@@ -106,17 +106,32 @@ while Bearer-token API calls consume one use per authenticated request.
 
 ## Live stream permission
 
-`view_live_streams` (64) permits a signed-in user to join another user's
-currently published live trip stream. Publishing one's own stream does not
-require this permission.
+`view_live_streams` (64) permits a signed-in trainer or supervisor to connect
+to another connected ClockTimer client for live coaching. Normal workflow
+clients automatically maintain live presence while online; there is no
+broadcast control on the workflow client. Only accounts with
+`view_live_streams` (or superuser) can discover or join another client.
 
-Viewer signaling requests always include `targetUserId`. The server verifies
-that the requested target owns the live session and that the viewer still has
-`view_live_streams` before returning session descriptions, ICE candidates,
-snapshots, speech metadata, or TTS metadata.
+Signaling and control use the authenticated `/live-stream-ws` WebSocket.
+The browser first obtains a one-use, 60-second socket token from
+`POST /api/live-stream/` with `action=socket-token`; the token is carried as a
+WebSocket subprotocol value rather than in the URL. Apache proxies the WebSocket
+to the local `clocktimer-live-stream.service`.
 
-WebRTC carries microphone and program audio using the browser's negotiated Opus
-codec and DTLS-SRTP. The HTTP signaling endpoint is `/api/live-stream/`.
-Signaling state is ephemeral and is not part of the historical trip record.
-Deployment-specific STUN/TURN servers may be configured at
-`api_config()['webrtc']['ice_servers']`.
+The signaling service re-reads viewer permissions for discovery, join and
+trainer TTS, then rechecks active trainer peers every two seconds. Revoking
+`view_live_streams` closes the associated peer connection. Publisher-facing
+signaling contains only an opaque peer ID, SDP and ICE data; trainer identity is
+not included in the workflow client's signaling payload.
+
+WebRTC carries microphone and ClockTimer program audio. Opus is preferred for
+audio while the WebSocket carries presence, SDP/ICE signaling, ClockTimer state,
+speech metadata and trainer-to-user TTS commands. Automatic live presence does
+not independently request microphone access: it clones the microphone track
+already opened by the normal speech workflow and removes that track when speech
+capture stops.
+
+Deployment installs the local WebSocket service and Apache proxy. The service
+binds to `127.0.0.1:8765` by default and can be changed with
+`api_config()['live_stream']['websocket_bind']`. Deployment-specific STUN/TURN
+servers remain configured at `api_config()['webrtc']['ice_servers']`.
