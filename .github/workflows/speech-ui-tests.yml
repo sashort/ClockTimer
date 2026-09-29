@@ -10,6 +10,7 @@ on:
       - "SpeechEditorRuntime.js"
       - "app.js"
       - "ClockTimer.js"
+      - "LiveTripStream.js"
       - "HamburgerMenu.js"
       - "index.html"
       - "app.css"
@@ -60,6 +61,7 @@ jobs:
           node --check ActionFunctions.js
           node --check HamburgerMenu.js
           node --check app.js
+          node --check LiveTripStream.js
           node --check api/audio/VoiceCatalog.js
           node --check api/audio/AudioEngine.js
           node --check api/admin/speech-editor/EditorActionFunctions.js
@@ -112,6 +114,7 @@ jobs:
           node regex-builder.mjs
           node trip-log.mjs
           node offline-trip-buffer.mjs
+          node live-trip-stream.mjs
           node deferred-trip.mjs
           node numberpad-meridiem.mjs
           php trip_editor.php
