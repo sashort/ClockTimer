@@ -324,6 +324,7 @@ function live_ws_handshake(array &$client, PDO $pdo): bool
     $client['user'] = $user;
     $client['connected_at'] = microtime(true);
     $client['snapshot'] = null;
+    $client['available'] = false;
     $client['fragment_opcode'] = null;
     $client['fragment_data'] = '';
 
@@ -474,6 +475,7 @@ function live_ws_target_client(
     foreach ($clients as $clientId => $client) {
         if (
             !($client['handshake'] ?? false) ||
+            !($client['available'] ?? false) ||
             (int) ($client['user']['id'] ?? 0) !== $targetUserId
         ) {
             continue;
@@ -501,6 +503,7 @@ function live_ws_targets(
 
         if (
             !($client['handshake'] ?? false) ||
+            !($client['available'] ?? false) ||
             !is_array($user) ||
             (int) $user['id'] === $viewerUserId
         ) {
@@ -630,6 +633,49 @@ function live_ws_handle_message(
         return;
     }
 
+    if ($type === 'presence.start') {
+        $client['available'] = true;
+        $client['snapshot'] =
+            $message['snapshot'] ??
+            null;
+
+        live_ws_send_response(
+            $client,
+            $requestId,
+            [
+                'available' => true,
+            ]
+        );
+        return;
+    }
+
+    if ($type === 'presence.stop') {
+        $client['available'] = false;
+        $client['snapshot'] = null;
+
+        foreach (array_keys($peers) as $peerId) {
+            $peer = $peers[$peerId];
+
+            if ((int) $peer['publisherClientId'] === $clientId) {
+                live_ws_close_peer(
+                    (int) $peerId,
+                    $peers,
+                    $clients,
+                    'publisher_unavailable'
+                );
+            }
+        }
+
+        live_ws_send_response(
+            $client,
+            $requestId,
+            [
+                'available' => false,
+            ]
+        );
+        return;
+    }
+
     if ($type === 'targets.request') {
         if (!live_ws_can_view($user)) {
             live_ws_send_error(
@@ -686,15 +732,6 @@ function live_ws_handle_message(
             'createdAt' => microtime(true),
         ];
 
-        live_ws_send(
-            $clients[$publisherClientId],
-            [
-                'type' => 'peer.offer',
-                'peerId' => $peerId,
-                'offer' => $offer,
-            ]
-        );
-
         live_ws_send_response(
             $client,
             $requestId,
@@ -702,6 +739,15 @@ function live_ws_handle_message(
                 'peerId' => $peerId,
                 'targetUserId' => $targetUserId,
                 'snapshot' => $clients[$publisherClientId]['snapshot'] ?? null,
+            ]
+        );
+
+        live_ws_send(
+            $clients[$publisherClientId],
+            [
+                'type' => 'peer.offer',
+                'peerId' => $peerId,
+                'offer' => $offer,
             ]
         );
         return;
@@ -844,6 +890,10 @@ function live_ws_handle_message(
     }
 
     if ($type === 'publisher.event') {
+        if (!($client['available'] ?? false)) {
+            return;
+        }
+
         $eventType = (string) ($message['eventType'] ?? '');
 
         if (!preg_match('/^[a-z0-9][a-z0-9._-]{0,63}$/D', $eventType)) {
