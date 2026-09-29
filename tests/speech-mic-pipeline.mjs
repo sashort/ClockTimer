@@ -2514,7 +2514,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /append\(system\)[\s\S]*#sleeping[\s\S]*return result[\s\S]*append\(topLevel\)[\s\S]*dialog\[open\]/
+    /#sleeping[\s\S]*system\.filter[\s\S]*speechSystemCommand[\s\S]*"wake"[\s\S]*SpeechMenu\.wake[\s\S]*return result[\s\S]*append\(system\)[\s\S]*append\(topLevel\)[\s\S]*dialog\[open\]/
 );
 assert.match(
     speechMenuSource,
