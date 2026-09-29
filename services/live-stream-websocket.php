@@ -294,11 +294,56 @@ function live_ws_handshake(array &$client, PDO $pdo): bool
         return false;
     }
 
-    $query = (string) parse_url($target, PHP_URL_QUERY);
-    parse_str($query, $parameters);
-    $token = is_string($parameters['token'] ?? null)
-        ? $parameters['token']
-        : '';
+    $protocolHeader =
+        (string) (
+            $headers[
+                'sec-websocket-protocol'
+            ] ??
+            ''
+        );
+    $protocols =
+        array_values(
+            array_filter(
+                array_map(
+                    'trim',
+                    explode(
+                        ',',
+                        $protocolHeader
+                    )
+                )
+            )
+        );
+    $token = '';
+
+    foreach ($protocols as $protocol) {
+        if (
+            str_starts_with(
+                $protocol,
+                'clocktimer-auth.'
+            )
+        ) {
+            $token =
+                substr(
+                    $protocol,
+                    strlen(
+                        'clocktimer-auth.'
+                    )
+                );
+            break;
+        }
+    }
+
+    if (
+        !in_array(
+            'clocktimer-live',
+            $protocols,
+            true
+        )
+    ) {
+        live_ws_http_error($client['socket'], 400, 'ClockTimer WebSocket protocol is required.');
+        $client['close'] = true;
+        return false;
+    }
 
     $user = live_ws_consume_token($pdo, $token);
 
@@ -313,7 +358,8 @@ function live_ws_handshake(array &$client, PDO $pdo): bool
         "HTTP/1.1 101 Switching Protocols\r\n"
         . "Upgrade: websocket\r\n"
         . "Connection: Upgrade\r\n"
-        . "Sec-WebSocket-Accept: {$accept}\r\n\r\n";
+        . "Sec-WebSocket-Accept: {$accept}\r\n"
+        . "Sec-WebSocket-Protocol: clocktimer-live\r\n\r\n";
 
     if (!live_ws_write($client, $response)) {
         $client['close'] = true;
