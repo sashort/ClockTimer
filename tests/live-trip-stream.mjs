@@ -27,6 +27,21 @@ assert.match(live, /setViewerMicrophoneVolume\(/);
 assert.match(live, /setViewerProgramVolume\(/);
 
 assert.match(app, /const PERMISSION_VIEW_LIVE_STREAMS\s*=\s*64/);
+assert.match(
+    app,
+    /syncAutomaticLivePublisher[\s\S]*startPublishing\(\{[\s\S]*requestMicrophone:\s*false/
+);
+assert.match(
+    app,
+    /\$\("#liveStreamButton"\)\.hidden\s*=\s*!canViewLiveStreams/
+);
+assert.doesNotMatch(html, /id="liveStreamPublishButton"/);
+assert.match(
+    live,
+    /async startPublishing\(\{[\s\S]*requestMicrophone[\s\S]*#acquirePublisherMedia\(\{[\s\S]*requestMicrophone/
+);
+assert.match(live, /async refreshPublisherMicrophone\(\)/);
+assert.match(live, /async clearPublisherMicrophone\(\)/);
 assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"tts"/);
 assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"speech\.command"/);
 
@@ -52,4 +67,4 @@ assert.match(endpoint, /PERMISSION_VIEW_LIVE_STREAMS/);
 assert.match(endpoint, /require_positive_int\(\$input, 'targetUserId'\)/);
 assert.match(endpoint, /require_positive_int\(\$_GET, 'targetUserId'\)/);
 
-console.log("PASS WebRTC live stream target scoping, audio routing, and viewer volume controls");
+console.log("PASS passive WebRTC live presence, target scoping, audio routing, and viewer volume controls");
