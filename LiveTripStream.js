@@ -17,28 +17,24 @@
         #csrfToken;
         #snapshotProvider;
         #iceServers = [];
-        #sequence = 0;
+
+        #socket;
+        #socketConnectPromise;
+        #socketRequests = new Map();
+        #socketRequestSequence = 0;
+        #socketReconnectTimer;
+        #closing = false;
 
         #publishing = false;
-        #publisherSessionId;
-        #publisherPollTimer;
-        #publisherHeartbeatTimer;
-        #publisherSignalId = 0;
         #publisherPeers = new Map();
+        #publisherCandidateQueues = new Map();
         #publisherMicrophoneStream;
         #publisherProgramStream;
-        #publisherOwnMicrophone = false;
 
         #viewing = false;
         #targetUserId;
         #viewerPeerId;
         #viewerPeer;
-        #viewerDataChannel;
-        #viewerPollTimer;
-        #viewerHeartbeatTimer;
-        #viewerSignalId = 0;
-        #viewerMessageId = 0;
-        #viewerLastSequence = 0;
         #viewerCandidateQueue = [];
         #viewerRemoteCandidateQueue = [];
         #viewerMicTransceiver;
@@ -134,50 +130,6 @@
             );
         }
 
-        #preferOpus(
-            transceiver
-        ) {
-            const codecs =
-                globalThis
-                    .RTCRtpReceiver
-                    ?.getCapabilities?.(
-                        "audio"
-                    )
-                    ?.codecs;
-
-            const opus =
-                Array.isArray(
-                    codecs
-                )
-                    ? codecs
-                        .filter(
-                            codec =>
-                                String(
-                                    codec
-                                        ?.mimeType ||
-                                    ""
-                                )
-                                    .toLowerCase() ===
-                                    "audio/opus"
-                        )
-                    : [];
-
-            if (
-                opus.length &&
-                typeof transceiver
-                    ?.setCodecPreferences ===
-                    "function"
-            ) {
-                try {
-                    transceiver
-                        .setCodecPreferences(
-                            opus
-                        );
-                }
-                catch {}
-            }
-        }
-
         #snapshot() {
             try {
                 return this
@@ -190,6 +142,57 @@
                 );
 
                 return undefined;
+            }
+        }
+
+        #preferOpus(
+            transceiver
+        ) {
+            const capabilities =
+                globalThis
+                    .RTCRtpReceiver
+                    ?.getCapabilities?.(
+                        "audio"
+                    );
+
+            const codecs =
+                capabilities
+                    ?.codecs ||
+                [];
+
+            const opus =
+                codecs.filter(
+                    codec =>
+                        String(
+                            codec
+                                ?.mimeType ||
+                            ""
+                        )
+                            .toLowerCase() ===
+                            "audio/opus"
+                );
+
+            if (
+                opus.length &&
+                typeof transceiver
+                    ?.setCodecPreferences ===
+                    "function"
+            ) {
+                try {
+                    transceiver
+                        .setCodecPreferences(
+                            [
+                                ...opus,
+                                ...codecs.filter(
+                                    codec =>
+                                        !opus.includes(
+                                            codec
+                                        )
+                                )
+                            ]
+                        );
+                }
+                catch {}
             }
         }
 
@@ -243,78 +246,33 @@
             return this.#csrfToken;
         }
 
-        async #request(
-            method,
-            {
-                query,
-                body,
-                retry = true
-            } = {}
+        async #requestToken(
+            retry = true
         ) {
-            const url =
-                new URL(
-                    this.#endpoint
-                );
-
-            for (
-                const [
-                    key,
-                    value
-                ] of
-                Object.entries(
-                    query ||
-                    {}
-                )
-            ) {
-                if (
-                    value !== undefined &&
-                    value !== null
-                ) {
-                    url.searchParams.set(
-                        key,
-                        String(
-                            value
-                        )
-                    );
-                }
-            }
-
-            const headers = {
-                Accept:
-                    "application/json"
-            };
-
-            if (
-                method !==
-                    "GET"
-            ) {
-                headers[
-                    "Content-Type"
-                ] =
-                    "application/json";
-
-                headers[
-                    "X-CSRF-Token"
-                ] =
-                    await this.#ensureCsrf();
-            }
-
             const response =
                 await fetch(
-                    url,
+                    this.#endpoint,
                     {
-                        method,
+                        method:
+                            "POST",
                         credentials:
                             "same-origin",
                         cache:
                             "no-store",
-                        headers,
+                        headers: {
+                            Accept:
+                                "application/json",
+                            "Content-Type":
+                                "application/json",
+                            "X-CSRF-Token":
+                                await this
+                                    .#ensureCsrf()
+                        },
                         body:
-                            body === undefined
-                                ? undefined
-                                : JSON.stringify(
-                                    body
-                                )
+                            JSON.stringify({
+                                action:
+                                    "socket-token"
+                            })
                     }
                 );
 
@@ -327,32 +285,31 @@
             if (
                 !response.ok &&
                 retry &&
-                method !==
-                    "GET" &&
                 data.error ===
                     "invalid_csrf"
             ) {
-                await this.#ensureCsrf(
-                    true
-                );
+                await this
+                    .#ensureCsrf(
+                        true
+                    );
 
-                return this.#request(
-                    method,
-                    {
-                        query,
-                        body,
-                        retry:
-                            false
-                    }
-                );
+                return this
+                    .#requestToken(
+                        false
+                    );
             }
 
-            if (!response.ok) {
+            if (
+                !response.ok ||
+                typeof data.token !==
+                    "string" ||
+                !data.token
+            ) {
                 const error =
                     new Error(
                         data.message ||
                         data.error ||
-                        "Live stream request failed."
+                        "Unable to authorize live streaming."
                     );
 
                 error.code =
@@ -363,21 +320,6 @@
                 throw error;
             }
 
-            return data;
-        }
-
-        async listTargets() {
-            const data =
-                await this.#request(
-                    "GET",
-                    {
-                        query: {
-                            action:
-                                "targets"
-                        }
-                    }
-                );
-
             this.#iceServers =
                 Array.isArray(
                     data.iceServers
@@ -385,39 +327,621 @@
                     ? data.iceServers
                     : [];
 
-            const targets =
-                Array.isArray(
-                    data.targets
-                )
-                    ? data.targets
-                    : [];
+            return data;
+        }
 
-            this.#emit(
-                "targetsChanged",
-                {
-                    targets
-                }
+        #webSocketUrl(
+            data
+        ) {
+            const path =
+                String(
+                    data?.websocketPath ||
+                    "/live-stream-ws"
+                );
+
+            const url =
+                new URL(
+                    path,
+                    this.#baseUrl
+                );
+
+            url.protocol =
+                url.protocol ===
+                    "https:"
+                    ? "wss:"
+                    : "ws:";
+
+            url.searchParams.set(
+                "token",
+                data.token
             );
 
-            return targets;
+            return url;
+        }
+
+        async #ensureSocket() {
+            if (
+                this.#socket &&
+                this.#socket.readyState ===
+                    globalThis.WebSocket
+                        ?.OPEN
+            ) {
+                return this.#socket;
+            }
+
+            if (
+                this
+                    .#socketConnectPromise
+            ) {
+                return this
+                    .#socketConnectPromise;
+            }
+
+            if (
+                typeof globalThis
+                    .WebSocket !==
+                    "function"
+            ) {
+                throw new Error(
+                    "WebSocket is not supported by this browser."
+                );
+            }
+
+            this.#closing =
+                false;
+
+            this.#socketConnectPromise =
+                (async () => {
+                    const data =
+                        await this
+                            .#requestToken();
+
+                    const socket =
+                        new WebSocket(
+                            this
+                                .#webSocketUrl(
+                                    data
+                                )
+                        );
+
+                    this.#socket =
+                        socket;
+
+                    socket.addEventListener(
+                        "message",
+                        event =>
+                            this
+                                .#handleSocketMessage(
+                                    event
+                                )
+                    );
+
+                    socket.addEventListener(
+                        "close",
+                        () =>
+                            this
+                                .#handleSocketClose()
+                    );
+
+                    socket.addEventListener(
+                        "error",
+                        () =>
+                            this.#emit(
+                                "error",
+                                {
+                                    role:
+                                        this.#viewing
+                                            ? "viewer"
+                                            : "publisher",
+                                    error:
+                                        new Error(
+                                            "Live stream WebSocket failed."
+                                        )
+                                }
+                            )
+                    );
+
+                    await new Promise(
+                        (
+                            resolve,
+                            reject
+                        ) => {
+                            const timeout =
+                                setTimeout(
+                                    () => {
+                                        reject(
+                                            new Error(
+                                                "Live stream WebSocket timed out."
+                                            )
+                                        );
+                                    },
+                                    10000
+                                );
+
+                            socket.addEventListener(
+                                "open",
+                                () => {
+                                    clearTimeout(
+                                        timeout
+                                    );
+                                    resolve();
+                                },
+                                {
+                                    once:
+                                        true
+                                }
+                            );
+
+                            socket.addEventListener(
+                                "close",
+                                () => {
+                                    clearTimeout(
+                                        timeout
+                                    );
+                                    reject(
+                                        new Error(
+                                            "Live stream WebSocket closed before connecting."
+                                        )
+                                    );
+                                },
+                                {
+                                    once:
+                                        true
+                                }
+                            );
+                        }
+                    );
+
+                    return socket;
+                })()
+                    .finally(
+                        () => {
+                            this.#socketConnectPromise =
+                                undefined;
+                        }
+                    );
+
+            return this
+                .#socketConnectPromise;
+        }
+
+        #socketSend(
+            message
+        ) {
+            const socket =
+                this.#socket;
+
+            if (
+                !socket ||
+                socket.readyState !==
+                    WebSocket.OPEN
+            ) {
+                throw new Error(
+                    "The live stream WebSocket is not connected."
+                );
+            }
+
+            socket.send(
+                JSON.stringify(
+                    message
+                )
+            );
+        }
+
+        async #socketRequest(
+            type,
+            payload = {}
+        ) {
+            await this
+                .#ensureSocket();
+
+            const requestId =
+                ++this
+                    .#socketRequestSequence;
+
+            return new Promise(
+                (
+                    resolve,
+                    reject
+                ) => {
+                    const timeout =
+                        setTimeout(
+                            () => {
+                                this
+                                    .#socketRequests
+                                    .delete(
+                                        requestId
+                                    );
+
+                                reject(
+                                    new Error(
+                                        "Live stream request timed out."
+                                    )
+                                );
+                            },
+                            10000
+                        );
+
+                    this
+                        .#socketRequests
+                        .set(
+                            requestId,
+                            {
+                                resolve,
+                                reject,
+                                timeout
+                            }
+                        );
+
+                    try {
+                        this.#socketSend({
+                            type,
+                            requestId,
+                            ...payload
+                        });
+                    }
+                    catch (error) {
+                        clearTimeout(
+                            timeout
+                        );
+
+                        this
+                            .#socketRequests
+                            .delete(
+                                requestId
+                            );
+
+                        reject(
+                            error
+                        );
+                    }
+                }
+            );
+        }
+
+        #resolveSocketRequest(
+            message
+        ) {
+            const requestId =
+                Number(
+                    message
+                        ?.requestId
+                );
+
+            if (
+                !Number.isInteger(
+                    requestId
+                )
+            ) {
+                return false;
+            }
+
+            const pending =
+                this
+                    .#socketRequests
+                    .get(
+                        requestId
+                    );
+
+            if (!pending) {
+                return false;
+            }
+
+            clearTimeout(
+                pending.timeout
+            );
+
+            this
+                .#socketRequests
+                .delete(
+                    requestId
+                );
+
+            if (
+                message.ok ===
+                    false
+            ) {
+                const error =
+                    new Error(
+                        message.message ||
+                        message.error ||
+                        "Live stream request failed."
+                    );
+
+                error.code =
+                    message.error;
+
+                if (
+                    message.error ===
+                        "permission_required"
+                ) {
+                    error.status =
+                        403;
+                }
+
+                pending.reject(
+                    error
+                );
+            }
+            else {
+                pending.resolve(
+                    message
+                );
+            }
+
+            return true;
+        }
+
+        #handleSocketMessage(
+            event
+        ) {
+            let message;
+
+            try {
+                message =
+                    JSON.parse(
+                        event.data
+                    );
+            }
+            catch {
+                return;
+            }
+
+            if (
+                !message ||
+                typeof message !==
+                    "object"
+            ) {
+                return;
+            }
+
+            if (
+                message.type ===
+                    "response"
+            ) {
+                this
+                    .#resolveSocketRequest(
+                        message
+                    );
+
+                return;
+            }
+
+            if (
+                message.type ===
+                    "peer.offer"
+            ) {
+                void this
+                    .#createPublisherPeer(
+                        message
+                    )
+                    .catch(
+                        error =>
+                            this.#emit(
+                                "error",
+                                {
+                                    role:
+                                        "publisher",
+                                    error
+                                }
+                            )
+                    );
+
+                return;
+            }
+
+            if (
+                message.type ===
+                    "peer.answer"
+            ) {
+                void this
+                    .#handleViewerAnswer(
+                        message
+                    );
+
+                return;
+            }
+
+            if (
+                message.type ===
+                    "peer.candidate"
+            ) {
+                void this
+                    .#handleRemoteCandidate(
+                        message
+                    );
+
+                return;
+            }
+
+            if (
+                message.type ===
+                    "peer.closed"
+            ) {
+                this
+                    .#handlePeerClosed(
+                        message
+                    );
+
+                return;
+            }
+
+            if (
+                message.type ===
+                    "publisher.event"
+            ) {
+                this
+                    .#handlePublisherEvent(
+                        message
+                    );
+
+                return;
+            }
+
+            if (
+                message.type ===
+                    "trainer.tts"
+            ) {
+                this.#emit(
+                    "publisherMessage",
+                    {
+                        peerId:
+                            Number(
+                                message.peerId
+                            ),
+                        type:
+                            "trainer.tts",
+                        payload: {
+                            text:
+                                message.text
+                        }
+                    }
+                );
+            }
+        }
+
+        #handleSocketClose() {
+            const wasPublishing =
+                this.#publishing;
+            const wasViewing =
+                this.#viewing;
+
+            this.#socket =
+                undefined;
+
+            for (
+                const [
+                    requestId,
+                    pending
+                ] of
+                this
+                    .#socketRequests
+            ) {
+                clearTimeout(
+                    pending.timeout
+                );
+
+                pending.reject(
+                    new Error(
+                        "The live stream WebSocket disconnected."
+                    )
+                );
+
+                this
+                    .#socketRequests
+                    .delete(
+                        requestId
+                    );
+            }
+
+            for (
+                const [
+                    peerId,
+                    entry
+                ] of
+                this
+                    .#publisherPeers
+            ) {
+                this
+                    .#closePublisherPeer(
+                        peerId,
+                        entry
+                    );
+            }
+
+            if (wasViewing) {
+                void this
+                    .stopViewing({
+                        notifyServer:
+                            false
+                    });
+            }
+
+            if (
+                wasPublishing &&
+                !this.#closing
+            ) {
+                clearTimeout(
+                    this
+                        .#socketReconnectTimer
+                );
+
+                this.#socketReconnectTimer =
+                    setTimeout(
+                        () => {
+                            this
+                                .#reconnectPublisher()
+                                .catch(
+                                    error =>
+                                        this.#emit(
+                                            "error",
+                                            {
+                                                role:
+                                                    "publisher",
+                                                error
+                                            }
+                                        )
+                                );
+                        },
+                        1000
+                    );
+            }
+        }
+
+        async #reconnectPublisher() {
+            if (
+                !this.#publishing ||
+                this.#closing
+            ) {
+                return;
+            }
+
+            await this
+                .#ensureSocket();
+
+            await this
+                .#socketRequest(
+                    "presence.start",
+                    {
+                        snapshot:
+                            this.#snapshot()
+                    }
+                );
+
+            this.broadcast(
+                "snapshot",
+                this.#snapshot()
+            );
+        }
+
+        async listTargets() {
+            const data =
+                await this
+                    .#socketRequest(
+                        "targets.request"
+                    );
+
+            return Array.isArray(
+                data.targets
+            )
+                ? data.targets
+                : [];
         }
 
         async #acquirePublisherMedia({
             requestMicrophone =
-                true
+                false
         } = {}) {
             let microphoneStream =
                 globalThis
                     .SpeechMenu
                     ?.createMicrophoneStream?.();
 
-            let ownMicrophone =
-                false;
-
             if (
                 !microphoneStream &&
                 requestMicrophone &&
-                navigator.mediaDevices
+                navigator
+                    .mediaDevices
                     ?.getUserMedia
             ) {
                 try {
@@ -434,16 +958,8 @@
                                         false
                                 }
                             });
-
-                    ownMicrophone =
-                        true;
                 }
-                catch (error) {
-                    console.warn(
-                        "Live microphone audio is unavailable:",
-                        error
-                    );
-                }
+                catch {}
             }
 
             let programStream;
@@ -465,159 +981,15 @@
                 microphoneStream;
             this.#publisherProgramStream =
                 programStream;
-            this.#publisherOwnMicrophone =
-                ownMicrophone;
         }
 
-        #stopPublisherMedia() {
-            for (
-                const stream of [
-                    this.#publisherMicrophoneStream,
-                    this.#publisherProgramStream
-                ]
-            ) {
-                for (
-                    const track of
-                    stream?.getTracks?.() ||
-                    []
-                ) {
-                    try {
-                        track.stop();
-                    }
-                    catch {}
-                }
-            }
-
-            this.#publisherMicrophoneStream =
-                undefined;
-            this.#publisherProgramStream =
-                undefined;
-            this.#publisherOwnMicrophone =
-                false;
-        }
-
-        async refreshPublisherMicrophone() {
-            if (!this.#publishing) {
-                return false;
-            }
-
-            const stream =
-                globalThis
-                    .SpeechMenu
-                    ?.createMicrophoneStream?.();
-
-            const track =
-                stream
-                    ?.getAudioTracks?.()[0];
-
-            if (!track) {
-                for (
-                    const mediaTrack of
-                    stream?.getTracks?.() ||
-                    []
-                ) {
-                    try {
-                        mediaTrack.stop();
-                    }
-                    catch {}
-                }
-
-                await this
-                    .clearPublisherMicrophone();
-
-                return false;
-            }
-
-            const previous =
-                this.#publisherMicrophoneStream;
-
-            this.#publisherMicrophoneStream =
-                stream;
-            this.#publisherOwnMicrophone =
-                false;
-
-            for (
-                const entry of
-                this.#publisherPeers
-                    .values()
-            ) {
-                try {
-                    await entry
-                        .microphoneSender
-                        ?.replaceTrack(
-                            track
-                        );
-                }
-                catch (error) {
-                    console.warn(
-                        "Unable to refresh live microphone track:",
-                        error
-                    );
-                }
-            }
-
-            if (
-                previous &&
-                previous !==
-                    stream
-            ) {
-                for (
-                    const mediaTrack of
-                    previous.getTracks?.() ||
-                    []
-                ) {
-                    try {
-                        mediaTrack.stop();
-                    }
-                    catch {}
-                }
-            }
-
-            this.#emit(
-                "publisherMediaChanged",
-                {
-                    microphone:
-                        true,
-                    programAudio:
-                        Boolean(
-                            this
-                                .#publisherProgramStream
-                                ?.getAudioTracks?.()
-                                .length
-                        )
-                }
-            );
-
-            return true;
-        }
-
-        async clearPublisherMicrophone() {
-            for (
-                const entry of
-                this.#publisherPeers
-                    .values()
-            ) {
-                try {
-                    await entry
-                        .microphoneSender
-                        ?.replaceTrack(
-                            null
-                        );
-                }
-                catch {}
-            }
-
-            const stream =
-                this.#publisherMicrophoneStream;
-
-            this.#publisherMicrophoneStream =
-                undefined;
-            this.#publisherOwnMicrophone =
-                false;
-
+        #stopStream(
+            stream
+        ) {
             for (
                 const track of
-                stream?.getTracks?.() ||
+                stream
+                    ?.getTracks?.() ||
                 []
             ) {
                 try {
@@ -625,28 +997,30 @@
                 }
                 catch {}
             }
+        }
 
-            this.#emit(
-                "publisherMediaChanged",
-                {
-                    microphone:
-                        false,
-                    programAudio:
-                        Boolean(
-                            this
-                                .#publisherProgramStream
-                                ?.getAudioTracks?.()
-                                .length
-                        )
-                }
-            );
+        #stopPublisherMedia() {
+            this
+                .#stopStream(
+                    this
+                        .#publisherMicrophoneStream
+                );
 
-            return true;
+            this
+                .#stopStream(
+                    this
+                        .#publisherProgramStream
+                );
+
+            this.#publisherMicrophoneStream =
+                undefined;
+            this.#publisherProgramStream =
+                undefined;
         }
 
         async startPublishing({
             requestMicrophone =
-                true
+                false
         } = {}) {
             if (
                 typeof globalThis
@@ -658,28 +1032,27 @@
                 );
             }
 
-            if (this.#publishing) {
+            if (
+                this.#publishing
+            ) {
                 return true;
             }
+
+            await this
+                .#ensureSocket();
 
             await this
                 .#acquirePublisherMedia({
                     requestMicrophone
                 });
 
-            let data;
-
             try {
-                data =
-                    await this.#request(
-                        "POST",
+                await this
+                    .#socketRequest(
+                        "presence.start",
                         {
-                            body: {
-                                action:
-                                    "publish",
-                                snapshot:
-                                    this.#snapshot()
-                            }
+                            snapshot:
+                                this.#snapshot()
                         }
                     );
             }
@@ -692,65 +1065,12 @@
 
             this.#publishing =
                 true;
-            this.#publisherSessionId =
-                data.sessionId;
-            this.#iceServers =
-                Array.isArray(
-                    data.iceServers
-                )
-                    ? data.iceServers
-                    : this.#iceServers;
-            this.#publisherSignalId =
-                0;
-
-            this.#publisherPollTimer =
-                setInterval(
-                    () =>
-                        void this
-                            .#publisherTick()
-                            .catch(
-                                error =>
-                                    this.#emit(
-                                        "error",
-                                        {
-                                            role:
-                                                "publisher",
-                                            error
-                                        }
-                                    )
-                            ),
-                    750
-                );
-
-            this.#publisherHeartbeatTimer =
-                setInterval(
-                    () =>
-                        void this
-                            .#publisherHeartbeat()
-                            .catch(
-                                error =>
-                                    this.#emit(
-                                        "error",
-                                        {
-                                            role:
-                                                "publisher",
-                                            error
-                                        }
-                                    )
-                            ),
-                    15000
-                );
-
-            await this
-                .#publisherTick();
 
             this.#emit(
                 "publishingChanged",
                 {
                     publishing:
                         true,
-                    sessionId:
-                        this.#publisherSessionId,
                     microphone:
                         Boolean(
                             this
@@ -771,192 +1091,131 @@
             return true;
         }
 
-        async #publisherHeartbeat() {
-            if (!this.#publishing) {
-                return;
+        async refreshPublisherMicrophone() {
+            if (
+                !this.#publishing
+            ) {
+                return false;
             }
 
-            await this.#request(
-                "POST",
-                {
-                    body: {
-                        action:
-                            "heartbeat",
-                        snapshot:
-                            this.#snapshot()
-                    }
+            const stream =
+                globalThis
+                    .SpeechMenu
+                    ?.createMicrophoneStream?.();
+
+            const track =
+                stream
+                    ?.getAudioTracks?.()[0];
+
+            if (!track) {
+                this
+                    .#stopStream(
+                        stream
+                    );
+
+                return this
+                    .clearPublisherMicrophone();
+            }
+
+            const previous =
+                this
+                    .#publisherMicrophoneStream;
+
+            this.#publisherMicrophoneStream =
+                stream;
+
+            for (
+                const entry of
+                this
+                    .#publisherPeers
+                    .values()
+            ) {
+                try {
+                    await entry
+                        .microphoneSender
+                        ?.replaceTrack(
+                            track
+                        );
                 }
-            );
+                catch {}
+            }
+
+            if (
+                previous &&
+                previous !==
+                    stream
+            ) {
+                this
+                    .#stopStream(
+                        previous
+                    );
+            }
+
+            return true;
         }
 
-        async #publisherTick() {
-            if (!this.#publishing) {
-                return;
-            }
-
-            const data =
-                await this.#request(
-                    "GET",
-                    {
-                        query: {
-                            action:
-                                "publisher",
-                            afterSignalId:
-                                this.#publisherSignalId
-                        }
-                    }
-                );
-
-            if (!data.session) {
-                await this.stopPublishing({
-                    notifyServer:
-                        false
-                });
-
-                return;
-            }
-
-            this.#iceServers =
-                Array.isArray(
-                    data.iceServers
-                )
-                    ? data.iceServers
-                    : this.#iceServers;
-
-            const livePeerIds =
-                new Set();
-
+        async clearPublisherMicrophone() {
             for (
-                const peer of
-                data.peers ||
-                []
+                const entry of
+                this
+                    .#publisherPeers
+                    .values()
             ) {
-                livePeerIds.add(
-                    Number(
-                        peer.peerId
-                    )
-                );
-
-                if (
-                    !this
-                        .#publisherPeers
-                        .has(
-                            Number(
-                                peer.peerId
-                            )
-                        )
-                ) {
-                    await this
-                        .#createPublisherPeer(
-                            peer
-                        );
-                }
-            }
-
-            for (
-                const [
-                    peerId,
-                    entry
-                ] of
-                this.#publisherPeers
-            ) {
-                if (
-                    !livePeerIds
-                        .has(
-                            peerId
-                        )
-                ) {
-                    this
-                        .#closePublisherPeer(
-                            peerId,
-                            entry
-                        );
-                }
-            }
-
-            for (
-                const signal of
-                data.signals ||
-                []
-            ) {
-                this.#publisherSignalId =
-                    Math.max(
-                        this
-                            .#publisherSignalId,
-                        Number(
-                            signal.id
-                        ) ||
-                        0
-                    );
-
-                const entry =
-                    this
-                        .#publisherPeers
-                        .get(
-                            Number(
-                                signal.peerId
-                            )
-                        );
-
-                if (
-                    !entry ||
-                    !signal.candidate
-                ) {
-                    continue;
-                }
-
                 try {
-                    await entry.pc
-                        .addIceCandidate(
-                            signal.candidate
+                    await entry
+                        .microphoneSender
+                        ?.replaceTrack(
+                            null
                         );
                 }
-                catch (error) {
-                    console.warn(
-                        "Unable to add viewer ICE candidate:",
-                        error
-                    );
-                }
+                catch {}
             }
 
-            for (
-                const message of
-                data.messages ||
-                []
-            ) {
-                this.#publisherSignalId =
-                    Math.max(
-                        this
-                            .#publisherSignalId,
-                        Number(
-                            message.id
-                        ) ||
-                        0
-                    );
-
-                this.#emit(
-                    "publisherMessage",
-                    {
-                        peerId:
-                            Number(
-                                message.peerId
-                            ),
-                        type:
-                            message.type,
-                        payload:
-                            message.payload
-                    }
+            this
+                .#stopStream(
+                    this
+                        .#publisherMicrophoneStream
                 );
-            }
+
+            this.#publisherMicrophoneStream =
+                undefined;
+
+            return true;
         }
 
         async #createPublisherPeer(
-            peer
+            message
         ) {
+            if (
+                !this.#publishing
+            ) {
+                return;
+            }
+
             const peerId =
                 Number(
-                    peer.peerId
+                    message.peerId
                 );
+
+            if (
+                !Number.isInteger(
+                    peerId
+                ) ||
+                !message.offer
+            ) {
+                return;
+            }
+
+            const existing =
+                this
+                    .#publisherPeers
+                    .get(
+                        peerId
+                    );
+
+            if (existing) {
+                return;
+            }
 
             const pc =
                 new RTCPeerConnection({
@@ -966,23 +1225,14 @@
 
             const entry = {
                 pc,
-                channel:
-                    undefined,
                 microphoneSender:
                     undefined,
                 programSender:
-                    undefined,
-                viewerUserId:
-                    Number(
-                        peer.viewerUserId
-                    ),
-                viewerName:
-                    peer.viewerName ||
-                    peer.viewerUsername ||
-                    "Viewer"
+                    undefined
             };
 
-            this.#publisherPeers
+            this
+                .#publisherPeers
                 .set(
                     peerId,
                     entry
@@ -991,73 +1241,33 @@
             pc.addEventListener(
                 "icecandidate",
                 event => {
-                    if (!event.candidate) {
+                    if (
+                        !event.candidate
+                    ) {
                         return;
                     }
 
-                    void this
-                        .#request(
-                            "POST",
-                            {
-                                body: {
-                                    action:
-                                        "candidate",
-                                    peerId,
-                                    candidate:
-                                        event
-                                            .candidate
-                                            .toJSON()
-                                }
-                            }
-                        )
-                        .catch(
-                            error =>
-                                console.warn(
-                                    "Unable to send publisher ICE candidate:",
-                                    error
-                                )
-                        );
-                }
-            );
-
-            pc.addEventListener(
-                "datachannel",
-                event => {
-                    entry.channel =
-                        event.channel;
-
-                    this
-                        .#configurePublisherChannel(
-                            entry.channel
-                        );
-                }
-            );
-
-            pc.addEventListener(
-                "connectionstatechange",
-                () =>
-                    this.#emit(
-                        "publisherPeerChanged",
-                        {
+                    try {
+                        this.#socketSend({
+                            type:
+                                "peer.candidate",
                             peerId,
-                            viewerUserId:
-                                entry
-                                    .viewerUserId,
-                            viewerName:
-                                entry
-                                    .viewerName,
-                            state:
-                                pc.connectionState
-                        }
-                    )
+                            candidate:
+                                event
+                                    .candidate
+                                    .toJSON()
+                        });
+                    }
+                    catch {}
+                }
             );
 
             await pc
                 .setRemoteDescription(
-                    peer.offer
+                    message.offer
                 );
 
-            const audioTransceivers =
+            const transceivers =
                 pc
                     .getTransceivers()
                     .filter(
@@ -1069,7 +1279,7 @@
                                 "audio"
                     );
 
-            const sourceTracks = [
+            const tracks = [
                 this
                     .#publisherMicrophoneStream
                     ?.getAudioTracks?.()[0],
@@ -1081,14 +1291,11 @@
             for (
                 let index = 0;
                 index <
-                    sourceTracks.length;
+                    tracks.length;
                 index++
             ) {
-                const track =
-                    sourceTracks[index];
-
                 let transceiver =
-                    audioTransceivers[
+                    transceivers[
                         index
                     ];
 
@@ -1107,87 +1314,82 @@
                         "sendonly";
                 }
 
-                this.#preferOpus(
-                    transceiver
-                );
+                this
+                    .#preferOpus(
+                        transceiver
+                    );
 
                 await transceiver
                     .sender
                     .replaceTrack(
-                        track ||
+                        tracks[
+                            index
+                        ] ||
                         null
                     );
 
-                if (index === 0) {
+                if (
+                    index ===
+                        0
+                ) {
                     entry.microphoneSender =
                         transceiver.sender;
                 }
-                else if (
-                    index ===
-                        1
-                ) {
+                else {
                     entry.programSender =
                         transceiver.sender;
                 }
             }
 
             const answer =
-                await pc.createAnswer();
+                await pc
+                    .createAnswer();
 
             await pc
                 .setLocalDescription(
                     answer
                 );
 
-            await this.#request(
-                "POST",
-                {
-                    body: {
-                        action:
-                            "answer",
-                        peerId,
-                        answer:
-                            pc
-                                .localDescription
-                                .toJSON()
-                    }
-                }
-            );
+            this.#socketSend({
+                type:
+                    "peer.answer",
+                peerId,
+                answer:
+                    pc
+                        .localDescription
+                        .toJSON()
+            });
 
-            this.#emit(
-                "publisherPeerChanged",
-                {
-                    peerId,
-                    viewerUserId:
-                        entry.viewerUserId,
-                    viewerName:
-                        entry.viewerName,
-                    state:
-                        "answering"
-                }
-            );
-        }
+            const queued =
+                this
+                    .#publisherCandidateQueues
+                    .get(
+                        peerId
+                    ) ||
+                [];
 
-        #configurePublisherChannel(
-            channel
-        ) {
-            channel.addEventListener(
-                "open",
-                () => {
-                    this
-                        .#sendChannelEnvelope(
-                            channel,
-                            "snapshot",
-                            this.#snapshot()
-                        );
-                }
-            );
+            this
+                .#publisherCandidateQueues
+                .delete(
+                    peerId
+                );
+
+            for (
+                const candidate of
+                queued
+            ) {
+                await pc
+                    .addIceCandidate(
+                        candidate
+                    );
+            }
         }
 
         #closePublisherPeer(
             peerId,
             entry =
-                this.#publisherPeers
+                this
+                    .#publisherPeers
                     .get(
                         peerId
                     )
@@ -1197,223 +1399,218 @@
             }
 
             try {
-                entry.channel?.close();
-            }
-            catch {}
-
-            try {
                 entry.pc?.close();
             }
             catch {}
 
-            this.#emit(
-                "publisherPeerChanged",
-                {
-                    peerId,
-                    viewerUserId:
-                        entry.viewerUserId,
-                    viewerName:
-                        entry.viewerName,
-                    state:
-                        "closed"
-                }
-            );
+            this
+                .#publisherPeers
+                .delete(
+                    peerId
+                );
 
-            this.#publisherPeers
+            this
+                .#publisherCandidateQueues
                 .delete(
                     peerId
                 );
         }
 
-        async stopPublishing({
-            notifyServer = true
-        } = {}) {
-            clearInterval(
-                this.#publisherPollTimer
-            );
-            clearInterval(
-                this.#publisherHeartbeatTimer
-            );
-            this.#publisherPollTimer =
-                undefined;
-            this.#publisherHeartbeatTimer =
-                undefined;
-
-            for (
-                const [
-                    peerId,
-                    entry
-                ] of
-                this.#publisherPeers
-            ) {
-                this
-                    .#closePublisherPeer(
-                        peerId,
-                        entry
-                    );
-            }
-
-            const wasPublishing =
-                this.#publishing;
-
-            this.#publishing =
-                false;
-            this.#publisherSessionId =
-                undefined;
-            this.#publisherSignalId =
-                0;
-
-            this
-                .#stopPublisherMedia();
+        async #handleViewerAnswer(
+            message
+        ) {
+            const peerId =
+                Number(
+                    message.peerId
+                );
 
             if (
-                wasPublishing &&
-                notifyServer
+                !this.#viewing ||
+                peerId !==
+                    this.#viewerPeerId ||
+                !this.#viewerPeer ||
+                !message.answer
             ) {
-                try {
-                    await this.#request(
-                        "DELETE",
-                        {
-                            body: {
-                                action:
-                                    "unpublish"
-                            }
-                        }
-                    );
-                }
-                catch (error) {
-                    console.warn(
-                        "Unable to close live stream session:",
-                        error
-                    );
-                }
+                return;
             }
 
-            if (wasPublishing) {
-                this.#emit(
-                    "publishingChanged",
-                    {
-                        publishing:
-                            false
-                    }
-                );
+            if (
+                !this
+                    .#viewerPeer
+                    .remoteDescription
+            ) {
+                await this
+                    .#viewerPeer
+                    .setRemoteDescription(
+                        message.answer
+                    );
+
+                for (
+                    const candidate of
+                    this
+                        .#viewerRemoteCandidateQueue
+                        .splice(
+                            0
+                        )
+                ) {
+                    await this
+                        .#viewerPeer
+                        .addIceCandidate(
+                            candidate
+                        );
+                }
             }
         }
 
-        #sendChannelEnvelope(
-            channel,
-            type,
-            payload
+        async #handleRemoteCandidate(
+            message
         ) {
+            const peerId =
+                Number(
+                    message.peerId
+                );
+            const candidate =
+                message.candidate;
+
             if (
-                !channel ||
-                channel.readyState !==
-                    "open"
+                !Number.isInteger(
+                    peerId
+                ) ||
+                !candidate
             ) {
-                return false;
+                return;
             }
 
-            const envelope = {
-                sequence:
-                    ++this.#sequence,
-                type:
-                    String(type),
-                timestamp:
-                    new Date()
-                        .toISOString(),
-                payload
-            };
+            if (
+                this.#viewing &&
+                peerId ===
+                    this.#viewerPeerId &&
+                this.#viewerPeer
+            ) {
+                if (
+                    this
+                        .#viewerPeer
+                        .remoteDescription
+                ) {
+                    await this
+                        .#viewerPeer
+                        .addIceCandidate(
+                            candidate
+                        );
+                }
+                else {
+                    this
+                        .#viewerRemoteCandidateQueue
+                        .push(
+                            candidate
+                        );
+                }
 
-            try {
-                channel.send(
-                    JSON.stringify(
-                        envelope
-                    )
+                return;
+            }
+
+            const entry =
+                this
+                    .#publisherPeers
+                    .get(
+                        peerId
+                    );
+
+            if (
+                entry?.pc
+                    ?.remoteDescription
+            ) {
+                await entry.pc
+                    .addIceCandidate(
+                        candidate
+                    );
+
+                return;
+            }
+
+            const queue =
+                this
+                    .#publisherCandidateQueues
+                    .get(
+                        peerId
+                    ) ||
+                [];
+
+            queue.push(
+                candidate
+            );
+
+            this
+                .#publisherCandidateQueues
+                .set(
+                    peerId,
+                    queue
+                );
+        }
+
+        #handlePeerClosed(
+            message
+        ) {
+            const peerId =
+                Number(
+                    message.peerId
                 );
 
-                return envelope;
+            if (
+                this
+                    .#publisherPeers
+                    .has(
+                        peerId
+                    )
+            ) {
+                this
+                    .#closePublisherPeer(
+                        peerId
+                    );
             }
-            catch {
-                return false;
+
+            if (
+                this.#viewing &&
+                peerId ===
+                    this.#viewerPeerId
+            ) {
+                void this
+                    .stopViewing({
+                        notifyServer:
+                            false,
+                        reason:
+                            message.reason
+                    });
             }
         }
 
         broadcast(
             type,
-            payload,
-            {
-                persist = false
-            } = {}
+            payload
         ) {
-            if (!this.#publishing) {
+            if (
+                !this.#publishing ||
+                !this.#socket ||
+                this.#socket.readyState !==
+                    WebSocket.OPEN
+            ) {
                 return false;
             }
 
-            let envelope;
+            try {
+                this.#socketSend({
+                    type:
+                        "publisher.event",
+                    eventType:
+                        String(type),
+                    payload
+                });
 
-            for (
-                const entry of
-                this
-                    .#publisherPeers
-                    .values()
-            ) {
-                const sent =
-                    this
-                        .#sendChannelEnvelope(
-                            entry.channel,
-                            type,
-                            payload
-                        );
-
-                if (
-                    sent &&
-                    !envelope
-                ) {
-                    envelope =
-                        sent;
-                }
+                return true;
             }
-
-            if (
-                persist
-            ) {
-                const storedEnvelope =
-                    envelope || {
-                        sequence:
-                            ++this.#sequence,
-                        type:
-                            String(type),
-                        timestamp:
-                            new Date()
-                                .toISOString(),
-                        payload
-                    };
-
-                void this.#request(
-                    "POST",
-                    {
-                        body: {
-                            action:
-                                "message",
-                            type:
-                                String(type),
-                            payload:
-                                storedEnvelope
-                        }
-                    }
-                ).catch(
-                    error =>
-                        console.warn(
-                            "Unable to persist live stream message:",
-                            error
-                        )
-                );
-
-                envelope =
-                    storedEnvelope;
+            catch {
+                return false;
             }
-
-            return envelope || false;
         }
 
         async startViewing(
@@ -1446,15 +1643,11 @@
                 );
             }
 
-            await this.stopViewing();
+            await this
+                .stopViewing();
 
-            if (
-                this.#iceServers
-                    .length ===
-                    0
-            ) {
-                await this.listTargets();
-            }
+            await this
+                .#ensureSocket();
 
             const pc =
                 new RTCPeerConnection({
@@ -1466,12 +1659,6 @@
                 pc;
             this.#targetUserId =
                 target;
-            this.#viewerSignalId =
-                0;
-            this.#viewerMessageId =
-                0;
-            this.#viewerLastSequence =
-                0;
             this.#viewerCandidateQueue =
                 [];
             this.#viewerRemoteCandidateQueue =
@@ -1495,29 +1682,16 @@
                     }
                 );
 
-            this.#preferOpus(
-                this
-                    .#viewerMicTransceiver
-            );
-
-            this.#preferOpus(
-                this
-                    .#viewerProgramTransceiver
-            );
-
-            this.#viewerDataChannel =
-                pc.createDataChannel(
-                    "clocktimer-live",
-                    {
-                        ordered:
-                            true
-                    }
+            this
+                .#preferOpus(
+                    this
+                        .#viewerMicTransceiver
                 );
 
             this
-                .#configureViewerChannel(
+                .#preferOpus(
                     this
-                        .#viewerDataChannel
+                        .#viewerProgramTransceiver
                 );
 
             pc.addEventListener(
@@ -1532,7 +1706,9 @@
             pc.addEventListener(
                 "icecandidate",
                 event => {
-                    if (!event.candidate) {
+                    if (
+                        !event.candidate
+                    ) {
                         return;
                     }
 
@@ -1554,10 +1730,17 @@
                         return;
                     }
 
-                    void this
-                        .#sendViewerCandidate(
+                    try {
+                        this.#socketSend({
+                            type:
+                                "peer.candidate",
+                            peerId:
+                                this
+                                    .#viewerPeerId,
                             candidate
-                        );
+                        });
+                    }
+                    catch {}
                 }
             );
 
@@ -1579,7 +1762,8 @@
             );
 
             const offer =
-                await pc.createOffer();
+                await pc
+                    .createOffer();
 
             await pc
                 .setLocalDescription(
@@ -1590,12 +1774,10 @@
 
             try {
                 data =
-                    await this.#request(
-                        "POST",
-                        {
-                            body: {
-                                action:
-                                    "join",
+                    await this
+                        .#socketRequest(
+                            "peer.join",
+                            {
                                 targetUserId:
                                     target,
                                 offer:
@@ -1603,14 +1785,18 @@
                                         .localDescription
                                         .toJSON()
                             }
-                        }
-                    );
+                        );
             }
             catch (error) {
-                await this.stopViewing({
-                    notifyServer:
-                        false
-                });
+                try {
+                    pc.close();
+                }
+                catch {}
+
+                this.#viewerPeer =
+                    undefined;
+                this.#targetUserId =
+                    undefined;
 
                 throw error;
             }
@@ -1619,14 +1805,6 @@
                 Number(
                     data.peerId
                 );
-            this.#viewerMessageId =
-                Math.max(
-                    0,
-                    Number(
-                        data.messageCursor
-                    ) ||
-                    0
-                );
             this.#viewing =
                 true;
 
@@ -1634,446 +1812,74 @@
                 const candidate of
                 this
                     .#viewerCandidateQueue
-                    .splice(0)
+                    .splice(
+                        0
+                    )
             ) {
-                await this
-                    .#sendViewerCandidate(
-                        candidate
+                this.#socketSend({
+                    type:
+                        "peer.candidate",
+                    peerId:
+                        this
+                            .#viewerPeerId,
+                    candidate
+                });
+            }
+
+            if (
+                data.snapshot
+            ) {
+                this
+                    .#emit(
+                        "snapshot",
+                        {
+                            targetUserId:
+                                target,
+                            snapshot:
+                                data.snapshot
+                        }
                     );
             }
 
-            if (data.snapshot) {
-                this.#emit(
-                    "snapshot",
+            this
+                .#emit(
+                    "viewerChanged",
                     {
+                        viewing:
+                            true,
                         targetUserId:
                             target,
-                        snapshot:
-                            data.snapshot
+                        peerId:
+                            this
+                                .#viewerPeerId,
+                        state:
+                            pc.connectionState
                     }
                 );
-            }
-
-            this.#viewerPollTimer =
-                setInterval(
-                    () =>
-                        void this
-                            .#viewerTick()
-                            .catch(
-                                error => {
-                                    this.#emit(
-                                        "error",
-                                        {
-                                            role:
-                                                "viewer",
-                                            error
-                                        }
-                                    );
-
-                                    if (
-                                        [
-                                            403,
-                                            404,
-                                            410
-                                        ].includes(
-                                            Number(
-                                                error
-                                                    ?.status
-                                            )
-                                        )
-                                    ) {
-                                        void this
-                                            .stopViewing({
-                                                notifyServer:
-                                                    false
-                                            });
-                                    }
-                                }
-                            ),
-                    750
-                );
-
-            this.#viewerHeartbeatTimer =
-                setInterval(
-                    () =>
-                        void this
-                            .#viewerHeartbeat()
-                            .catch(
-                                error => {
-                                    this.#emit(
-                                        "error",
-                                        {
-                                            role:
-                                                "viewer",
-                                            error
-                                        }
-                                    );
-
-                                    if (
-                                        Number(
-                                            error
-                                                ?.status
-                                        ) ===
-                                            403
-                                    ) {
-                                        void this
-                                            .stopViewing({
-                                                notifyServer:
-                                                    false
-                                            });
-                                    }
-                                }
-                            ),
-                    15000
-                );
-
-            await this
-                .#viewerTick();
-
-            this.#emit(
-                "viewerChanged",
-                {
-                    viewing:
-                        true,
-                    targetUserId:
-                        target,
-                    peerId:
-                        this.#viewerPeerId,
-                    state:
-                        pc.connectionState
-                }
-            );
 
             return true;
         }
 
-        async #sendViewerCandidate(
-            candidate
-        ) {
-            if (
-                !this.#viewerPeerId ||
-                !this.#targetUserId
-            ) {
-                return;
-            }
-
-            await this.#request(
-                "POST",
-                {
-                    body: {
-                        action:
-                            "candidate",
-                        targetUserId:
-                            this
-                                .#targetUserId,
-                        peerId:
-                            this
-                                .#viewerPeerId,
-                        candidate
-                    }
-                }
-            );
-        }
-
-        async #viewerHeartbeat() {
-            if (
-                !this.#viewing ||
-                !this.#viewerPeerId ||
-                !this.#targetUserId
-            ) {
-                return;
-            }
-
-            await this.#request(
-                "POST",
-                {
-                    body: {
-                        action:
-                            "heartbeat",
-                        targetUserId:
-                            this
-                                .#targetUserId,
-                        peerId:
-                            this
-                                .#viewerPeerId
-                    }
-                }
-            );
-        }
-
-        async #viewerTick() {
-            if (
-                !this.#viewing ||
-                !this.#viewerPeerId ||
-                !this.#targetUserId
-            ) {
-                return;
-            }
-
-            const data =
-                await this.#request(
-                    "GET",
-                    {
-                        query: {
-                            action:
-                                "viewer",
-                            targetUserId:
-                                this
-                                    .#targetUserId,
-                            peerId:
-                                this
-                                    .#viewerPeerId,
-                            afterSignalId:
-                                this
-                                    .#viewerSignalId,
-                            afterMessageId:
-                                this
-                                    .#viewerMessageId
-                        }
-                    }
-                );
-
-            if (
-                data.answer &&
-                !this
-                    .#viewerPeer
-                    ?.remoteDescription
-            ) {
-                await this
-                    .#viewerPeer
-                    .setRemoteDescription(
-                        data.answer
-                    );
-
-                for (
-                    const candidate of
-                    this
-                        .#viewerRemoteCandidateQueue
-                        .splice(0)
-                ) {
-                    await this
-                        .#viewerPeer
-                        .addIceCandidate(
-                            candidate
-                        );
-                }
-            }
-
-            for (
-                const signal of
-                data.signals ||
-                []
-            ) {
-                this.#viewerSignalId =
-                    Math.max(
-                        this
-                            .#viewerSignalId,
-                        Number(
-                            signal.id
-                        ) ||
-                        0
-                    );
-
-                if (!signal.candidate) {
-                    continue;
-                }
-
-                if (
-                    !this
-                        .#viewerPeer
-                        ?.remoteDescription
-                ) {
-                    this
-                        .#viewerRemoteCandidateQueue
-                        .push(
-                            signal.candidate
-                        );
-
-                    continue;
-                }
-
-                await this
-                    .#viewerPeer
-                    .addIceCandidate(
-                        signal.candidate
-                    );
-            }
-
-            for (
-                const message of
-                data.messages ||
-                []
-            ) {
-                this.#viewerMessageId =
-                    Math.max(
-                        this
-                            .#viewerMessageId,
-                        Number(
-                            message.id
-                        ) ||
-                        0
-                    );
-
-                this
-                    .#handleEnvelope(
-                        message.payload
-                    );
-            }
-
-            if (data.snapshot) {
-                this.#emit(
-                    "snapshot",
-                    {
-                        targetUserId:
-                            this
-                                .#targetUserId,
-                        snapshot:
-                            data.snapshot
-                    }
-                );
-            }
-        }
-
-        #configureViewerChannel(
-            channel
-        ) {
-            channel.addEventListener(
-                "message",
-                event => {
-                    try {
-                        this
-                            .#handleEnvelope(
-                                JSON.parse(
-                                    event.data
-                                )
-                            );
-                    }
-                    catch (error) {
-                        console.warn(
-                            "Invalid live stream data message:",
-                            error
-                        );
-                    }
-                }
-            );
-
-            channel.addEventListener(
-                "open",
-                () =>
-                    this.#emit(
-                        "viewerChanged",
-                        {
-                            viewing:
-                                true,
-                            targetUserId:
-                                this
-                                    .#targetUserId,
-                            peerId:
-                                this
-                                    .#viewerPeerId,
-                            state:
-                                "live"
-                        }
-                    )
-            );
-        }
-
-        async sendToPublisher(
-            type,
-            payload
+        #handlePublisherEvent(
+            message
         ) {
             if (
                 !this.#viewing ||
-                !this.#viewerPeerId ||
-                !this.#targetUserId
-            ) {
-                throw new Error(
-                    "The live stream is not connected."
-                );
-            }
-
-            if (
-                type !==
-                    "trainer.tts"
-            ) {
-                throw new TypeError(
-                    "Unsupported viewer message type."
-                );
-            }
-
-            const text =
-                String(
-                    payload?.text ||
-                    ""
-                )
-                    .trim()
-                    .slice(
-                        0,
-                        500
-                    );
-
-            if (!text) {
-                throw new TypeError(
-                    "Trainer TTS text is required."
-                );
-            }
-
-            return this.#request(
-                "POST",
-                {
-                    body: {
-                        action:
-                            "trainer-message",
-                        targetUserId:
-                            this
-                                .#targetUserId,
-                        peerId:
-                            this
-                                .#viewerPeerId,
-                        type:
-                            "trainer.tts",
-                        text
-                    }
-                }
-            );
-        }
-
-        #handleEnvelope(
-            envelope
-        ) {
-            if (
-                !envelope ||
-                typeof envelope !==
-                    "object"
-            ) {
-                return;
-            }
-
-            const sequence =
                 Number(
-                    envelope.sequence
-                ) ||
-                0;
-
-            if (
-                sequence &&
-                sequence <=
-                    this
-                        .#viewerLastSequence
+                    message.peerId
+                ) !==
+                    this.#viewerPeerId
             ) {
                 return;
-            }
-
-            if (sequence) {
-                this.#viewerLastSequence =
-                    sequence;
             }
 
             const type =
                 String(
-                    envelope.type ||
+                    message.eventType ||
                     ""
                 );
+            const payload =
+                message.payload;
 
             if (
                 type ===
@@ -2086,13 +1892,9 @@
                             this
                                 .#targetUserId,
                         snapshot:
-                            envelope.payload,
-                        timestamp:
-                            envelope.timestamp
+                            payload
                     }
                 );
-
-                return;
             }
 
             if (
@@ -2101,7 +1903,7 @@
             ) {
                 this
                     .#playRemoteTts(
-                        envelope.payload
+                        payload
                     );
             }
 
@@ -2111,7 +1913,10 @@
                     targetUserId:
                         this
                             .#targetUserId,
-                    ...envelope
+                    type,
+                    payload,
+                    timestamp:
+                        message.timestamp
                 }
             );
         }
@@ -2132,7 +1937,7 @@
                         Number(
                             payload.volume
                         ) ||
-                        0
+                        1
                     ) *
                     this
                         .#viewerMasterVolume *
@@ -2176,80 +1981,10 @@
                         .#viewerMicTransceiver;
 
             const audio =
-                this
-                    .#viewerAudioElement(
-                        microphone
-                            ? "microphone"
-                            : "program"
+                document
+                    .createElement(
+                        "audio"
                     );
-
-            audio.srcObject =
-                new MediaStream(
-                    [
-                        event.track
-                    ]
-                );
-
-            this
-                .#syncViewerVolume();
-
-            void audio.play()
-                .catch(
-                    () => {}
-                );
-
-            this.#emit(
-                "audioChanged",
-                {
-                    kind:
-                        microphone
-                            ? "microphone"
-                            : "program",
-                    available:
-                        true
-                }
-            );
-        }
-
-        #viewerAudioElement(
-            kind
-        ) {
-            const field =
-                kind ===
-                    "microphone"
-                    ? "#viewerMicAudio"
-                    : "#viewerProgramAudio";
-
-            if (field === "#viewerMicAudio") {
-                if (!this.#viewerMicAudio) {
-                    this.#viewerMicAudio =
-                        this
-                            .#createAudioElement(
-                                "microphone"
-                            );
-                }
-
-                return this.#viewerMicAudio;
-            }
-
-            if (!this.#viewerProgramAudio) {
-                this.#viewerProgramAudio =
-                    this
-                        .#createAudioElement(
-                            "program"
-                        );
-            }
-
-            return this.#viewerProgramAudio;
-        }
-
-        #createAudioElement(
-            kind
-        ) {
-            const audio =
-                document.createElement(
-                    "audio"
-                );
 
             audio.autoplay =
                 true;
@@ -2257,24 +1992,54 @@
                 true;
             audio.hidden =
                 true;
-            audio.dataset
-                .liveStreamAudio =
-                kind;
+            audio.srcObject =
+                new MediaStream([
+                    event.track
+                ]);
 
-            document.body.append(
-                audio
-            );
+            document.body
+                .append(
+                    audio
+                );
 
-            return audio;
+            if (microphone) {
+                this.#viewerMicAudio
+                    ?.remove?.();
+
+                this.#viewerMicAudio =
+                    audio;
+            }
+            else {
+                this.#viewerProgramAudio
+                    ?.remove?.();
+
+                this.#viewerProgramAudio =
+                    audio;
+            }
+
+            this
+                .#applyViewerVolumes();
+
+            void audio
+                .play?.()
+                .catch(
+                    () => {}
+                );
         }
 
-        #syncViewerVolume() {
-            if (this.#viewerMicAudio) {
-                this.#viewerMicAudio
+        #applyViewerVolumes() {
+            if (
+                this
+                    .#viewerMicAudio
+            ) {
+                this
+                    .#viewerMicAudio
                     .muted =
-                    this.#viewerMuted;
+                    this
+                        .#viewerMuted;
 
-                this.#viewerMicAudio
+                this
+                    .#viewerMicAudio
                     .volume =
                     clamp01(
                         this
@@ -2284,11 +2049,15 @@
                     );
             }
 
-            if (this.#viewerProgramAudio) {
+            if (
+                this
+                    .#viewerProgramAudio
+            ) {
                 this
                     .#viewerProgramAudio
                     .muted =
-                    this.#viewerMuted;
+                    this
+                        .#viewerMuted;
 
                 this
                     .#viewerProgramAudio
@@ -2300,49 +2069,23 @@
                             .#viewerProgramVolume
                     );
             }
-
-            this.#emit(
-                "volumeChanged",
-                {
-                    muted:
-                        this.#viewerMuted,
-                    master:
-                        this
-                            .#viewerMasterVolume,
-                    microphone:
-                        this
-                            .#viewerMicVolume,
-                    program:
-                        this
-                            .#viewerProgramVolume
-                }
-            );
         }
 
         setViewerMuted(
-            muted
+            value
         ) {
             this.#viewerMuted =
                 Boolean(
-                    muted
+                    value
                 );
 
-            if (
-                this.#viewerMuted &&
-                this.#viewing
-            ) {
-                try {
-                    globalThis
-                        .speechSynthesis
-                        ?.cancel?.();
-                }
-                catch {}
-            }
-
             this
-                .#syncViewerVolume();
+                .#applyViewerVolumes();
 
-            return this.#viewerMuted;
+            this.#emit(
+                "volumeChanged",
+                {}
+            );
         }
 
         setViewerMasterVolume(
@@ -2354,10 +2097,12 @@
                 );
 
             this
-                .#syncViewerVolume();
+                .#applyViewerVolumes();
 
-            return this
-                .#viewerMasterVolume;
+            this.#emit(
+                "volumeChanged",
+                {}
+            );
         }
 
         setViewerMicrophoneVolume(
@@ -2369,10 +2114,12 @@
                 );
 
             this
-                .#syncViewerVolume();
+                .#applyViewerVolumes();
 
-            return this
-                .#viewerMicVolume;
+            this.#emit(
+                "volumeChanged",
+                {}
+            );
         }
 
         setViewerProgramVolume(
@@ -2384,26 +2131,75 @@
                 );
 
             this
-                .#syncViewerVolume();
+                .#applyViewerVolumes();
+
+            this.#emit(
+                "volumeChanged",
+                {}
+            );
+        }
+
+        async sendToPublisher(
+            type,
+            payload
+        ) {
+            if (
+                !this.#viewing ||
+                !this.#viewerPeerId ||
+                !this.#targetUserId
+            ) {
+                throw new Error(
+                    "The live stream is not connected."
+                );
+            }
+
+            if (
+                type !==
+                    "trainer.tts"
+            ) {
+                throw new TypeError(
+                    "Unsupported viewer message type."
+                );
+            }
+
+            const text =
+                String(
+                    payload?.text ||
+                    ""
+                )
+                    .trim()
+                    .slice(
+                        0,
+                        500
+                    );
+
+            if (!text) {
+                throw new TypeError(
+                    "Trainer TTS text is required."
+                );
+            }
 
             return this
-                .#viewerProgramVolume;
+                .#socketRequest(
+                    "trainer.tts",
+                    {
+                        peerId:
+                            this
+                                .#viewerPeerId,
+                        targetUserId:
+                            this
+                                .#targetUserId,
+                        text
+                    }
+                );
         }
 
         async stopViewing({
-            notifyServer = true
+            notifyServer =
+                true,
+            reason =
+                "closed"
         } = {}) {
-            clearInterval(
-                this.#viewerPollTimer
-            );
-            clearInterval(
-                this.#viewerHeartbeatTimer
-            );
-            this.#viewerPollTimer =
-                undefined;
-            this.#viewerHeartbeatTimer =
-                undefined;
-
             const wasViewing =
                 this.#viewing;
             const peerId =
@@ -2414,12 +2210,21 @@
             this.#viewing =
                 false;
 
-            try {
-                this
-                    .#viewerDataChannel
-                    ?.close();
+            if (
+                notifyServer &&
+                peerId &&
+                this.#socket?.readyState ===
+                    WebSocket.OPEN
+            ) {
+                try {
+                    this.#socketSend({
+                        type:
+                            "peer.leave",
+                        peerId
+                    });
+                }
+                catch {}
             }
-            catch {}
 
             try {
                 this
@@ -2450,8 +2255,6 @@
 
             this.#viewerPeer =
                 undefined;
-            this.#viewerDataChannel =
-                undefined;
             this.#viewerPeerId =
                 undefined;
             this.#targetUserId =
@@ -2468,41 +2271,10 @@
                 [];
             this.#viewerRemoteCandidateQueue =
                 [];
-            this.#viewerSignalId =
-                0;
-            this.#viewerMessageId =
-                0;
-            this.#viewerLastSequence =
-                0;
 
             if (
-                wasViewing &&
-                notifyServer &&
-                peerId &&
-                targetUserId
+                wasViewing
             ) {
-                try {
-                    await this.#request(
-                        "DELETE",
-                        {
-                            body: {
-                                action:
-                                    "leave",
-                                targetUserId,
-                                peerId
-                            }
-                        }
-                    );
-                }
-                catch (error) {
-                    console.warn(
-                        "Unable to leave live stream cleanly:",
-                        error
-                    );
-                }
-            }
-
-            if (wasViewing) {
                 this.#emit(
                     "viewerChanged",
                     {
@@ -2511,17 +2283,96 @@
                         targetUserId,
                         peerId,
                         state:
-                            "closed"
+                            reason
                     }
                 );
             }
         }
 
+        async stopPublishing() {
+            const wasPublishing =
+                this.#publishing;
+
+            this.#publishing =
+                false;
+
+            if (
+                this.#socket?.readyState ===
+                    WebSocket.OPEN
+            ) {
+                try {
+                    await this
+                        .#socketRequest(
+                            "presence.stop"
+                        );
+                }
+                catch {}
+            }
+
+            for (
+                const [
+                    peerId,
+                    entry
+                ] of
+                this
+                    .#publisherPeers
+            ) {
+                this
+                    .#closePublisherPeer(
+                        peerId,
+                        entry
+                    );
+            }
+
+            this
+                .#stopPublisherMedia();
+
+            if (
+                wasPublishing
+            ) {
+                this.#emit(
+                    "publishingChanged",
+                    {
+                        publishing:
+                            false
+                    }
+                );
+            }
+        }
+
+        #closeSocket() {
+            clearTimeout(
+                this
+                    .#socketReconnectTimer
+            );
+
+            this.#socketReconnectTimer =
+                undefined;
+            this.#closing =
+                true;
+
+            try {
+                this
+                    .#socket
+                    ?.close();
+            }
+            catch {}
+
+            this.#socket =
+                undefined;
+        }
+
         async close() {
+            this.#closing =
+                true;
+
             await Promise.all([
                 this.stopViewing(),
                 this.stopPublishing()
             ]);
+
+            this
+                .#closeSocket();
         }
     }
 
