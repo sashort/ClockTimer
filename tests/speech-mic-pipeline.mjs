@@ -1949,11 +1949,11 @@ assert.match(
 );
 assert.match(
     speechMicBarSource,
-    /hideOptions\([\s\S]*getComputedStyle[\s\S]*#optionsPanel[\s\S]*currentClipPath/
+    /hideOptions\(\)[\s\S]*optionsCollapsed[\s\S]*return true[\s\S]*optionsOpen[\s\S]*collapseOptions\(\)/
 );
 assert.match(
     speechMicBarSource,
-    /hideOptions\([\s\S]*removeAttribute\(\s*"options-open"\s*\)[\s\S]*aria-hidden[\s\S]*animation\.finished/
+    /hideOptions\(\)[\s\S]*setAttribute\(\s*"options-collapsed"[\s\S]*aria-hidden[\s\S]*#fitOptions\(\)[\s\S]*#dispatchSurfaceBoundaryChange\(\)/
 );
 assert.match(
     app,
