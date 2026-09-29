@@ -94,7 +94,7 @@ class SpeechMicBar extends HTMLElement {
                         );
                     box-sizing: border-box;
                     width: 100%;
-                    height: 74px;
+                    height: var(--speech-bar-height, 74px);
                     min-width: 0;
                     display: block;
                     position: relative;
@@ -183,9 +183,9 @@ class SpeechMicBar extends HTMLElement {
 
                 :host([options-collapsed])
                 #optionsPanel {
-                    height: 42px;
-                    min-height: 42px;
-                    max-height: 42px;
+                    height: var(--speech-options-header-height, 42px);
+                    min-height: var(--speech-options-header-height, 42px);
+                    max-height: var(--speech-options-header-height, 42px);
                     padding: 0 8px;
                     overflow: hidden;
                 }
@@ -676,9 +676,9 @@ class SpeechMicBar extends HTMLElement {
                     isolation: isolate;
                     box-sizing: border-box;
                     width: 100%;
-                    height: 74px;
+                    height: var(--speech-bar-height, 74px);
                     min-width: 0;
-                    padding: 8px 12px;
+                    padding: 4px 10px;
                     display: flex;
                     align-items: center;
                     gap: 12px;
@@ -930,6 +930,17 @@ class SpeechMicBar extends HTMLElement {
                     font-size: 16px;
                     font-weight: 700;
                     transition: color 160ms linear;
+                }
+
+                @media (orientation: portrait) and (max-width: 520px) and (max-height: 720px),
+                       (orientation: landscape) and (min-width: 600px) and (max-height: 520px) {
+                    #bar { gap: 8px; }
+                    #mic { width: 38px; height: 38px; flex-basis: 38px; }
+                    #mic::before { width: 23px; height: 23px; }
+                    #activity { height: 16px; }
+                    #text { min-height: 18px; font-size: 13px; }
+                    :host([options-collapsed]) #optionsHeader { top: 2px; line-height: 27px; font-size: 14px; }
+                    :host([options-collapsed]) #optionsClose { top: 2px; right: 5px; width: 26px; height: 26px; font-size: 19px; }
                 }
 
                 :host([phase="matched"]) #text { color: #a9ddf7; }

@@ -7236,3 +7236,108 @@ speech-command {
         grid-column: auto;
     }
 }
+
+/* Phone layouts share available height between controls and the clock. */
+@media (orientation: portrait) and (max-width: 520px) and (max-height: 720px) {
+    .app {
+        --speech-bar-height: 44px;
+        --speech-options-header-height: 34px;
+        --speech-command-row-height: 0px;
+        --trip-log-row-height: 48px;
+        --home-clock-preferred-size: 56vw;
+        grid-template-rows: 42px 100px 54px 0 minmax(0, 1fr)
+            calc(var(--trip-log-row-height) + var(--speech-command-row-height))
+            var(--speech-mic-row-height);
+    }
+    .app[data-speech-active="true"] {
+        --speech-command-row-height: 34px;
+        --speech-mic-row-height: 44px;
+    }
+    .app[data-trip-state="running"] {
+        grid-template-rows: 42px 100px 94px 0 minmax(0, 1fr)
+            calc(var(--trip-log-row-height) + var(--speech-command-row-height))
+            var(--speech-mic-row-height);
+    }
+    .app[data-interval-state="down"] {
+        grid-template-rows: 42px 100px 156px 0 minmax(0, 1fr)
+            calc(var(--trip-log-row-height) + var(--speech-command-row-height))
+            var(--speech-mic-row-height);
+    }
+    .app-header .hamburger-button { font-size: 18px; }
+    .scope-toggle { font-size: 19px; }
+    .scope-connection-button { width: 42px; font-size: 20px; }
+    .trip-summary { grid-template-rows: 55px 45px; }
+    .summary-label { font-size: 12px; }
+    .summary-cell strong { font-size: 25px; }
+    .percent-summary { font-size: 33px; gap: 8px; }
+    .trip-action-button { font-size: 25px; border-width: 2px; border-radius: 10px; }
+    .new-trip-button { font-size: 27px; border-width: 2px; }
+    .down-trip-controls { gap: 2px; padding: 2px; grid-template-rows: 60px 46px 42px; }
+    .down-elapsed-panel { padding: 3px; border-width: 2px; }
+    .down-elapsed-panel > span { font-size: 14px; }
+    .down-elapsed-value { font-size: 32px; }
+    .down-trip-controls .trip-action-button { font-size: 23px; border-width: 2px; }
+    .down-details-button svg { width: 28px; height: 28px; }
+    .trip-log-button:not(.trip-log-floating) { height: 48px; font-size: 26px; border-width: 2px; }
+    speech-mic-bar { height: 44px; }
+}
+
+@media (orientation: landscape) and (min-width: 600px) and (max-height: 520px) {
+    .app, .app[data-trip-state="running"], .app[data-interval-state="down"] {
+        --speech-bar-height: 44px;
+        --speech-options-header-height: 32px;
+        --trip-log-row-height: 0px;
+        --speech-command-row-height: 0px;
+        --home-clock-preferred-size: 50vh;
+        grid-template-columns: minmax(0, 46%) minmax(0, 54%);
+        grid-template-rows: 44px 52px minmax(0, 1fr)
+            var(--speech-command-row-height) var(--speech-mic-row-height);
+    }
+    .app[data-speech-active="true"] {
+        --speech-command-row-height: 32px;
+        --speech-mic-row-height: 44px;
+    }
+    .app-header { grid-row: 1; grid-column: 1 / -1; padding-right: 108px; }
+    .app-header .hamburger-button { font-size: 18px; }
+    .scope-toggle { font-size: 20px; }
+    .scope-connection-button { width: 44px; font-size: 20px; }
+    .trip-summary {
+        grid-row: 2; grid-column: 1 / -1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: 52px;
+    }
+    .summary-label { font-size: 12px; }
+    .summary-cell strong { font-size: 24px; }
+    .percent-summary { grid-column: 3; font-size: 31px; gap: 6px; }
+    .end-time-goal-lock { width: 19px; height: 19px; right: 3px; bottom: 2px; }
+    .trip-action-controls { grid-row: 3; grid-column: 1; min-width: 0; }
+    .active-trip-controls { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+    .trip-action-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .trip-action-button, .new-trip-button {
+        min-width: 0; border-width: 2px; border-radius: 10px;
+        font-size: clamp(19px, 3.1vw, 29px);
+    }
+    .summary-spacer { display: none; }
+    .clock-region { grid-row: 3; grid-column: 2; min-width: 0; }
+    .trip-log-button:not(.trip-log-floating) {
+        grid-row: 1; grid-column: 2;
+        justify-self: end; align-self: start;
+        width: 108px; height: 44px;
+        border-width: 2px; border-radius: 10px;
+        font-size: 19px; z-index: 2;
+    }
+    speech-mic-bar { grid-row: 5; grid-column: 1 / -1; height: 44px; }
+    .down-trip-controls {
+        grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, .8fr);
+        gap: 2px; padding: 2px;
+    }
+    .down-elapsed-panel { padding: 2px 5px; border-width: 2px; border-radius: 9px; }
+    .down-elapsed-panel > span { font-size: clamp(12px, 1.8vw, 17px); }
+    .down-elapsed-value { font-size: clamp(23px, 3.7vw, 35px); }
+    .down-action-row { gap: 2px; grid-template-columns: minmax(42px, .32fr) repeat(2, minmax(0, 1fr)); }
+    .down-trip-controls .trip-action-button {
+        border-width: 2px; border-radius: 9px;
+        font-size: clamp(17px, 2.8vw, 27px);
+    }
+    .down-details-button svg { width: 25px; height: 25px; }
+}
