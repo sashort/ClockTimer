@@ -2420,7 +2420,7 @@ assert.match(
 );
 assert.match(
     app,
-    /readTotalGoal\(\)[\s\S]*dictateSpeechMetric\(\s*"Total Goal"/
+    /readTotalGoal\(\)[\s\S]*dictateSpeechMetric\([\s\S]*totalScopeLabel\(\) \+ " Goal"[\s\S]*goalPercentForScope\([\s\S]*"total"/
 );
 assert.match(
     app,
