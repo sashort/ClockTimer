@@ -7,7 +7,7 @@ const controller = new Function(`
     function refreshNumberPad() {}
     ${section('    function splitAbsoluteDigits(', '    function renderAbsoluteDigits(')}
     ${section('    function absoluteHour24(', '    function absoluteTimelineMilliseconds(')}
-    ${section('    function absoluteValuesEqual(', '    function numberPadHasChanges(')}
+    ${section('    function absoluteValuesEqual(', '    function refreshNumberPad(')}
     ${section('    function changeNumberPadMeridiem(', '    function formatTripTimeDisplay(')}
     ${section('    function eraseNumberPadPendingValue(', '    function changeNumberPadMeridiem(')}
     return {set: state => numberPadState = state, changeNumberPadMeridiem,
