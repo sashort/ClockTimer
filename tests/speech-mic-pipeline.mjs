@@ -2680,7 +2680,7 @@ assert.match(
 );
 assert.match(
     app,
-    /tripDraft\.standardTime\s*=\s*formatted[\s\S]*cancelScheduledStartSpeechPrompt\(\)/
+    /tripDraft\.standardTimeMilliseconds\s*=\s*duration[\s\S]*cancelScheduledStartSpeechPrompt\(\)/
 );
 
 assert.match(
