@@ -3254,7 +3254,19 @@ assert.match(
 );
 assert.match(
     speechAssetCacheWorkerSource,
-    /"fetch"[\s\S]*caches\.open\([\s\S]*cache\.match\([\s\S]*if \(cached\)[\s\S]*fetch\([\s\S]*cache\.put/
+    /const loadAsset[\s\S]*caches\.open\([\s\S]*runtimeScript[\s\S]*if \(!runtimeScript\)[\s\S]*readCached[\s\S]*if \(cached\)[\s\S]*fetch\(/
+);
+assert.match(
+    speechAssetCacheWorkerSource,
+    /runtimeScript[\s\S]*fetch\([\s\S]*cache:[\s\S]*"no-cache"[\s\S]*response\.ok[\s\S]*rememberResponse[\s\S]*readCached/
+);
+assert.match(
+    speechAssetCacheWorkerSource,
+    /rememberResponse[\s\S]*cache\?\.put[\s\S]*response\.clone/
+);
+assert.match(
+    speechAssetCacheWorkerSource,
+    /"fetch"[\s\S]*event\.respondWith[\s\S]*loadAsset/
 );
 
 assert.match(
