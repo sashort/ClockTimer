@@ -631,6 +631,9 @@
     const PERMISSION_GRANT_TOKEN_ACCESS =
         32;
 
+    const PERMISSION_VIEW_LIVE_STREAMS =
+        64;
+
     const ACCESS_TOKEN_PERMISSION_MASK =
         PERMISSION_SUPERUSER |
         PERMISSION_GRANT_TOKEN_ACCESS;
@@ -686,11 +689,26 @@
             ) &&
             canUseDeveloperTools;
 
+        const canViewLiveStreams =
+            Boolean(
+                permissions &
+                (
+                    PERMISSION_VIEW_LIVE_STREAMS |
+                    PERMISSION_SUPERUSER
+                )
+            );
+
         $("#newUserButton").hidden =
             !canCreateUsers;
 
         $("#accessTokensButton").hidden =
             !canManageTokens;
+
+        $("#liveStreamButton").hidden =
+            false;
+
+        $("#liveStreamViewerSection").hidden =
+            !canViewLiveStreams;
 
         $("#speechToolsGroup").hidden =
             false;
@@ -5916,6 +5934,16 @@
                 SPEECH_EDITOR_PERMISSION_MASK
             );
 
+        const canViewLiveStreams =
+            connected &&
+            Boolean(
+                permissions &
+                (
+                    PERMISSION_VIEW_LIVE_STREAMS |
+                    PERMISSION_SUPERUSER
+                )
+            );
+
         const showAdmin =
             canCreateUsers ||
             canManageTokens;
@@ -5928,6 +5956,12 @@
 
         $("#accessTokensButton").hidden =
             !canManageTokens;
+
+        $("#liveStreamButton").hidden =
+            !connected;
+
+        $("#liveStreamViewerSection").hidden =
+            !canViewLiveStreams;
 
         $("#speechToolsGroup").hidden =
             false;
