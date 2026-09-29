@@ -107,8 +107,8 @@ jobs:
           php developer_docs.php
           node new-user-qr.mjs
           node regex-builder.mjs
-          npm run test:trip-editor
-          npm run test:offline-buffer
+          node trip-log.mjs
+          node offline-trip-buffer.mjs
           php trip_editor.php
           node speech-mic-pipeline.mjs
           node speech-goal-fail.mjs
