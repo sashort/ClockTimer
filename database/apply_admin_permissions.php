@@ -30,6 +30,7 @@ try {
         '005_developer_permissions',
         '006_speech_model_training',
         '007_live_streams',
+        '008_live_stream_websocket',
     ] as $id) {
         $result = apply_migration($pdo, $id, 0);
         echo $id . ($result['alreadyApplied'] ? " already recorded.\n" : " applied and recorded.\n");
