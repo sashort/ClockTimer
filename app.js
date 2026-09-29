@@ -1953,9 +1953,6 @@
         $("#userLookupButton").hidden =
             !canLookupUsers;
 
-        $("#userLookupButton").hidden =
-            !canLookupUsers;
-
         $("#newUserButton").hidden =
             !canCreateUsers;
 
@@ -1994,18 +1991,6 @@
                         false
                 });
         }
-
-        liveStreamLookupButton.hidden =
-            !canLookupUsers;
-
-        if (!canLookupUsers) {
-            identityContext
-                ?.clear?.();
-        }
-
-        userLookup
-            ?.sync?.();
-        syncLiveStreamIdentityUI();
 
         $("#speechToolsGroup").hidden =
             false;
