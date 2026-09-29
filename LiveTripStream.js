@@ -1312,22 +1312,34 @@
                     offer
                 );
 
-            const data =
-                await this.#request(
-                    "POST",
-                    {
-                        body: {
-                            action:
-                                "join",
-                            targetUserId:
-                                target,
-                            offer:
-                                pc
-                                    .localDescription
-                                    .toJSON()
+            let data;
+
+            try {
+                data =
+                    await this.#request(
+                        "POST",
+                        {
+                            body: {
+                                action:
+                                    "join",
+                                targetUserId:
+                                    target,
+                                offer:
+                                    pc
+                                        .localDescription
+                                        .toJSON()
+                            }
                         }
-                    }
-                );
+                    );
+            }
+            catch (error) {
+                await this.stopViewing({
+                    notifyServer:
+                        false
+                });
+
+                throw error;
+            }
 
             this.#viewerPeerId =
                 Number(
