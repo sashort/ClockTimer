@@ -29052,7 +29052,7 @@
                 tripGoal: "goals",
                 totalGoal: "goals",
                 changeGoal: "goals",
-                readGoalMode: "settings",
+                readGoalMode: "informational",
                 goalMode: "settings",
                 readRenderedTime: "informational",
                 sync: "settings",
