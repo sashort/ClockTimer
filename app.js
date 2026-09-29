@@ -654,10 +654,6 @@
 
     const liveStreamDialog =
         $("#liveStreamDialog");
-    const liveStreamPublishButton =
-        $("#liveStreamPublishButton");
-    const liveStreamPublishStatus =
-        $("#liveStreamPublishStatus");
     const liveStreamViewerSection =
         $("#liveStreamViewerSection");
     const liveStreamTarget =
@@ -730,6 +726,80 @@
                         }
                 })
             : undefined;
+
+    let liveStreamPresenceQueue =
+        Promise.resolve();
+
+    const syncAutomaticLivePublisher =
+        () => {
+            if (!liveTripStream) {
+                return Promise.resolve(
+                    false
+                );
+            }
+
+            liveStreamPresenceQueue =
+                liveStreamPresenceQueue
+                    .catch(
+                        () => {}
+                    )
+                    .then(
+                        async () => {
+                            const shouldPublish =
+                                Boolean(
+                                    signedInProfile
+                                        ?.id
+                                ) &&
+                                clockTimer
+                                    .networkStatus ===
+                                    "online";
+
+                            if (
+                                shouldPublish &&
+                                !liveTripStream
+                                    .publishing
+                            ) {
+                                await liveTripStream
+                                    .startPublishing({
+                                        requestMicrophone:
+                                            false
+                                    });
+
+                                if (
+                                    globalThis
+                                        .SpeechMenu
+                                        ?.started
+                                ) {
+                                    await liveTripStream
+                                        .refreshPublisherMicrophone?.();
+                                }
+                            }
+                            else if (
+                                !shouldPublish &&
+                                liveTripStream
+                                    .publishing
+                            ) {
+                                await liveTripStream
+                                    .stopPublishing();
+                            }
+
+                            return liveTripStream
+                                .publishing;
+                        }
+                    )
+                    .catch(
+                        error => {
+                            console.warn(
+                                "Automatic live stream presence failed:",
+                                error
+                            );
+
+                            return false;
+                        }
+                    );
+
+            return liveStreamPresenceQueue;
+        };
 
     const canViewLiveStreams =
         () => {
@@ -1054,69 +1124,9 @@
         syncLiveStreamVolumeLabels();
     }
 
-    function syncLiveStreamPublisherUI(
-        detail = {}
-    ) {
-        const publishing =
-            Boolean(
-                liveTripStream
-                    ?.publishing
-            );
-
-        liveStreamPublishButton.textContent =
-            publishing
-                ? "Stop Broadcast"
-                : "Start Broadcast";
-
-        if (!publishing) {
-            liveStreamPublishStatus.textContent =
-                "Not broadcasting.";
-            return;
-        }
-
-        const audio = [];
-
-        if (
-            detail.microphone
-        ) {
-            audio.push(
-                "microphone"
-            );
-        }
-
-        if (
-            detail.programAudio
-        ) {
-            audio.push(
-                "ClockTimer audio"
-            );
-        }
-
-        liveStreamPublishStatus.textContent =
-            "Broadcasting" +
-            (
-                audio.length
-                    ? " " +
-                        audio.join(
-                            " + "
-                        )
-                    : ""
-            ) +
-            ".";
-    }
-
     if (
         liveTripStream
     ) {
-        liveTripStream
-            .addEventListener(
-                "publishingChanged",
-                event =>
-                    syncLiveStreamPublisherUI(
-                        event.detail
-                    )
-            );
-
         liveTripStream
             .addEventListener(
                 "viewerChanged",
@@ -1180,46 +1190,16 @@
                             ?.role ===
                             "publisher"
                     ) {
-                        liveStreamPublishStatus.textContent =
-                            message;
-                    }
-                    else {
-                        liveStreamViewerStatus.textContent =
-                            message;
-                    }
-                }
-            );
+                        console.warn(
+                            "Passive live stream publisher error:",
+                            error
+                        );
 
-        liveStreamPublishButton
-            ?.addEventListener(
-                "click",
-                async () => {
-                    liveStreamPublishButton.disabled =
-                        true;
+                        return;
+                    }
 
-                    try {
-                        if (
-                            liveTripStream
-                                .publishing
-                        ) {
-                            await liveTripStream
-                                .stopPublishing();
-                        }
-                        else {
-                            await liveTripStream
-                                .startPublishing();
-                        }
-                    }
-                    catch (error) {
-                        liveStreamPublishStatus.textContent =
-                            error.message ||
-                            "Unable to change broadcast state.";
-                    }
-                    finally {
-                        liveStreamPublishButton.disabled =
-                            false;
-                        syncLiveStreamPublisherUI();
-                    }
+                    liveStreamViewerStatus.textContent =
+                        message;
                 }
             );
 
@@ -1351,7 +1331,6 @@
             ?.addEventListener(
                 "opening",
                 () => {
-                    syncLiveStreamPublisherUI();
                     syncLiveStreamViewerUI();
 
                     if (
@@ -1451,6 +1430,50 @@
                     events;
 
                 events.addEventListener(
+                    "started",
+                    () => {
+                        if (
+                            liveTripStream
+                                .publishing
+                        ) {
+                            void liveTripStream
+                                .refreshPublisherMicrophone?.();
+                        }
+                    }
+                );
+
+                for (
+                    const eventName of [
+                        "stopped",
+                        "speechCaptureEnded"
+                    ]
+                ) {
+                    events.addEventListener(
+                        eventName,
+                        () => {
+                            if (
+                                liveTripStream
+                                    .publishing
+                            ) {
+                                void liveTripStream
+                                    .clearPublisherMicrophone?.();
+                            }
+                        }
+                    );
+                }
+
+                if (
+                    liveTripStream
+                        .publishing &&
+                    globalThis
+                        .SpeechMenu
+                        ?.started
+                ) {
+                    void liveTripStream
+                        .refreshPublisherMicrophone?.();
+                }
+
+                events.addEventListener(
                     "speechCommandDispatched",
                     event => {
                         if (
@@ -1523,7 +1546,6 @@
             );
 
         wireLiveSpeechEvents();
-        syncLiveStreamPublisherUI();
         syncLiveStreamViewerUI();
     }
     function populateProfile(user = signedInProfile) {
@@ -1580,7 +1602,7 @@
             !canManageTokens;
 
         $("#liveStreamButton").hidden =
-            false;
+            !canViewLiveStreams;
 
         $("#liveStreamViewerSection").hidden =
             !canViewLiveStreams;
@@ -1613,6 +1635,8 @@
             );
 
         syncSpeechTrainingControls();
+
+        void syncAutomaticLivePublisher();
     }
     profileDialog.addEventListener("opening", () => populateProfile());
     const graphicalDialog = $("#graphicalSettingsDialog");
@@ -6833,7 +6857,7 @@
             !canManageTokens;
 
         $("#liveStreamButton").hidden =
-            !connected;
+            !canViewLiveStreams;
 
         $("#liveStreamViewerSection").hidden =
             !canViewLiveStreams;
@@ -6887,6 +6911,8 @@
         }
 
         syncSpeechTrainingControls();
+
+        void syncAutomaticLivePublisher();
     }
 
     function normalizedConnectionStatus(value = clockTimer.networkStatus) {
@@ -23301,13 +23327,13 @@
                 disableInAppSpeechTraining();
             }
 
+            signedInProfile = undefined;
+
             void liveTripStream
                 ?.close?.()
                 .catch(
                     () => {}
                 );
-
-            signedInProfile = undefined;
             speechTrainingCsrfToken = undefined;
             globalThis
                 .SpeechMenu
