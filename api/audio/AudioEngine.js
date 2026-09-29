@@ -2786,6 +2786,30 @@
                         utterance.addEventListener(
                             "start",
                             () => {
+                                globalThis
+                                    .dispatchEvent?.(
+                                        new CustomEvent(
+                                            "wmof-audio-speak",
+                                            {
+                                                detail: {
+                                                    text,
+                                                    lang:
+                                                        utterance.lang,
+                                                    rate:
+                                                        utterance.rate,
+                                                    pitch:
+                                                        utterance.pitch,
+                                                    volume:
+                                                        utterance.volume,
+                                                    voiceProvider:
+                                                        "system",
+                                                    voice:
+                                                        ""
+                                                }
+                                            }
+                                        )
+                                    );
+
                                 synthesizedSpeechToken =
                                     globalThis
                                         .SpeechMenu
