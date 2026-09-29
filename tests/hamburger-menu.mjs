@@ -212,7 +212,7 @@ assert.match(
 
 assert.match(
     componentSource,
-    /#documentUsableBottom\([\s\S]*boundary[\s\S]*Math\.min/
+    /#documentUsableBounds\([\s\S]*boundary[\s\S]*Math\.min/
 );
 
 const appCss =

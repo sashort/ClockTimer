@@ -96,7 +96,7 @@
             "  right: auto;",
             "  bottom: auto;",
             "  margin: 0;",
-            "  max-width: calc(100vw - 16px);",
+            "  max-width: var(--hamburger-menu-safe-width, calc(100vw - 16px));",
             "  height: auto;",
             "  min-height: 0;",
             "  max-height: var(--hamburger-menu-safe-height, calc(100dvh - 16px));",
@@ -2969,6 +2969,9 @@
             const viewport =
                 this.#viewportBounds();
 
+            const documentBounds =
+                this.#documentUsableBounds(viewport);
+
             const boundary =
                 this.#resolveBoundary();
 
@@ -2991,11 +2994,11 @@
                     rect?.bottom,
                 left:
                     rect?.left,
+                documentLeft: documentBounds.left,
+                documentRight: documentBounds.right,
+                documentTop: documentBounds.top,
                 documentBottom:
-                    this
-                        .#documentUsableBottom(
-                            viewport.bottom
-                        )
+                    documentBounds.bottom
             };
         }
 
@@ -3020,6 +3023,9 @@
                     "right",
                     "bottom",
                     "left",
+                    "documentLeft",
+                    "documentRight",
+                    "documentTop",
                     "documentBottom"
                 ]
             ) {
@@ -3148,6 +3154,24 @@
                     ?.offsetTop ||
                 0;
 
+            const left =
+                viewport
+                    ?.offsetLeft ||
+                0;
+
+            const right =
+                left +
+                (
+                    viewport
+                        ?.width ||
+                    globalThis
+                        .innerWidth ||
+                    document
+                        .documentElement
+                        .clientWidth ||
+                    0
+                );
+
             const bottom =
                 top +
                 (
@@ -3162,84 +3186,77 @@
                 );
 
             return {
+                left,
+                right,
                 top,
                 bottom
             };
         }
 
-        #documentUsableBottom(
-            viewportBottom
-        ) {
-            const root =
-                document
-                    .documentElement;
+        #documentUsableBounds(viewport) {
+            const bounds = { ...viewport };
 
-            const body =
-                document.body;
+            const styles = [
+                document.documentElement,
+                document.body
+            ].filter(Boolean).map(element => getComputedStyle(element));
 
-            const rootStyle =
-                getComputedStyle(
-                    root
+            bounds.left += styles.reduce(
+                (total, style) => total + px(style.marginLeft), 0
+            );
+            bounds.right -= styles.reduce(
+                (total, style) => total + px(style.marginRight), 0
+            );
+            bounds.top += styles.reduce(
+                (total, style) => total + px(style.marginTop), 0
+            );
+            bounds.bottom -= styles.reduce(
+                (total, style) => total + px(style.marginBottom), 0
+            );
+
+            for (const element of [
+                document.documentElement,
+                document.body
+            ]) {
+                if (!element) continue;
+
+                const rect = element.getBoundingClientRect();
+                const style = getComputedStyle(element);
+
+                bounds.left = Math.max(
+                    bounds.left,
+                    rect.left + px(style.borderLeftWidth) +
+                        px(style.paddingLeft)
                 );
-
-            const bodyStyle =
-                body
-                    ? getComputedStyle(
-                        body
-                    )
-                    : undefined;
-
-            const spacing =
-                px(
-                    rootStyle
-                        .paddingBottom
-                ) +
-                px(
-                    rootStyle
-                        .marginBottom
-                ) +
-                px(
-                    bodyStyle
-                        ?.paddingBottom
-                ) +
-                px(
-                    bodyStyle
-                        ?.marginBottom
+                bounds.right = Math.min(
+                    bounds.right,
+                    rect.right - px(style.borderRightWidth) -
+                        px(style.paddingRight)
                 );
-
-            const documentBottom =
-                root
-                    .getBoundingClientRect()
-                    .bottom -
-                spacing;
-
-            if (
-                Number.isFinite(
-                    documentBottom
-                ) &&
-                documentBottom > 0
-            ) {
-                return Math.min(
-                    viewportBottom,
-                    documentBottom
+                bounds.top = Math.max(
+                    bounds.top,
+                    rect.top + px(style.borderTopWidth) +
+                        px(style.paddingTop)
+                );
+                bounds.bottom = Math.min(
+                    bounds.bottom,
+                    rect.bottom - px(style.borderBottomWidth) -
+                        px(style.paddingBottom)
                 );
             }
 
-            return (
-                viewportBottom -
-                spacing
-            );
+            return bounds;
         }
 
         #safeRegion() {
             const viewport =
                 this.#viewportBounds();
 
+            const documentBounds =
+                this.#documentUsableBounds(viewport);
+
             const documentBottom =
-                this
-                    .#documentUsableBottom(
-                        viewport.bottom
-                    );
+                documentBounds.bottom;
 
             const triggerRect =
                 this.#trigger
@@ -3256,9 +3273,11 @@
             if (!boundary) {
                 return {
                     top:
-                        viewport.top,
+                        documentBounds.top,
                     bottom:
                         documentBottom,
+                    left: documentBounds.left,
+                    right: documentBounds.right,
                     direction:
                         "document",
                     boundary:
@@ -3290,7 +3309,7 @@
             ) {
                 return {
                     top:
-                        viewport.top,
+                        documentBounds.top,
                     bottom:
                         Math.min(
                             documentBottom,
@@ -3308,6 +3327,8 @@
                                         .marginBottom
                                 )
                         ),
+                    left: documentBounds.left,
+                    right: documentBounds.right,
                     direction:
                         "below",
                     boundary:
@@ -3319,7 +3340,7 @@
             return {
                 top:
                     Math.max(
-                        viewport.top,
+                        documentBounds.top,
                         boundary
                             .rect
                             .bottom +
@@ -3335,6 +3356,8 @@
                     ),
                 bottom:
                     documentBottom,
+                left: documentBounds.left,
+                right: documentBounds.right,
                 direction:
                     "above",
                 boundary:
@@ -3370,6 +3393,11 @@
                     height +
                         "px"
                 );
+
+            this.#popover.style.setProperty(
+                "--hamburger-menu-safe-width",
+                Math.max(1, region.right - region.left) + "px"
+            );
 
             this.#popover
                 .dataset
@@ -4145,6 +4173,25 @@
                         )
                 );
 
+            const currentShiftX =
+                px(getComputedStyle(this.#popover)
+                    .getPropertyValue(
+                        "--hamburger-menu-popover-shift-x"
+                    ));
+
+            let deltaX = 0;
+            if (menu.right > region.right) {
+                deltaX -= menu.right - region.right;
+            }
+            if (menu.left + deltaX < region.left) {
+                deltaX += region.left - (menu.left + deltaX);
+            }
+
+            this.#popover.style.setProperty(
+                "--hamburger-menu-popover-shift-x",
+                currentShiftX + deltaX + "px"
+            );
+
             let deltaY =
                 0;
 
@@ -4183,10 +4230,8 @@
                 );
 
             if (
-                Math.abs(
-                    deltaY
-                ) >
-                    0.5 &&
+                (Math.abs(deltaY) > 0.5 ||
+                    Math.abs(deltaX) > 0.5) &&
                 pass <
                     2
             ) {
