@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/_core/bootstrap.php';
 
 const LIVE_STREAM_TTL_SECONDS = 45;
+const LIVE_STREAM_SOCKET_TOKEN_TTL_SECONDS = 60;
 const LIVE_STREAM_RETENTION_SECONDS = 300;
 const LIVE_STREAM_MAX_DESCRIPTION_BYTES = 262144;
 const LIVE_STREAM_MAX_SIGNAL_BYTES = 32768;
@@ -333,18 +334,21 @@ if ($method === 'GET') {
         $afterSignalId = live_stream_after_id('afterSignalId');
 
         $statement = $pdo->prepare(
-            'SELECT p.id, p.viewer_user_id, p.offer, p.answer, p.state, '
-            . 'p.created_at, p.updated_at, p.expires_at, '
-            . 'u.username, u.preferred_name, u.first_name '
+            'SELECT p.id, p.offer, p.answer, p.state, '
+            . 'p.created_at, p.updated_at, p.expires_at '
             . 'FROM live_stream_peers p '
             . 'INNER JOIN users u ON u.id = p.viewer_user_id '
             . 'WHERE p.session_id = :session_id '
             . 'AND p.expires_at > :now AND p.state <> \'closed\' '
+            . 'AND (((u.permissions & :superuser) <> 0) '
+            . 'OR ((u.permissions & :view_live_streams) = :view_live_streams)) '
             . 'ORDER BY p.id'
         );
         $statement->execute([
             ':session_id' => $session['id'],
             ':now' => time(),
+            ':superuser' => PERMISSION_SUPERUSER,
+            ':view_live_streams' => PERMISSION_VIEW_LIVE_STREAMS,
         ]);
 
         $peers = [];
@@ -352,16 +356,6 @@ if ($method === 'GET') {
         while ($row = $statement->fetch()) {
             $peers[] = [
                 'peerId' => (int) $row['id'],
-                'viewerUserId' => (int) $row['viewer_user_id'],
-                'viewerUsername' => (string) $row['username'],
-                'viewerName' =>
-                    trim(
-                        (string) (
-                            $row['preferred_name'] ??
-                            $row['first_name'] ??
-                            $row['username']
-                        )
-                    ),
                 'offer' => live_stream_decode((string) $row['offer']),
                 'answered' =>
                     is_string($row['answer']) &&
@@ -510,6 +504,58 @@ $input = json_input();
 $action = require_string($input, 'action');
 
 if ($method === 'POST') {
+    if ($action === 'socket-token') {
+        $now = time();
+        $token =
+            rtrim(
+                strtr(
+                    base64_encode(
+                        random_bytes(32)
+                    ),
+                    '+/',
+                    '-_'
+                ),
+                '='
+            );
+        $tokenHash =
+            hash(
+                'sha256',
+                $token
+            );
+
+        $delete = $pdo->prepare(
+            'DELETE FROM live_stream_socket_tokens WHERE expires_at <= :now'
+        );
+        $delete->execute([
+            ':now' => $now,
+        ]);
+
+        $statement = $pdo->prepare(
+            'INSERT INTO live_stream_socket_tokens '
+            . '(user_id, token_hash, created_at, expires_at) '
+            . 'VALUES (:user_id, :token_hash, :created_at, :expires_at)'
+        );
+        $statement->execute([
+            ':user_id' => $actorId,
+            ':token_hash' => $tokenHash,
+            ':created_at' => $now,
+            ':expires_at' =>
+                $now +
+                LIVE_STREAM_SOCKET_TOKEN_TTL_SECONDS,
+        ]);
+
+        json_response([
+            'token' => $token,
+            'expiresAt' =>
+                $now +
+                LIVE_STREAM_SOCKET_TOKEN_TTL_SECONDS,
+            'websocketPath' =>
+                '/live-stream-ws',
+            'iceServers' =>
+                live_stream_ice_servers(),
+        ], 201);
+    }
+
     if ($action === 'publish') {
         $now = time();
         $snapshot = null;
