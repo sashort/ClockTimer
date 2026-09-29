@@ -26818,6 +26818,32 @@
                 );
 
             if (!Number.isFinite(adjustedEndTimeline)) {
+                const openIntervalType =
+                    String(
+                        this.#openEndedRange
+                            ?.type ??
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase();
+
+                if (openIntervalType === "down") {
+                    // Down Time makes the wall-clock end unknown, but it does
+                    // not invalidate the counted-time requirement or the
+                    // calculated Sync goal. Preserve those values while Down
+                    // is active so presentation does not fall back to the
+                    // user's stored Trip Goal.
+                    return {
+                        tripGoal,
+                        adjustedTimeElapsed:
+                            Math.round(
+                                adjustedTimeElapsed
+                            ),
+                        adjustedEndTime:
+                            null
+                    };
+                }
+
                 return empty;
             }
 

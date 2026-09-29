@@ -124,6 +124,7 @@ jobs:
           node regex-builder.mjs
           node trip-log.mjs
           node offline-trip-buffer.mjs
+          node autosync-downtime.mjs
           node live-trip-stream.mjs
           node user-lookup.mjs
           node deferred-trip.mjs

@@ -6777,12 +6777,7 @@
             Number(
                 requirements
                     ?.adjustedTimeElapsed
-            ) > 0 &&
-            typeof requirements?.adjustedEndTime ===
-                "string" &&
-            requirements
-                .adjustedEndTime
-                .length > 0
+            ) > 0
         )
             ? "active"
             : "time-blocked";
