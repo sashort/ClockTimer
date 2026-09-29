@@ -16,6 +16,7 @@ require_once dirname(__DIR__) . '/api/_core/permissions.php';
 const LIVE_WS_TOKEN_TTL_SECONDS = 60;
 const LIVE_WS_MAX_FRAME_BYTES = 1048576;
 const LIVE_WS_PERMISSION_SWEEP_SECONDS = 2;
+const LIVE_WS_PING_SECONDS = 20;
 const LIVE_WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
 function live_ws_now(): int
@@ -369,6 +370,7 @@ function live_ws_handshake(array &$client, PDO $pdo): bool
     $client['handshake'] = true;
     $client['user'] = $user;
     $client['connected_at'] = microtime(true);
+    $client['last_ping_at'] = microtime(true);
     $client['snapshot'] = null;
     $client['available'] = false;
     $client['fragment_opcode'] = null;
@@ -1129,6 +1131,47 @@ while (true) {
     }
 
     $now = microtime(true);
+
+    foreach ($clients as $clientId => &$client) {
+        if (
+            !($client['handshake'] ?? false) ||
+            $now -
+                (float) (
+                    $client['last_ping_at'] ??
+                    0
+                ) <
+                LIVE_WS_PING_SECONDS
+        ) {
+            continue;
+        }
+
+        $client['last_ping_at'] =
+            $now;
+
+        if (
+            !live_ws_write(
+                $client,
+                live_ws_frame(
+                    '',
+                    0x9
+                )
+            )
+        ) {
+            $client['close'] =
+                true;
+        }
+    }
+    unset($client);
+
+    foreach (array_keys($clients) as $clientId) {
+        if (($clients[$clientId]['close'] ?? false) === true) {
+            live_ws_disconnect_client(
+                (int) $clientId,
+                $clients,
+                $peers
+            );
+        }
+    }
 
     if ($now - $lastPermissionSweep >= LIVE_WS_PERMISSION_SWEEP_SECONDS) {
         $lastPermissionSweep = $now;
