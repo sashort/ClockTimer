@@ -956,7 +956,7 @@
                 option.value =
                     "";
                 option.textContent =
-                    "No live streams";
+                    "No other connected users";
 
                 liveStreamTarget.append(
                     option
