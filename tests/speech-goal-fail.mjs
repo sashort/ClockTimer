@@ -59,12 +59,12 @@ const appSource =
 
 assert.match(
     appSource,
-    /sentences\.push\(\s*"Trip Goal Failed\."\s*\)/
+    /summarySentences\.push\(\s*"Trip Goal Failed\."\s*\)/
 );
 
 assert.match(
     appSource,
-    /sentences\.push\(\s*"Total Goal Failed\."\s*\)/
+    /summarySentences\.push\([\s\S]*totalScopeLabel\(\) \+ " Goal Failed\."/
 );
 
 assert.match(
@@ -119,17 +119,17 @@ console.log(
 
 assert.match(
     appSource,
-    /consumeSemanticAction\(\s*"summary"\s*\)[\s\S]*"Standard Goal Failed\."[\s\S]*"Trip Goal Failed\."[\s\S]*"Total Goal Failed\."/
+    /summarySentences[\s\S]*"Standard Goal Failed\."[\s\S]*"Trip Goal Failed\."[\s\S]*totalScopeLabel\(\) \+ " Goal Failed\."[\s\S]*consumeAnnouncementAction\([\s\S]*"goal-failed",[\s\S]*"summary"/
 );
 
 assert.match(
     appSource,
-    /!consumeSemanticAction\(\s*"details"\s*\)[\s\S]*return sentences\.join/
+    /detailSentences\.length[\s\S]*consumeAnnouncementAction\([\s\S]*"goal-failed",[\s\S]*"details"[\s\S]*spoken\.push[\s\S]*return spoken\.join/
 );
 
 assert.match(
     appSource,
-    /consumeSemanticAction\(\s*"chime"\s*\)[\s\S]*"goal-failed"/
+    /const chime\s*=[\s\S]*consumeAnnouncementAction\([\s\S]*"goal-failed",[\s\S]*"chime"[\s\S]*runSemanticAnnouncement\([\s\S]*"goal-failed"/
 );
 
 console.log(
