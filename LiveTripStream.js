@@ -998,7 +998,8 @@
 
                     this
                         .#configurePublisherChannel(
-                            entry.channel
+                            entry.channel,
+                            entry
                         );
                 }
             );
@@ -1139,7 +1140,8 @@
         }
 
         #configurePublisherChannel(
-            channel
+            channel,
+            entry
         ) {
             channel.addEventListener(
                 "open",
@@ -1150,6 +1152,45 @@
                             "snapshot",
                             this.#snapshot()
                         );
+                }
+            );
+
+            channel.addEventListener(
+                "message",
+                event => {
+                    try {
+                        const envelope =
+                            JSON.parse(
+                                event.data
+                            );
+
+                        if (
+                            !envelope ||
+                            typeof envelope !==
+                                "object"
+                        ) {
+                            return;
+                        }
+
+                        this.#emit(
+                            "publisherMessage",
+                            {
+                                viewerUserId:
+                                    entry
+                                        ?.viewerUserId,
+                                viewerName:
+                                    entry
+                                        ?.viewerName,
+                                ...envelope
+                            }
+                        );
+                    }
+                    catch (error) {
+                        console.warn(
+                            "Invalid viewer live stream message:",
+                            error
+                        );
+                    }
                 }
             );
         }
@@ -1175,6 +1216,19 @@
                 entry.pc?.close();
             }
             catch {}
+
+            this.#emit(
+                "publisherPeerChanged",
+                {
+                    peerId,
+                    viewerUserId:
+                        entry.viewerUserId,
+                    viewerName:
+                        entry.viewerName,
+                    state:
+                        "closed"
+                }
+            );
 
             this.#publisherPeers
                 .delete(
@@ -1933,6 +1987,32 @@
                         }
                     )
             );
+        }
+
+        sendToPublisher(
+            type,
+            payload
+        ) {
+            const channel =
+                this.#viewerDataChannel;
+
+            if (
+                !this.#viewing ||
+                !channel ||
+                channel.readyState !==
+                    "open"
+            ) {
+                throw new Error(
+                    "The live stream is not connected."
+                );
+            }
+
+            return this
+                .#sendChannelEnvelope(
+                    channel,
+                    type,
+                    payload
+                );
         }
 
         #handleEnvelope(
