@@ -8047,6 +8047,10 @@ class SpeechMenu {
                 "speechCommandExecuted",
                 {
                     utteranceId,
+                    utteranceStartedAt:
+                        executionStartedAt ||
+                        utterance
+                            ?.wallStartedAt,
                     commandElement:
                         element,
                     speechMenuElement,
