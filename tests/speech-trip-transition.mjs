@@ -127,7 +127,11 @@ console.log(
 
 assert.match(
     app,
-    /transitionChimePlayed[\s\S]*startChimeEnabled[\s\S]*incrementSemanticDisable\(\s*"chime"\s*\)/
+    /const reserveStartChime\s*=[\s\S]*transitionChimeAllowed[\s\S]*startChimeEnabled[\s\S]*if \(reserveStartChime\)[\s\S]*incrementSemanticDisable\(\s*"chime"\s*\)/
+);
+assert.match(
+    app,
+    /transitionChimePlayed[\s\S]*reserveStartChime &&[\s\S]*!transitionChimePlayed[\s\S]*cancelSemanticDisable\(\s*"chime"\s*\)/
 );
 
 assert.match(
