@@ -12,7 +12,8 @@ const bindings = {
     parseDateInput: value => new Date(value + 'T00:00:00'),
     parseTimelineTime: value => value ? value.split(':').reduce((total, part) => total * 60 + Number(part), 0) * 1000 : NaN,
     formatTimelineMilliseconds: value => `${Math.floor(value / 3600000)}:${String(Math.floor(value / 60000) % 60).padStart(2, '0')}:${String(Math.floor(value / 1000) % 60).padStart(2, '0')}`,
-    openNumberPad: options => { frame = options; return true; }
+    openNumberPad: options => { frame = options; return true; },
+    openValueEditor: async options => { frame = options; return true; }
 };
 const controller = new Function(...Object.keys(bindings), `
     let tripDraft, tripSettingsSession, tripStartsNowState, stagedStandardTimeMilliseconds;
