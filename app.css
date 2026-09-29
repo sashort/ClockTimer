@@ -6889,3 +6889,113 @@ speech-command {
         grid-template-columns: 1fr;
     }
 }
+
+
+.live-stream-dialog {
+    width: min(92vw, 760px);
+}
+
+.live-stream-layout {
+    display: grid;
+    gap: 14px;
+    padding: 12px;
+}
+
+.live-stream-section {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid currentColor;
+    border-radius: 10px;
+}
+
+.live-stream-section h3,
+.live-stream-section p {
+    margin: 0;
+}
+
+.live-stream-target-row,
+.live-stream-view-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.live-stream-target-row select {
+    min-width: 190px;
+    flex: 1 1 220px;
+}
+
+.live-stream-status {
+    min-height: 1.2em;
+}
+
+.live-stream-volume-controls {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.live-stream-volume-controls > label:not(.live-stream-mute) {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr);
+    align-items: center;
+    gap: 10px;
+}
+
+.live-stream-volume-controls output {
+    display: inline-block;
+    min-width: 4ch;
+    text-align: right;
+}
+
+.live-stream-mute {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.live-stream-readout {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.live-stream-readout > div {
+    display: grid;
+    gap: 3px;
+    padding: 8px;
+    border: 1px solid currentColor;
+    border-radius: 8px;
+    min-width: 0;
+}
+
+.live-stream-readout span {
+    font-size: .78em;
+    opacity: .75;
+}
+
+.live-stream-readout strong {
+    overflow-wrap: anywhere;
+}
+
+.live-stream-transcript {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+    .live-stream-volume-controls > label:not(.live-stream-mute) {
+        grid-template-columns: 1fr;
+    }
+
+    .live-stream-readout {
+        grid-template-columns: 1fr;
+    }
+
+    .live-stream-transcript {
+        grid-column: auto;
+    }
+}
