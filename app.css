@@ -564,7 +564,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
     height: 74px;
     margin: 0;
     padding: 0;
-    align-self: end;
+    align-self: start;
     border: 3px solid #000;
     border-radius: var(--trip-log-shell-radius);
     color: var(--wm-white);
