@@ -374,7 +374,13 @@ html[data-trip-log-startup="unpinned"] .app {
 }
 
 .app[data-trip-state="running"] {
-    grid-template-rows: 52px 142px 122px 0 1fr var(--trip-log-row-height) var(--speech-mic-row-height);
+    grid-template-rows:
+        52px 142px 122px 0 1fr
+        calc(
+            var(--trip-log-row-height) +
+            var(--speech-command-row-height)
+        )
+        var(--speech-mic-row-height);
 }
 
 .app[data-trip-state="running"] .new-trip-button {
