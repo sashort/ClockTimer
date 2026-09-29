@@ -16,6 +16,7 @@ const endpoint = readFileSync(join(root, "api/live-stream/index.php"), "utf8");
 assert.match(live, /new RTCPeerConnection/);
 assert.match(live, /addTransceiver\(\s*"audio"/);
 assert.match(live, /createDataChannel\(\s*"clocktimer-live"/);
+assert.match(live, /audio\/opus/);
 assert.match(live, /targetUserId:\s*target/);
 assert.match(live, /action:\s*"candidate"[\s\S]*targetUserId/);
 assert.match(live, /action:\s*"heartbeat"[\s\S]*targetUserId/);
