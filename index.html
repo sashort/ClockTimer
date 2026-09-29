@@ -36,6 +36,8 @@
                 <div id="adminMenuGroup" class="admin-menu-group" hidden>
                     <button id="adminMenuButton" type="button" aria-expanded="false" aria-controls="adminSubmenu">Admin</button>
                     <div id="adminSubmenu" class="admin-submenu" hidden>
+                        <button id="userLookupButton" type="button" data-dialog="userLookupDialog" hidden>User Lookup</button>
+                        <button id="liveStreamButton" type="button" data-dialog="liveStreamDialog" hidden>Live Stream</button>
                         <button id="newUserButton" type="button" hidden>New User</button>
                         <button id="accessTokensButton" type="button" hidden>Access Tokens</button>
                     </div>
@@ -56,9 +58,6 @@
                 <div class="main-menu-row sync-goals-menu-row">
                     <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span>Sync Goals</span></button>
                     <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals">i</button>
-                </div>
-                <div class="main-menu-row live-stream-menu-row">
-                    <button id="liveStreamButton" type="button" data-dialog="liveStreamDialog" hidden>Live Stream</button>
                 </div>
                 <div class="trip-menu-group">
                 <div class="main-menu-row trip-list-menu-row">
@@ -1067,6 +1066,53 @@
         </form>
     </dialog>
 
+    <dialog id="userLookupDialog" class="app-dialog user-lookup-dialog">
+        <form id="userLookupForm" autocomplete="off">
+            <header class="dialog-header">
+                <h2>User Lookup</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
+            </header>
+
+            <section class="user-lookup-search" aria-labelledby="userLookupSearchTitle">
+                <h3 id="userLookupSearchTitle">Search criteria</h3>
+                <div class="user-lookup-fields">
+                    <label><span>User ID</span><input id="userLookupId" name="id" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></label>
+                    <label><span>Username</span><input id="userLookupUsername" name="username" maxlength="191" autocomplete="off"></label>
+                    <label><span>First Name</span><input id="userLookupFirstName" name="firstName" maxlength="100" autocomplete="off"></label>
+                    <label><span>Last Name</span><input id="userLookupLastName" name="lastName" maxlength="100" autocomplete="off"></label>
+                    <label><span>Preferred Name</span><input id="userLookupPreferredName" name="preferredName" maxlength="100" autocomplete="off"></label>
+                </div>
+                <div class="user-lookup-search-actions">
+                    <button id="userLookupClearSearch" type="button">Clear</button>
+                    <button id="userLookupSearchButton" class="primary-action" type="submit">Search</button>
+                </div>
+                <p id="userLookupStatus" class="user-lookup-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="user-lookup-selected" aria-labelledby="userLookupSelectedTitle">
+                <h3 id="userLookupSelectedTitle">Selected identity</h3>
+                <div class="identity-object-card">
+                    <strong id="userLookupSelectedName">No user selected</strong>
+                    <span id="userLookupSelectedMeta">Select a result to create the current identity object.</span>
+                </div>
+                <div class="user-lookup-selected-actions">
+                    <button id="userLookupCopySelected" type="button" disabled>Copy Identity</button>
+                    <button id="userLookupLiveStream" class="primary-action" type="button" hidden disabled>Live Stream</button>
+                    <button id="userLookupClearSelected" type="button" disabled>Clear Selection</button>
+                </div>
+            </section>
+
+            <section class="user-lookup-results-section" aria-labelledby="userLookupResultsTitle">
+                <div class="user-lookup-results-header">
+                    <h3 id="userLookupResultsTitle">Results</h3>
+                    <span id="userLookupResultCount"></span>
+                </div>
+                <div id="userLookupResults" class="user-lookup-results" role="list"></div>
+                <button id="userLookupLoadMore" type="button" hidden>Load More</button>
+            </section>
+        </form>
+    </dialog>
+
     <dialog id="liveStreamDialog" class="app-dialog live-stream-dialog">
         <form method="dialog">
             <header class="dialog-header">
@@ -1076,16 +1122,18 @@
             <div class="live-stream-layout">
                 <section id="liveStreamViewerSection" class="live-stream-section" aria-labelledby="liveStreamViewerTitle" hidden>
                     <h3 id="liveStreamViewerTitle">View user</h3>
-                    <div class="live-stream-target-row">
-                        <label for="liveStreamTarget">Target</label>
-                        <select id="liveStreamTarget" aria-label="Live stream target"></select>
-                        <button id="liveStreamRefreshTargets" type="button">Refresh</button>
+                    <div class="live-stream-identity-row">
+                        <div class="identity-object-card">
+                            <strong id="liveStreamIdentityName">No user selected</strong>
+                            <span id="liveStreamIdentityMeta">Use User Lookup to select an identity.</span>
+                        </div>
+                        <button id="liveStreamLookupButton" type="button">User Lookup</button>
                     </div>
                     <div class="live-stream-view-actions">
-                        <button id="liveStreamWatchButton" class="primary-action" type="button">Watch</button>
+                        <button id="liveStreamWatchButton" class="primary-action" type="button" disabled>Watch</button>
                         <span id="liveStreamViewerStatus" class="live-stream-status">Not viewing.</span>
                     </div>
-                    <p class="dialog-helper">Authorized viewers can join any connected ClockTimer client. No action is required on the remote client.</p>
+                    <p class="dialog-helper">The selected identity supplies the target user ID. Live-stream permission is checked independently when the connection is opened.</p>
 
                     <fieldset id="liveStreamTrainerMessage" class="live-stream-trainer-message" disabled>
                         <legend>Trainer message</legend>
@@ -1176,6 +1224,7 @@
     <script src="AnnouncementCatalog.js?v=goal-range-announcements-1"></script>
     <script src="api/audio/VoiceCatalog.js?v=language-aware-voices-1"></script>
     <script src="api/audio/AudioEngine.js?v=dynamic-system-voices-1"></script>
+    <script src="IdentityContext.js"></script>
     <script src="LiveTripStream.js"></script>
     <script src="PanePage.js?v=overflow-3"></script>
     <script src="HamburgerMenu.js?v=multi-pane-promotion-1"></script>
