@@ -1154,10 +1154,13 @@
                 ? "Stop Watching"
                 : "Watch";
 
-        liveStreamWatchButton.disabled =
-            viewing
-                ? false
-                : !syncLiveStreamIdentityUI();
+        const identity =
+            syncLiveStreamIdentityUI();
+
+        if (viewing) {
+            liveStreamWatchButton.disabled =
+                false;
+        }
 
         liveStreamVolumeControls.disabled =
             !viewing;
@@ -1185,8 +1188,24 @@
                         ".";
         }
         else {
+            const self =
+                Boolean(
+                    identity &&
+                    Number(
+                        identity.userId
+                    ) ===
+                        Number(
+                            signedInProfile
+                                ?.id
+                        )
+                );
+
             liveStreamViewerStatus.textContent =
-                "Not viewing.";
+                !identity
+                    ? "Select a user with User Lookup."
+                    : self
+                        ? "Select another user."
+                        : "Not viewing.";
             liveStreamRemoteState.textContent =
                 "—";
             liveStreamRemoteTime.textContent =
@@ -1900,6 +1919,21 @@
                 )
             );
 
+        const canLookupUsers =
+            Boolean(
+                permissions &
+                (
+                    PERMISSION_LOOKUP_USERS |
+                    PERMISSION_SUPERUSER
+                )
+            );
+
+        $("#userLookupButton").hidden =
+            !canLookupUsers;
+
+        $("#userLookupButton").hidden =
+            !canLookupUsers;
+
         $("#newUserButton").hidden =
             !canCreateUsers;
 
@@ -1911,6 +1945,42 @@
 
         $("#liveStreamViewerSection").hidden =
             !canViewLiveStreams;
+
+        liveStreamLookupButton.hidden =
+            !canLookupUsers;
+
+        if (!canLookupUsers) {
+            identityContext
+                ?.clear?.();
+        }
+
+        userLookup
+            ?.sync?.();
+        syncLiveStreamIdentityUI();
+
+        if (
+            !canViewLiveStreams &&
+            liveTripStream
+                ?.viewing
+        ) {
+            void liveTripStream
+                .stopViewing({
+                    notifyServer:
+                        false
+                });
+        }
+
+        liveStreamLookupButton.hidden =
+            !canLookupUsers;
+
+        if (!canLookupUsers) {
+            identityContext
+                ?.clear?.();
+        }
+
+        userLookup
+            ?.sync?.();
+        syncLiveStreamIdentityUI();
 
         $("#speechToolsGroup").hidden =
             false;
@@ -1936,7 +2006,9 @@
         $("#adminMenuGroup").hidden =
             !(
                 canCreateUsers ||
-                canManageTokens
+                canManageTokens ||
+                canLookupUsers ||
+                canViewLiveStreams
             );
 
         syncSpeechTrainingControls();
@@ -7148,9 +7220,21 @@
                 )
             );
 
+        const canLookupUsers =
+            connected &&
+            Boolean(
+                permissions &
+                (
+                    PERMISSION_LOOKUP_USERS |
+                    PERMISSION_SUPERUSER
+                )
+            );
+
         const showAdmin =
             canCreateUsers ||
-            canManageTokens;
+            canManageTokens ||
+            canLookupUsers ||
+            canViewLiveStreams;
 
         $("#adminMenuGroup").hidden =
             !showAdmin;
@@ -23633,6 +23717,10 @@
             }
 
             signedInProfile = undefined;
+            identityContext
+                ?.clear?.();
+            userLookup
+                ?.sync?.();
 
             void liveTripStream
                 ?.close?.()
