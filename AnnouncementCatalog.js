@@ -231,6 +231,32 @@
         }
     );
 
+    register(
+        "sync-state",
+        {
+            label:
+                "Sync State",
+            group:
+                "Settings",
+            layers: [
+                "summary"
+            ]
+        }
+    );
+
+    register(
+        "sync-goal",
+        {
+            label:
+                "Sync Goal",
+            group:
+                "Settings",
+            layers: [
+                "summary"
+            ]
+        }
+    );
+
     const api = {
         register,
         ensure,

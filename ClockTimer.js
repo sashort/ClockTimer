@@ -4312,7 +4312,11 @@
 
             this.#handleTripGoalChange(
                 this.#renderedPercentGoalSourceOverride ??
-                "user"
+                "user",
+                {
+                    forceSyncGoalRecalculationEvent:
+                        true
+                }
             );
 
             return {
@@ -23320,7 +23324,14 @@
             }
         }
 
-        #refreshCalculatedTripGoal() {
+        #refreshCalculatedTripGoal(
+            source =
+                this.#renderedPercentGoalSourceOverride ??
+                "automatic",
+            {
+                forceEvent = false
+            } = {}
+        ) {
             const previous =
                 this.#calculatedTripGoal;
 
@@ -23350,7 +23361,76 @@
             this.#calculatedGoalSource =
                 "sync";
 
-            return previous !== this.#calculatedTripGoal;
+            const changed =
+                previous !==
+                    this.#calculatedTripGoal;
+
+            if (changed || forceEvent) {
+                const currentRequirements =
+                    this.#calculateTotalGoalRequirements();
+
+                const valid =
+                    Number.isFinite(
+                        currentRequirements
+                            .tripGoal
+                    ) &&
+                    currentRequirements
+                        .tripGoal > 0 &&
+                    Number.isFinite(
+                        currentRequirements
+                            .adjustedTimeElapsed
+                    ) &&
+                    currentRequirements
+                        .adjustedTimeElapsed > 0 &&
+                    typeof currentRequirements
+                        .adjustedEndTime ===
+                            "string" &&
+                    currentRequirements
+                        .adjustedEndTime
+                        .length > 0;
+
+                this.#emitClockTimerEvent(
+                    "syncGoalRecalculated",
+                    {
+                        source,
+                        operation:
+                            forceEvent
+                                ? "sync"
+                                : "recalculation",
+                        changed,
+                        valid,
+                        reason:
+                            valid
+                                ? null
+                                : (
+                                    this
+                                        .#getTotalGoalRequirementFailureReason() ??
+                                    "insufficient-time"
+                                ),
+                        previousCalculatedTripGoal:
+                            Number.isFinite(
+                                previous
+                            )
+                                ? previous
+                                : null,
+                        calculatedTripGoal:
+                            Number.isFinite(
+                                this.#calculatedTripGoal
+                            )
+                                ? this.#calculatedTripGoal
+                                : null,
+                        requirements: {
+                            ...currentRequirements
+                        },
+                        tripGoal:
+                            this.#getTripGoal(),
+                        totalGoal:
+                            this.#getTotalGoal()
+                    }
+                );
+            }
+
+            return changed;
         }
 
         #handleTripGoalChange(
@@ -23358,12 +23438,20 @@
                 this.#renderedPercentGoalSourceOverride ??
                 "automatic",
             {
-                refreshCalculatedGoal = true
+                refreshCalculatedGoal = true,
+                forceSyncGoalRecalculationEvent =
+                    false
             } = {}
         ) {
 
             if (refreshCalculatedGoal) {
-                this.#refreshCalculatedTripGoal();
+                this.#refreshCalculatedTripGoal(
+                    source,
+                    {
+                        forceEvent:
+                            forceSyncGoalRecalculationEvent
+                    }
+                );
             }
 
             const goal =

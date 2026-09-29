@@ -3017,6 +3017,10 @@
     let endTimeGoalLockFlashTimer;
     let syncNetworkStatus;
     let syncOfflineTransitionSequence = 0;
+    let syncAnnouncementState;
+    let syncAnnouncementGoal;
+    let syncPreferenceChangeInProgress =
+        false;
 
     const CONNECTION_INDICATOR_MINIMUM = 1000;
     const CLOCK_TIMER_DOUBLE_PRESS = 350;
@@ -6715,6 +6719,273 @@
                 : "trip";
     }
 
+
+    function syncGoalRequirements() {
+        try {
+            const requirements =
+                clockTimer
+                    .calculateTotalGoalRequirements
+                    ?.();
+
+            return (
+                requirements &&
+                typeof requirements ===
+                    "object"
+            )
+                ? requirements
+                : undefined;
+        }
+        catch {
+            return undefined;
+        }
+    }
+
+    function getSyncRuntimeState() {
+        if (
+            normalizedConnectionStatus() ===
+                "offline"
+        ) {
+            return "offline";
+        }
+
+        if (!getSyncGoalsState()) {
+            return "off";
+        }
+
+        if (!tripIsLive()) {
+            return "ready";
+        }
+
+        const requirements =
+            syncGoalRequirements();
+
+        return (
+            Number.isFinite(
+                Number(
+                    requirements?.tripGoal
+                )
+            ) &&
+            Number(
+                requirements?.tripGoal
+            ) > 0 &&
+            Number.isFinite(
+                Number(
+                    requirements
+                        ?.adjustedTimeElapsed
+                )
+            ) &&
+            Number(
+                requirements
+                    ?.adjustedTimeElapsed
+            ) > 0 &&
+            typeof requirements?.adjustedEndTime ===
+                "string" &&
+            requirements
+                .adjustedEndTime
+                .length > 0
+        )
+            ? "active"
+            : "time-blocked";
+    }
+
+    function currentCalculatedSyncGoal() {
+        const requirements =
+            syncGoalRequirements();
+
+        const requiredGoal =
+            Number(
+                requirements?.tripGoal
+            );
+
+        if (
+            Number.isFinite(
+                requiredGoal
+            ) &&
+            requiredGoal > 0
+        ) {
+            return requiredGoal;
+        }
+
+        const calculatedGoal =
+            Number(
+                clockTimer
+                    .calculatedTripGoal
+            );
+
+        return (
+            Number.isFinite(
+                calculatedGoal
+            ) &&
+            calculatedGoal > 0
+        )
+            ? calculatedGoal
+            : undefined;
+    }
+
+    function syncGoalMatches(
+        left,
+        right
+    ) {
+        return (
+            Number.isFinite(left) &&
+            Number.isFinite(right) &&
+            Math.abs(left - right) <
+                1e-9
+        );
+    }
+
+    function setSyncAnnouncementBaseline(
+        state =
+            getSyncRuntimeState()
+    ) {
+        syncAnnouncementState =
+            state;
+
+        syncAnnouncementGoal =
+            state === "active"
+                ? currentCalculatedSyncGoal()
+                : undefined;
+
+        return state;
+    }
+
+    function announceCalculatedSyncGoal(
+        {
+            force = false
+        } = {}
+    ) {
+        const goal =
+            currentCalculatedSyncGoal();
+
+        if (
+            !Number.isFinite(goal) ||
+            goal <= 0
+        ) {
+            return false;
+        }
+
+        if (
+            !force &&
+            syncGoalMatches(
+                syncAnnouncementGoal,
+                goal
+            )
+        ) {
+            return false;
+        }
+
+        syncAnnouncementGoal =
+            goal;
+
+        return confirmInformationalChange(
+            "sync-goal",
+            "Sync Goal " +
+                formatSummaryPercent(
+                    goal
+                )
+        );
+    }
+
+    function announceSyncRuntimeState(
+        {
+            force = false,
+            preferCalculatedGoal =
+                false,
+            forceCalculatedGoal =
+                false
+        } = {}
+    ) {
+        const state =
+            getSyncRuntimeState();
+
+        const previous =
+            syncAnnouncementState;
+
+        const changed =
+            previous !== state;
+
+        syncAnnouncementState =
+            state;
+
+        if (state !== "active") {
+            syncAnnouncementGoal =
+                undefined;
+        }
+
+        if (
+            !force &&
+            !changed &&
+            !(
+                state === "active" &&
+                preferCalculatedGoal
+            )
+        ) {
+            return false;
+        }
+
+        if (state === "offline") {
+            if (!getSyncGoalsState()) {
+                return false;
+            }
+
+            return confirmInformationalChange(
+                "sync-state",
+                "Cannot sync offline"
+            );
+        }
+
+        if (state === "off") {
+            return confirmInformationalChange(
+                "sync-state",
+                "Sync Off"
+            );
+        }
+
+        if (
+            state ===
+                "time-blocked"
+        ) {
+            return confirmInformationalChange(
+                "sync-state",
+                "Not enough time to sync"
+            );
+        }
+
+        if (state === "active") {
+            if (
+                preferCalculatedGoal ||
+                previous ===
+                    "time-blocked"
+            ) {
+                return announceCalculatedSyncGoal({
+                    force:
+                        forceCalculatedGoal
+                });
+            }
+
+            if (force || changed) {
+                return confirmInformationalChange(
+                    "sync-state",
+                    "Sync On"
+                );
+            }
+
+            return false;
+        }
+
+        if (
+            state === "ready" &&
+            (force || changed)
+        ) {
+            return confirmInformationalChange(
+                "sync-state",
+                "Sync On"
+            );
+        }
+
+        return false;
+    }
+
     function renderSyncGoalsState(
         renderedScope = getRenderedGoalScope()
     ) {
@@ -6723,9 +6994,18 @@
         const enabled =
             getSyncGoalsState();
 
-        const idle = enabled && normalizedConnectionStatus() === "online" && !tripIsLive();
+        const runtimeState =
+            getSyncRuntimeState();
+
+        const idle =
+            runtimeState ===
+                "ready";
+
         for (const element of [toggleSyncGoalButton, syncGoalsMenuIcon]) {
             if (!element) continue;
+            ensureSyncOfflineOverlay(element);
+            element.dataset.syncRuntimeState =
+                runtimeState;
             element.classList.toggle("sync-paused", idle);
             if (!element.querySelector(".sync-pause-badge")) {
                 const badge = document.createElement("span");
@@ -6768,7 +7048,9 @@
         }
 
         if (toggleSyncGoalButton) {
-            const calculable=enabled&&normalizedConnectionStatus()==="online"&&tripIsLive()&&Boolean(state?.auto_goal_active)&&Boolean(state?.goal_component?.valid);
+            const calculable =
+                runtimeState ===
+                    "active";
             ensureSyncOfflineOverlay(toggleSyncGoalButton);
             toggleSyncGoalButton.classList.toggle("sync-calculable",calculable);
             toggleSyncGoalButton.hidden =
@@ -6796,9 +7078,18 @@
             renderEndTimeGoalLock();
         }
 
-        clockTimer.configure({
-            auto_goal: enabled
-        });
+        syncPreferenceChangeInProgress =
+            true;
+
+        try {
+            clockTimer.configure({
+                auto_goal: enabled
+            });
+        }
+        finally {
+            syncPreferenceChangeInProgress =
+                false;
+        }
 
         if (tripDraft) {
             tripDraft.syncGoals =
@@ -6821,6 +7112,7 @@
         }
 
         renderSyncGoalsState();
+        setSyncAnnouncementBaseline();
         queueSummaryRefresh();
 
         return enabled;
@@ -20936,6 +21228,8 @@
             event.detail?.now
         );
 
+        void announceSyncRuntimeState();
+
         refreshTripLogLiveProjection(
             event.detail?.summary
         );
@@ -20947,7 +21241,66 @@
 
     clockTimer.addEventListener("started", event => {
         setTripControlState(true);
+        renderSyncGoalsState();
+
+        void announceSyncRuntimeState({
+            force: true
+        });
     });
+
+    clockTimer.addEventListener(
+        "stopped",
+        () => {
+            renderSyncGoalsState();
+
+            // Trip End is deliberately silent for Sync. Keep the baseline
+            // accurate so a later transition is compared with the ready state.
+            setSyncAnnouncementBaseline();
+        }
+    );
+
+    clockTimer.addEventListener(
+        "goalChanged",
+        () => {
+            renderSyncGoalsState();
+
+            void announceSyncRuntimeState({
+                preferCalculatedGoal:
+                    true
+            });
+        }
+    );
+
+    clockTimer.addEventListener(
+        "syncGoalRecalculated",
+        event => {
+            renderSyncGoalsState();
+
+            if (
+                event.detail?.source ===
+                    "start" ||
+                syncPreferenceChangeInProgress ||
+                normalizedConnectionStatus() ===
+                    "offline"
+            ) {
+                setSyncAnnouncementBaseline();
+                return;
+            }
+
+            const syncOperation =
+                event.detail?.operation ===
+                    "sync";
+
+            void announceSyncRuntimeState({
+                force:
+                    syncOperation,
+                preferCalculatedGoal:
+                    true,
+                forceCalculatedGoal:
+                    syncOperation
+            });
+        }
+    );
 
 
     function animateDownTimeClockTransition() {
@@ -20980,6 +21333,11 @@
         }
 
         renderTripActionState();
+
+        void announceSyncRuntimeState({
+            preferCalculatedGoal:
+                true
+        });
     });
 
     clockTimer.addEventListener("intervalEnded", () => {
@@ -20988,6 +21346,11 @@
         }
 
         renderTripActionState();
+
+        void announceSyncRuntimeState({
+            preferCalculatedGoal:
+                true
+        });
     });
 
     const summaryRefreshEvents = [
@@ -21067,6 +21430,7 @@
             undefined;
         releaseEndTimeGoalOverride();
         setTripControlState(false);
+        setSyncAnnouncementBaseline();
         stagedStandardTimeMilliseconds =
             undefined;
         updateSummaryValues();
@@ -21090,6 +21454,9 @@
 
     clockTimer.addEventListener("networkStatusChanged", () => {
         renderSyncGoalsState();
+
+        void announceSyncRuntimeState();
+
         const connectionState =
             numberPadState ??
             getTripSettingsReturnNumberPadState();
@@ -26222,7 +26589,7 @@
                     animateOfflineClouds();
 
                     return confirmSettingChange(
-                        "Sync Unavailable"
+                        "Cannot sync offline"
                     );
                 }
 
@@ -29547,6 +29914,7 @@
         auto_goal: tripPreferences.syncGoals
     });
     renderSyncGoalsState();
+    setSyncAnnouncementBaseline();
     applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();

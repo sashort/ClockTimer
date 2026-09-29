@@ -4273,6 +4273,51 @@ clock-timer[hide-latency] time-range[type="latency"] {
     transition: none !important;
 }
 
+/* sync-runtime-state-v1 */
+/* Sync Off keeps the sync glyph but uses a neutral gray top-left -> bottom-right
+   slash. The red X is reserved for an online active trip that cannot meet a
+   valid Sync goal. */
+.sync-goals-menu-icon[data-sync-runtime-state="off"]::after,
+.goal-sync-button[data-sync-runtime-state="off"]::after {
+    background: rgb(255 255 255 / 58%);
+    opacity: 1;
+    transition: none;
+}
+
+.sync-goals-menu-icon[data-sync-runtime-state="time-blocked"] .sync-offline-x,
+.goal-sync-button[data-sync-runtime-state="time-blocked"] .sync-offline-x {
+    opacity: 1;
+    transition: opacity 250ms linear;
+}
+
+.sync-goals-menu-icon[data-sync-runtime-state="time-blocked"]::after,
+.goal-sync-button[data-sync-runtime-state="time-blocked"]::after {
+    opacity: 0;
+}
+
+/* Offline is a connection state, not the red-X "not enough time" state.
+   Reuse the same cloud-offline glyph as Trip Settings so both surfaces match. */
+.sync-goals-menu-icon[data-sync-runtime-state="offline"],
+.goal-sync-button[data-sync-runtime-state="offline"] {
+    color: rgb(255 255 255 / 78%);
+}
+
+.sync-goals-menu-icon[data-sync-runtime-state="offline"]::after,
+.goal-sync-button[data-sync-runtime-state="offline"]::after {
+    opacity: 0 !important;
+}
+
+.sync-goals-menu-icon[data-sync-runtime-state="offline"] .sync-offline-x,
+.goal-sync-button[data-sync-runtime-state="offline"] .sync-offline-x {
+    opacity: 0 !important;
+}
+
+.sync-goals-menu-icon[data-sync-runtime-state="offline"][data-sync-network-state="offline"] .sync-offline-arrow,
+.goal-sync-button[data-sync-runtime-state="offline"][data-sync-network-state="offline"] .sync-offline-arrow {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 5l14 14' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 5l14 14' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
 /* Trip Settings footer controls should size like the pencil controls rather
    than stretching with the fullscreen form grid. */
 .trip-settings-dialog form {
