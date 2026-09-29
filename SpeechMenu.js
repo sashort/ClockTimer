@@ -220,6 +220,28 @@ class SpeechMenu {
     }
 
     static get events() { return SpeechMenu.#events; }
+
+    static createMicrophoneStream() {
+        const track =
+            SpeechMenu.#micTrack;
+
+        if (
+            !track ||
+            track.readyState !== "live" ||
+            typeof globalThis.MediaStream !==
+                "function" ||
+            typeof track.clone !==
+                "function"
+        ) {
+            return undefined;
+        }
+
+        return new globalThis.MediaStream(
+            [
+                track.clone()
+            ]
+        );
+    }
     static get debug() { return SpeechMenu.#debug; }
     static get debugFunction() { return SpeechMenu.#debugFunction; }
     static get executionEnabled() { return SpeechMenu.#executionEnabled; }
