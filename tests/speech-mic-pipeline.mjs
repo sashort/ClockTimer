@@ -3403,9 +3403,17 @@ assert.match(
     app,
     /backspaceNumberPadValue\(\)[\s\S]*backspaceNumberPadPendingValue\(\)/
 );
-assert.doesNotMatch(
+assert.match(
     app,
-    /clearNumberPadPointerDown|clearNumberPadPointerUp|clearNumberPadKeyboardClick/
+    /backspaceNumberPadPointerUp[\s\S]*backspaceNumberPadValue/
+);
+assert.match(
+    app,
+    /clearNumberPadPointerUp[\s\S]*clearNumberPadValue/
+);
+assert.match(
+    app,
+    /resetNumberPadPointerUp[\s\S]*resetNumberPadValue/
 );
 assert.doesNotMatch(
     app,
