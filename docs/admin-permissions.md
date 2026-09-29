@@ -7,7 +7,7 @@ OR. Superuser implies all permissions. The explicitly authorized initial account
 bobthebuilder (ID 2) receives a one-time superuser grant in migration 002.
 
 The Lightsail deployment runs the idempotent database/apply_admin_permissions.php
-CLI entry point and verifies the three permission definitions. For manual
+CLI entry point and verifies the permission definitions. For manual
 application, run database/admin_permissions.sql with a database administrator connection.
 For a fresh install, initialize database/create_database.sql before deployment.
 Migration scripts now live in migrations/ and server application state in
