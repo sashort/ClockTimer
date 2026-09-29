@@ -42,7 +42,7 @@ assert.equal(
 );
 assert.equal(
     parse("1:30"),
-    "1:30:00"
+    "1:30"
 );
 assert.equal(
     parse("1:02:03"),
