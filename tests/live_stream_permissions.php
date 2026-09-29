@@ -45,13 +45,13 @@ expect(
     'superuser should imply live stream viewing'
 );
 expect(
-    require_permission_assignment($super, 127) === 127,
-    'permission assignment should accept all seven flags'
+    require_permission_assignment($super, 255) === 255,
+    'permission assignment should accept all eight flags'
 );
 
 try {
-    require_permission_assignment($super, 128);
-    throw new RuntimeException('permission mask 128 should be rejected');
+    require_permission_assignment($super, 256);
+    throw new RuntimeException('permission mask 256 should be rejected');
 } catch (ApiFailure $error) {
     expect(
         $error->status === 422 &&
