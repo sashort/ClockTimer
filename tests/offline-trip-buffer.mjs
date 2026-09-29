@@ -115,7 +115,7 @@ assert.equal(requests.filter(r=>r.options.method==='DELETE').length,0);
 console.log('PASS reconnect after interrupted completion uploads both trips once with original timing and no DELETE');
 
 // A new active trip must not acquire any events from the completed queue.
-offline=true;await complete('40:00',16);
+offline=true;await complete(2400000,16);
 const prepared=await c.prepareTrip();
 await c.start({standardTimeMilliseconds:3000000});
 assert.notEqual(c.status,'ready');
