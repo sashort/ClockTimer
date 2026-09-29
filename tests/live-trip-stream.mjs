@@ -15,12 +15,16 @@ const endpoint = readFileSync(join(root, "api/live-stream/index.php"), "utf8");
 
 assert.match(live, /new RTCPeerConnection/);
 assert.match(live, /addTransceiver\(\s*"audio"/);
-assert.match(live, /createDataChannel\(\s*"clocktimer-live"/);
+assert.match(live, /new WebSocket\(/);
+assert.match(live, /"socket-token"/);
+assert.match(live, /"presence\.start"/);
+assert.match(live, /"peer\.join"/);
+assert.doesNotMatch(live, /createDataChannel\(/);
 assert.match(live, /audio\/opus/);
 assert.match(live, /targetUserId:\s*target/);
-assert.match(live, /action:\s*"candidate"[\s\S]*targetUserId/);
-assert.match(live, /action:\s*"heartbeat"[\s\S]*targetUserId/);
-assert.match(live, /action:\s*"leave"[\s\S]*targetUserId/);
+assert.match(live, /type:\s*"peer\.candidate"/);
+assert.match(live, /type:\s*"peer\.leave"/);
+assert.match(live, /type:\s*"publisher\.event"/);
 assert.match(live, /setViewerMuted\(/);
 assert.match(live, /setViewerMasterVolume\(/);
 assert.match(live, /setViewerMicrophoneVolume\(/);
@@ -43,7 +47,7 @@ assert.match(
 assert.match(live, /async refreshPublisherMicrophone\(\)/);
 assert.match(live, /async clearPublisherMicrophone\(\)/);
 assert.match(live, /async sendToPublisher\(/);
-assert.match(live, /action:\s*"trainer-message"/);
+assert.match(live, /#socketRequest\(\s*"trainer\.tts"/);
 assert.match(live, /"publisherMessage"/);
 assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"tts"/);
 assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"speech\.command"/);
@@ -74,8 +78,19 @@ assert.match(speech, /utteranceStartedAt:/);
 assert.match(endpoint, /PERMISSION_VIEW_LIVE_STREAMS/);
 assert.match(endpoint, /require_positive_int\(\$input, 'targetUserId'\)/);
 assert.match(endpoint, /require_positive_int\(\$_GET, 'targetUserId'\)/);
-assert.match(endpoint, /\$action === 'trainer-message'/);
-assert.match(endpoint, /live_stream_require_viewer\([\s\S]*trainer-message|trainer-message[\s\S]*live_stream_require_viewer/);
-assert.match(endpoint, /Unsupported trainer message type/);
+assert.match(endpoint, /\$action === 'socket-token'/);
+assert.match(endpoint, /live_stream_socket_tokens/);
+assert.match(endpoint, /PERMISSION_VIEW_LIVE_STREAMS/);
 
-console.log("PASS permissioned trainer live presence, audio routing, and trainer TTS");
+const websocketService = readFileSync(
+    join(root, "services/live-stream-websocket.php"),
+    "utf8"
+);
+assert.match(websocketService, /targets\.request/);
+assert.match(websocketService, /peer\.join/);
+assert.match(websocketService, /trainer\.tts/);
+assert.match(websocketService, /LIVE_WS_PERMISSION_SWEEP_SECONDS\s*=\s*2/);
+assert.match(websocketService, /live_ws_can_view/);
+assert.doesNotMatch(websocketService, /viewerName|viewerUsername/);
+
+console.log("PASS WebSocket signaling, permissioned trainer presence, Opus audio, and trainer TTS");
