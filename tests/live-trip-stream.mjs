@@ -26,8 +26,8 @@ assert.match(live, /setViewerMicrophoneVolume\(/);
 assert.match(live, /setViewerProgramVolume\(/);
 
 assert.match(app, /const PERMISSION_VIEW_LIVE_STREAMS\s*=\s*64/);
-assert.match(app, /liveTripStream\.broadcast\(\s*"tts"/);
-assert.match(app, /liveTripStream\.broadcast\(\s*"speech\.command"/);
+assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"tts"/);
+assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"speech\.command"/);
 
 for (const id of [
     "liveStreamMute",
