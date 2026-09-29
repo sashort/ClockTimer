@@ -1331,7 +1331,7 @@
             );
 
         const sendLiveTrainerMessage =
-            () => {
+            async () => {
                 const text =
                     String(
                         liveStreamTrainerMessageText
@@ -1344,6 +1344,13 @@
                             500
                         );
 
+                if (!canViewLiveStreams()) {
+                    liveStreamTrainerMessageStatus.textContent =
+                        "Live stream permission is required.";
+
+                    return false;
+                }
+
                 if (!text) {
                     liveStreamTrainerMessageStatus.textContent =
                         "Enter a message.";
@@ -1351,8 +1358,11 @@
                     return false;
                 }
 
+                liveStreamTrainerMessageSend.disabled =
+                    true;
+
                 try {
-                    liveTripStream
+                    await liveTripStream
                         .sendToPublisher(
                             "trainer.tts",
                             {
@@ -1372,14 +1382,33 @@
                         error.message ||
                         "Unable to send message.";
 
+                    if (
+                        Number(
+                            error?.status
+                        ) ===
+                            403
+                    ) {
+                        void liveTripStream
+                            .stopViewing({
+                                notifyServer:
+                                    false
+                            });
+                    }
+
                     return false;
+                }
+                finally {
+                    liveStreamTrainerMessageSend.disabled =
+                        !liveTripStream
+                            .viewing;
                 }
             };
 
         liveStreamTrainerMessageSend
             ?.addEventListener(
                 "click",
-                sendLiveTrainerMessage
+                () =>
+                    void sendLiveTrainerMessage()
             );
 
         liveStreamTrainerMessageText
@@ -1391,7 +1420,7 @@
                             "Enter"
                     ) {
                         event.preventDefault();
-                        sendLiveTrainerMessage();
+                        void sendLiveTrainerMessage();
                     }
                 }
             );
