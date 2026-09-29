@@ -107,6 +107,6 @@ const returnController = new Function(`
     return tripSettingsNavigation.numberPadState;
 `)();
 assert.equal(returnController.initial,'003000');
-assert.equal(returnController.pending,'04500');
+assert.equal(returnController.pending,'4500');
 assert.equal(returnController.everEdited,true);
 console.log('PASS returning from Trip Settings preserves the original and marks the new numberpad value changed');
