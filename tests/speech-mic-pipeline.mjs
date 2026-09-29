@@ -1848,7 +1848,11 @@ assert.match(
 
 assert.match(
     app,
-    /function getSpeechMicTop\(\)[\s\S]*--speech-command-row-height[\s\S]*optionsCollapsed[\s\S]*micTop\s*-\s*[\s\S]*commandRowHeight/
+    /function getSpeechMicTop\(\)[\s\S]*speechMicBar[\s\S]*getSafeTop\?\.\(\)[\s\S]*return Math\.max\([\s\S]*metrics\.rect\.top[\s\S]*speechTop/
+);
+assert.match(
+    speechMicBarSource,
+    /getSafeTop\(\)[\s\S]*optionsOpen[\s\S]*optionsCollapsed[\s\S]*#optionsPanel[\s\S]*getBoundingClientRect\(\)[\s\S]*Math\.min\([\s\S]*hostRect\.top[\s\S]*optionsRect\.top/
 );
 
 assert.match(
