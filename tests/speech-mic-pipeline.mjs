@@ -3421,7 +3421,7 @@ assert.doesNotMatch(
 );
 assert.match(
     app,
-    /async function commitNumberPad\(\)[\s\S]*!numberPadHasChanges\(\)[\s\S]*!state\.startsTripOnConfirm[\s\S]*return true;[\s\S]*if \(state\.onConfirm\)/
+    /async function commitNumberPad\([\s\S]*signal[\s\S]*\)[\s\S]*!numberPadHasChanges\(\)[\s\S]*!state\.startsTripOnConfirm[\s\S]*return true;[\s\S]*if \(state\.onConfirm\)/
 );
 
 assert.match(
