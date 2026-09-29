@@ -64,11 +64,11 @@ assert.deepEqual(
         event => event.tone
     ),
     [
-        "D#8",
-        "B7",
-        "G7",
-        "B7",
-        "D#8"
+        "D#3",
+        "B2",
+        "G2",
+        "B2",
+        "D#3"
     ]
 );
 
