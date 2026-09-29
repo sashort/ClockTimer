@@ -274,9 +274,12 @@ if ($method === 'GET') {
     }
 
     if ($action === 'targets') {
-        if (!has_permission($actor, PERMISSION_VIEW_LIVE_STREAMS)) {
+        if (
+            !has_permission($actor, PERMISSION_VIEW_LIVE_STREAMS) ||
+            !has_permission($actor, PERMISSION_LOOKUP_USERS)
+        ) {
             api_error(
-                'Viewing live streams requires permission.',
+                'User lookup and live stream permissions are required.',
                 403,
                 'permission_required'
             );
