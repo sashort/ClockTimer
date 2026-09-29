@@ -42,15 +42,23 @@ assert.match(
 );
 assert.match(live, /async refreshPublisherMicrophone\(\)/);
 assert.match(live, /async clearPublisherMicrophone\(\)/);
+assert.match(live, /async sendToPublisher\(/);
+assert.match(live, /action:\s*"trainer-message"/);
+assert.match(live, /"publisherMessage"/);
 assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"tts"/);
 assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"speech\.command"/);
+assert.match(app, /detail\.type !==\s*"trainer\.tts"/);
+assert.match(app, /WMOFAudio[\s\S]{0,160}\.speak\?\.\([\s\S]{0,180}broadcast:\s*false/);
+assert.match(app, /canViewLiveStreams\(\)[\s\S]{0,240}Live stream permission is required/);
 
 for (const id of [
     "liveStreamMute",
     "liveStreamMasterVolume",
     "liveStreamMicVolume",
     "liveStreamProgramVolume",
-    "liveStreamTarget"
+    "liveStreamTarget",
+    "liveStreamTrainerMessageText",
+    "liveStreamTrainerMessageSend"
 ]) {
     assert.match(html, new RegExp(`id="${id}"`));
 }
@@ -66,5 +74,8 @@ assert.match(speech, /utteranceStartedAt:/);
 assert.match(endpoint, /PERMISSION_VIEW_LIVE_STREAMS/);
 assert.match(endpoint, /require_positive_int\(\$input, 'targetUserId'\)/);
 assert.match(endpoint, /require_positive_int\(\$_GET, 'targetUserId'\)/);
+assert.match(endpoint, /\$action === 'trainer-message'/);
+assert.match(endpoint, /live_stream_require_viewer\([\s\S]*trainer-message|trainer-message[\s\S]*live_stream_require_viewer/);
+assert.match(endpoint, /Unsupported trainer message type/);
 
-console.log("PASS passive WebRTC live presence, target scoping, audio routing, and viewer volume controls");
+console.log("PASS permissioned trainer live presence, audio routing, and trainer TTS");
