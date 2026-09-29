@@ -1020,7 +1020,7 @@ assert.match(
 );
 assert.match(
     app,
-    /cancelDownTime\(\)[\s\S]*cancelDownConfirmDialog[\s\S]*Press\\/Say OK to Delete your down time[\s\S]*WMOFAudio[\s\S]*\.speak/
+    /cancelDownTime\(\)[\s\S]*cancelDownConfirmDialog[\s\S]*Press\/Say OK to Delete your down time[\s\S]*WMOFAudio[\s\S]*\.speak/
 );
 assert.match(
     app,
