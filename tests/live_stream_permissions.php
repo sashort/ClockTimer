@@ -69,6 +69,8 @@ foreach (
         "require_positive_int(\$_GET, 'targetUserId')",
         'PERMISSION_VIEW_LIVE_STREAMS',
         'live_stream_require_viewer',
+        "if (\$action === 'trainer-message')",
+        "Unsupported trainer message type.",
     ] as $needle
 ) {
     expect(
@@ -77,4 +79,4 @@ foreach (
     );
 }
 
-echo "PASS live stream permission and target scoping" . PHP_EOL;
+echo "PASS live stream permission, target scoping, and trainer message guard" . PHP_EOL;
