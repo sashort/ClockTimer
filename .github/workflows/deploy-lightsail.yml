@@ -170,6 +170,36 @@ jobs:
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              echo "Database connectivity check passed."
 
+             LIVE_STREAM_SERVICE=/etc/systemd/system/clocktimer-live-stream.service
+             LIVE_STREAM_APACHE_CONF=/opt/bitnami/apache2/conf/clocktimer-live-stream.conf
+             HTTPD_CONF=/opt/bitnami/apache2/conf/httpd.conf
+
+             sudo -n install -m 644                deploy/clocktimer-live-stream.service                "$LIVE_STREAM_SERVICE"
+             sudo -n install -m 644                deploy/clocktimer-live-stream-apache.conf                "$LIVE_STREAM_APACHE_CONF"
+
+             if ! sudo -n grep -Fq "Include \"$LIVE_STREAM_APACHE_CONF\"" "$HTTPD_CONF"; then
+               printf '\nInclude "%s"\n' "$LIVE_STREAM_APACHE_CONF"                  | sudo -n tee -a "$HTTPD_CONF" >/dev/null
+             fi
+
+             sudo -n /opt/bitnami/apache2/bin/apachectl -t
+             sudo -n systemctl daemon-reload
+             sudo -n systemctl enable clocktimer-live-stream.service
+             sudo -n systemctl restart clocktimer-live-stream.service
+             sudo -n systemctl --no-pager --full status clocktimer-live-stream.service
+             sudo -n /opt/bitnami/ctlscript.sh restart apache
+
+             LIVE_STREAM_STATUS=$(curl -sS -o /tmp/clocktimer-live-stream-health.txt -w "%{http_code}" https://wmof.sashort-apps.com/live-stream-ws)
+             echo "Live stream WebSocket proxy status: $LIVE_STREAM_STATUS"
+             cat /tmp/clocktimer-live-stream-health.txt
+             echo
+             if [ "$LIVE_STREAM_STATUS" != "400" ]; then
+               echo "Live stream service logs:"
+               sudo -n journalctl -u clocktimer-live-stream.service -n 80 --no-pager || true
+               echo "Recent Apache errors:"
+               sudo -n tail -n 80 /opt/bitnami/apache2/logs/error_log || true
+               exit 1
+             fi
+
              sudo -n chown "$(id -un)":daemon SpeechFunctionRoles.js
              sudo -n chmod 664 SpeechFunctionRoles.js
 
