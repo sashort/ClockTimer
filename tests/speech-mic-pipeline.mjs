@@ -2494,7 +2494,7 @@ assert.match(
 );
 assert.match(
     app,
-    /readRenderedTime\([\s\S]*getRenderedTime\?\.\([\s\S]*dictateSpeechMetric\(/
+    /readRenderedTime\([\s\S]*getEffectiveTimeState\?\.\([\s\S]*state\.mode[\s\S]*state\.available[\s\S]*dictateSpeechMetric\(/
 );
 assert.match(
     html,
@@ -2602,7 +2602,7 @@ assert.match(
 );
 assert.match(
     app,
-    /confirmSettingChange\s*=\s*async[\s\S]*startSong\?\.\([\s\S]*"info-tone"[\s\S]*await cue[\s\S]*\.finished[\s\S]*\.speak\?\.\(/
+    /const confirmSettingChange\s*=[\s\S]*confirmInformationalChange\([\s\S]*"setting-change"/
 );
 assert.match(
     app,
@@ -2610,11 +2610,11 @@ assert.match(
 );
 assert.match(
     app,
-    /"Showing " \+[\s\S]*label \+[\s\S]*" Mode"/
+    /confirmSettingChange\([\s\S]*label \+[\s\S]*" Mode"/
 );
 assert.match(
     app,
-    /"Sync Goals Set to " \+/
+    /toggleSync\([\s\S]*"Sync Unavailable"[\s\S]*"Sync Fail"[\s\S]*enabled[\s\S]*\? "Sync On"[\s\S]*: "Sync Off"/
 );
 assert.match(
     app,
@@ -2622,7 +2622,7 @@ assert.match(
 );
 assert.match(
     app,
-    /"Showing " \+[\s\S]*"Remaining Time"/
+    /toggleRenderedTime\([\s\S]*"Showing End Time"[\s\S]*"Showing Elapsed Time"[\s\S]*"Showing Banked Time"[\s\S]*"Showing Time Over"[\s\S]*"Showing Time Left"/
 );
 assert.match(
     speechMicBarSource,
