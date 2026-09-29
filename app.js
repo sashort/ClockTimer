@@ -1963,7 +1963,10 @@
             !canManageTokens;
 
         $("#liveStreamButton").hidden =
-            !canViewLiveStreams;
+            !(
+                canViewLiveStreams &&
+                canLookupUsers
+            );
 
         $("#liveStreamViewerSection").hidden =
             !canViewLiveStreams;
@@ -2029,8 +2032,7 @@
             !(
                 canCreateUsers ||
                 canManageTokens ||
-                canLookupUsers ||
-                canViewLiveStreams
+                canLookupUsers
             );
 
         syncSpeechTrainingControls();
@@ -7255,8 +7257,7 @@
         const showAdmin =
             canCreateUsers ||
             canManageTokens ||
-            canLookupUsers ||
-            canViewLiveStreams;
+            canLookupUsers;
 
         $("#adminMenuGroup").hidden =
             !showAdmin;
@@ -7268,7 +7269,10 @@
             !canManageTokens;
 
         $("#liveStreamButton").hidden =
-            !canViewLiveStreams;
+            !(
+                canViewLiveStreams &&
+                canLookupUsers
+            );
 
         $("#liveStreamViewerSection").hidden =
             !canViewLiveStreams;
