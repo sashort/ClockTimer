@@ -13733,15 +13733,10 @@
     }
 
     function durationValueToRawDigits(
-        value
+        milliseconds
     ) {
-        const milliseconds =
-            parseTimelineTime(
-                value
-            );
-
         if (
-            !Number.isFinite(
+            !Number.isSafeInteger(
                 milliseconds
             ) ||
             milliseconds < 0
@@ -13792,15 +13787,10 @@
     }
 
     function canonicalClockTimerDuration(
-        value
+        milliseconds
     ) {
-        const milliseconds =
-            parseTimelineTime(
-                value
-            );
-
         if (
-            !Number.isFinite(
+            !Number.isSafeInteger(
                 milliseconds
             ) ||
             milliseconds <= 0
@@ -13814,15 +13804,10 @@
     }
 
     function displayClockTimerDuration(
-        value
+        milliseconds
     ) {
-        const milliseconds =
-            parseTimelineTime(
-                value
-            );
-
         if (
-            !Number.isFinite(
+            !Number.isSafeInteger(
                 milliseconds
             ) ||
             milliseconds <= 0
@@ -13900,6 +13885,29 @@
         const parts = splitTimeDigits(raw);
         if (!parts) return false;
         return Number(parts.minutesText) < 60 && Number(parts.secondsText) < 60;
+    }
+
+    function timeDigitsToMilliseconds(raw) {
+        const parts = splitTimeDigits(raw);
+
+        if (
+            !parts ||
+            Number(parts.minutesText) >= 60 ||
+            Number(parts.secondsText) >= 60
+        ) {
+            return undefined;
+        }
+
+        const milliseconds =
+            (
+                Number(parts.hoursText || 0) * 3600 +
+                Number(parts.minutesText) * 60 +
+                Number(parts.secondsText)
+            ) * 1000;
+
+        return Number.isSafeInteger(milliseconds)
+            ? milliseconds
+            : undefined;
     }
 
     function autocorrectTimeDigits(raw) {
@@ -14406,7 +14414,11 @@
                         initialValue
                     )
                     : durationValueToRawDigits(
-                        initialValue
+                        Number.isSafeInteger(initialValue)
+                            ? initialValue
+                            : parseTimelineTime(
+                                initialValue
+                            )
                     );
         }
 
@@ -15800,9 +15812,7 @@
 
             numberPadState.pending =
                 durationValueToRawDigits(
-                    formatTimelineMilliseconds(
-                        duration
-                    )
+                    duration
                 );
 
             if (
@@ -16564,7 +16574,16 @@
         }
 
         if (state.onConfirm) {
-            const value = !state.pending ? undefined : state.mode === "absolute" ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString() : renderTimeDigits(state.pending);
+            const value =
+                !state.pending
+                    ? undefined
+                    : state.mode === "absolute"
+                        ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString()
+                        : state.mode === "percent"
+                            ? Number(state.pending)
+                            : timeDigitsToMilliseconds(
+                                state.pending
+                            );
             const confirmed =
                 await state.onConfirm(value) !==
                     false;
@@ -16661,7 +16680,19 @@
             return false;
         }
 
-        const formatted = state.pending ? renderTimeDigits(state.pending) : "";
+        const durationMilliseconds =
+            state.pending
+                ? timeDigitsToMilliseconds(
+                    state.pending
+                )
+                : undefined;
+        const formatted =
+            durationMilliseconds ===
+                undefined
+                ? ""
+                : canonicalClockTimerDuration(
+                    durationMilliseconds
+                ) || "";
         if (!formatted && !state.allowEmpty) return false;
         if (tripSettingsSession && state.source === "standard-time") {
             tripSettingsSession.values.standardTime = formatted;
@@ -16690,34 +16721,21 @@
         }
 
         if (clockTimer.standardTime !== undefined) {
-            const canonical =
-                canonicalClockTimerDuration(
-                    formatted
-                );
-
-            if (!canonical) {
+            if (
+                !Number.isSafeInteger(
+                    durationMilliseconds
+                ) ||
+                durationMilliseconds <= 0
+            ) {
                 return false;
             }
 
-            clockTimer.standardTime =
-                canonical;
-
-            const appliedMilliseconds =
-                parseTimelineTime(
-                    clockTimer.standardTime
-                );
-
-            const requestedMilliseconds =
-                parseTimelineTime(
-                    canonical
-                );
+            clockTimer.standardTimeMilliseconds =
+                durationMilliseconds;
 
             if (
-                !Number.isFinite(
-                    appliedMilliseconds
-                ) ||
-                appliedMilliseconds !==
-                    requestedMilliseconds
+                clockTimer.standardTimeMilliseconds !==
+                    durationMilliseconds
             ) {
                 return false;
             }
@@ -16870,7 +16888,11 @@
     function syncDraftStandardTimeReturnFrame(formatted) {
         const state = getTripSettingsReturnNumberPadState();
         if (!state || state.source !== "new-trip") return;
-        const digits = durationValueToRawDigits(formatted);
+        const digits = durationValueToRawDigits(
+            parseTimelineTime(
+                formatted
+            )
+        );
         state.initial = digits;
         state.pending = digits;
         state.replaceOnNextDigit = false;
@@ -17103,8 +17125,10 @@
             );
         scheduledStartStandardValue.textContent =
             displayClockTimerDuration(
-                tripDraft
-                    ?.standardTime
+                parseTimelineTime(
+                    tripDraft
+                        ?.standardTime
+                )
             ) ||
             "---";
         const scheduledTimeReached = remaining <= 0;
@@ -17298,12 +17322,16 @@
             }
         }
 
-        const standardTime =
-            canonicalClockTimerDuration(
+        const standardTimeMilliseconds =
+            parseTimelineTime(
                 String(
                     draft?.standardTime ||
                     ""
                 ).trim()
+            );
+        const standardTime =
+            canonicalClockTimerDuration(
+                standardTimeMilliseconds
             );
 
         if (
@@ -17343,7 +17371,7 @@
         }
 
         await clockTimer.start({
-            standardTime,
+            standardTimeMilliseconds,
             creationDate: draft.creationDate,
             nonProduction: draft.nonProduction === true,
             creationTime: draft.creationTime,
@@ -17617,17 +17645,22 @@
                 clockTimer.standardTime !==
                     values.standardTime
             ) {
-                const canonicalStandardTime =
-                    canonicalClockTimerDuration(
+                const standardTimeMilliseconds =
+                    parseTimelineTime(
                         values.standardTime
                     );
 
-                if (!canonicalStandardTime) {
+                if (
+                    !Number.isSafeInteger(
+                        standardTimeMilliseconds
+                    ) ||
+                    standardTimeMilliseconds <= 0
+                ) {
                     return false;
                 }
 
-                clockTimer.standardTime =
-                    canonicalStandardTime;
+                clockTimer.standardTimeMilliseconds =
+                    standardTimeMilliseconds;
             }
             clockTimer.nonProduction = values.nonProduction === true;
             clockTimer.configure({auto_goal: Boolean(values.syncGoals)});
@@ -17643,7 +17676,11 @@
         const state = getTripSettingsReturnNumberPadState();
         const standardTime = tripSettingsSession?.values?.standardTime;
         if (!state || state.source !== "standard-time" || !standardTime) return;
-        const digits = durationValueToRawDigits(standardTime);
+        const digits = durationValueToRawDigits(
+            parseTimelineTime(
+                standardTime
+            )
+        );
         if (!digits) return;
         const changed = digits !== state.initial;
         state.pending = digits;
@@ -17703,7 +17740,9 @@
             "standard-time": settingsValues?.deferred
                 ? "---"
                 : displayClockTimerDuration(
-                    settingsValues?.standardTime
+                    parseTimelineTime(
+                        settingsValues?.standardTime
+                    )
                 ) || "---"
         };
 
@@ -19315,9 +19354,9 @@
             speechTransactionDate()
     ) {
         const configs = {
-            break: { type: "break", length: "15:00", attributes: { breakType: "break" } },
-            lunch: { type: "lunch", length: "30:00", attributes: { breakType: "lunch" } },
-            "short-break": { type: "break", length: "10:00", attributes: { breakType: "short" } }
+            break: { type: "break", lengthMilliseconds: 15 * 60 * 1000, attributes: { breakType: "break" } },
+            lunch: { type: "lunch", lengthMilliseconds: 30 * 60 * 1000, attributes: { breakType: "lunch" } },
+            "short-break": { type: "break", lengthMilliseconds: 10 * 60 * 1000, attributes: { breakType: "short" } }
         };
         const config = configs[kind];
         if (!config) return false;
@@ -19367,10 +19406,10 @@
             await clockTimer
                 .startInterval(
                     config.type,
-                    config.length,
+                    config.lengthMilliseconds,
                     config.attributes,
-                    "2:30",
-                    "2:30",
+                    2 * 60 * 1000 + 30 * 1000,
+                    2 * 60 * 1000 + 30 * 1000,
                     transactionTime
                 );
 
@@ -26126,9 +26165,25 @@
                     allowEmpty:
                         true,
                     onConfirm:
-                        value => {
+                        durationMilliseconds => {
                             if (
                                 !tripDraft
+                            ) {
+                                return false;
+                            }
+
+                            const value =
+                                durationMilliseconds ===
+                                    undefined
+                                    ? ""
+                                    : canonicalClockTimerDuration(
+                                        durationMilliseconds
+                                    );
+
+                            if (
+                                durationMilliseconds !==
+                                    undefined &&
+                                !value
                             ) {
                                 return false;
                             }

@@ -4858,10 +4858,24 @@
             if (
                 !startedValue ||
                 typeof startedValue !==
-                    "object" ||
-                typeof startedValue.standardTime !==
-                    "string"
+                    "object"
             ) {
+                throw new Error(
+                    "The trip.started event is invalid."
+                );
+            }
+
+            let startedStandardTimeMilliseconds;
+
+            try {
+                startedStandardTimeMilliseconds =
+                    this.#serializedDurationToMilliseconds(
+                        startedValue.standardTimeMilliseconds ??
+                            startedValue.standardTime,
+                        "trip.started standardTime"
+                    );
+            }
+            catch {
                 throw new Error(
                     "The trip.started event is invalid."
                 );
@@ -4905,8 +4919,8 @@
                     this.#startLocal({
                         tripId:
                             numericTripId,
-                        standardTime:
-                            startedValue.standardTime,
+                        standardTimeMilliseconds:
+                            startedStandardTimeMilliseconds,
                         creationTime:
                             startedValue.creationTime,
                         startTime:
@@ -4966,14 +4980,29 @@
                             const inserted =
                                 this.#startIntervalLocal(
                                     value.type,
-                                    value.length ??
-                                        undefined,
+                                    value.length === null ||
+                                        value.length === undefined
+                                        ? undefined
+                                        : this.#serializedDurationToMilliseconds(
+                                            value.length,
+                                            "interval length"
+                                        ),
                                     value.attributes ??
                                         {},
-                                    value.startBuffer ??
-                                        undefined,
-                                    value.endBuffer ??
-                                        undefined,
+                                    value.startBuffer === null ||
+                                        value.startBuffer === undefined
+                                        ? undefined
+                                        : this.#serializedDurationToMilliseconds(
+                                            value.startBuffer,
+                                            "interval start buffer"
+                                        ),
+                                    value.endBuffer === null ||
+                                        value.endBuffer === undefined
+                                        ? undefined
+                                        : this.#serializedDurationToMilliseconds(
+                                            value.endBuffer,
+                                            "interval end buffer"
+                                        ),
                                     eventDate
                                 );
 
@@ -5432,7 +5461,27 @@
             const preparedTripId = Number.isInteger(Number(prepared?.tripId)) && Number(prepared.tripId) > 0
                 ? Number(prepared.tripId)
                 : undefined;
-            const localResult = this.#startLocal({ ...localOptions, tripId: preparedTripId });
+
+            const standardTimeMilliseconds =
+                localOptions.standardTimeMilliseconds !==
+                    undefined
+                    ? this.#validateDurationMilliseconds(
+                        localOptions.standardTimeMilliseconds,
+                        "standardTimeMilliseconds"
+                    )
+                    : this.#validateDurationTime(
+                        localOptions.standardTime,
+                        "standardTime"
+                    ).total;
+
+            delete localOptions.standardTime;
+            delete localOptions.standardTimeMilliseconds;
+
+            const localResult = this.#startLocal({
+                ...localOptions,
+                tripId: preparedTripId,
+                standardTimeMilliseconds
+            });
             if (!localResult) {
                 throw new Error("The trip could not be started.");
             }
@@ -5453,6 +5502,10 @@
                 "trip.started",
                 startEventTime,
                 {
+                    standardTimeMilliseconds:
+                        Math.round(
+                            this.#standardDuration
+                        ),
                     standardTime:
                         this.#formatStandardTime(
                             this.#standardDuration,
@@ -5804,10 +5857,10 @@
 
         async startInterval(
             type,
-            length,
+            lengthMilliseconds,
             attributes,
-            startBuffer,
-            endBuffer,
+            startBufferMilliseconds,
+            endBufferMilliseconds,
             at
         ) {
             const operationTime =
@@ -5838,10 +5891,10 @@
             const localResult =
                 this.#startIntervalLocal(
                     type,
-                    length,
+                    lengthMilliseconds,
                     attributes,
-                    startBuffer,
-                    endBuffer,
+                    startBufferMilliseconds,
+                    endBufferMilliseconds,
                     operationTime
                 );
 
@@ -5895,11 +5948,11 @@
                     type:
                         record.type,
                     length:
-                        length ?? null,
+                        lengthMilliseconds ?? null,
                     startBuffer:
-                        startBuffer ?? null,
+                        startBufferMilliseconds ?? null,
                     endBuffer:
-                        endBuffer ?? null,
+                        endBufferMilliseconds ?? null,
                     attributes:
                         attributes &&
                         typeof attributes === "object" &&
@@ -7446,6 +7499,34 @@
             return this.#standardTime;
         }
 
+        get standardTimeMilliseconds() {
+            return Number.isSafeInteger(
+                this.#standardDuration
+            )
+                ? this.#standardDuration
+                : undefined;
+        }
+
+        set standardTimeMilliseconds(value) {
+            let milliseconds;
+
+            try {
+                milliseconds =
+                    this.#validateDurationMilliseconds(
+                        value,
+                        "standardTimeMilliseconds"
+                    );
+            }
+            catch {
+                return;
+            }
+
+            this.standardTime =
+                this.#formatStandardTime(
+                    milliseconds
+                );
+        }
+
         set standardTime(value) {
             if (!this.#hasStartProperties()) {
                 return;
@@ -8803,7 +8884,7 @@
 
         #startLocal({
             tripId,
-            standardTime,
+            standardTimeMilliseconds,
             creationTime,
             startTime,
             scheduledStart,
@@ -8828,9 +8909,9 @@
                     );
                 }
 
-                this.#validateDurationTime(
-                    standardTime,
-                    "standardTime"
+                this.#validateDurationMilliseconds(
+                    standardTimeMilliseconds,
+                    "standardTimeMilliseconds"
                 );
 
                 if (creationTime !== undefined) {
@@ -8860,7 +8941,10 @@
 
             const suppliedStartArguments = {
                 tripId,
-                standardTime,
+                standardTime:
+                    this.#formatStandardTime(
+                        standardTimeMilliseconds
+                    ),
                 creationTime,
                 startTime,
                 scheduledStart,
@@ -8883,12 +8967,6 @@
 
             this.#nonProduction =
                 nonProduction;
-
-            const standard =
-                this.#validateDurationTime(
-                    standardTime,
-                    "standardTime"
-                );
 
             if (
                 creationTime ===
@@ -8976,11 +9054,11 @@
 
             this.#standardTime =
                 this.#formatStandardTime(
-                    standard.total
+                    standardTimeMilliseconds
                 );
 
             this.#standardDuration =
-                standard.total;
+                standardTimeMilliseconds;
 
             this.#calculatedEndTime =
                 this.#scheduledStartMilliseconds +
@@ -9231,8 +9309,12 @@
             ) {
                 try {
                     duration =
-                        this.#parseInsertRangeLength(
-                            rangeLength
+                        this.#validateDurationMilliseconds(
+                            rangeLength,
+                            "rangeLength",
+                            {
+                                allowZero: true
+                            }
                         );
                 }
                 catch {
@@ -10873,62 +10955,13 @@
         }
 
         #parseIntervalLength(
-            value
+            value,
+            name = "length"
         ) {
-            if (
-                typeof value !==
-                    "string"
-            ) {
-                throw new TypeError(
-                    "length must be a string in m:ss[.ms] format."
-                );
-            }
-
-            const text =
-                value.trim();
-
-            const match =
-                text.match(
-                    /^(\d+):([0-5]\d)(?:\.(\d{1,3}))?$/
-                );
-
-            if (!match) {
-                throw new TypeError(
-                    "length must match m:ss[.ms]."
-                );
-            }
-
-            const minutes =
-                Number(match[1]);
-
-            const seconds =
-                Number(match[2]);
-
-            const milliseconds =
-                match[3] === undefined
-                    ? 0
-                    : Number(
-                        match[3].padEnd(
-                            3,
-                            "0"
-                        )
-                    );
-
-            const total =
-                minutes * 60 * 1000 +
-                seconds * 1000 +
-                milliseconds;
-
-            if (
-                !Number.isFinite(total) ||
-                total <= 0
-            ) {
-                throw new RangeError(
-                    "length must be greater than zero."
-                );
-            }
-
-            return total;
+            return this.#validateDurationMilliseconds(
+                value,
+                name
+            );
         }
 
         #normalizeIntervalAttributes(
@@ -13228,10 +13261,10 @@
 
         #startIntervalLocal(
             type,
-            length,
+            lengthMilliseconds,
             attributes,
-            startBuffer,
-            endBuffer,
+            startBufferMilliseconds,
+            endBufferMilliseconds,
             at = new Date()
         ) {
             let intervalType;
@@ -13261,24 +13294,27 @@
                     return false;
                 }
 
-                if (length !== undefined) {
+                if (lengthMilliseconds !== undefined) {
                     duration =
                         this.#parseIntervalLength(
-                            length
+                            lengthMilliseconds,
+                            "lengthMilliseconds"
                         );
                 }
 
-                if (startBuffer !== undefined) {
+                if (startBufferMilliseconds !== undefined) {
                     startBufferDuration =
                         this.#parseIntervalLength(
-                            startBuffer
+                            startBufferMilliseconds,
+                            "startBufferMilliseconds"
                         );
                 }
 
-                if (endBuffer !== undefined) {
+                if (endBufferMilliseconds !== undefined) {
                     endBufferDuration =
                         this.#parseIntervalLength(
-                            endBuffer
+                            endBufferMilliseconds,
+                            "endBufferMilliseconds"
                         );
                 }
 
@@ -13407,9 +13443,7 @@
                                 cursor
                             ),
                         rangeLength:
-                            this.#formatStandardTime(
-                                startBufferDuration
-                            ),
+                            startBufferDuration,
                         otherAttributes: {}
                     });
 
@@ -13429,11 +13463,7 @@
             }
 
             const rangeLength =
-                duration === undefined
-                    ? undefined
-                    : this.#formatStandardTime(
-                        duration
-                    );
+                duration;
 
             const inserted =
                 this.#insert({
@@ -13478,9 +13508,7 @@
                                 explicitEnd
                             ),
                         rangeLength:
-                            this.#formatStandardTime(
-                                endBufferDuration
-                            ),
+                            endBufferDuration,
                         otherAttributes: {}
                     });
 
@@ -32834,6 +32862,70 @@
                 {
                     duration: false,
                     name
+                }
+            );
+        }
+
+        #validateDurationMilliseconds(
+            value,
+            name = "duration",
+            {
+                allowZero = false
+            } = {}
+        ) {
+            if (!Number.isSafeInteger(value)) {
+                throw new TypeError(
+                    `${name} must be an integer number of milliseconds.`
+                );
+            }
+
+            const minimum =
+                allowZero
+                    ? 0
+                    : 1;
+
+            if (value < minimum) {
+                throw new RangeError(
+                    `${name} must be ${allowZero ? "zero or greater" : "greater than zero"}.`
+                );
+            }
+
+            return value;
+        }
+
+        #serializedDurationToMilliseconds(
+            value,
+            name = "duration",
+            {
+                allowZero = false
+            } = {}
+        ) {
+            if (Number.isSafeInteger(value)) {
+                return this.#validateDurationMilliseconds(
+                    value,
+                    name,
+                    {
+                        allowZero
+                    }
+                );
+            }
+
+            const milliseconds =
+                TemporalFormat.durationToMilliseconds(
+                    value
+                );
+
+            if (milliseconds === undefined) {
+                throw new TypeError(
+                    `${name} must be an integer number of milliseconds or a serialized duration.`
+                );
+            }
+
+            return this.#validateDurationMilliseconds(
+                milliseconds,
+                name,
+                {
+                    allowZero
                 }
             );
         }
