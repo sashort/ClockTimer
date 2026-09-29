@@ -101,6 +101,30 @@ assert.match(
     /beginNewTripWorkflow\(\{[\s\S]*endStartTransition:\s*true/
 );
 
+const endStartTransitionSource =
+    app.slice(
+        app.indexOf(
+            "async function endCurrentIntervalOrTrip("
+        ),
+        app.indexOf(
+            "let speechBreakPromptState"
+        )
+    );
+
+assert.match(
+    endStartTransitionSource,
+    /const transitionTimestamp\s*=\s*effectiveTime\.getTime\(\);[\s\S]*clockTimer\.stop\(\s*new Date\(\s*transitionTimestamp\s*\)\s*\)[\s\S]*beginNewTripWorkflow\(\{[\s\S]*tripMoment:\s*new Date\(\s*transitionTimestamp\s*\)/
+);
+
+assert.doesNotMatch(
+    endStartTransitionSource,
+    /clockTimer\.stop\(\s*transactionTime\s*\)/
+);
+
+console.log(
+    "PASS Ready end/start transitions share one immutable millisecond boundary"
+);
+
 assert.match(
     app,
     /transitionChimePlayed[\s\S]*startChimeEnabled[\s\S]*incrementSemanticDisable\(\s*"chime"\s*\)/
