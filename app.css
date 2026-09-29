@@ -6939,6 +6939,25 @@ speech-command {
     border-radius: 8px;
 }
 
+.live-stream-trainer-message {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.live-stream-trainer-message-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.live-stream-trainer-message-row input {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
 .live-stream-volume-controls > label:not(.live-stream-mute) {
     display: grid;
     grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr);
@@ -6989,6 +7008,11 @@ speech-command {
 @media (max-width: 560px) {
     .live-stream-volume-controls > label:not(.live-stream-mute) {
         grid-template-columns: 1fr;
+    }
+
+    .live-stream-trainer-message-row {
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .live-stream-readout {
