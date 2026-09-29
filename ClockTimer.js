@@ -1569,7 +1569,7 @@
                     ? "End Time"
                     : "Time Remaining";
             const interval = this.getActiveIntervalState?.(now);
-            const standardText = selected?.standardTime;
+            const standardText = summary.trip?.standardTime;
             const effectiveTimeState =
                 this.#getEffectiveTimeState(
                     now,
@@ -1640,10 +1640,10 @@
                 goal_type: this.#percentMode,
                 effective_goal_type: scope,
                 auto_goal_active: this.#percentMode === "auto" && this.#autoSyncTripGoal,
-                standard_time_header_text: `${scopeLabel} Standard Time`,
+                standard_time_header_text: "Trip Standard Time",
                 standard_time_component: this.#component(
                     standardText,
-                    Number(selected?.standardTimeMilliseconds),
+                    Number(summary.trip?.standardTimeMilliseconds),
                     null,
                     typeof standardText === "string" && Boolean(standardText)
                 ),
