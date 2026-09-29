@@ -573,10 +573,23 @@ if ($method === 'POST') {
             ':expires_at' => $now + LIVE_STREAM_TTL_SECONDS,
         ]);
 
+        $peerId = (int) $pdo->lastInsertId();
+
+        $cursorStatement = $pdo->prepare(
+            'SELECT COALESCE(MAX(id), 0) FROM live_stream_messages '
+            . 'WHERE session_id = :session_id'
+        );
+        $cursorStatement->execute([
+            ':session_id' => $session['id'],
+        ]);
+        $messageCursor =
+            (int) ($cursorStatement->fetchColumn() ?: 0);
+
         json_response([
-            'peerId' => (int) $pdo->lastInsertId(),
+            'peerId' => $peerId,
             'targetUserId' => $targetUserId,
             'snapshot' => live_stream_decode($session['snapshot']),
+            'messageCursor' => $messageCursor,
             'iceServers' => live_stream_ice_servers(),
         ], 201);
     }
