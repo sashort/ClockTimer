@@ -22,7 +22,15 @@ try {
         throw new RuntimeException('Unable to prepare writable migration ledger.');
     }
     $pdo = db();
-    foreach (['001_admin_permissions', '002_bootstrap_superuser', '003_calendar_rules'] as $id) {
+    foreach ([
+        '001_admin_permissions',
+        '002_bootstrap_superuser',
+        '003_calendar_rules',
+        '004_new_user_tokens',
+        '005_developer_permissions',
+        '006_speech_model_training',
+        '007_live_streams',
+    ] as $id) {
         $result = apply_migration($pdo, $id, 0);
         echo $id . ($result['alreadyApplied'] ? " already recorded.\n" : " applied and recorded.\n");
     }
