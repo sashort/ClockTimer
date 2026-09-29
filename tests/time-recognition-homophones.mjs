@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 
 const source=fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8');
 const durationSource=fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8');
+const clockSource=fs.readFileSync(new URL('../lang/en-US/SpokenTimeParser.js',import.meta.url),'utf8');
 const preprocessorSource=fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',import.meta.url),'utf8');
 
 globalThis.WMOFLanguages=Object.create(null);
 eval(source);
 eval(durationSource);
+eval(clockSource);
 eval(preprocessorSource);
 
 const language=globalThis.WMOFLanguages['en-US'];
