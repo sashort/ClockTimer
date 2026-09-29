@@ -198,7 +198,7 @@ assert.match(
 
 assert.match(
     app,
-    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-transition"[\s\S]*transitionChimePlayed\s*=\s*Boolean\(song\)/
+    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-transition"[\s\S]*transitionChimePlayed\s*=\s*Boolean\([\s\S]*song\?\.hasChime[\s\S]*\)/
 );
 
 assert.equal(
