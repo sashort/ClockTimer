@@ -634,6 +634,9 @@
     const PERMISSION_VIEW_LIVE_STREAMS =
         64;
 
+    const PERMISSION_LOOKUP_USERS =
+        128;
+
     const ACCESS_TOKEN_PERMISSION_MASK =
         PERMISSION_SUPERUSER |
         PERMISSION_GRANT_TOKEN_ACCESS;
@@ -652,14 +655,20 @@
     const profileDialog = $("#profileDialog");
     let signedInProfile;
 
+    const identityContext =
+        globalThis
+            .WMOFIdentityContext;
+
     const liveStreamDialog =
         $("#liveStreamDialog");
     const liveStreamViewerSection =
         $("#liveStreamViewerSection");
-    const liveStreamTarget =
-        $("#liveStreamTarget");
-    const liveStreamRefreshTargets =
-        $("#liveStreamRefreshTargets");
+    const liveStreamIdentityName =
+        $("#liveStreamIdentityName");
+    const liveStreamIdentityMeta =
+        $("#liveStreamIdentityMeta");
+    const liveStreamLookupButton =
+        $("#liveStreamLookupButton");
     const liveStreamWatchButton =
         $("#liveStreamWatchButton");
     const liveStreamViewerStatus =
@@ -826,6 +835,200 @@
             );
         };
 
+    const canLookupUsers =
+        () => {
+            const permissions =
+                Number(
+                    signedInProfile
+                        ?.permissions
+                ) || 0;
+
+            return Boolean(
+                permissions &
+                (
+                    PERMISSION_LOOKUP_USERS |
+                    PERMISSION_SUPERUSER
+                )
+            );
+        };
+
+    const identityDisplayName =
+        identity => {
+            if (!identity) {
+                return "No user selected";
+            }
+
+            const formal =
+                [
+                    identity.firstName,
+                    identity.lastName
+                ]
+                    .filter(
+                        Boolean
+                    )
+                    .join(
+                        " "
+                    )
+                    .trim();
+
+            return (
+                identity.preferredName ||
+                formal ||
+                identity.username ||
+                "User"
+            );
+        };
+
+    const identityMeta =
+        identity => {
+            if (!identity) {
+                return "Use User Lookup to select an identity.";
+            }
+
+            const formal =
+                [
+                    identity.firstName,
+                    identity.lastName
+                ]
+                    .filter(
+                        Boolean
+                    )
+                    .join(
+                        " "
+                    )
+                    .trim();
+            const parts = [];
+
+            if (
+                identity.preferredName &&
+                formal &&
+                identity.preferredName !==
+                    formal
+            ) {
+                parts.push(
+                    formal
+                );
+            }
+
+            parts.push(
+                "@" +
+                    identity.username
+            );
+            parts.push(
+                "ID " +
+                    identity.userId
+            );
+
+            return parts.join(
+                " · "
+            );
+        };
+
+    function syncLiveStreamIdentityUI() {
+        const identity =
+            identityContext
+                ?.current;
+        const self =
+            Boolean(
+                identity &&
+                Number(
+                    identity.userId
+                ) ===
+                    Number(
+                        signedInProfile
+                            ?.id
+                    )
+            );
+
+        liveStreamIdentityName.textContent =
+            identityDisplayName(
+                identity
+            );
+        liveStreamIdentityMeta.textContent =
+            identityMeta(
+                identity
+            );
+        liveStreamLookupButton.hidden =
+            !canLookupUsers();
+
+        if (
+            !liveTripStream
+                ?.viewing
+        ) {
+            liveStreamWatchButton.disabled =
+                !canViewLiveStreams() ||
+                !identity ||
+                self;
+        }
+
+        if (
+            !identity &&
+            !liveTripStream
+                ?.viewing
+        ) {
+            liveStreamViewerStatus.textContent =
+                "Select a user with User Lookup.";
+        }
+        else if (
+            self &&
+            !liveTripStream
+                ?.viewing
+        ) {
+            liveStreamViewerStatus.textContent =
+                "Select another user.";
+        }
+
+        return identity;
+    }
+
+    const userLookup =
+        typeof globalThis
+            .WMOFUserLookup ===
+            "function"
+            ? new globalThis
+                .WMOFUserLookup({
+                    baseUrl:
+                        API_BASE,
+                    identityContext,
+                    canLookup:
+                        canLookupUsers,
+                    canViewLive:
+                        canViewLiveStreams,
+                    currentUserId:
+                        () =>
+                            signedInProfile
+                                ?.id,
+                    onLiveStream:
+                        () => {
+                            const dialog =
+                                $("#userLookupDialog");
+
+                            if (
+                                dialog
+                                    ?.open
+                            ) {
+                                closeDialog(
+                                    dialog,
+                                    {
+                                        reason:
+                                            "identity-live-stream",
+                                        immediate:
+                                            true
+                                    }
+                                );
+                            }
+
+                            openDialog(
+                                "liveStreamDialog",
+                                {
+                                    reason:
+                                        "identity-live-stream"
+                                }
+                            );
+                        }
+                })
+            : undefined;
+
     const liveStreamPercent =
         value =>
             Math.round(
@@ -886,153 +1089,6 @@
         liveStreamProgramVolumeValue.value =
             liveStreamProgramVolume.value +
             "%";
-    }
-
-    function liveStreamTargetLabel(
-        target
-    ) {
-        const name =
-            String(
-                target?.preferredName ||
-                target?.firstName ||
-                target?.username ||
-                "User"
-            ).trim();
-
-        const username =
-            String(
-                target?.username ||
-                ""
-            ).trim();
-
-        return (
-            username &&
-            username !== name
-        )
-            ? name +
-                " (" +
-                username +
-                ")"
-            : name;
-    }
-
-    async function refreshLiveStreamTargets() {
-        if (
-            !liveTripStream ||
-            !canViewLiveStreams()
-        ) {
-            return [];
-        }
-
-        liveStreamRefreshTargets.disabled =
-            true;
-
-        try {
-            const previous =
-                liveStreamTarget.value;
-
-            const targets =
-                (
-                    await liveTripStream
-                        .listTargets()
-                )
-                    .filter(
-                        target =>
-                            Number(
-                                target
-                                    .userId
-                            ) !==
-                            Number(
-                                signedInProfile
-                                    ?.id
-                            )
-                    );
-
-            liveStreamTarget
-                .replaceChildren();
-
-            if (
-                targets.length ===
-                    0
-            ) {
-                const option =
-                    document
-                        .createElement(
-                            "option"
-                        );
-
-                option.value =
-                    "";
-                option.textContent =
-                    "No other connected users";
-
-                liveStreamTarget.append(
-                    option
-                );
-                liveStreamTarget.disabled =
-                    true;
-                liveStreamWatchButton.disabled =
-                    true;
-            }
-            else {
-                for (
-                    const target of
-                    targets
-                ) {
-                    const option =
-                        document
-                            .createElement(
-                                "option"
-                            );
-
-                    option.value =
-                        String(
-                            target.userId
-                        );
-                    option.textContent =
-                        liveStreamTargetLabel(
-                            target
-                        );
-
-                    liveStreamTarget.append(
-                        option
-                    );
-                }
-
-                liveStreamTarget.disabled =
-                    false;
-                liveStreamWatchButton.disabled =
-                    false;
-
-                if (
-                    previous &&
-                    [
-                        ...liveStreamTarget
-                            .options
-                    ].some(
-                        option =>
-                            option.value ===
-                                previous
-                    )
-                ) {
-                    liveStreamTarget.value =
-                        previous;
-                }
-            }
-
-            return targets;
-        }
-        catch (error) {
-            liveStreamViewerStatus.textContent =
-                error.message ||
-                "Unable to list live streams.";
-
-            throw error;
-        }
-        finally {
-            liveStreamRefreshTargets.disabled =
-                false;
-        }
     }
 
     function renderLiveStreamSnapshot(
@@ -1097,6 +1153,11 @@
             viewing
                 ? "Stop Watching"
                 : "Watch";
+
+        liveStreamWatchButton.disabled =
+            viewing
+                ? false
+                : !syncLiveStreamIdentityUI();
 
         liveStreamVolumeControls.disabled =
             !viewing;
@@ -1261,16 +1322,6 @@
                 }
             );
 
-        liveStreamRefreshTargets
-            ?.addEventListener(
-                "click",
-                () =>
-                    void refreshLiveStreamTargets()
-                        .catch(
-                            () => {}
-                        )
-            );
-
         liveStreamWatchButton
             ?.addEventListener(
                 "click",
@@ -1285,14 +1336,23 @@
                         ) {
                             await liveTripStream
                                 .stopViewing();
-
-                            await refreshLiveStreamTargets();
                         }
                         else {
+                            if (
+                                !canViewLiveStreams()
+                            ) {
+                                throw new Error(
+                                    "Live stream permission is required."
+                                );
+                            }
+
+                            const identity =
+                                identityContext
+                                    ?.current;
                             const targetUserId =
                                 Number(
-                                    liveStreamTarget
-                                        .value
+                                    identity
+                                        ?.userId
                                 );
 
                             if (
@@ -1304,7 +1364,19 @@
                                     1
                             ) {
                                 throw new Error(
-                                    "Select a live stream target."
+                                    "Select a user with User Lookup."
+                                );
+                            }
+
+                            if (
+                                targetUserId ===
+                                    Number(
+                                        signedInProfile
+                                            ?.id
+                                    )
+                            ) {
+                                throw new Error(
+                                    "Select another user."
                                 );
                             }
 
@@ -1483,19 +1555,99 @@
         liveStreamDialog
             ?.addEventListener(
                 "opening",
-                () => {
-                    syncLiveStreamViewerUI();
-
+                event => {
                     if (
-                        canViewLiveStreams()
+                        !canViewLiveStreams()
                     ) {
-                        void refreshLiveStreamTargets()
-                            .catch(
-                                () => {}
-                            );
+                        event
+                            .preventDefault();
+
+                        return;
                     }
+
+                    syncLiveStreamIdentityUI();
+                    syncLiveStreamViewerUI();
                 }
             );
+
+        liveStreamLookupButton
+            ?.addEventListener(
+                "click",
+                async () => {
+                    if (
+                        !canLookupUsers()
+                    ) {
+                        return;
+                    }
+
+                    if (
+                        liveTripStream
+                            .viewing
+                    ) {
+                        await liveTripStream
+                            .stopViewing();
+                    }
+
+                    if (
+                        liveStreamDialog
+                            ?.open
+                    ) {
+                        closeDialog(
+                            liveStreamDialog,
+                            {
+                                reason:
+                                    "live-stream-user-lookup",
+                                immediate:
+                                    true
+                            }
+                        );
+                    }
+
+                    openDialog(
+                        "userLookupDialog",
+                        {
+                            reason:
+                                "live-stream-user-lookup"
+                        }
+                    );
+                }
+            );
+
+        for (
+            const eventName of [
+                "identity-selected",
+                "identity-cleared"
+            ]
+        ) {
+            identityContext
+                ?.addEventListener?.(
+                    eventName,
+                    () => {
+                        const identity =
+                            identityContext
+                                ?.current;
+
+                        if (
+                            liveTripStream
+                                .viewing &&
+                            Number(
+                                liveTripStream
+                                    .targetUserId
+                            ) !==
+                                Number(
+                                    identity
+                                        ?.userId
+                                )
+                        ) {
+                            void liveTripStream
+                                .stopViewing();
+                        }
+
+                        syncLiveStreamIdentityUI();
+                        syncLiveStreamViewerUI();
+                    }
+                );
+        }
 
         let liveSnapshotTimer;
 
