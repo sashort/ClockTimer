@@ -1,9 +1,9 @@
 # Administrative permissions
 
-The users.permissions column stores seven flags: create_users = 1,
+The users.permissions column stores eight flags: create_users = 1,
 modify_users = 2, superuser = 4, developer_preview = 8, developer = 16,
-grant_token_access = 32, and view_live_streams = 64. Combine them with bitwise
-OR. Superuser implies all permissions. The explicitly authorized initial account
+grant_token_access = 32, view_live_streams = 64, and lookup_users = 128.
+Combine them with bitwise OR. Superuser implies all permissions. The explicitly authorized initial account
 bobthebuilder (ID 2) receives a one-time superuser grant in migration 002.
 
 The Lightsail deployment runs the idempotent database/apply_admin_permissions.php
@@ -104,13 +104,48 @@ Editor surfaces. Browser form redemption establishes a scoped temporary session 
 while Bearer-token API calls consume one use per authenticated request.
 
 
+## User lookup and identity objects
+
+`lookup_users` (128) permits an administrator to search user identities by
+user ID, username prefix, first name, last name, or preferred name. Search
+criteria are combined with AND. User ID is exact, username is a
+case-insensitive prefix match, and name fields are case-insensitive substring
+matches. The endpoint is `GET /api/admin/user-lookup/`; at least one criterion
+is required and results are paged.
+
+User Lookup returns a deliberately small, versioned identity object:
+
+```json
+{
+  "type": "user",
+  "version": 1,
+  "userId": 42,
+  "firstName": "John",
+  "lastName": "Smith",
+  "preferredName": "Johnny",
+  "username": "jsmith"
+}
+```
+
+The identity object identifies a user but does not authorize an operation and is
+not authoritative profile state. It intentionally excludes permissions, live
+presence and editable account data. Admin tools consume `userId` from the
+identity and independently enforce their own permissions. Live Stream still
+requires `view_live_streams`; future editing of another user's profile will
+still require `modify_users`.
+
+The browser keeps the selected identity in the shared
+`WMOFIdentityContext`, can copy its canonical JSON representation to the
+clipboard, and uses the selection as the target for Live Stream.
+
 ## Live stream permission
 
 `view_live_streams` (64) permits a signed-in trainer or supervisor to connect
 to another connected ClockTimer client for live coaching. Normal workflow
 clients automatically maintain live presence while online; there is no
 broadcast control on the workflow client. Only accounts with
-`view_live_streams` (or superuser) can discover or join another client.
+`view_live_streams` (or superuser) can join another client. User discovery in
+the admin UI is separately guarded by `lookup_users`.
 
 Signaling and control use the authenticated `/live-stream-ws` WebSocket.
 The browser first obtains a one-use, 60-second socket token from
