@@ -19137,8 +19137,12 @@
             return;
         }
 
-        const tripMoment =
-            effectiveTime;
+        // A Ready transition is one atomic wall-clock boundary: the
+        // completed trip stops at the exact millisecond the next trip starts.
+        // Store the boundary as an immutable number so neither async work nor a
+        // Date object mutation can make the two sides drift apart.
+        const transitionTimestamp =
+            effectiveTime.getTime();
 
         endingIntoNewTrip =
             true;
@@ -19151,7 +19155,9 @@
 
         const stopPromise =
             clockTimer.stop(
-                transactionTime
+                new Date(
+                    transitionTimestamp
+                )
             );
 
         if (
@@ -19204,7 +19210,10 @@
         const opened =
             await beginNewTripWorkflow({
                 initialValue: "",
-                tripMoment,
+                tripMoment:
+                    new Date(
+                        transitionTimestamp
+                    ),
                 inputMode:
                     speechRecognitionEnabled()
                         ? "voice"
