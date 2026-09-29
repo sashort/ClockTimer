@@ -30234,14 +30234,6 @@
 
             this.#removeEmptyRings();
 
-            if (this.#started) {
-                this.#pruneShortTripRings(
-                    Number.isFinite(now)
-                        ? now
-                        : this.#getCurrentTimelineTime()
-                );
-            }
-
             if (
                 this.#started
             ) {
@@ -32029,76 +32021,6 @@
                 this.#rings.delete(
                     ringIndex
                 );
-            }
-        }
-
-        #pruneShortTripRings(now) {
-            const scheduled =
-                this.#scheduledStartMilliseconds;
-            const standardEnd =
-                this.#standardEnd;
-            const actualStart =
-                this.#getStartTimeMilliseconds();
-
-            if (
-                !Number.isFinite(now) ||
-                !Number.isFinite(scheduled) ||
-                !Number.isFinite(standardEnd) ||
-                !Number.isFinite(actualStart) ||
-                standardEnd <= scheduled ||
-                standardEnd - scheduled >= ClockTimer.#HOUR ||
-                this.#renderedPercentGoal < 1 ||
-                now < scheduled ||
-                now >= standardEnd ||
-                this.#insertedRanges.length > 0 ||
-                this.#overwriteRanges.length > 0 ||
-                this.#openEndedRange ||
-                this.#openOverwriteRange ||
-                this.#starting ||
-                this.#timerTypeTransitioning ||
-                this.#toleranceTransitionState
-            ) {
-                return;
-            }
-
-            const expectedIndex =
-                this.#getTimerRingIndex(scheduled);
-
-            if (
-                this.#getTimerRingIndex(standardEnd - 1) !== expectedIndex ||
-                this.#getTimerRingIndex(actualStart) !== expectedIndex ||
-                this.#getTimerRingIndex(now) !== expectedIndex ||
-                (
-                    Number.isFinite(this.#calculatedEndTime) &&
-                    this.#calculatedEndTime >
-                        this.#getTimerRingEnd(expectedIndex)
-                )
-            ) {
-                return;
-            }
-
-            // A short, uninterrupted trip cannot have another hour ring.
-            // Clear containers left by a prior trip or a completed transition.
-            for (const [index, ring] of this.#rings) {
-                if (index === expectedIndex) continue;
-                ring.remove();
-                this.#rings.delete(index);
-                this.#remainingRanges.delete(index);
-                this.#overtimeRanges.delete(index);
-                if (this.#elapsedRange?.parentElement === ring) {
-                    this.#elapsedRange = undefined;
-                }
-            }
-
-            for (const ring of this.querySelectorAll(
-                ':scope > ring-container'
-            )) {
-                if (
-                    ring.clockTimerRing !== undefined &&
-                    ring !== this.#rings.get(expectedIndex)
-                ) {
-                    ring.remove();
-                }
             }
         }
 
