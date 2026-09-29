@@ -5,6 +5,8 @@
         #catalogPromise;
         #preparePromise;
         #context;
+        #programOutput;
+        #programStreamDestination;
         #catalogReady = false;
         #audioResourcesReady = false;
         #prepareError;
@@ -389,6 +391,76 @@
             }
 
             return this.#context;
+        }
+
+        #programOutputNode(
+            context
+        ) {
+            if (!this.#programOutput) {
+                this.#programOutput =
+                    context.createGain();
+
+                this.#programOutput.connect(
+                    this.#programOutputNode(
+                    context
+                )
+                );
+
+                if (
+                    typeof context
+                        .createMediaStreamDestination ===
+                        "function"
+                ) {
+                    this.#programStreamDestination =
+                        context
+                            .createMediaStreamDestination();
+
+                    this.#programOutput.connect(
+                        this.#programStreamDestination
+                    );
+                }
+            }
+
+            return this.#programOutput;
+        }
+
+        async createProgramStream() {
+            const context =
+                await this.#audioContext();
+
+            this.#programOutputNode(
+                context
+            );
+
+            const source =
+                this.#programStreamDestination
+                    ?.stream;
+
+            if (
+                !source ||
+                typeof globalThis.MediaStream !==
+                    "function"
+            ) {
+                return undefined;
+            }
+
+            const tracks =
+                source
+                    .getAudioTracks()
+                    .map(
+                        track =>
+                            typeof track.clone ===
+                                "function"
+                                ? track.clone()
+                                : undefined
+                    )
+                    .filter(Boolean);
+
+            return tracks.length
+                ? new globalThis.MediaStream(
+                    tracks
+                )
+                : undefined;
         }
 
         #isPhone() {
@@ -1279,7 +1351,9 @@
                         resource.outputs
                     ) {
                         output.connect(
-                            context.destination
+                            this.#programOutputNode(
+                                context
+                            )
                         );
                     }
 
@@ -1320,7 +1394,9 @@
             ) {
                 try {
                     output.disconnect(
-                        context.destination
+                        this.#programOutputNode(
+                    context
+                )
                     );
                 }
                 catch {
@@ -2155,7 +2231,9 @@
             outputNode.connect(
                 instrumentResource
                     ?.input ||
-                context.destination
+                this.#programOutputNode(
+                    context
+                )
             );
 
             const effectTail =
@@ -3425,6 +3503,7 @@
                 speechVelocity,
                 voiceProvider,
                 voice,
+                broadcast = true,
                 onEnd,
                 onError
             } = {}
@@ -3640,6 +3719,35 @@
             utterance.addEventListener(
                 "start",
                 () => {
+                    if (
+                        broadcast !==
+                            false
+                    ) {
+                        globalThis
+                            .dispatchEvent?.(
+                                new CustomEvent(
+                                    "wmof-audio-speak",
+                                    {
+                                        detail: {
+                                            text,
+                                            lang:
+                                                utterance.lang,
+                                            rate:
+                                                utterance.rate,
+                                            pitch:
+                                                utterance.pitch,
+                                            volume:
+                                                utterance.volume,
+                                            voiceProvider:
+                                                effectiveVoiceProvider,
+                                            voice:
+                                                effectiveVoice
+                                        }
+                                    }
+                                )
+                            );
+                    }
+
                     synthesizedSpeechToken =
                         globalThis
                             .SpeechMenu
@@ -3781,7 +3889,9 @@
                         gain
                     );
                     gain.connect(
-                        context.destination
+                        this.#programOutputNode(
+                    context
+                )
                     );
 
                     oscillator.start();
