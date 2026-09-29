@@ -1074,15 +1074,8 @@
                 <button class="dialog-close" type="button" data-close-dialog aria-label="Close">×</button>
             </header>
             <div class="live-stream-layout">
-                <section class="live-stream-section" aria-labelledby="liveStreamPublishTitle">
-                    <h3 id="liveStreamPublishTitle">Broadcast this client</h3>
-                    <p id="liveStreamPublishStatus" class="live-stream-status">Not broadcasting.</p>
-                    <button id="liveStreamPublishButton" class="primary-action" type="button">Start Broadcast</button>
-                    <p class="dialog-helper">Microphone speech and ClockTimer program audio are sent with WebRTC. TTS metadata is mirrored so viewers hear the same announcement.</p>
-                </section>
-
                 <section id="liveStreamViewerSection" class="live-stream-section" aria-labelledby="liveStreamViewerTitle" hidden>
-                    <h3 id="liveStreamViewerTitle">View another user</h3>
+                    <h3 id="liveStreamViewerTitle">View user</h3>
                     <div class="live-stream-target-row">
                         <label for="liveStreamTarget">Target</label>
                         <select id="liveStreamTarget" aria-label="Live stream target"></select>
@@ -1092,6 +1085,7 @@
                         <button id="liveStreamWatchButton" class="primary-action" type="button">Watch</button>
                         <span id="liveStreamViewerStatus" class="live-stream-status">Not viewing.</span>
                     </div>
+                    <p class="dialog-helper">Authorized viewers can join any connected ClockTimer client. No action is required on the remote client.</p>
 
                     <fieldset id="liveStreamVolumeControls" class="live-stream-volume-controls" disabled>
                         <legend>Viewer audio</legend>
