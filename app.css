@@ -4154,14 +4154,16 @@ clock-timer[hide-latency] time-range[type="latency"] {
     white-space: nowrap;
 }
 
-/* The offline overlay has independent arrow/X layers. The arrow can rotate
-   while the X stays fixed in the lower-left. */
+/* The Sync status overlay keeps the circular arrows as the primary symbol.
+   Small status badges share the lower-right corner: cloud for offline, red X
+   for an online active trip that cannot currently Sync. */
 .sync-offline-overlay::before,
 .sync-offline-overlay::after {
     content: none;
 }
 
 .sync-offline-arrow,
+.sync-offline-cloud,
 .sync-offline-x {
     position: absolute;
     display: block;
@@ -4175,8 +4177,21 @@ clock-timer[hide-latency] time-range[type="latency"] {
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.2 8.8A7.5 7.5 0 0 1 18 6.7L20.5 9M20.5 9V4.8M18.8 15.2A7.5 7.5 0 0 1 6 17.3L3.5 15M3.5 15v4.2' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
+.sync-offline-cloud {
+    right: -2px;
+    bottom: -2px;
+    width: 13px;
+    height: 13px;
+    background: currentColor;
+    opacity: 0;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.1 12.5h7.4a2.7 2.7 0 0 0 .5-5.35A4.25 4.25 0 0 0 3.9 6a3.25 3.25 0 0 0 .2 6.5Z' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.1 12.5h7.4a2.7 2.7 0 0 0 .5-5.35A4.25 4.25 0 0 0 3.9 6a3.25 3.25 0 0 0 .2 6.5Z' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
+    filter: drop-shadow(0 0 1px rgb(0 0 0 / 55%));
+    transition: opacity 250ms linear;
+}
+
 .sync-offline-x {
-    left: -2px;
+    right: -2px;
     bottom: -2px;
     width: 13px;
     height: 13px;
@@ -4235,16 +4250,18 @@ clock-timer[hide-latency] time-range[type="latency"] {
     transition: none;
 }
 
-/* X is only the offline red overlay. */
+/* The red X is not a network-offline badge. Runtime eligibility controls it. */
 .sync-offline-x {
     opacity: 0;
     transition: opacity 750ms linear;
 }
 
-.sync-goals-menu-icon[data-sync-network-state="offline-fading"] .sync-offline-x,
-.sync-goals-menu-icon[data-sync-network-state="offline"] .sync-offline-x,
-.goal-sync-button[data-sync-network-state="offline-fading"] .sync-offline-x,
-.goal-sync-button[data-sync-network-state="offline"] .sync-offline-x {
+/* The offline badge is the tiny cloud, while the circular Sync arrows remain
+   visible as the primary glyph. */
+.sync-goals-menu-icon[data-sync-network-state="offline-fading"] .sync-offline-cloud,
+.sync-goals-menu-icon[data-sync-network-state="offline"] .sync-offline-cloud,
+.goal-sync-button[data-sync-network-state="offline-fading"] .sync-offline-cloud,
+.goal-sync-button[data-sync-network-state="offline"] .sync-offline-cloud {
     opacity: 1;
 }
 
@@ -4267,7 +4284,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
     transition: none;
 }
 
-/* Do not crossfade red overlays while arrows are actively spinning. */
+/* Do not crossfade status overlays while arrows are actively spinning. */
 .sync-icon-spinning .sync-offline-x,
 .sync-icon-spinning::after {
     transition: none !important;
@@ -4295,8 +4312,8 @@ clock-timer[hide-latency] time-range[type="latency"] {
     opacity: 0;
 }
 
-/* Offline is a connection state, not the red-X "not enough time" state.
-   Reuse the same cloud-offline glyph as Trip Settings so both surfaces match. */
+/* Offline keeps the circular Sync arrows and adds a small cloud badge in the
+   lower-right. The red X uses that same corner only for TIME_BLOCKED. */
 .sync-goals-menu-icon[data-sync-runtime-state="offline"],
 .goal-sync-button[data-sync-runtime-state="offline"] {
     color: rgb(255 255 255 / 78%);
@@ -4312,10 +4329,9 @@ clock-timer[hide-latency] time-range[type="latency"] {
     opacity: 0 !important;
 }
 
-.sync-goals-menu-icon[data-sync-runtime-state="offline"][data-sync-network-state="offline"] .sync-offline-arrow,
-.goal-sync-button[data-sync-runtime-state="offline"][data-sync-network-state="offline"] .sync-offline-arrow {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 5l14 14' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .8-7.9A6 6 0 0 0 6.4 8.4 4.8 4.8 0 0 0 7 18Z' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M5 5l14 14' stroke='black' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+.sync-goals-menu-icon[data-sync-runtime-state="offline"] .sync-offline-cloud,
+.goal-sync-button[data-sync-runtime-state="offline"] .sync-offline-cloud {
+    opacity: 1;
 }
 
 /* Trip Settings footer controls should size like the pencil controls rather

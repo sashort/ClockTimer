@@ -7161,6 +7161,19 @@
             overlay.append(arrow);
         }
 
+        let offlineCloud =
+            overlay.querySelector(
+                ":scope > .sync-offline-cloud"
+            );
+
+        if (!offlineCloud) {
+            offlineCloud =
+                document.createElement("span");
+            offlineCloud.className =
+                "sync-offline-cloud";
+            overlay.append(offlineCloud);
+        }
+
         let offlineX =
             overlay.querySelector(
                 ":scope > .sync-offline-x"
