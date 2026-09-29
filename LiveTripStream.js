@@ -1876,6 +1876,10 @@
                         pitch:
                             payload.pitch,
                         volume,
+                        speechVolume:
+                            1,
+                        speechVelocity:
+                            1,
                         voiceProvider:
                             payload
                                 .voiceProvider,
