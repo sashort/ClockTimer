@@ -1340,7 +1340,7 @@ assert.match(css, /speech-mic-bar\s*\{[^}]*grid-row:\s*7;[^}]*display:\s*block;/
 assert.match(css, /\.trip-log-button\s*\{[^}]*grid-row:\s*6;/s);
 assert.match(
     css,
-    /grid-template-rows:\s*52px 142px 62px 29px 1fr var\(--trip-log-row-height\) var\(--speech-mic-row-height\)/
+    /grid-template-rows:\s*52px\s*142px\s*62px\s*29px\s*1fr\s*calc\(\s*var\(--trip-log-row-height\)\s*\+\s*var\(--speech-command-row-height\)\s*\)\s*var\(--speech-mic-row-height\)/s
 );
 assert.match(
     css,
