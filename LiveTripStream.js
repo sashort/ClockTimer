@@ -351,11 +351,6 @@
                     ? "wss:"
                     : "ws:";
 
-            url.searchParams.set(
-                "token",
-                data.token
-            );
-
             return url;
         }
 
@@ -401,7 +396,12 @@
                             this
                                 .#webSocketUrl(
                                     data
-                                )
+                                ),
+                            [
+                                "clocktimer-live",
+                                "clocktimer-auth." +
+                                    data.token
+                            ]
                         );
 
                     this.#socket =
