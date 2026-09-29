@@ -313,6 +313,7 @@ if ($method === 'GET') {
         json_response([
             'targets' => $targets,
             'permission' => PERMISSION_VIEW_LIVE_STREAMS,
+            'iceServers' => live_stream_ice_servers(),
         ]);
     }
 
