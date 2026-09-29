@@ -130,8 +130,9 @@ if ($id !== null) {
 }
 
 if ($username !== null) {
-    $where[] = 'LEFT(username, CHAR_LENGTH(:username)) = :username';
-    $params[':username'] = $username;
+    $where[] = 'LEFT(username, CHAR_LENGTH(:username_length)) = :username_value';
+    $params[':username_length'] = $username;
+    $params[':username_value'] = $username;
 }
 
 if ($firstName !== null) {
