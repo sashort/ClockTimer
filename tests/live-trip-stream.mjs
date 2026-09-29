@@ -54,13 +54,17 @@ assert.match(app, /liveTripStream[\s\S]{0,200}\.broadcast\(\s*"speech\.command"/
 assert.match(app, /detail\.type !==\s*"trainer\.tts"/);
 assert.match(app, /WMOFAudio[\s\S]{0,160}\.speak\?\.\([\s\S]{0,180}broadcast:\s*false/);
 assert.match(app, /canViewLiveStreams\(\)[\s\S]{0,240}Live stream permission is required/);
+assert.match(app, /identityContext[\s\S]{0,220}\.current/);
+assert.match(app, /startViewing\(\s*targetUserId/);
 
 for (const id of [
     "liveStreamMute",
     "liveStreamMasterVolume",
     "liveStreamMicVolume",
     "liveStreamProgramVolume",
-    "liveStreamTarget",
+    "liveStreamIdentityName",
+    "liveStreamIdentityMeta",
+    "liveStreamLookupButton",
     "liveStreamTrainerMessageText",
     "liveStreamTrainerMessageSend"
 ]) {
@@ -91,6 +95,7 @@ assert.match(websocketService, /peer\.join/);
 assert.match(websocketService, /trainer\.tts/);
 assert.match(websocketService, /LIVE_WS_PERMISSION_SWEEP_SECONDS\s*=\s*2/);
 assert.match(websocketService, /live_ws_can_view/);
+assert.match(websocketService, /live_ws_can_lookup/);
 assert.doesNotMatch(websocketService, /viewerName|viewerUsername/);
 
 console.log("PASS WebSocket signaling, permissioned trainer presence, Opus audio, and trainer TTS");
