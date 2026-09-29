@@ -81,11 +81,13 @@ jobs:
           php -l api/docs/index.php
           php -l api/admin/speech-editor/agent/index.php
           php -l api/_core/permissions.php
+          php -l api/live-stream/index.php
           php -l api/_core/csrf.php
           php -l api/speech-editor-config/index.php
           php -l api/speech-corrections/index.php
           php -l api/_core/speech_corrections.php
           php -l migrations/006_speech_model_training.php
+          php -l migrations/007_live_streams.php
 
       - name: Install test dependencies
         working-directory: tests
@@ -101,6 +103,7 @@ jobs:
           npm run test:editor-actions
           npm run test:hamburger-menu
           php admin_permissions.php
+          php live_stream_permissions.php
           php access_tokens.php
           php new_user_invites.php
           php sql_batch.php
