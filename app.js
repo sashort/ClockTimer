@@ -4626,6 +4626,79 @@
     }
 
     let tripLogView;
+    let tripLogLiveProjectionMilliseconds;
+
+    function tripLogLiveEffectiveMilliseconds(
+        summary =
+            clockTimer.getSummarySnapshot?.(
+                new Date()
+            )
+    ) {
+        const trip =
+            summary?.trip;
+
+        if (
+            !tripIsLive() ||
+            !trip?.available
+        ) {
+            return undefined;
+        }
+
+        const counted =
+            trip.countedTimeElapsedMilliseconds;
+
+        const allotted =
+            trip.allottedTimeMilliseconds;
+
+        if (
+            !Number.isSafeInteger(counted) ||
+            counted < 0
+        ) {
+            return undefined;
+        }
+
+        return (
+            Number.isSafeInteger(allotted) &&
+            allotted >= 0
+        )
+            ? Math.max(
+                allotted,
+                counted
+            )
+            : counted;
+    }
+
+    function refreshTripLogLiveProjection(
+        summary,
+        {
+            force = false
+        } = {}
+    ) {
+        const next =
+            tripLogLiveEffectiveMilliseconds(
+                summary
+            );
+
+        const changed =
+            next !==
+                tripLogLiveProjectionMilliseconds;
+
+        tripLogLiveProjectionMilliseconds =
+            next;
+
+        if (
+            tripLogView &&
+            (
+                force ||
+                changed
+            )
+        ) {
+            tripLogView.rerender();
+        }
+
+        return changed;
+    }
+
     function getTripLogIncludeCurrent() {
         return safeStorageGet(STORAGE.tripLogIncludeCurrent) === "true";
     }
@@ -4712,6 +4785,7 @@
                 return {id:clockTimer.currentTripId,running:true,activeState,
                     includeInParentPercent:getTripLogIncludeCurrent()||tripGoalMissed||totalGoalMissed,startTime:start,endTime:new Date().toISOString(),
                     standardTimeMilliseconds:summary.standardTimeMilliseconds,
+                    allottedTimeMilliseconds:summary.allottedTimeMilliseconds,
                     actualTimeMilliseconds:summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds:summary.countedTimeElapsedMilliseconds,nonProduction:clockTimer.nonProduction};
             }
@@ -19476,6 +19550,10 @@
         renderTripActionState(
             event.detail?.now
         );
+
+        refreshTripLogLiveProjection(
+            event.detail?.summary
+        );
     });
 
     clockTimer.addEventListener("uiStateChanged", event => {
@@ -19576,7 +19654,32 @@
         clockTimer.addEventListener(eventName, queueSummaryRefresh);
     }
 
+    for (
+        const eventName of
+            [
+                "started",
+                "goalChanged",
+                "renderedPercentGoalChanged",
+                "goalFail",
+                "goalChangeFailed",
+                "standardTimeChanged"
+            ]
+    ) {
+        clockTimer.addEventListener(
+            eventName,
+            () =>
+                refreshTripLogLiveProjection(
+                    undefined,
+                    {
+                        force: true
+                    }
+                )
+        );
+    }
+
     clockTimer.addEventListener("cleared", () => {
+        tripLogLiveProjectionMilliseconds =
+            undefined;
         releaseEndTimeGoalOverride();
         setTripControlState(false);
         stagedStandardTime = undefined;
@@ -19586,6 +19689,12 @@
     clockTimer.addEventListener("percentModeChanged", () => {
         syncScopeUI(true);
         queueSummaryRefresh();
+        refreshTripLogLiveProjection(
+            undefined,
+            {
+                force: true
+            }
+        );
     });
 
     clockTimer.addEventListener("renderedTimeModeChanged", () => {

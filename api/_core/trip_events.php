@@ -18,6 +18,151 @@ function normalize_trip_event_view(mixed $value): string
     return $view;
 }
 
+function legacy_trip_event_duration_milliseconds(mixed $value): ?int
+{
+    if (is_int($value)) {
+        return $value >= 0
+            ? $value
+            : null;
+    }
+
+    if (!is_string($value)) {
+        return null;
+    }
+
+    $text = trim($value);
+
+    if (
+        !preg_match(
+            '/^(?:(\d+):)?([0-5]?\d):([0-5]\d)(?:\.(\d{1,3}))?$/D',
+            $text,
+            $match
+        )
+    ) {
+        return null;
+    }
+
+    return
+        (
+            (int) ($match[1] ?? 0) * 3600 +
+            (int) $match[2] * 60 +
+            (int) $match[3]
+        ) * 1000 +
+        (int) str_pad(
+            $match[4] ?? '',
+            3,
+            '0'
+        );
+}
+
+function normalize_trip_event_duration_values(
+    string $event,
+    mixed $value
+): mixed {
+    if (!is_array($value)) {
+        return $value;
+    }
+
+    if ($event === 'trip.started') {
+        $milliseconds =
+            legacy_trip_event_duration_milliseconds(
+                $value['standardTimeMilliseconds'] ??
+                    $value['standardTime'] ??
+                    null
+            );
+
+        if ($milliseconds !== null) {
+            $value['standardTimeMilliseconds'] =
+                $milliseconds;
+            unset($value['standardTime']);
+        }
+    }
+    elseif ($event === 'trip.standard-time-changed') {
+        $milliseconds =
+            legacy_trip_event_duration_milliseconds(
+                $value['value'] ??
+                    null
+            );
+
+        if ($milliseconds !== null) {
+            $value['value'] =
+                $milliseconds;
+        }
+    }
+    elseif ($event === 'interval.started') {
+        foreach (
+            [
+                'length',
+                'startBuffer',
+                'endBuffer',
+                'approvedTime'
+            ] as $field
+        ) {
+            if (
+                !array_key_exists(
+                    $field,
+                    $value
+                ) ||
+                $value[$field] === null
+            ) {
+                continue;
+            }
+
+            $milliseconds =
+                legacy_trip_event_duration_milliseconds(
+                    $value[$field]
+                );
+
+            if ($milliseconds !== null) {
+                $value[$field] =
+                    $milliseconds;
+            }
+        }
+
+        if (is_array($value['attributes'] ?? null)) {
+            foreach (
+                [
+                    'approved',
+                    'unapproved'
+                ] as $field
+            ) {
+                if (
+                    !array_key_exists(
+                        $field,
+                        $value['attributes']
+                    )
+                ) {
+                    continue;
+                }
+
+                $milliseconds =
+                    legacy_trip_event_duration_milliseconds(
+                        $value['attributes'][$field]
+                    );
+
+                if ($milliseconds !== null) {
+                    $value['attributes'][$field] =
+                        $milliseconds;
+                }
+            }
+        }
+    }
+    elseif ($event === 'interval.approval-changed') {
+        $milliseconds =
+            legacy_trip_event_duration_milliseconds(
+                $value['value'] ??
+                    null
+            );
+
+        if ($milliseconds !== null) {
+            $value['value'] =
+                $milliseconds;
+        }
+    }
+
+    return $value;
+}
+
 function require_trip_event_type_id(PDO $pdo, string $event): int
 {
     $statement = $pdo->prepare(
@@ -51,6 +196,12 @@ function decode_trip_event_row(array $row): array
             'invalid_event_value'
         );
     }
+
+    $value =
+        normalize_trip_event_duration_values(
+            (string) $row['event'],
+            $value
+        );
 
     return [
         'id' => (int) $row['id'],

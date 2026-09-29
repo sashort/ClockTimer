@@ -1,8 +1,8 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';
 const w=new Window({url:'https://clock.example/'});w.eval(fs.readFileSync(new URL('../CalendarRange.js',import.meta.url),'utf8'));w.eval(fs.readFileSync(new URL('../TripLog.js',import.meta.url),'utf8'));
 const root=w.document.createElement('div');w.document.body.append(root);let criteria='pay-period',filter='all',pad,includeCurrentSetting=false;
-const events=[{id:1,event:'trip.started',timestamp:'2026-09-18 12:00:00',value:{}},{id:2,event:'interval.started',timestamp:'2026-09-18 12:05:00',value:{type:'break',length:'2:00',intervalKey:'b'}},{id:3,event:'interval.ended',timestamp:'2026-09-18 12:07:00',value:{intervalKey:'b'}},{id:4,event:'trip.stopped',timestamp:'2026-09-18 12:20:00',value:{}}];
-const settings={creationAnchor:'2026-09-18T00:00:00Z',standardTime:'20:00',creationTime:'11:00:00',scheduledStart:'12:00:00',startTime:'12:00:00',nonProduction:false};
+const events=[{id:1,event:'trip.started',timestamp:'2026-09-18 12:00:00',value:{}},{id:2,event:'interval.started',timestamp:'2026-09-18 12:05:00',value:{type:'break',length:120000,intervalKey:'b'}},{id:3,event:'interval.ended',timestamp:'2026-09-18 12:07:00',value:{intervalKey:'b'}},{id:4,event:'trip.stopped',timestamp:'2026-09-18 12:20:00',value:{}}];
+const settings={creationAnchor:'2026-09-18T00:00:00Z',standardTimeMilliseconds:1200000,creationTime:'11:00:00',scheduledStart:'12:00:00',startTime:'12:00:00',nonProduction:false};
 const view=new w.TripLog(root,{range:()=>criteria,filter:()=>filter,includeCurrent:()=>includeCurrentSetting,onIncludeCurrent:value=>{includeCurrentSetting=value;view.rerender();},onFilter:v=>filter=v,onRange:v=>criteria=v,onDate(){},numberPad:async options=>{assert.equal(options.confirmTarget,'none');assert.equal(options.cancelTarget,'none');pad=options;},request:async()=>({events,settings,revision:'test'}),refresh:async()=>{}});
 const originalRequest=view.options.request;
 const calendar={range:'pay-period',timezone:'UTC',startTime:'2026-09-05T00:00:00Z',endTime:'2026-09-19T00:00:00Z',rules:{weekStartDay:6,cutoffTime:'00:00:00'}};
@@ -11,26 +11,21 @@ view.render({trips},calendar);assert.equal(root.querySelector('.trip-log-trip su
 assert.deepEqual([...root.querySelectorAll('.trip-log-column-header [role="columnheader"]')].map(cell=>cell.textContent),['Time','Standard','Actual','Percent','']);
 assert.equal(w.TripLog.duration(27*3600000+5*60000+9000),'27:05:09');assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]),'50.00%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:100,actualTimeMilliseconds:200,countedTimeMilliseconds:100}]),'100.00%');
-const compactDurationTrip={
+const numericDurationTrip={
  standardTimeMilliseconds:600000,
  actualTimeMilliseconds:600000,
  countedTimeMilliseconds:600000,
- events:[{event:'interval.started',value:{intervalKey:'compact',type:'break',length:'4:12'}}]
+ events:[{event:'interval.started',value:{intervalKey:'numeric',type:'break',length:252000}}]
 };
-const canonicalDurationTrip={
- ...compactDurationTrip,
- events:[{event:'interval.started',value:{intervalKey:'canonical',type:'break',length:'0:04:12'}}]
-};
-assert.equal(w.TripLog.counted(compactDurationTrip),348000,'Trip Log interprets two-part duration values as mm:ss');
-assert.equal(w.TripLog.counted(canonicalDurationTrip),348000,'Trip Log interprets canonical h:mm:ss duration values identically');
+assert.equal(w.TripLog.counted(numericDurationTrip),600000,'Trip Log treats persisted counted milliseconds as authoritative');
 const skippedBreakEvents=[
- {event:'interval.started',timestamp:'2026-09-20 17:31:32.751',value:{intervalKey:'skip',type:'break',length:'10:00',startBuffer:'2:30',endBuffer:'2:30'}},
+ {event:'interval.started',timestamp:'2026-09-20 17:31:32.751',value:{intervalKey:'skip',type:'break',length:600000,startBuffer:150000,endBuffer:150000}},
  {event:'interval.ended',timestamp:'2026-09-20 17:31:45.017',value:{intervalKey:'skip'}}
 ];
 const skippedBreak={standardTimeMilliseconds:3383000,actualTimeMilliseconds:3665607,countedTimeMilliseconds:3653341,events:skippedBreakEvents};
-assert.equal(w.TripLog.counted(skippedBreak),2765607);
-assert.equal(w.TripLog.percent([skippedBreak]),'122.32%');
-assert.equal(w.TripLog.counted({...skippedBreak,countedTimeMilliseconds:2765607}),2765607,'already-correct scheduled break allowance is not subtracted twice');
+assert.equal(w.TripLog.counted(skippedBreak),3653341,'Trip Log does not reinterpret persisted counted milliseconds from interval metadata');
+assert.equal(w.TripLog.percent([skippedBreak]),'92.60%');
+assert.equal(w.TripLog.counted({...skippedBreak,countedTimeMilliseconds:2765607}),2765607,'persisted counted milliseconds remain authoritative');
 // Production regression: wall time is 10:03:36, but excluded intervals reduce
 // counted time to 9:05:01. The Trip Log must show the counted-time result.
 assert.equal(w.TripLog.percent([{
@@ -38,8 +33,9 @@ assert.equal(w.TripLog.percent([{
  actualTimeMilliseconds:36216727,
  countedTimeMilliseconds:32701965
 }]),'86.91%');
-assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.00%');
-assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:1500000}]),'80.00%');
+assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,allottedTimeMilliseconds:1200000,countedTimeMilliseconds:600000}]),'100.00%');
+assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,allottedTimeMilliseconds:1200000,countedTimeMilliseconds:1500000}]),'80.00%');
+assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,allottedTimeMilliseconds:1500000,countedTimeMilliseconds:600000}]),'80.00%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.00%');
 assert.equal(view.entryLabel(events[2],events[1],events[2]),'Break Ended');
 assert.equal(view.entryLabel({...events[2],timestamp:'2026-09-18 12:06:00'},events[1],{...events[2],timestamp:'2026-09-18 12:06:00'}),'Break Ended Early · 1:00 Gained');
@@ -47,17 +43,17 @@ assert.equal(view.entryLabel({...events[2],timestamp:'2026-09-18 12:08:30'},even
 const shortBreakStart={...events[1],value:{...events[1].value,attributes:{breakType:'short'}}};
 assert.equal(view.entryLabel(shortBreakStart,shortBreakStart,events[2]),'Short Break Started');
 assert.equal(view.entryLabel(events[2],shortBreakStart,events[2]),'Short Break Ended');
-const downStart={id:4,event:'interval.started',timestamp:'2026-09-18 12:10:00',value:{type:'down',intervalKey:'down-1',approvedTime:'0:05:00'}};
+const downStart={id:4,event:'interval.started',timestamp:'2026-09-18 12:10:00',value:{type:'down',intervalKey:'down-1',approvedTime:300000}};
 const downEnd={id:5,event:'interval.ended',timestamp:'2026-09-18 12:16:30',value:{intervalKey:'down-1'}};
 assert.equal(view.entryLabel(downEnd,downStart,downEnd,[downStart,downEnd]),'Down Ended · 1:30 Approval Deficit');
-downStart.value.approvedTime='0:07:30';
+downStart.value.approvedTime=450000;
 assert.equal(view.entryLabel(downEnd,downStart,downEnd,[downStart,downEnd]),'Down Ended · 1:00 Approval Surplus');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:600000,actualTimeMilliseconds:600000},{running:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}],true),'100.00%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:600000,actualTimeMilliseconds:600000},{running:true,includeInParentPercent:true,standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}],true),'150.00%');
 console.log('PASS newest-first, pay-period hierarchy, weighted percentages, and unlimited-hour overview');
 const collapsed=root.querySelector('.trip-log-group');collapsed.open=false;collapsed.dispatchEvent(new w.Event('toggle'));
 let includeActive=false;
-view.options.liveTrip=()=>({...trips[1],running:true,activeState:'break',includeInParentPercent:includeCurrentSetting||includeActive,actualTimeMilliseconds:1200000,countedTimeMilliseconds:1200000});
+view.options.liveTrip=()=>({...trips[1],running:true,activeState:'break',includeInParentPercent:includeCurrentSetting||includeActive,actualTimeMilliseconds:1200000,countedTimeMilliseconds:1200000,allottedTimeMilliseconds:1200000});
 view.render({trips},calendar);
 assert.equal(root.querySelector('.trip-log-group').open,false);
 assert(root.querySelector('.trip-log-trip.is-active-trip'));
@@ -129,7 +125,7 @@ let add=root.querySelector('.trip-log-add');add.click();assert.equal(root.queryS
 let intervalRow=[...root.querySelectorAll('.trip-log-entry')].find(row=>row.textContent.includes('Break Started'));const entryPress=new w.PointerEvent('pointerdown',{clientX:50,clientY:10,cancelable:true});intervalRow.dispatchEvent(entryPress);assert(entryPress.defaultPrevented);await new Promise(resolve=>setTimeout(resolve,600));assert.equal(root.querySelectorAll('.trip-log-entry-remove').length,1);intervalRow=[...root.querySelectorAll('.trip-log-entry')].find(row=>row.textContent.includes('Break Started'));assert(intervalRow.previousElementSibling.classList.contains('trip-log-add'));root.querySelector('.trip-log-entry-remove').click();assert(![...root.querySelectorAll('.trip-log-entry')].some(row=>row.textContent.includes('Break Started')));assert(![...root.querySelectorAll('.trip-log-entry')].some(row=>row.textContent.includes('Break Ended')));
 root.querySelector('.trip-log-add').click();root.querySelector('.trip-log-new-entry .trip-log-entry-cancel').click();assert.equal(root.querySelector('.trip-log-new-entry-pair'),null);assert(root.querySelector('.trip-log-add'));
 assert.equal(view.entryChanges(view.trips[0]).map(change=>change.operation).sort().join(','),'add-entry,delete-entry,entry');
-assert.equal(view.entryChanges(view.trips[0]).find(change=>change.operation==='add-entry').entry.approvedTime,'0:02:00');
+assert.equal(view.entryChanges(view.trips[0]).find(change=>change.operation==='add-entry').entry.approvedTime,120000);
 root.querySelector('.trip-log-entry-heading button').click();await new Promise(resolve=>setTimeout(resolve,10));assert.equal(offlineChanges.length,1);assert.equal(offlineChanges[0].operation,'entries');assert.equal(offlineChanges[0].changes.map(change=>change.operation).sort().join(','),'add-entry,delete-entry,entry');assert(!view.editing.has('offline-two'));
 offlineTrip.events=localEvents;view.render({trips:[offlineTrip],offline:true,incomplete:true},calendar);view.options.request=async()=>({events:localEvents,settings,revision:'outside'});await view.beginEntryEdit(offlineTrip);assert(root.querySelector('.trip-log-trip').open);root.querySelector('.trip-log-trip>summary').dispatchEvent(new w.PointerEvent('pointerdown',{bubbles:true,cancelable:true}));assert(!view.editing.has('offline-two'));assert(!root.querySelector('.trip-log-trip').open);const outside=w.document.createElement('button');w.document.body.append(outside);
 await view.beginEntryEdit(offlineTrip);root.querySelector('.trip-log-entry-time').click();await new Promise(resolve=>setTimeout(resolve,10));await pad.onConfirm('2026-09-18T12:01:00Z');let confirmations=0;w.confirm=()=>{confirmations++;return false;};let outsidePress=new w.PointerEvent('pointerdown',{bubbles:true,cancelable:true});outside.dispatchEvent(outsidePress);assert.equal(confirmations,1);assert(outsidePress.defaultPrevented);assert(view.editing.has('offline-two'));assert(root.querySelector('.trip-log-trip').open);w.confirm=()=>true;outsidePress=new w.PointerEvent('pointerdown',{bubbles:true,cancelable:true});outside.dispatchEvent(outsidePress);assert.equal(confirmations,1);assert(!view.editing.has('offline-two'));assert(!root.querySelector('.trip-log-trip').open);assert.equal(view.trips[0].events[0].timestamp,localEvents[0].timestamp);outside.remove();

@@ -2441,8 +2441,8 @@
                     this.#tripId,
                 creationDate:
                     this.creationDate,
-                standardTime:
-                    this.standardTime,
+                standardTimeMilliseconds:
+                    this.standardTimeMilliseconds,
                 scheduledStart:
                     this.scheduledStart,
                 nonProduction:
@@ -3472,6 +3472,7 @@
                     ...payload, running: this.#started, buffered: this.networkStatus === "offline",
                     actualTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
+                    allottedTimeMilliseconds: summary.allottedTimeMilliseconds,
                     events: this.#localLogEvents(this.toJSON()).filter(event => event.event !== "trip.stopped")});
             }
             return trips;
@@ -3587,12 +3588,10 @@
             const startTime = this.#timelineToISO(this.#getElapsedStartTimeMilliseconds());
             const endTime = this.#timelineToISO(this.#calculatedEndTime);
             const standardTimeMilliseconds =
-                Math.round(
-                    this.#standardDuration
-                );
+                this.#standardDuration;
             const countedTimeMilliseconds =
-                Math.round(
-                    this.#getCountedTimeElapsed(timelineNow)
+                this.#getCountedTimeElapsed(
+                    timelineNow
                 );
 
             if (
@@ -5184,7 +5183,13 @@
                             this.#setIntervalApprovalAttributes(
                                 record,
                                 value.state,
-                                value.value
+                                this.#serializedDurationToMilliseconds(
+                                    value.value,
+                                    "interval approval value",
+                                    {
+                                        allowZero: true
+                                    }
+                                )
                             );
 
                             const nextDuration =
@@ -5265,8 +5270,11 @@
 
                         case "trip.standard-time-changed":
                             if (typeof value.nonProduction === "boolean") this.#nonProduction = value.nonProduction;
-                            this.standardTime =
-                                value.value;
+                            this.standardTimeMilliseconds =
+                                this.#serializedDurationToMilliseconds(
+                                    value.value,
+                                    "trip.standard-time-changed value"
+                                );
                             break;
 
                         case "trip.creation-date-changed":
@@ -5503,17 +5511,7 @@
                 startEventTime,
                 {
                     standardTimeMilliseconds:
-                        Math.round(
-                            this.#standardDuration
-                        ),
-                    standardTime:
-                        this.#formatStandardTime(
-                            this.#standardDuration,
-                            {
-                                includeHours:
-                                    true
-                            }
-                        ),
+                        this.#standardDuration,
                     creationTime:
                         this.#formatStandardTime(
                             this.#creationMilliseconds,
@@ -5708,13 +5706,9 @@
                 persistedEnd,
                 {
                     standardTimeMilliseconds:
-                        Math.round(
-                            this.#standardDuration
-                        ),
+                        this.#standardDuration,
                     countedTimeMilliseconds:
-                        Math.round(
-                            aggregateCountedTime
-                        )
+                        aggregateCountedTime
                 }
             );
 
@@ -7096,7 +7090,7 @@
                     events: buffered.log?.events || [],
                     settings: {
                         creationAnchor: buffered.payload.creationAnchor,
-                        standardTime: buffered.payload.standardTime,
+                        standardTimeMilliseconds: buffered.payload.standardTimeMilliseconds,
                         creationTime: buffered.payload.creationTime,
                         scheduledStart: buffered.payload.scheduledStart,
                         startTime: buffered.payload.startTime,
@@ -7148,13 +7142,21 @@
                 if (change.operation === "settings") {
                     Object.assign(buffered.payload, change.settings);
                     Object.assign(buffered.log, change.settings);
-                    const seconds = String(change.settings.standardTime || "").split(":")
-                        .reduce((sum, part) => sum * 60 + Number(part || 0), 0);
-                    if (Number.isFinite(seconds)) {
-                        buffered.log.standardTimeMilliseconds = seconds * 1000;
-                        buffered.payload.standardTimeMilliseconds = seconds * 1000;
+                    const standardTimeMilliseconds =
+                        change.settings
+                            .standardTimeMilliseconds;
+                    if (
+                        Number.isSafeInteger(
+                            standardTimeMilliseconds
+                        ) &&
+                        standardTimeMilliseconds > 0
+                    ) {
+                        buffered.log.standardTimeMilliseconds =
+                            standardTimeMilliseconds;
+                        buffered.payload.standardTimeMilliseconds =
+                            standardTimeMilliseconds;
                         const stopped = buffered.events.find(event => event.event === "trip.stopped");
-                        if (stopped) stopped.value.standardTimeMilliseconds = seconds * 1000;
+                        if (stopped) stopped.value.standardTimeMilliseconds = standardTimeMilliseconds;
                     }
                     const start = buffered.events.find(event => event.event === "trip.started");
                     if (start) Object.assign(start.value, change.settings);
@@ -7373,8 +7375,19 @@
         }
 
         get originalStandardTime() {
+            const milliseconds =
+                this.#originalStartArguments
+                    ?.standardTimeMilliseconds;
+            return Number.isSafeInteger(milliseconds)
+                ? this.#formatStandardTime(
+                    milliseconds
+                )
+                : undefined;
+        }
+
+        get originalStandardTimeMilliseconds() {
             return this.#originalStartArguments
-                ?.standardTime;
+                ?.standardTimeMilliseconds;
         }
 
         get originalCreationTime() {
@@ -7508,6 +7521,10 @@
         }
 
         set standardTimeMilliseconds(value) {
+            if (!this.#hasStartProperties()) {
+                return;
+            }
+
             let milliseconds;
 
             try {
@@ -7515,30 +7532,6 @@
                     this.#validateDurationMilliseconds(
                         value,
                         "standardTimeMilliseconds"
-                    );
-            }
-            catch {
-                return;
-            }
-
-            this.standardTime =
-                this.#formatStandardTime(
-                    milliseconds
-                );
-        }
-
-        set standardTime(value) {
-            if (!this.#hasStartProperties()) {
-                return;
-            }
-
-            let parsed;
-
-            try {
-                parsed =
-                    this.#validateDurationTime(
-                        value,
-                        "standardTime"
                     );
             }
             catch {
@@ -7554,14 +7547,14 @@
             const previousDuration =
                 this.#standardDuration;
 
-            const nextValue =
-                this.#formatStandardTime(
-                    parsed.total
-                );
-
-            if (nextValue === previousValue) {
+            if (milliseconds === previousDuration) {
                 return;
             }
+
+            const nextValue =
+                this.#formatStandardTime(
+                    milliseconds
+                );
 
             const proceed =
                 this.#emitClockTimerEvent(
@@ -7569,7 +7562,8 @@
                     {
                         previousValue,
                         value: nextValue,
-                        standardTimeMilliseconds: parsed.total
+                        standardTimeMilliseconds:
+                            milliseconds
                     },
                     {
                         cancelable: true
@@ -7584,7 +7578,7 @@
                 nextValue;
 
             this.#standardDuration =
-                parsed.total;
+                milliseconds;
 
             if (
                 Number.isFinite(
@@ -7595,7 +7589,7 @@
                 )
             ) {
                 this.#calculatedEndTime +=
-                    parsed.total -
+                    milliseconds -
                     previousDuration;
             }
 
@@ -7617,8 +7611,12 @@
                 {
                     previousValue,
                     value: this.#standardTime,
-                    standardTimeMilliseconds: this.#standardDuration,
-                    summary: this.#buildSummarySnapshot(new Date())
+                    standardTimeMilliseconds:
+                        this.#standardDuration,
+                    summary:
+                        this.#buildSummarySnapshot(
+                            new Date()
+                        )
                 }
             );
 
@@ -7627,17 +7625,29 @@
                 new Date(),
                 {
                     value:
-                        this.#formatStandardTime(
-                            this.#standardDuration,
-                            {
-                                includeHours:
-                                    true
-                            }
-                        )
+                        this.#standardDuration
                 }
             );
 
             this.#scheduleTripEventSync();
+        }
+
+        set standardTime(value) {
+            let parsed;
+
+            try {
+                parsed =
+                    this.#validateDurationTime(
+                        value,
+                        "standardTime"
+                    );
+            }
+            catch {
+                return;
+            }
+
+            this.standardTimeMilliseconds =
+                parsed.total;
         }
 
         get creationTime() {
@@ -8941,10 +8951,7 @@
 
             const suppliedStartArguments = {
                 tripId,
-                standardTime:
-                    this.#formatStandardTime(
-                        standardTimeMilliseconds
-                    ),
+                standardTimeMilliseconds,
                 creationTime,
                 startTime,
                 scheduledStart,
@@ -11092,8 +11099,12 @@
 
             try {
                 duration =
-                    this.#parseInsertRangeLength(
-                        entry.value
+                    this.#serializedDurationToMilliseconds(
+                        entry.value,
+                        "interval approval value",
+                        {
+                            allowZero: true
+                        }
                     );
             }
             catch {
@@ -11108,7 +11119,7 @@
                         ? "approved"
                         : "unapproved",
                 value:
-                    entry.value,
+                    duration,
                 duration
             };
         }
@@ -11215,32 +11226,36 @@
         #normalizeIntervalApprovalDuration(
             value
         ) {
-            if (typeof value !== "string") {
-                throw new TypeError(
-                    "approval duration must be a string in [h:]m:ss[.ms] format."
-                );
-            }
-
             let duration;
 
             try {
                 duration =
-                    this.#parseInsertRangeLength(
-                        value.trim()
-                    );
+                    Number.isSafeInteger(value)
+                        ? this.#validateDurationMilliseconds(
+                            value,
+                            "approval duration",
+                            {
+                                allowZero: true
+                            }
+                        )
+                        : this.#serializedDurationToMilliseconds(
+                            value,
+                            "approval duration",
+                            {
+                                allowZero: true
+                            }
+                        );
             }
             catch {
                 throw new RangeError(
-                    "approval duration must be a human-readable duration in [h:]m:ss[.ms] format."
+                    "approval duration must resolve to a non-negative integer number of milliseconds."
                 );
             }
 
             return {
                 duration,
                 value:
-                    this.#formatStandardTime(
-                        duration
-                    )
+                    duration
             };
         }
 
@@ -11274,8 +11289,15 @@
                 }
             }
 
+            const duration =
+                this.#normalizeIntervalApprovalDuration(
+                    value
+                ).duration;
+
             attributes[state] =
-                String(value);
+                this.#formatStandardTime(
+                    duration
+                );
 
             record.otherAttributes =
                 attributes;
@@ -11320,9 +11342,7 @@
             this.#setIntervalApprovalAttributes(
                 record,
                 "approved",
-                this.#formatStandardTime(
-                    duration
-                )
+                duration
             );
 
             record.clockTimerApprovalInitialized =
@@ -32694,6 +32714,39 @@
                 Number.isFinite(this.#standardDuration)
                     ? this.#standardDuration / tripCountedTimeElapsedMilliseconds
                     : undefined;
+            let activeGoalRequirements;
+            if (this.#percentMode === "trip") {
+                activeGoalRequirements =
+                    this.#calculateTripGoalRequirements({
+                        allowMissed: true
+                    });
+            }
+            else if (this.#percentMode === "total") {
+                activeGoalRequirements =
+                    this.#calculateTotalGoalRequirements({
+                        allowMissed: true
+                    });
+            }
+            else {
+                activeGoalRequirements =
+                    this.#calculateGoalRequirements();
+            }
+            const rawAllottedTimeMilliseconds =
+                Number(
+                    activeGoalRequirements
+                        ?.adjustedTimeElapsed
+                );
+            const allottedTimeMilliseconds =
+                hasTrip &&
+                Number.isFinite(rawAllottedTimeMilliseconds) &&
+                rawAllottedTimeMilliseconds > 0
+                    ? Math.ceil(
+                        rawAllottedTimeMilliseconds -
+                        1e-9
+                    )
+                    : Number.isSafeInteger(this.#standardDuration)
+                        ? this.#standardDuration
+                        : undefined;
 
             const trip = {
                 available: hasTrip,
@@ -32703,6 +32756,7 @@
                     : undefined,
                 actualTimeElapsedMilliseconds: tripActualTimeElapsedMilliseconds,
                 countedTimeElapsedMilliseconds: tripCountedTimeElapsedMilliseconds,
+                allottedTimeMilliseconds,
                 countedPercent: tripCountedPercent,
                 percentGoal: this.#getScopePercentGoal("trip"),
                 renderedTime: hasTrip
