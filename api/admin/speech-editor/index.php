@@ -133,6 +133,13 @@ header('Referrer-Policy: no-referrer');
                 </select>
             </label>
             <label>
+                <span>Orientation</span>
+                <select id="orientationSelect" aria-label="Preview orientation">
+                    <option value="portrait">Portrait</option>
+                    <option value="landscape">Landscape</option>
+                </select>
+            </label>
+            <label>
                 <span>Compare To</span>
                 <select id="compareSizeSelect">
                     <option value="">None</option>
