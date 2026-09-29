@@ -59,7 +59,7 @@ assert.equal(configured.time_component.text,'---','Total End Time is unavailable
 assert.equal(timer.getSummarySnapshot().total.renderedTime,undefined,'idle aggregate totals do not synthesize an end time from the wall clock');
 timer.configure({trip_goal:'107%'});assert.equal(timer.getAttribute('trip-goal'),'107%');assert.equal(timer.getAttribute('total-goal'),'110%');assert.equal(timer.renderedTimeMode,'calculated-end');
 await timer.start({standardTime:'0:30:00'});
-const state=timer.uiState;assert.equal(state.state,'running');assert.equal(state.standard_time_header_text,'Total Standard Time');assert.equal(state.time_header_text,'Total End Time');assert.equal(state.standard_time_component.value,5400000);assert.equal(state.trip_goal_component.text,'107%');assert(state.time_component.date instanceof window.Date);assert(Object.isFrozen(state));
+const state=timer.uiState;assert.equal(state.state,'running');assert.equal(state.standard_time_header_text,'Trip Standard Time');assert.equal(state.time_header_text,'Total End Time');assert.equal(state.standard_time_component.value,1800000);assert.equal(timer.getSummarySnapshot().total.standardTimeMilliseconds,5400000);assert.equal(state.trip_goal_component.text,'107%');assert(state.time_component.date instanceof window.Date);assert(Object.isFrozen(state));
 assert(states.some(item=>item.transition==='trip_started'&&item.state==='running'));assert(states.some(item=>item.transition_phase==='active'));await Promise.resolve();assert(states.some(item=>item.transition_phase==='settled'));
 window.__testTime+=1000;timer.dispatchEvent(new window.CustomEvent('test'));await new Promise(resolve=>setTimeout(resolve,10));
 const overtime=window.document.createElement('clock-timer');window.document.body.append(overtime);
