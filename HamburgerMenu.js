@@ -2410,9 +2410,10 @@
                     await nextFrame();
 
                     this.#updateSafeGeometry();
-                    if (!prepared) {
-                        this.#layoutPanels();
-                    }
+                    // The popover can have different geometry after it
+                    // enters the top layer. Pack again against the live
+                    // speech surface before freezing the opening pane.
+                    this.#layoutPanels();
                     this.#reconcilePlacement();
 
                     await nextFrame();
@@ -2954,7 +2955,12 @@
             return {
                 boundary,
                 top:
-                    rect?.top,
+                    boundary && rect
+                        ? this.#boundarySafeTop(
+                            boundary,
+                            rect
+                        )
+                        : undefined,
                 right:
                     rect?.right,
                 bottom:
@@ -3264,9 +3270,10 @@
                     bottom:
                         Math.min(
                             documentBottom,
-                            boundary
-                                .rect
-                                .top -
+                            this.#boundarySafeTop(
+                                boundary.element,
+                                boundary.rect
+                            ) -
                                 px(
                                     boundary
                                         .style
@@ -3310,6 +3317,15 @@
                     boundary
                         .element
             };
+        }
+
+        #boundarySafeTop(element, rect) {
+            const surfaceTop =
+                element.getSafeTop?.();
+
+            return Number.isFinite(surfaceTop)
+                ? Math.min(rect.top, surfaceTop)
+                : rect.top;
         }
 
         #updateSafeGeometry() {
