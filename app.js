@@ -106,7 +106,8 @@
     const AUDIO_LANGUAGE = "en-US";
     const AUDIO_PERCENT_STEP = 5;
     const AUDIO_SPEECH_VELOCITY_MIN = 0.5;
-    const AUDIO_SPEECH_VELOCITY_MAX = 4;
+    // The former 70% point (2.8×) is now the top of the speech range.
+    const AUDIO_SPEECH_VELOCITY_MAX = 2.8;
     const AUDIO_TONE_VELOCITY_MIN = 0.5;
     const AUDIO_TONE_VELOCITY_MAX = 1.5;
 
@@ -3118,7 +3119,12 @@
         settings.masterVelocity =
             clamp(value.masterVelocity, 0.5, 4, 1);
         settings.speechVelocity =
-            clamp(value.speechVelocity, 0.5, 4, 1);
+            clamp(
+                value.speechVelocity,
+                AUDIO_SPEECH_VELOCITY_MIN,
+                AUDIO_SPEECH_VELOCITY_MAX,
+                1
+            );
         settings.toneVelocity =
             clamp(value.toneVelocity, 0.5, 1.5, 1);
         settings.instrument =
@@ -3270,8 +3276,8 @@
                 );
                 copyCustom(
                     "speechVelocity",
-                    0.5,
-                    4
+                    AUDIO_SPEECH_VELOCITY_MIN,
+                    AUDIO_SPEECH_VELOCITY_MAX
                 );
                 copyCustom(
                     "toneVelocity",
@@ -4494,9 +4500,9 @@
             next;
         audioSettings.speechVelocity =
             Math.max(
-                0.5,
+                AUDIO_SPEECH_VELOCITY_MIN,
                 Math.min(
-                    4,
+                    AUDIO_SPEECH_VELOCITY_MAX,
                     audioSettings.speechVelocity +
                         delta
                 )
