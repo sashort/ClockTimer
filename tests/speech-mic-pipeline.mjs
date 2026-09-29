@@ -1458,7 +1458,7 @@ assert.match(
 assert.match(speechMenuSource, /static #pipeline = "raw";/);
 assert.match(speechMenuSource, /SpeechMenu\.pipeline must be "raw" or "silero"/);
 assert.match(speechMenuSource, /new globalThis\.SileroVad/);
-assert.match(speechMenuSource, /minSilenceDuration:\s*SpeechMenu[\s\S]*#commitSilenceTimeout\s*\/\s*1000/s);
+assert.match(speechMenuSource, /minSilenceDuration:\s*SpeechMenu[\s\S]*#vadMinimumSilenceMilliseconds\s*\/\s*1000/s);
 assert.match(speechMenuSource, /"vad-silence"/);
 assert.match(speechMenuSource, /speechVadChanged/);
 assert.match(speechMenuSource, /speechRecognitionTiming/);
