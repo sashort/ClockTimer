@@ -134,6 +134,50 @@
             );
         }
 
+        #preferOpus(
+            transceiver
+        ) {
+            const codecs =
+                globalThis
+                    .RTCRtpReceiver
+                    ?.getCapabilities?.(
+                        "audio"
+                    )
+                    ?.codecs;
+
+            const opus =
+                Array.isArray(
+                    codecs
+                )
+                    ? codecs
+                        .filter(
+                            codec =>
+                                String(
+                                    codec
+                                        ?.mimeType ||
+                                    ""
+                                )
+                                    .toLowerCase() ===
+                                    "audio/opus"
+                        )
+                    : [];
+
+            if (
+                opus.length &&
+                typeof transceiver
+                    ?.setCodecPreferences ===
+                    "function"
+            ) {
+                try {
+                    transceiver
+                        .setCodecPreferences(
+                            opus
+                        );
+                }
+                catch {}
+            }
+        }
+
         #snapshot() {
             try {
                 return this
@@ -872,6 +916,10 @@
                         "sendonly";
                 }
 
+                this.#preferOpus(
+                    transceiver
+                );
+
                 await transceiver
                     .sender
                     .replaceTrack(
@@ -1230,6 +1278,16 @@
                             "recvonly"
                     }
                 );
+
+            this.#preferOpus(
+                this
+                    .#viewerMicTransceiver
+            );
+
+            this.#preferOpus(
+                this
+                    .#viewerProgramTransceiver
+            );
 
             this.#viewerDataChannel =
                 pc.createDataChannel(
