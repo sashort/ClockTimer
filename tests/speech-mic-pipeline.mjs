@@ -2582,7 +2582,11 @@ assert.match(
 );
 assert.match(
     audioEngineSource,
-    /instrument[\s\S]*\.noise[\s\S]*createBuffer\([\s\S]*createBufferSource\([\s\S]*noiseGain/
+    /#noiseBuffer\([\s\S]*#noiseBuffers\.has[\s\S]*context\.createBuffer\([\s\S]*#noiseBuffers\.set/
+);
+assert.match(
+    audioEngineSource,
+    /const noise\s*=[\s\S]*instrument[\s\S]*\?\.noise[\s\S]*#noiseBuffer\([\s\S]*createBufferSource\([\s\S]*noiseGain/
 );
 assert.match(
     audioEngineSource,
