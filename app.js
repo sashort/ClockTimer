@@ -666,6 +666,14 @@
         $("#liveStreamViewerStatus");
     const liveStreamVolumeControls =
         $("#liveStreamVolumeControls");
+    const liveStreamTrainerMessage =
+        $("#liveStreamTrainerMessage");
+    const liveStreamTrainerMessageText =
+        $("#liveStreamTrainerMessageText");
+    const liveStreamTrainerMessageSend =
+        $("#liveStreamTrainerMessageSend");
+    const liveStreamTrainerMessageStatus =
+        $("#liveStreamTrainerMessageStatus");
     const liveStreamMute =
         $("#liveStreamMute");
     const liveStreamMasterVolume =
@@ -1092,6 +1100,13 @@
 
         liveStreamVolumeControls.disabled =
             !viewing;
+        liveStreamTrainerMessage.disabled =
+            !viewing;
+
+        if (!viewing) {
+            liveStreamTrainerMessageStatus.textContent =
+                "";
+        }
 
         if (
             viewing
@@ -1170,6 +1185,49 @@
                                 ?.transcript ||
                             "—";
                     }
+                }
+            );
+
+        liveTripStream
+            .addEventListener(
+                "publisherMessage",
+                event => {
+                    const detail =
+                        event.detail ||
+                        {};
+
+                    if (
+                        detail.type !==
+                            "trainer.tts"
+                    ) {
+                        return;
+                    }
+
+                    const text =
+                        String(
+                            detail.payload
+                                ?.text ||
+                            ""
+                        )
+                            .trim()
+                            .slice(
+                                0,
+                                500
+                            );
+
+                    if (!text) {
+                        return;
+                    }
+
+                    globalThis
+                        .WMOFAudio
+                        ?.speak?.(
+                            text,
+                            {
+                                broadcast:
+                                    false
+                            }
+                        );
                 }
             );
 
@@ -1268,6 +1326,72 @@
                         liveStreamWatchButton.disabled =
                             false;
                         syncLiveStreamViewerUI();
+                    }
+                }
+            );
+
+        const sendLiveTrainerMessage =
+            () => {
+                const text =
+                    String(
+                        liveStreamTrainerMessageText
+                            ?.value ||
+                        ""
+                    )
+                        .trim()
+                        .slice(
+                            0,
+                            500
+                        );
+
+                if (!text) {
+                    liveStreamTrainerMessageStatus.textContent =
+                        "Enter a message.";
+
+                    return false;
+                }
+
+                try {
+                    liveTripStream
+                        .sendToPublisher(
+                            "trainer.tts",
+                            {
+                                text
+                            }
+                        );
+
+                    liveStreamTrainerMessageText.value =
+                        "";
+                    liveStreamTrainerMessageStatus.textContent =
+                        "Sent.";
+
+                    return true;
+                }
+                catch (error) {
+                    liveStreamTrainerMessageStatus.textContent =
+                        error.message ||
+                        "Unable to send message.";
+
+                    return false;
+                }
+            };
+
+        liveStreamTrainerMessageSend
+            ?.addEventListener(
+                "click",
+                sendLiveTrainerMessage
+            );
+
+        liveStreamTrainerMessageText
+            ?.addEventListener(
+                "keydown",
+                event => {
+                    if (
+                        event.key ===
+                            "Enter"
+                    ) {
+                        event.preventDefault();
+                        sendLiveTrainerMessage();
                     }
                 }
             );
