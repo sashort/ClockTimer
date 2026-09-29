@@ -3434,7 +3434,7 @@ assert.match(
 );
 assert.match(
     app,
-    /function createNumberPadState\([\s\S]*function openVoiceEntry\([\s\S]*createNumberPadState\(/
+    /function createNumberPadState\([\s\S]*async function openValueEditor\([\s\S]*createNumberPadState\([\s\S]*function openVoiceEntry\([\s\S]*openValueEditor\([\s\S]*"voice"/
 );
 assert.match(
     app,
