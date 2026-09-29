@@ -494,6 +494,7 @@ class EnglishDurationParser {
             const token =
                 tokens[index];
             const zeroToken =
+                token === "0" ||
                 token === "oh" ||
                 token === "o" ||
                 token === "zero" ||
