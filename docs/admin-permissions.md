@@ -1,9 +1,9 @@
 # Administrative permissions
 
-The users.permissions column stores six flags: create_users = 1,
-modify_users = 2, superuser = 4, developer_preview = 8, developer = 16, and
-grant_token_access = 32. Combine them with bitwise OR. Superuser implies all
-permissions. The explicitly authorized initial account
+The users.permissions column stores seven flags: create_users = 1,
+modify_users = 2, superuser = 4, developer_preview = 8, developer = 16,
+grant_token_access = 32, and view_live_streams = 64. Combine them with bitwise
+OR. Superuser implies all permissions. The explicitly authorized initial account
 bobthebuilder (ID 2) receives a one-time superuser grant in migration 002.
 
 The Lightsail deployment runs the idempotent database/apply_admin_permissions.php
@@ -102,3 +102,21 @@ counter later.
 Token use is currently enabled only for the guarded Superuser SQL console and Speech
 Editor surfaces. Browser form redemption establishes a scoped temporary session grant,
 while Bearer-token API calls consume one use per authenticated request.
+
+
+## Live stream permission
+
+`view_live_streams` (64) permits a signed-in user to join another user's
+currently published live trip stream. Publishing one's own stream does not
+require this permission.
+
+Viewer signaling requests always include `targetUserId`. The server verifies
+that the requested target owns the live session and that the viewer still has
+`view_live_streams` before returning session descriptions, ICE candidates,
+snapshots, speech metadata, or TTS metadata.
+
+WebRTC carries microphone and program audio using the browser's negotiated Opus
+codec and DTLS-SRTP. The HTTP signaling endpoint is `/api/live-stream/`.
+Signaling state is ephemeral and is not part of the historical trip record.
+Deployment-specific STUN/TURN servers may be configured at
+`api_config()['webrtc']['ice_servers']`.
