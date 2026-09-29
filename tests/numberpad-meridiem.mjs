@@ -7,9 +7,9 @@ const controller = new Function(`
     function refreshNumberPad() {}
     ${section('    function splitAbsoluteDigits(', '    function renderAbsoluteDigits(')}
     ${section('    function absoluteHour24(', '    function absoluteTimelineMilliseconds(')}
-    ${section('    function absoluteValuesEqual(', '    function getNumberPadClearAction(')}
+    ${section('    function absoluteValuesEqual(', '    function numberPadHasChanges(')}
     ${section('    function changeNumberPadMeridiem(', '    function formatTripTimeDisplay(')}
-    ${section('    function eraseNumberPadPendingValue(', '    function runNumberPadClearShortAction(')}
+    ${section('    function eraseNumberPadPendingValue(', '    function changeNumberPadMeridiem(')}
     return {set: state => numberPadState = state, changeNumberPadMeridiem,
         get: () => numberPadState, absoluteHour24, numberPadHasChanges,
         eraseNumberPadPendingValue, resetNumberPadPendingValue};
@@ -101,7 +101,7 @@ const returnController = new Function(`
     }};
     const tripSettingsSession = {values:{standardTimeMilliseconds:2700000}};
     function getTripSettingsReturnNumberPadState() { return tripSettingsNavigation.numberPadState; }
-    ${section('    function normalizeTimeDigits(', '    function normalizePercentDigits(')}
+    ${section('    function durationValueToRawDigits(', '    function canonicalClockTimerDuration(')}
     ${section('    function syncTripSettingsCallerAfterSave(', '    async function closeTripSettingsToNavigation(')}
     syncTripSettingsCallerAfterSave();
     return tripSettingsNavigation.numberPadState;
