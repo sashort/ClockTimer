@@ -6,7 +6,7 @@
     // The context-specific preprocessor/action still validates the value.
     const keypadToken =
         "(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|" +
-        "zero|oh|o|naught|nought|double|triple|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?)";
+        "zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?)";
     const keypadValuePattern =
         "^(?<spokenValue>" + keypadToken +
         "(?:[\\s\\-\\u2013\\u2014]+" + keypadToken + ")*)$";
