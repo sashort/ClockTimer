@@ -2316,7 +2316,7 @@ assert.match(
 
 assert.match(
     app,
-    /changeGoalMode\([\s\S]*SpeechMenu[\s\S]*executionContext[\s\S]*transcript[\s\S]*\^\(auto\|total\|trip\) mode\$/
+    /changeGoalMode\([\s\S]*goalMode[\s\S]*rangeByMode[\s\S]*check:\s*"pay-period"[\s\S]*requestedRange[\s\S]*requestedMode[\s\S]*PERCENT_MODES[\s\S]*setTripLogRange\([\s\S]*applyScope\(/
 );
 assert.doesNotMatch(
     app,
