@@ -84,12 +84,14 @@ jobs:
           php -l api/admin/speech-editor/agent/index.php
           php -l api/_core/permissions.php
           php -l api/live-stream/index.php
+          php -l services/live-stream-websocket.php
           php -l api/_core/csrf.php
           php -l api/speech-editor-config/index.php
           php -l api/speech-corrections/index.php
           php -l api/_core/speech_corrections.php
           php -l migrations/006_speech_model_training.php
           php -l migrations/007_live_streams.php
+          php -l migrations/008_live_stream_websocket.php
 
       - name: Install test dependencies
         working-directory: tests
