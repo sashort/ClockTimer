@@ -17,7 +17,7 @@ const bindings = {
 const controller = new Function(...Object.keys(bindings), `
     let tripDraft, tripSettingsSession, tripStartsNowState, stagedStandardTimeMilliseconds;
     ${section('    function tripDraftCanStart(', '    function cloneTripSettingsValues(')}
-    ${section('    function resumedTripStarts(', '    $("#newTripButton").addEventListener(')}
+    ${section('    function resumedTripStarts(', '    globalThis\n        .WMOFInteractionFunctions\n        .bindAction({\n            element:\n                $("#newTripButton"),')}
     return {beginNewTripWorkflow, startTripDraft, tripDraftCanStart,
         draft: () => tripDraft, defer() { tripDraft.deferred=true; tripDraft.startTime=undefined; tripDraft.scheduledStart=tripDraft.creationTime; }};
 `)(...Object.values(bindings));
