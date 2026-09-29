@@ -401,9 +401,7 @@
                     context.createGain();
 
                 this.#programOutput.connect(
-                    this.#programOutputNode(
-                    context
-                )
+                    context.destination
                 );
 
                 if (
