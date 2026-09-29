@@ -37,7 +37,7 @@ assert.match(
 );
 assert.match(
     app,
-    /\$\("#liveStreamButton"\)\.hidden\s*=\s*!canViewLiveStreams/
+    /\$\("#liveStreamButton"\)\.hidden\s*=\s*!\(\s*canViewLiveStreams\s*&&\s*canLookupUsers\s*\)/
 );
 assert.doesNotMatch(html, /id="liveStreamPublishButton"/);
 assert.match(
