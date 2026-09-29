@@ -59,6 +59,11 @@ function live_ws_can_view(array $user): bool
     return has_permission($user, PERMISSION_VIEW_LIVE_STREAMS);
 }
 
+function live_ws_can_lookup(array $user): bool
+{
+    return has_permission($user, PERMISSION_LOOKUP_USERS);
+}
+
 function live_ws_consume_token(PDO $pdo, string $token): ?array
 {
     if (!preg_match('/^[A-Za-z0-9_-]{32,256}$/D', $token)) {
@@ -749,12 +754,15 @@ function live_ws_handle_message(
     }
 
     if ($type === 'targets.request') {
-        if (!live_ws_can_view($user)) {
+        if (
+            !live_ws_can_view($user) ||
+            !live_ws_can_lookup($user)
+        ) {
             live_ws_send_error(
                 $client,
                 $requestId,
                 'permission_required',
-                'Viewing live streams requires permission.'
+                'User lookup and live stream permissions are required.'
             );
             return;
         }
