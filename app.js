@@ -5648,18 +5648,6 @@
         const metrics =
             getAppContentMetrics();
 
-        // In phone landscape the pinned button lives in the header.
-        if (window.matchMedia(
-            "(orientation: landscape) and (min-width: 600px) and (max-height: 520px)"
-        ).matches) {
-            return {
-                left: metrics.rect.right - metrics.paddingRight - 108,
-                top: metrics.rect.top + metrics.paddingTop,
-                width: 108,
-                height: 44
-            };
-        }
-
         return {
             left: metrics.left,
             top:

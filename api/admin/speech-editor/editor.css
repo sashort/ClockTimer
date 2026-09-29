@@ -506,13 +506,13 @@ body { margin: 0; min-width: 1180px; min-height: 100vh; }
 .viewport-controls label {
     display: grid;
     gap: 3px;
-    min-width: 150px;
+    min-width: 180px;
     color: #d9ebf8;
     font-size: 11px;
     font-weight: 700;
 }
 .viewport-controls select {
-    min-width: 150px;
+    min-width: 180px;
     max-width: 250px;
     padding: 6px 28px 6px 9px;
     color: #fff;

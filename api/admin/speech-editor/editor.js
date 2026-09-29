@@ -2282,7 +2282,6 @@
         {brand:"Apple", model:"iPad Pro", generation:"13-inch (M4)", width:1032, height:1376},
         {brand:"Apple", model:"iPhone", generation:"13", width:390, height:844},
         {brand:"Apple", model:"iPhone", generation:"13 mini", width:375, height:812},
-        {brand:"Apple", model:"iPhone SE", generation:"3rd generation", width:375, height:667},
         {brand:"Apple", model:"iPhone", generation:"13 Pro Max", width:428, height:926},
         {brand:"Apple", model:"iPhone", generation:"14", width:390, height:844},
         {brand:"Apple", model:"iPhone", generation:"14 Plus", width:428, height:926},
@@ -2309,7 +2308,6 @@
         {brand:"Dell", model:"XPS 16", generation:"9640", width:1728, height:1080},
         {brand:"Framework", model:"Laptop 13", generation:"2024", width:1504, height:1003},
         {brand:"Framework", model:"Laptop 16", generation:"2024", width:1707, height:1067},
-        {brand:"Google", model:"Pixel", generation:"6", width:412, height:915},
         {brand:"Google", model:"Pixel", generation:"8", width:412, height:915},
         {brand:"Google", model:"Pixel", generation:"8 Pro", width:448, height:998},
         {brand:"Google", model:"Pixel", generation:"8a", width:412, height:915},
@@ -2656,32 +2654,22 @@
                         padding * 2
                 );
 
-            const landscape =
-                $("orientationSelect").value ===
-                "landscape";
+            const screen = {
+                width:
+                    selectedPreset
+                        ?.width ||
+                    fillWidth,
+                height:
+                    selectedPreset
+                        ?.height ||
+                    fillHeight
+            };
 
-            const orient =
-                (width, height) =>
-                    landscape
-                        ? {
-                            width: Math.max(width, height),
-                            height: Math.min(width, height)
-                        }
-                        : {width, height};
-
-            const screen = orient(
-                selectedPreset?.width || fillWidth,
-                selectedPreset?.height || fillHeight
-            );
-
-            const comparePreset =
+            const compare =
                 deviceById.get(
                     $("compareSizeSelect")
                         .value
                 );
-            const compare = comparePreset
-                ? orient(comparePreset.width, comparePreset.height)
-                : null;
 
             const extentWidth =
                 Math.max(
@@ -3097,17 +3085,6 @@
                         screenSize:
                             event.target
                                 .value
-                    })
-        );
-
-    $("orientationSelect")
-        .addEventListener(
-            "change",
-            event =>
-                editorActions
-                    .setViewport({
-                        orientation:
-                            event.target.value
                     })
         );
 
@@ -11276,9 +11253,6 @@
                         .value,
                 compareSize:
                     $("compareSizeSelect")
-                        .value,
-                orientation:
-                    $("orientationSelect")
                         .value
             },
             selection:
@@ -11354,9 +11328,6 @@
                                 .value,
                         compareSize:
                             $("compareSizeSelect")
-                                .value,
-                        orientation:
-                            $("orientationSelect")
                                 .value
                     },
                     workspace:
@@ -11448,14 +11419,6 @@
                     snapshot.viewport
                         ?.compareSize ||
                     "";
-
-                $("orientationSelect")
-                    .value =
-                    snapshot.viewport
-                        ?.orientation ===
-                    "landscape"
-                        ? "landscape"
-                        : "portrait";
 
                 restoreWorkspaceSnapshot(
                     snapshot.workspace
@@ -11999,21 +11962,9 @@
                         );
                 }
 
-                if (
-                    input?.orientation !==
-                    undefined
-                ) {
-                    $("orientationSelect").value =
-                        input.orientation === "landscape"
-                            ? "landscape"
-                            : "portrait";
-                }
-
                 applyViewport();
 
                 return {
-                    orientation:
-                        $("orientationSelect").value,
                     screenSize:
                         $("screenSizeSelect")
                             .value,
@@ -12024,7 +11975,7 @@
             },
             {
                 description:
-                    "Set preview orientation and viewport presets.",
+                    "Set the preview and comparison viewport presets.",
                 input: {
                     type:
                         "object",
@@ -12036,10 +11987,6 @@
                         compareSize: {
                             type:
                                 "string"
-                        },
-                        orientation: {
-                            type: "string",
-                            enum: ["portrait", "landscape"]
                         }
                     }
                 }

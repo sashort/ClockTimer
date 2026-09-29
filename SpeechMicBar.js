@@ -932,8 +932,7 @@ class SpeechMicBar extends HTMLElement {
                     transition: color 160ms linear;
                 }
 
-                @media (orientation: portrait) and (max-width: 520px) and (max-height: 720px),
-                       (orientation: landscape) and (min-width: 600px) and (max-height: 520px) {
+                @media (orientation: portrait) and (max-width: 520px) and (max-height: 720px) {
                     #bar { gap: 8px; }
                     #mic { width: 38px; height: 38px; flex-basis: 38px; }
                     #mic::before { width: 23px; height: 23px; }
