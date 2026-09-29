@@ -325,6 +325,7 @@ if ($method === 'GET') {
                 'session' => null,
                 'peers' => [],
                 'signals' => [],
+                'messages' => [],
                 'iceServers' => live_stream_ice_servers(),
             ]);
         }
@@ -384,12 +385,34 @@ if ($method === 'GET') {
         ]);
 
         $signals = [];
+        $messages = [];
 
         while ($row = $statement->fetch()) {
+            $decoded = live_stream_decode((string) $row['payload']);
+            $id = (int) $row['id'];
+            $peerId = (int) $row['peer_id'];
+
+            if (
+                is_array($decoded) &&
+                ($decoded['kind'] ?? null) === 'trainer.tts'
+            ) {
+                $messages[] = [
+                    'id' => $id,
+                    'peerId' => $peerId,
+                    'type' => 'trainer.tts',
+                    'payload' =>
+                        is_array($decoded['payload'] ?? null)
+                            ? $decoded['payload']
+                            : [],
+                ];
+
+                continue;
+            }
+
             $signals[] = [
-                'id' => (int) $row['id'],
-                'peerId' => (int) $row['peer_id'],
-                'candidate' => live_stream_decode((string) $row['payload']),
+                'id' => $id,
+                'peerId' => $peerId,
+                'candidate' => $decoded,
             ];
         }
 
@@ -401,6 +424,7 @@ if ($method === 'GET') {
             ],
             'peers' => $peers,
             'signals' => $signals,
+            'messages' => $messages,
             'iceServers' => live_stream_ice_servers(),
         ]);
     }
@@ -666,6 +690,73 @@ if ($method === 'POST') {
             'signalId' => (int) $pdo->lastInsertId(),
             'peerId' => $peerId,
             'sender' => $sender,
+        ], 201);
+    }
+
+    if ($action === 'trainer-message') {
+        $targetUserId = require_positive_int($input, 'targetUserId');
+        $peerId = require_positive_int($input, 'peerId');
+        $peer = live_stream_require_viewer(
+            $pdo,
+            $actor,
+            $targetUserId,
+            $peerId
+        );
+
+        if (
+            $peer['expires_at'] <= time() ||
+            $peer['session_expires_at'] <= time()
+        ) {
+            api_error('The live stream has expired.', 410, 'live_stream_expired');
+        }
+
+        $type = require_string($input, 'type');
+
+        if ($type !== 'trainer.tts') {
+            api_error(
+                'Unsupported trainer message type.',
+                422,
+                'invalid_argument'
+            );
+        }
+
+        $text = trim(require_string($input, 'text'));
+
+        if ($text === '' || strlen($text) > 2000) {
+            api_error(
+                'Trainer TTS text must contain 1-500 characters.',
+                422,
+                'invalid_argument'
+            );
+        }
+
+        $payload = live_stream_encode_object(
+            [
+                'kind' => 'trainer.tts',
+                'payload' => [
+                    'text' => $text,
+                ],
+            ],
+            'trainer message',
+            LIVE_STREAM_MAX_SIGNAL_BYTES
+        );
+
+        $statement = $pdo->prepare(
+            'INSERT INTO live_stream_signals '
+            . '(peer_id, sender, payload, created_at) '
+            . 'VALUES (:peer_id, 'viewer', :payload, :created_at)'
+        );
+        $statement->execute([
+            ':peer_id' => $peerId,
+            ':payload' => $payload,
+            ':created_at' => time(),
+        ]);
+
+        json_response([
+            'messageId' => (int) $pdo->lastInsertId(),
+            'peerId' => $peerId,
+            'targetUserId' => $targetUserId,
+            'type' => $type,
         ], 201);
     }
 
