@@ -65,6 +65,21 @@ CREATE TABLE IF NOT EXISTS `permissions` (
         CHECK (`value` > 0 AND (`value` & (`value` - 1)) = 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+INSERT INTO `permissions`
+    (`value`, `name`, `description`)
+VALUES
+    (1, 'create_users', 'Create user accounts.'),
+    (2, 'modify_users', 'Modify other non-superuser accounts. Own account editing is implicit.'),
+    (4, 'superuser', 'All account permissions and guarded raw SQL access.'),
+    (8, 'developer_preview', 'Access developer-preview tools and interfaces.'),
+    (16, 'developer', 'Access developer tools and interfaces.'),
+    (32, 'grant_token_access', 'Create and manage temporary delegated-access tokens.'),
+    (64, 'view_live_streams', 'View another user\'s active live trip stream, including live audio and speech metadata.'),
+    (128, 'lookup_users', 'Search for user identities by ID, username, first name, last name, or preferred name.')
+ON DUPLICATE KEY UPDATE
+    `name` = VALUES(`name`),
+    `description` = VALUES(`description`);
+
 CREATE TABLE IF NOT EXISTS `access_tokens` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     -- NULL means the token was created by an anonymous delegated session.
