@@ -466,18 +466,28 @@
             await this
                 .#acquirePublisherMedia();
 
-            const data =
-                await this.#request(
-                    "POST",
-                    {
-                        body: {
-                            action:
-                                "publish",
-                            snapshot:
-                                this.#snapshot()
+            let data;
+
+            try {
+                data =
+                    await this.#request(
+                        "POST",
+                        {
+                            body: {
+                                action:
+                                    "publish",
+                                snapshot:
+                                    this.#snapshot()
+                            }
                         }
-                    }
-                );
+                    );
+            }
+            catch (error) {
+                this
+                    .#stopPublisherMedia();
+
+                throw error;
+            }
 
             this.#publishing =
                 true;
@@ -1356,7 +1366,7 @@
                         void this
                             .#viewerTick()
                             .catch(
-                                error =>
+                                error => {
                                     this.#emit(
                                         "error",
                                         {
@@ -1364,7 +1374,27 @@
                                                 "viewer",
                                             error
                                         }
-                                    )
+                                    );
+
+                                    if (
+                                        [
+                                            403,
+                                            404,
+                                            410
+                                        ].includes(
+                                            Number(
+                                                error
+                                                    ?.status
+                                            )
+                                        )
+                                    ) {
+                                        void this
+                                            .stopViewing({
+                                                notifyServer:
+                                                    false
+                                            });
+                                    }
+                                }
                             ),
                     750
                 );
@@ -1375,7 +1405,7 @@
                         void this
                             .#viewerHeartbeat()
                             .catch(
-                                error =>
+                                error => {
                                     this.#emit(
                                         "error",
                                         {
@@ -1383,7 +1413,22 @@
                                                 "viewer",
                                             error
                                         }
-                                    )
+                                    );
+
+                                    if (
+                                        Number(
+                                            error
+                                                ?.status
+                                        ) ===
+                                            403
+                                    ) {
+                                        void this
+                                            .stopViewing({
+                                                notifyServer:
+                                                    false
+                                            });
+                                    }
+                                }
                             ),
                     15000
                 );
