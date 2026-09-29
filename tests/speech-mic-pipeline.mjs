@@ -2667,7 +2667,7 @@ assert.match(
 );
 assert.match(
     app,
-    /"Standard Time Set to " \+[\s\S]*responseDisplay:[\s\S]*prefix:[\s\S]*"Standard Time Set to"[\s\S]*code:[\s\S]*formatted/
+    /"Standard Time Set to " \+[\s\S]*responseDisplay:[\s\S]*prefix:[\s\S]*"Standard Time Set to"[\s\S]*code:[\s\S]*displayFormatted/
 );
 
 assert.match(
