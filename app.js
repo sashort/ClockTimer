@@ -23301,6 +23301,12 @@
                 disableInAppSpeechTraining();
             }
 
+            void liveTripStream
+                ?.close?.()
+                .catch(
+                    () => {}
+                );
+
             signedInProfile = undefined;
             speechTrainingCsrfToken = undefined;
             globalThis
