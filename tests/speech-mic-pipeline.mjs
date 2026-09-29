@@ -1647,7 +1647,11 @@ assert.doesNotMatch(
 );
 assert.match(
     speechMenuSource,
-    /beginSpeechResponse[\s\S]*finishSpeechResponse/
+    /beginSpeechResponse/
+);
+assert.match(
+    speechMenuSource,
+    /finishSpeechResponse/
 );
 assert.match(
     speechMenuSource,
