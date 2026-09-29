@@ -70,7 +70,8 @@ foreach (
         'PERMISSION_VIEW_LIVE_STREAMS',
         'live_stream_require_viewer',
         "if (\$action === 'trainer-message')",
-        "Unsupported trainer message type.",
+        "if (\$action === 'socket-token')",
+        'live_stream_socket_tokens',
     ] as $needle
 ) {
     expect(
@@ -79,4 +80,27 @@ foreach (
     );
 }
 
-echo "PASS live stream permission, target scoping, and trainer message guard" . PHP_EOL;
+$socket = file_get_contents(__DIR__ . '/../services/live-stream-websocket.php');
+expect(is_string($socket) && $socket !== '', 'live stream WebSocket service should exist');
+foreach (
+    [
+        'LIVE_WS_PERMISSION_SWEEP_SECONDS = 2',
+        'live_ws_can_view',
+        "if (\$type === 'targets.request')",
+        "if (\$type === 'peer.join')",
+        "if (\$type === 'trainer.tts')",
+        "'permission_revoked'",
+    ] as $needle
+) {
+    expect(
+        str_contains($socket, $needle),
+        'WebSocket signaling should enforce live permissions: ' . $needle
+    );
+}
+expect(
+    !str_contains($socket, 'viewerName') &&
+    !str_contains($socket, 'viewerUsername'),
+    'publisher signaling should not disclose trainer identity'
+);
+
+echo "PASS live stream permission, anonymous trainer signaling, revocation, and trainer TTS guard" . PHP_EOL;
