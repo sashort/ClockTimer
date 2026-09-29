@@ -3204,7 +3204,8 @@ class SpeechMenu {
             !streamResult
                 ?.viable &&
             !utterance.committing &&
-            !utterance.lastExactCandidate
+            !utterance.lastExactCandidate &&
+            isFinal
         ) {
             if (
                 SpeechMenu
