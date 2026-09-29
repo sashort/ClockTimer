@@ -3422,7 +3422,7 @@ assert.match(
 );
 assert.match(
     css,
-    /\.voice-entry-surface\s*\{[\s\S]*inset:\s*50% auto auto 50%[\s\S]*width:\s*min\(560px,[\s\S]*transform:\s*translate\(-50%, -50%\)/
+    /\.voice-entry-surface\s*\{[\s\S]*inset:\s*50% auto auto 50%[\s\S]*width:\s*min\(560px,[\s\S]*transform:[\s\S]*translate\([\s\S]*-50%,[\s\S]*--voice-entry-summary-shift-y/
 );
 assert.match(
     app,
@@ -3494,7 +3494,7 @@ assert.match(
 );
 assert.match(
     html,
-    /id="speechTimingDialog"[\s\S]*Estimated Speech Rate[\s\S]*Continuation Grace/
+    /id="speechTimingDialog"[\s\S]*Estimated Speech Rate[\s\S]*Pause Boundary[\s\S]*Continuation Dispatch Delay/
 );
 assert.match(
     speechTimingApiSource,
