@@ -111,9 +111,9 @@
     // The former 70% point (2.8×) is now the top of the speech range.
     const AUDIO_SPEECH_VELOCITY_MAX = 2.8;
     const CHIME_RATES = Object.freeze([
-        { label: "Slow", value: 1 },
-        { label: "Medium", value: 1.25 },
-        { label: "Fast", value: 1.5 }
+        { label: "Slow", value: 0.8 },
+        { label: "Medium", value: 1 },
+        { label: "Fast", value: 1.2 }
     ]);
 
     function normalizeChimeRate(value) {
@@ -124,9 +124,19 @@
                 ? rate.value : nearest, 1);
     }
 
+    function savedChimeRate(value, version) {
+        if (version === 2 || value === undefined) return normalizeChimeRate(value);
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return 1;
+        const oldRates = [1, 1.25, 1.5];
+        const nearest = oldRates.reduce((best, rate) =>
+            Math.abs(rate - numeric) < Math.abs(best - numeric) ? rate : best, 1);
+        return normalizeChimeRate(nearest / 1.25);
+    }
+
     function formatChimeRate(value) {
         const rate = CHIME_RATES.find(rate => rate.value === normalizeChimeRate(value));
-        return rate.label + " (" + Math.round(rate.value * 100) + "%)";
+        return rate.label;
     }
 
     function audioVelocityPercent(value, maximum) {
@@ -3093,6 +3103,7 @@
 
         return {
             volume: 1,
+            chimeRateVersion: 2,
             masterVelocity: 1,
             speechVelocity: 1,
             toneVelocity: 1,
@@ -3140,7 +3151,7 @@
                 1
             );
         settings.toneVelocity =
-            normalizeChimeRate(value.toneVelocity);
+            savedChimeRate(value.toneVelocity, value.chimeRateVersion);
         settings.instrument =
             typeof value.instrument ===
                 "string"
@@ -3293,7 +3304,7 @@
                     1.5
                 );
                 if (Object.prototype.hasOwnProperty.call(custom, "toneVelocity")) {
-                    custom.toneVelocity = normalizeChimeRate(custom.toneVelocity);
+                    custom.toneVelocity = savedChimeRate(custom.toneVelocity, value.chimeRateVersion);
                 }
 
                 if (
