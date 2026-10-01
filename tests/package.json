@@ -18,7 +18,8 @@
     "test:action-macros": "node action-macros.mjs",
     "test:editor-actions": "node editor-actions.mjs",
     "test:hamburger-menu": "node hamburger-menu.mjs",
-    "test:clock-fsm": "node clock-timer-fsm.mjs"
+    "test:clock-fsm": "node clock-timer-fsm.mjs",
+    "test:speech-failfast": "node speech-failfast.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

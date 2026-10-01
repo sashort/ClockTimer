@@ -2463,6 +2463,7 @@ class SpeechMenu {
             sampleCount,
             transcript: "",
             transcriptRevision: 0,
+            noCandidateTranscript: "",
             firstTranscriptAt:
                 undefined,
             candidatePool: [],
@@ -2986,7 +2987,8 @@ class SpeechMenu {
 
         if (
             transcript ===
-            utterance.transcript
+            utterance.transcript &&
+            !isFinal
         ) {
             return;
         }
@@ -3199,13 +3201,17 @@ class SpeechMenu {
             }
         }
 
+        if (pool.length || streamResult?.viable || utterance.lastExactCandidate) {
+            utterance.noCandidateTranscript = "";
+        }
+
         if (
             !pool.length &&
             !streamResult
                 ?.viable &&
             !utterance.committing &&
             !utterance.lastExactCandidate &&
-            isFinal
+            SpeechMenu.#shouldFailFast(utterance, transcript, isFinal)
         ) {
             if (
                 SpeechMenu
@@ -3255,6 +3261,29 @@ class SpeechMenu {
                 utterance,
                 revision
             );
+    }
+
+    static #shouldFailFast(utterance, transcript, isFinal) {
+        if (isFinal) return true;
+        // Capture-only sessions keep complete mismatches for training/editor review.
+        if (!SpeechMenu.#executionEnabled) return false;
+        const previous = SpeechMenu.#normalizeTranscript(utterance.noCandidateTranscript);
+        const current = SpeechMenu.#normalizeTranscript(transcript);
+        utterance.noCandidateTranscript = current;
+        // The last word may still revise ("re" / "read" -> "ready").
+        // Reject only when the stable prefix itself cannot begin a command.
+        // Viable commands reset this history.
+        const previousWords = previous.split(" ").filter(Boolean);
+        const words = current.split(" ").filter(Boolean);
+        let stableLength = 0;
+        while (stableLength < words.length - 1 && stableLength < previousWords.length &&
+            words[stableLength] === previousWords[stableLength]) stableLength++;
+        if (!stableLength) return false;
+        const stablePrefix = words.slice(0, stableLength).join(" ");
+        const viablePrefix = SpeechMenu.#phraseGroups.some(group => group.phrases.some(phrase =>
+            SpeechMenu.#phraseCanContinue(stablePrefix, phrase) ||
+            SpeechMenu.#normalizeTranscript(phrase) === stablePrefix));
+        return !viablePrefix;
     }
 
     static async #executeCommandChain(

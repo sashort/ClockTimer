@@ -315,7 +315,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-09-29-responsive-1";
+        "2026-10-01-failfast-1";
 
     const speechRuntimeVersion =
         "?sherpa=" +

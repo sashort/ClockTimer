@@ -2761,7 +2761,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /!pool\.length[\s\S]*!utterance\.lastExactCandidate\s*&&\s*isFinal[\s\S]*#finishUtterance\([\s\S]*"no-candidates"[\s\S]*false[\s\S]*"utteranceUnrecognized"/
+    /!pool\.length[\s\S]*!utterance\.lastExactCandidate\s*&&\s*SpeechMenu\.#shouldFailFast\(utterance, transcript, isFinal\)[\s\S]*#finishUtterance\([\s\S]*"no-candidates"[\s\S]*false[\s\S]*"utteranceUnrecognized"/
 );
 assert.doesNotMatch(
     speechMenuSource,
