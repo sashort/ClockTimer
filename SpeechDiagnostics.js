@@ -18,7 +18,7 @@
 
         constructor() {
             super();
-            this.#shadow.innerHTML = `
+            this.#shadow.innerHTML = globalThis.WMOFLanguagePack.markup(`
                 <style>
                     :host {
                         position: fixed;
@@ -151,45 +151,44 @@
                 </style>
                 <section class="panel">
                     <header>
-                        <strong>Raw Sherpa Diagnostics</strong>
+                        <strong data-language-id="3b370944-1322-5c2b-ba28-ca4fe078d8ee">{{text:3b370944-1322-5c2b-ba28-ca4fe078d8ee:text0}}</strong>
                         <span id="device"></span>
                         <span class="spacer"></span>
-                        <button id="copy" type="button">Copy JSON</button>
-                        <button id="clear" type="button">Clear</button>
-                        <button id="close" type="button" aria-label="Close">×</button>
+                        <button id="copy" type="button" data-language-id="520d6d61-06e2-5858-87af-67bb2119c306">{{text:520d6d61-06e2-5858-87af-67bb2119c306:text0}}</button>
+                        <button id="clear" type="button" data-language-id="211555b3-3393-5fda-bdac-70d96a90c24f">{{text:211555b3-3393-5fda-bdac-70d96a90c24f:text0}}</button>
+                        <button id="close" type="button" aria-label="{{text:05b57c42-d19f-5ae4-a819-2d1f59f371ae:aria-label}}" data-language-id="05b57c42-d19f-5ae4-a819-2d1f59f371ae">{{text:05b57c42-d19f-5ae4-a819-2d1f59f371ae:text0}}</button>
                     </header>
                     <div class="controls">
-                        <label>
-                            <input id="execute" type="checkbox">
-                            Execute matched commands
-                        </label>
-                        <span id="capture">Mic DSP: waiting…</span>
+                        <label data-language-id="8a762e16-ebe3-5d2d-b41e-9022767b5a55">
+                            <input id="execute" type="checkbox">{{text:8a762e16-ebe3-5d2d-b41e-9022767b5a55:text0}}</label>
+                        <span id="capture" data-language-id="1344a310-dc45-5422-a378-cc0dc0c392da">{{text:1344a310-dc45-5422-a378-cc0dc0c392da:text0}}</span>
                     </div>
                     <div class="summary">
-                        <div class="metric"><b id="utterances">0</b><small>utterances</small></div>
-                        <div class="metric"><b id="matched">0</b><small>matched</small></div>
-                        <div class="metric"><b id="first">—</b><small>median first</small></div>
-                        <div class="metric"><b id="final">—</b><small>median final</small></div>
-                        <div class="metric"><b id="decode">—</b><small>max decode</small></div>
-                        <div class="metric"><b id="vad">—</b><small>max VAD</small></div>
+                        <div class="metric"><b id="utterances" data-language-id="ac9c02f4-1530-5467-9154-2b3c19c0586b">{{text:ac9c02f4-1530-5467-9154-2b3c19c0586b:text0}}</b><small data-language-id="b2ae3f22-9d53-52a8-a1a1-0c4d1660af59">{{text:b2ae3f22-9d53-52a8-a1a1-0c4d1660af59:text0}}</small></div>
+                        <div class="metric"><b id="matched" data-language-id="cd7fe480-ba89-5c85-a1f1-a5b38fc865f0">{{text:cd7fe480-ba89-5c85-a1f1-a5b38fc865f0:text0}}</b><small data-language-id="e152de11-f83a-53e2-919d-f8ec96659737">{{text:e152de11-f83a-53e2-919d-f8ec96659737:text0}}</small></div>
+                        <div class="metric"><b id="first" data-language-id="6ed8b126-03f8-5869-b622-eb17365b1cd3">{{text:6ed8b126-03f8-5869-b622-eb17365b1cd3:text0}}</b><small data-language-id="9e504b23-c3d0-5880-b116-df2d80b478f6">{{text:9e504b23-c3d0-5880-b116-df2d80b478f6:text0}}</small></div>
+                        <div class="metric"><b id="final" data-language-id="05cacaf2-1a49-5c14-a8a7-add539853f39">{{text:05cacaf2-1a49-5c14-a8a7-add539853f39:text0}}</b><small data-language-id="8d48c4d6-89f3-5c68-ac37-e780c78f04a0">{{text:8d48c4d6-89f3-5c68-ac37-e780c78f04a0:text0}}</small></div>
+                        <div class="metric"><b id="decode" data-language-id="c0c012bc-86bf-5581-83a4-336298e13c12">{{text:c0c012bc-86bf-5581-83a4-336298e13c12:text0}}</b><small data-language-id="6c0822c9-2d65-5c1f-bfcb-e6cff9851bd3">{{text:6c0822c9-2d65-5c1f-bfcb-e6cff9851bd3:text0}}</small></div>
+                        <div class="metric"><b id="vad" data-language-id="f9407d4d-20e3-550a-9ec0-fbd7cc855a74">{{text:f9407d4d-20e3-550a-9ec0-fbd7cc855a74:text0}}</b><small data-language-id="f7f4545c-e887-5d61-8aaf-530ebbe1bf1e">{{text:f7f4545c-e887-5d61-8aaf-530ebbe1bf1e:text0}}</small></div>
                     </div>
                     <div class="table-wrap">
                         <table>
                             <thead>
                                 <tr>
-                                    <th class="id">#</th>
-                                    <th class="transcript">Transcript</th>
-                                    <th class="latency">First</th>
-                                    <th class="latency">Final</th>
-                                    <th class="latency decode">Decode</th>
-                                    <th class="status">Status</th>
+                                    <th class="id" data-language-id="643d11bb-975b-5898-83df-e121e7b094ef">{{text:643d11bb-975b-5898-83df-e121e7b094ef:text0}}</th>
+                                    <th class="transcript" data-language-id="cfa6a354-2eae-51f3-ac5c-7a41bb1f56b5">{{text:cfa6a354-2eae-51f3-ac5c-7a41bb1f56b5:text0}}</th>
+                                    <th class="latency" data-language-id="08e15368-e9e4-50c0-b9d4-3a7b9b17f38c">{{text:08e15368-e9e4-50c0-b9d4-3a7b9b17f38c:text0}}</th>
+                                    <th class="latency" data-language-id="30e0a9c3-95bf-5e9a-bd82-ce9d8d74087b">{{text:30e0a9c3-95bf-5e9a-bd82-ce9d8d74087b:text0}}</th>
+                                    <th class="latency decode" data-language-id="1378239f-817f-5c11-9251-05ac18894c12">{{text:1378239f-817f-5c11-9251-05ac18894c12:text0}}</th>
+                                    <th class="status" data-language-id="88e72b76-c213-5869-96ec-e0d85e7ce110">{{text:88e72b76-c213-5869-96ec-e0d85e7ce110:text0}}</th>
                                 </tr>
                             </thead>
                             <tbody id="body"></tbody>
                         </table>
                     </div>
                 </section>
-            `;
+            `);
+        globalThis.WMOFLanguagePack.observe(this.#shadow);
 
             this.#shadow.getElementById("execute")
                 .addEventListener("change", event => {
@@ -396,7 +395,7 @@
                     row.error =
                         detail.message ||
                         detail.error ||
-                        "Recognition error";
+                        globalThis.WMOFLanguagePack.text("de25229e-79b4-4fdb-84be-b850ec419c4b");
                     break;
             }
 
@@ -411,7 +410,7 @@
 
             this.#shadow.getElementById("device")
                 .textContent =
-                    `${this.#session.pipeline || "raw"} · ${short} · ${navigator.hardwareConcurrency || "?"} cores`;
+                    globalThis.WMOFLanguagePack.text("86efedcc-9b49-57aa-bc4f-7583746adfd4", {value0: (this.#session.pipeline || "raw"), value1: (short), value2: (navigator.hardwareConcurrency || "?")});
         }
 
         #renderCapture() {
@@ -428,7 +427,7 @@
 
             this.#shadow.getElementById("capture")
                 .textContent =
-                    `Mic DSP: EC ${fmt(settings.echoCancellation)} · NS ${fmt(settings.noiseSuppression)} · AGC ${fmt(settings.autoGainControl)}`;
+                    globalThis.WMOFLanguagePack.text("26a4dc24-9a0f-5e45-818b-e5430b66a0d0", {value0: (fmt(settings.echoCancellation)), value1: (fmt(settings.noiseSuppression)), value2: (fmt(settings.autoGainControl))});
         }
 
         #median(values) {
@@ -522,7 +521,7 @@
 
             this.#shadow.getElementById("vad")
                 .textContent =
-                    this.#session.pipeline === "silero"
+                    this.#session.pipeline === globalThis.WMOFLanguagePack.text("1644aee1-d80d-50d4-a781-598589d458c3")
                         ? this.#milliseconds(
                             this.#session
                                 .vadMaxProcessMilliseconds
@@ -604,7 +603,7 @@
                     button.textContent;
 
                 button.textContent =
-                    "Copied";
+                    globalThis.WMOFLanguagePack.text("691baafb-681e-5f62-bc45-a6a6f8c29a2f");
 
                 setTimeout(
                     () =>
@@ -615,7 +614,7 @@
             }
             catch {
                 console.log(
-                    "Speech diagnostics:",
+                    globalThis.WMOFLanguagePack.text("052bd581-4379-41c4-8cc9-410a95b21f15"),
                     this.#snapshot()
                 );
             }

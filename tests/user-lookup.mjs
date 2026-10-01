@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {join} from "node:path";
 import {fileURLToPath} from "node:url";
-import {Window} from "happy-dom";
+import {Window} from "./LanguageWindow.mjs";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const root = join(here, "..");

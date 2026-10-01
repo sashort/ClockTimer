@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {Window} from 'happy-dom';
+import {Window} from './LanguageWindow.mjs';
 const window=new Window({settings:{disableJavaScriptEvaluation:true,disableJavaScriptFileLoading:true,disableCSSFileLoading:true}});
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 window.document.body.innerHTML=html.slice(html.indexOf('<main'),html.indexOf('<script src='));
@@ -29,7 +29,7 @@ const code=field('    function setFloatingTripLogRect(', '    async function ani
     field('    function setFloatingTripLogBodyRect(', '    function positionTripLogCloseButton(')+
     field('    async function openTripList(', '    function getStoredJSON(');
 const workflow=new Function(...Object.keys(bindings),`let tripLogSettingsVisible;${code};return {openTripList,closeTripList};`)(...Object.values(bindings));
-Object.assign(globalThis,{window,document,Element:window.Element,HTMLElement:window.HTMLElement,EventTarget:window.EventTarget,
+Object.assign(globalThis,{WMOFLanguagePack:window.WMOFLanguagePack,window,document,Element:window.Element,HTMLElement:window.HTMLElement,EventTarget:window.EventTarget,
     CustomEvent:window.CustomEvent,getComputedStyle:window.getComputedStyle.bind(window),requestAnimationFrame:cb=>queueMicrotask(()=>cb(performance.now()))});
 Function(fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8'))();
 const Speech=globalThis.SpeechMenu;

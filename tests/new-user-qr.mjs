@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import {Window} from 'happy-dom';
+import {Window} from './LanguageWindow.mjs';
 
 const adminSource=fs.readFileSync(
     new URL('../api/admin/new-user/index.php',import.meta.url),

@@ -4,6 +4,8 @@
     let current;
     let generation = 0;
     const fetchLanguage = locale => {
+        const embedded = globalThis.WMOFLanguagePack?.resources?.announcements;
+        if (embedded?.locale === locale) return Promise.resolve(embedded);
         if (!resources.has(locale)) {
             const request = fetch(`lang/${encodeURIComponent(locale)}/announcements.json`, { cache: "no-cache" })
                 .then(response => {
@@ -39,6 +41,7 @@
                 return String(values[key] ?? "");
             });
         },
+        id(type) { return current?.selected.announcements[type]?.id ?? current?.english.announcements[type]?.id; },
         summary(type) {
             const definition = current?.selected.announcements[type] ?? current?.english.announcements[type];
             return definition?.summary ? { text: api.text(`announcements.${type}.summary`), options: definition.speechOptions || {} } : null;

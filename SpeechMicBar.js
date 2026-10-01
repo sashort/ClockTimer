@@ -62,29 +62,29 @@ class SpeechMicBar extends HTMLElement {
     #optionCategories = [
         {
             key: "trip-actions",
-            label: "Trip Actions"
+            label: globalThis.WMOFLanguagePack.text("d5bf1d0c-6d0b-4c87-a84d-21499ed0e4ec")
         },
         {
             key: "informational",
-            label: "Informational"
+            label: globalThis.WMOFLanguagePack.text("50aa0a27-c331-4e91-a248-4ae98bb4becc")
         },
         {
             key: "goals",
-            label: "Goals"
+            label: globalThis.WMOFLanguagePack.text("73c3d2d3-266e-41ad-8c71-1dd4fef5a5ae")
         },
         {
             key: "settings",
-            label: "Settings"
+            label: globalThis.WMOFLanguagePack.text("edd1cf00-bd9e-43a5-a984-fa32dc030612")
         },
         {
             key: "system",
-            label: "System"
+            label: globalThis.WMOFLanguagePack.text("d3a4271a-d8f8-4e52-9690-200ee65fd2d0")
         }
     ];
 
     constructor() {
         super();
-        this.#shadow.innerHTML = `
+        this.#shadow.innerHTML = globalThis.WMOFLanguagePack.markup(`
             <style>
                 :host {
                     --speech-shell-radius:
@@ -1132,20 +1132,20 @@ class SpeechMicBar extends HTMLElement {
             </style>
             <section
                 id="optionsPanel"
-                aria-label="Speech Commands"
+                aria-label="{{text:fa5c9346-43fa-5ce0-a8f3-a74a0985ff7e:aria-label}}"
                 aria-hidden="true"
-            >
-                <div id="optionsHeader">Speech Commands</div>
+             data-language-id="fa5c9346-43fa-5ce0-a8f3-a74a0985ff7e">
+                <div id="optionsHeader" data-language-id="143961ca-bddb-5ce5-88f8-77f36af9ff5d">{{text:143961ca-bddb-5ce5-88f8-77f36af9ff5d:text0}}</div>
                 <button
                     id="optionsClose"
                     type="button"
-                    aria-label="Collapse speech commands"
-                    title="Collapse speech commands"
-                >▼</button>
+                    aria-label="{{text:eb85a4a0-3a6e-516c-b72f-190c8fb61116:aria-label}}"
+                    title="{{text:eb85a4a0-3a6e-516c-b72f-190c8fb61116:title}}"
+                 data-language-id="eb85a4a0-3a6e-516c-b72f-190c8fb61116">{{text:eb85a4a0-3a6e-516c-b72f-190c8fb61116:text0}}</button>
                 <div id="optionsGrid"></div>
             </section>
             <div id="bar">
-                <div id="mic" role="button" tabindex="0" aria-label="Sleep or wake speech recognition"></div>
+                <div id="mic" role="button" tabindex="0" aria-label="{{text:fef7e983-13d3-5925-ae96-55e45a53b52b:aria-label}}" data-language-id="fef7e983-13d3-5925-ae96-55e45a53b52b"></div>
                 <div id="main">
                     <div id="activity" aria-live="polite"></div>
                     <div id="codes"></div>
@@ -1154,7 +1154,8 @@ class SpeechMicBar extends HTMLElement {
                     <div id="responseContent"></div>
                 </div>
             </div>
-        `;
+        `);
+        globalThis.WMOFLanguagePack.observe(this.#shadow);
         this.#optionsPanel =
             this.#shadow.querySelector(
                 "#optionsPanel"
@@ -1406,30 +1407,30 @@ class SpeechMicBar extends HTMLElement {
         this.#wakeCommand =
             ensureCommand(
                 "wake",
-                "^wake$",
+                globalThis.WMOFLanguagePack.patternFor("system:wake"),
                 "SpeechMenu.wake"
             );
         this.#sleepCommand =
             ensureCommand(
                 "sleep",
-                "^sleep$",
+                globalThis.WMOFLanguagePack.patternFor("system:sleep"),
                 "SpeechMenu.sleep"
             );
         this.#offCommand =
             ensureCommand(
                 "off",
-                "^off$",
+                globalThis.WMOFLanguagePack.patternFor("system:off"),
                 "WMOFActions.disableSpeechRecognition"
             );
         this.#commandsCommand =
             ensureCommand(
                 "commands",
-                "^(?:(?:speech )?commands|choices|options|what)$",
+                globalThis.WMOFLanguagePack.patternFor("system:commands"),
                 "WMOFActions.openSpeechOptions"
             );
         ensureCommand(
             "speech",
-            "^speech (?:on|off)$",
+            globalThis.WMOFLanguagePack.patternFor("system:speech"),
             "WMOFActions.setSpeechMaster"
         )
             .setAttribute(
@@ -1438,7 +1439,7 @@ class SpeechMicBar extends HTMLElement {
             );
         ensureCommand(
             "chime",
-            "^chime (?:on|off)$",
+            globalThis.WMOFLanguagePack.patternFor("system:chime"),
             "WMOFActions.setChimeMaster"
         )
             .setAttribute(
@@ -1448,14 +1449,14 @@ class SpeechMicBar extends HTMLElement {
 
         ensureCommand(
             "chime-rate",
-            "^chime (?<rate>fast|medium|slow)$",
+            globalThis.WMOFLanguagePack.patternFor("system:chime-rate"),
             "WMOFActions.setChimeRate"
         ).setAttribute("speech-repeatable", "");
 
         const speechRatePercentCommand =
             ensureCommand(
                 "speech-rate-percent",
-                "^speech (?!on$|off$)(?<percent>.+?)(?: percent|%)?$",
+                globalThis.WMOFLanguagePack.patternFor("system:speech-rate-percent"),
                 "WMOFActions.setAudioRatePercent"
             );
         speechRatePercentCommand
@@ -1491,7 +1492,7 @@ class SpeechMicBar extends HTMLElement {
         const volumePercentCommand =
             ensureCommand(
                 "volume-percent",
-                "^volume (?<percent>.+?)(?: percent|%)?$",
+                globalThis.WMOFLanguagePack.patternFor("system:volume-percent"),
                 "WMOFActions.setAudioVolumePercent"
             );
         volumePercentCommand
@@ -1525,7 +1526,7 @@ class SpeechMicBar extends HTMLElement {
             "volume <percent>";
         ensureCommand(
             "faster",
-            "^faster$",
+            globalThis.WMOFLanguagePack.patternFor("system:faster"),
             "WMOFActions.changeAudioRateFaster"
         )
             .setAttribute(
@@ -1534,7 +1535,7 @@ class SpeechMicBar extends HTMLElement {
             );
         ensureCommand(
             "slower",
-            "^slower$",
+            globalThis.WMOFLanguagePack.patternFor("system:slower"),
             "WMOFActions.changeAudioRateSlower"
         )
             .setAttribute(
@@ -1543,7 +1544,7 @@ class SpeechMicBar extends HTMLElement {
             );
         ensureCommand(
             "louder",
-            "^louder$",
+            globalThis.WMOFLanguagePack.patternFor("system:louder"),
             "WMOFActions.changeAudioVolumeLouder"
         )
             .setAttribute(
@@ -1552,7 +1553,7 @@ class SpeechMicBar extends HTMLElement {
             );
         ensureCommand(
             "softer",
-            "^softer$",
+            globalThis.WMOFLanguagePack.patternFor("system:softer"),
             "WMOFActions.changeAudioVolumeSofter"
         )
             .setAttribute(
@@ -2590,8 +2591,8 @@ class SpeechMicBar extends HTMLElement {
 
         const action =
             collapsed
-                ? "Expand speech commands"
-                : "Collapse speech commands";
+                ? globalThis.WMOFLanguagePack.text("5a5167e8-8a4e-43b2-beb7-19785a085f1c")
+                : globalThis.WMOFLanguagePack.text("2dc7c476-ad13-43f6-9ccf-f2d073bd7952");
 
         this.#optionsClose
             .setAttribute(
@@ -2757,7 +2758,7 @@ class SpeechMicBar extends HTMLElement {
     ) {
         if (!Array.isArray(definitions)) {
             throw new TypeError(
-                "Option categories must be an array."
+                globalThis.WMOFLanguagePack.text("19cb29df-a217-4ea3-9330-68294dcce62e")
             );
         }
 
@@ -2826,7 +2827,7 @@ class SpeechMicBar extends HTMLElement {
             normalized.push(
                 Object.freeze({
                     key: "settings",
-                    label: "Settings"
+                    label: globalThis.WMOFLanguagePack.text("fb5c1464-461b-4328-8f3c-57f64e4b768e")
                 })
             );
         }
@@ -2862,7 +2863,7 @@ class SpeechMicBar extends HTMLElement {
 
         if (!key) {
             throw new TypeError(
-                "Option category key is required."
+                globalThis.WMOFLanguagePack.text("ed0af682-ef92-4125-bd3b-24dfb767364d")
             );
         }
 
@@ -3485,7 +3486,7 @@ class SpeechMicBar extends HTMLElement {
             );
 
             row.title =
-                "Not implemented";
+                globalThis.WMOFLanguagePack.text("65cc918a-7440-55f7-a00f-0d8e56c413be");
         }
 
         const text =
@@ -3542,7 +3543,7 @@ class SpeechMicBar extends HTMLElement {
                 "option-unimplemented-label";
 
             status.textContent =
-                " (unimplemented)";
+                globalThis.WMOFLanguagePack.text("b31e1a71-0d1a-51ff-91d5-0c4d69848889");
 
             row.append(
                 status
@@ -3551,7 +3552,7 @@ class SpeechMicBar extends HTMLElement {
             row.setAttribute(
                 "aria-label",
                 text +
-                " (unimplemented)"
+                globalThis.WMOFLanguagePack.text("a811df4a-77b4-5cd6-8f9b-bb0f5bb73cee")
             );
         }
         else {
@@ -5362,7 +5363,7 @@ class SpeechMicBar extends HTMLElement {
                 "option-empty";
 
             empty.textContent =
-                "No voice options available.";
+                globalThis.WMOFLanguagePack.text("45a32866-c70f-5089-9087-f189a1e9ef5b");
 
             this.#optionsGrid
                 .append(
@@ -6183,7 +6184,7 @@ class SpeechMicBar extends HTMLElement {
                 this.setAttribute("state", "stopped");
                 this.#showStatus(
                     detail?.message ||
-                    "Speech recognition unavailable"
+                    globalThis.WMOFLanguagePack.text("abaa156d-5c84-4aef-998f-017b4e977485")
                 );
                 break;
             case "speechRecognitionStatusChanged":
@@ -6263,7 +6264,7 @@ class SpeechMicBar extends HTMLElement {
                             "no-candidates"
                     ) {
                         this.#showStatus(
-                            "Processing…"
+                            globalThis.WMOFLanguagePack.text("b3a1644c-9bd5-451e-b159-2dbfb5ffcc18")
                         );
                     }
                 }
@@ -6569,16 +6570,16 @@ class SpeechMicBar extends HTMLElement {
         this.#showStatus(
             this.state === "muted"
                 ? (
-                    "Say " +
+                    globalThis.WMOFLanguagePack.text("28e1bb49-d720-45b4-839b-aeeedebe3b2f") +
                     this
                         .#wakeActivationPhrase() +
                     " to Activate"
                 )
                 : this.state === "suspended"
-                    ? "Listening paused"
+                    ? globalThis.WMOFLanguagePack.text("99f3cad2-a509-481c-9f22-86f4c8f82598")
                     : this.state === "stopped"
                         ? ""
-                        : "Listening…"
+                        : globalThis.WMOFLanguagePack.text("01d8e57d-d85b-4a7f-9e35-910c1fcdfabe")
         );
     }
 
@@ -6853,7 +6854,7 @@ class SpeechMicBar extends HTMLElement {
 
         if (readyAt) {
             return {
-                core: "Ready At",
+                core: globalThis.WMOFLanguagePack.text("e9b63162-19e4-4f5e-9163-922abb2d5156"),
                 rest:
                     transcript.slice(
                         readyAt[0]
@@ -6872,7 +6873,7 @@ class SpeechMicBar extends HTMLElement {
 
         if (ready) {
             return {
-                core: "Ready",
+                core: globalThis.WMOFLanguagePack.text("93395bb0-0807-4a38-9cf5-74daccfa5ffd"),
                 rest:
                     transcript.slice(
                         ready[0]
@@ -6891,7 +6892,7 @@ class SpeechMicBar extends HTMLElement {
 
         if (syncOff) {
             return {
-                core: "Sync Off",
+                core: globalThis.WMOFLanguagePack.text("25587df8-aa1e-404f-82ff-abb2dde2dc55"),
                 rest:
                     transcript.slice(
                         syncOff[0]
@@ -6910,7 +6911,7 @@ class SpeechMicBar extends HTMLElement {
 
         if (sync) {
             return {
-                core: "Sync",
+                core: globalThis.WMOFLanguagePack.text("5380b649-b98d-4d51-9569-a8154e94c8fc"),
                 rest:
                     transcript.slice(
                         sync[0]
@@ -7156,9 +7157,9 @@ class SpeechMicBar extends HTMLElement {
 
             code.textContent =
                 value === null
-                    ? "null"
+                    ? globalThis.WMOFLanguagePack.text("896987a3-aa82-5da8-9437-69ba1744a7bb")
                     : typeof value ===
-                        "string"
+                        globalThis.WMOFLanguagePack.text("712ebbf4-40c1-5f45-bf50-14c7acef45c1")
                         ? value
                         : JSON.stringify(
                             value

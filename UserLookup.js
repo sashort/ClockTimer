@@ -239,7 +239,7 @@
                     )
             ) {
                 throw new Error(
-                    "User ID must be a positive integer."
+                    globalThis.WMOFLanguagePack.text("03c4bdd2-9057-48c9-a9b7-f6fbd97b1310")
                 );
             }
 
@@ -250,7 +250,7 @@
                     0
             ) {
                 throw new Error(
-                    "Enter at least one search criterion."
+                    globalThis.WMOFLanguagePack.text("8833716a-086f-4d1c-b2b7-6aeca61285f7")
                 );
             }
 
@@ -261,7 +261,7 @@
             identity
         ) {
             if (!identity) {
-                return "No user selected";
+                return globalThis.WMOFLanguagePack.text("0d29d3a2-389b-4825-993d-688183cd5f91");
             }
 
             const formal =
@@ -283,7 +283,7 @@
                 formal ||
                 identity
                     .username ||
-                "User"
+                globalThis.WMOFLanguagePack.text("fef363e8-ad34-48c9-9961-6d6460e1456f")
             );
         }
 
@@ -291,7 +291,7 @@
             identity
         ) {
             if (!identity) {
-                return "Select a result to create the current identity object.";
+                return globalThis.WMOFLanguagePack.text("98eb131c-07ac-4ba5-95eb-17ab2a9a4826");
             }
 
             const formal =
@@ -325,7 +325,7 @@
                         .username
             );
             parts.push(
-                "ID " +
+                globalThis.WMOFLanguagePack.text("e8cafe89-9039-44e1-9314-dcb503e0f7a2") +
                     identity
                         .userId
             );
@@ -442,7 +442,7 @@
                 select.type =
                     "button";
                 select.textContent =
-                    "Select";
+                    globalThis.WMOFLanguagePack.text("e8050ef7-72ba-5854-bc79-d46712f28281");
                 select.addEventListener(
                     "click",
                     () =>
@@ -461,7 +461,7 @@
                 copy.type =
                     "button";
                 copy.textContent =
-                    "Copy Identity";
+                    globalThis.WMOFLanguagePack.text("9b02e0b1-7add-5cec-ba58-0f0c2b915c37");
                 copy.addEventListener(
                     "click",
                     () =>
@@ -497,7 +497,7 @@
                     live.dataset.action =
                         "live-stream";
                     live.textContent =
-                        "Live Stream";
+                        globalThis.WMOFLanguagePack.text("c796d00c-df14-54c9-91ae-40022ff832db");
                     live.addEventListener(
                         "click",
                         () =>
@@ -543,7 +543,7 @@
                                     ? "+"
                                     : ""
                             ) +
-                            " result" +
+                            globalThis.WMOFLanguagePack.text("2d9ecb50-8a00-50bd-b37e-a612bf40e93c") +
                             (
                                 this
                                     .#identities
@@ -552,7 +552,7 @@
                                 !this
                                     .#nextAfterId
                                     ? ""
-                                    : "s"
+                                    : globalThis.WMOFLanguagePack.text("a1eade3f-ff99-5e18-a86e-41217e28eaf2")
                             )
                         );
             }
@@ -718,7 +718,7 @@
                     .#canLookup()
             ) {
                 this.#status.textContent =
-                    "User lookup permission is required.";
+                    globalThis.WMOFLanguagePack.text("0549ce8a-6d89-5cf9-8b9d-a63a92949335");
 
                 return [];
             }
@@ -801,7 +801,7 @@
             this.#searchAbort =
                 controller;
             this.#status.textContent =
-                "Searching…";
+                globalThis.WMOFLanguagePack.text("62c267a0-d3af-529c-8eb5-01beca9409f2");
             $("#userLookupSearchButton").disabled =
                 true;
             this.#loadMore.disabled =
@@ -839,7 +839,7 @@
                         new Error(
                             data.message ||
                             data.error ||
-                            "User lookup failed."
+                            globalThis.WMOFLanguagePack.text("70f32e1c-dd50-417b-ac9d-86916696b9a1")
                         );
 
                     error.status =
@@ -914,7 +914,7 @@
                         .#identities
                         .length
                         ? ""
-                        : "No users matched.";
+                        : globalThis.WMOFLanguagePack.text("1256d560-45d5-555c-a945-8d878a7642e6");
 
                 this
                     .#renderResults();
@@ -932,7 +932,7 @@
 
                 this.#status.textContent =
                     error.message ||
-                    "User lookup failed.";
+                    globalThis.WMOFLanguagePack.text("29d10587-1940-5523-9b37-57b5d268d8a5");
 
                 return [];
             }
@@ -970,14 +970,14 @@
                     );
 
                 this.#status.textContent =
-                    "Identity copied.";
+                    globalThis.WMOFLanguagePack.text("9c8f7cef-a26e-57d8-bd87-7719b71f3376");
 
                 return true;
             }
             catch (error) {
                 this.#status.textContent =
                     error.message ||
-                    "Unable to copy identity.";
+                    globalThis.WMOFLanguagePack.text("f07d2624-75dd-54c5-b3b7-7744ecb393d0");
 
                 return false;
             }

@@ -1,3 +1,4 @@
+import { englishSpeechLanguage } from './announcement-language-fixture.mjs';
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
@@ -125,7 +126,7 @@ test("voice pad uses normal queued execution and retains system passthrough", ()
 });
 
 test("English speech vocabulary includes the touch-keypad voice command", () => {
-    assert.match(languageSource, /voice:\s*"\^voice\$"/);
+    assert.equal(englishSpeechLanguage.speech.commands.voice, "^voice$");
 });
 
 test("switch is an allowed action verb", () => {
@@ -159,22 +160,11 @@ test("ready-at continuation lives in the voice editor instead of the touch keypa
 });
 
 test("Trip Settings voice aliases cover standard, scheduled, actual, and creation time", () => {
-    assert.match(
-        languageSource,
-        /standardTime:\s*"\^standard\(\?: time\)\? /
-    );
-    assert.match(
-        languageSource,
-        /scheduledStartEditor:\s*"\^\(\?:scheduled start\|scheduled time\)\$"/
-    );
-    assert.match(
-        languageSource,
-        /actualStartEditor:\s*"\^\(\?:actual start\|start time\)\$"/
-    );
-    assert.match(
-        languageSource,
-        /creationTimeEditor:\s*"\^\(\?:creation time\|created\(\?: at\)\?\)\$"/
-    );
+    const commands = englishSpeechLanguage.speech.commands;
+    assert.ok(new RegExp(commands.standardTime).test("standard time one hour"));
+    assert.ok(new RegExp(commands.scheduledStartEditor).test("scheduled time"));
+    assert.ok(new RegExp(commands.actualStartEditor).test("start time"));
+    assert.ok(new RegExp(commands.creationTimeEditor).test("created at"));
 });
 
 test("Early Start standard command keeps spoken duration and makes time optional", () => {
@@ -239,22 +229,11 @@ test("voice entry registers its own value and control speech candidates", () => 
 });
 
 test("voice-entry command grammar includes OK, cancel, touch, and defer", () => {
-    assert.match(
-        languageSource,
-        /voiceEntryConfirm:\s*"\^ok\(\?:ay\)\?\$"/
-    );
-    assert.match(
-        languageSource,
-        /voiceEntryCancel:\s*"\^\(\?:cancel\|close\)\$"/
-    );
-    assert.match(
-        languageSource,
-        /voiceEntryTouch:\s*"\^\(\?:touch\|keypad\|number pad\)\$"/
-    );
-    assert.match(
-        languageSource,
-        /voiceEntryDefer:\s*"\^defer trip\$"/
-    );
+    const commands = englishSpeechLanguage.speech.commands;
+    assert.ok(new RegExp(commands.voiceEntryConfirm).test("okay"));
+    assert.ok(new RegExp(commands.voiceEntryCancel).test("close"));
+    assert.ok(new RegExp(commands.voiceEntryTouch).test("number pad"));
+    assert.ok(new RegExp(commands.voiceEntryDefer).test("defer trip"));
 });
 
 test("Trip Log uses the rendered speech surface safe top", () => {
@@ -367,7 +346,7 @@ test("voice absolute-time parsing uses the keypad clock-parts parser", () => {
 test("voice keypad grammar still recognizes representative value phrases", () => {
     // Evaluate the production language file instead of reconstructing the
     // concatenated pattern from source fragments.
-    const scope = {};
+    const scope = { WMOFLanguagePack: { language: englishSpeechLanguage } };
     Function(
         "globalThis",
         languageSource
@@ -611,15 +590,15 @@ test("voice entry binds transcript routing after the lazy speech runtime loads",
 test("voice entry shows descriptive context-aware guidance and accepted-value feedback", () => {
     assert.match(
         indexSource,
-        /id="voiceEntryInstructions"[\s\S]*?<strong>Say OK<\/strong> to[\s\S]*?<strong>Cancel<\/strong> to/
+        /id="voiceEntryInstructions"[\s\S]*?<strong[^>]*>Say OK<\/strong> to[\s\S]*?<strong[^>]*>Cancel<\/strong> to/
     );
     assert.match(
         appSource,
-        /function voiceEntryDescriptor\([\s\S]*?"Trip Percent Goal"[\s\S]*?totalScopeLabel\(\)[\s\S]*?" Percent Goal"[\s\S]*?"Standard Time"/
+        /function voiceEntryDescriptor\([\s\S]*?globalThis\.WMOFLanguagePack\.text[\s\S]*?totalScopeLabel\(\)/
     );
     assert.match(
         appSource,
-        /function voiceEntryPromptForState\([\s\S]*?"Say " \+ descriptor/
+        /function voiceEntryPromptForState\([\s\S]*?globalThis\.WMOFLanguagePack\.text/
     );
     assert.match(
         appSource,
@@ -627,7 +606,7 @@ test("voice entry shows descriptive context-aware guidance and accepted-value fe
     );
     assert.match(
         appSource,
-        /function speakVoiceEntryFeedback\([\s\S]*?onEnd[\s\S]*?220[\s\S]*?"Say OK to "/
+        /function speakVoiceEntryFeedback\([\s\S]*?onEnd[\s\S]*?220[\s\S]*?globalThis\.WMOFLanguagePack\.text/
     );
     assert.match(
         appSource,

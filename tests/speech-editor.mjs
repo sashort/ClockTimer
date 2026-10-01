@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import {Window} from "happy-dom";
+import {Window} from "./LanguageWindow.mjs";
 
 const window = new Window({url:"https://wmof.example/"});
 

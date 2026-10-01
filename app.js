@@ -109,7 +109,7 @@
     // Browser speech exposes no waveform; use a conservative chime gain ceiling.
     const CHIME_VOLUME_RATIO = 0.5;
 
-    const AUDIO_LANGUAGE = "en-US";
+    const AUDIO_LANGUAGE = globalThis.WMOFLanguagePack?.locale || "en-US";
     const AUDIO_PERCENT_STEP = 5;
     const AUDIO_SPEECH_VELOCITY_MIN = 0.5;
     // The former 70% point (2.8×) is now the top of the speech range.
@@ -310,24 +310,24 @@
     };
     const GRAPHICAL_HELP = {
         timerMode: {
-            title: "Timer Mode",
-            text: "Elapsed fills the timer as counted time passes. Remaining begins full and decreases toward zero."
+            title: globalThis.WMOFLanguagePack.text("20963a74-5865-56b4-b5af-2f073c86cbbe"),
+            text: globalThis.WMOFLanguagePack.text("97fa55a1-b46b-50e1-84b1-921381af98df")
         },
         timerType: {
-            title: "Timer Type",
-            text: "Radial Overflow preserves the clock’s normal minute scale. The ring starts at the minute mark where the trip began, follows the clock face, and continues into additional rings when the timeframe exceeds the available circle. Radial Fitted starts at the top of the clock and visually compresses the entire trip timeframe into one complete ring, with each range sized in proportion to its share of the trip."
+            title: globalThis.WMOFLanguagePack.text("c4c43c88-5f2b-5d95-9372-bd4b473ce706"),
+            text: globalThis.WMOFLanguagePack.text("5f50ccf4-3cd4-5a0c-9564-b27a57a5c276")
         },
-        tripColor: {title: "Trip Color", text: "The productive portion of the active trip uses this color."},
-        earlyStartColor: {title: "Early Start Color", text: "Sets the color for time worked before the scheduled start.", stateControl: "showEarlyStart", stateText: {true: "Early Start uses this color.", false: "The adjacent Trip range extends through Early Start and uses the Trip color."}},
-        lunchColor: {title: "Lunch Color", text: "Lunch intervals use this color and do not count as productive trip time."},
-        breakColor: {title: "Break Color", text: "Break intervals use this color and pause productive elapsed time."},
-        breakBufferColor: {title: "to/from Break Color", text: "Sets the color for the allowed time to or from Break or Lunch.", stateControl: "showBreakBuffer", stateText: {true: "to/from Break uses this color.", false: "The adjacent interval extends across that time."}},
-        downColor: {title: "Down Color", text: "Down-time intervals use this color while productive elapsed time is paused."},
-        approvalSurplusColor: {title: "Approval Surplus Color", text: "Approval Surplus is extra approved Down time that remains excluded after Down ends."},
-        approvalDeficitColor: {title: "Approval Deficit Color", text: "Approval Deficit is the unapproved portion of a Down interval and counts as productive elapsed time."},
-        overtimeColor: {title: "Overtime Color", text: "Overtime is the time your trip runs over the standard time.", stateControl: "showOvertime", stateText: {true: "Overtime is shown with its own color.", false: "Overtime is still counted but is shown as Trip time."}},
-        toleranceColor: {title: "B-Game Color", text: "You aimed above 100%. B-Game shows the time after you miss that goal while you’re still above 100%.", stateControl: "showTolerance", stateText: {true: "B-Game is shown.", false: "That time is shown as Trip time.", undefined: "B-Game appears after you enter that portion of the trip."}},
-        latencyColor: {title: "Late Start Color", text: "Sets the color for time that begins when you are late.", stateControl: "showLatency", stateText: {true: "Late Start is shown with this color.", false: "Late Start is still calculated while the underlying Trip range remains visible."}}
+        tripColor: {title: globalThis.WMOFLanguagePack.text("f179a94e-fd69-5b23-8258-cc765e0c3521"), text: globalThis.WMOFLanguagePack.text("39aae00c-6e71-51e1-b559-3c8a556543e4")},
+        earlyStartColor: {title: globalThis.WMOFLanguagePack.text("4fa71adf-90f3-57be-9de9-37445b7b08e7"), text: globalThis.WMOFLanguagePack.text("e4920a3d-3d1a-5c4c-a4cc-915536f3f12e"), stateControl: "showEarlyStart", stateText: {true: globalThis.WMOFLanguagePack.text("c249bf19-3793-4d02-bf8b-e752eec3cf50"), false: globalThis.WMOFLanguagePack.text("54f5a90e-9fdf-4d7a-9565-86cab9116cea")}},
+        lunchColor: {title: globalThis.WMOFLanguagePack.text("c8c62814-cf9f-5b64-bf93-534a2383b957"), text: globalThis.WMOFLanguagePack.text("04459416-7e0f-5e2f-92d7-c247d514b383")},
+        breakColor: {title: globalThis.WMOFLanguagePack.text("b3d9f04f-4062-5c30-b90f-bc5822e6bac8"), text: globalThis.WMOFLanguagePack.text("c70e9af7-c9c2-57cc-8014-6b833e307466")},
+        breakBufferColor: {title: globalThis.WMOFLanguagePack.text("58abef60-c292-547e-89bc-7889457f9037"), text: globalThis.WMOFLanguagePack.text("894f6706-7f64-5c01-b989-d9ed3365f78d"), stateControl: "showBreakBuffer", stateText: {true: "to/from Break uses this color.", false: globalThis.WMOFLanguagePack.text("30790cc1-6ac6-4461-b9eb-33ececd1835f")}},
+        downColor: {title: globalThis.WMOFLanguagePack.text("056758c1-276d-5357-953d-28ce0530da09"), text: globalThis.WMOFLanguagePack.text("bd1758b8-6a66-5a03-a1a3-51d53c15b1f3")},
+        approvalSurplusColor: {title: globalThis.WMOFLanguagePack.text("4b3a5003-5d74-5b94-975a-b5781d68f1b2"), text: globalThis.WMOFLanguagePack.text("342df0e0-b348-530e-9ab3-10567eb3e073")},
+        approvalDeficitColor: {title: globalThis.WMOFLanguagePack.text("d8728b83-9792-5701-a66f-82051b1aeab4"), text: globalThis.WMOFLanguagePack.text("76cb75e0-1061-5917-ab2a-81df4982da3d")},
+        overtimeColor: {title: globalThis.WMOFLanguagePack.text("aa271074-0603-5cc2-b076-c306f716850e"), text: globalThis.WMOFLanguagePack.text("700bdc92-1820-55cb-9ae3-3fb9c19640d2"), stateControl: "showOvertime", stateText: {true: globalThis.WMOFLanguagePack.text("bffa06f8-bddf-4046-b925-67bc08a02e63"), false: globalThis.WMOFLanguagePack.text("4e540920-0c55-482a-89f7-52678909687b")}},
+        toleranceColor: {title: globalThis.WMOFLanguagePack.text("f07dc6d4-dbbf-5c3f-9dc9-ae7183f0caec"), text: globalThis.WMOFLanguagePack.text("5569534d-252a-503c-8869-a4ce5b956c4a"), stateControl: "showTolerance", stateText: {true: globalThis.WMOFLanguagePack.text("0498aab2-8d70-4bde-b585-473bfb0a74ee"), false: globalThis.WMOFLanguagePack.text("702e97ca-db6c-41d5-8b9b-b7ce1d44d2f1"), undefined: globalThis.WMOFLanguagePack.text("91b34e04-48eb-453b-bb02-ad1958d99a11")}},
+        latencyColor: {title: globalThis.WMOFLanguagePack.text("92704b89-f209-52c2-9495-8f00c5c4c17a"), text: globalThis.WMOFLanguagePack.text("1f6618cd-1496-5293-9e63-21b57ecbd327"), stateControl: "showLatency", stateText: {true: globalThis.WMOFLanguagePack.text("de2815df-0269-42f6-a02a-ab64c0205a15"), false: globalThis.WMOFLanguagePack.text("4ffeb636-fc6b-4de4-9b0b-4ac25cba69b9")}}
     };
 
     const $ = selector => document.querySelector(selector);
@@ -543,7 +543,7 @@
 
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
-                                "SpeechMenu.js?v=adaptive-timing-1"
+                                "SpeechMenu.js?v=language-pack-20261001"
                             );
                         }
 
@@ -573,7 +573,7 @@
                             )
                         ) {
                             await loadClassicScript(
-                                "SpeechMicBar.js"
+                                "SpeechMicBar.js?v=language-pack-20261001"
                             );
                         }
 
@@ -584,7 +584,7 @@
                             )
                         ) {
                             await loadClassicScript(
-                                "SpeechDiagnostics.js"
+                                "SpeechDiagnostics.js?v=language-pack-20261001"
                             );
                         }
 
@@ -1000,7 +1000,7 @@
                 ?.viewing
         ) {
             liveStreamViewerStatus.textContent =
-                "Select a user with User Lookup.";
+                globalThis.WMOFLanguagePack.text("96b38945-fbb7-5bae-b0c1-8f4245ef4f2c");
         }
         else if (
             self &&
@@ -1008,7 +1008,7 @@
                 ?.viewing
         ) {
             liveStreamViewerStatus.textContent =
-                "Select another user.";
+                globalThis.WMOFLanguagePack.text("9ec69c77-f415-5d94-8f94-9c79997b5578");
         }
 
         return identity;
@@ -1197,8 +1197,8 @@
 
         liveStreamWatchButton.textContent =
             viewing
-                ? "Stop Watching"
-                : "Watch";
+                ? globalThis.WMOFLanguagePack.text("d82579ae-0ee3-593a-9a3d-6208756e8ae3")
+                : globalThis.WMOFLanguagePack.text("07ebf99a-22d4-507f-a4b0-7f01bb41ec96");
 
         const identity =
             syncLiveStreamIdentityUI();
@@ -1227,9 +1227,9 @@
 
             liveStreamViewerStatus.textContent =
                 state ===
-                    "live"
-                    ? "Live."
-                    : "Viewing: " +
+                    globalThis.WMOFLanguagePack.text("8e2d128c-3e7b-56e6-90f1-020f4992ef4c")
+                    ? globalThis.WMOFLanguagePack.text("5f0f4c0d-61e8-5fae-8051-67b7285bfcaa")
+                    : globalThis.WMOFLanguagePack.text("fe4fe880-58d4-5eb5-ba7f-057cde1dfc70") +
                         state +
                         ".";
         }
@@ -1248,10 +1248,10 @@
 
             liveStreamViewerStatus.textContent =
                 !identity
-                    ? "Select a user with User Lookup."
+                    ? globalThis.WMOFLanguagePack.text("ae90cb97-b121-553a-bbb3-63dbbc51b71a")
                     : self
-                        ? "Select another user."
-                        : "Not viewing.";
+                        ? globalThis.WMOFLanguagePack.text("bcc0f8e6-a525-5209-b2c2-d02379d5d968")
+                        : globalThis.WMOFLanguagePack.text("ff88a708-6172-5b0c-aae0-971449760e0a");
             liveStreamRemoteState.textContent =
                 "—";
             liveStreamRemoteTime.textContent =
@@ -1446,7 +1446,7 @@
                             }
 
                             liveStreamViewerStatus.textContent =
-                                "Connecting…";
+                                globalThis.WMOFLanguagePack.text("6a9d8d8f-6ec0-5e87-8711-1b53a348fc3b");
 
                             await liveTripStream
                                 .startViewing(
@@ -1457,7 +1457,7 @@
                     catch (error) {
                         liveStreamViewerStatus.textContent =
                             error.message ||
-                            "Unable to view the live stream.";
+                            globalThis.WMOFLanguagePack.text("424976cc-ba79-5cef-a125-eee1ae94368d");
                     }
                     finally {
                         liveStreamWatchButton.disabled =
@@ -1483,14 +1483,14 @@
 
                 if (!canViewLiveStreams()) {
                     liveStreamTrainerMessageStatus.textContent =
-                        "Live stream permission is required.";
+                        globalThis.WMOFLanguagePack.text("07dba185-8a12-583b-bc6c-c900ac30541d");
 
                     return false;
                 }
 
                 if (!text) {
                     liveStreamTrainerMessageStatus.textContent =
-                        "Enter a message.";
+                        globalThis.WMOFLanguagePack.text("77eb095c-b3c7-5925-a60e-475a1facb32c");
 
                     return false;
                 }
@@ -1510,14 +1510,14 @@
                     liveStreamTrainerMessageText.value =
                         "";
                     liveStreamTrainerMessageStatus.textContent =
-                        "Sent.";
+                        globalThis.WMOFLanguagePack.text("ffdd5c41-57e5-59b3-ae39-4004ccc270a0");
 
                     return true;
                 }
                 catch (error) {
                     liveStreamTrainerMessageStatus.textContent =
                         error.message ||
-                        "Unable to send message.";
+                        globalThis.WMOFLanguagePack.text("3e1425ee-fe0b-5725-afb3-277cc665694d");
 
                     if (
                         Number(
@@ -2212,8 +2212,8 @@
                     easterEggPlaybackStarting;
                 easterEggPlayButton.textContent =
                     paused
-                        ? "Resume"
-                        : "Play";
+                        ? globalThis.WMOFLanguagePack.text("69821096-51df-5483-a080-a941e08372bd")
+                        : globalThis.WMOFLanguagePack.text("1da08a03-76d4-51ad-8611-109e3557e1ba");
             }
 
             if (easterEggPauseButton) {
@@ -2588,8 +2588,8 @@
                         speechRecognitionButton
                             .title =
                             enabled
-                                ? "Disable Speech Recognition"
-                                : "Enable Speech Recognition";
+                                ? globalThis.WMOFLanguagePack.text("a5405f53-9bd1-51a7-b31e-383ddb79f9c5")
+                                : globalThis.WMOFLanguagePack.text("395fcf23-3e43-51f7-9510-2de8fdc6d893");
 
                         speechRecognitionButton
                             .setAttribute(
@@ -2751,7 +2751,7 @@
                 false;
 
             const englishLanguage =
-                globalThis.WMOFLanguages?.["en-US"];
+                globalThis.WMOFLanguages?.[AUDIO_LANGUAGE];
 
             return Boolean(
                 await speechMenu?.start?.(
@@ -3639,7 +3639,7 @@
                 ""
             );
         defaultOption.textContent =
-            "System Default";
+            globalThis.WMOFLanguagePack.text("3adfd015-0028-5e88-b395-baa087eecef5");
         fragment.append(
             defaultOption
         );
@@ -3753,7 +3753,7 @@
             unavailable.value =
                 selectedValue;
             unavailable.textContent =
-                "Unavailable saved voice";
+                globalThis.WMOFLanguagePack.text("d7f13047-b878-5e40-ab98-9a269f68dcf7");
             unavailable.disabled =
                 true;
             audioVoice.append(
@@ -3790,7 +3790,7 @@
 
             defaultOption.value = "";
             defaultOption.textContent =
-                "Song Default";
+                globalThis.WMOFLanguagePack.text("b5b19daf-1b1a-595e-ae3d-ec088d1b1978");
             fragment.append(
                 defaultOption
             );
@@ -4090,7 +4090,7 @@
                             key;
                         enabled.setAttribute(
                             "aria-label",
-                            "Enable " + label
+                            globalThis.WMOFLanguagePack.text("40470ef7-fb33-5398-a560-1262be5f51f0") + label
                         );
 
                         row.append(
@@ -4213,7 +4213,7 @@
         audioAnnouncementSelectedLabel
             .textContent =
             master
-                ? "Master"
+                ? globalThis.WMOFLanguagePack.text("d59ebfd4-1b57-5fe0-94f7-6901b9c5bdb7")
                 : entry[1];
 
         if (master) {
@@ -4468,7 +4468,7 @@
                     : "Global ";
 
             output.textContent =
-                property === "volume"
+                property === globalThis.WMOFLanguagePack.text("6d4dc215-ec65-5994-af07-d6f00532fb0e")
                     ? prefix +
                         Math.round(
                             Number(value) *
@@ -4476,14 +4476,14 @@
                         ) +
                         "%"
                     : property ===
-                        "speechVelocity"
+                        globalThis.WMOFLanguagePack.text("c38a0fd7-ee67-5bb5-8c9a-0f0ea99df154")
                         ? prefix +
                             formatAudioVelocityPercent(
                                 value,
                                 AUDIO_SPEECH_VELOCITY_MAX
                             )
                         : property ===
-                            "toneVelocity"
+                            globalThis.WMOFLanguagePack.text("cc637842-9b1b-5735-b972-9a817ab66adc")
                             ? prefix +
                                 formatChimeRate(value)
                             : prefix +
@@ -5851,7 +5851,7 @@
         const range = getTripLogRange();
         if (tripLogBody) {
             tripLogBody.setAttribute("aria-busy", "true");
-            if (!tripLogBody.querySelector('.trip-log-settings')) tripLogBody.textContent = "Loading trips…";
+            if (!tripLogBody.querySelector('.trip-log-settings')) tripLogBody.textContent = globalThis.WMOFLanguagePack.text("ee9123ac-dfed-5d34-aff5-c694acf48758");
         }
         try {
             const calendar = await resolveTripLogCalendar(range);
@@ -5911,7 +5911,7 @@
                 } catch {}
             }
             if (tripLogView && tripLogBody?.querySelector('.trip-log-settings')) tripLogView.error(error);
-            else if (tripLogBody) tripLogBody.textContent = error.message || "Trip Log is unavailable.";
+            else if (tripLogBody) tripLogBody.textContent = error.message || globalThis.WMOFLanguagePack.text("e7f5cf65-a6a5-5f2b-8f8d-3225af1b90e9");
             window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {detail: {range, message: error.message}}));
         } finally {
             if (sequence === tripLogRequestSequence) tripLogBody?.setAttribute("aria-busy", "false");
@@ -6087,7 +6087,7 @@
         if (!tripLogView.trips.length) {
             tripLogSettingsVisible = true;
             tripLogSettingsButton?.setAttribute("aria-expanded", "true");
-            tripLogSettingsButton?.setAttribute("aria-label", "Hide Trip Log settings");
+            tripLogSettingsButton?.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("6753d87f-95b6-5469-8e1c-f0c6b8408f0e"));
         }
         tripLogView.setSettingsVisible(tripLogSettingsVisible);
     }
@@ -6392,7 +6392,7 @@
         tripLogSettingsVisible = false;
         tripLogView?.setSettingsVisible(false);
         tripLogSettingsButton?.setAttribute("aria-expanded", "false");
-        tripLogSettingsButton?.setAttribute("aria-label", "Show Trip Log settings");
+        tripLogSettingsButton?.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("7e26ce8a-a59a-51cb-8227-1237c284bd84"));
 
         const pinned =
             tripLogIsPinned();
@@ -7030,14 +7030,14 @@
             button.setAttribute(
                 "aria-label",
                 enabled
-                    ? "Disable Sync Goals"
-                    : "Enable Sync Goals"
+                    ? globalThis.WMOFLanguagePack.text("f4d49d14-9be3-5a7a-ad5c-ecfed5a2aea3")
+                    : globalThis.WMOFLanguagePack.text("9590e90b-8a84-51e9-8e12-9d3e20919284")
             );
 
             button.title =
                 enabled
-                    ? "Sync Goals enabled"
-                    : "Sync Goals disabled";
+                    ? globalThis.WMOFLanguagePack.text("e9188539-e5ac-5acf-881d-afae34f7edb6")
+                    : globalThis.WMOFLanguagePack.text("1113f92b-19ca-5428-8797-47d0ef87c532");
         }
 
         if (syncGoalsMenuIcon) {
@@ -7606,7 +7606,7 @@
             $("#sqlConsoleButton").hidden =
                 true;
         }
-        authButton.textContent = connected ? "Logout" : "Login";
+        authButton.textContent = connected ? globalThis.WMOFLanguagePack.text("bcfe0d35-c815-53b3-82d8-327a7a1628e1") : globalThis.WMOFLanguagePack.text("3e22c46f-8733-5120-9725-4956ad4eeb27");
         authButton.classList.toggle("logout-button", connected);
 
         if (connected) {
@@ -7847,10 +7847,10 @@
         tripSettingsCloud.setAttribute(
             "aria-label",
             busy
-                ? "Checking connection"
-                : normalized === "online"
-                    ? "Connected"
-                    : "Offline. Retry connection"
+                ? globalThis.WMOFLanguagePack.text("ba15a467-ecb8-54d3-9ecb-a52b0a55c8d4")
+                : normalized === globalThis.WMOFLanguagePack.text("29cf5408-659a-51a3-8cd7-2e1e56721750")
+                    ? globalThis.WMOFLanguagePack.text("96277f73-a245-54a1-ad90-282f0a7eee76")
+                    : globalThis.WMOFLanguagePack.text("c8419b10-5297-59d4-9674-3ea45106e7f8")
         );
         tripSettingsCloud.setAttribute(
             "aria-disabled",
@@ -7906,10 +7906,10 @@
         scopeConnectionButton.setAttribute(
             "aria-label",
             busy
-                ? "Checking connection"
-                : normalized === "online"
-                    ? "Connected"
-                    : "Offline. Retry connection"
+                ? globalThis.WMOFLanguagePack.text("44f66774-8b94-56d5-878d-deccfcf626cf")
+                : normalized === globalThis.WMOFLanguagePack.text("c231ce1a-c7c6-576a-849f-9ddcc14f0d0b")
+                    ? globalThis.WMOFLanguagePack.text("82a5943c-2428-5f23-a87d-713f1128d126")
+                    : globalThis.WMOFLanguagePack.text("cfd4804c-299d-5314-b4d0-125c6eacfbd8")
         );
     }
 
@@ -8638,7 +8638,7 @@
         scopeToggle.dataset.percentMode = actual;
         scopeToggle.setAttribute(
             "aria-label",
-            `Percent mode: ${label}`
+            globalThis.WMOFLanguagePack.text("ecd0c7da-90cb-5248-9723-f38b68114550", {value0: (label)})
         );
 
         syncScopeConnectionCloud();
@@ -8926,7 +8926,7 @@
         void openNumberPad({
             mode: "absolute",
             source: "end-time-goal",
-            title: "End Time",
+            title: globalThis.WMOFLanguagePack.text("335b8938-b938-5f41-bf37-3f3dc462617a"),
             initialValue: defaults.creationTime,
             tripDefaults: defaults,
             role: "root",
@@ -9001,11 +9001,11 @@
         $("#goalPercentValue").textContent = state.goal_component.text;
         $("#goalPercentValue").setAttribute(
             "aria-label",
-            state.goal_type === "auto"
-                ? "Choose Trip or " + totalScopeLabel() + " goal"
-                : state.goal_type === "total"
-                    ? "Edit " + totalScopeLabel() + " goal"
-                    : "Edit Trip goal"
+            state.goal_type === globalThis.WMOFLanguagePack.text("137eb683-b835-5fb1-a76a-a840dcd2a563")
+                ? globalThis.WMOFLanguagePack.text("f0452602-b46c-5cb7-b5b7-b140779a672e") + totalScopeLabel() + globalThis.WMOFLanguagePack.text("52989047-518d-5c59-b51e-049813058a63")
+                : state.goal_type === globalThis.WMOFLanguagePack.text("fa9eda7c-04ab-5184-8825-fc59fcdacbc3")
+                    ? globalThis.WMOFLanguagePack.text("b38453e0-4e17-54b9-9d0a-f735c48e467d") + totalScopeLabel() + globalThis.WMOFLanguagePack.text("833e2f37-720d-5bdc-88fa-8b56c1a15e8b")
+                    : globalThis.WMOFLanguagePack.text("8f2b966f-88bd-56f0-9837-c1f63999b513")
         );
         const controls = state.controls;
         if (controls) {
@@ -9015,7 +9015,7 @@
             downButton.hidden = !controls.down_visible;
             endTripButton.hidden = !controls.primary_action?.visible;
             endTripButton.disabled = controls.primary_action?.enabled === false;
-            endTripButton.textContent = controls.primary_action?.text || "End Trip";
+            endTripButton.textContent = controls.primary_action?.text || globalThis.WMOFLanguagePack.text("c74e61ab-77bd-5cb0-b085-793b18c0c270");
             setEndTripButtonIntervalPalette(state.active_interval_type);
         }
         if (
@@ -9040,11 +9040,11 @@
         catch {data={active:Boolean(capture),hasImage:false,notes:''};}
         document.querySelector('.down-details-dialog')?.remove();
         const dialog=document.createElement('dialog');dialog.className='app-dialog down-details-dialog';const form=document.createElement('form');form.method='dialog';
-        const header=document.createElement('header');header.className='dialog-header';header.innerHTML='<h2>Down Details</h2>';const close=document.createElement('button');close.type='button';close.className='dialog-close';close.setAttribute('aria-label','Close Down Details');close.addEventListener('click',()=>dialog.close());header.append(close);form.append(header);
+        const header=document.createElement('header');header.className='dialog-header';header.innerHTML='<h2>Down Details</h2>';const close=document.createElement('button');close.type='button';close.className='dialog-close';close.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("6ee6bd5f-f375-597a-b040-c18da9f77e43"));close.addEventListener('click',()=>dialog.close());header.append(close);form.append(header);
         const body=document.createElement('div');body.className='down-details-body';const photo=document.createElement('div');photo.className='down-details-photo';let selectedImage;let cameraStream;let selectedImageUrl;
         const stopCamera=()=>{cameraStream?.getTracks?.().forEach(track=>track.stop());cameraStream=undefined;};
-        const image=document.createElement('img');image.alt='Down time photo';
-        const showSelectedImage=()=>{stopCamera();if(selectedImageUrl)URL.revokeObjectURL(selectedImageUrl);selectedImageUrl=URL.createObjectURL(selectedImage);image.src=selectedImageUrl;const clear=document.createElement('button');clear.type='button';clear.className='down-details-photo-clear';clear.setAttribute('aria-label','Clear captured photo');clear.setAttribute('title','Clear captured photo');clear.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"/></svg>';clear.addEventListener('click',()=>{selectedImage=undefined;if(selectedImageUrl){URL.revokeObjectURL(selectedImageUrl);selectedImageUrl=undefined;}image.removeAttribute('src');void openCamera();});photo.replaceChildren(image,clear);};
+        const image=document.createElement('img');image.alt=globalThis.WMOFLanguagePack.text("8d9126db-836b-5c11-9d0a-a9264cd6d8a4");
+        const showSelectedImage=()=>{stopCamera();if(selectedImageUrl)URL.revokeObjectURL(selectedImageUrl);selectedImageUrl=URL.createObjectURL(selectedImage);image.src=selectedImageUrl;const clear=document.createElement('button');clear.type='button';clear.className='down-details-photo-clear';clear.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("0c903e6a-60d5-55a6-9043-b6daabe0e640"));clear.setAttribute('title',globalThis.WMOFLanguagePack.text("15de456e-95db-5111-8ee6-c8b9520369a5"));clear.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6"/></svg>';clear.addEventListener('click',()=>{selectedImage=undefined;if(selectedImageUrl){URL.revokeObjectURL(selectedImageUrl);selectedImageUrl=undefined;}image.removeAttribute('src');void openCamera();});photo.replaceChildren(image,clear);};
         const openFileFallback=()=>{const input=document.createElement('input');input.type='file';input.accept='image/jpeg,image/png,image/webp,image/heic,image/heif';input.addEventListener('change',()=>{selectedImage=input.files?.[0];if(selectedImage)showSelectedImage();},{once:true});input.click();};
         const openCamera=async()=>{
             if(!navigator.mediaDevices?.getUserMedia){openFileFallback();return;}
@@ -9052,15 +9052,15 @@
                 cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
                 const stage=document.createElement('div');stage.className='down-camera-stage';
                 const video=document.createElement('video');video.autoplay=true;video.muted=true;video.playsInline=true;video.srcObject=cameraStream;
-                const shutter=document.createElement('button');shutter.type='button';shutter.className='down-camera-shutter';shutter.setAttribute('aria-label','Capture Down photo');shutter.textContent='Capture Photo';
+                const shutter=document.createElement('button');shutter.type='button';shutter.className='down-camera-shutter';shutter.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("512ad78e-3f7f-5fdd-ac05-ad2afcfe80ce"));shutter.textContent=globalThis.WMOFLanguagePack.text("950c38bf-c5cb-5505-a625-48758a48b95e");
                 shutter.addEventListener('click',async()=>{const canvas=document.createElement('canvas');canvas.width=video.videoWidth||1280;canvas.height=video.videoHeight||720;canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.9));if(!blob)return;selectedImage=new File([blob],`down-${Date.now()}.jpg`,{type:'image/jpeg'});showSelectedImage();});
                 stage.append(video,shutter);photo.replaceChildren(stage);await video.play?.();
             }catch{openFileFallback();}
         };
-        if(data.hasImage){image.src=data.imageUrl;photo.append(image);}else if(capture&&data.active){const camera=document.createElement('button');camera.type='button';camera.className='down-details-camera';camera.innerHTML='<svg viewBox="0 0 64 52" aria-hidden="true"><path d="M6 14h13l5-8h16l5 8h13v32H6z"/><circle cx="32" cy="30" r="12"/><circle cx="51" cy="20" r="2"/></svg><strong>Take Photo</strong>';camera.addEventListener('click',()=>void openCamera());photo.append(camera);}else {const empty=document.createElement('p');empty.textContent='No photo attached.';photo.append(empty);}body.append(photo);
-        const label=document.createElement('label');label.textContent='Notes';const notes=document.createElement('textarea');notes.maxLength=10000;notes.placeholder='Describe the cause of the down time…';notes.value=data.notes||'';notes.readOnly=!editing&&!capture;label.append(notes);body.append(label);
-        let deleteImage=false;if((editing||capture)&&data.hasImage){const remove=document.createElement('button');remove.type='button';remove.className='down-details-delete';remove.textContent='Delete Photo';remove.addEventListener('click',()=>{if(confirm('Delete this Down photo?')){deleteImage=true;photo.replaceChildren(Object.assign(document.createElement('p'),{textContent:'Photo will be deleted when saved.'}));remove.hidden=true;}});body.append(remove);}const helper=document.createElement('p');helper.className='down-details-helper';helper.textContent='One photo may be attached to this Down interval.';body.append(helper);form.append(body);
-        const actions=document.createElement('div');actions.className='dialog-actions two-actions';const cancel=document.createElement('button');cancel.type='button';cancel.textContent=(editing||capture)?'Cancel':'Close';cancel.addEventListener('click',()=>dialog.close());actions.append(cancel);if(editing||capture){const save=document.createElement('button');save.type='submit';save.className='primary-action';save.textContent='Save';actions.append(save);form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;try{await globalThis.WMOFActions.saveDownDetails(tripId,intervalKey,{notes:notes.value,image:selectedImage,deleteImage});dialog.close();}catch(error){let alert=form.querySelector('[role=alert]');if(!alert){alert=document.createElement('p');alert.className='trip-log-error';alert.setAttribute('role','alert');body.append(alert);}alert.textContent=error.message;}finally{save.disabled=false;}});}form.append(actions);dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{stopCamera();if(selectedImageUrl)URL.revokeObjectURL(selectedImageUrl);dialog.remove();},{once:true});dialog.showModal();
+        if(data.hasImage){image.src=data.imageUrl;photo.append(image);}else if(capture&&data.active){const camera=document.createElement('button');camera.type='button';camera.className='down-details-camera';camera.innerHTML='<svg viewBox="0 0 64 52" aria-hidden="true"><path d="M6 14h13l5-8h16l5 8h13v32H6z"/><circle cx="32" cy="30" r="12"/><circle cx="51" cy="20" r="2"/></svg><strong>Take Photo</strong>';camera.addEventListener('click',()=>void openCamera());photo.append(camera);}else {const empty=document.createElement('p');empty.textContent=globalThis.WMOFLanguagePack.text("cb777147-2870-5dfd-a8a0-cd699a8f28a5");photo.append(empty);}body.append(photo);
+        const label=document.createElement('label');label.textContent=globalThis.WMOFLanguagePack.text("87d1de8f-c85e-56cd-8763-5d8913efb4d0");const notes=document.createElement('textarea');notes.maxLength=10000;notes.placeholder=globalThis.WMOFLanguagePack.text("761798b7-b8cb-57fd-b958-ad5f64bc9dcf");notes.value=data.notes||'';notes.readOnly=!editing&&!capture;label.append(notes);body.append(label);
+        let deleteImage=false;if((editing||capture)&&data.hasImage){const remove=document.createElement('button');remove.type='button';remove.className='down-details-delete';remove.textContent=globalThis.WMOFLanguagePack.text("2ad79000-8a3e-5135-b009-039d68cf0df3");remove.addEventListener('click',()=>{if(confirm('Delete this Down photo?')){deleteImage=true;photo.replaceChildren(Object.assign(document.createElement('p'),{textContent:'Photo will be deleted when saved.'}));remove.hidden=true;}});body.append(remove);}const helper=document.createElement('p');helper.className='down-details-helper';helper.textContent=globalThis.WMOFLanguagePack.text("986b7ca4-f766-5e90-a489-36334edb9360");body.append(helper);form.append(body);
+        const actions=document.createElement('div');actions.className='dialog-actions two-actions';const cancel=document.createElement('button');cancel.type='button';cancel.textContent=(editing||capture)?globalThis.WMOFLanguagePack.text("5820c773-798f-57b6-b473-b4560cf0bd1f"):globalThis.WMOFLanguagePack.text("5f58f996-50d9-5913-8b67-376c08ccf04b");cancel.addEventListener('click',()=>dialog.close());actions.append(cancel);if(editing||capture){const save=document.createElement('button');save.type='submit';save.className='primary-action';save.textContent=globalThis.WMOFLanguagePack.text("8436522d-1407-51dc-b771-572b9c165e7b");actions.append(save);form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;try{await globalThis.WMOFActions.saveDownDetails(tripId,intervalKey,{notes:notes.value,image:selectedImage,deleteImage});dialog.close();}catch(error){let alert=form.querySelector('[role=alert]');if(!alert){alert=document.createElement('p');alert.className='trip-log-error';alert.setAttribute('role','alert');body.append(alert);}alert.textContent=error.message;}finally{save.disabled=false;}});}form.append(actions);dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{stopCamera();if(selectedImageUrl)URL.revokeObjectURL(selectedImageUrl);dialog.remove();},{once:true});dialog.showModal();
     }
 
     function updateSummaryValues(state = clockTimer.uiState) {
@@ -9458,10 +9458,10 @@
 
             available.textContent =
                 font === active
-                    ? "Active"
+                    ? globalThis.WMOFLanguagePack.text("911f99ba-8f23-5b32-a4c1-e703caa7a75a")
                     : clockFontCanRender(font)
-                        ? "Available"
-                        : "Unavailable";
+                        ? globalThis.WMOFLanguagePack.text("76177d3e-e2e1-5711-908c-e3f13a8cda51")
+                        : globalThis.WMOFLanguagePack.text("91c6f1cc-7f82-5ab7-8ddb-4c03ecd30c47");
 
             const remove =
                 document.createElement(
@@ -9479,7 +9479,7 @@
 
             remove.setAttribute(
                 "aria-label",
-                `Remove ${font}`
+                globalThis.WMOFLanguagePack.text("ea78b5d4-9979-562e-90f0-e35a0695285d", {value0: (font)})
             );
 
             remove.textContent =
@@ -9814,7 +9814,7 @@
             button.type = "button";
             button.textContent = "?";
             button.dataset.helpKey = key;
-            button.setAttribute("aria-label", `About ${GRAPHICAL_HELP[key].title}`);
+            button.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("537b08c7-3f4d-56ee-be88-6a4a1a082674", {value0: (GRAPHICAL_HELP[key].title)}));
             button.setAttribute("aria-hidden", "true");
             button.tabIndex = -1;
 
@@ -9846,7 +9846,7 @@
         graphicalDialog.classList.toggle("show-setting-help", graphicalHelpVisible);
         const toggle = $("#graphicalHelpToggle");
         toggle?.setAttribute("aria-pressed", String(graphicalHelpVisible));
-        toggle?.setAttribute("aria-label", graphicalHelpVisible ? "Hide setting help" : "Show setting help");
+        toggle?.setAttribute("aria-label", graphicalHelpVisible ? globalThis.WMOFLanguagePack.text("a92e1d7b-774c-5235-98be-7e6bfed271fe") : globalThis.WMOFLanguagePack.text("7395482d-1c7b-5ebb-925d-ec2db7f980c6"));
         graphicalDialog.querySelectorAll(".settings-help-button").forEach(button => {
             button.setAttribute("aria-hidden", String(!graphicalHelpVisible));
             button.tabIndex = graphicalHelpVisible ? 0 : -1;
@@ -10129,7 +10129,7 @@
         checkbox.checked = state === true;
         checkbox.indeterminate = state === undefined;
         checkbox.setAttribute("aria-checked", state === undefined ? "mixed" : String(state));
-        label.textContent = state === undefined ? "Automatic" : state ? "Enabled" : "Disabled";
+        label.textContent = state === undefined ? globalThis.WMOFLanguagePack.text("b3678f92-d975-5d01-8dfc-184743dd98fa") : state ? globalThis.WMOFLanguagePack.text("f77a96e2-203f-5f99-8aa5-cad67f9e6491") : globalThis.WMOFLanguagePack.text("c3c025a4-fb0f-5314-a48e-57e49eedadfe");
         description.textContent = definition.stateText[String(state)];
     }
 
@@ -10225,7 +10225,7 @@
         title.textContent =
             template?.dataset.helpTitle ||
             definition?.title ||
-            "Help";
+            globalThis.WMOFLanguagePack.text("e7c534ac-1637-5863-a681-b1be3f42bf3c");
 
         if (template) {
             body.replaceChildren(
@@ -11723,7 +11723,7 @@
         if (speechTrainingHeard) {
             speechTrainingHeard
                 .textContent =
-                "Heard: " +
+                globalThis.WMOFLanguagePack.text("403d8210-bd08-59a9-ad5c-71a7323d96ea") +
                 (
                     result?.observed ||
                     "—"
@@ -12071,7 +12071,7 @@
 
             heard.textContent =
                 result.observed ||
-                "Bad input";
+                globalThis.WMOFLanguagePack.text("38ac96ca-3e71-510d-b998-d3c4d3db3899");
 
             const target =
                 document.createElement(
@@ -12079,13 +12079,13 @@
                 );
 
             target.textContent =
-                "Expected: " +
+                globalThis.WMOFLanguagePack.text("d59666e1-e3d9-5ecd-9de3-d6c0bf44a047") +
                 (
                     result.target
                         ?.display ||
                     result.target
                         ?.phrase ||
-                    "command"
+                    globalThis.WMOFLanguagePack.text("4db2b8f5-318d-5978-ba5b-3ffb07fbeb67")
                 );
 
             copy.append(
@@ -12113,10 +12113,10 @@
             remove.className =
                 "speech-training-result-remove";
             remove.title =
-                "Delete this training run";
+                globalThis.WMOFLanguagePack.text("07e2b5f5-50a2-59a0-8035-723d8a5387e0");
             remove.setAttribute(
                 "aria-label",
-                "Delete this training run"
+                globalThis.WMOFLanguagePack.text("03eb5364-e1ab-5660-a695-adedaeaa2239")
             );
 
             remove.addEventListener(
@@ -12442,12 +12442,12 @@
 
             speechTrainingButton.title =
                 speechTrainingActive
-                    ? "Stop active training before disabling Speech Training"
+                    ? globalThis.WMOFLanguagePack.text("d5126160-dc81-5226-b1ea-35b659127c84")
                     : unavailable
-                        ? "Sign in and connect to use Speech Training"
+                        ? globalThis.WMOFLanguagePack.text("9a37b5dd-d0ce-5e54-a1fc-a090b4c5ba27")
                         : inAppSpeechTrainingEnabled
-                            ? "Disable Speech Training"
-                            : "Enable Speech Training";
+                            ? globalThis.WMOFLanguagePack.text("f08c51dd-83c3-5a08-bbaa-75b56fcb9955")
+                            : globalThis.WMOFLanguagePack.text("1443a6b4-8353-5d63-a5da-8248ee807566");
         }
 
         if (speechRecognitionButton) {
@@ -12489,8 +12489,8 @@
 
         speechTrainingStartStop.textContent =
             speechTrainingActive
-                ? "Stop"
-                : "Start";
+                ? globalThis.WMOFLanguagePack.text("57caeade-0bd5-5af2-8a9d-5f6d14394fbb")
+                : globalThis.WMOFLanguagePack.text("7d087033-9f10-5ee0-9d28-2760379b8697");
 
         speechTrainingStartStop.dataset.active =
             String(
@@ -12605,7 +12605,7 @@
             speechTrainingPrompt.textContent =
                 label ||
                 state ||
-                "Ready";
+                globalThis.WMOFLanguagePack.text("a56d3ca4-0b64-50c3-a8e8-78a6b0217a00");
         }
     }
 
@@ -12621,7 +12621,7 @@
 
         if (speechTrainingPhrase) {
             speechTrainingPhrase.textContent =
-                "Select a command";
+                globalThis.WMOFLanguagePack.text("44422ed7-d31d-5b99-833c-ecf7affa7526");
         }
 
         setSpeechTrainingHeardResult();
@@ -12676,7 +12676,7 @@
                 speechTimingValues
                     .stream
                     .textContent =
-                    "Speech runtime not loaded";
+                    globalThis.WMOFLanguagePack.text("02e1c7ab-8093-5041-9be6-1cd2837fbfa1");
             }
 
             return false;
@@ -12835,7 +12835,7 @@
             .textContent =
             recognition.transcript
                 ? (
-                    "Stream " +
+                    globalThis.WMOFLanguagePack.text("e99a08ac-60b6-5587-91d7-bcafda9ce7cb") +
                     String(
                         recognition
                             .streamDepth ||
@@ -12847,14 +12847,14 @@
                     (
                         recognition
                             .canContinue
-                            ? "  • continuation"
+                            ? globalThis.WMOFLanguagePack.text("670045f8-c8f3-520f-94ad-7160cc92fc54")
                             : recognition
                                 .exact
-                                ? "  • terminal"
-                                : "  • partial"
+                                ? globalThis.WMOFLanguagePack.text("67a1a732-a26b-53ea-8707-84d0f269a718")
+                                : globalThis.WMOFLanguagePack.text("c7d89a82-b3ba-5fa6-8d3e-f79844f94c93")
                     )
                 )
-                : "Idle";
+                : globalThis.WMOFLanguagePack.text("3d0da3ff-43a0-5beb-aadd-e7697d416a1d");
 
         const recent =
             Array.isArray(
@@ -12887,13 +12887,13 @@
                                         ) ||
                                         0
                                     ) +
-                                    " ms · " +
+                                    globalThis.WMOFLanguagePack.text("7bd84859-8c56-5ca5-87ee-7ddc5e77e23b") +
                                     (
                                         entry
                                             .type ===
-                                            "separation"
-                                            ? "new stream"
-                                            : "continuation"
+                                            globalThis.WMOFLanguagePack.text("95c5a3d4-9a81-52c2-9ae7-7ca2c279d2b7")
+                                            ? globalThis.WMOFLanguagePack.text("6d1cf774-f8dd-52a2-91da-ab25057ac92c")
+                                            : globalThis.WMOFLanguagePack.text("042480b6-f716-5299-8f56-f005148687e2")
                                     ) +
                                     " · " +
                                     String(
@@ -13419,16 +13419,16 @@
         speechTrainingPendingMessage
             .textContent =
             count +
-            " pending " +
+            globalThis.WMOFLanguagePack.text("8eaf2757-f613-5d75-8e7f-1e250014382e") +
             suffix +
-            " for “" +
+            globalThis.WMOFLanguagePack.text("5bc1ef12-1682-5579-95d0-1bc634980faf") +
             pendingSpeechTrainingTargetLabel() +
             "”. " +
             (
                 reason ===
-                    "switch"
-                    ? "Commit or discard them before changing phrases."
-                    : "Commit or discard them before leaving Speech Training."
+                    globalThis.WMOFLanguagePack.text("74c05817-a643-5b95-9f2a-cf0fbebbd44f")
+                    ? globalThis.WMOFLanguagePack.text("47d7ad70-e4ee-55c3-a60f-ffa1658634fe")
+                    : globalThis.WMOFLanguagePack.text("b0463772-c7d4-5e7e-908e-9f8c2166949c")
             );
 
         return true;
@@ -14091,7 +14091,7 @@
     tripLogSettingsButton?.addEventListener("click", () => {
         tripLogSettingsVisible = !tripLogSettingsVisible;
         tripLogSettingsButton.setAttribute("aria-expanded", String(tripLogSettingsVisible));
-        tripLogSettingsButton.setAttribute("aria-label", tripLogSettingsVisible ? "Hide Trip Log settings" : "Show Trip Log settings");
+        tripLogSettingsButton.setAttribute("aria-label", tripLogSettingsVisible ? globalThis.WMOFLanguagePack.text("5f75a2f1-4857-5e8b-a98c-6e9d40841f75") : globalThis.WMOFLanguagePack.text("04e4428c-41ca-514f-ad1f-f59c1b96a302"));
         tripLogView?.setSettingsVisible(tripLogSettingsVisible);
     });
     globalThis
@@ -14326,7 +14326,7 @@
                         error.textContent =
                             failure
                                 ?.message ||
-                            "Unable to login.";
+                            globalThis.WMOFLanguagePack.text("6420d898-9a7c-5db6-a0d3-baab37b7ec1b");
                     }
                 }
             )
@@ -14605,7 +14605,7 @@
                             false;
                         speechTrainingPendingError.textContent =
                             error?.message ||
-                            "Unable to commit pending speech training.";
+                            globalThis.WMOFLanguagePack.text("0d78c657-46b7-52a3-8a14-ceab2a6a633e");
                     }
                 }
             }
@@ -14774,7 +14774,7 @@
                             .display ||
                         speechTrainingTarget
                             .phrase ||
-                        "Command";
+                        globalThis.WMOFLanguagePack.text("bf5867f2-0ee0-5e03-9cd1-b95f883f522c");
                 }
 
                 setSpeechTrainingHeardResult();
@@ -14847,7 +14847,7 @@
                 ) {
                     speechTrainingHeard
                         .textContent =
-                        "Heard: " +
+                        globalThis.WMOFLanguagePack.text("9e458244-ea32-53ef-a3f6-474d98d96788") +
                         transcript;
                 }
 
@@ -15299,7 +15299,7 @@
                             ok: false,
                             error: "http_error",
                             message:
-                                `Request failed (${response.status}).`,
+                                globalThis.WMOFLanguagePack.text("52267177-57b2-59ed-b177-7d458b27c353", {value0: (response.status)}),
                             status: response.status,
                             text
                         }
@@ -15312,7 +15312,7 @@
                     error: "fetch_failed",
                     message:
                         cause?.message ||
-                        "Network request failed.",
+                        globalThis.WMOFLanguagePack.text("4664e4f7-b27b-5cbb-9912-b3914d998995"),
                     status: 0,
                     text: ""
                 },
@@ -15884,7 +15884,7 @@
         numberPadContext.classList.toggle("absolute-mode", absoluteMode);
         numberPadReadout.classList.toggle("absolute-mode", absoluteMode);
         numberPadDisplay.textContent = percentMode
-            ? (numberPadState.pending ? `${Number(numberPadState.pending)}%` : "---")
+            ? (numberPadState.pending ? globalThis.WMOFLanguagePack.text("e3620451-3e1a-5638-b0e7-c608c808d5b7", {value0: (Number(numberPadState.pending))}) : "---")
             : absoluteMode
                 ? (numberPadState.pending ? renderAbsoluteDigits(numberPadState.pending) : "---")
                 : (numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "---");
@@ -15913,17 +15913,17 @@
             "clear";
         numberPadClear.setAttribute(
             "aria-label",
-            "Clear"
+            globalThis.WMOFLanguagePack.text("f0da736d-62d8-5d82-ad2b-56c0ee4b7b85")
         );
 
         numberPadReset?.setAttribute(
             "aria-label",
-            "Reset"
+            globalThis.WMOFLanguagePack.text("145278b7-79d1-504f-abad-ab820ab5e2ea")
         );
 
         numberPadCancel?.setAttribute(
             "aria-label",
-            "Cancel"
+            globalThis.WMOFLanguagePack.text("c64ce58e-7565-5625-b06f-411e48bc02f4")
         );
 
         const valid = numberPadValueValid();
@@ -15932,7 +15932,7 @@
         numberPadConfirm.dataset.action = confirmAction;
         numberPadConfirm.setAttribute(
             "aria-label",
-            startsTrip ? "Start Trip" : "Confirm"
+            startsTrip ? globalThis.WMOFLanguagePack.text("662b206d-cfdf-5440-8e42-d80a1a3a36f0") : globalThis.WMOFLanguagePack.text("018afec5-9627-566a-8294-9bfcab5e32e2")
         );
         numberPadConfirm.disabled = !valid;
 
@@ -15973,14 +15973,14 @@
             );
             numberPadSettingsArea.dataset.connectionPhase =
                 phase === "awaiting-login" ? "retry" : phase;
-            numberPadSettings.setAttribute("aria-label", "Trip settings");
+            numberPadSettings.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("367ef834-13eb-5419-89b9-c8ad12dea8a8"));
             numberPadConnection.setAttribute(
                 "aria-label",
                 connectionBusy
-                    ? "Checking connection"
-                    : status === "online"
-                        ? "Connected"
-                        : "Offline. Retry connection"
+                    ? globalThis.WMOFLanguagePack.text("b5b21cf5-ab83-532f-af7c-c910ebae8e1c")
+                    : status === globalThis.WMOFLanguagePack.text("2672a80e-cc5d-558e-b69b-e47040596905")
+                        ? globalThis.WMOFLanguagePack.text("768b21ac-3fd8-5644-956a-542c678db770")
+                        : globalThis.WMOFLanguagePack.text("4bccc08f-b9f8-5adf-92cf-b1ae26e167cd")
             );
             numberPadConnection.setAttribute(
                 "aria-busy",
@@ -16346,21 +16346,21 @@
     function voiceEntryCopyForMode(mode) {
         if (mode === "percent") {
             return {
-                prompt: "Say Percent",
-                example: "Example: “eighty-five percent”"
+                prompt: globalThis.WMOFLanguagePack.text("81486eb7-8509-4e28-98c9-7cd01a2f606b"),
+                example: globalThis.WMOFLanguagePack.text("a8d64689-784a-4333-b606-6a95e70a5e1f")
             };
         }
 
         if (mode === "absolute") {
             return {
-                prompt: "Say Time",
-                example: "Example: “eight thirty A M”"
+                prompt: globalThis.WMOFLanguagePack.text("9bfe8d87-99fa-4073-bdbb-894cf5def19e"),
+                example: globalThis.WMOFLanguagePack.text("a5bd5e0e-23ed-4682-b0e3-c033a1a97192")
             };
         }
 
         return {
-            prompt: "Say Duration",
-            example: "Example: “five minutes”"
+            prompt: globalThis.WMOFLanguagePack.text("a7f64702-1b9c-4c12-98ff-215c5be316ee"),
+            example: globalThis.WMOFLanguagePack.text("81a721c3-7a95-4200-95fb-66fefda8dc5d")
         };
     }
 
@@ -16386,11 +16386,11 @@
             state.startsTripOnConfirm ||
             source === "new-trip"
         ) {
-            return "Standard Time";
+            return globalThis.WMOFLanguagePack.text("5dbc9a9b-595a-4549-ad93-024bf9a76572");
         }
 
         if (source === "trip-goal") {
-            return "Trip Percent Goal";
+            return globalThis.WMOFLanguagePack.text("3acc5f11-2e70-4867-ae46-b0c04978d313");
         }
 
         if (source === "total-goal") {
@@ -16404,23 +16404,23 @@
             source === "end-time-goal" ||
             source === "end-time"
         ) {
-            return "End Time";
+            return globalThis.WMOFLanguagePack.text("ddf61bc6-7094-442f-964c-b8e494fdf18c");
         }
 
         if (source === "creation-time") {
-            return "Creation Time";
+            return globalThis.WMOFLanguagePack.text("b45872fe-bd13-4c8d-ba4c-28f50d2a8993");
         }
 
         if (source === "scheduled-start") {
-            return "Scheduled Start";
+            return globalThis.WMOFLanguagePack.text("617b527b-bdef-4270-9166-a8eb8295d251");
         }
 
         if (source === "actual-start") {
-            return "Actual Start";
+            return globalThis.WMOFLanguagePack.text("701cc464-6891-4d74-862d-299e76fc93d6");
         }
 
         if (source === "standard-time") {
-            return "Standard Time";
+            return globalThis.WMOFLanguagePack.text("13b9568a-f433-468b-9717-56e34d790bdc");
         }
 
         if (state.mode === "percent") {
@@ -16431,14 +16431,14 @@
             if (/goal/i.test(title)) {
                 return title.replace(
                     /goal/i,
-                    "Percent Goal"
+                    globalThis.WMOFLanguagePack.text("656e6173-1e61-426b-a800-77a2dbed420a")
                 );
             }
 
             return (
                 title
                     ? title + " Percent"
-                    : "Percent"
+                    : globalThis.WMOFLanguagePack.text("5d8c0e5d-16e7-44d3-8160-34189d69c216")
             );
         }
 
@@ -16446,8 +16446,8 @@
             title ||
             (
                 state.mode === "absolute"
-                    ? "Time"
-                    : "Duration"
+                    ? globalThis.WMOFLanguagePack.text("08acea6d-a2b0-4d39-80c3-99bf6df95b78")
+                    : globalThis.WMOFLanguagePack.text("adb0908e-089d-487c-8058-0880b87e2288")
             )
         );
     }
@@ -16461,7 +16461,7 @@
             );
 
         return descriptor
-            ? "Say " + descriptor
+            ? globalThis.WMOFLanguagePack.text("5cdb8e66-bd32-4683-9fde-a3d09bd24725") + descriptor
             : voiceEntryCopyForMode(
                 state?.mode
             ).prompt;
@@ -16476,9 +16476,9 @@
             );
 
         return descriptor
-            ? "Say a Valid " +
+            ? globalThis.WMOFLanguagePack.text("816eb5cd-4e1f-49e5-b53a-ba0431e1a2c4") +
                 descriptor
-            : "Say a Valid Value";
+            : globalThis.WMOFLanguagePack.text("eec7964b-0ebb-4ddd-847b-1ce09be38f4c");
     }
 
     function voiceEntryActionCopy(
@@ -16498,15 +16498,15 @@
 
         if (state?.startsTripOnConfirm) {
             return {
-                ok: "start the trip",
-                cancel: "cancel the new trip"
+                ok: globalThis.WMOFLanguagePack.text("ab3e0916-c3e5-5e4a-a0bc-42fa1352fd80"),
+                cancel: globalThis.WMOFLanguagePack.text("f9535a0e-ffe7-5f88-b86e-004ceb60f55d")
             };
         }
 
         if (source === "trip-goal") {
             return {
-                ok: "set the Trip goal",
-                cancel: "keep the current Trip goal"
+                ok: globalThis.WMOFLanguagePack.text("7e3c0e7e-3a52-5cf3-967b-aac41c1a4c0e"),
+                cancel: globalThis.WMOFLanguagePack.text("8e375427-ff4f-5db1-ac39-427cc551f40f")
             };
         }
 
@@ -16516,9 +16516,9 @@
 
             return {
                 ok:
-                    `set the ${scopeLabel} goal`,
+                    globalThis.WMOFLanguagePack.text("501e9e3f-c786-5d42-add7-3cf3818bb3a1", {value0: (scopeLabel)}),
                 cancel:
-                    `keep the current ${scopeLabel} goal`
+                    globalThis.WMOFLanguagePack.text("495975d0-0ac3-5b59-87cb-c180484903e5", {value0: (scopeLabel)})
             };
         }
 
@@ -16527,36 +16527,36 @@
             source === "end-time"
         ) {
             return {
-                ok: "set the End Time",
-                cancel: "keep the current End Time"
+                ok: globalThis.WMOFLanguagePack.text("4968cc2c-c721-5e63-bec3-d06bc7bab997"),
+                cancel: globalThis.WMOFLanguagePack.text("36f58b6d-76b6-55d8-aea8-8f349517e0dc")
             };
         }
 
         if (source === "creation-time") {
             return {
-                ok: "set the Creation Time",
-                cancel: "keep the current Creation Time"
+                ok: globalThis.WMOFLanguagePack.text("1f0d17d9-870b-58e4-b0cf-449c011b90fe"),
+                cancel: globalThis.WMOFLanguagePack.text("f59124a9-2540-53d8-a5f6-836d8521bdfc")
             };
         }
 
         if (source === "scheduled-start") {
             return {
-                ok: "set the Scheduled Start",
-                cancel: "keep the current Scheduled Start"
+                ok: globalThis.WMOFLanguagePack.text("fd14bacf-765e-5a4e-80f6-28f9b87f0df2"),
+                cancel: globalThis.WMOFLanguagePack.text("ecb48f0a-1b06-51dd-a809-eb3bffea46fd")
             };
         }
 
         if (source === "actual-start") {
             return {
-                ok: "set the Actual Start",
-                cancel: "keep the current Actual Start"
+                ok: globalThis.WMOFLanguagePack.text("f4ef8902-659f-54ed-b3d1-c49a9edfe7e4"),
+                cancel: globalThis.WMOFLanguagePack.text("da2dabef-3c39-5231-92d3-d39366cbdac8")
             };
         }
 
         if (source === "standard-time") {
             return {
-                ok: "set the Standard Time",
-                cancel: "keep the current Standard Time"
+                ok: globalThis.WMOFLanguagePack.text("29dd9d2e-274f-592c-8c17-37ca23cfeeba"),
+                cancel: globalThis.WMOFLanguagePack.text("28a78d9b-2987-5740-9f76-cebfa20d033e")
             };
         }
 
@@ -16566,26 +16566,26 @@
         ) {
             return {
                 ok:
-                    `set ${title}`,
+                    globalThis.WMOFLanguagePack.text("0879b148-1aa9-546d-9f0e-f61e8e3a96ea", {value0: (title)}),
                 cancel:
-                    `keep the current ${title}`
+                    globalThis.WMOFLanguagePack.text("2bdee0ae-351c-56eb-a499-54c96a2d6ebb", {value0: (title)})
             };
         }
 
         if (state?.onConfirm) {
             return {
                 ok:
-                    `apply ${title}`,
+                    globalThis.WMOFLanguagePack.text("704e8d3f-74ac-5fd4-884f-d65950babd88", {value0: (title)}),
                 cancel:
-                    "go back without changes"
+                    globalThis.WMOFLanguagePack.text("e877e557-0007-5434-bd91-dba2f51a0e91")
             };
         }
 
         return {
             ok:
-                `save ${title}`,
+                globalThis.WMOFLanguagePack.text("8ed42549-a3c5-575c-904d-46449c0c9a73", {value0: (title)}),
             cancel:
-                "go back without changes"
+                globalThis.WMOFLanguagePack.text("55c8adbb-01cc-5b75-b3eb-c767e42c5302")
         };
     }
 
@@ -16956,7 +16956,7 @@
                 numberPadState
             ) ||
             numberPadState?.title ||
-            "Voice Entry";
+            globalThis.WMOFLanguagePack.text("413dea8a-d716-5324-90e8-83d3a67654cb");
 
         const copy =
             voiceEntryCopyForMode(
@@ -17930,17 +17930,17 @@
     function resetNumberPad() {
         numberPadState = undefined;
         if (numberPadDisplay) numberPadDisplay.textContent = "";
-        if (numberPadContext) numberPadContext.textContent = "Number Pad";
+        if (numberPadContext) numberPadContext.textContent = globalThis.WMOFLanguagePack.text("048501aa-538c-5fcf-a827-2b93385ab99b");
         if (numberPadDate) numberPadDate.value = "";
         if (numberPadClear) {
             numberPadClear.dataset.action = "clear";
-            numberPadClear.setAttribute("aria-label", "Clear");
+            numberPadClear.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("ee140c31-a9b9-531b-93a7-0ab037bd8b0d"));
         }
-        numberPadReset?.setAttribute("aria-label", "Reset");
-        numberPadCancel?.setAttribute("aria-label", "Cancel");
+        numberPadReset?.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("e94bf55f-4d7e-5b70-9f5d-327a409eb1d7"));
+        numberPadCancel?.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("e8637974-fa34-552f-9dff-1caff99f7d41"));
         if (numberPadConfirm) {
             numberPadConfirm.dataset.action = "confirm";
-            numberPadConfirm.setAttribute("aria-label", "Confirm");
+            numberPadConfirm.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("b764733a-e5f5-5a6d-a2ae-a8c7b7666968"));
             numberPadConfirm.disabled = true;
         }
 
@@ -18183,9 +18183,9 @@
                 );
             if (label) {
                 label.textContent =
-                    "Your " +
+                    globalThis.WMOFLanguagePack.text("1b0f9b4f-0d93-54f1-8c5a-9801396be042") +
                     totalScopeLabel() +
-                    " Goal";
+                    globalThis.WMOFLanguagePack.text("3d4d77e4-c49f-5026-897f-91aa6a7ff612");
             }
         }
 
@@ -18201,8 +18201,8 @@
             button.setAttribute(
                 "aria-label",
                 locked
-                    ? `${scopeLabel} goal locked to End Time`
-                    : `Edit ${scopeLabel} goal`
+                    ? globalThis.WMOFLanguagePack.text("fa750493-7a9b-5fbb-aff7-62a44e32aecc", {value0: (scopeLabel)})
+                    : globalThis.WMOFLanguagePack.text("bc25bce7-017f-5cf1-96e7-dfe57079ad6e", {value0: (scopeLabel)})
             );
         }
     }
@@ -18719,7 +18719,7 @@
         void scheduledStartStandard.offsetWidth;
         scheduledStartStandard.classList.add("needs-value");
         scheduledStartMessage.hidden = false;
-        scheduledStartMessage.textContent = "Enter Standard Time before starting the trip.";
+        scheduledStartMessage.textContent = globalThis.WMOFLanguagePack.text("91ea9d0e-3b5b-5602-9976-54a3a2274bcf");
     }
 
     async function beginScheduledTrip(mode) {
@@ -18807,7 +18807,7 @@
         }
 
         scheduledStartCountdownLabel.textContent =
-            "Time Until " +
+            globalThis.WMOFLanguagePack.text("b56e40c4-8243-52f7-b865-fa79db4d6e43") +
             scheduledTimeLabel;
         scheduledStartCountdown.textContent =
             (
@@ -19219,8 +19219,8 @@
         tripSetStartsNow.setAttribute(
             "aria-label",
             active && tripStartsNowState?.label
-                ? `Set To ${tripStartsNowState.label}`
-                : "Set Scheduled/Actual Start to Now"
+                ? globalThis.WMOFLanguagePack.text("4162b31b-cef0-5417-81de-f5ecd107fe29", {value0: (tripStartsNowState.label)})
+                : globalThis.WMOFLanguagePack.text("d0db03d3-cab7-53cf-b077-f93acb23bb32")
         );
     }
 
@@ -19460,26 +19460,26 @@
                 ) || "---"
         };
 
-        $("#tripCreationTime").textContent = values["creation-time"];
-        $("#tripScheduledStart").textContent = values["scheduled-start"];
-        $("#tripActualStart").textContent = values["actual-start"];
-        $("#tripStandardTime").textContent = values["standard-time"];
+        $("#tripCreationTime").textContent = values[globalThis.WMOFLanguagePack.text("fd496c52-20e8-5d67-aea1-7077901593cf")];
+        $("#tripScheduledStart").textContent = values[globalThis.WMOFLanguagePack.text("29188729-7c6c-5556-85f6-786559516b8c")];
+        $("#tripActualStart").textContent = values[globalThis.WMOFLanguagePack.text("e06de7ff-317a-5b32-9275-4c86a7f5a5de")];
+        $("#tripStandardTime").textContent = values[globalThis.WMOFLanguagePack.text("c569f591-c653-5454-ab6b-04d1a0642bce")];
         tripSettingsDialog.querySelectorAll("[data-trip-time-field]").forEach(button => {
             button.disabled = (!live && !draft) || (settingsValues?.deferred && ["standard-time", "scheduled-start", "actual-start"].includes(button.dataset.tripTimeField));
         });
         $("#tripProductive").checked = !settingsValues?.nonProduction;
         $("#tripDefer").checked = Boolean(settingsValues?.deferred);
         $("#tripDefer").disabled = live || !draft;
-        tripSettingsTitle.textContent = draft ? "New Trip Settings" : "Edit Trip Settings";
+        tripSettingsTitle.textContent = draft ? globalThis.WMOFLanguagePack.text("663e4656-b18e-5a0b-8e71-434afa06e206") : globalThis.WMOFLanguagePack.text("203ed173-27ac-5160-93ce-2e3551b37211");
         const futureTrip = Boolean(draft && !settingsValues?.deferred && tripDraftHasFutureStart(getTripSettingsCandidateDraft()));
         tripSettingsPrimary.dataset.futureTrip = String(futureTrip);
         if (futureTrip) {
             tripSettingsPrimary.innerHTML = futureTripClockIcon(tripDraftFutureStartDate(getTripSettingsCandidateDraft()));
-            tripSettingsPrimary.setAttribute("aria-label", "Review future trip start");
-            tripSettingsPrimary.title = "Future trip";
+            tripSettingsPrimary.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("ead3c1da-2ec8-597e-848f-0650e87b3d7d"));
+            tripSettingsPrimary.title = globalThis.WMOFLanguagePack.text("cf2e9e5b-d428-5a0b-971e-5ea533f2dd5b");
         }
         else {
-            tripSettingsPrimary.textContent = settingsValues?.deferred ? "Defer" : draft ? "Start Trip" : "Save";
+            tripSettingsPrimary.textContent = settingsValues?.deferred ? globalThis.WMOFLanguagePack.text("ea49d7be-ce6f-5d8f-93df-26c3f32a7fcd") : draft ? globalThis.WMOFLanguagePack.text("91d0a1ae-9a7c-5619-be27-c1ec5a7d7516") : globalThis.WMOFLanguagePack.text("899eb420-8e68-5a9c-9738-2083c3aa8ed9");
             tripSettingsPrimary.setAttribute("aria-label", tripSettingsPrimary.textContent);
             tripSettingsPrimary.removeAttribute("title");
         }
@@ -20143,7 +20143,7 @@
     function renderDeferredTrip() {
         const button = $("#newTripButton");
         button.classList.toggle("has-deferred-trip", Boolean(tripDraft?.deferred));
-        button.title = tripDraft?.deferred ? "Resume deferred trip" : "New Trip";
+        button.title = tripDraft?.deferred ? globalThis.WMOFLanguagePack.text("d2bcf8dd-8724-50f1-b9e1-5c15d9b0a021") : globalThis.WMOFLanguagePack.text("4a08539e-5b49-5f21-aa5e-4784470146d0");
     }
 
     globalThis
@@ -20644,7 +20644,7 @@
             endTripButton.hidden = false;
             tripActionRow.hidden = false;
             setEndTripButtonIntervalPalette();
-            endTripButton.textContent = "End Trip";
+            endTripButton.textContent = globalThis.WMOFLanguagePack.text("1cf0b3f1-858c-50c8-8cb9-8b3af9e1decd");
             tripActionRow.hidden = false;
             breakButton.hidden = false;
             downButton.hidden = false;
@@ -20681,7 +20681,7 @@
             );
             const label = intervalType === "lunch" ? "Lunch" : "Break";
             endTripButton.textContent =
-                `End ${label} : ${formatIntervalClock(interval.remainingMilliseconds)}`;
+                globalThis.WMOFLanguagePack.text("5f86b39a-0618-5446-a3f3-6455a079beeb", {value0: (label), value1: (formatIntervalClock(interval.remainingMilliseconds))});
             tripActionRow.hidden = true;
             breakButton.hidden = true;
             downButton.hidden = true;
@@ -20691,7 +20691,7 @@
         app.dataset.intervalState = "normal";
         endTripButton.hidden = false;
         setEndTripButtonIntervalPalette();
-        endTripButton.textContent = "End Trip";
+        endTripButton.textContent = globalThis.WMOFLanguagePack.text("42cbe432-c0c6-500f-a98e-9368c2675d45");
         tripActionRow.hidden = false;
         breakButton.hidden = false;
         downButton.hidden = false;
@@ -20962,9 +20962,9 @@
 
         if (mode === "start") {
             title.textContent =
-                "Start Break";
+                globalThis.WMOFLanguagePack.text("cbf94a84-680d-55ec-883a-c3b8f50dff5d");
             message.textContent =
-                "Is this a lunch?";
+                globalThis.WMOFLanguagePack.text("850864d9-4a03-5c73-b3d5-8914e8117f3a");
 
             speechBreakPromptState = {
                 mode: "start"
@@ -20997,9 +20997,9 @@
                     : "Break";
 
             title.textContent =
-                `End ${label}`;
+                globalThis.WMOFLanguagePack.text("b1fd082a-02bb-57b0-b3ed-90ea53d9f026", {value0: (label)});
             message.textContent =
-                `Are you ready to end your ${label.toLowerCase()}?`;
+                globalThis.WMOFLanguagePack.text("3c163e32-eac5-52d3-9485-de84030ded1b", {value0: (label.toLowerCase())});
 
             speechBreakPromptState = {
                 mode: "end",
@@ -21923,7 +21923,8 @@
         const basePriority = Number.isFinite(priority) ? priority :
             ["syncTry", "sync-state", "sync-goal"].includes(announcement) ? 50 : context === "trip-start" && start ? 100 : 0;
         const entry = {
-            id: numericId, priority: basePriority, sequence: queue.length,
+            id: numericId, definitionId: globalThis.WMOFAnnouncementLanguage?.id?.(announcement),
+            priority: basePriority, sequence: queue.length,
             components: components.map((component, sequence) => ({ ...component, sequence,
                 priority: Number.isFinite(component.priority) ? component.priority :
                     Number.isFinite(phasePriorities[component.phase]) ? phasePriorities[component.phase] :
@@ -28807,7 +28808,7 @@
             return;
         }
 
-        const englishLanguage = globalThis.WMOFLanguages?.["en-US"];
+        const englishLanguage = globalThis.WMOFLanguages?.[AUDIO_LANGUAGE];
         englishSpeech =
             englishLanguage?.speech;
 
@@ -28867,7 +28868,7 @@
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
-                yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:"#speechBreakConfirmCancel",
+                yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:globalThis.WMOFLanguagePack.text("fc22edac-745f-58af-bb71-5ad273c14a68"),
                 standardTimeEditor:'#tripSettingsDialog [data-trip-time-field="standard-time"]',
                 scheduledStartEditor:'#tripSettingsDialog [data-trip-time-field="scheduled-start"]',
                 scheduledStart:'#tripSettingsDialog [data-trip-time-field="scheduled-start"]',
@@ -28890,7 +28891,7 @@
 
             const speechIntents = {
                 confirm: "confirm",
-                cancel: "cancel"
+                cancel: globalThis.WMOFLanguagePack.text("86a2d12f-4bc4-5ece-9d59-845caf053568")
             };
 
             const speechChainContexts = {
@@ -28938,7 +28939,7 @@
                 confirm: "trip-actions",
                 yes: "trip-actions",
                 no: "trip-actions",
-                cancel: "trip-actions",
+                cancel: globalThis.WMOFLanguagePack.text("b606f7ac-1ba1-5fc2-969a-81293ef1d75b"),
                 standardTimeEditor: "settings",
                 scheduledStartEditor: "settings",
                 scheduledStart: "settings",
@@ -28983,7 +28984,7 @@
                 renderedTimeMode:
                     "WMOFSpeechAvailability.canToggleRenderedTime",
                 cancel:
-                    "WMOFSpeechAvailability.canCloseSurface"
+                    globalThis.WMOFLanguagePack.text("5cd10bb3-77e3-5d48-b968-a1e9024c1fde")
             };
 
             const availability =
@@ -29051,7 +29052,8 @@
             }
 
             if (englishSpeech.nouns?.[key]) element.setAttribute('speech-noun', englishSpeech.nouns[key]);
-            element.setAttribute("speech-pattern", pattern);
+            if (globalThis.WMOFLanguagePack) globalThis.WMOFLanguagePack.bindCommand(element, key);
+            else element.setAttribute("speech-pattern", pattern);
             element.setAttribute("speech-function", `WMOFActions.${actionName}`);
             if (key === 'cancel' || key === 'close') {
                 element.setAttribute('speech-function', key === 'close' ? 'SpeechMenu.close' : 'SpeechMenu.cancel');
@@ -29069,6 +29071,10 @@
                 element.setAttribute("speech-preproc-context", valueKind);
                 element.setAttribute("speech-preproc-field", valueField);
             }
+
+            if (valueKind && valueField) globalThis.WMOFLanguagePack?.bindPreprocessor(element, key, {
+                handler: "WMOFSpeechProcessing.normalizeSpeechValue", context: valueKind, field: valueField
+            });
 
             return element;
         };

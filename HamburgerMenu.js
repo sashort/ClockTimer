@@ -1051,7 +1051,7 @@
                         this.getAttribute(
                             "aria-label"
                         ) ||
-                        "Menu"
+                        globalThis.WMOFLanguagePack.text("fb9ad1af-7c8b-5dbd-a66d-1c7b3555f5dd")
                     );
 
                 this.#popover

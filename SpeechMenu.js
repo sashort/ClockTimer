@@ -8368,6 +8368,8 @@ class SpeechMenu {
             if (
                 element.speechPreprocFunc
             ) {
+                text = globalThis.WMOFLanguagePack?.preprocess(text,
+                    element.getAttribute("data-speech-preproc-definition") || element.getAttribute("data-speech-preproc-id")) ?? text;
                 const processed =
                     await Promise.resolve(
                         element.speechPreprocFunc(

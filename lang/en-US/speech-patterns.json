@@ -1,0 +1,651 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "patterns": {
+    "978255d5-aa06-506d-a272-a01539ee1587": {
+      "id": "978255d5-aa06-506d-a272-a01539ee1587",
+      "pattern": "^ready at (?<spokenTime>.+)$"
+    },
+    "69c663ba-52cf-52f2-b173-9c20e3199b32": {
+      "id": "69c663ba-52cf-52f2-b173-9c20e3199b32",
+      "pattern": "^at (?<spokenTime>.+)$"
+    },
+    "6552c89a-5807-5ccf-8755-8e411b5c3de5": {
+      "id": "6552c89a-5807-5ccf-8755-8e411b5c3de5",
+      "pattern": "^ready$"
+    },
+    "f1892f87-4a17-50fc-bfc6-5a26a24c114c": {
+      "id": "f1892f87-4a17-50fc-bfc6-5a26a24c114c",
+      "pattern": "^break start$"
+    },
+    "fa9fc390-ba88-5ee6-8702-1fb6e7b81947": {
+      "id": "fa9fc390-ba88-5ee6-8702-1fb6e7b81947",
+      "pattern": "^down(?: time)?$"
+    },
+    "7b9541f1-ed3e-5829-a081-299916108502": {
+      "id": "7b9541f1-ed3e-5829-a081-299916108502",
+      "pattern": "^break end$"
+    },
+    "215e7e83-3439-5014-a92e-22463882cd66": {
+      "id": "215e7e83-3439-5014-a92e-22463882cd66",
+      "pattern": "^resume$"
+    },
+    "74c28b6f-1b4e-542d-888a-fa1a8c861e34": {
+      "id": "74c28b6f-1b4e-542d-888a-fa1a8c861e34",
+      "pattern": "^trip goal$"
+    },
+    "96c8476f-2dc6-5eca-9d83-824d69cb8bd8": {
+      "id": "96c8476f-2dc6-5eca-9d83-824d69cb8bd8",
+      "pattern": "^total goal$"
+    },
+    "17bb8ab5-2caa-5ec3-915d-5c6978e62143": {
+      "id": "17bb8ab5-2caa-5ec3-915d-5c6978e62143",
+      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|check|month|year)$"
+    },
+    "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8": {
+      "id": "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8",
+      "pattern": "^mode$"
+    },
+    "42dad3d4-16d6-5256-9799-b4d1b61eff12": {
+      "id": "42dad3d4-16d6-5256-9799-b4d1b61eff12",
+      "pattern": "^(?<goalMode>auto|total|trip|day|week|check|month|year)(?: mode)?$"
+    },
+    "76d4ec7f-de0f-5a9a-bc27-a7e91391ae09": {
+      "id": "76d4ec7f-de0f-5a9a-bc27-a7e91391ae09",
+      "pattern": "^sync(?: (?<syncAction>on|off))?$"
+    },
+    "4462c434-4696-5dfb-8caa-6e5a28048e9a": {
+      "id": "4462c434-4696-5dfb-8caa-6e5a28048e9a",
+      "pattern": "^lock end time(?: to)? (?<spokenTime>.+)$"
+    },
+    "1f24cb83-74a7-5a1b-a1cd-3247aaf56f50": {
+      "id": "1f24cb83-74a7-5a1b-a1cd-3247aaf56f50",
+      "pattern": "^(?:trip )?log$",
+      "noun": "log|trip log"
+    },
+    "e29a547e-a0ca-55e2-9e62-be188f68e605": {
+      "id": "e29a547e-a0ca-55e2-9e62-be188f68e605",
+      "pattern": "^(?:hide|close) trip log$"
+    },
+    "5ad7b062-9ca5-561b-91d0-d6f0f2ed8261": {
+      "id": "5ad7b062-9ca5-561b-91d0-d6f0f2ed8261",
+      "pattern": "^defer trip$"
+    },
+    "61fa6dbb-c724-5639-91e2-4331c624f9b1": {
+      "id": "61fa6dbb-c724-5639-91e2-4331c624f9b1",
+      "pattern": "^(?<timeMode>time remaining|time elapsed|end time)$"
+    },
+    "abe9c9f9-3993-5d10-8bb9-042cf3f053d3": {
+      "id": "abe9c9f9-3993-5d10-8bb9-042cf3f053d3",
+      "pattern": "^show (?<timeMode>time remaining|time elapsed|end time)$"
+    },
+    "bc7b0b38-b5fb-52a9-91aa-372ededfc794": {
+      "id": "bc7b0b38-b5fb-52a9-91aa-372ededfc794",
+      "pattern": "^close$"
+    },
+    "bdd8da71-82c9-5853-a344-532e717031db": {
+      "id": "bdd8da71-82c9-5853-a344-532e717031db",
+      "pattern": "^standard(?: time)? (?<timeValue>.+)$"
+    },
+    "1cbde201-615f-5deb-830f-dd8fa08125e2": {
+      "id": "1cbde201-615f-5deb-830f-dd8fa08125e2",
+      "pattern": "^standard(?: time)? (?<timeValue>.+)$"
+    },
+    "ac142905-7527-5832-97fb-00bd047e44f2": {
+      "id": "ac142905-7527-5832-97fb-00bd047e44f2",
+      "pattern": "^(?<breakChoice>10|15|long|short|lunch)$"
+    },
+    "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012": {
+      "id": "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012",
+      "pattern": "^ok(?:ay)?$"
+    },
+    "408a0105-d07e-50d7-865a-f91f02112ac6": {
+      "id": "408a0105-d07e-50d7-865a-f91f02112ac6",
+      "pattern": "^ok(?:ay)?$"
+    },
+    "92d60ea1-eca5-5dfa-9662-15ebe254e3f1": {
+      "id": "92d60ea1-eca5-5dfa-9662-15ebe254e3f1",
+      "pattern": "^yes$"
+    },
+    "b7797206-8526-54e6-907f-0240df4472d4": {
+      "id": "b7797206-8526-54e6-907f-0240df4472d4",
+      "pattern": "^no$"
+    },
+    "a19f3281-639f-5b82-8bbd-e6bf40a81a17": {
+      "id": "a19f3281-639f-5b82-8bbd-e6bf40a81a17",
+      "pattern": "^standard(?: time)? (?<timeValue>.+)$",
+      "command": "standardTime",
+      "preprocessorId": "95343326-10ca-5d64-b8a3-1b250d7737df"
+    },
+    "c7f4346c-a894-58b0-98c4-34ab2edd895c": {
+      "id": "c7f4346c-a894-58b0-98c4-34ab2edd895c",
+      "pattern": "^standard(?: time)?$",
+      "command": "standardTimeEditor"
+    },
+    "6d7fd825-3aba-530a-b9c7-f69d8d4769fc": {
+      "id": "6d7fd825-3aba-530a-b9c7-f69d8d4769fc",
+      "pattern": "^(?:scheduled start|scheduled time)$",
+      "command": "scheduledStartEditor"
+    },
+    "5cb36a3c-62e5-5049-9e54-4c9febcab3b0": {
+      "id": "5cb36a3c-62e5-5049-9e54-4c9febcab3b0",
+      "pattern": "^(?:scheduled start|scheduled time) (?<spokenTime>.+)$",
+      "command": "scheduledStart"
+    },
+    "d6cd3380-35a6-5b7f-982c-e6588b1663a1": {
+      "id": "d6cd3380-35a6-5b7f-982c-e6588b1663a1",
+      "pattern": "^start$",
+      "command": "scheduledStartNow"
+    },
+    "d783c868-628b-50c5-b09f-3a71468543dc": {
+      "id": "d783c868-628b-50c5-b09f-3a71468543dc",
+      "pattern": "^(?:actual start|start time)$",
+      "command": "actualStartEditor"
+    },
+    "626b495b-78d3-59ef-8c65-2068ec034a66": {
+      "id": "626b495b-78d3-59ef-8c65-2068ec034a66",
+      "pattern": "^(?:actual start|start time) (?<spokenTime>.+)$",
+      "command": "actualStart"
+    },
+    "87d47b7a-ea63-5f3a-aa90-c27f3a85b51d": {
+      "id": "87d47b7a-ea63-5f3a-aa90-c27f3a85b51d",
+      "pattern": "^(?:creation time|created(?: at)?)$",
+      "command": "creationTimeEditor"
+    },
+    "687d8362-e20f-54e5-983c-b506836371e6": {
+      "id": "687d8362-e20f-54e5-983c-b506836371e6",
+      "pattern": "^(?:creation time|created(?: at)?) (?<spokenTime>.+)$",
+      "command": "creationTime"
+    },
+    "7cfc2b56-03bc-56ea-a11c-3cb3679456cc": {
+      "id": "7cfc2b56-03bc-56ea-a11c-3cb3679456cc",
+      "pattern": "^ready at (?<spokenTime>.+)$",
+      "command": "readyAt",
+      "preprocessorId": "204da7f1-f1f5-5f6b-951a-f9a1cd05155f"
+    },
+    "8e3d3f08-975b-53c6-9729-127b6c376ddf": {
+      "id": "8e3d3f08-975b-53c6-9729-127b6c376ddf",
+      "pattern": "^at (?<spokenTime>.+)$",
+      "command": "readyAtContinuation",
+      "preprocessorId": "150a0f87-e3f2-5609-9df4-8691efd7b7d0"
+    },
+    "af3af6f3-1e52-544f-bf23-a914078c78b7": {
+      "id": "af3af6f3-1e52-544f-bf23-a914078c78b7",
+      "pattern": "^ready$",
+      "command": "ready"
+    },
+    "6de24515-cbba-565f-a856-a588dc240656": {
+      "id": "6de24515-cbba-565f-a856-a588dc240656",
+      "pattern": "^break start$",
+      "command": "breakStart"
+    },
+    "fd26842e-d902-537c-b813-3f94de48dad0": {
+      "id": "fd26842e-d902-537c-b813-3f94de48dad0",
+      "pattern": "^(?<breakChoice>10|15|break|long|short|lunch)$",
+      "command": "breakChoice"
+    },
+    "772e6012-32b8-5baa-bc6a-24e7a15119a2": {
+      "id": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+      "pattern": "^ok(?:ay)?$",
+      "command": "confirm"
+    },
+    "1dffbcc6-dfcd-5681-bd6d-e44e0804ecc7": {
+      "id": "1dffbcc6-dfcd-5681-bd6d-e44e0804ecc7",
+      "pattern": "^yes$",
+      "command": "yes"
+    },
+    "529257c3-f4f4-5200-957e-79ba9b4ec915": {
+      "id": "529257c3-f4f4-5200-957e-79ba9b4ec915",
+      "pattern": "^no$",
+      "command": "no"
+    },
+    "1d84b59d-4078-5b53-a748-02489f86c0d1": {
+      "id": "1d84b59d-4078-5b53-a748-02489f86c0d1",
+      "pattern": "^cancel$",
+      "command": "cancel"
+    },
+    "b636c62b-ddd1-5619-93ef-685659516e71": {
+      "id": "b636c62b-ddd1-5619-93ef-685659516e71",
+      "pattern": "^close$",
+      "command": "close"
+    },
+    "e9689080-76d4-50a9-b23f-bd0186154dac": {
+      "id": "e9689080-76d4-50a9-b23f-bd0186154dac",
+      "pattern": "^voice$",
+      "command": "voice"
+    },
+    "315ffc8d-05f8-5beb-a900-33a0be0b2213": {
+      "id": "315ffc8d-05f8-5beb-a900-33a0be0b2213",
+      "pattern": "^ok(?:ay)?$",
+      "command": "voiceEntryConfirm"
+    },
+    "9e012b55-1e73-51a3-b8c4-e90181485523": {
+      "id": "9e012b55-1e73-51a3-b8c4-e90181485523",
+      "pattern": "^(?:cancel|close)$",
+      "command": "voiceEntryCancel"
+    },
+    "956ded15-a3b9-5d29-bf13-50c65e7c8a66": {
+      "id": "956ded15-a3b9-5d29-bf13-50c65e7c8a66",
+      "pattern": "^(?:touch|keypad|number pad)$",
+      "command": "voiceEntryTouch"
+    },
+    "ec58c797-85c9-5b9d-864a-6572a2157d50": {
+      "id": "ec58c797-85c9-5b9d-864a-6572a2157d50",
+      "pattern": "^defer trip$",
+      "command": "voiceEntryDefer"
+    },
+    "a80f3b5d-027e-5d10-a44a-abefefddcece": {
+      "id": "a80f3b5d-027e-5d10-a44a-abefefddcece",
+      "pattern": "^down(?: time)?$",
+      "command": "down"
+    },
+    "fc5cbca8-9f11-5edd-bf7f-0c49ae4f1569": {
+      "id": "fc5cbca8-9f11-5edd-bf7f-0c49ae4f1569",
+      "pattern": "^break end$",
+      "command": "breakEnd"
+    },
+    "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39": {
+      "id": "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39",
+      "pattern": "^resume$",
+      "command": "resume"
+    },
+    "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f": {
+      "id": "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f",
+      "pattern": "^trip goal$",
+      "command": "tripGoal"
+    },
+    "32cacf3a-7da9-59a1-8944-857bce67d349": {
+      "id": "32cacf3a-7da9-59a1-8944-857bce67d349",
+      "pattern": "^total goal$",
+      "command": "totalGoal"
+    },
+    "a195f1e5-4693-5f11-80e8-ad6bcff662fd": {
+      "id": "a195f1e5-4693-5f11-80e8-ad6bcff662fd",
+      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|check|month|year)$",
+      "command": "changeGoal",
+      "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
+    },
+    "e97c639b-bda8-57f4-91d8-3da60b1e0bf8": {
+      "id": "e97c639b-bda8-57f4-91d8-3da60b1e0bf8",
+      "pattern": "^mode$",
+      "command": "readGoalMode"
+    },
+    "79d635a9-c4f4-5646-be1c-3d4b9596d241": {
+      "id": "79d635a9-c4f4-5646-be1c-3d4b9596d241",
+      "pattern": "^(?<goalMode>auto|total|trip|day|week|check|month|year)(?: mode)?$",
+      "command": "goalMode"
+    },
+    "e8af9836-0b68-572f-a3e2-5a80249855d0": {
+      "id": "e8af9836-0b68-572f-a3e2-5a80249855d0",
+      "pattern": "^(?:sync|sink|sin)(?: (?<syncAction>on|off))?$",
+      "command": "sync"
+    },
+    "4e2a400e-d148-50f5-95dc-dbd960bc8335": {
+      "id": "4e2a400e-d148-50f5-95dc-dbd960bc8335",
+      "pattern": "^(?:sync|sink|sin) status$",
+      "command": "syncStatus"
+    },
+    "a087b64a-a17c-5570-9677-35fa29a71963": {
+      "id": "a087b64a-a17c-5570-9677-35fa29a71963",
+      "pattern": "^(?:how long|time)$",
+      "command": "howLong"
+    },
+    "2ab112df-fdbe-5b21-87ea-7234ec548aa1": {
+      "id": "2ab112df-fdbe-5b21-87ea-7234ec548aa1",
+      "pattern": "^when$",
+      "command": "when"
+    },
+    "5274c32f-7ccc-562d-971b-6f3dcade100c": {
+      "id": "5274c32f-7ccc-562d-971b-6f3dcade100c",
+      "pattern": "^lock end time(?: to)? (?<spokenTime>.+)$",
+      "command": "lockEndTime",
+      "preprocessorId": "a12d5454-894d-594c-822a-a10f995cf023"
+    },
+    "9d88a842-ff55-512c-a4fe-aefd57e88b20": {
+      "id": "9d88a842-ff55-512c-a4fe-aefd57e88b20",
+      "pattern": "^(?:trip )?log$",
+      "command": "showTripLog"
+    },
+    "783baddc-895b-50fe-9db1-d5c20bf1b77a": {
+      "id": "783baddc-895b-50fe-9db1-d5c20bf1b77a",
+      "pattern": "^(?:hide|close) trip log$",
+      "command": "hideTripLog"
+    },
+    "b16fe1e6-3da7-57b4-adb4-a8c2da63030e": {
+      "id": "b16fe1e6-3da7-57b4-adb4-a8c2da63030e",
+      "pattern": "^defer trip$",
+      "command": "deferTrip"
+    },
+    "1ef88583-92a7-56ff-b847-eeb3ff18a6b3": {
+      "id": "1ef88583-92a7-56ff-b847-eeb3ff18a6b3",
+      "pattern": "^(?<timeMode>time remaining|time elapsed|end time)$",
+      "command": "readRenderedTime"
+    },
+    "348676a8-1088-56aa-9c44-b247f2dc9d1b": {
+      "id": "348676a8-1088-56aa-9c44-b247f2dc9d1b",
+      "pattern": "^show (?<timeMode>time remaining|time elapsed|end time)$",
+      "command": "renderedTimeMode"
+    },
+    "d1fc965f-6fdb-551a-a7e0-60079b90fb3e": {
+      "id": "d1fc965f-6fdb-551a-a7e0-60079b90fb3e",
+      "pattern": "^(?<spokenValue>(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?)(?:[\\s\\-\\u2013\\u2014]+(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?))*)$",
+      "command": "keypadValue"
+    },
+    "8488608f-bc9a-54b4-94a1-1e5fa0801771": {
+      "id": "8488608f-bc9a-54b4-94a1-1e5fa0801771",
+      "pattern": "^wake$"
+    },
+    "2fa0573b-b083-5f96-9926-66809b55af14": {
+      "id": "2fa0573b-b083-5f96-9926-66809b55af14",
+      "pattern": "^sleep$"
+    },
+    "6b82de7a-8fee-53e4-b37a-bbc852613b31": {
+      "id": "6b82de7a-8fee-53e4-b37a-bbc852613b31",
+      "pattern": "^off$"
+    },
+    "41c21000-4282-5a5d-8559-ec0c2bf150cc": {
+      "id": "41c21000-4282-5a5d-8559-ec0c2bf150cc",
+      "pattern": "^wake$",
+      "source": "SpeechMicBar.js:48509"
+    },
+    "e17ba51f-4dde-5502-97ef-95955ac66b37": {
+      "id": "e17ba51f-4dde-5502-97ef-95955ac66b37",
+      "pattern": "^sleep$",
+      "source": "SpeechMicBar.js:48665"
+    },
+    "7071dc27-7d1d-567d-8feb-d187438a869c": {
+      "id": "7071dc27-7d1d-567d-8feb-d187438a869c",
+      "pattern": "^off$",
+      "source": "SpeechMicBar.js:48819"
+    },
+    "b39573f3-0017-5efe-a07c-be22ff010b6f": {
+      "id": "b39573f3-0017-5efe-a07c-be22ff010b6f",
+      "pattern": "^(?:(?:speech )?commands|choices|options|what)$",
+      "source": "SpeechMicBar.js:49001"
+    },
+    "f2987a12-d8f5-5fab-b3e9-b8b84784e87b": {
+      "id": "f2987a12-d8f5-5fab-b3e9-b8b84784e87b",
+      "pattern": "^speech (?:on|off)$",
+      "source": "SpeechMicBar.js:49172"
+    },
+    "f9f54c7c-2128-5895-9be2-8d9cff354aed": {
+      "id": "f9f54c7c-2128-5895-9be2-8d9cff354aed",
+      "pattern": "^chime (?:on|off)$",
+      "source": "SpeechMicBar.js:49401"
+    },
+    "d082345f-e78b-5966-a417-e3b5791f2d41": {
+      "id": "d082345f-e78b-5966-a417-e3b5791f2d41",
+      "pattern": "^chime (?<rate>fast|medium|slow)$",
+      "source": "SpeechMicBar.js:49634"
+    },
+    "4a4ab416-a940-5776-a66a-86e18d610b7e": {
+      "id": "4a4ab416-a940-5776-a66a-86e18d610b7e",
+      "pattern": "^speech (?!on$|off$)(?<percent>.+?)(?: percent|%)?$",
+      "source": "SpeechMicBar.js:49883"
+    },
+    "d029bbd2-da7e-5d3b-9115-c0d7c73f27de": {
+      "id": "d029bbd2-da7e-5d3b-9115-c0d7c73f27de",
+      "pattern": "^volume (?<percent>.+?)(?: percent|%)?$",
+      "source": "SpeechMicBar.js:50954"
+    },
+    "6108af3e-29e2-555d-b0a4-17f833664188": {
+      "id": "6108af3e-29e2-555d-b0a4-17f833664188",
+      "pattern": "^faster$",
+      "source": "SpeechMicBar.js:51933"
+    },
+    "56a061ff-38d0-5c65-ad44-8df0067c1dd9": {
+      "id": "56a061ff-38d0-5c65-ad44-8df0067c1dd9",
+      "pattern": "^slower$",
+      "source": "SpeechMicBar.js:52158"
+    },
+    "b9871a5a-df97-5d32-ab84-1060682b4514": {
+      "id": "b9871a5a-df97-5d32-ab84-1060682b4514",
+      "pattern": "^louder$",
+      "source": "SpeechMicBar.js:52383"
+    },
+    "acde1058-233d-58b3-add4-8acf62004b71": {
+      "id": "acde1058-233d-58b3-add4-8acf62004b71",
+      "pattern": "^softer$",
+      "source": "SpeechMicBar.js:52610"
+    }
+  },
+  "preprocessors": {
+    "204da7f1-f1f5-5f6b-951a-f9a1cd05155f": {
+      "id": "204da7f1-f1f5-5f6b-951a-f9a1cd05155f",
+      "handler": "WMOFSpeechProcessing.normalizeSpeechValue",
+      "context": "clock",
+      "field": "spokenTime"
+    },
+    "150a0f87-e3f2-5609-9df4-8691efd7b7d0": {
+      "id": "150a0f87-e3f2-5609-9df4-8691efd7b7d0",
+      "handler": "WMOFSpeechProcessing.normalizeSpeechValue",
+      "context": "clock",
+      "field": "spokenTime"
+    },
+    "f3cd9d02-c597-522d-b684-ea5c4f1f7354": {
+      "id": "f3cd9d02-c597-522d-b684-ea5c4f1f7354",
+      "handler": "WMOFSpeechProcessing.normalizeSpeechValue",
+      "context": "percent",
+      "field": "percent"
+    },
+    "a12d5454-894d-594c-822a-a10f995cf023": {
+      "id": "a12d5454-894d-594c-822a-a10f995cf023",
+      "handler": "WMOFSpeechProcessing.normalizeSpeechValue",
+      "context": "clock",
+      "field": "spokenTime"
+    },
+    "95343326-10ca-5d64-b8a3-1b250d7737df": {
+      "id": "95343326-10ca-5d64-b8a3-1b250d7737df",
+      "handler": "WMOFSpeechProcessing.normalizeSpeechValue",
+      "context": "duration",
+      "field": "timeValue"
+    },
+    "fbd059b1-70fd-55fc-9265-22f4ac813cd2": {
+      "id": "fbd059b1-70fd-55fc-9265-22f4ac813cd2",
+      "handler": "WMOFSpeechProcessing.normalizeSpeechValue",
+      "context": "duration",
+      "field": "timeValue"
+    }
+  },
+  "customRules": {
+    "9ba1fed7-b4ef-5575-b6ac-3a381be1cc04": {
+      "id": "9ba1fed7-b4ef-5575-b6ac-3a381be1cc04",
+      "implementation": "lang/en-US/SpokenTimeParser.js"
+    },
+    "d40019b4-8557-529f-88a9-d63c8c7c0517": {
+      "id": "d40019b4-8557-529f-88a9-d63c8c7c0517",
+      "implementation": "lang/en-US/DurationParser.js"
+    },
+    "3c4c7ad4-f2e9-5d0d-8439-700eaa4f0e44": {
+      "id": "3c4c7ad4-f2e9-5d0d-8439-700eaa4f0e44",
+      "implementation": "lang/en-US/PercentParser.js"
+    },
+    "c9cef33b-fe91-5d89-8912-ee3ae040bf8a": {
+      "id": "c9cef33b-fe91-5d89-8912-ee3ae040bf8a",
+      "implementation": "lang/en-US/SpeechValuePreprocessor.js"
+    }
+  },
+  "language": {
+    "code": "en-US",
+    "name": "English (United States)",
+    "direction": "ltr",
+    "speechRecognitionLanguage": "en-US",
+    "speech": {
+      "recognitionHotwords": [
+        "zero",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+        "oh",
+        "o",
+        "naught",
+        "nought",
+        "double",
+        "triple",
+        "twenty",
+        "twenty one",
+        "twenty two",
+        "twenty three",
+        "twenty four",
+        "twenty five",
+        "twenty six",
+        "twenty seven",
+        "twenty eight",
+        "twenty nine",
+        "thirty",
+        "thirty one",
+        "thirty two",
+        "thirty three",
+        "thirty four",
+        "thirty five",
+        "thirty six",
+        "thirty seven",
+        "thirty eight",
+        "thirty nine",
+        "forty",
+        "forty one",
+        "forty two",
+        "forty three",
+        "forty four",
+        "forty five",
+        "forty six",
+        "forty seven",
+        "forty eight",
+        "forty nine",
+        "fifty",
+        "fifty one",
+        "fifty two",
+        "fifty three",
+        "fifty four",
+        "fifty five",
+        "fifty six",
+        "fifty seven",
+        "fifty eight",
+        "fifty nine",
+        "sixty",
+        "sixty one",
+        "sixty two",
+        "sixty three",
+        "sixty four",
+        "sixty five",
+        "sixty six",
+        "sixty seven",
+        "sixty eight",
+        "sixty nine",
+        "seventy",
+        "seventy one",
+        "seventy two",
+        "seventy three",
+        "seventy four",
+        "seventy five",
+        "seventy six",
+        "seventy seven",
+        "seventy eight",
+        "seventy nine",
+        "eighty",
+        "eighty one",
+        "eighty two",
+        "eighty three",
+        "eighty four",
+        "eighty five",
+        "eighty six",
+        "eighty seven",
+        "eighty eight",
+        "eighty nine",
+        "ninety",
+        "ninety one",
+        "ninety two",
+        "ninety three",
+        "ninety four",
+        "ninety five",
+        "ninety six",
+        "ninety seven",
+        "ninety eight",
+        "ninety nine"
+      ],
+      "wakePhrase": "8488608f-bc9a-54b4-94a1-1e5fa0801771",
+      "sleepPhrase": "2fa0573b-b083-5f96-9926-66809b55af14",
+      "offPhrase": "6b82de7a-8fee-53e4-b37a-bbc852613b31",
+      "nouns": {
+        "showTripLog": "log|trip log"
+      },
+      "commands": {
+        "standardTime": "a19f3281-639f-5b82-8bbd-e6bf40a81a17",
+        "standardTimeEditor": "c7f4346c-a894-58b0-98c4-34ab2edd895c",
+        "scheduledStartEditor": "6d7fd825-3aba-530a-b9c7-f69d8d4769fc",
+        "scheduledStart": "5cb36a3c-62e5-5049-9e54-4c9febcab3b0",
+        "scheduledStartNow": "d6cd3380-35a6-5b7f-982c-e6588b1663a1",
+        "actualStartEditor": "d783c868-628b-50c5-b09f-3a71468543dc",
+        "actualStart": "626b495b-78d3-59ef-8c65-2068ec034a66",
+        "creationTimeEditor": "87d47b7a-ea63-5f3a-aa90-c27f3a85b51d",
+        "creationTime": "687d8362-e20f-54e5-983c-b506836371e6",
+        "readyAt": "7cfc2b56-03bc-56ea-a11c-3cb3679456cc",
+        "readyAtContinuation": "8e3d3f08-975b-53c6-9729-127b6c376ddf",
+        "ready": "af3af6f3-1e52-544f-bf23-a914078c78b7",
+        "breakStart": "6de24515-cbba-565f-a856-a588dc240656",
+        "breakChoice": "fd26842e-d902-537c-b813-3f94de48dad0",
+        "confirm": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+        "yes": "1dffbcc6-dfcd-5681-bd6d-e44e0804ecc7",
+        "no": "529257c3-f4f4-5200-957e-79ba9b4ec915",
+        "cancel": "1d84b59d-4078-5b53-a748-02489f86c0d1",
+        "close": "b636c62b-ddd1-5619-93ef-685659516e71",
+        "voice": "e9689080-76d4-50a9-b23f-bd0186154dac",
+        "voiceEntryConfirm": "315ffc8d-05f8-5beb-a900-33a0be0b2213",
+        "voiceEntryCancel": "9e012b55-1e73-51a3-b8c4-e90181485523",
+        "voiceEntryTouch": "956ded15-a3b9-5d29-bf13-50c65e7c8a66",
+        "voiceEntryDefer": "ec58c797-85c9-5b9d-864a-6572a2157d50",
+        "down": "a80f3b5d-027e-5d10-a44a-abefefddcece",
+        "breakEnd": "fc5cbca8-9f11-5edd-bf7f-0c49ae4f1569",
+        "resume": "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39",
+        "tripGoal": "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f",
+        "totalGoal": "32cacf3a-7da9-59a1-8944-857bce67d349",
+        "changeGoal": "a195f1e5-4693-5f11-80e8-ad6bcff662fd",
+        "readGoalMode": "e97c639b-bda8-57f4-91d8-3da60b1e0bf8",
+        "goalMode": "79d635a9-c4f4-5646-be1c-3d4b9596d241",
+        "sync": "e8af9836-0b68-572f-a3e2-5a80249855d0",
+        "syncStatus": "4e2a400e-d148-50f5-95dc-dbd960bc8335",
+        "howLong": "a087b64a-a17c-5570-9677-35fa29a71963",
+        "when": "2ab112df-fdbe-5b21-87ea-7234ec548aa1",
+        "lockEndTime": "5274c32f-7ccc-562d-971b-6f3dcade100c",
+        "showTripLog": "9d88a842-ff55-512c-a4fe-aefd57e88b20",
+        "hideTripLog": "783baddc-895b-50fe-9db1-d5c20bf1b77a",
+        "deferTrip": "b16fe1e6-3da7-57b4-adb4-a8c2da63030e",
+        "readRenderedTime": "1ef88583-92a7-56ff-b847-eeb3ff18a6b3",
+        "renderedTimeMode": "348676a8-1088-56aa-9c44-b247f2dc9d1b",
+        "keypadValue": "d1fc965f-6fdb-551a-a7e0-60079b90fb3e"
+      }
+    },
+    "ui": {}
+  },
+  "sourceKeys": {
+    "system:wake": "41c21000-4282-5a5d-8559-ec0c2bf150cc",
+    "system:sleep": "e17ba51f-4dde-5502-97ef-95955ac66b37",
+    "system:off": "7071dc27-7d1d-567d-8feb-d187438a869c",
+    "system:commands": "b39573f3-0017-5efe-a07c-be22ff010b6f",
+    "system:speech": "f2987a12-d8f5-5fab-b3e9-b8b84784e87b",
+    "system:chime": "f9f54c7c-2128-5895-9be2-8d9cff354aed",
+    "system:chime-rate": "d082345f-e78b-5966-a417-e3b5791f2d41",
+    "system:speech-rate-percent": "4a4ab416-a940-5776-a66a-86e18d610b7e",
+    "system:volume-percent": "d029bbd2-da7e-5d3b-9115-c0d7c73f27de",
+    "system:faster": "6108af3e-29e2-555d-b0a4-17f833664188",
+    "system:slower": "56a061ff-38d0-5c65-ad44-8df0067c1dd9",
+    "system:louder": "b9871a5a-df97-5d32-ab84-1060682b4514",
+    "system:softer": "acde1058-233d-58b3-add4-8acf62004b71"
+  }
+}

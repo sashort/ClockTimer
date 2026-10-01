@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
-import {Window} from "happy-dom";
+import {Window} from "./LanguageWindow.mjs";
 
 const window = new Window({url:"https://clock.example/"});
 Object.assign(globalThis, {

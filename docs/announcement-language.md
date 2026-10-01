@@ -1,22 +1,13 @@
-# Announcement language resources
+# Language packs
 
-English announcement sentences live in `lang/en-US/announcements.json`. The musical catalog `api/audio/catalog.json` contains notes and tempo, without embedded speech. `AnnouncementLanguage.js` reads the selected language resource and resolves templates. `app.js` waits for the resource before initialization, using the document's language (`en` resolves to `en-US`). Missing languages or missing translated templates fall back to English.
+`index.php` renders `templates/index.html`. `?lang=en-US` selects `lang/en-US`; omitted, invalid, or unavailable folders use English. A folder must contain all four version-1 resources: `ui-text.json`, `speech-patterns.json`, `announcements.json`, and `associations.json`. Only English is supplied.
 
-The language file has `version`, `locale`, `announcements`, and `messages`. Announcement entries use stable type keys such as `trip-started`, `trip-ended`, `goal-failed`, and `syncTry`. Components and variants contain sentences with named placeholders, for example:
+UI text, speech patterns, preprocessors, announcement types, and associated elements use UUID definitions. Distinct speech patterns must have distinct IDs, including across languages. Runtime copies receive separate instance IDs while retaining their definition references. Associations connect elements to text, patterns, preprocessors and select options. Option values remain application keys; labels and available options can vary by language.
 
-```json
-{
-  "summary": "Trip started.",
-  "details": "{duration} until {goal}."
-}
-```
+PHP escapes HTML text and safely embeds the resource pack as JSON. Language-specific parser implementations must be JavaScript files inside the selected language folder. Declarative replacement rules can be attached to preprocessors through their transform IDs. `LanguagePack.js` resolves runtime text and speech bindings and observes dynamically inserted elements and component shadow roots.
 
-JavaScript supplies values rather than concatenating the sentence. Translations can move placeholders to any position. Values such as durations and numbers continue through the existing English spoken-value formatters; another language may need its own value formatter as well as translated sentences. Chime references, component priorities, and state decisions remain language-independent.
+Announcement templates use named placeholders such as `{duration}`. Queue type IDs remain positive numeric IDs independent of language; announcement definition UUIDs identify their underlying resource. Chimes, priorities, and event state remain application logic. English spoken-value parsers are supplied; a new language must provide suitable vocabulary and parsing rules.
 
-`WMOFAnnouncementLanguage.load(locale)` selects a resource. Subsequent announcements use its sentences. Loads are cached and language selections are protected against outdated asynchronous requests. `text(path, values)` resolves a sentence, rejecting missing templates and missing required values. `summary(type)` exposes a fixed announcement summary and its speech options. Audio output includes the selected speech language.
+The generated `index.html` is the English static fallback. Regenerate it after template/resource edits with `php index.php > index.html`. Hosting must support PHP and prefer `index.php` (the supplied `.htaccess` sets this for Apache).
 
-`AnnouncementCatalog.js` assigns stable positive IDs to built-in types. IDs do not depend on the spoken wording, language, or load order. New types should receive new IDs; existing IDs must not be renumbered. Custom runtime types retain the queue's fallback ID allocation starting at 1000. Informational announcements now deduplicate by underlying event type, including differently worded outcomes of the same type in one nonempty queue cycle.
-
-English-only implementation: trip start/resume/end, goal failures and remaining time, sync outcomes, chime summaries and meal cues, audio-setting confirmations, goal/mode/range confirmations and time readbacks. This does not translate the entire UI, speech-recognition grammar, or voice-entry dialog prompts.
-
-Tests: `tests/announcement-language.mjs` checks loading, substitutions, fallback, language switching, and template coverage; `tests/announcement-english-output.mjs` checks the actual dynamic sentence builders. Queue, component, chime, and volume tests also exercise the loaded English resource.
+Checks: PHP template tests cover fallback, HTML/script escaping, UUID uniqueness, alternate-language options and parser paths. Runtime tests cover command bindings, cloned elements, shadow roots and preprocessing transforms. Announcement tests cover template loading, substitution and queue behavior.

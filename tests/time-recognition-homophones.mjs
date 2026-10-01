@@ -1,3 +1,4 @@
+import { englishSpeechLanguage } from './announcement-language-fixture.mjs';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
@@ -7,6 +8,7 @@ const clockSource=fs.readFileSync(new URL('../lang/en-US/SpokenTimeParser.js',im
 const preprocessorSource=fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',import.meta.url),'utf8');
 
 globalThis.WMOFLanguages=Object.create(null);
+globalThis.WMOFLanguagePack={language:englishSpeechLanguage};
 eval(source);
 eval(durationSource);
 eval(clockSource);

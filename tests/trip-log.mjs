@@ -1,4 +1,4 @@
-import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';
+import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from './LanguageWindow.mjs';
 const w=new Window({url:'https://clock.example/'});w.eval(fs.readFileSync(new URL('../CalendarRange.js',import.meta.url),'utf8'));w.eval(fs.readFileSync(new URL('../TripLog.js',import.meta.url),'utf8'));
 const root=w.document.createElement('div');w.document.body.append(root);let criteria='pay-period',filter='all',pad,includeCurrentSetting=false;
 const events=[{id:1,event:'trip.started',timestamp:'2026-09-18 12:00:00',value:{}},{id:2,event:'interval.started',timestamp:'2026-09-18 12:05:00',value:{type:'break',length:120000,intervalKey:'b'}},{id:3,event:'interval.ended',timestamp:'2026-09-18 12:07:00',value:{intervalKey:'b'}},{id:4,event:'trip.stopped',timestamp:'2026-09-18 12:20:00',value:{}}];
