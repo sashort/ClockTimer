@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
-const ctx=vm.createContext({console:{error:()=>{}}});
+const ctx=vm.createContext({console:{error:()=>{}},audioAnnouncementOutput:()=>({speechDelayMs:150}),waitForAnnouncementDelay:async()=>{}});
 vm.runInContext(source.slice(source.indexOf('    let semanticAnnouncementTail'),source.indexOf('    function waitForAnnouncementDelay'))+source.slice(source.indexOf('    function runSemanticAnnouncement('),source.indexOf('    function playSemanticSong('))+'\nglobalThis.enqueue=runSemanticAnnouncement; globalThis.reserve=reserveSemanticSpeech;',ctx);
 let release;const gate=new Promise(resolve=>release=resolve);const steps=[];
 const guard1=ctx.reserve(),guard2=ctx.reserve();assert.equal(guard1(),true);assert.equal(guard2(),true);

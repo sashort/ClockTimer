@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const log=[];let now=0;let rate=2;
+const ctx=vm.createContext({console:{error:()=>{}},Date:{now:()=>now},ANNOUNCEMENT_SPEECH_PAUSE_AT_1X:300,audioAnnouncementOutput:()=>({speechDelayMs:300/rate}),setTimeout:(fn,ms)=>{log.push(['pause',ms]);now+=ms;fn();}});
+vm.runInContext(source.slice(source.indexOf('    let semanticAnnouncementTail'),source.indexOf('    function waitForAnnouncementDelay'))+source.slice(source.indexOf('    function waitForAnnouncementDelay'),source.indexOf('    function speakSemantic('))+source.slice(source.indexOf('    function speakSemanticAndWait('),source.indexOf('    function playSemanticSong('))+'\nglobalThis.speak=speakSemanticAndWait; globalThis.enqueue=runSemanticAnnouncement;',ctx);
+const audio={speak:(text,options)=>{log.push(['speech',text]);options.onEnd();return true;}};
+await ctx.enqueue('one',()=>ctx.speak(audio,['Summary','Details'],{speechVelocity:rate}));
+await ctx.enqueue('two',()=>ctx.speak(audio,['','Only details'],{speechVelocity:rate}));
+assert.deepEqual(log,[['speech','Summary'],['pause',150],['speech','Details'],['pause',300],['speech','Only details']]);
+log.length=0;now+=1000;rate=1;
+await ctx.enqueue('three',()=>ctx.speak(audio,['Summary','Details'],{speechVelocity:rate}));
+await ctx.enqueue('four',()=>ctx.speak(audio,['Summary',''],{speechVelocity:rate}));
+assert.deepEqual(log,[['speech','Summary'],['pause',300],['speech','Details'],['pause',600],['speech','Summary']]);
+console.log('PASS speech-rate-scaled component/announcement pauses, skipped layers, no first or redundant idle pause');

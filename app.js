@@ -21689,6 +21689,8 @@
     }
 
     let semanticAnnouncementTail = Promise.resolve();
+    let previousAnnouncementDelayMs = 0;
+    let previousAnnouncementCompletedAt = 0;
 
     function reserveSemanticSpeech() {
         // Every queued announcement retains its own speech, including events
@@ -21762,6 +21764,24 @@
         options,
         guard
     ) {
+        if (Array.isArray(speech)) {
+            const components = speech.filter(value => String(value || "").trim());
+            return (async () => {
+                let spoken = false;
+                for (const component of components) {
+                    if (spoken) {
+                        await waitForAnnouncementDelay(
+                            ANNOUNCEMENT_SPEECH_PAUSE_AT_1X /
+                            Math.max(0.01, Number(options?.speechVelocity) || 1)
+                        );
+                    }
+                    const performed = await speakSemanticAndWait(audio, component, options, guard);
+                    spoken = performed || spoken;
+                }
+                return spoken;
+            })();
+        }
+
         if (
             guard &&
             guard() === false
@@ -21823,7 +21843,20 @@
 
     function runSemanticAnnouncement(announcement, playback) {
         if (typeof playback !== "function") return Promise.resolve(false);
-        const task = semanticAnnouncementTail.then(playback);
+        const componentDelayMs = audioAnnouncementOutput(announcement).speechDelayMs;
+        const task = semanticAnnouncementTail.then(async () => {
+            if (previousAnnouncementDelayMs > 0) {
+                await waitForAnnouncementDelay(Math.max(0, previousAnnouncementDelayMs - (Date.now() - previousAnnouncementCompletedAt)));
+            }
+            previousAnnouncementDelayMs = 0;
+            try {
+                return await playback();
+            }
+            finally {
+                previousAnnouncementDelayMs = componentDelayMs * 2;
+                previousAnnouncementCompletedAt = Date.now();
+            }
+        });
         // Recover the queue after a failed entry while preserving that entry's
         // rejection for its caller. Chime, pause, summary and details finish
         // inside playback before the next entry starts.
@@ -22084,9 +22117,7 @@
             );
         }
 
-        return parts.join(
-            " "
-        );
+        return parts;
     }
 
     function formatSpokenPercent(
@@ -22291,6 +22322,8 @@
             }
         }
 
+        const summaryCount = parts.length;
+
         if (details.perform) {
             const remaining =
                 renderedGoalRemainingMilliseconds(
@@ -22330,7 +22363,7 @@
             }
         }
 
-        return parts.join(" ");
+        return [parts.slice(0, summaryCount).join(" "), parts.slice(summaryCount).join(" ")];
     }
 
     let lunchClockCueState;
@@ -23033,7 +23066,7 @@
                 ) {
                     await speakSemanticAndWait(
                         audio,
-                        parts.join(" "),
+                        parts,
                         {
                             speechVolume:
                                 output.speechVolume,
@@ -23811,7 +23844,7 @@
             ).perform
         ) {
             spoken.push(
-                ...summarySentences
+                summarySentences.join(" ")
             );
         }
 
@@ -23823,13 +23856,11 @@
             ).perform
         ) {
             spoken.push(
-                ...detailSentences
+                detailSentences.join(" ")
             );
         }
 
-        return spoken.join(
-            " "
-        );
+        return spoken;
     }
 
     async function speakGoalFailure(
@@ -23849,6 +23880,8 @@
                 "chime"
             );
 
+        const output = audioAnnouncementOutput("goal-failed");
+
         return runSemanticAnnouncement(
             "goal-failed",
             async () => {
@@ -23866,8 +23899,8 @@
                                     }
                                 );
 
-                        await song
-                            ?.finished;
+                        await song?.finished;
+                        if (song?.hasChime) await waitForAnnouncementDelay(output.speechDelayMs);
                     }
                     catch (
                         error
@@ -23883,7 +23916,8 @@
                 if (speech) {
                     await speakSemanticAndWait(
                         audio,
-                        speech
+                        speech,
+                        { speechVolume: output.speechVolume, speechVelocity: output.speechVelocity }
                     );
                 }
 
