@@ -108,8 +108,24 @@
     const AUDIO_SPEECH_VELOCITY_MIN = 0.5;
     // The former 70% point (2.8×) is now the top of the speech range.
     const AUDIO_SPEECH_VELOCITY_MAX = 2.8;
-    const AUDIO_TONE_VELOCITY_MIN = 0.5;
-    const AUDIO_TONE_VELOCITY_MAX = 1.5;
+    const CHIME_RATES = Object.freeze([
+        { label: "Slow", value: 0.7 },
+        { label: "Medium", value: 0.85 },
+        { label: "Fast", value: 1 }
+    ]);
+
+    function normalizeChimeRate(value) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) return 1;
+        return CHIME_RATES.reduce((nearest, rate) =>
+            Math.abs(rate.value - numeric) < Math.abs(nearest - numeric)
+                ? rate.value : nearest, 1);
+    }
+
+    function formatChimeRate(value) {
+        const rate = CHIME_RATES.find(rate => rate.value === normalizeChimeRate(value));
+        return rate.label + " (" + Math.round(rate.value * 100) + "%)";
+    }
 
     function audioVelocityPercent(value, maximum) {
         const numeric = Number(value);
@@ -3128,7 +3144,7 @@
                 1
             );
         settings.toneVelocity =
-            clamp(value.toneVelocity, 0.5, 1.5, 1);
+            normalizeChimeRate(value.toneVelocity);
         settings.instrument =
             typeof value.instrument ===
                 "string"
@@ -3286,6 +3302,9 @@
                     0.5,
                     1.5
                 );
+                if (Object.prototype.hasOwnProperty.call(custom, "toneVelocity")) {
+                    custom.toneVelocity = normalizeChimeRate(custom.toneVelocity);
+                }
 
                 if (
                     Object.keys(
@@ -4293,10 +4312,7 @@
                 AUDIO_SPEECH_VELOCITY_MAX
             );
         audioToneVelocityValue.textContent =
-            formatAudioVelocityPercent(
-                audioSettings.toneVelocity,
-                AUDIO_TONE_VELOCITY_MAX
-            );
+            formatChimeRate(audioSettings.toneVelocity);
 
         for (
             const input of
@@ -4473,10 +4489,7 @@
                         : property ===
                             "toneVelocity"
                             ? prefix +
-                                formatAudioVelocityPercent(
-                                    value,
-                                    AUDIO_TONE_VELOCITY_MAX
-                                )
+                                formatChimeRate(value)
                             : prefix +
                                 String(value);
         }
@@ -4506,15 +4519,6 @@
                 Math.min(
                     AUDIO_SPEECH_VELOCITY_MAX,
                     audioSettings.speechVelocity +
-                        delta
-                )
-            );
-        audioSettings.toneVelocity =
-            Math.max(
-                0.5,
-                Math.min(
-                    1.5,
-                    audioSettings.toneVelocity +
                         delta
                 )
             );
@@ -4997,8 +5001,7 @@
                     Number(target.value);
             }
             else if (target === audioToneVelocity) {
-                audioSettings.toneVelocity =
-                    Number(target.value);
+                audioSettings.toneVelocity = normalizeChimeRate(target.value);
             }
             else if (target === audioFormalTime) {
                 audioSettings.formalTime =
@@ -24999,14 +25002,6 @@
                     AUDIO_SPEECH_VELOCITY_MAX,
                     deltaPercent
                 );
-            audioSettings.toneVelocity =
-                stepAudioVelocity(
-                    audioSettings
-                        .toneVelocity,
-                    AUDIO_TONE_VELOCITY_MIN,
-                    AUDIO_TONE_VELOCITY_MAX,
-                    deltaPercent
-                );
 
             renderAudioSettings();
             applyAudioOutputSettings();
@@ -25048,12 +25043,6 @@
                     value,
                     AUDIO_SPEECH_VELOCITY_MIN,
                     AUDIO_SPEECH_VELOCITY_MAX
-                );
-            audioSettings.toneVelocity =
-                audioVelocityAtPercent(
-                    value,
-                    AUDIO_TONE_VELOCITY_MIN,
-                    AUDIO_TONE_VELOCITY_MAX
                 );
 
             renderAudioSettings();
