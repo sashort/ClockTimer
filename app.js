@@ -91,8 +91,7 @@
             );
 
     const AUDIO_DEFAULTS = Object.freeze({
-        speechVolume: 1,
-        toneVolume: 1,
+        volume: 1,
         masterVelocity: 1,
         speechVelocity: 1,
         toneVelocity: 1,
@@ -102,6 +101,9 @@
             details: true
         })
     });
+
+    // Browser speech exposes no waveform; use a conservative chime gain ceiling.
+    const CHIME_VOLUME_RATIO = 0.5;
 
     const AUDIO_LANGUAGE = "en-US";
     const AUDIO_PERCENT_STEP = 5;
@@ -2871,16 +2873,14 @@
     const audioAnnouncementApplyCustom = $("#audioAnnouncementApplyCustom");
     const audioAnnouncementResetCustom = $("#audioAnnouncementResetCustom");
     const audioAnnouncementCancelCustom = $("#audioAnnouncementCancelCustom");
-    const audioSpeechVolume = $("#audioSpeechVolume");
-    const audioToneVolume = $("#audioToneVolume");
+    const audioVolume = $("#audioVolume");
     const audioVoice = $("#audioVoice");
     const audioInstrument = $("#audioInstrument");
     const audioMasterVelocity = $("#audioMasterVelocity");
     const audioSpeechVelocity = $("#audioSpeechVelocity");
     const audioToneVelocity = $("#audioToneVelocity");
     const audioFormalTime = $("#audioFormalTime");
-    const audioSpeechVolumeValue = $("#audioSpeechVolumeValue");
-    const audioToneVolumeValue = $("#audioToneVolumeValue");
+    const audioVolumeValue = $("#audioVolumeValue");
     const audioMasterVelocityValue = $("#audioMasterVelocityValue");
     const audioSpeechVelocityValue = $("#audioSpeechVelocityValue");
     const audioToneVelocityValue = $("#audioToneVelocityValue");
@@ -3092,8 +3092,7 @@
         }
 
         return {
-            speechVolume: 1,
-            toneVolume: 1,
+            volume: 1,
             masterVelocity: 1,
             speechVelocity: 1,
             toneVelocity: 1,
@@ -3130,10 +3129,7 @@
                     : fallback;
             };
 
-        settings.speechVolume =
-            clamp(value.speechVolume, 0, 1, 1);
-        settings.toneVolume =
-            clamp(value.toneVolume, 0, 1, 1);
+        settings.volume = clamp(value.volume ?? value.speechVolume ?? value.toneVolume, 0, 1, 1);
         settings.masterVelocity =
             clamp(value.masterVelocity, 0.5, 4, 1);
         settings.speechVelocity =
@@ -3282,16 +3278,10 @@
                             );
                     };
 
-                copyCustom(
-                    "speechVolume",
-                    0,
-                    1
-                );
-                copyCustom(
-                    "toneVolume",
-                    0,
-                    1
-                );
+                const legacyVolume = row.custom.volume ?? row.custom.speechVolume ?? row.custom.toneVolume;
+                if (Number.isFinite(Number(legacyVolume))) {
+                    custom.volume = clamp(legacyVolume, 0, 1, 1);
+                }
                 copyCustom(
                     "speechVelocity",
                     AUDIO_SPEECH_VELOCITY_MIN,
@@ -3443,9 +3433,9 @@
 
         globalThis.WMOFAudio?.configureOutput?.({
             speechVolume:
-                audioSettings.speechVolume,
+                audioSettings.volume,
             toneVolume:
-                audioSettings.toneVolume,
+                (audioSettings.volume * CHIME_VOLUME_RATIO),
             speechVelocity:
                 audioSettings.speechVelocity,
             toneVelocity:
@@ -3528,13 +3518,9 @@
 
         return {
             speechVolume:
-                resolve(
-                    "speechVolume"
-                ),
+                resolve("volume"),
             toneVolume:
-                resolve(
-                    "toneVolume"
-                ),
+                resolve("volume") * CHIME_VOLUME_RATIO,
             speechVelocity,
             toneVelocity:
                 resolve(
@@ -4273,10 +4259,8 @@
     function renderAudioSettings() {
         if (!audioSettingsDialog) return;
 
-        audioSpeechVolume.value =
-            String(audioSettings.speechVolume);
-        audioToneVolume.value =
-            String(audioSettings.toneVolume);
+        audioVolume.value =
+            String(audioSettings.volume);
         audioMasterVelocity.value =
             String(audioSettings.masterVelocity);
         audioSpeechVelocity.value =
@@ -4300,10 +4284,8 @@
         audioFormalTime.checked =
             audioSettings.formalTime === true;
 
-        audioSpeechVolumeValue.textContent =
-            Math.round(audioSettings.speechVolume * 100) + "%";
-        audioToneVolumeValue.textContent =
-            Math.round(audioSettings.toneVolume * 100) + "%";
+        audioVolumeValue.textContent =
+            Math.round(audioSettings.volume * 100) + "%";
         audioMasterVelocityValue.textContent =
             audioSettings.masterVelocity.toFixed(2) + "×";
         audioSpeechVelocityValue.textContent =
@@ -4470,9 +4452,7 @@
                     : "Global ";
 
             output.textContent =
-                property.endsWith(
-                    "Volume"
-                )
+                property === "volume"
                     ? prefix +
                         Math.round(
                             Number(value) *
@@ -4983,12 +4963,8 @@
                 return;
             }
 
-            if (target === audioSpeechVolume) {
-                audioSettings.speechVolume =
-                    Number(target.value);
-            }
-            else if (target === audioToneVolume) {
-                audioSettings.toneVolume =
+            if (target === audioVolume) {
+                audioSettings.volume =
                     Number(target.value);
             }
             else if (target === audioMasterVelocity) {
@@ -25112,16 +25088,10 @@
 
     const changeGlobalAudioVolume =
         deltaPercent => {
-            audioSettings.speechVolume =
+            audioSettings.volume =
                 stepAudioVolume(
                     audioSettings
-                        .speechVolume,
-                    deltaPercent
-                );
-            audioSettings.toneVolume =
-                stepAudioVolume(
-                    audioSettings
-                        .toneVolume,
+                        .volume,
                     deltaPercent
                 );
 
@@ -25130,10 +25100,10 @@
             saveAudioSettings();
 
             return confirmSettingChange(
-                "Speech Volume " +
+                "Volume " +
                     Math.round(
                         audioSettings
-                            .speechVolume *
+                            .volume *
                         100
                     ) +
                     "%",
@@ -25161,11 +25131,7 @@
                 return false;
             }
 
-            audioSettings.speechVolume =
-                audioVolumeAtPercent(
-                    value
-                );
-            audioSettings.toneVolume =
+            audioSettings.volume =
                 audioVolumeAtPercent(
                     value
                 );
@@ -25175,10 +25141,10 @@
             saveAudioSettings();
 
             return confirmSettingChange(
-                "Speech Volume " +
+                "Volume " +
                     Math.round(
                         audioSettings
-                            .speechVolume *
+                            .volume *
                         100
                     ) +
                     "%",
