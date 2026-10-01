@@ -343,7 +343,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-10-01-command-tree-1";
+        "2026-10-01-chime-speech-presets-1";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -25077,6 +25077,19 @@
             );
         };
 
+    const setChimeRate = rate => {
+        const preset = CHIME_RATES.find(preset =>
+            preset.label.toLowerCase() === String(rate ?? "").trim().toLowerCase());
+        if (!preset) return false;
+        audioSettings.toneVelocity = preset.value;
+        renderAudioSettings();
+        applyAudioOutputSettings();
+        saveAudioSettings();
+        return confirmSettingChange("Chime " + preset.label, {
+            useGlobalAudioSettings: true
+        });
+    };
+
     const setMasterChime =
         enabled => {
             audioSettings.masters.chime =
@@ -25548,6 +25561,10 @@
                 }
 
                 return false;
+            },
+
+            setChimeRate(rate) {
+                return setChimeRate(rate);
             },
 
             setAudioRatePercent(

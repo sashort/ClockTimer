@@ -1446,6 +1446,12 @@ class SpeechMicBar extends HTMLElement {
                 ""
             );
 
+        ensureCommand(
+            "chime-rate",
+            "^chime (?<rate>fast|medium|slow)$",
+            "WMOFActions.setChimeRate"
+        ).setAttribute("speech-repeatable", "");
+
         const speechRatePercentCommand =
             ensureCommand(
                 "speech-rate-percent",
