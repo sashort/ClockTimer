@@ -2471,6 +2471,7 @@ class SpeechMenu {
             sampleCount,
             transcript: "",
             transcriptRevision: 0,
+            valueCollectors: new Map(),
             digestTranscript: "",
             digestContext: undefined,
             digestQueue: Promise.resolve(),
@@ -2600,6 +2601,7 @@ class SpeechMenu {
 
         if (!utterance) return;
         utterance.digestClosed = true;
+        utterance.valueCollectors?.clear();
         SpeechMenu.#clearPrimed(utterance);
         if (["stopped", "muted", "speech-context-change", "surface-context-change"].includes(reason)) {
             utterance.chainCanceled = true;
@@ -3322,6 +3324,7 @@ class SpeechMenu {
 
     static #rejectDigest(utterance, reason, remainder) {
         utterance.digestFailed = true;
+        utterance.valueCollectors?.clear();
         if (reason === "consumed-prefix-revised") utterance.chainCanceled = true;
         SpeechMenu.#clearPrimed(utterance);
         if (SpeechMenu.#utterance === utterance) SpeechMenu.#finishUtterance(reason, false);
@@ -3333,6 +3336,7 @@ class SpeechMenu {
         utterance.digestTranscript = [utterance.digestTranscript, segment].filter(Boolean).join(" ");
         utterance.digestSteps.push(step);
         utterance.digestContext = step.nextContext;
+        utterance.valueCollectors?.delete(step.commandElement);
         utterance.noCandidateTranscript = "";
         SpeechMenu.#primeContext(utterance, step.nextContext);
         SpeechMenu.#emit("speechCommandDigested", {utteranceId: utterance.id,
@@ -3390,7 +3394,8 @@ class SpeechMenu {
         // command establishes its boundary; otherwise wait for final decode.
         if (!isFinal && last && (last.canContinue ||
             /\(\?</.test(last.commandElement.getAttribute("speech-pattern") || "") ||
-            last.commandElement.hasAttribute("speech-open-ended")) && !candidate.pending) count--;
+            last.commandElement.hasAttribute("speech-open-ended") ||
+            last.commandElement.hasAttribute("speech-collect")) && !candidate.pending) count--;
         for (const step of steps.slice(0, count)) SpeechMenu.#queueDigestStep(utterance, step);
         const consumedWords = steps.slice(0, count).reduce((n, step) =>
             n + step.segmentTranscript.split(" ").length, 0);
@@ -6041,6 +6046,29 @@ class SpeechMenu {
             );
     }
 
+    // Collect an opaque sequence using the item's own matching/preprocessing
+    // contract. No language, numeric format, or value type is assumed.
+    static async #collectSpeechSequence(element, words, utterance, signal, probe) {
+        if (!element.hasAttribute("speech-collect")) return undefined;
+        let accepted;
+        for (let end = 1; end <= words.length; end++) {
+            if (signal?.aborted) return undefined;
+            const segment = words.slice(0, end).join(" ");
+            const result = await probe(segment);
+            if (result) accepted = {end, segment, result};
+        }
+        const state = {status: accepted ? "valid" : "pending",
+            transcript: words.join(" "), value: accepted?.result.transcript,
+            acceptedTranscript: accepted?.segment, end: accepted?.end};
+        // Final decodes after VAD closure may collect locally, but must not
+        // recreate persistent state for an utterance whose capture ended.
+        if (!utterance.digestClosed && !utterance.digestFailed && !signal?.aborted) {
+            utterance.valueCollectors ??= new Map();
+            utterance.valueCollectors.set(element, state);
+        }
+        return {state, accepted};
+    }
+
     static #digestCandidates(context) {
         const contextual = context ? SpeechMenu.#chainContextCandidates(context) : [];
         return [...new Set([...contextual, ...SpeechMenu.#availableCandidates()])];
@@ -6076,21 +6104,22 @@ class SpeechMenu {
             if (partialDepth !== undefined) select({steps: [], exact: false, continuation: true,
                 terminal: false, pending: {element, transcript: full}, consumedWords: 0,
                 remainder: full, depth: partialDepth});
-            for (let end = 1; end <= words.length; end++) {
-                const segment = words.slice(0, end).join(" ");
-                if (!memo.probes.has(element)) memo.probes.set(element, new Map());
-                const probes = memo.probes.get(element);
+            if (!memo.probes.has(element)) memo.probes.set(element, new Map());
+            const probes = memo.probes.get(element);
+            const probeSegment = segment => {
                 if (!probes.has(segment)) probes.set(segment,
                     SpeechMenu.#probeChainElement(element, segment, utterance, signal));
-                const probe = await probes.get(segment);
+                return probes.get(segment);
+            };
+            const collector = await SpeechMenu.#collectSpeechSequence(element, words, utterance, signal, probeSegment);
+            for (let end = 1; end <= words.length; end++) {
+                if (collector && end !== collector.accepted?.end) continue;
+                const segment = words.slice(0, end).join(" ");
+                const probe = await probeSegment(segment);
                 if (!probe || signal?.aborted) continue;
                 const context = SpeechMenu.#chainNextContext(element);
                 if (!memo.contexts.has(context)) memo.contexts.set(context, SpeechMenu.#digestCandidates(context));
-                // A free-form value is one parameter. Do not manufacture a
-                // chain by matching that same item against each number word.
-                const next = element.hasAttribute("speech-open-ended")
-                    ? memo.contexts.get(context).filter(other => other !== element)
-                    : memo.contexts.get(context);
+                const next = memo.contexts.get(context);
                 const step = {...probe, segmentTranscript: segment,
                     nextContext: context, context: projectedContext,
                     canContinue: SpeechMenu.#digestCanContinue(element, segment, candidates)};
@@ -6112,6 +6141,7 @@ class SpeechMenu {
     }
 
     static async #planCommandChain(utterance, transcript, signal) {
+        utterance.valueCollectors?.clear();
         const normalized = SpeechMenu.#normalizeTranscript(transcript);
         const words = normalized.split(" ").filter(Boolean);
         if (!words.length) return undefined;

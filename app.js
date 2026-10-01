@@ -315,7 +315,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-10-01-command-digest-2";
+        "2026-10-01-value-collector-1";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -29586,6 +29586,7 @@
             element.setAttribute("speech-pattern", pattern);
             element.setAttribute("speech-function", `WMOFActions.${actionName}`);
             if (valueKind && valueField) {
+                element.setAttribute("speech-collect", "");
                 element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", valueKind);
                 element.setAttribute("speech-preproc-field", valueField);
@@ -29614,6 +29615,7 @@
                     "settings";
                 element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
                 element.setAttribute("speech-function", "WMOFActions.changeStandardTime");
+                element.setAttribute("speech-collect", "");
                 element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
                 element.setAttribute("speech-preproc-context", "duration");
                 element.setAttribute("speech-preproc-field", "timeValue");

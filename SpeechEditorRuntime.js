@@ -12,7 +12,8 @@
         "speech-index",
         "speech-chain-context",
         "speech-chain-next",
-        "speech-authorized"
+        "speech-authorized",
+        "speech-collect"
     ];
     const created = new Map();
 
@@ -66,7 +67,8 @@
                             "speech-chain-context" ||
                         name ===
                             "speech-chain-next" ||
-                        name === "speech-authorized"
+                        name === "speech-authorized" ||
+                        name === "speech-collect"
                     ) &&
                     value === undefined
                 ) {
