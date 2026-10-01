@@ -18,11 +18,33 @@ function trip_edit_persistence_plan(array $existing, array $edited): array {
     return ['keep'=>$keep,'delete'=>array_values(array_unique($delete)),'insert'=>$insert];
 }
 
-function trip_edit_duration(string $value): int {
-    if (!preg_match('/^(?:(\d+):)?([0-5]?\d):([0-5]\d)(?:\.(\d{1,3}))?$/D', $value, $m)) throw new InvalidArgumentException('Use h:mm:ss.');
-    $ms = ((int)$m[1]*3600+(int)$m[2]*60+(int)$m[3])*1000+(int)str_pad($m[4]??'',3,'0');
-    if ($ms < 1 || $ms > 31536000000) throw new InvalidArgumentException('Enter a positive duration shorter than one year.');
-    return $ms;
+function trip_edit_duration_milliseconds(
+    mixed $value,
+    bool $allowZero = false
+): int {
+    if (!is_int($value)) {
+        throw new InvalidArgumentException(
+            'Duration must be an integer number of milliseconds.'
+        );
+    }
+
+    $minimum =
+        $allowZero
+            ? 0
+            : 1;
+
+    if (
+        $value < $minimum ||
+        $value > 31536000000
+    ) {
+        throw new InvalidArgumentException(
+            $allowZero
+                ? 'Duration must be between zero and one year.'
+                : 'Duration must be positive and shorter than one year.'
+        );
+    }
+
+    return $value;
 }
 
 function trip_edit_iso(string $value): string {
@@ -37,7 +59,7 @@ function trip_edit_settings(array $events): array {
     foreach ($events as $event) {
         $v=$event['value'];
         if ($event['event']==='trip.started') $settings=$v;
-        $fields=['trip.standard-time-changed'=>'standardTime','trip.creation-time-changed'=>'creationTime',
+        $fields=['trip.standard-time-changed'=>'standardTimeMilliseconds','trip.creation-time-changed'=>'creationTime',
             'trip.scheduled-start-changed'=>'scheduledStart','trip.start-time-changed'=>'startTime'];
         if (isset($fields[$event['event']])) $settings[$fields[$event['event']]]=$v['value'];
         if ($event['event']==='trip.creation-date-changed' && isset($v['creationAnchor'])) $settings['creationAnchor']=$v['creationAnchor'];
@@ -59,7 +81,10 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
     } elseif ($operation==='settings') {
         $s=$input['settings']??null;
         if (!is_array($s) || !is_bool($s['nonProduction']??null)) throw new InvalidArgumentException('Invalid trip settings.');
-        trip_edit_duration($s['standardTime']??'');
+        trip_edit_duration_milliseconds(
+            $s['standardTimeMilliseconds'] ??
+                null
+        );
         $anchor=trip_edit_iso($s['creationAnchor']??'');
         foreach (['creationTime','scheduledStart','startTime'] as $field) {
             if (!preg_match('/^(\d+):([0-5]\d):([0-5]\d)(?:\.\d{1,3})?$/D',$s[$field]??'',$m) || ($field==='creationTime' && (int)$m[1]>23)) throw new InvalidArgumentException('Invalid trip time.');
@@ -79,7 +104,8 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
             $entry['intervalKey']=$key;
             $type=$entry['type']??'break';$breakType=$entry['breakType']??null;$approvedTime=$entry['approvedTime']??null;
             if ($type==='break' && !in_array($breakType,['break','short',null],true)) throw new InvalidArgumentException('Unknown break type.');
-            if($type==='down' && $approvedTime!==null && $approvedTime!=='') trip_edit_duration($approvedTime);
+            if($type==='down' && $approvedTime!==null) trip_edit_duration_milliseconds($approvedTime, true);
+            if($type!=='down' && isset($entry['length']) && $entry['length']!==null) trip_edit_duration_milliseconds($entry['length']);
             $events[]=['id'=>null,'event'=>'interval.started','timestamp'=>trip_edit_iso($entry['start']??''),
                 'value'=>['type'=>$type,'length'=>$entry['length']??null,'approvedTime'=>$type==='down'?$approvedTime:null,'attributes'=>$type==='break'?['breakType'=>$breakType??'break']:[], 'intervalKey'=>$key]];
             $events[]=['id'=>null,'event'=>'interval.ended','timestamp'=>trip_edit_iso($entry['end']??''),'value'=>['intervalKey'=>$key]];
@@ -98,10 +124,10 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
                         if (!in_array($breakType,['break','short'],true)) throw new InvalidArgumentException('Unknown break type.');
                         $e['value']['attributes']=array_merge($e['value']['attributes']??[],['breakType'=>$breakType]);
                     } elseif (isset($e['value']['attributes']['breakType'])) unset($e['value']['attributes']['breakType']);
-                    if (isset($entry['length']) && $entry['length']!=='') {trip_edit_duration($entry['length']);$e['value']['length']=$entry['length'];}
+                    if (isset($entry['length']) && $entry['length']!==null) {trip_edit_duration_milliseconds($entry['length']);$e['value']['length']=$entry['length'];}
                     if ($entry['type']==='down') {
                         $approvedTime=$entry['approvedTime']??null;
-                        if($approvedTime!==null && $approvedTime!=='') trip_edit_duration($approvedTime);
+                        if($approvedTime!==null && $approvedTime!=='') trip_edit_duration_milliseconds($approvedTime, true);
                         $e['value']['approvedTime']=$approvedTime;
                     } else unset($e['value']['approvedTime']);
                 } elseif ($e['event']==='interval.ended' && isset($entry['end'])) $e['timestamp']=trip_edit_iso($entry['end']);
@@ -123,7 +149,7 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
             $type=$entry['type']??'';$approvedTime=$entry['approvedTime']??null;$approvalFound=false;
             foreach($events as &$e)if(($e['event']??'')==='interval.approval-changed'&&($e['value']['intervalKey']??null)===$key){$approvalFound=true;if($type==='down'){$e['value']['state']='approved';$e['value']['value']=$approvedTime;}else $e['_delete']=true;}
             unset($e);
-            if($type==='down'&&is_string($approvedTime)&&$approvedTime!==''&&!$approvalFound)$events[]=['id'=>null,'event'=>'interval.approval-changed','timestamp'=>trip_edit_iso($entry['end']??$entry['start']??''),'value'=>['intervalKey'=>$key,'state'=>'approved','value'=>$approvedTime]];
+            if($type==='down'&&is_int($approvedTime)&&$approvedTime>=0&&!$approvalFound)$events[]=['id'=>null,'event'=>'interval.approval-changed','timestamp'=>trip_edit_iso($entry['end']??$entry['start']??''),'value'=>['intervalKey'=>$key,'state'=>'approved','value'=>$approvedTime]];
         }
         if (!$found) throw new InvalidArgumentException('Entry no longer exists.');
         $events=array_values(array_filter($events,static fn($e)=>!($e['_delete']??false)));
@@ -153,9 +179,9 @@ function trip_edit_aggregate(array $events): array {
             if(!isset($intervals[$key])) throw new InvalidArgumentException('Entry end precedes its start.');
             $intervals[$key]['end']=$time;
         }
-        if($e['event']==='interval.approval-changed'&&isset($intervals[$key]))$intervals[$key]['approvedTime']=($e['value']['state']??'')==='approved'?($e['value']['value']??null):'0:00:00';
+        if($e['event']==='interval.approval-changed'&&isset($intervals[$key]))$intervals[$key]['approvedTime']=($e['value']['state']??'')==='approved'?($e['value']['value']??null):0;
     }
-    if($start===null || !isset($s['standardTime'],$s['scheduledStart'],$s['creationAnchor'])) throw new InvalidArgumentException('Trip settings are incomplete.');
+    if($start===null || !isset($s['standardTimeMilliseconds'],$s['scheduledStart'],$s['creationAnchor'])) throw new InvalidArgumentException('Trip settings are incomplete.');
     $scheduled=(float)(new DateTimeImmutable(trip_edit_clock_iso($s['creationAnchor'],$s['scheduledStart']),new DateTimeZone('UTC')))->format('U.u')*1000;
     $begin=min($start,$scheduled);$terminal=$end??round(microtime(true)*1000);
     if($terminal<$start) throw new InvalidArgumentException('Trip end must follow actual start.');
@@ -166,10 +192,10 @@ function trip_edit_aggregate(array $events): array {
         if($finish<=$i['start'] || $i['start']<$start || $finish>$terminal) throw new InvalidArgumentException('Entry must fit within the trip and end after its start.');
         $occupied[]=[$i['start'],$finish];
         if(in_array($i['type'],['break','lunch'],true)) {
-            $planned=0;foreach(['length','startBuffer','endBuffer'] as $field)if(is_string($i[$field])&&$i[$field]!=='')$planned+=trip_edit_duration($i[$field]);
+            $planned=0;foreach(['length','startBuffer','endBuffer'] as $field)if(is_int($i[$field]))$planned+=trip_edit_duration_milliseconds($i[$field], true);
             $excluded[]=[max($begin,$i['start']),min($terminal,$i['start']+($planned?:$finish-$i['start']))];
         } elseif($i['type']==='down') {
-            $approved=$i['approvedTime']==='0:00:00'?0:(is_string($i['approvedTime'])&&$i['approvedTime']!==''?trip_edit_duration($i['approvedTime']):$finish-$i['start']);
+            $approved=is_int($i['approvedTime'])?trip_edit_duration_milliseconds($i['approvedTime'], true):$finish-$i['start'];
             $excluded[]=[max($begin,$i['start']),min($terminal,$i['start']+$approved)];
         }
     }
@@ -179,6 +205,6 @@ function trip_edit_aggregate(array $events): array {
     foreach($excluded as [$a,$b]) {if($b>max($last,$a)) $removed+=$b-max($last,$a);$last=max($last,$b);}
     return ['startTime'=>gmdate('Y-m-d H:i:s',(int)floor($begin/1000)),
         'endTime'=>gmdate('Y-m-d H:i:s',(int)floor($terminal/1000)),
-        'standard'=>trip_edit_duration($s['standardTime']),'counted'=>(int)max(0,round($terminal-$begin-$removed)),
+        'standard'=>trip_edit_duration_milliseconds($s['standardTimeMilliseconds']),'counted'=>(int)max(0,round($terminal-$begin-$removed)),
         'nonProduction'=>($s['nonProduction']??false)?1:0];
 }

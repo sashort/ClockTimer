@@ -1,41 +1,8 @@
 (() => {
     "use strict";
-
-    const language = Object.freeze({
-        code: "en-US",
-        name: "English (United States)",
-        direction: "ltr",
-        speechRecognitionLanguage: "en-US",
-        speech: Object.freeze({
-            wakePhrase: "^listen$",
-            sleepPhrase: "^mute$",
-            commands: Object.freeze({
-                standardTime: "^standard time (?<timeValue>.+)$",
-                readyAt: "^ready at (?<spokenTime>.+)$",
-                readyAtContinuation: "^at (?<spokenTime>.+)$",
-                ready: "^ready$",
-                breakStart: "^break start$",
-                breakChoice: "^(?<breakChoice>10|15|long|short|lunch)$",
-                confirm: "^ok(?:ay)?$",
-                cancel: "^cancel$",
-                down: "^down(?: time)?$",
-                breakEnd: "^break end$",
-                resume: "^resume$",
-                goal: "^(?<goalScope>trip|total) goal (?<percent>.+)$",
-                goalMode: "^(?<goalMode>auto|total|trip) mode$",
-                sync: "^sync(?: (?<syncAction>on|off))?$",
-                lockEndTime: "^lock end time(?: to)? (?<spokenTime>.+)$",
-                showTripLog: "^(?:show )?trip log$",
-                hideTripLog: "^(?:hide|close) trip log$",
-                deferTrip: "^defer trip$",
-                renderedTimeMode: "^(?:time )?(?<timeMode>elapsed|remaining|end(?: time)?)$",
-                keypadValue: "^(?<spokenValue>.+)$"
-            })
-        }),
-        ui: Object.freeze({})
-    });
-
-    const catalog = globalThis.WMOFLanguages || Object.create(null);
-    catalog[language.code] = language;
-    globalThis.WMOFLanguages = catalog;
+    // Compatibility entry point. English vocabulary now comes from the language pack.
+    const language = globalThis.WMOFLanguagePack?.language;
+    if (!language) throw new Error("Load the language pack before the speech language adapter.");
+    globalThis.WMOFLanguages ||= Object.create(null);
+    globalThis.WMOFLanguages[language.code] = language;
 })();

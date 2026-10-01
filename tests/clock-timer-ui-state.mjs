@@ -54,6 +54,9 @@ assert.equal(timer.hasAttribute('data-clock-timer-free-aspect-ratio'),false);
 const states=[];timer.addEventListener('uiStateChanged',event=>states.push(event.detail));
 const configured=timer.configure({rendered_time_type:'calculated_end_time',goal_type:'total',auto_goal:false,trip_goal:'105%',total_goal:'110%',external_standard_time:'1:00:00',external_counted_time:3300000});
 assert(configured instanceof window.ClockTimerUIState);assert.equal(configured.rendered_time_type,'calculated_end_time');assert.equal(configured.goal_type,'total');assert.equal(timer.getAttribute('trip-goal'),'105%');assert.equal(timer.getAttribute('total-goal'),'110%');
+assert.equal(configured.time_header_text,'Total End Time');
+assert.equal(configured.time_component.text,'---','Total End Time is unavailable without an active trip');
+assert.equal(timer.getSummarySnapshot().total.renderedTime,undefined,'idle aggregate totals do not synthesize an end time from the wall clock');
 timer.configure({trip_goal:'107%'});assert.equal(timer.getAttribute('trip-goal'),'107%');assert.equal(timer.getAttribute('total-goal'),'110%');assert.equal(timer.renderedTimeMode,'calculated-end');
 await timer.start({standardTime:'0:30:00'});
 const state=timer.uiState;assert.equal(state.state,'running');assert.equal(state.standard_time_header_text,'Total Standard Time');assert.equal(state.time_header_text,'Total End Time');assert.equal(state.standard_time_component.value,5400000);assert.equal(state.trip_goal_component.text,'107%');assert(state.time_component.date instanceof window.Date);assert(Object.isFrozen(state));
@@ -83,7 +86,10 @@ assert.equal(toleranceSummary.actualTimeElapsedMilliseconds,75000);
 assert.equal(toleranceSummary.countedTimeElapsedMilliseconds,75000,'productive tolerance time remains counted');
 tolerance.remove();
 const paused=window.document.createElement('clock-timer');window.document.body.append(paused);
+paused.configure({rendered_time_type:'time_remaining',goal_type:'trip',trip_goal:'100%'});
 await paused.start({standardTime:'0:30:00'});
+const pausedTripRemainingBeforeBreak=paused.getSummarySnapshot().trip.renderedTime;
+assert.equal(pausedTripRemainingBeforeBreak,'0:30:00');
 await paused.startInterval('break','15:00',{breakType:'break'});
 const pausedState=paused.getUIState(new window.Date());
 assert.equal(pausedState.controls.active_trip_visible,true);
@@ -94,7 +100,69 @@ assert.equal(pausedState.controls.trip_action_row_visible,false);
 window.__testTime+=901000;
 const latePausedState=paused.getUIState(new window.Date());
 assert(latePausedState.controls.primary_action.text.startsWith('End Break : -0:01'));
+assert.equal(
+    paused.getSummarySnapshot().trip.renderedTime,
+    pausedTripRemainingBeforeBreak,
+    'Trip Time Remaining is productive counted time and does not change while wall clock advances on break'
+);
 paused.remove();
+
+const resumedEarlyBreak=window.document.createElement('clock-timer');window.document.body.append(resumedEarlyBreak);
+resumedEarlyBreak.configure({rendered_time_type:'time_remaining',goal_type:'trip',trip_goal:'100%'});
+await resumedEarlyBreak.start({standardTime:'0:30:00'});
+await resumedEarlyBreak.startInterval('break','15:00',{breakType:'break'});
+window.__testTime+=60000;
+await resumedEarlyBreak.endInterval();
+const earlyBreakRemaining=resumedEarlyBreak.getSummarySnapshot().trip.renderedTime;
+window.__testTime+=1000;
+assert.notEqual(
+    resumedEarlyBreak.getSummarySnapshot().trip.renderedTime,
+    earlyBreakRemaining,
+    'Time Remaining resumes immediately after an early break ends'
+);
+resumedEarlyBreak.remove();
+
+const resumedDown=window.document.createElement('clock-timer');window.document.body.append(resumedDown);
+resumedDown.configure({rendered_time_type:'time_remaining',goal_type:'trip',trip_goal:'100%'});
+await resumedDown.start({standardTime:'0:30:00'});
+let silentResumeDetail;
+resumedDown.addEventListener('tripResumed',event=>{silentResumeDetail=event.detail;});
+await resumedDown.startInterval('down');
+window.__testTime+=60000;
+await resumedDown.endInterval(undefined,{suppressTripResumed:true});
+assert.equal(
+    silentResumeDetail?.suppressAnnouncement,
+    true,
+    'Down handoff still emits tripResumed while suppressing only its announcement'
+);
+const downRemaining=resumedDown.getSummarySnapshot().trip.renderedTime;
+window.__testTime+=1000;
+assert.notEqual(
+    resumedDown.getSummarySnapshot().trip.renderedTime,
+    downRemaining,
+    'Time Remaining resumes immediately after Down ends'
+);
+resumedDown.remove();
+
+const pausedTotal=window.document.createElement('clock-timer');window.document.body.append(pausedTotal);
+pausedTotal.configure({
+    rendered_time_type:'time_remaining',
+    goal_type:'total',
+    total_goal:'100%',
+    external_standard_time:3600000,
+    external_counted_time:1800000
+});
+await pausedTotal.start({standardTime:'0:30:00'});
+const pausedTotalRemainingBeforeLunch=pausedTotal.getSummarySnapshot().total.renderedTime;
+assert.equal(pausedTotalRemainingBeforeLunch,'1:00:00');
+await pausedTotal.startInterval('lunch','15:00',{breakType:'lunch'});
+window.__testTime+=300000;
+assert.equal(
+    pausedTotal.getSummarySnapshot().total.renderedTime,
+    pausedTotalRemainingBeforeLunch,
+    'Total Time Remaining is target counted time minus counted time earned and freezes during lunch'
+);
+pausedTotal.remove();
 const skippedBreak=window.document.createElement('clock-timer');window.document.body.append(skippedBreak);
 await skippedBreak.start({standardTime:'0:30:00'});
 await skippedBreak.startInterval('break','10:00',{breakType:'short'},'2:30','2:30');
@@ -104,6 +172,8 @@ skippedBreak.remove();
 const threshold=window.document.createElement('clock-timer');window.document.body.append(threshold);
 await threshold.start({standardTime:'0:01:40'});
 window.__testTime+=90000;await new Promise(resolve=>setTimeout(resolve,1100));const aboveGoal=threshold.getSummarySnapshot().trip.countedPercent;
+assert.equal(threshold.getUIState(new window.Date()).current_percent_component.text,'111.11%','actual UI percent is display-rounded to hundredths');
+assert.equal(threshold.getUIState(new window.Date()).goal_component.text,'100%','goal display precision is unchanged');
 window.__testTime+=11000;await new Promise(resolve=>setTimeout(resolve,1100));const belowGoal=threshold.getSummarySnapshot().trip.countedPercent;
 window.__testTime+=9000;await new Promise(resolve=>setTimeout(resolve,1100));const laterBelowGoal=threshold.getSummarySnapshot().trip.countedPercent;
 assert(Math.abs(aboveGoal-(100/90))<1e-9);
@@ -124,5 +194,51 @@ await repeatedDown.startInterval('down');await repeatedDown.endInterval();window
 await repeatedDown.startInterval('down');
 assert.equal(downStartedCount,2,'each successfully started Down interval emits downTimeStarted');
 await repeatedDown.endInterval();repeatedDown.remove();
+const canceledDown=window.document.createElement('clock-timer');window.document.body.append(canceledDown);
+let canceledDownEvents=0;let resumedAfterCancel=0;
+canceledDown.addEventListener('downTimeCanceled',()=>canceledDownEvents++);
+canceledDown.addEventListener('tripResumed',()=>resumedAfterCancel++);
+await canceledDown.start({standardTime:'0:10:00'});
+await canceledDown.startInterval('down');
+window.__testTime+=5000;
+const canceled=await canceledDown.cancelInterval();
+assert.equal(Boolean(canceled?.deleted),true,'cancelInterval deletes the active Down interval');
+assert.equal(canceledDownEvents,1,'canceling Down emits downTimeCanceled');
+assert.equal(resumedAfterCancel,1,'canceling Down resumes the trip');
+assert.notEqual(String(canceledDown.getActiveIntervalState()?.intervalType||'').toLowerCase(),'down','canceled Down is no longer active');
+canceledDown.remove();
+
+const clockTimerSource=fs.readFileSync(new URL('../ClockTimer.js',import.meta.url),'utf8');
+assert.match(clockTimerSource,/targetCombinedCounted[\s\S]*totals\.countedTimeMilliseconds/,'Total goal requirements use counted history, matching Total Percent');
+assert.doesNotMatch(clockTimerSource,/targetCombinedActual[\s\S]*totals\.actualTimeMilliseconds/,'Total goal requirements must not use aggregate actual time');
 console.log('PASS configure is partial and UI state describes values, state, and transitions');
 timer.remove();window.happyDOM.abort();
+
+
+{
+    const clockTimerSource=fs.readFileSync(new URL('../ClockTimer.js',import.meta.url),'utf8');
+    const renderedTimeDefinition=clockTimerSource.indexOf(
+        '\n        #calculateRenderedTime('
+    );
+    const renderedTimeMethod=clockTimerSource.slice(
+        renderedTimeDefinition,
+        clockTimerSource.indexOf(
+            '\n        #updateDisplay(',
+            renderedTimeDefinition
+        )
+    );
+    assert.match(
+        renderedTimeMethod,
+        /requiredCountedMilliseconds[\s\S]*?#getCountedTimeElapsed/
+    );
+    assert.doesNotMatch(
+        renderedTimeMethod,
+        /#calculatedEnd\s*-\s*timelineNow/
+    );
+    const totalAdjustedMethod=clockTimerSource.slice(
+        clockTimerSource.indexOf('#getTotalGoalAdjustedTimeElapsed()'),
+        clockTimerSource.indexOf('#getTotalGoalImpossibility(',clockTimerSource.indexOf('#getTotalGoalAdjustedTimeElapsed()'))
+    );
+    assert.match(totalAdjustedMethod,/totals\.countedTimeMilliseconds/);
+    assert.doesNotMatch(totalAdjustedMethod,/totals\.actualTimeMilliseconds/);
+}

@@ -13,7 +13,16 @@
     "test:deferred-trip": "node deferred-trip.mjs",
     "test:ui-state": "node clock-timer-ui-state.mjs",
     "test:active-restore": "node active-trip-restore.mjs",
-    "test:speech-editor": "node speech-editor.mjs"
+    "test:speech-editor": "node speech-editor.mjs",
+    "test:speech-phrases": "node speech-phrases.mjs",
+    "test:action-macros": "node action-macros.mjs",
+    "test:editor-actions": "node editor-actions.mjs",
+    "test:hamburger-menu": "node hamburger-menu.mjs",
+    "test:clock-fsm": "node clock-timer-fsm.mjs",
+    "test:speech-index": "node speech-command-index.mjs && node speech-dialog-surfaces.mjs",
+    "bench:speech-index": "node speech-command-performance.mjs",
+    "test:speech-chain": "node speech-command-digest.mjs && node speech-chain-actions.mjs",
+    "test:speech-failfast": "node speech-failfast.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

@@ -1,0 +1,260 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {Window} from 'happy-dom';
+const window=new Window({url:'https://clock.example/'});
+Object.assign(globalThis,{window,document:window.document,Element:window.Element,
+    HTMLElement:window.HTMLElement,EventTarget:window.EventTarget,CustomEvent:window.CustomEvent,
+    getComputedStyle:window.getComputedStyle.bind(window),requestAnimationFrame:cb=>queueMicrotask(()=>cb(performance.now()))});
+globalThis.ParameterParser=Function(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nreturn ParameterParser;')();
+const parserSource=['DurationParser','SpokenTimeParser','PercentParser','SpeechValuePreprocessor'].map(name=>
+    fs.readFileSync(new URL(`../lang/en-US/${name}.js`,import.meta.url),'utf8')).join('\n');
+const Values=Function(parserSource+'\nreturn EnglishSpeechValuePreprocessor;')();
+let source=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8');
+if(process.env.SPEECH_INDEX_BASELINE) source=source.replace('static #indexedMatching = true','static #indexedMatching = false');
+source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
+    static testBegin() {
+        SpeechMenu.#stopped=false;
+        SpeechMenu.#recognizer={beginUtterance(){},setHotwords(){},abortUtterance(){},finishUtterance(){}};
+        SpeechMenu.#beginUtterance(performance.now());
+        return SpeechMenu.#utterance;
+    }
+    static testTranscript(u,text,final=false){return SpeechMenu.#handleLiveTranscript(u,text,final);}
+    static testFinish(reason="candidate-silence",recognize=true){SpeechMenu.#finishUtterance(reason,recognize);}
+    static testFinal(u,text){return SpeechMenu.#handleCompletedTranscript(u,text);}
+    static testInvalidate(){return SpeechMenu.#invalidateRecognitionContext("surface-context-change");}
+    static testAvailable(){return SpeechMenu.#availableCandidates();}
+    static testActive(){return SpeechMenu.#utterance;}
+    static testReset(){SpeechMenu.#clearPrimed();SpeechMenu.#finishedUtterances.clear();SpeechMenu.#utterance=undefined;}
+}\n\nglobalThis.SpeechMenu = SpeechMenu;`);
+Function(source)();
+const speech=globalThis.SpeechMenu;
+window.SpeechMenu=speech;
+const calls=[],errors=[];
+speech.events.addEventListener('utteranceUnrecognized',e=>errors.push(e.detail));
+let readyOutcome=()=>Promise.resolve(true);
+globalThis.TestChain=window.TestChain={
+    readyAt(spokenTime){calls.push(['ready',spokenTime]);return readyOutcome();},
+    standard(timeValue){assert.equal(speech.executionContext.chain,true);assert.equal(speech.executionContext.chainContext,'scheduled-start');calls.push(['standard',timeValue]);return true;},
+    showLog(){calls.push(['log']);return true;},
+    breakStart(){calls.push(['break']);return true;},
+    choice(breakChoice){calls.push(['choice',breakChoice]);return true;},
+    okay(){calls.push(['okay']);return true;},
+    permitted(){return false;}
+};
+globalThis.TestValues=window.TestValues={normalize(text,{pattern,kind,field,provisional}){
+    const match=new RegExp(pattern,'i').exec(text);
+    if(!match?.groups?.[field]) return text;
+    const value=match.groups[field];
+    const normalized=Values.normalize(value,kind);
+    if(normalized === undefined) return provisional ? false : text;
+    return text.replace(value,normalized);
+}};
+const make=(host,id,pattern,action,attrs={})=>{
+    const element=document.createElement('speech-command');
+    element.dataset.speechEditorId=id;
+    if(attrs['speech-preproc']) element.setAttribute('speech-collect','');
+    element.setAttribute('speech-pattern',pattern);
+    element.setAttribute('speech-function',`TestChain.${action}`);
+    for(const [key,value] of Object.entries(attrs)) element.setAttribute(key,value);
+    host.append(element);return element;
+};
+const ready=make(document.body,'ready','^ready at (?<spokenTime>.+)$','readyAt',{
+    'speech-modal':'top-level','speech-chain-next':'scheduled-start','speech-preproc':'TestValues.normalize',
+    'speech-preproc-context':'clock','speech-preproc-field':'spokenTime'});
+const future=document.createElement('dialog');document.body.append(future);
+const standard=make(future,'standard','^standard(?: time)? (?<timeValue>.+)$','standard',{
+    'speech-chain-context':'scheduled-start','data-speech-target':'#future-standard',
+    'speech-preproc':'TestValues.normalize','speech-preproc-context':'duration','speech-preproc-field':'timeValue'});
+standard.id='future-standard';
+const log=make(document.body,'log','^show log$','showLog',{'speech-modal':'top-level'});
+const hear=async(...args)=>{await speech.testTranscript(...args);await new Promise(setImmediate);};
+const fresh=()=>{speech.testReset();calls.length=0;errors.length=0;return speech.testBegin();};
+try {
+    const value=make(document.body,'value','^(?<timeValue>.+)$','showLog',{
+        'speech-open-ended':'','speech-preproc':'TestValues.normalize',
+        'speech-preproc-context':'duration','speech-preproc-field':'timeValue'});
+    const duration=fresh();
+    await hear(duration,'twenty two');
+    await hear(duration,'twenty two fifty');
+    assert.equal(calls.length,0,'interim number groups remain one growing value');
+    assert.equal(duration.valueCollectors.get(value).value,'0:22:50');
+    await hear(duration,'twenty three fifty six');
+    assert.equal(duration.valueCollectors.get(value).value,'0:23:56','unconsumed recognition revisions replace collected values');
+    await hear(duration,'twenty two fifty six',true);
+    await duration.digestQueue;
+    assert.equal(duration.digestSteps.length,1,'a free-form value is one command, not a chain of number fragments');
+    assert.equal(duration.digestSteps[0].transcript,'0:22:56');
+    assert.equal(duration.valueCollectors.size,0,'final completion clears collectors');
+    const interruptedValue=fresh();
+    await hear(interruptedValue,'twenty two');
+    assert(interruptedValue.valueCollectors.size > 0);
+    speech.testFinish('muted',false);
+    assert.equal(interruptedValue.valueCollectors.size,0,'invalidation clears collectors');
+    const followedValue=fresh();
+    await hear(followedValue,'twenty two fifty six show log',true);
+    await followedValue.digestQueue;
+    assert.equal(followedValue.digestSteps[0].transcript,'0:22:56','a following command releases the collected duration');
+    assert.deepEqual(calls,[['log'],['log']]);
+    value.remove();
+    const sequence=make(document.body,'sequence','^(?<label>rouge(?: pomme)?)$','showLog',{'speech-collect':''});
+    const opaque=fresh();
+    await hear(opaque,'rouge');
+    await hear(opaque,'rouge pomme');
+    assert.equal(calls.length,0,'opaque sequences remain pending without a boundary');
+    assert.equal(opaque.valueCollectors.get(sequence).value,'rouge pomme');
+    await hear(opaque,'rouge pomme show log',true);
+    await opaque.digestQueue;
+    assert.equal(opaque.digestSteps[0].segmentTranscript,'rouge pomme');
+    assert.deepEqual(calls,[['log'],['log']],'language-independent collector releases at the next command');
+    assert.equal(opaque.valueCollectors.size,0);
+    sequence.remove();
+    const tripLogSurface=document.createElement('section');tripLogSurface.id='test-trip-log';tripLogSurface.setAttribute('speech-scope','');document.body.append(tripLogSurface);
+    future.id='test-scheduled-trip';
+    const logNoun=make(document.body,'logNoun','^(?:trip )?log$','showLog',{'speech-modal':'top-level','speech-noun':'log|trip log','speech-chain-surface':'#test-trip-log'});
+    const rootClose=make(document.body,'rootClose','^close$','showLog',{'speech-modal':'system','speech-chain-surface':'pop'});
+    rootClose.setAttribute('speech-function','SpeechMenu.close');
+    const rootCancel=make(document.body,'rootCancel','^cancel$','showLog',{'speech-modal':'system','speech-chain-surface':'pop'});
+    rootCancel.setAttribute('speech-function','SpeechMenu.cancel');
+    let closeSucceeds=true;
+    const unregister=speech.registerSurface(tripLogSurface,{isOpen:()=>true,
+        close(){calls.push(['close']);return closeSucceeds;},cancel(){calls.push(['cancel']);return closeSucceeds;}});
+    readyOutcome=()=>Promise.resolve(true);
+    const returned=fresh();
+    await hear(returned,'ready at 4:15 log close',true);await returned.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['log'],['close']]);
+    assert.equal(returned.digestSurfaceStack.at(-1).surface,future,'close restores the scheduled-trip surface');
+    assert.equal(returned.digestContext,'scheduled-start');
+    const resumed=fresh();
+    await hear(resumed,'ready at 4:15 trip log close standard time one hour',true);await resumed.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['log'],['close'],['standard','1:00:00']],
+        'follow-up consumes the restored tree even while the log DOM remains open');
+    closeSucceeds=false;
+    const refused=fresh();
+    await hear(refused,'ready at 4:15 log cancel standard time one hour',true);await refused.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['log'],['cancel']],'failed cancellation prevents restored-scope actions');
+    assert.equal(document.querySelectorAll('[primed]').length,0);
+    assert.equal(refused.valueCollectors.size,0);
+    assert.equal(refused.digestSurfaceStack.at(-1).surface,tripLogSurface,'failed cancellation keeps the current surface');
+    unregister();tripLogSurface.remove();logNoun.remove();rootClose.remove();rootCancel.remove();
+    let release;
+    readyOutcome=()=>new Promise(resolve=>release=resolve);
+    const u=fresh();
+    await hear(u,'ready at four');
+    assert.equal(calls.length,0,'a clock parameter must be allowed to grow');
+    await hear(u,'ready at four fifteen standard');
+    assert.deepEqual(calls,[['ready','4:15']]);
+    assert.equal(u.digestTranscript,'ready at four fifteen');
+    assert(standard.hasAttribute('primed'),'follow-up is primed while its prerequisite is pending');
+    assert(speech.testAvailable().includes(standard),'closed-dialog follow-up is available when primed');
+    assert.equal(future.open,false,'test deliberately never opens the future dialog');
+    speech.testInvalidate();
+    assert.equal(speech.testActive(),u,'surface lag does not restart the utterance');
+    await hear(u,'ready at four fifteen standard time one hour');
+    assert.equal(calls.length,1,'dependent action waits for successful prerequisite');
+    await hear(u,'ready at four fifteen standard time one hour',true);
+    assert.equal(standard.hasAttribute('primed'),false,'utterance completion removes priming even while queue waits');
+    release(true);await u.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']]);
+    assert.equal(future.open,false,'actions complete independently of dialog availability');
+    await speech.testFinal(u,'ready at four fifteen standard time one hour');
+    await u.digestQueue;
+    assert.equal(calls.length,2,'identical/stale final decode never executes consumed commands twice');
+
+    readyOutcome=()=>Promise.resolve(true);
+    let unrelatedRelease;
+    readyOutcome=()=>new Promise(resolve=>unrelatedRelease=resolve);
+    const modalInterrupted=fresh();
+    await hear(modalInterrupted,'ready at four fifteen standard');
+    const unrelated=document.createElement('dialog');unrelated.setAttribute('open','');document.body.append(unrelated);
+    speech.testInvalidate();
+    assert(modalInterrupted.chainCanceled,'an unrelated modal cancels pending commands');
+    assert.equal(modalInterrupted.valueCollectors.size,0);
+    assert.equal(document.querySelectorAll('[primed]').length,0);
+    unrelatedRelease(true);await modalInterrupted.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15']]);
+    unrelated.remove();
+    readyOutcome=()=>Promise.resolve(true);
+    const paused=fresh();
+    await hear(paused,'ready at four fifteen standard');
+    speech.testFinish();
+    assert.equal(document.querySelectorAll('[primed]').length,0,'VAD closure clears temporary markers');
+    speech.testInvalidate();
+    await speech.testFinal(paused,'ready at four fifteen standard time one hour');
+    await paused.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']],'final tail still uses projected context after VAD cleanup');
+
+    const three=fresh();
+    const paintFrames=[];
+    const normalRAF=globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame=callback=>paintFrames.push(callback);
+    await hear(three,'ready at four fifteen standard time one hour show log',true);
+    await three.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00'],['log']],
+        'the next action does not wait for a previous response to paint');
+    assert(paintFrames.length>0,'the test leaves presentation paint deliberately pending');
+    globalThis.requestAnimationFrame=normalRAF;
+    for(const callback of paintFrames) callback(performance.now());
+
+    const bad=fresh();
+    await hear(bad,'ready at four fifteen standard time one hour nonsense again',true);
+    await bad.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']],'valid prefix still executes before an invalid remainder');
+    assert.equal(errors.at(-1)?.transcript,'nonsense again');
+    assert.equal(standard.hasAttribute('primed'),false);
+
+    readyOutcome=()=>Promise.resolve(false);
+    const rejected=fresh();
+    await hear(rejected,'ready at four fifteen standard time one hour',true);
+    await rejected.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15']],'failed prerequisite blocks dependent actions');
+    assert.equal(standard.hasAttribute('primed'),false);
+    readyOutcome=()=>Promise.resolve(true);
+
+    standard.setAttribute('disabled','');
+    const disabled=fresh();
+    await hear(disabled,'ready at four fifteen standard time one hour',true);
+    await disabled.digestQueue;
+    assert.equal(calls.some(call=>call[0]==='standard'),false,'priming cannot bypass a disabled item');
+    assert.equal(standard.hasAttribute('primed'),false);
+    standard.removeAttribute('disabled');
+
+    standard.setAttribute('speech-authorized','TestChain.permitted');
+    const denied=fresh();
+    await hear(denied,'ready at four fifteen standard time one hour',true);
+    await denied.digestQueue;
+    assert.equal(calls.some(call=>call[0]==='standard'),false,'priming cannot bypass authorization');
+    standard.removeAttribute('speech-authorized');
+
+    readyOutcome=()=>new Promise(resolve=>release=resolve);
+    const canceled=fresh();
+    await hear(canceled,'ready at four fifteen standard');
+    speech.testFinish('muted',false);
+    assert.equal(standard.hasAttribute('primed'),false);
+    release(true);await canceled.digestQueue;
+    assert.equal(calls.some(call=>call[0]==='standard'),false);
+
+    readyOutcome=()=>Promise.resolve(true);
+    const revised=fresh();
+    await hear(revised,'ready at four fifteen standard');
+    await hear(revised,'ready at five thirty standard time one hour',true);
+    await revised.digestQueue;
+    assert.equal(calls.length,1,'revising an already consumed prefix stops rather than replaying it');
+    assert.equal(errors.at(-1)?.reason,'consumed-prefix-revised');
+    assert.equal(document.querySelectorAll('[primed]').length,0);
+
+    const longChain=fresh();
+    await hear(longChain,Array(12).fill('show log').join(' '),true);
+    await longChain.digestQueue;
+    assert.equal(calls.length,12,'chains are not limited by the former eight-step depth');
+
+    const breakRoot=make(document.body,'break','^break start$','breakStart',{'speech-chain-next':'break-choice'});
+    const choice=make(future,'choice','^(?<breakChoice>long|short|lunch)$','choice',{
+        'speech-chain-context':'break-choice','speech-chain-next':'break-confirm'});
+    const okay=make(future,'okay','^ok(?:ay)?$','okay',{'speech-chain-context':'break-confirm'});
+    const b=fresh();
+    await hear(b,'break start lunch ok',true);await b.digestQueue;
+    assert.deepEqual(calls,[['break'],['choice','lunch'],['okay']]);
+    assert.equal(document.querySelectorAll('[primed]').length,0);
+    breakRoot.remove();choice.remove();okay.remove();
+    console.log('PASS incremental command digestion, priming, UI lag, parameter boundaries, ordered actions, invalid tails, failure, cancellation and hard gates');
+} finally {speech.testReset();await window.happyDOM.close();}

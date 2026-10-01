@@ -43,7 +43,7 @@ function clock(){const c=window.document.createElement('clock-timer');c.setAttri
 let c=clock();await c.connect('test','test');
 async function complete(standard,minutes){
     const prepared=await c.prepareTrip();
-    await c.start({standardTime:standard});
+    await c.start({standardTimeMilliseconds:standard});
     window.__testTime+=minutes*60000;
     await c.stop();
     const result=await c.resetCompletedTrip();
@@ -52,8 +52,8 @@ async function complete(standard,minutes){
     assert.equal(c.currentTripId,undefined);
 }
 offline=true;
-await complete('20:00',8);
-await complete('30:00',12);
+await complete(1200000,8);
+await complete(1800000,12);
 let queue=JSON.parse(window.localStorage.getItem(storageKey));
 assert.equal(queue.length,2);
 assert.equal(c.getLocalTripLog().length,2);
@@ -68,15 +68,15 @@ console.log('PASS two trips complete offline, clear independently, and buffer se
 const editable=c.getLocalTripLog()[0];
 const editorState=await c.tripEditorRequest(editable.id);
 await c.tripEditorRequest(editable.id,{operation:'settings',revision:editorState.revision,
-    settings:{...editorState.settings,standardTime:'25:00',nonProduction:true}});
+    settings:{...editorState.settings,standardTimeMilliseconds:1500000,nonProduction:true}});
 await c.tripEditorRequest(editable.id,{operation:'entries',revision:editorState.revision,changes:[
-    {operation:'add-entry',entry:{start:'2026-09-18T12:02:00.000Z',end:'2026-09-18T12:03:00.000Z',type:'break',length:'0:01:00'}}
+    {operation:'add-entry',entry:{start:'2026-09-18T12:02:00.000Z',end:'2026-09-18T12:03:00.000Z',type:'break',length:60000}}
 ]});
 const edited=c.getLocalTripLog().find(t=>String(t.id)===String(editable.id));
 assert.equal(edited.standardTimeMilliseconds,1500000);
 assert.equal(edited.nonProduction,true);
 assert(edited.events.some(event=>event.event==='interval.started'));
-assert.equal(JSON.parse(window.localStorage.getItem(storageKey))[0].payload.standardTime,'25:00');
+assert.equal(JSON.parse(window.localStorage.getItem(storageKey))[0].payload.standardTimeMilliseconds,1500000);
 console.log('PASS buffered trips retain settings and entry edits while offline');
 const removed=c.getLocalTripLog()[1];
 await c.tripEditorRequest(removed.id,{operation:'delete-trip',revision:'offline'});
@@ -115,9 +115,9 @@ assert.equal(requests.filter(r=>r.options.method==='DELETE').length,0);
 console.log('PASS reconnect after interrupted completion uploads both trips once with original timing and no DELETE');
 
 // A new active trip must not acquire any events from the completed queue.
-offline=true;await complete('40:00',16);
+offline=true;await complete(2400000,16);
 const prepared=await c.prepareTrip();
-await c.start({standardTime:'50:00'});
+await c.start({standardTimeMilliseconds:3000000});
 assert.notEqual(c.status,'ready');
 offline=false;await c.connect('test','test');
 assert.equal(trips.size,3);

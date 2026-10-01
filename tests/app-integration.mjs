@@ -1,4 +1,4 @@
-import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';
+import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from './LanguageWindow.mjs';
 const window=new Window({url:'https://clock.example/',settings:{disableJavaScriptEvaluation:true}});
 let recognition;
 window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abort(){this.onend?.();}};
@@ -92,9 +92,18 @@ speechToggle.click();window.document.querySelector('#numberPadConfirm').dispatch
 assert.equal(c.getAttribute('trip-goal'),'105%');
 const newTrip=window.document.querySelector('#newTripButton');newTrip.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
 speechToggle.click();assert.equal(speechToggle.getAttribute('aria-pressed'),'true');
+say('seventeen thirty six.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:17:36');
+say('twenty two nineteen.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:22:19');
+say('twenty two sixteen.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:22:16');
+say('twenty to sixteen.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:22:16');
+say('twenty too sixteen.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:22:16');
+say('to too.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:00:22');
+say('too to.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:00:22');
 say('forty five minutes.');assert.equal(window.document.querySelector('#numberPadDisplay').textContent,'0:45:00');
 speechToggle.click();
 const settingsButton=window.document.querySelector('#numberPadSettings');assert(settingsButton);settingsButton.dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));await settle();
+assert.equal(window.document.querySelector('#numberPadDialog').open,false,'Number Pad closes after opening settings');
+assert.equal(window.document.querySelector('#tripSettingsDialog').open,true,'Number Pad settings gear opens Trip Settings');
 const standardSpeechControl=window.document.querySelector('[data-trip-time-field="standard-time"]');assert.equal(standardSpeechControl.getAttribute('speech-function'),'WMOFSpeechCommands.setStandardTime');assert.equal(standardSpeechControl.getAttribute('speech-preproc'),'WMOFSpeechPreprocess.normalize');assert.equal(standardSpeechControl.getAttribute('speech-preproc-context'),'duration');assert.equal(window.WMOFSpeechCommands.setStandardTime('forty five minutes'),true);assert.equal(window.document.querySelector('#tripStandardTime').textContent,'0:45:00');
 assert(speechToggle);assert.equal(speechToggle.getAttribute('aria-pressed'),'false');assert.equal(speechToggle.title,'Enable Speech Recognition');assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.showTripLog"]'));assert(window.document.querySelector('speech-command[speech-function="WMOFSpeechCommands.setGoal"]'));assert.equal(window.WMOFSpeechCommands.setRenderedTimeMode('elapsed'),true);assert.equal(c.renderedTimeMode,'elapsed');window.WMOFSpeechCommands.setRenderedTimeMode('remaining');
 assert.equal(window.WMOFSpeechCommands.setGoal('trip','one hundred and five percent'),true);assert.equal(c.getAttribute('trip-goal'),'105%');assert.equal(window.WMOFSpeechCommands.setGoal('total','95'),true);assert.equal(c.getAttribute('total-goal'),'95%');

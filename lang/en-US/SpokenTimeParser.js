@@ -1,6 +1,7 @@
 class EnglishSpokenTimeParser {
     static #units = Object.freeze({
-        zero: 0, oh: 0, one: 1, two: 2, three: 3, four: 4, five: 5,
+        zero: 0, oh: 0, o: 0, naught: 0, nought: 0,
+        one: 1, two: 2, three: 3, four: 4, five: 5,
         six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11,
         twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
         sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19
@@ -101,7 +102,18 @@ class EnglishSpokenTimeParser {
 
     static #minuteWords(text) {
         const tokens = text.split(" ").filter(Boolean);
-        if (tokens[0] === "oh" && tokens.length > 1) return EnglishSpokenTimeParser.#wordsToNumber(tokens.slice(1).join(" "));
+        if (
+            ["zero", "oh", "o", "naught", "nought"]
+                .includes(tokens[0]) &&
+            tokens.length > 1
+        ) {
+            return EnglishSpokenTimeParser
+                .#wordsToNumber(
+                    tokens
+                        .slice(1)
+                        .join(" ")
+                );
+        }
         return EnglishSpokenTimeParser.#wordsToNumber(text);
     }
 

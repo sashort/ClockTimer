@@ -1,0 +1,55 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {Window} from 'happy-dom';
+const window=new Window();
+const source=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8');
+const Index=Function('document',source.slice(0,source.indexOf('class SpeechMenu {'))+';return SpeechCommandIndex;')(window.document);
+const root=window.document.body;
+const add=pattern=>{const e=window.document.createElement('speech-command');e.setAttribute('speech-pattern',pattern);root.append(e);return e;};
+const a=add('^show trip log$'), b=add('^show trip time$'), fallback=add('^(?:wake|activate)$');
+const index=new Index(root);
+assert(index.candidates(['show','trip','lo']).has(a));
+assert(!index.candidates(['show','trip','lo']).has(b));
+assert(index.candidates(['wake']).has(fallback));
+assert(index.candidates(['show']).has(a));
+a.remove();assert(!index.candidates(['show']).has(a),'detach before observer callback');
+assert(index.candidates(['show']).has(b),'shared prefix remains');
+root.append(a);assert(index.candidates(['show']).has(a),'reattach');
+a.setAttribute('speech-pattern','^open history$');
+assert(!index.candidates(['show']).has(a));assert(index.candidates(['open']).has(a),'pattern edit');
+const host=window.document.createElement('section');root.append(host);host.append(a);
+assert(index.candidates(['open']).has(a),'reparent inside root');
+host.remove();assert(!index.candidates(['open']).has(a),'remove subtree');
+b.removeAttribute('speech-pattern');assert(!index.elements().includes(b));
+assert.equal(index.candidates(['wake'],new Set()).size,0,'inactive branches and fallbacks are excluded');
+const alternate=add('^one|two$');assert(index.candidates(['two']).has(alternate),'top-level alternative uses fallback');
+const optional=add('^commands?$');assert(index.candidates(['command']).has(optional),'optional literal suffix uses fallback');
+assert(index.candidates(['wake'],new Set([fallback])).has(fallback),'eligibility changes revalidate branches');
+console.log('PASS dynamic attachment, detachment, moves, pattern edits, shared branches, partial words, regex fallback and node eligibility');
+
+const modal=window.document.createElement('dialog');root.append(modal);
+const modalCommand=window.document.createElement('speech-command');modalCommand.setAttribute('speech-pattern','^open history$');modal.append(modalCommand);
+root.append(a);
+const scoped=index.candidates(['open'],new Set([modalCommand]));
+assert(scoped.has(modalCommand));assert(!scoped.has(a),'modal scope excludes identically named page command');
+modal.append(a);
+assert(index.candidates(['open'],new Set([a,modalCommand])).has(a),'moving a command migrates its tree');
+modal.remove();assert(!index.elements().includes(a));assert(!index.elements().includes(modalCommand));
+console.log('PASS separate modal trees, identical page/modal prefixes, migration and modal subtree removal');
+
+root.append(modal);modal.append(modalCommand);
+index.prime(modalCommand,7);assert(index.isPrimed(modalCommand,7));assert(modalCommand.hasAttribute('primed'));
+root.append(modalCommand);assert(index.isPrimed(modalCommand,7),'priming follows tree migration');
+index.clearPrimed(6);assert(index.isPrimed(modalCommand,7),'old utterance cannot clear newer priming');
+index.clearPrimed(7);assert(!index.isPrimed(modalCommand,7));assert(!modalCommand.hasAttribute('primed'));
+index.prime(modalCommand,8);modalCommand.remove();index.flush();assert(!modalCommand.hasAttribute('primed'),'detach clears reflected priming');
+console.log('PASS tree-owned priming, ownership, migration, cleanup and reflected DOM markers');
+
+const optionalSpace=add('^a ?b$');assert(index.candidates(['ab']).has(optionalSpace),'optional separators cannot create an unsafe literal prefix');
+
+const noun=add('^(?:trip )?log$');noun.setAttribute('speech-noun','log|trip log');
+assert(index.candidates(['trip','log']).has(noun));assert(index.candidates(['log']).has(noun));
+assert(!index.candidates(['unrelated']).has(noun),'noun paths avoid regex fallback');
+noun.setAttribute('speech-noun','log');assert(!index.candidates(['trip','log']).has(noun),'noun edits update registration');
+noun.remove();assert(!index.elements().includes(noun));
+console.log('PASS noun aliases, noun edits, noun branch gating and removal');
