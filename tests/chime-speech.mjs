@@ -1,3 +1,5 @@
+import { englishLanguage } from './announcement-language-fixture.mjs';
+const language = await englishLanguage();
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -7,7 +9,7 @@ const pattern=bar.match(/"chime-rate",\s*"([^"]+)"/)[1];
 const regex=new RegExp(pattern,'i');
 const calls=[];
 const settings={toneVelocity:1,speechVelocity:2,volume:0.6,masters:{chime:false}};
-const ctx=vm.createContext({audioSettings:settings,renderAudioSettings:()=>calls.push('render'),applyAudioOutputSettings:()=>calls.push('apply'),saveAudioSettings:()=>calls.push('save'),confirmSettingChange:(text)=>{calls.push(text);return true;}});
+const ctx=vm.createContext({announcementLanguage:language, announcementText:language.text,audioSettings:settings,renderAudioSettings:()=>calls.push('render'),applyAudioOutputSettings:()=>calls.push('apply'),saveAudioSettings:()=>calls.push('save'),confirmSettingChange:(text)=>{calls.push(text);return true;}});
 vm.runInContext(app.slice(app.indexOf('    const CHIME_RATES'),app.indexOf('    function audioVelocityPercent'))+app.slice(app.indexOf('    const setChimeRate ='),app.indexOf('    const setMasterChime ='))+'\nglobalThis.setRate=setChimeRate;',ctx);
 for(const [phrase,value] of [['chime fast',1.2],['chime medium',1],['chime slow',0.8]]) {
  const match=regex.exec(phrase);assert.ok(match);calls.length=0;

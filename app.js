@@ -1,5 +1,9 @@
-(() => {
+(async () => {
     "use strict";
+
+    const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
+    await announcementLanguage.load(document.documentElement.lang || "en-US");
+    const announcementText = (key, values) => announcementLanguage.text(key, values);
 
     const API_BASE = "https://wmof.sashort-apps.com/";
     const calendarRanges = new CalendarRange({baseUrl: API_BASE, databaseOnly: true,
@@ -3528,6 +3532,7 @@
             );
 
         return {
+            lang: announcementLanguage.locale,
             speechVolume:
                 resolve("volume"),
             toneVolume:
@@ -5293,21 +5298,7 @@
     }
 
     function totalScopeLabel() {
-        switch (getTripLogRange()) {
-            case "day":
-                return "Day";
-            case "week":
-                return "Week";
-            case "pay-period":
-                return "Check";
-            case "month":
-                return "Month";
-            case "year":
-                return "Year";
-            case "custom":
-            default:
-                return "Total";
-        }
+        return announcementText(`messages.scope.${getTripLogRange()}`);
     }
 
     function userFacingTotalText(value) {
@@ -5373,8 +5364,7 @@
         ) {
             void confirmInformationalChange(
                 "range-change",
-                "Viewing " +
-                    totalScopeLabel()
+                announcementText("messages.settings.viewing", { scope: totalScopeLabel() })
             );
         }
 
@@ -6886,10 +6876,7 @@
 
         return confirmInformationalChange(
             "sync-goal",
-            "Sync Goal " +
-                formatSummaryPercent(
-                    goal
-                ),
+            announcementText("announcements.syncTry.goal", { percent: formatSummaryPercent(goal) }),
             { eventName: "syncTry" }
         );
     }
@@ -6938,7 +6925,7 @@
 
             return confirmInformationalChange(
                 "sync-state",
-                "Cannot sync offline",
+                announcementText("announcements.syncTry.offline"),
                 { eventName: "syncTry" }
             );
         }
@@ -6946,7 +6933,7 @@
         if (state === "off") {
             return confirmInformationalChange(
                 "sync-state",
-                "Sync Off",
+                announcementText("announcements.syncTry.off"),
                 { eventName: "syncTry" }
             );
         }
@@ -6957,7 +6944,7 @@
         ) {
             return confirmInformationalChange(
                 "sync-state",
-                "Not enough time to sync",
+                announcementText("announcements.syncTry.blocked"),
                 { eventName: "syncTry" }
             );
         }
@@ -6977,7 +6964,7 @@
             if (force || changed) {
                 return confirmInformationalChange(
                     "sync-state",
-                    "Sync On",
+                    announcementText("announcements.syncTry.on"),
                     { eventName: "syncTry" }
                 );
             }
@@ -6991,7 +6978,7 @@
         ) {
             return confirmInformationalChange(
                 "sync-state",
-                "Sync On",
+                announcementText("announcements.syncTry.on"),
                 { eventName: "syncTry" }
             );
         }
@@ -21636,7 +21623,7 @@
     let previousAnnouncementCompletedAt = 0;
 
     const semanticAnnouncementIds = new Map();
-    let nextSemanticAnnouncementId = 1;
+    let nextSemanticAnnouncementId = 1000;
 
     function announcementId(key) {
         if (typeof key === "number") {
@@ -21644,6 +21631,8 @@
             nextSemanticAnnouncementId = Math.max(nextSemanticAnnouncementId, key + 1);
             return key;
         }
+        const typeId = globalThis.WMOFAnnouncementCatalog?.id?.(key);
+        if (typeId) return typeId;
         if (!semanticAnnouncementIds.has(key)) semanticAnnouncementIds.set(key, nextSemanticAnnouncementId++);
         return semanticAnnouncementIds.get(key);
     }
@@ -21980,14 +21969,9 @@
         // Catalog summaries are a distinct component even when their text loads asynchronously.
         const components = announcementComponents(audio, announcementSongName(name), chime.perform, [], output, undefined, options);
         if (summary.perform) components.push({ phase: "summary", delayMs: output.speechDelayMs, play: async () => {
-            const catalog = await audio.load();
-            const events = catalog?.songs?.[announcementSongName(name)]?.events || [];
-            let spoken = false;
-            for (const event of events.filter(event => event.speech)) {
-                spoken = await speakSemanticAndWait(audio, event.speech,
-                    { ...output, ...options, lang: event.lang, rate: event.rate, pitch: event.pitch, volume: event.volume }, reserveSemanticSpeech()) || spoken;
-            }
-            return spoken;
+            const summary = announcementLanguage.summary(name);
+            return summary ? speakSemanticAndWait(audio, summary.text,
+                { ...output, ...options, ...summary.options }, reserveSemanticSpeech()) : false;
         }});
         return runSemanticAnnouncement(name, components, options);
     }
@@ -22029,48 +22013,15 @@
 
     // Early/late announcements are about the timing gain or loss for
     // the current trip event. They intentionally never use summary.total.
-    function tripTimingSpeech(
-        detail,
-        lead,
-        disposition,
-        announcement
-    ) {
-        const milliseconds =
-            Number(
-                detail
-                    ?.timeDifferenceMilliseconds
-            );
-
+    function tripTimingSpeech(detail, announcement) {
+        const milliseconds = Number(detail?.timeDifferenceMilliseconds);
         const parts = ["", ""];
-
-        if (
-            consumeAnnouncementAction(
-                announcement,
-                "summary"
-            ).perform
-        ) {
-            parts[0] = lead + ".";
-        }
-
-        if (
-            Number.isFinite(
-                milliseconds
-            ) &&
-            consumeAnnouncementAction(
-                announcement,
-                "details"
-            ).perform
-        ) {
-            parts[1] = formatGoalFailureDuration(
-                    Math.abs(
-                        milliseconds
-                    )
-                ) +
-                " " +
-                disposition +
-                ".";
-        }
-
+        if (consumeAnnouncementAction(announcement, "summary").perform)
+            parts[0] = announcementText(`announcements.${announcement}.summary`);
+        if (Number.isFinite(milliseconds) && consumeAnnouncementAction(announcement, "details").perform)
+            parts[1] = announcementText(`announcements.${announcement}.details`, {
+                duration: formatGoalFailureDuration(Math.abs(milliseconds))
+            });
         return parts;
     }
 
@@ -22087,12 +22038,7 @@
             return "";
         }
 
-        return (
-            goalFailureNumberWords(
-                percent
-            ) +
-            " percent"
-        );
+        return announcementText("messages.speech.percent", { value: goalFailureNumberWords(percent) });
     }
 
     function renderedGoalLabel(
@@ -22127,7 +22073,7 @@
             scope === "standard" ||
             roundedPercent === 100
         ) {
-            return "Standard Goal";
+            return announcementText("messages.goal.standard");
         }
 
         if (!Number.isFinite(roundedPercent)) {
@@ -22137,16 +22083,9 @@
         const type =
             scope === "total"
                 ? totalScopeLabel()
-                : "Trip";
+                : announcementText("messages.scope.trip");
 
-        return (
-            type +
-            " Goal " +
-            goalFailureNumberWords(
-                roundedPercent
-            ) +
-            " percent"
-        );
+        return announcementText("messages.goal.percent", { scope: type, percent: goalFailureNumberWords(roundedPercent) });
     }
 
     function renderedGoalRemainingMilliseconds(
@@ -22225,14 +22164,7 @@
             return "";
         }
 
-        return (
-            formatGoalFailureDuration(
-                remaining
-            ) +
-            " until " +
-            label +
-            "."
-        );
+        return announcementText("announcements.trip-started.details", { duration: formatGoalFailureDuration(remaining), goal: label });
     }
 
     function tripEndTotalSpeech(
@@ -22258,7 +22190,7 @@
 
         if (summary.perform) {
             parts.push(
-                "Trip ended."
+                announcementText("announcements.trip-ended.summary")
             );
 
             if (
@@ -22267,11 +22199,9 @@
                 )
             ) {
                 parts.push(
-                    totalScopeLabel() + " percent: " +
-                        formatSpokenPercent(
-                            countedPercent
-                        ) +
-                        "."
+                    announcementText("announcements.trip-ended.total", {
+                        scope: totalScopeLabel(), percent: formatSpokenPercent(countedPercent)
+                    })
                 );
             }
         }
@@ -22294,24 +22224,14 @@
             ) {
                 if (remaining > 0) {
                     parts.push(
-                        formatGoalFailureDuration(
-                            remaining
-                        ) +
-                        " banked toward " +
-                        label +
-                        "."
+                        announcementText("announcements.trip-ended.banked", { duration: formatGoalFailureDuration(remaining), goal: label })
                     );
                 }
                 else if (remaining < 0) {
                     parts.push(
-                        formatGoalFailureDuration(
-                            Math.abs(
+                        announcementText("announcements.trip-ended.over", { duration: formatGoalFailureDuration(Math.abs(
                                 remaining
-                            )
-                        ) +
-                        " over " +
-                        label +
-                        "."
+                            )), goal: label })
                     );
                 }
             }
@@ -22931,7 +22851,7 @@
 
         if (summary.perform) {
             parts.push({ phase: "summary", text: chime.runtimeSuppressed && !chime.userDisabled
-                ? "Trip in Progress." : "Trip started." });
+                ? announcementText("announcements.trip-started.inProgress") : announcementText("announcements.trip-started.summary") });
         }
 
         if (details.perform) {
@@ -22977,8 +22897,6 @@
             "trip-started-early",
             tripTimingSpeech(
                 event.detail,
-                "Trip started early",
-                "saved",
                 "trip-started-early"
             )
         );
@@ -22995,8 +22913,6 @@
             "trip-started-late",
             tripTimingSpeech(
                 event.detail,
-                "Trip started late",
-                "lost",
                 "trip-started-late"
             )
         );
@@ -23031,8 +22947,6 @@
             "trip-resumed-early",
             tripTimingSpeech(
                 event.detail,
-                "Trip resumed early",
-                "saved",
                 "trip-resumed-early"
             )
         );
@@ -23055,8 +22969,6 @@
             "trip-resumed-after-break",
             tripTimingSpeech(
                 event.detail,
-                "Trip resumed",
-                "lost",
                 "trip-resumed-after-break"
             )
         );
@@ -23603,13 +23515,13 @@
             )
         ) {
             summarySentences.push(
-                "Standard Goal Failed."
+                announcementText("announcements.goal-failed.standard")
             );
         }
         else {
             if (standardFailed) {
                 summarySentences.push(
-                    "Standard Goal Failed."
+                    announcementText("announcements.goal-failed.standard")
                 );
             }
 
@@ -23619,7 +23531,7 @@
                         "trip"
                 ) {
                     summarySentences.push(
-                        "Trip Goal Failed."
+                        announcementText("announcements.goal-failed.trip")
                     );
                 }
                 else if (
@@ -23627,7 +23539,7 @@
                         "total"
                 ) {
                     summarySentences.push(
-                        totalScopeLabel() + " Goal Failed."
+                        announcementText("announcements.goal-failed.total", { scope: totalScopeLabel() })
                     );
                 }
             }
@@ -23679,36 +23591,20 @@
                     type === "standard" ||
                     roundedPercent === 100;
 
-                const label =
-                    useStandardLabel
-                        ? "Standard"
-                        : type === "trip"
-                            ? "Trip"
-                            : totalScopeLabel();
-
-                const percentText =
-                    !useStandardLabel &&
-                    Number.isFinite(
-                        roundedPercent
-                    )
-                        ? " " +
-                            goalFailureNumberWords(
-                                roundedPercent
-                            ) +
-                            " percent"
-                        : "";
-
-                detailSentences.push(
-                    `${formatGoalFailureDuration(
-                        remainingMilliseconds
-                    )} until ${label} Goal${percentText}.`
-                );
+                const scope = type === "trip" ? announcementText("messages.scope.trip") : totalScopeLabel();
+                const goalLabel = useStandardLabel ? announcementText("messages.goal.standard") :
+                    announcementText(Number.isFinite(roundedPercent) ? "messages.goal.fallbackPercent" : "messages.goal.label", {
+                        scope, percent: goalFailureNumberWords(roundedPercent)
+                    });
+                detailSentences.push(announcementText("announcements.goal-failed.details", {
+                    duration: formatGoalFailureDuration(remainingMilliseconds), goal: goalLabel
+                }));
             }
         }
 
         if (belowStandardFailed) {
             detailSentences.push(
-                "Overtime in progress."
+                announcementText("announcements.goal-failed.overtime")
             );
         }
 
@@ -24461,9 +24357,7 @@
                     .trim();
             const response =
                 (
-                    labelText +
-                    " " +
-                    displayValue
+                    announcementText("messages.readback.metric", { label: labelText, value: displayValue })
                 )
                     .replace(
                         /\s+/g,
@@ -24482,13 +24376,11 @@
                     .trim();
             const spokenResponse =
                 (
-                    labelText +
-                    " " +
-                    speechValue
+                    announcementText("messages.readback.metric", { label: labelText, value: speechValue })
                 )
                     .replace(
                         /%/g,
-                        " percent"
+                        announcementText("messages.speech.percentSuffix")
                     )
                     .replace(
                         /\s+/g,
@@ -24557,7 +24449,7 @@
                 )
                     .replace(
                         /%/g,
-                        " percent"
+                        announcementText("messages.speech.percentSuffix")
                     )
                     .replace(
                         /\s+/g,
@@ -24608,7 +24500,7 @@
                 summary.perform ? spokenResponse : "", output, speechGuard),
                 {
                     exclusive,
-                    id: eventName + ":" + spokenResponse
+                    id: eventName
                 }
             )
                 .catch(
@@ -24659,12 +24551,8 @@
             saveAudioSettings();
 
             return confirmSettingChange(
-                "Speech Rate " +
-                    formatAudioVelocityPercent(
-                        audioSettings
-                            .speechVelocity,
-                        AUDIO_SPEECH_VELOCITY_MAX
-                    ),
+                announcementText("messages.settings.speechRate", { percent:
+                    formatAudioVelocityPercent(audioSettings.speechVelocity, AUDIO_SPEECH_VELOCITY_MAX) }),
                 {
                     useGlobalAudioSettings:
                         true
@@ -24701,12 +24589,8 @@
             saveAudioSettings();
 
             return confirmSettingChange(
-                "Speech Rate " +
-                    formatAudioVelocityPercent(
-                        audioSettings
-                            .speechVelocity,
-                        AUDIO_SPEECH_VELOCITY_MAX
-                    ),
+                announcementText("messages.settings.speechRate", { percent:
+                    formatAudioVelocityPercent(audioSettings.speechVelocity, AUDIO_SPEECH_VELOCITY_MAX) }),
                 {
                     useGlobalAudioSettings:
                         true
@@ -24730,8 +24614,8 @@
 
             return confirmSettingChange(
                 next
-                    ? "Speech On"
-                    : "Speech Off",
+                    ? announcementText("messages.settings.speechOn")
+                    : announcementText("messages.settings.speechOff"),
                 {
                     useGlobalAudioSettings:
                         true,
@@ -24749,7 +24633,7 @@
         renderAudioSettings();
         applyAudioOutputSettings();
         saveAudioSettings();
-        return confirmSettingChange("Chime " + preset.label, {
+        return confirmSettingChange(announcementText("messages.settings.chimeRate", { rate: announcementText(`messages.settings.chime${preset.label}`) }), {
             useGlobalAudioSettings: true
         });
     };
@@ -24765,8 +24649,8 @@
 
             return confirmSettingChange(
                 audioSettings.masters.chime
-                    ? "Chime On"
-                    : "Chime Off",
+                    ? announcementText("messages.settings.chimeOn")
+                    : announcementText("messages.settings.chimeOff"),
                 {
                     useGlobalAudioSettings:
                         true
@@ -24788,13 +24672,7 @@
             saveAudioSettings();
 
             return confirmSettingChange(
-                "Volume " +
-                    Math.round(
-                        audioSettings
-                            .volume *
-                        100
-                    ) +
-                    "%",
+                announcementText("messages.settings.volume", { percent: Math.round(audioSettings.volume * 100) }),
                 {
                     useGlobalAudioSettings:
                         true
@@ -24829,13 +24707,7 @@
             saveAudioSettings();
 
             return confirmSettingChange(
-                "Volume " +
-                    Math.round(
-                        audioSettings
-                            .volume *
-                        100
-                    ) +
-                    "%",
+                announcementText("messages.settings.volume", { percent: Math.round(audioSettings.volume * 100) }),
                 {
                     useGlobalAudioSettings:
                         true
@@ -24964,9 +24836,7 @@
 
             return confirmInformationalChange(
                 "goal-change",
-                label +
-                    " Goal Set to " +
-                    after
+                announcementText("messages.settings.goalSet", { scope: label, percent: after })
             );
         };
 
@@ -25046,17 +24916,13 @@
                         duration
                         ? true
                         : confirmSettingChange(
-                            "Standard Time Set to " +
-                            displayFormatted,
+                            announcementText("messages.settings.standardTime", { time: displayFormatted }),
                             {
                                 spokenValue:
-                                    "Standard Time Set to " +
-                                    formatGoalFailureDuration(
-                                        duration
-                                    ),
+                                    announcementText("messages.settings.standardTime", { time: formatGoalFailureDuration(duration) }),
                                 responseDisplay: {
                                     prefix:
-                                        "Standard Time Set to",
+                                        announcementText("messages.settings.standardTimePrefix"),
                                     code:
                                         displayFormatted
                                 }
@@ -25097,17 +24963,13 @@
                         duration
                         ? true
                         : confirmSettingChange(
-                            "Standard Time Set to " +
-                            displayFormatted,
+                            announcementText("messages.settings.standardTime", { time: displayFormatted }),
                             {
                                 spokenValue:
-                                    "Standard Time Set to " +
-                                    formatGoalFailureDuration(
-                                        duration
-                                    ),
+                                    announcementText("messages.settings.standardTime", { time: formatGoalFailureDuration(duration) }),
                                 responseDisplay: {
                                     prefix:
-                                        "Standard Time Set to",
+                                        announcementText("messages.settings.standardTimePrefix"),
                                     code:
                                         displayFormatted
                                 }
@@ -25970,7 +25832,7 @@
 
             readTripGoal() {
                 return dictateSpeechMetric(
-                    "Trip Goal",
+                    announcementText("messages.readback.tripGoal"),
                     goalPercentForScope(
                         "trip"
                     )
@@ -25979,7 +25841,7 @@
 
             readTotalGoal() {
                 return dictateSpeechMetric(
-                    totalScopeLabel() + " Goal",
+                    announcementText("messages.goal.label", { scope: totalScopeLabel() }),
                     goalPercentForScope(
                         "total"
                     )
@@ -26090,7 +25952,7 @@
 
                 return dictateSpeechMetric(
                     label,
-                    "Mode"
+                    announcementText("messages.readback.mode")
                 );
             },
 
@@ -26187,8 +26049,7 @@
                                 .slice(1);
 
                 return confirmSettingChange(
-                    label +
-                    " Mode"
+                    announcementText("messages.settings.mode", { scope: label })
                 );
             },
 
@@ -26228,16 +26089,15 @@
                                 .slice(1);
 
                 return confirmSettingChange(
-                    label +
-                    " Mode"
+                    announcementText("messages.settings.mode", { scope: label })
                 );
             },
 
             readSyncStatus() {
                 return confirmSettingChange(
                     getSyncGoalsState()
-                        ? "Sync On"
-                        : "Sync Off"
+                        ? announcementText("announcements.syncTry.on")
+                        : announcementText("announcements.syncTry.off")
                 );
             },
 
@@ -26251,7 +26111,7 @@
                     animateOfflineClouds();
 
                     return confirmSettingChange(
-                        "Cannot sync offline"
+                        announcementText("announcements.syncTry.offline")
                     );
                 }
 
@@ -26327,7 +26187,7 @@
                 }
                 catch {
                     return confirmSettingChange(
-                        "Sync Fail"
+                        announcementText("announcements.syncTry.failed")
                     );
                 }
 
@@ -26341,7 +26201,7 @@
                         enabled
                 ) {
                     return confirmSettingChange(
-                        "Sync Fail"
+                        announcementText("announcements.syncTry.failed")
                     );
                 }
 
@@ -26354,8 +26214,8 @@
 
                 return confirmSettingChange(
                     enabled
-                        ? "Sync On"
-                        : "Sync Off"
+                        ? announcementText("announcements.syncTry.on")
+                        : announcementText("announcements.syncTry.off")
                 );
             },
 
@@ -26413,12 +26273,11 @@
                         );
 
                 return confirmSettingChange(
-                    "End Time Locked to " +
-                    label,
+                    announcementText("messages.settings.endTimeLocked", { time: label }),
                     {
                         responseDisplay: {
                             prefix:
-                                "End Time Locked to",
+                                announcementText("messages.settings.endTimePrefix"),
                             code:
                                 label
                         }
@@ -26507,7 +26366,7 @@
                 }
 
                 return dictateSpeechMetric(
-                    "End Time",
+                    announcementText("messages.readback.endTime"),
                     rendered,
                     {
                         codeValue:
@@ -26567,8 +26426,7 @@
                     );
                 const spokenValue =
                     overBy
-                        ? "Over by " +
-                            spokenDuration
+                        ? announcementText("messages.readback.overBy", { duration: spokenDuration })
                         : spokenDuration;
 
                 return confirmSettingChange(
@@ -26745,14 +26603,14 @@
                         "calculated-end"
                 ) {
                     announcement =
-                        "Showing End Time";
+                        announcementText("messages.settings.showingEnd");
                 }
                 else if (
                     next ===
                         "elapsed"
                 ) {
                     announcement =
-                        "Showing Elapsed Time";
+                        announcementText("messages.settings.showingElapsed");
                 }
                 else {
                     let effectiveTimeState;
@@ -26770,12 +26628,12 @@
                         effectiveTimeState
                             ?.label ===
                             "Banked Time"
-                            ? "Showing Banked Time"
+                            ? announcementText("messages.settings.showingBanked")
                             : effectiveTimeState
                                 ?.label ===
                                 "Time Over"
-                                ? "Showing Time Over"
-                                : "Showing Time Left";
+                                ? announcementText("messages.settings.showingOver")
+                                : announcementText("messages.settings.showingLeft");
                 }
 
                 return confirmSettingChange(

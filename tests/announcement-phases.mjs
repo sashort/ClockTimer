@@ -1,8 +1,10 @@
+import { englishLanguage } from './announcement-language-fixture.mjs';
+const language = await englishLanguage();
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
-const ctx=vm.createContext({queueMicrotask,console,Date,ANNOUNCEMENT_SPEECH_PAUSE_AT_1X:300,audioAnnouncementOutput:()=>({speechDelayMs:0}),waitForAnnouncementDelay:async()=>{}, consumeAnnouncementAction:()=>({perform:true}), announcementSongName:name=>name});
+const ctx=vm.createContext({announcementLanguage:language, announcementText:language.text,queueMicrotask,console,Date,ANNOUNCEMENT_SPEECH_PAUSE_AT_1X:300,audioAnnouncementOutput:()=>({speechDelayMs:0}),waitForAnnouncementDelay:async()=>{}, consumeAnnouncementAction:()=>({perform:true}), announcementSongName:name=>name});
 vm.runInContext(source.slice(source.indexOf('    const semanticAnnouncementQueue'),source.indexOf('    function waitForAnnouncementDelay'))+source.slice(source.indexOf('    function speakSemanticAndWait('),source.indexOf('    function playSemanticSongThenSpeak('))+'\nglobalThis.enqueue=runSemanticAnnouncement;globalThis.components=announcementComponents;globalThis.song=playSemanticSong;globalThis.batch=beginAnnouncementBatch;globalThis.cancel=cancelQueuedAnnouncement;globalThis.queue=semanticAnnouncementQueue;',ctx);
 const flush=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 const order=[];let finishSpeech;
@@ -48,11 +50,11 @@ assert.equal(parts(['','Remaining'])[0].phase,'details');
 assert.equal(ctx.queue.pointer,0);assert.equal(ctx.queue.length,0);assert.equal(ctx.queue.announced.size,0);
 // Catalog speech is dispatched separately from the chime rather than embedded in it.
 order.length=0;let catalogFinish;const catalogGate=new Promise(resolve=>catalogFinish=resolve);
-ctx.WMOFAudio={...audio,load:async()=>({songs:{catalog:{events:[{speech:'Catalog summary',rate:1.1,pitch:0.9,volume:0.8}]}}}),
+ctx.WMOFAudio={...audio,load:async()=>{throw Error('Speech must not be read from the music catalog');},
  startSong:async(name,options)=>{assert.equal(options.includeSpeech,false);order.push('Catalog chime');return {hasChime:true,finished:catalogGate};}};
-const catalogSong=ctx.song('catalog');await flush();assert.deepEqual(order,['Catalog chime']);
+const catalogSong=ctx.song('break-started');await flush();assert.deepEqual(order,['Catalog chime']);
 const catalogUrgent=ctx.enqueue('catalog-urgent',parts('Catalog urgent'),{priority:20});
 await flush();assert.deepEqual(order,['Catalog chime']);catalogFinish();await flush();assert.deepEqual(order,['Catalog chime','Catalog urgent']);
-finishSpeech();await flush();assert.deepEqual(order,['Catalog chime','Catalog urgent','Catalog summary']);
+finishSpeech();await flush();assert.deepEqual(order,['Catalog chime','Catalog urgent','Break started']);
 finishSpeech();await Promise.all([catalogSong,catalogUrgent]);await flush();
 console.log('PASS independent component priorities, sync interleaving, internal reordering, boundary-only interruption, cancellation and disabled summaries');

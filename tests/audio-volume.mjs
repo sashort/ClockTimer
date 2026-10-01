@@ -1,8 +1,10 @@
+import { englishLanguage } from './announcement-language-fixture.mjs';
+const language = await englishLanguage();
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
-const ctx=vm.createContext({AUDIO_ANNOUNCEMENTS:[['test']],AUDIO_LANGUAGE:'en-US',AUDIO_SPEECH_VELOCITY_MIN:0.5,AUDIO_SPEECH_VELOCITY_MAX:2.8,CHIME_VOLUME_RATIO:0.5,ANNOUNCEMENT_SPEECH_PAUSE_AT_1X:300});
+const ctx=vm.createContext({announcementLanguage:language, announcementText:language.text,AUDIO_ANNOUNCEMENTS:[['test']],AUDIO_LANGUAGE:'en-US',AUDIO_SPEECH_VELOCITY_MIN:0.5,AUDIO_SPEECH_VELOCITY_MAX:2.8,CHIME_VOLUME_RATIO:0.5,ANNOUNCEMENT_SPEECH_PAUSE_AT_1X:300});
 vm.runInContext(source.slice(source.indexOf('    const CHIME_RATES'),source.indexOf('    function audioVelocityPercent'))+source.slice(source.indexOf('    function defaultAudioSettings'),source.indexOf('    function loadAudioSettings'))+'\nglobalThis.normalize=normalizeAudioSettings;',ctx);
 for(const [input,expected] of [[{volume:0.4},0.4],[{speechVolume:0.3,toneVolume:0.9},0.3],[{toneVolume:0.2},0.2],[{volume:0,speechVolume:1},0],[{},1]]) {
  const settings=ctx.normalize(input); assert.equal(settings.volume,expected); assert.ok(!('speechVolume' in settings));assert.ok(!('toneVolume' in settings));

@@ -4,6 +4,18 @@
     const entries =
         new Map();
 
+    // Stable type IDs: append new IDs; do not renumber existing types.
+    const typeIds = Object.freeze({
+        "trip-started": 1, "trip-started-early": 2, "trip-started-late": 3,
+        "break-started": 4, "short-break-started": 5, "lunch-started": 6,
+        "trip-resumed-early": 7, "trip-resumed-automatically": 8,
+        "trip-resumed-after-break": 9, "down-time-started": 10,
+        "trip-resumed-from-down": 11, "trip-ended": 12, "goal-failed": 13,
+        "lunch-clock-out": 14, "lunch-clock-in": 15, "setting-change": 16,
+        "goal-change": 17, "range-change": 18, "sync-state": 19, "sync-goal": 20,
+        "syncTry": 21
+    });
+
     const titleFromKey =
         key =>
             String(key || "")
@@ -84,6 +96,7 @@
                 );
 
             return Object.freeze({
+                id: typeIds[normalizedKey],
                 key:
                     normalizedKey,
                 label:
@@ -258,6 +271,7 @@
     );
 
     const api = {
+        id(key) { return typeIds[String(key || "").trim()]; },
         register,
         ensure,
 
