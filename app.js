@@ -111,9 +111,9 @@
     // The former 70% point (2.8×) is now the top of the speech range.
     const AUDIO_SPEECH_VELOCITY_MAX = 2.8;
     const CHIME_RATES = Object.freeze([
-        { label: "Slow", value: 0.7 },
-        { label: "Medium", value: 0.85 },
-        { label: "Fast", value: 1 }
+        { label: "Slow", value: 1 },
+        { label: "Medium", value: 1.25 },
+        { label: "Fast", value: 1.5 }
     ]);
 
     function normalizeChimeRate(value) {
