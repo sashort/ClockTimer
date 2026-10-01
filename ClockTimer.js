@@ -23468,45 +23468,44 @@
                         .adjustedEndTime
                         .length > 0;
 
-                this.#emitClockTimerEvent(
-                    "syncGoalRecalculated",
-                    {
-                        source,
-                        operation:
-                            forceEvent
-                                ? "sync"
-                                : "recalculation",
-                        changed,
-                        valid,
-                        reason:
-                            valid
-                                ? null
-                                : (
-                                    this
-                                        .#getTotalGoalRequirementFailureReason() ??
-                                    "insufficient-time"
-                                ),
-                        previousCalculatedTripGoal:
-                            Number.isFinite(
-                                previous
-                            )
-                                ? previous
-                                : null,
-                        calculatedTripGoal:
-                            Number.isFinite(
-                                this.#calculatedTripGoal
-                            )
-                                ? this.#calculatedTripGoal
-                                : null,
-                        requirements: {
-                            ...currentRequirements
-                        },
-                        tripGoal:
-                            this.#getTripGoal(),
-                        totalGoal:
-                            this.#getTotalGoal()
-                    }
-                );
+                const syncAttempt = {
+                    source,
+                    operation:
+                        forceEvent
+                            ? "sync"
+                            : "recalculation",
+                    changed,
+                    valid,
+                    reason:
+                        valid
+                            ? null
+                            : (
+                                this
+                                    .#getTotalGoalRequirementFailureReason() ??
+                                "insufficient-time"
+                            ),
+                    previousCalculatedTripGoal:
+                        Number.isFinite(
+                            previous
+                        )
+                            ? previous
+                            : null,
+                    calculatedTripGoal:
+                        Number.isFinite(
+                            this.#calculatedTripGoal
+                        )
+                            ? this.#calculatedTripGoal
+                            : null,
+                    requirements: {
+                        ...currentRequirements
+                    },
+                    tripGoal:
+                        this.#getTripGoal(),
+                    totalGoal:
+                        this.#getTotalGoal()
+                };
+                this.#emitClockTimerEvent("syncTry", syncAttempt);
+                this.#emitClockTimerEvent("syncGoalRecalculated", syncAttempt);
             }
 
             return changed;

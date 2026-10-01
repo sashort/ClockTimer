@@ -6889,7 +6889,8 @@
             "Sync Goal " +
                 formatSummaryPercent(
                     goal
-                )
+                ),
+            { eventName: "syncTry" }
         );
     }
 
@@ -6937,14 +6938,16 @@
 
             return confirmInformationalChange(
                 "sync-state",
-                "Cannot sync offline"
+                "Cannot sync offline",
+                { eventName: "syncTry" }
             );
         }
 
         if (state === "off") {
             return confirmInformationalChange(
                 "sync-state",
-                "Sync Off"
+                "Sync Off",
+                { eventName: "syncTry" }
             );
         }
 
@@ -6954,7 +6957,8 @@
         ) {
             return confirmInformationalChange(
                 "sync-state",
-                "Not enough time to sync"
+                "Not enough time to sync",
+                { eventName: "syncTry" }
             );
         }
 
@@ -6973,7 +6977,8 @@
             if (force || changed) {
                 return confirmInformationalChange(
                     "sync-state",
-                    "Sync On"
+                    "Sync On",
+                    { eventName: "syncTry" }
                 );
             }
 
@@ -6986,7 +6991,8 @@
         ) {
             return confirmInformationalChange(
                 "sync-state",
-                "Sync On"
+                "Sync On",
+                { eventName: "syncTry" }
             );
         }
 
@@ -20922,78 +20928,8 @@
 
             void runSemanticAnnouncement(
                 "trip-ended",
-                async () => {
-                    let transitionChimePlayed =
-                        false;
-
-                    if (
-                        transitionChimeAllowed &&
-                        audio?.startSong
-                    ) {
-                        try {
-                            const song =
-                                await audio
-                                    .startSong(
-                                        transitionSong,
-                                        {
-
-                                            includeSpeech:
-                                                false
-                                        }
-                                    );
-
-                            transitionChimePlayed =
-                                Boolean(
-                                    song?.hasChime
-                                );
-
-                            await song
-                                ?.finished;
-
-                            if (
-                                transitionChimePlayed
-                            ) {
-                                await waitForAnnouncementDelay(
-                                    transitionSpeechOutput
-                                        .speechDelayMs
-                                );
-                            }
-                        }
-                        catch (error) {
-                            console.error(
-                                "Audio playback failed:",
-                                transitionSong,
-                                error
-                            );
-                        }
-                    }
-
-                    if (
-                        reserveStartChime &&
-                        !transitionChimePlayed
-                    ) {
-                        cancelSemanticDisable(
-                            "chime"
-                        );
-                    }
-
-                    if (speech) {
-                        await speakSemanticAndWait(
-                            audio,
-                            speech,
-                            {
-                                speechVolume:
-                                    transitionSpeechOutput
-                                        .speechVolume,
-                                speechVelocity:
-                                    transitionSpeechOutput
-                                        .speechVelocity
-                            }
-                        );
-                    }
-
-                    return true;
-                },
+                announcementComponents(audio, transitionSong, transitionChimeAllowed, speech, transitionSpeechOutput, undefined,
+                { onChime: played => { if (reserveStartChime && !played) cancelSemanticDisable("chime"); } }),
                 {
                     exclusive:
                         announcementSpeechIgnoresMaster(
@@ -21275,7 +21211,7 @@
     );
 
     clockTimer.addEventListener(
-        "syncGoalRecalculated",
+        "syncTry",
         event => {
             renderSyncGoalsState();
 
@@ -21861,6 +21797,8 @@
         );
     }
 
+    let previousAnnouncementEntry;
+
     function scheduleSemanticAnnouncements() {
         if (semanticAnnouncementScheduled || semanticAnnouncementDraining || semanticAnnouncementContexts.length) return;
         semanticAnnouncementScheduled = true;
@@ -21887,7 +21825,7 @@
         const queue = semanticAnnouncementQueue;
         for (let index = queue.pointer; -index < queue.length; index--) {
             const entry = queue[index];
-            if (entry.id === numericId && !entry.playing) {
+            if (entry.id === numericId && !entry.completed) {
                 entry.canceled = true;
                 canceled = true;
             }
@@ -21895,70 +21833,113 @@
         return canceled;
     }
 
+    function completeAnnouncement(entry, result, error) {
+        entry.completed = true;
+        if (result === false || error) semanticAnnouncementQueue.announced.delete(entry.id);
+        if (error) {
+            console.error("Announcement playback failed:", entry.id, error);
+            entry.reject(error);
+        } else entry.resolve(result);
+    }
+
+    function nextAnnouncementComponent() {
+        const queue = semanticAnnouncementQueue;
+        let best;
+        for (let index = queue.pointer; -index < queue.length; index--) {
+            const entry = queue[index];
+            if (entry.completed) continue;
+            if (entry.canceled || (!entry.started && queue.announced.has(entry.id))) {
+                // A skipped duplicate must not remove the original's announced ID.
+                entry.completed = true;
+                if (entry.canceled && entry.started) queue.announced.delete(entry.id);
+                entry.resolve(false);
+                continue;
+            }
+            for (const component of entry.components) {
+                if (component.completed) continue;
+                if (!best || component.priority > best.component.priority ||
+                    (component.priority === best.component.priority &&
+                        (entry.sequence < best.entry.sequence ||
+                            (entry.sequence === best.entry.sequence && component.sequence < best.component.sequence)))) {
+                    best = { entry, component };
+                }
+            }
+        }
+        return best;
+    }
+
     async function drainSemanticAnnouncements() {
         if (semanticAnnouncementDraining || semanticAnnouncementContexts.length) return;
         semanticAnnouncementDraining = true;
         const queue = semanticAnnouncementQueue;
         try {
-            while (-queue.pointer < queue.length && !semanticAnnouncementContexts.length) {
+            while (!semanticAnnouncementContexts.length) {
+                let next = nextAnnouncementComponent();
+                if (!next) break;
                 if (previousAnnouncementDelayMs > 0) {
-                    await waitForAnnouncementDelay(Math.max(0,
-                        previousAnnouncementDelayMs - (Date.now() - previousAnnouncementCompletedAt)));
+                    const margin = previousAnnouncementDelayMs * (previousAnnouncementEntry === next.entry ? 1 : 2);
+                    await waitForAnnouncementDelay(Math.max(0, margin - (Date.now() - previousAnnouncementCompletedAt)));
+                    // New arrivals and cancellation during the margin affect selection.
+                    if (semanticAnnouncementContexts.length) break;
+                    next = nextAnnouncementComponent();
+                    if (!next) break;
+                    const revisedMargin = previousAnnouncementDelayMs * (previousAnnouncementEntry === next.entry ? 1 : 2);
+                    await waitForAnnouncementDelay(Math.max(0, revisedMargin - (Date.now() - previousAnnouncementCompletedAt)));
                     previousAnnouncementDelayMs = 0;
+                    if (semanticAnnouncementContexts.length) break;
+                    next = nextAnnouncementComponent();
+                    if (!next) break;
                 }
-                if (semanticAnnouncementContexts.length) break;
-                let best = queue.pointer;
-                for (let index = best - 1; -index < queue.length; index--) {
-                    const candidate = queue[index], selected = queue[best];
-                    if (candidate.priority > selected.priority ||
-                        (candidate.priority === selected.priority && candidate.sequence < selected.sequence)) best = index;
-                }
-                [queue[queue.pointer], queue[best]] = [queue[best], queue[queue.pointer]];
-                const entry = queue[queue.pointer];
-                if (entry.canceled || queue.announced.has(entry.id)) {
-                    entry.resolve(false);
-                }
-                else {
-                    entry.playing = true;
-                    queue.announced.add(entry.id);
-                    try {
-                        const result = await entry.playback();
-                        if (result === false) queue.announced.delete(entry.id);
-                        entry.resolve(result);
-                    }
-                    catch (error) {
-                        queue.announced.delete(entry.id);
-                        console.error("Announcement playback failed:", entry.id, error);
-                        entry.reject(error);
-                    }
-                    previousAnnouncementDelayMs = entry.componentDelayMs * 2;
+                const { entry, component } = next;
+                entry.started = true;
+                entry.playing = true;
+                queue.announced.add(entry.id);
+                try {
+                    const result = await component.play();
+                    component.completed = true;
+                    entry.result = result;
+                    entry.performed ||= result !== false;
+                    if (entry.canceled) completeAnnouncement(entry, false);
+                    else if (entry.components.every(component => component.completed)) completeAnnouncement(entry, entry.performed && result === false ? true : result);
+                } catch (error) {
+                    completeAnnouncement(entry, false, error);
+                } finally {
+                    entry.playing = false;
+                    previousAnnouncementDelayMs = entry.componentDelayMs;
                     previousAnnouncementCompletedAt = Date.now();
+                    previousAnnouncementEntry = entry;
                 }
-                delete queue[queue.pointer--];
+                while (-queue.pointer < queue.length && queue[queue.pointer].completed) delete queue[queue.pointer--];
             }
+            while (-queue.pointer < queue.length && queue[queue.pointer].completed) delete queue[queue.pointer--];
             if (-queue.pointer === queue.length) {
                 queue.pointer = 0;
                 queue.length = 0;
                 queue.announced.clear();
             }
-        }
-        finally {
+        } finally {
             semanticAnnouncementDraining = false;
         }
     }
 
-    function runSemanticAnnouncement(announcement, playback, { id = announcement, priority } = {}) {
-        if (typeof playback !== "function") return Promise.resolve(false);
+    function runSemanticAnnouncement(announcement, playback, { id = announcement, priority, phasePriorities = {} } = {}) {
+        const components = (Array.isArray(playback) ? playback : typeof playback === "function" ? [{ phase: "summary", play: playback }] : [])
+            .filter(component => typeof component?.play === "function");
+        if (!components.length) return Promise.resolve(false);
         const queue = semanticAnnouncementQueue;
         const numericId = announcementId(id);
         if (queue.announced.has(numericId)) return Promise.resolve(false);
         const context = semanticAnnouncementContexts.at(-1)?.context;
-        const contextualPriority = context === "trip-start" &&
-            ["trip-started", "trip-started-early", "trip-started-late"].includes(announcement) ? 100 : 0;
+        const start = ["trip-started", "trip-started-early", "trip-started-late"].includes(announcement);
+        const basePriority = Number.isFinite(priority) ? priority :
+            ["syncTry", "sync-state", "sync-goal"].includes(announcement) ? 50 : context === "trip-start" && start ? 100 : 0;
         const entry = {
-            id: numericId, priority: Number.isFinite(priority) ? priority : contextualPriority,
-            sequence: queue.length, playback,
-            componentDelayMs: audioAnnouncementOutput(announcement).speechDelayMs
+            id: numericId, priority: basePriority, sequence: queue.length,
+            components: components.map((component, sequence) => ({ ...component, sequence,
+                priority: Number.isFinite(component.priority) ? component.priority :
+                    Number.isFinite(phasePriorities[component.phase]) ? phasePriorities[component.phase] :
+                        component.phase === "details" && start ? 0 : basePriority })),
+            componentDelayMs: components[0]?.delayMs ?? audioAnnouncementOutput(announcement).speechDelayMs
         };
         entry.promise = new Promise((resolve, reject) => Object.assign(entry, { resolve, reject }));
         queue[-queue.length++] = entry;
@@ -21966,96 +21947,49 @@
         return entry.promise;
     }
 
-    function playSemanticSong(name, options = {}) {
-        const audio =
-            globalThis.WMOFAudio;
-        const chime =
-            consumeAnnouncementAction(
-                name,
-                "chime"
-            );
-        const summary =
-            consumeAnnouncementAction(
-                name,
-                "summary"
-            );
-
-        if (
-            (!chime.perform && !summary.perform) ||
-            !audio?.startSong
-        ) {
-            return Promise.resolve(
-                false
-            );
-        }
-
-        const output =
-            audioAnnouncementOutput(
-                name
-            );
-        const speechGuard =
-            summary.perform
-                ? reserveSemanticSpeech()
-                : undefined;
-        const exclusive =
-            announcementSpeechIgnoresMaster(
-                name
-            );
-
-        return runSemanticAnnouncement(
-            name,
-            async () => {
-                try {
-                    const song =
-                        await audio
-                            .startSong(
-                                announcementSongName(
-                                    name
-                                ),
-                                {
-
-                                    includeTones:
-                                        chime.perform,
-                                    includeSpeech:
-                                        summary.perform,
-                                    speechGuard,
-                                    speechVolume:
-                                        output.speechVolume,
-                                    toneVolume:
-                                        output.toneVolume,
-                                    speechVelocity:
-                                        output.speechVelocity,
-                                    toneVelocity:
-                                        output.toneVelocity,
-                                    speechDelayMs:
-                                        chime.perform
-                                            ? output.speechDelayMs
-                                            : 0,
-                                    ...options
-                                }
-                            );
-
-                    await song
-                        ?.finished;
-
-                    return Boolean(
-                        song
-                    );
-                }
-                catch (error) {
-                    console.error(
-                        "Audio playback failed:",
-                        name,
-                        error
-                    );
-
-                    return false;
-                }
-            },
-            {
-                exclusive
+    function announcementComponents(audio, songName, chimeEnabled, speech, output, guard, options = {}) {
+        const components = [];
+        if (chimeEnabled && audio?.startSong) components.push({ phase: "chime", delayMs: output.speechDelayMs, play: async () => {
+            let played = false;
+            try {
+                const song = await audio.startSong(songName, { ...output, ...options, includeSpeech: false });
+                await song?.finished;
+                played = Boolean(song?.hasChime);
+            } catch (error) {
+                console.error("Audio playback failed:", songName, error);
             }
-        );
+            options.onChime?.(played);
+            return played;
+        }});
+        const parts = Array.isArray(speech) ? speech : [speech];
+        parts.forEach((part, index) => {
+            const text = typeof part === "object" ? part?.text : part;
+            if (!String(text || "").trim() || !audio?.speak) return;
+            components.push({ phase: part?.phase || (index === 0 ? "summary" : "details"), delayMs: output.speechDelayMs,
+                play: () => speakSemanticAndWait(audio, text, { ...output, ...options, ...(part?.options || {}) }, guard) });
+        });
+        return components;
+    }
+
+    function playSemanticSong(name, options = {}) {
+        const audio = globalThis.WMOFAudio;
+        const chime = consumeAnnouncementAction(name, "chime");
+        const summary = consumeAnnouncementAction(name, "summary");
+        if ((!chime.perform && !summary.perform) || !audio?.startSong) return Promise.resolve(false);
+        const output = audioAnnouncementOutput(name);
+        // Catalog summaries are a distinct component even when their text loads asynchronously.
+        const components = announcementComponents(audio, announcementSongName(name), chime.perform, [], output, undefined, options);
+        if (summary.perform) components.push({ phase: "summary", delayMs: output.speechDelayMs, play: async () => {
+            const catalog = await audio.load();
+            const events = catalog?.songs?.[announcementSongName(name)]?.events || [];
+            let spoken = false;
+            for (const event of events.filter(event => event.speech)) {
+                spoken = await speakSemanticAndWait(audio, event.speech,
+                    { ...output, ...options, lang: event.lang, rate: event.rate, pitch: event.pitch, volume: event.volume }, reserveSemanticSpeech()) || spoken;
+            }
+            return spoken;
+        }});
+        return runSemanticAnnouncement(name, components, options);
     }
 
     function playSemanticSongThenSpeak(
@@ -22086,85 +22020,9 @@
 
         return runSemanticAnnouncement(
             name,
-            async () => {
-                let played =
-                    false;
-
-                if (
-                    chime.perform &&
-                    audio?.startSong
-                ) {
-                    try {
-                        const song =
-                            await audio
-                                .startSong(
-                                    announcementSongName(
-                                        name
-                                    ),
-                                    {
-
-                                        speechVolume:
-                                            output.speechVolume,
-                                        toneVolume:
-                                            output.toneVolume,
-                                        speechVelocity:
-                                            output.speechVelocity,
-                                        toneVelocity:
-                                            output.toneVelocity,
-                                        ...options,
-                                        includeSpeech:
-                                            false
-                                    }
-                                );
-
-                        played =
-                            Boolean(
-                                song?.hasChime
-                            );
-
-                        await song
-                            ?.finished;
-
-                        if (played) {
-                            await waitForAnnouncementDelay(
-                                output
-                                    .speechDelayMs
-                            );
-                        }
-                    }
-                    catch (error) {
-                        console.error(
-                            "Audio playback failed:",
-                            name,
-                            error
-                        );
-                    }
-                }
-
-                if (
-                    speech &&
-                    audio?.speak
-                ) {
-                    await speakSemanticAndWait(
-                        audio,
-                        speech,
-                        {
-                            speechVolume:
-                                output.speechVolume,
-                            speechVelocity:
-                                output.speechVelocity
-                        },
-                        speechGuard
-                    );
-                }
-
-                return {
-                    played,
-                    chime
-                };
-            },
+            announcementComponents(audio, announcementSongName(name), chime.perform, speech, output, speechGuard, options),
             {
-                exclusive
+                ...options, exclusive
             }
         );
     }
@@ -22183,7 +22041,7 @@
                     ?.timeDifferenceMilliseconds
             );
 
-        const parts = [];
+        const parts = ["", ""];
 
         if (
             consumeAnnouncementAction(
@@ -22191,9 +22049,7 @@
                 "summary"
             ).perform
         ) {
-            parts.push(
-                lead + "."
-            );
+            parts[0] = lead + ".";
         }
 
         if (
@@ -22205,16 +22061,14 @@
                 "details"
             ).perform
         ) {
-            parts.push(
-                formatGoalFailureDuration(
+            parts[1] = formatGoalFailureDuration(
                     Math.abs(
                         milliseconds
                     )
                 ) +
                 " " +
                 disposition +
-                "."
-            );
+                ".";
         }
 
         return parts;
@@ -23076,12 +22930,8 @@
         const parts = [];
 
         if (summary.perform) {
-            parts.push(
-                chime.runtimeSuppressed &&
-                !chime.userDisabled
-                    ? "Trip in Progress."
-                    : "Trip started."
-            );
+            parts.push({ phase: "summary", text: chime.runtimeSuppressed && !chime.userDisabled
+                ? "Trip in Progress." : "Trip started." });
         }
 
         if (details.perform) {
@@ -23091,9 +22941,7 @@
                 );
 
             if (detailSpeech) {
-                parts.push(
-                    detailSpeech
-                );
+                parts.push({ phase: "details", text: detailSpeech });
             }
         }
 
@@ -23108,77 +22956,7 @@
 
         return runSemanticAnnouncement(
             "trip-started",
-            async () => {
-                let chimePlayed =
-                    false;
-
-                if (
-                    chime.perform &&
-                    audio?.startSong
-                ) {
-                    try {
-                        const song =
-                            await audio
-                                .startSong(
-                                    "trip-started",
-                                    {
-
-                                        includeSpeech:
-                                            false,
-                                        speechVolume:
-                                            output.speechVolume,
-                                        toneVolume:
-                                            output.toneVolume,
-                                        speechVelocity:
-                                            output.speechVelocity,
-                                        toneVelocity:
-                                            output.toneVelocity
-                                    }
-                                );
-
-                        chimePlayed =
-                            Boolean(
-                                song?.hasChime
-                            );
-
-                        await song
-                            ?.finished;
-
-                        if (chimePlayed) {
-                            await waitForAnnouncementDelay(
-                                output
-                                    .speechDelayMs
-                            );
-                        }
-                    }
-                    catch (error) {
-                        console.error(
-                            "Audio playback failed:",
-                            "trip-started",
-                            error
-                        );
-                    }
-                }
-
-                if (
-                    parts.length &&
-                    audio?.speak
-                ) {
-                    await speakSemanticAndWait(
-                        audio,
-                        parts,
-                        {
-                            speechVolume:
-                                output.speechVolume,
-                            speechVelocity:
-                                output.speechVelocity
-                        },
-                        speechGuard
-                    );
-                }
-
-                return true;
-            },
+            announcementComponents(audio, "trip-started", chime.perform, parts, output, speechGuard),
             {
                 exclusive:
                     announcementSpeechIgnoresMaster(
@@ -23934,7 +23712,7 @@
             );
         }
 
-        const spoken = [];
+        const spoken = ["", ""];
 
         if (
             summarySentences.length &&
@@ -23943,9 +23721,7 @@
                 "summary"
             ).perform
         ) {
-            spoken.push(
-                summarySentences.join(" ")
-            );
+            spoken[0] = summarySentences.join(" ");
         }
 
         if (
@@ -23955,9 +23731,7 @@
                 "details"
             ).perform
         ) {
-            spoken.push(
-                detailSentences.join(" ")
-            );
+            spoken[1] = detailSentences.join(" ");
         }
 
         return spoken;
@@ -23984,45 +23758,7 @@
 
         return runSemanticAnnouncement(
             "goal-failed",
-            async () => {
-                if (
-                    chime.perform &&
-                    audio?.startSong
-                ) {
-                    try {
-                        const song =
-                            await audio
-                                .startSong(
-                                    "goal-failed",
-                                    {
-
-                                    }
-                                );
-
-                        await song?.finished;
-                        if (song?.hasChime) await waitForAnnouncementDelay(output.speechDelayMs);
-                    }
-                    catch (
-                        error
-                    ) {
-                        console.error(
-                            "Audio playback failed:",
-                            "goal-failed",
-                            error
-                        );
-                    }
-                }
-
-                if (speech) {
-                    await speakSemanticAndWait(
-                        audio,
-                        speech,
-                        { speechVolume: output.speechVolume, speechVelocity: output.speechVelocity }
-                    );
-                }
-
-                return true;
-            }
+            announcementComponents(audio, "goal-failed", chime.perform, speech, output)
         );
     }
 
@@ -24795,7 +24531,8 @@
                 useGlobalAudioSettings =
                     false,
                 ignoreSummaryMaster =
-                    false
+                    false,
+                eventName = announcement
             } = {}
         ) => {
             const response =
@@ -24866,84 +24603,12 @@
                 );
 
             void runSemanticAnnouncement(
-                announcement,
-                async () => {
-                    let chimePlayed =
-                        false;
-
-                    if (
-                        chime.perform &&
-                        audio?.startSong
-                    ) {
-                        try {
-                            const cue =
-                                await audio
-                                    .startSong(
-                                        announcementSongName(
-                                            announcement
-                                        ),
-                                        {
-
-                                            includeSpeech:
-                                                false,
-                                            speechVolume:
-                                                output.speechVolume,
-                                            toneVolume:
-                                                output.toneVolume,
-                                            speechVelocity:
-                                                output.speechVelocity,
-                                            toneVelocity:
-                                                output.toneVelocity
-                                        }
-                                    );
-
-                            chimePlayed =
-                                Boolean(
-                                    cue?.hasChime
-                                );
-
-                            await cue
-                                ?.finished;
-
-                            if (chimePlayed) {
-                                await waitForAnnouncementDelay(
-                                    output
-                                        .speechDelayMs
-                                );
-                            }
-                        }
-                        catch (
-                            error
-                        ) {
-                            console.warn(
-                                "Informational announcement cue failed:",
-                                error
-                            );
-                        }
-                    }
-
-                    if (
-                        summary.perform &&
-                        audio?.speak
-                    ) {
-                        await speakSemanticAndWait(
-                            audio,
-                            spokenResponse,
-                            {
-                                speechVolume:
-                                    output.speechVolume,
-                                speechVelocity:
-                                    output.speechVelocity
-                            },
-                            speechGuard
-                        );
-                    }
-
-                    return true;
-                },
+                eventName,
+                announcementComponents(audio, announcementSongName(announcement), chime.perform,
+                summary.perform ? spokenResponse : "", output, speechGuard),
                 {
                     exclusive,
-                    id: announcement + ":" + spokenResponse
+                    id: eventName + ":" + spokenResponse
                 }
             )
                 .catch(

@@ -131,7 +131,7 @@ assert.match(
 );
 assert.match(
     app,
-    /transitionChimePlayed[\s\S]*reserveStartChime &&[\s\S]*!transitionChimePlayed[\s\S]*cancelSemanticDisable\(\s*"chime"\s*\)/
+    /onChime: played => \{ if \(reserveStartChime && !played\) cancelSemanticDisable\("chime"\)/
 );
 
 assert.match(
@@ -198,7 +198,7 @@ assert.match(
 
 assert.match(
     app,
-    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-transition"[\s\S]*transitionChimePlayed\s*=\s*Boolean\([\s\S]*song\?\.hasChime[\s\S]*\)/
+    /const opened\s*=\s*await beginNewTripWorkflow[\s\S]*"trip-transition"[\s\S]*announcementComponents\(audio, transitionSong, transitionChimeAllowed, speech, transitionSpeechOutput/
 );
 
 assert.equal(

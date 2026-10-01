@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
 const ctx=vm.createContext({queueMicrotask,console:{error:()=>{}},audioAnnouncementOutput:()=>({speechDelayMs:0}),waitForAnnouncementDelay:async()=>{}});
-vm.runInContext(source.slice(source.indexOf('    const semanticAnnouncementQueue'),source.indexOf('    function waitForAnnouncementDelay'))+source.slice(source.indexOf('    function scheduleSemanticAnnouncements('),source.indexOf('    function playSemanticSong('))+'\nglobalThis.enqueue=runSemanticAnnouncement;globalThis.batch=beginAnnouncementBatch;globalThis.queue=semanticAnnouncementQueue;globalThis.id=announcementId;globalThis.cancel=cancelQueuedAnnouncement;',ctx);
+vm.runInContext(source.slice(source.indexOf('    const semanticAnnouncementQueue'),source.indexOf('    function waitForAnnouncementDelay'))+source.slice(source.indexOf('    let previousAnnouncementEntry'),source.indexOf('    function playSemanticSong('))+'\nglobalThis.enqueue=runSemanticAnnouncement;globalThis.batch=beginAnnouncementBatch;globalThis.queue=semanticAnnouncementQueue;globalThis.id=announcementId;globalThis.cancel=cancelQueuedAnnouncement;',ctx);
 const order=[];
 const release=ctx.batch('trip-start');
 const sync=ctx.enqueue('setting-change',async()=>{order.push('sync-on');return true;},{id:'sync-on'});
