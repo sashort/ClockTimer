@@ -19047,6 +19047,8 @@
             return false;
         }
 
+        const releaseAnnouncements = beginAnnouncementBatch("trip-start");
+        try {
         clockTimer.configure({auto_goal: Boolean(draft.syncGoals)});
         clockTimer.intervalElapsedBehavior = "startLatency";
         clockTimer.autoRestartTripAfterLateBreak =
@@ -19095,6 +19097,8 @@
         renderDeferredTrip();
         uiReturnStack.length = 0;
         return true;
+        }
+        finally { releaseAnnouncements(); }
     }
 
 
@@ -21688,9 +21692,25 @@
         void purpose;
     }
 
-    let semanticAnnouncementTail = Promise.resolve();
+    const semanticAnnouncementQueue = { pointer: 0, announced: new Set(), length: 0 };
+    const semanticAnnouncementContexts = [];
+    let semanticAnnouncementDraining = false;
+    let semanticAnnouncementScheduled = false;
     let previousAnnouncementDelayMs = 0;
     let previousAnnouncementCompletedAt = 0;
+
+    const semanticAnnouncementIds = new Map();
+    let nextSemanticAnnouncementId = 1;
+
+    function announcementId(key) {
+        if (typeof key === "number") {
+            if (!Number.isSafeInteger(key) || key <= 0) throw new TypeError("Announcement IDs must be positive integers.");
+            nextSemanticAnnouncementId = Math.max(nextSemanticAnnouncementId, key + 1);
+            return key;
+        }
+        if (!semanticAnnouncementIds.has(key)) semanticAnnouncementIds.set(key, nextSemanticAnnouncementId++);
+        return semanticAnnouncementIds.get(key);
+    }
 
     function reserveSemanticSpeech() {
         // Every queued announcement retains its own speech, including events
@@ -21841,29 +21861,109 @@
         );
     }
 
-    function runSemanticAnnouncement(announcement, playback) {
+    function scheduleSemanticAnnouncements() {
+        if (semanticAnnouncementScheduled || semanticAnnouncementDraining || semanticAnnouncementContexts.length) return;
+        semanticAnnouncementScheduled = true;
+        queueMicrotask(() => {
+            semanticAnnouncementScheduled = false;
+            void drainSemanticAnnouncements();
+        });
+    }
+
+    function beginAnnouncementBatch(context) {
+        const token = { context };
+        semanticAnnouncementContexts.push(token);
+        return () => {
+            const index = semanticAnnouncementContexts.indexOf(token);
+            if (index < 0) return;
+            semanticAnnouncementContexts.splice(index, 1);
+            scheduleSemanticAnnouncements();
+        };
+    }
+
+    function cancelQueuedAnnouncement(id) {
+        const numericId = announcementId(id);
+        let canceled = false;
+        const queue = semanticAnnouncementQueue;
+        for (let index = queue.pointer; -index < queue.length; index--) {
+            const entry = queue[index];
+            if (entry.id === numericId && !entry.playing) {
+                entry.canceled = true;
+                canceled = true;
+            }
+        }
+        return canceled;
+    }
+
+    async function drainSemanticAnnouncements() {
+        if (semanticAnnouncementDraining || semanticAnnouncementContexts.length) return;
+        semanticAnnouncementDraining = true;
+        const queue = semanticAnnouncementQueue;
+        try {
+            while (-queue.pointer < queue.length && !semanticAnnouncementContexts.length) {
+                if (previousAnnouncementDelayMs > 0) {
+                    await waitForAnnouncementDelay(Math.max(0,
+                        previousAnnouncementDelayMs - (Date.now() - previousAnnouncementCompletedAt)));
+                    previousAnnouncementDelayMs = 0;
+                }
+                if (semanticAnnouncementContexts.length) break;
+                let best = queue.pointer;
+                for (let index = best - 1; -index < queue.length; index--) {
+                    const candidate = queue[index], selected = queue[best];
+                    if (candidate.priority > selected.priority ||
+                        (candidate.priority === selected.priority && candidate.sequence < selected.sequence)) best = index;
+                }
+                [queue[queue.pointer], queue[best]] = [queue[best], queue[queue.pointer]];
+                const entry = queue[queue.pointer];
+                if (entry.canceled || queue.announced.has(entry.id)) {
+                    entry.resolve(false);
+                }
+                else {
+                    entry.playing = true;
+                    queue.announced.add(entry.id);
+                    try {
+                        const result = await entry.playback();
+                        if (result === false) queue.announced.delete(entry.id);
+                        entry.resolve(result);
+                    }
+                    catch (error) {
+                        queue.announced.delete(entry.id);
+                        console.error("Announcement playback failed:", entry.id, error);
+                        entry.reject(error);
+                    }
+                    previousAnnouncementDelayMs = entry.componentDelayMs * 2;
+                    previousAnnouncementCompletedAt = Date.now();
+                }
+                delete queue[queue.pointer--];
+            }
+            if (-queue.pointer === queue.length) {
+                queue.pointer = 0;
+                queue.length = 0;
+                queue.announced.clear();
+            }
+        }
+        finally {
+            semanticAnnouncementDraining = false;
+        }
+    }
+
+    function runSemanticAnnouncement(announcement, playback, { id = announcement, priority } = {}) {
         if (typeof playback !== "function") return Promise.resolve(false);
-        const componentDelayMs = audioAnnouncementOutput(announcement).speechDelayMs;
-        const task = semanticAnnouncementTail.then(async () => {
-            if (previousAnnouncementDelayMs > 0) {
-                await waitForAnnouncementDelay(Math.max(0, previousAnnouncementDelayMs - (Date.now() - previousAnnouncementCompletedAt)));
-            }
-            previousAnnouncementDelayMs = 0;
-            try {
-                return await playback();
-            }
-            finally {
-                previousAnnouncementDelayMs = componentDelayMs * 2;
-                previousAnnouncementCompletedAt = Date.now();
-            }
-        });
-        // Recover the queue after a failed entry while preserving that entry's
-        // rejection for its caller. Chime, pause, summary and details finish
-        // inside playback before the next entry starts.
-        semanticAnnouncementTail = task.catch(error => {
-            console.error("Announcement playback failed:", announcement, error);
-        });
-        return task;
+        const queue = semanticAnnouncementQueue;
+        const numericId = announcementId(id);
+        if (queue.announced.has(numericId)) return Promise.resolve(false);
+        const context = semanticAnnouncementContexts.at(-1)?.context;
+        const contextualPriority = context === "trip-start" &&
+            ["trip-started", "trip-started-early", "trip-started-late"].includes(announcement) ? 100 : 0;
+        const entry = {
+            id: numericId, priority: Number.isFinite(priority) ? priority : contextualPriority,
+            sequence: queue.length, playback,
+            componentDelayMs: audioAnnouncementOutput(announcement).speechDelayMs
+        };
+        entry.promise = new Promise((resolve, reject) => Object.assign(entry, { resolve, reject }));
+        queue[-queue.length++] = entry;
+        scheduleSemanticAnnouncements();
+        return entry.promise;
     }
 
     function playSemanticSong(name, options = {}) {
@@ -24842,7 +24942,8 @@
                     return true;
                 },
                 {
-                    exclusive
+                    exclusive,
+                    id: announcement + ":" + spokenResponse
                 }
             )
                 .catch(
