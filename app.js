@@ -4723,7 +4723,7 @@
                                     announcement
                                 ),
                                 {
-                                    bpm: 180,
+
                                     includeTones: true,
                                     includeSpeech: false,
                                     toneVolume:
@@ -20921,7 +20921,7 @@
                                     .startSong(
                                         transitionSong,
                                         {
-                                            bpm: 180,
+
                                             includeSpeech:
                                                 false
                                         }
@@ -22005,7 +22005,7 @@
                                     name
                                 ),
                                 {
-                                    bpm: 180,
+
                                     includeTones:
                                         chime.perform,
                                     includeSpeech:
@@ -22094,7 +22094,7 @@
                                         name
                                     ),
                                     {
-                                        bpm: 180,
+
                                         speechVolume:
                                             output.speechVolume,
                                         toneVolume:
@@ -22531,7 +22531,7 @@
                 playSemanticSong(
                     "lunch-clock-out",
                     {
-                        bpm: 120
+
                     }
                 );
             };
@@ -22552,7 +22552,7 @@
                 playSemanticSong(
                     "lunch-clock-in",
                     {
-                        bpm: 120
+
                     }
                 );
             };
@@ -22632,7 +22632,7 @@
             playSemanticSong(
                 "lunch-clock-in",
                 {
-                    bpm: 120
+
                 }
             );
         }
@@ -23114,7 +23114,7 @@
                                 .startSong(
                                     "trip-started",
                                     {
-                                        bpm: 180,
+
                                         includeSpeech:
                                             false,
                                         speechVolume:
@@ -23987,7 +23987,7 @@
                                 .startSong(
                                     "goal-failed",
                                     {
-                                        bpm: 100
+
                                     }
                                 );
 
@@ -24874,7 +24874,7 @@
                                             announcement
                                         ),
                                         {
-                                            bpm: 120,
+
                                             includeSpeech:
                                                 false,
                                             speechVolume:
