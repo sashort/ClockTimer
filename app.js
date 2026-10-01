@@ -315,7 +315,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-10-01-value-collector-1";
+        "2026-10-01-command-tree-1";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -2967,6 +2967,8 @@
     let numberPadDateRow;
     let numberPadAM;
     let numberPadPM;
+    const tripLogDialog = $("#tripLogDialog");
+    const tripLogPlaceholder = $("#tripLogPlaceholder");
     const voiceEntrySurface = $("#voiceEntrySurface");
     const voiceEntryTitle = $("#voiceEntryTitle");
     const voiceEntryPrompt = $("#voiceEntryPrompt");
@@ -6415,6 +6417,15 @@
         const pinned =
             tripLogIsPinned();
 
+        const sourceRect = tripLogButton.getBoundingClientRect();
+        setFloatingTripLogRect(sourceRect);
+        if (tripLogPlaceholder && pinned) {
+            tripLogPlaceholder.style.height = `${sourceRect.height}px`;
+            tripLogPlaceholder.hidden = false;
+        }
+        tripLogDialog.append(tripLogButton);
+        if (!tripLogDialog.open) tripLogDialog.showModal();
+
         const topRect =
             getTripLogTopRect();
 
@@ -6434,7 +6445,6 @@
         );
 
         if (pinned) {
-            const sourceRect = tripLogButton.getBoundingClientRect();
             setFloatingTripLogRect(sourceRect);
             await animateTripLogButton(
                 "translateY(0px)",
@@ -6489,6 +6499,7 @@
 
         app.dataset.tripListState =
             "open";
+        globalThis.SpeechMenu?.surfaceOpened?.(tripLogDialog);
 
         await showTripLogMerge();
 
@@ -6589,6 +6600,13 @@
 
         app.dataset.tripListState =
             "closed";
+        globalThis.SpeechMenu?.surfaceClosed?.(tripLogDialog);
+
+        if (tripLogPlaceholder) {
+            tripLogPlaceholder.before(tripLogButton);
+            tripLogPlaceholder.hidden = true;
+        }
+        if (tripLogDialog.open) tripLogDialog.close();
 
         clearFloatingTripLogRect();
 
@@ -14138,6 +14156,8 @@
 
     document.querySelectorAll("dialog").forEach(dialog => {
         dialog.addEventListener("cancel", event => {
+            if (dialog === tripLogDialog) {event.preventDefault(); void closeTripList('escape'); return;}
+            if (dialog === voiceEntrySurface) {event.preventDefault(); void closeVoiceEntry({cancel: true}); return;}
             if (dialog === tripSettingsDialog) {
                 event.preventDefault();
                 void cancelTripSettingsDialog("trip-settings-cancel").catch(() => {});
@@ -15328,6 +15348,11 @@
             return false;
         }
 
+        globalThis.SpeechMenu?.registerSurface?.(numberPadDialog, {
+            priority: 100, isOpen: () => numberPadDialog.open,
+            close: () => actions.cancelNumberPadEdit(), cancel: () => actions.cancelNumberPadEdit()
+        });
+
         installSpeechCommand(
             "voice",
             "switchNumberPadToVoice",
@@ -15357,7 +15382,6 @@
             const key of [
                 "keypadValue",
                 "voiceEntryConfirm",
-                "voiceEntryCancel",
                 "voiceEntryTouch",
                 "voiceEntryDefer"
             ]
@@ -16604,28 +16628,7 @@
     }
 
     function voiceEntryIsVisible() {
-        if (
-            !voiceEntrySurface ||
-            voiceEntrySurface.hidden
-        ) {
-            return false;
-        }
-
-        try {
-            return (
-                voiceEntrySurface
-                    .matches(
-                        ":popover-open"
-                    ) ||
-                !voiceEntrySurface
-                    .hasAttribute(
-                        "popover"
-                    )
-            );
-        }
-        catch {
-            return !voiceEntrySurface.hidden;
-        }
+        return Boolean(voiceEntrySurface?.open && !voiceEntrySurface.hidden);
     }
 
     function numberPadIsVisible() {
@@ -17112,18 +17115,7 @@
         voiceEntryAcceptTimer =
             undefined;
 
-        try {
-            if (
-                voiceEntrySurface
-                    ?.matches?.(
-                        ":popover-open"
-                    )
-            ) {
-                voiceEntrySurface
-                    .hidePopover?.();
-            }
-        }
-        catch {}
+        if (voiceEntrySurface?.open) voiceEntrySurface.close();
 
         if (voiceEntrySurface) {
             voiceEntrySurface.hidden =
@@ -17670,9 +17662,8 @@
             globalThis.SpeechMenu
                 .systemExecutionPassthrough =
                 true;
-            globalThis.SpeechMenu
-                .executionEnabled =
-                false;
+            // Voice values now execute through SpeechMenu's collector and
+            // command queue instead of a separate capture-only command pipe.
         }
 
         renderVoiceEntry({
@@ -17683,18 +17674,7 @@
         voiceEntrySurface.hidden =
             false;
 
-        try {
-            if (
-                !voiceEntrySurface
-                    .matches(
-                        ":popover-open"
-                    )
-            ) {
-                voiceEntrySurface
-                    .showPopover?.();
-            }
-        }
-        catch {}
+        if (!voiceEntrySurface.open) voiceEntrySurface.showModal();
 
         queueMicrotask(
             () =>
@@ -17793,7 +17773,7 @@
     function pipeVoiceEntryTranscript(
         event
     ) {
-        if (!voiceEntryState) {
+        if (!voiceEntryState || globalThis.SpeechMenu?.executionEnabled) {
             return;
         }
 
@@ -24394,7 +24374,7 @@
         };
 
     const closeActiveSpeechSurface =
-        async () => {
+        async (targetSurface = undefined) => {
             const interruptedAction =
                 globalThis
                     .WMOFActionFunctions
@@ -24411,7 +24391,8 @@
                 return true;
             }
 
-            const popover =
+            const popover = targetSurface?.matches?.('dialog') ? undefined
+                : targetSurface?.hasAttribute?.('popover') ? targetSurface :
                 [
                     ...document
                         .querySelectorAll(
@@ -24442,7 +24423,7 @@
                 return true;
             }
 
-            const dialog =
+            const dialog = targetSurface?.matches?.('dialog') ? targetSurface :
                 [
                     ...document
                         .querySelectorAll(
@@ -25676,8 +25657,8 @@
                 );
             },
 
-            closeActiveSurface() {
-                return closeActiveSpeechSurface();
+            closeActiveSurface(targetSurface = undefined) {
+                return closeActiveSpeechSurface(targetSurface);
             },
 
             handleSpeechRuntimeStarted() {
@@ -26798,34 +26779,14 @@
                 );
             },
 
-            openTripLog(
-                source = "speech"
-            ) {
-                if (
-                    getTripListState() !==
-                        "open"
-                ) {
-                    void openTripList(
-                        source
-                    );
-                }
-
-                return true;
+            async openTripLog(source = "speech") {
+                if (getTripListState() === "open") return true;
+                return await openTripList(source) !== false;
             },
 
-            closeTripLog(
-                source = "speech"
-            ) {
-                if (
-                    getTripListState() ===
-                        "open"
-                ) {
-                    void closeTripList(
-                        source
-                    );
-                }
-
-                return true;
+            async closeTripLog(source = "speech") {
+                if (getTripListState() !== "open") return false;
+                return await closeTripList(source) !== false;
             },
 
             deferTrip() {
@@ -29347,6 +29308,7 @@
 
         installSpeechCommand =
             (key, actionName, container = document.body, modal = true, valueKind, valueField) => {
+            if ((key === 'cancel' || key === 'close') && container !== document.body) return undefined;
             const pattern = englishSpeech?.commands?.[key];
             if (!pattern) return;
             const modalMode =
@@ -29583,8 +29545,19 @@
                 );
             }
 
+            if (englishSpeech.nouns?.[key]) element.setAttribute('speech-noun', englishSpeech.nouns[key]);
             element.setAttribute("speech-pattern", pattern);
             element.setAttribute("speech-function", `WMOFActions.${actionName}`);
+            if (key === 'cancel' || key === 'close') {
+                element.setAttribute('speech-function', key === 'close' ? 'SpeechMenu.close' : 'SpeechMenu.cancel');
+                element.setAttribute('speech-modal', 'system');
+                element.dataset.speechSystemCommand = key;
+                element.dataset.speechOptionsCategory = 'system';
+                element.setAttribute('speech-chain-surface', 'pop');
+            } else if (key === 'showTripLog') element.setAttribute('speech-chain-surface', '#tripLogDialog');
+            else if (key === 'hideTripLog' || key === 'voiceEntryConfirm' || ['confirmBreakType', 'saveTripSettings', 'confirmNumberPad'].includes(actionName)) {
+                element.setAttribute('speech-chain-surface', 'pop');
+            }
             if (valueKind && valueField) {
                 element.setAttribute("speech-collect", "");
                 element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
@@ -29715,6 +29688,38 @@
 
             installSpeechCommand("confirm", "saveTripSettings", tripSettingsDialog, false);
             installSpeechCommand("cancel", "closeActiveSurface", document.body, "default");
+            installSpeechCommand("close", "closeActiveSurface", document.body, "default");
+            SpeechMenu.registerSurface(document.body, {
+                isOpen: () => true,
+                close: () => actions.closeActiveSurface(),
+                cancel: () => !document.querySelector('dialog[open]') && !voiceEntryState && getTripListState() !== 'open' &&
+                    globalThis.WMOFSpeechAvailability.canCancelDownTime()
+                    ? actions.cancelDownTime() : actions.closeActiveSurface()
+            });
+            for (const surface of document.querySelectorAll('dialog, [popover]')) {
+                if (surface === speechMicBar || surface.getAttribute('role') === 'status') continue;
+                const dismiss = async () => {
+                    const result = surface === voiceEntrySurface ? await closeVoiceEntry({cancel: true})
+                        : surface === tripLogDialog ? await actions.closeTripLog()
+                        : surface.id === 'cancelDownConfirmDialog' ? await actions.continueDownTime()
+                        : surface.id === 'speechBreakConfirmDialog' ? await actions.cancelBreakPrompt()
+                        : await actions.closeActiveSurface(surface);
+                    if (result === false) return false;
+                    if (surface.open && surface.classList.contains('dialog-closing')) {
+                        return new Promise(resolve => {
+                            const finish = () => {clearTimeout(timer); surface.removeEventListener('closed', finish); resolve(!surface.open);};
+                            const timer = setTimeout(finish, 1000);
+                            surface.addEventListener('closed', finish, {once: true});
+                        });
+                    }
+                    return true;
+                };
+                SpeechMenu.registerSurface(surface, {
+                    priority: 100,
+                    isOpen: () => surface.matches('dialog') ? surface.open : popoverIsOpen(surface),
+                    close: dismiss, cancel: dismiss
+                });
+            }
             installNumberPadSpeechCommands();
             installVoiceEntrySpeechCommands();
             speechMicBar

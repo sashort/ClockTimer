@@ -12,6 +12,8 @@
         "speech-index",
         "speech-chain-context",
         "speech-chain-next",
+        "speech-chain-surface",
+        "speech-noun",
         "speech-authorized",
         "speech-collect"
     ];

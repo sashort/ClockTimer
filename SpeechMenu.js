@@ -1,4 +1,202 @@
+// Stable literal-prefix tree; regexes remain the final matching authority.
+class SpeechCommandIndex {
+    #trees = new Map();
+    #records = new Map();
+    #observer;
+    generation = 0;
+
+    constructor(root = document.documentElement) {
+        this.root = root;
+        for (const element of root.querySelectorAll('[speech-pattern]')) this.#register(element);
+        const Observer = globalThis.MutationObserver || root.ownerDocument?.defaultView?.MutationObserver;
+        if (typeof Observer === 'function') {
+            this.#observer = new Observer(records => this.#reconcile(records));
+            this.#observer.observe(root, {subtree: true, childList: true, attributes: true,
+                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-chain-context', 'speech-chain-next', 'speech-chain-surface', 'speech-available',
+                    'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
+                    'speech-preproc-field', 'speech-collect', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
+        }
+    }
+
+    static literalPrefix(pattern) {
+        // Only index syntax whose leading literals are certain. Alternatives,
+        // lookarounds and variable-leading patterns safely use the fallback.
+        if (!pattern?.startsWith('^')) return [];
+        let literal = '', complete = false;
+        for (let i = 1; i < pattern.length; i++) {
+            const char = pattern[i];
+            if (char === '$' && i === pattern.length - 1) {complete = true; break;}
+            if ('\\()[]{}.*+?|^$'.includes(char)) {
+                if ('?*{'.includes(char) && /\s$/.test(literal)) literal = literal.trimEnd();
+                break;
+            }
+            literal += char;
+            if (i === pattern.length - 1) complete = true;
+        }
+        // A top-level alternative can bypass all preceding literals.
+        let nesting = 0, bracket = false, escaped = false;
+        for (const char of pattern) {
+            if (escaped) {escaped = false; continue;}
+            if (char === '\\') {escaped = true; continue;}
+            if (char === '[') bracket = true;
+            if (char === ']') bracket = false;
+            if (bracket) continue;
+            if (char === '(') nesting++;
+            if (char === ')') nesting--;
+            if (char === '|' && nesting === 0) return [];
+        }
+        if (!complete && !/\s$/.test(literal)) literal = literal.replace(/\S+$/, '');
+        return literal.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+    }
+
+    #register(element) {
+        const pattern = element.getAttribute('speech-pattern');
+        if (!pattern || !this.root.contains(element)) {this.#remove(element); return;}
+        const modalMode = element.getAttribute('speech-modal') ?? element.closest('speech-menu')?.getAttribute('speech-modal');
+        const reserved = ['SpeechMenu.close', 'SpeechMenu.cancel'].includes(element.getAttribute('speech-function'));
+        const scope = reserved ? 'system' : ['system', 'top-level', 'default'].includes(modalMode) ? modalMode
+            : element.closest('dialog, [popover], details, [speech-scope]') || null;
+        const nouns = element.getAttribute('speech-noun') || '';
+        const previous = this.#records.get(element);
+        if (previous?.pattern === pattern && previous.scope === scope && previous.nouns === nouns) return;
+        const primedOwner = previous?.tree.primed.get(element);
+        this.#remove(element);
+        let tree = this.#trees.get(scope);
+        if (!tree) this.#trees.set(scope, tree = {children: new Map(), commands: new Set(), descendants: new Set(), fallback: new Set(), primed: new Map()});
+        tree.descendants.add(element);
+        const prefixes = nouns ? nouns.split('|').map(noun => noun.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean))
+            : [SpeechCommandIndex.literalPrefix(pattern)];
+        const path = [];
+        for (const words of prefixes) {
+            let node = tree;
+            for (const word of words) {
+                let next = node.children.get(word);
+                if (!next) node.children.set(word, next = {children: new Map(), commands: new Set(), descendants: new Set()});
+                path.push({parent: node, word, node: next});
+                next.descendants.add(element);
+                node = next;
+            }
+            if (words.length) node.commands.add(element);
+            else tree.fallback.add(element);
+        }
+        this.#records.set(element, {pattern, nouns, path, scope, tree});
+        if (primedOwner !== undefined) {tree.primed.set(element, primedOwner); element.setAttribute('primed', '');}
+        this.generation++;
+    }
+
+    #remove(element) {
+        const record = this.#records.get(element);
+        if (!record) return;
+        if (record.tree.primed.delete(element)) element.removeAttribute('primed');
+        record.tree.fallback.delete(element);
+        record.tree.descendants.delete(element);
+        for (const {node} of record.path) {node.commands.delete(element); node.descendants.delete(element);}
+        for (const {parent, word, node} of record.path.toReversed()) {
+            if (!node.descendants.size) parent.children.delete(word);
+        }
+        if (!record.tree.descendants.size) this.#trees.delete(record.scope);
+        this.#records.delete(element);
+        this.generation++;
+    }
+
+    #reconcile(records) {
+        const affected = new Set();
+        const collect = node => {
+            if (node.nodeType !== 1) return;
+            if (node.hasAttribute('speech-pattern') || this.#records.has(node)) affected.add(node);
+            for (const child of node.querySelectorAll('[speech-pattern]')) affected.add(child);
+            // Removed subtrees may have lost speech-pattern before delivery.
+            for (const element of this.#records.keys()) if (node.contains(element)) affected.add(element);
+        };
+        for (const record of records) {
+            if (record.type === 'attributes') {
+                if (record.attributeName !== 'speech-pattern') this.generation++;
+                collect(record.target);
+            }
+            else {for (const node of record.addedNodes) collect(node); for (const node of record.removedNodes) collect(node);}
+        }
+        for (const element of affected) this.#register(element);
+    }
+
+    flush() {if (this.#observer) this.#reconcile(this.#observer.takeRecords());}
+    elements() {this.flush(); return [...this.#records.keys()];}
+    prime(element, owner) {
+        this.flush();
+        const record = this.#records.get(element);
+        if (!record) return;
+        record.tree.primed.set(element, owner);
+        element.setAttribute('primed', '');
+        this.generation++;
+    }
+    isPrimed(element, owner) {
+        this.flush();
+        return owner !== undefined && this.#records.get(element)?.tree.primed.get(element) === owner;
+    }
+    clearPrimed(owner) {
+        this.flush();
+        for (const tree of this.#trees.values()) for (const [element, id] of tree.primed) {
+            if (owner !== undefined && id !== owner) continue;
+            tree.primed.delete(element);
+            element.removeAttribute('primed');
+            this.generation++;
+        }
+    }
+
+    clearSurfacePrimed(surface, owner) {
+        this.flush();
+        const tree = this.#trees.get(surface);
+        if (!tree) return;
+        for (const [element, id] of tree.primed) {
+            if (owner !== undefined && owner !== id) continue;
+            tree.primed.delete(element); element.removeAttribute('primed'); this.generation++;
+        }
+    }
+
+    #accessible(node, eligible) {
+        if (!eligible) return true;
+        if (node.accessScope !== eligible || node.accessGeneration !== this.generation) {
+            node.accessScope = eligible;
+            node.accessGeneration = this.generation;
+            node.accessible = [...node.descendants].some(element => eligible.has(element));
+        }
+        return node.accessible;
+    }
+
+    candidates(words, eligible) {
+        this.flush();
+        const found = new Set();
+        const scopes = eligible ? new Set([...eligible].map(element => this.#records.get(element)?.scope)) : this.#trees.keys();
+        for (const scope of scopes) {
+            const tree = this.#trees.get(scope);
+            if (!tree || !this.#accessible(tree, eligible)) continue;
+            for (const element of tree.fallback) if (!eligible || eligible.has(element)) found.add(element);
+            let node = tree;
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i].toLocaleLowerCase();
+                if (i === words.length - 1) {
+                    for (const [key, child] of node.children) {
+                        if (key.startsWith(word) && this.#accessible(child, eligible))
+                            for (const command of child.descendants) if (!eligible || eligible.has(command)) found.add(command);
+                    }
+                }
+                node = node.children.get(word);
+                if (!node || !this.#accessible(node, eligible)) break;
+                for (const command of node.commands) if (!eligible || eligible.has(command)) found.add(command);
+                if (i === words.length - 1) for (const command of node.descendants)
+                    if (!eligible || eligible.has(command)) found.add(command);
+            }
+        }
+        return found;
+    }
+}
+
 class SpeechMenu {
+    static #surfaceHandlers = new Map();
+    static #surfaceOrder = [];
+    static #surfaceListeners = new Map();
+    static #commandIndex;
+    static #indexedMatching = true;
+    static #index() { return SpeechMenu.#commandIndex ??= new SpeechCommandIndex(); }
     static #stopped = true;
     static #sleeping = false;
     static #listeningSuspensions = 0;
@@ -32,7 +230,6 @@ class SpeechMenu {
     static #silentGain;
     static #utterance;
     static #utteranceSequence = 0;
-    static #primedItems = new Map();
     static #preRollFrames = [];
     static #preRollSamples = 0;
     static #startPromise;
@@ -199,6 +396,7 @@ class SpeechMenu {
                         attributes: true,
                         attributeFilter: [
                             "speech-pattern",
+                            "speech-noun",
                             "speech-modal",
                             "speech-index",
                             "data-speech-options-group",
@@ -212,7 +410,14 @@ class SpeechMenu {
                             "speech-open-ended",
                             "speech-chain-context",
                             "speech-chain-next",
+                            "speech-chain-surface",
+                            "speech-scope",
                             "speech-authorized",
+                            "speech-collect",
+                            "speech-function",
+                            "speech-preproc",
+                            "speech-preproc-context",
+                            "speech-preproc-field",
                             "primed"
                         ]
                     }
@@ -249,6 +454,91 @@ class SpeechMenu {
     static get debugFunction() { return SpeechMenu.#debugFunction; }
     static get executionEnabled() { return SpeechMenu.#executionEnabled; }
     static get systemExecutionPassthrough() { return SpeechMenu.#systemExecutionPassthrough; }
+    static registerSurface(element, handlers) {
+        if (!element?.isConnected || typeof handlers?.close !== 'function') {
+            throw new TypeError('A connected surface and close handler are required.');
+        }
+        SpeechMenu.#surfaceListeners.get(element)?.();
+        SpeechMenu.#surfaceHandlers.set(element, handlers);
+        const toggled = event => {
+            if (event.newState === 'open' || handlers.isOpen?.()) SpeechMenu.surfaceOpened(element);
+            else SpeechMenu.surfaceClosed(element);
+        };
+        element.addEventListener('toggle', toggled);
+        element.addEventListener('close', toggled);
+        const detach = () => {
+            element.removeEventListener('toggle', toggled);
+            element.removeEventListener('close', toggled);
+        };
+        SpeechMenu.#surfaceListeners.set(element, detach);
+        if (handlers.isOpen?.()) SpeechMenu.surfaceOpened(element);
+        return () => {
+            if (SpeechMenu.#surfaceHandlers.get(element) !== handlers) return;
+            detach(); SpeechMenu.#surfaceListeners.delete(element);
+            SpeechMenu.#surfaceHandlers.delete(element); SpeechMenu.surfaceClosed(element);
+        };
+    }
+
+    static surfaceOpened(element) {
+        if (!SpeechMenu.#surfaceHandlers.has(element)) return false;
+        SpeechMenu.#surfaceOrder = SpeechMenu.#surfaceOrder.filter(surface => surface !== element);
+        SpeechMenu.#surfaceOrder.push(element);
+        return true;
+    }
+
+    static surfaceClosed(element) {
+        SpeechMenu.#surfaceOrder = SpeechMenu.#surfaceOrder.filter(surface => surface !== element);
+        return true;
+    }
+
+    static get activeSurface() {
+        // Reconcile custom surfaces whose UI changed without a native toggle.
+        for (const [element, handlers] of SpeechMenu.#surfaceHandlers) {
+            if (element.isConnected && handlers.isOpen?.() && !SpeechMenu.#surfaceOrder.includes(element)) {
+                SpeechMenu.#surfaceOrder.push(element);
+            }
+        }
+        SpeechMenu.#surfaceOrder = SpeechMenu.#surfaceOrder.filter(element =>
+            element.isConnected && SpeechMenu.#surfaceHandlers.get(element)?.isOpen?.());
+        let active, priority = -Infinity;
+        for (const element of SpeechMenu.#surfaceOrder) {
+            const value = SpeechMenu.#surfaceHandlers.get(element).priority || 0;
+            if (value >= priority) {active = element; priority = value;}
+        }
+        return active;
+    }
+
+    static #surfaceFrames() {
+        SpeechMenu.activeSurface;
+        const surfaces = SpeechMenu.#surfaceOrder.filter(element => element !== document.body)
+            .toSorted((a, b) => (SpeechMenu.#surfaceHandlers.get(a)?.priority || 0) - (SpeechMenu.#surfaceHandlers.get(b)?.priority || 0));
+        if (!surfaces.length) surfaces.push(...document.querySelectorAll('dialog[open]'));
+        const items = SpeechMenu.#index().elements();
+        return surfaces.map(surface => ({surface, context: SpeechMenu.#chainContextTokens(items.find(element =>
+            element.closest('dialog, [popover], [speech-scope]') === surface && element.hasAttribute('speech-chain-context')))[0]}));
+    }
+
+    static async close() { return SpeechMenu.#dismissSurface('close'); }
+    static async cancel() { return SpeechMenu.#dismissSurface('cancel'); }
+
+    static async #dismissSurface(intent) {
+        const projected = SpeechMenu.#executionContext?.chainSurface;
+        const surface = SpeechMenu.activeSurface;
+        if (projected && projected !== surface) return false;
+        const handlers = SpeechMenu.#surfaceHandlers.get(surface);
+        if (!handlers || !surface?.isConnected || handlers.isOpen?.() === false ||
+            handlers.canClose?.(intent) === false) return false;
+        const handler = intent === 'cancel' ? handlers.cancel || handlers.close : handlers.close;
+        const result = await handler({intent, surface, context: SpeechMenu.#executionContext});
+        if (result === false) return false;
+        SpeechMenu.#index().clearSurfacePrimed(surface, SpeechMenu.#executionContext?.utteranceId);
+        const owner = SpeechMenu.#utterance?.id === SpeechMenu.#executionContext?.utteranceId
+            ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(SpeechMenu.#executionContext?.utteranceId);
+        owner?.expectedSurfaces?.delete(surface);
+        SpeechMenu.#index().flush();
+        return true;
+    }
+
     static get executionContext() { return SpeechMenu.#executionContext; }
     static get synthesizedSpeechActive() { return SpeechMenu.#synthesizedSpeech.size > 0; }
     static get pipeline() { return SpeechMenu.#pipeline; }
@@ -1761,7 +2051,23 @@ class SpeechMenu {
         const chains = [SpeechMenu.#utterance, ...SpeechMenu.#finishedUtterances.values()]
             .filter(utterance => utterance?.chainActive && !utterance.chainCanceled && !utterance.digestFailed);
         if (chains.length && !SpeechMenu.#stopped) {
-            for (const chain of chains) chain.contextGeneration = SpeechMenu.#contextGeneration;
+            const activeSurface = (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll('dialog[open]')].at(-1);
+            for (const chain of chains) {
+                if (activeSurface && !chain.expectedSurfaces?.has(activeSurface)) {
+                    // A single surface-opening action may introduce its own
+                    // dialog. A pending chain must name its projected surface.
+                    if (chain.commandChainExecuting && !chain.digestContext &&
+                        chain.digestSteps.length === 1 && !chain.digestPending) {
+                        chain.expectedSurfaces ??= new Set();
+                        chain.expectedSurfaces.add(activeSurface);
+                    } else {
+                        chain.chainCanceled = true;
+                        SpeechMenu.#rejectDigest(chain, 'unexpected-modal', chain.digestPending || '');
+                        continue;
+                    }
+                }
+                chain.contextGeneration = SpeechMenu.#contextGeneration;
+            }
             return true;
         }
 
@@ -2471,6 +2777,7 @@ class SpeechMenu {
             sampleCount,
             transcript: "",
             transcriptRevision: 0,
+            expectedSurfaces: new Set([...document.querySelectorAll('dialog[open]')].slice(-1)),
             valueCollectors: new Map(),
             digestTranscript: "",
             digestContext: undefined,
@@ -3293,25 +3600,20 @@ class SpeechMenu {
     }
 
     static #isPrimed(element) {
-        return Boolean(element?.hasAttribute("primed") &&
-            SpeechMenu.#primedItems.get(element) === SpeechMenu.#utterance?.id);
+        return SpeechMenu.#index().isPrimed(element, SpeechMenu.#utterance?.id);
     }
 
     static #primeContext(utterance, context) {
         if (!context || utterance.digestClosed) return;
         for (const element of SpeechMenu.#chainContextCandidates(context)) {
-            SpeechMenu.#primedItems.set(element, utterance.id);
-            element.setAttribute("primed", "");
+            const surface = element.closest('dialog, [popover]');
+            if (surface) {utterance.expectedSurfaces ??= new Set(); utterance.expectedSurfaces.add(surface);}
+            SpeechMenu.#index().prime(element, utterance.id);
         }
     }
 
     static #clearPrimed(utterance) {
-        for (const [element, owner] of SpeechMenu.#primedItems) {
-            if (!utterance || owner === utterance.id) {
-                element.removeAttribute("primed");
-                SpeechMenu.#primedItems.delete(element);
-            }
-        }
+        SpeechMenu.#index().clearPrimed(utterance?.id);
     }
 
     static #digestRemainder(utterance, transcript) {
@@ -3336,9 +3638,21 @@ class SpeechMenu {
         utterance.digestTranscript = [utterance.digestTranscript, segment].filter(Boolean).join(" ");
         utterance.digestSteps.push(step);
         utterance.digestContext = step.nextContext;
+        utterance.digestSurfaceStack = step.nextSurfaceStack;
+        for (const frame of step.nextSurfaceStack || []) {
+            utterance.expectedSurfaces ??= new Set(); utterance.expectedSurfaces.add(frame.surface);
+        }
         utterance.valueCollectors?.delete(step.commandElement);
         utterance.noCandidateTranscript = "";
+        SpeechMenu.#clearPrimed(utterance);
         SpeechMenu.#primeContext(utterance, step.nextContext);
+        const nextSurface = step.nextSurfaceStack?.at(-1)?.surface;
+        if (nextSurface && !utterance.digestClosed) {
+            for (const element of SpeechMenu.#index().elements()) {
+                if (element.closest('dialog, [popover], [speech-scope]') === nextSurface &&
+                    SpeechMenu.#candidateStateAvailable(element, true)) SpeechMenu.#index().prime(element, utterance.id);
+            }
+        }
         SpeechMenu.#emit("speechCommandDigested", {utteranceId: utterance.id,
             commandElement: step.commandElement, transcript: segment,
             consumedTranscript: utterance.digestTranscript});
@@ -3361,9 +3675,11 @@ class SpeechMenu {
                 const result = await SpeechMenu.#processElement(step.commandElement, segment,
                     utterance.id, step.speechMenuElement, SpeechMenu.#shouldExecuteElement(step.commandElement),
                     undefined, utterance.wallStartedAt, true, false,
-                    {chain: true, chainContext: step.context || utterance.digestExecutingContext});
+                    {chain: true, chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext});
                 if (!result) {
                     utterance.digestExecutionFailed = true;
+                    utterance.digestSurfaceStack = step.surfaceStack;
+                    utterance.digestContext = step.context;
                     SpeechMenu.#rejectDigest(utterance, "chain-action-failed", segment);
                     return false;
                 }
@@ -6001,10 +6317,7 @@ class SpeechMenu {
         return SpeechMenu
             .#sortCandidates(
                 [
-                    ...document
-                        .querySelectorAll(
-                            "[speech-pattern][speech-chain-context]"
-                        )
+                    ...SpeechMenu.#index().elements()
                 ]
                     .filter(
                         element =>
@@ -6069,9 +6382,9 @@ class SpeechMenu {
         return {state, accepted};
     }
 
-    static #digestCandidates(context) {
+    static #digestCandidates(context, frames) {
         const contextual = context ? SpeechMenu.#chainContextCandidates(context) : [];
-        return [...new Set([...contextual, ...SpeechMenu.#availableCandidates()])];
+        return [...new Set([...contextual, ...SpeechMenu.#availableCandidates(frames === undefined ? undefined : frames.at(-1)?.surface || null)])];
     }
 
     static #digestCanContinue(element, segment, candidates) {
@@ -6080,13 +6393,18 @@ class SpeechMenu {
                 SpeechMenu.#elementDirectContinuationDepth(other, segment) !== undefined);
     }
 
-    static async #planDigest(candidates, words, utterance, signal, depth = 0, memo = new Map(), projectedContext = utterance.digestContext) {
+    static async #planDigest(candidates, words, utterance, signal, depth = 0, memo = new Map(), projectedContext = utterance.digestContext, projectedFrames = utterance.digestSurfaceStack) {
         if (signal?.aborted || !words.length) return undefined;
-        memo.elementIds ??= new Map([...document.querySelectorAll("[speech-pattern]")]
+        memo.elementIds ??= new Map(SpeechMenu.#index().elements()
             .map((element, index) => [element, index]));
         memo.contexts ??= new Map();
         memo.probes ??= new Map();
-        const key = String(projectedContext || "") + ":" +
+        memo.surfaces ??= new Map();
+        if (projectedFrames) for (const frame of projectedFrames) {
+            if (!memo.surfaces.has(frame.surface)) memo.surfaces.set(frame.surface, memo.surfaces.size);
+        }
+        const scopeKey = projectedFrames?.map(frame => memo.surfaces.get(frame.surface) + ':' + (frame.context || '')).join('/') ?? 'actual';
+        const key = scopeKey + ":" + String(projectedContext || "") + ":" +
             candidates.map(element => memo.elementIds.get(element)).join(",") + ":" + words.join(" ");
         if (memo.has(key)) return memo.get(key);
         let best;
@@ -6097,7 +6415,9 @@ class SpeechMenu {
                 (candidate.exact ? 2000 : 0) + candidate.consumedWords;
             if (!best || score(plan) > score(best)) best = plan;
         };
+        const indexed = SpeechMenu.#indexedMatching ? SpeechMenu.#index().candidates(words, new Set(candidates)) : undefined;
         for (const element of candidates) {
+            if (indexed && !indexed.has(element)) continue;
             if (signal?.aborted) return undefined;
             const full = words.join(" ");
             const partialDepth = SpeechMenu.#elementDirectContinuationDepth(element, full);
@@ -6117,15 +6437,37 @@ class SpeechMenu {
                 const segment = words.slice(0, end).join(" ");
                 const probe = await probeSegment(segment);
                 if (!probe || signal?.aborted) continue;
-                const context = SpeechMenu.#chainNextContext(element);
-                if (!memo.contexts.has(context)) memo.contexts.set(context, SpeechMenu.#digestCandidates(context));
-                const next = memo.contexts.get(context);
+                const declaredContext = SpeechMenu.#chainNextContext(element);
+                const transition = element.getAttribute('speech-chain-surface');
+                let frames = projectedFrames?.map(frame => ({...frame}));
+                if (transition || declaredContext) {
+                    frames ??= SpeechMenu.#surfaceFrames();
+                    if (transition === 'pop' || transition === 'close') frames.pop();
+                    else if (transition) {
+                        let surface;
+                        try {surface = document.querySelector(transition);} catch {}
+                        if (surface && frames.at(-1)?.surface !== surface) frames.push({surface, context: declaredContext});
+                    }
+                    if (declaredContext) {
+                        const surface = SpeechMenu.#chainContextCandidates(declaredContext)[0]?.closest('dialog, [popover], [speech-scope]');
+                        if (surface && frames.at(-1)?.surface !== surface) frames.push({surface, context: declaredContext});
+                        else if (frames.length) frames.at(-1).context = declaredContext;
+                    }
+                }
+                const context = frames === undefined ? declaredContext : frames.at(-1)?.context;
+                const nextSurface = frames?.at(-1)?.surface;
+                if (nextSurface && !memo.surfaces.has(nextSurface)) memo.surfaces.set(nextSurface, memo.surfaces.size);
+                const contextKey = String(context || '') + ':' + (nextSurface ? memo.surfaces.get(nextSurface) : frames ? 'page' : 'actual');
+                if (!memo.contexts.has(contextKey)) memo.contexts.set(contextKey, SpeechMenu.#digestCandidates(context, frames));
+                const next = memo.contexts.get(contextKey);
                 const step = {...probe, segmentTranscript: segment,
-                    nextContext: context, context: projectedContext,
+                    nextContext: context, nextSurfaceStack: frames, context: projectedContext,
+                    surfaceStack: projectedFrames,
+                    surface: projectedFrames?.at(-1)?.surface,
                     canContinue: SpeechMenu.#digestCanContinue(element, segment, candidates)};
                 const remaining = words.slice(end);
                 if (remaining.length) {
-                    const tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context);
+                    const tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context, frames);
                     if (tail) select({...tail, steps: [step, ...tail.steps], consumedWords: end + tail.consumedWords});
                     else select({steps: [step], exact: false, continuation: false, terminal: false,
                         invalid: true, consumedWords: end, remainder: remaining.join(" ")});
@@ -6145,8 +6487,19 @@ class SpeechMenu {
         const normalized = SpeechMenu.#normalizeTranscript(transcript);
         const words = normalized.split(" ").filter(Boolean);
         if (!words.length) return undefined;
-        const best = await SpeechMenu.#planDigest(SpeechMenu.#digestCandidates(utterance.digestContext),
-            words, utterance, signal);
+        let best;
+        // Rebuild the unconsumed cursor if DOM registrations change while a
+        // preprocessor is awaiting. Consumed commands are never replayed.
+        for (let attempt = 0; attempt < 2; attempt++) {
+            SpeechMenu.#index().flush();
+            const generation = SpeechMenu.#index().generation;
+            best = await SpeechMenu.#planDigest(SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
+                words, utterance, signal);
+            SpeechMenu.#index().flush();
+            if (generation === SpeechMenu.#index().generation) break;
+            best = undefined;
+            utterance.valueCollectors?.clear();
+        }
         if (!best || (!best.steps.length && !utterance.chainActive)) return undefined;
         const root = best.steps[0] || best.pending;
         return {kind: "chain", utteranceId: utterance.id,
@@ -6473,6 +6826,7 @@ class SpeechMenu {
             (
                 SpeechMenu
                     .#systemExecutionPassthrough &&
+                !['SpeechMenu.close', 'SpeechMenu.cancel'].includes(element.getAttribute('speech-function')) &&
                 SpeechMenu
                     .#effectiveModal(
                         element
@@ -6483,6 +6837,7 @@ class SpeechMenu {
     }
 
     static #effectiveModal(element) {
+        if (['SpeechMenu.close', 'SpeechMenu.cancel'].includes(element.getAttribute('speech-function'))) return 'system';
         if (
             element.hasAttribute(
                 "speech-modal"
@@ -6693,7 +7048,7 @@ class SpeechMenu {
     ) {
         const primed = projected || SpeechMenu.#isPrimed(element);
         if (
-            !element ||
+            !element || !element.isConnected ||
             (!primed && element.hasAttribute(
                 "hidden"
             )) ||
@@ -6818,14 +7173,8 @@ class SpeechMenu {
             );
     }
 
-    static #availableCandidates() {
-        const all =
-            [
-                ...document
-                    .querySelectorAll(
-                        "[speech-pattern]"
-                    )
-            ];
+    static #availableCandidates(projectedSurface) {
+        const all = SpeechMenu.#index().elements();
 
         const system = [];
         const topLevel = [];
@@ -6837,7 +7186,7 @@ class SpeechMenu {
             if (
                 !SpeechMenu
                     .#candidateStateAvailable(
-                        element
+                        element, projectedSurface !== undefined
                     )
             ) {
                 continue;
@@ -6908,13 +7257,9 @@ class SpeechMenu {
         append(system);
         append(topLevel);
 
-        const dialog =
-            [
-                ...document
-                    .querySelectorAll(
-                        "dialog[open]"
-                    )
-            ].at(-1);
+        const dialog = projectedSurface === undefined
+            ? (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll("dialog[open]")].at(-1)
+            : projectedSurface;
 
         if (dialog) {
             append(
@@ -6943,7 +7288,7 @@ class SpeechMenu {
                 ...[
                     ...document
                         .querySelectorAll(
-                            "[popover]"
+                            "[popover], [speech-scope]"
                         )
                 ]
                     .filter(
@@ -6984,7 +7329,7 @@ class SpeechMenu {
 
                     if (
                         element.closest(
-                            "[popover]"
+                            "[popover], [speech-scope]"
                         )
                     ) {
                         return false;
@@ -8513,7 +8858,8 @@ class SpeechMenu {
                         utterance
                             ?.wallStartedAt,
                     chain: executionMetadata?.chain === true || utterance?.commandChainExecuting === true,
-                    chainContext: executionMetadata?.chainContext || utterance?.digestExecutingContext
+                    chainContext: executionMetadata?.chainContext || utterance?.digestExecutingContext,
+                    chainSurface: executionMetadata?.chainSurface
                 });
 
             let outcomeValue;

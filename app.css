@@ -4890,11 +4890,11 @@ clock-timer[hide-latency] time-range[type="latency"] {
     display: none;
 }
 
-.voice-entry-surface[popover]:popover-open {
+.voice-entry-surface[open] {
     display: block;
 }
 
-.voice-entry-surface[popover]::backdrop {
+.voice-entry-surface::backdrop {
     display: none;
 }
 
@@ -7302,3 +7302,22 @@ speech-command {
 }
 
 .login-dialog .dialog-header { grid-template-columns: 1fr; }
+
+/* Trip Log owns one native top-layer surface; its fixed children retain geometry. */
+.trip-log-dialog {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    pointer-events: none;
+}
+.trip-log-dialog > * { pointer-events: auto; }
+.trip-log-dialog::backdrop { background: transparent; }
+#tripLogPlaceholder { grid-row: 6; width: 100%; pointer-events: none; }

@@ -19,7 +19,7 @@
             catch {}
         })();
     </script>
-    <link rel="stylesheet" href="app.css?v=pane-swipe-outer-corner-20260929">
+    <link rel="stylesheet" href="app.css?v=speech-dialogs-20261001">
 </head>
 <body>
     <div class="portrait-orientation-notice" role="status">Rotate your phone to portrait to use the timer.</div>
@@ -207,7 +207,6 @@
             <speech-command data-speech-editor-id="builtin:down:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canStartDownTime" data-speech-target="#downButton" speech-pattern="^down(?: time)?$" speech-function="WMOFActions.startDownTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:breakEnd:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenBreakEndMenu" data-speech-target="#breakButton" speech-pattern="^break end$" speech-function="WMOFActions.openBreakEndMenu"></speech-command>
             <speech-command data-speech-editor-id="builtin:resume:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canResumeTrip" data-speech-target="#downResumeButton" speech-pattern="^resume$" speech-function="WMOFActions.resumeTrip"></speech-command>
-            <speech-command data-speech-editor-id="builtin:cancelDown:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canCancelDownTime" data-speech-target="#downCancelButton" speech-pattern="^cancel$" speech-function="WMOFActions.cancelDownTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:tripGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-pattern="^trip goal$" speech-function="WMOFActions.readTripGoal"></speech-command>
             <speech-command data-speech-editor-id="builtin:totalGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-pattern="^total goal$" speech-function="WMOFActions.readTotalGoal"></speech-command>
             <speech-command data-speech-editor-id="builtin:changeGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" data-speech-target="#goalPercentValue" speech-pattern="^(?&lt;percent&gt;.+?)(?: percent)? (?&lt;goalScope&gt;day|trip|total|week|check|month|year)$" speech-function="WMOFActions.changeGoal" speech-collect speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="percent" speech-preproc-field="percent"></speech-command>
@@ -215,19 +214,22 @@
             <speech-command data-speech-editor-id="builtin:goalMode:page" data-speech-options-category="settings" data-speech-options-group="mode" speech-pattern="^(?&lt;goalMode&gt;auto|total|trip|day|week|check|month|year)(?: mode)?$" speech-function="WMOFActions.changeGoalMode"></speech-command>
             <speech-command data-speech-editor-id="builtin:sync:page" data-speech-options-category="settings" data-speech-target="#toggleSyncMenuButton,#toggleSyncGoalButton" speech-pattern="^sync(?: (?&lt;syncAction&gt;on|off))?$" speech-function="WMOFActions.toggleSync"></speech-command>
             <speech-command data-speech-editor-id="builtin:lockEndTime:page" data-speech-options-category="settings" speech-available="WMOFSpeechAvailability.canLockEndTime" data-speech-target="#toggleRenderedTimeButton" speech-pattern="^lock end time(?: to)? (?&lt;spokenTime&gt;.+)$" speech-function="WMOFActions.lockEndTime" speech-collect speech-preproc="WMOFSpeechProcessing.normalizeSpeechValue" speech-preproc-context="clock" speech-preproc-field="spokenTime"></speech-command>
-            <speech-command data-speech-editor-id="builtin:showTripLog:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenTripLog" data-speech-target="#tripListMenuButton" speech-pattern="^log$" speech-function="WMOFActions.openTripLog"></speech-command>
-            <speech-command data-speech-editor-id="builtin:hideTripLog:page" speech-available="WMOFSpeechAvailability.canCloseTripLog" data-speech-options-category="trip-actions" data-speech-target="#tripListMenuButton" speech-pattern="^(?:hide|close) trip log$" speech-function="WMOFActions.closeTripLog"></speech-command>
+            <speech-command data-speech-editor-id="builtin:showTripLog:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenTripLog" data-speech-target="#tripListMenuButton" speech-noun="log|trip log" speech-pattern="^(?:trip )?log$" speech-chain-surface="#tripLogDialog" speech-function="WMOFActions.openTripLog"></speech-command>
+            <speech-command data-speech-editor-id="builtin:hideTripLog:page" speech-available="WMOFSpeechAvailability.canCloseTripLog" data-speech-options-category="trip-actions" data-speech-target="#tripListMenuButton" speech-pattern="^(?:hide|close) trip log$" speech-chain-surface="pop" speech-function="WMOFActions.closeTripLog"></speech-command>
             <speech-command data-speech-editor-id="builtin:deferTrip:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canDeferTrip" data-speech-target="#tripDefer" speech-pattern="^defer trip$" speech-function="WMOFActions.deferTrip"></speech-command>
             <speech-command data-speech-editor-id="builtin:readRenderedTime:page" data-speech-options-category="informational" data-speech-options-group="time" speech-available="WMOFSpeechAvailability.canUseInformational" speech-pattern="^(?&lt;timeMode&gt;time remaining|time elapsed|end time)$" speech-function="WMOFActions.readRenderedTime"></speech-command>
             <speech-command data-speech-editor-id="builtin:renderedTimeMode:page" data-speech-options-category="settings" data-speech-options-group="time" speech-available="WMOFSpeechAvailability.canToggleRenderedTime" data-speech-target="#toggleRenderedTimeButton" speech-pattern="^show (?&lt;timeMode&gt;time remaining|time elapsed|end time)$" speech-function="WMOFActions.toggleRenderedTime"></speech-command>
         </speech-menu>
         <speech-menu id="speechDefaultMenu" speech-modal="default" data-speech-editor-id="builtin:menu:default">
-            <speech-command data-speech-editor-id="builtin:closeSurface:default" speech-available="WMOFSpeechAvailability.canCloseSurface" data-speech-options-category="settings" speech-pattern="^(?:cancel|close)$" speech-function="WMOFActions.closeActiveSurface"></speech-command>
+            <speech-command data-speech-editor-id="builtin:close:page" speech-available="WMOFSpeechAvailability.canCloseSurface" data-speech-options-category="settings" speech-modal="system" data-speech-system-command="close" speech-chain-surface="pop" speech-pattern="^close$" speech-function="SpeechMenu.close"></speech-command>
         </speech-menu>
         <button id="tripLogButton" class="trip-log-button" type="button" aria-expanded="false" aria-controls="tripLogBody">Trip Log</button>
-        <button id="tripLogCloseButton" class="trip-log-close-button" type="button" aria-label="Close Trip Log" hidden></button>
-        <button id="tripLogSettingsButton" class="trip-log-close-button trip-log-settings-button" type="button" aria-label="Show Trip Log settings" aria-expanded="false" aria-controls="tripLogSettings" hidden><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M9.528,4.392 L10.436,2.123 L13.564,2.123 L14.472,4.392 L15.632,4.872 L17.878,3.910 L20.090,6.122 L19.128,8.368 L19.608,9.528 L21.877,10.436 L21.877,13.564 L19.608,14.472 L19.128,15.632 L20.090,17.878 L17.878,20.090 L15.632,19.128 L14.472,19.608 L13.564,21.877 L10.436,21.877 L9.528,19.608 L8.368,19.128 L6.122,20.090 L3.910,17.878 L4.872,15.632 L4.392,14.472 L2.123,13.564 L2.123,10.436 L4.392,9.528 L4.872,8.368 L3.910,6.122 L6.122,3.910 L8.368,4.872 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
-        <section id="tripLogBody" class="trip-log-body" aria-label="Trip Log" hidden></section>
+        <span id="tripLogPlaceholder" aria-hidden="true" hidden></span>
+        <dialog id="tripLogDialog" class="trip-log-dialog" aria-label="Trip Log">
+            <button id="tripLogCloseButton" class="trip-log-close-button" type="button" aria-label="Close Trip Log" hidden></button>
+            <button id="tripLogSettingsButton" class="trip-log-close-button trip-log-settings-button" type="button" aria-label="Show Trip Log settings" aria-expanded="false" aria-controls="tripLogSettings" hidden><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M9.528,4.392 L10.436,2.123 L13.564,2.123 L14.472,4.392 L15.632,4.872 L17.878,3.910 L20.090,6.122 L19.128,8.368 L19.608,9.528 L21.877,10.436 L21.877,13.564 L19.608,14.472 L19.128,15.632 L20.090,17.878 L17.878,20.090 L15.632,19.128 L14.472,19.608 L13.564,21.877 L10.436,21.877 L9.528,19.608 L8.368,19.128 L6.122,20.090 L3.910,17.878 L4.872,15.632 L4.392,14.472 L2.123,13.564 L2.123,10.436 L4.392,9.528 L4.872,8.368 L3.910,6.122 L6.122,3.910 L8.368,4.872 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
+            <section id="tripLogBody" speech-scope class="trip-log-body" aria-label="Trip Log" hidden></section>
+        </dialog>
     </main>
 
     <section id="speechTrainingWidget" class="speech-training-widget" aria-label="Speech Training" popover="manual" hidden>
@@ -253,7 +255,7 @@
         </details>
     </section>
 
-    <section id="voiceEntrySurface" class="voice-entry-surface" popover="manual" hidden aria-label="Voice Entry">
+    <dialog id="voiceEntrySurface" class="voice-entry-surface" hidden aria-label="Voice Entry">
         <header class="voice-entry-header">
             <strong id="voiceEntryTitle">Number</strong>
             <div class="voice-entry-actions">
@@ -270,7 +272,7 @@
             <span><strong>Say OK</strong> to <span id="voiceEntryOkAction">confirm</span></span>
             <span><strong>Cancel</strong> to <span id="voiceEntryCancelAction">go back</span></span>
         </div>
-    </section>
+    </dialog>
 
     <dialog id="speechTrainingChoiceDialog" class="app-dialog speech-training-choice-dialog">
         <header class="dialog-header">
@@ -1021,7 +1023,6 @@
             </div>
             <speech-menu data-speech-editor-id="builtin:menu:cancelDownConfirmDialog">
                 <speech-command data-speech-editor-id="builtin:confirm:cancelDownConfirmDialog" data-speech-intent="confirm" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-pattern="^ok(?:ay)?$" speech-function="WMOFActions.confirmCancelDownTime"></speech-command>
-                <speech-command data-speech-editor-id="builtin:cancel:cancelDownConfirmDialog" data-speech-intent="cancel" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmNo" speech-pattern="^cancel$" speech-function="WMOFActions.continueDownTime"></speech-command>
             </speech-menu>
         </form>
     </dialog>
@@ -1196,7 +1197,6 @@
             <speech-menu data-speech-editor-id="builtin:menu:speechBreakConfirmDialog">
                 <speech-command data-speech-editor-id="builtin:yes:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmYes" speech-pattern="^yes$" speech-function="WMOFActions.confirmBreakPromptYes"></speech-command>
                 <speech-command data-speech-editor-id="builtin:no:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmNo" speech-pattern="^no$" speech-function="WMOFActions.confirmBreakPromptNo"></speech-command>
-                <speech-command data-speech-editor-id="builtin:cancel:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmCancel" speech-pattern="^cancel$" speech-function="WMOFActions.cancelBreakPrompt"></speech-command>
             </speech-menu>
         </form>
     </dialog>
@@ -1208,7 +1208,7 @@
     <script src="CalendarRange.js"></script>
     <script src="TripLog.js"></script>
     <script src="ParameterParser.js"></script>
-    <script src="lang/en-US.js?v=voice-entry-candidates-1"></script>
+    <script src="lang/en-US.js?v=speech-nouns-system-20261001"></script>
     <script src="lang/en-US/SpokenTimeParser.js"></script>
     <script src="lang/en-US/DurationParser.js?v=duration-readback-1"></script>
     <script src="lang/en-US/PercentParser.js"></script>
@@ -1228,7 +1228,7 @@
     <script src="LiveTripStream.js"></script>
     <script src="PanePage.js?v=overflow-3"></script>
     <script src="HamburgerMenu.js?v=document-insets-20260929"></script>
-    <script src="app.js?v=speech-collector-20261001"></script>
+    <script src="app.js?v=speech-tree-20261001"></script>
     <script src="SpeechEditorRuntime.js"></script>
 </body>
 </html>
