@@ -162,6 +162,13 @@
 
         #standardDuration;
 
+        #tripStartMilliseconds;
+        #countedTimeElapsed = 0;
+        #lastCountedTick;
+        #countedStopTime;
+        #countedAccountingKey;
+        #countedExcludedSegments = [];
+
         #originalStartArguments;
 
         #renderedPercentGoal =
@@ -7964,6 +7971,8 @@
                 return;
             }
 
+            this.#tripStartMilliseconds = startTimeMilliseconds;
+
             this.#reconcilePlannedRanges({
                 startTimeMilliseconds
             });
@@ -8008,63 +8017,9 @@
         }
 
         #getStartTimeMilliseconds() {
-            if (!this.#hasStartProperties()) {
-                return undefined;
-            }
-
-            const ranges =
-                this.#getManagedTimeRanges()
-                    .filter(
-                        range =>
-                            range.clockTimerPlanned !==
-                                undefined
-                    );
-
-            const earlyStarts =
-                ranges
-                    .filter(
-                        range =>
-                            range.getAttribute(
-                                "type"
-                            ) === "earlystart"
-                    )
-                    .map(
-                        range =>
-                            Number(
-                                range.clockTimerStart
-                            )
-                    )
-                    .filter(Number.isFinite);
-
-            if (earlyStarts.length > 0) {
-                return Math.min(
-                    ...earlyStarts
-                );
-            }
-
-            const latencyEnds =
-                ranges
-                    .filter(
-                        range =>
-                            range.getAttribute(
-                                "type"
-                            ) === "latency"
-                    )
-                    .map(
-                        range =>
-                            Number(
-                                range.clockTimerEnd
-                            )
-                    )
-                    .filter(Number.isFinite);
-
-            if (latencyEnds.length > 0) {
-                return Math.max(
-                    ...latencyEnds
-                );
-            }
-
-            return this.#scheduledStartMilliseconds;
+            return this.#hasStartProperties()
+                ? this.#tripStartMilliseconds ?? this.#scheduledStartMilliseconds
+                : undefined;
         }
 
         #stopLocal(
@@ -8085,6 +8040,9 @@
                     parsed.total,
                     referenceTimeline
                 );
+
+            this.#countedStopTime = stopTime;
+            this.#getCountedTimeElapsed(stopTime);
 
             this.#stopTickTimer();
 
@@ -9062,6 +9020,12 @@
                         this.#scheduledStartMilliseconds
                     );
             }
+
+            this.#tripStartMilliseconds = startTimeMilliseconds;
+            this.#countedTimeElapsed = 0;
+            this.#lastCountedTick = undefined;
+            this.#countedStopTime = undefined;
+            this.#countedAccountingKey = undefined;
 
             this.#standardTime =
                 this.#formatStandardTime(
@@ -14233,6 +14197,13 @@
 
             this.#standardDuration =
                 undefined;
+
+            this.#tripStartMilliseconds = undefined;
+            this.#countedTimeElapsed = 0;
+            this.#lastCountedTick = undefined;
+            this.#countedStopTime = undefined;
+            this.#countedAccountingKey = undefined;
+            this.#countedExcludedSegments = [];
 
             this.#originalStartArguments =
                 undefined;
@@ -26549,163 +26520,11 @@
             };
         }
 
-        #getIntervalSegments(
-            startTime
-        ) {
-            if (!Number.isFinite(startTime)) {
-                return undefined;
-            }
-
-            const segments = [];
-
-            const approvalManagedIds =
-                new Set(
-                    this.#insertedRanges
-                        .filter(
-                            record =>
-                                this.#isIntervalApprovalManaged(
-                                    record
-                                )
-                        )
-                        .map(
-                            record =>
-                                record.id
-                        )
-                );
-
-            for (
-                const range of
-                    this.#getManagedTimeRanges()
-            ) {
-                if (
-                    range.timeRangeExiting === true ||
-                    !this.#isIntervalType(
-                        range.getAttribute(
-                            "type"
-                        )
-                    ) ||
-                    (
-                        range.clockTimerInserted !==
-                            undefined &&
-                        approvalManagedIds.has(
-                            range.clockTimerInserted
-                        )
-                    )
-                ) {
-                    continue;
-                }
-
-                const rangeStart =
-                    Number(
-                        range.clockTimerStart
-                    );
-
-                const rangeEnd =
-                    Number(
-                        range.clockTimerEnd
-                    );
-
-                if (
-                    !Number.isFinite(rangeStart) ||
-                    !Number.isFinite(rangeEnd) ||
-                    rangeEnd <= rangeStart ||
-                    rangeEnd <= startTime
-                ) {
-                    continue;
-                }
-
-                segments.push([
-                    Math.max(
-                        rangeStart,
-                        startTime
-                    ),
-                    rangeEnd
-                ]);
-            }
-
-            for (
-                const record of
-                    this.#insertedRanges
-            ) {
-                if (
-                    !approvalManagedIds.has(
-                        record.id
-                    ) ||
-                    !this.#isIntervalType(
-                        record.type
-                    )
-                ) {
-                    continue;
-                }
-
-                const rangeStart =
-                    this.#dateToTimelineTime(
-                        record.startDate
-                    );
-
-                const duration =
-                    this.#getIntervalEffectiveDuration(
-                        record
-                    );
-
-                const rangeEnd =
-                    Number.isFinite(rangeStart) &&
-                    Number.isFinite(duration)
-                        ? rangeStart + duration
-                        : undefined;
-
-                if (
-                    !Number.isFinite(rangeStart) ||
-                    !Number.isFinite(rangeEnd) ||
-                    rangeEnd <= rangeStart ||
-                    rangeEnd <= startTime
-                ) {
-                    continue;
-                }
-
-                segments.push([
-                    Math.max(
-                        rangeStart,
-                        startTime
-                    ),
-                    rangeEnd
-                ]);
-            }
-
-            segments.sort(
-                (left, right) =>
-                    left[0] - right[0] ||
-                    left[1] - right[1]
-            );
-
-            const merged = [];
-
-            for (const segment of segments) {
-                const previous =
-                    merged[
-                        merged.length - 1
-                    ];
-
-                if (
-                    !previous ||
-                    segment[0] > previous[1]
-                ) {
-                    merged.push([
-                        segment[0],
-                        segment[1]
-                    ]);
-
-                    continue;
-                }
-
-                previous[1] =
-                    Math.max(
-                        previous[1],
-                        segment[1]
-                    );
-            }
-
-            return merged;
+        #getIntervalSegments(startTime) {
+            if (!Number.isFinite(startTime)) return undefined;
+            return this.#getAccountingExclusions({ forGoal: true })
+                .filter(([start, end]) => Number.isFinite(end) && end > startTime)
+                .map(([start, end]) => [Math.max(start, startTime), end]);
         }
 
         #openIntervalBlocksAdjustedEnd(
@@ -32477,85 +32296,134 @@
         }
 
         #getElapsedStartTimeMilliseconds() {
-            const candidates = [];
+            const scheduled = this.#scheduledStartMilliseconds;
+            const actual = this.#getStartTimeMilliseconds();
+            if (!Number.isFinite(scheduled)) return actual;
+            return Number.isFinite(actual)
+                ? Math.min(scheduled, actual)
+                : scheduled;
+        }
 
-            if (Number.isFinite(this.#scheduledStartMilliseconds)) {
-                candidates.push(this.#scheduledStartMilliseconds);
-            }
-
-            const relevantTypes = new Set([
-                "earlystart",
-                "latency",
-                "trip",
-                "overtime"
-            ]);
-
-            for (const range of this.#getManagedTimeRanges()) {
-                if (
-                    range.timeRangeExiting === true ||
-                    !relevantTypes.has(
-                        String(range.getAttribute("type") ?? "").trim().toLowerCase()
-                    )
-                ) {
-                    continue;
+        #mergeAccountingSegments(segments) {
+            segments.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+            const merged = [];
+            for (const [start, end] of segments) {
+                if (!Number.isFinite(start) || !(end > start)) continue;
+                const previous = merged.at(-1);
+                if (!previous || start > previous[1]) {
+                    merged.push([start, end]);
                 }
-
-                const start = Number(range.clockTimerStart);
-                if (Number.isFinite(start)) candidates.push(start);
+                else {
+                    previous[1] = Math.max(previous[1], end);
+                }
             }
+            return merged;
+        }
 
-            return candidates.length > 0
-                ? Math.min(...candidates)
-                : this.#getStartTimeMilliseconds();
+        // Accounting reads interval records, never rendered ranges or rings.
+        // The same records are restored/replayed and edited by the public API.
+        #accountingTimelineForDate(date) {
+            const anchor = this.#getJSONCreationDate();
+            return date instanceof Date && anchor instanceof Date
+                ? date.getTime() - anchor.getTime()
+                : undefined;
+        }
+
+        #getAccountingExclusions({ forGoal = false } = {}) {
+            let segments = [];
+            for (const record of this.#insertedRanges) {
+                if (record.clockTimerPendingDelete === true ||
+                    !this.#isIntervalType(record.type)) continue;
+                const start = this.#accountingTimelineForDate(record.startDate);
+                let end = record.openEnded === true
+                    ? (forGoal ? this.#openEndedLastTick : Infinity)
+                    : Number.isFinite(record.rangeLength)
+                        ? start + record.rangeLength
+                        : this.#accountingTimelineForDate(record.endDate);
+                if (record.openEnded !== true &&
+                    this.#isIntervalApprovalManaged(record)) {
+                    const approval = this.#getIntervalApprovalState(record);
+                    if (approval) {
+                        end = start + (approval.state === "approved"
+                            ? approval.duration : 0);
+                    }
+                }
+                if (!forGoal && record.clockTimerExplicitlyEnded === true &&
+                    Number.isFinite(record.clockTimerExplicitEndTimeline)) {
+                    end = Math.min(end, record.clockTimerExplicitEndTimeline);
+                }
+                if (Number.isFinite(start) && end > start) {
+                    segments.push([start, end]);
+                }
+            }
+            segments = this.#mergeAccountingSegments(segments);
+
+            const countedTypes = new Set([
+                "earlystart", "trip", "tolerance", "latency", "overtime",
+                "approval-deficit"
+            ]);
+            // Overwrites take precedence in insertion order. Splitting an
+            // exclusion here handles partial overlaps without double counting.
+            for (const record of this.#overwriteRanges) {
+                const type = String(record.type ?? "").trim().toLowerCase();
+                const counted = countedTypes.has(type);
+                if (!counted && !this.#isIntervalType(type) &&
+                    type !== "approval-surplus") continue;
+                // Goal deadlines preserve scheduled allowance when a break
+                // ends early; its productive Early Start is counted separately.
+                if (forGoal && counted) continue;
+                const start = record.start;
+                const end = record.openEnded === true
+                    ? (forGoal ? this.#openOverwriteLastTick : Infinity)
+                    : record.end;
+                if (!Number.isFinite(start) || !(end > start)) continue;
+                segments = segments.flatMap(([left, right]) => {
+                    if (right <= start || left >= end) return [[left, right]];
+                    const remaining = [];
+                    if (left < start) remaining.push([left, start]);
+                    if (right > end) remaining.push([end, right]);
+                    return remaining;
+                });
+                if (!counted) segments.push([start, end]);
+                segments = this.#mergeAccountingSegments(segments);
+            }
+            return segments;
+        }
+
+        #countAccountingDuration(start, end) {
+            if (!Number.isFinite(start) || !Number.isFinite(end) ||
+                end <= start) return 0;
+            let counted = end - start;
+            for (const [left, right] of this.#countedExcludedSegments) {
+                if (left >= end) break;
+                counted -= Math.max(0,
+                    Math.min(end, right) - Math.max(start, left));
+            }
+            return Math.max(0, counted);
         }
 
         #getCountedTimeElapsed(timelineNow) {
-            if (!Number.isFinite(timelineNow)) return 0;
-
-            const countedTypes = new Set([
-                "earlystart",
-                "trip",
-                "tolerance",
-                "latency",
-                "overtime",
-                "approval-deficit"
-            ]);
-            const segments = [];
-
-            for (const range of this.#getManagedTimeRanges()) {
-                if (
-                    range.timeRangeExiting === true ||
-                    !countedTypes.has(
-                        String(range.getAttribute("type") ?? "").trim().toLowerCase()
-                    )
-                ) {
-                    continue;
-                }
-
-                const start = Number(range.clockTimerStart);
-                const end = Number(range.clockTimerEnd);
-                if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
-                const clippedEnd = Math.min(end, timelineNow);
-                if (clippedEnd > start) segments.push([start, clippedEnd]);
+            const start = this.#getElapsedStartTimeMilliseconds();
+            if (!Number.isFinite(start) || !Number.isFinite(timelineNow)) return 0;
+            const end = Number.isFinite(this.#countedStopTime)
+                ? Math.min(timelineNow, this.#countedStopTime)
+                : timelineNow;
+            const exclusions = this.#getAccountingExclusions();
+            const key = JSON.stringify([start, exclusions]);
+            if (key !== this.#countedAccountingKey ||
+                !Number.isFinite(this.#lastCountedTick) ||
+                end < this.#lastCountedTick) {
+                this.#countedExcludedSegments = exclusions;
+                this.#countedTimeElapsed = this.#countAccountingDuration(start, end);
+                this.#countedAccountingKey = key;
             }
-
-            segments.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-            let total = 0;
-            let current;
-
-            for (const segment of segments) {
-                if (!current || segment[0] > current[1]) {
-                    current = [...segment];
-                    total += current[1] - current[0];
-                    continue;
-                }
-                if (segment[1] > current[1]) {
-                    total += segment[1] - current[1];
-                    current[1] = segment[1];
-                }
+            else {
+                this.#countedTimeElapsed += this.#countAccountingDuration(
+                    Math.max(start, this.#lastCountedTick), end
+                );
             }
-
-            return Math.max(0, total);
+            this.#lastCountedTick = end;
+            return this.#countedTimeElapsed;
         }
 
         #getSummaryTimelineNow(nowDate = new Date()) {
@@ -33618,176 +33486,7 @@
             );
         }
 
-        #getClosedIntervalSegments() {
-            const segments = [];
 
-            const openInsertedId =
-                this.#openEndedRange?.id;
-
-            const openOverwriteId =
-                this.#openOverwriteRange?.id;
-
-            for (
-                const range of
-                    this.#getManagedTimeRanges()
-            ) {
-                if (
-                    range.timeRangeExiting === true ||
-                    !this.#isIntervalType(
-                        range.getAttribute(
-                            "type"
-                        )
-                    ) ||
-                    (
-                        openInsertedId !== undefined &&
-                        range.clockTimerInserted ===
-                            openInsertedId
-                    ) ||
-                    (
-                        openOverwriteId !== undefined &&
-                        range.clockTimerOverwrite ===
-                            openOverwriteId
-                    )
-                ) {
-                    continue;
-                }
-
-                const start =
-                    Number(
-                        range.clockTimerStart
-                    );
-
-                const end =
-                    Number(
-                        range.clockTimerEnd
-                    );
-
-                if (
-                    !Number.isFinite(start) ||
-                    !Number.isFinite(end) ||
-                    end <= start
-                ) {
-                    continue;
-                }
-
-                segments.push([
-                    start,
-                    end
-                ]);
-            }
-
-            segments.sort(
-                (left, right) =>
-                    left[0] - right[0] ||
-                    left[1] - right[1]
-            );
-
-            const merged = [];
-
-            for (const segment of segments) {
-                const previous =
-                    merged[
-                        merged.length - 1
-                    ];
-
-                if (
-                    !previous ||
-                    segment[0] > previous[1]
-                ) {
-                    merged.push([
-                        ...segment
-                    ]);
-                    continue;
-                }
-
-                previous[1] =
-                    Math.max(
-                        previous[1],
-                        segment[1]
-                    );
-            }
-
-            return merged;
-        }
-
-        #getClosedIntervalDuration(
-            start,
-            end
-        ) {
-            if (
-                !Number.isFinite(start) ||
-                !Number.isFinite(end) ||
-                end <= start
-            ) {
-                return 0;
-            }
-
-            let total =
-                0;
-
-            for (
-                const [
-                    intervalStart,
-                    intervalEnd
-                ] of
-                    this.#getClosedIntervalSegments()
-            ) {
-                if (intervalEnd <= start) {
-                    continue;
-                }
-
-                if (intervalStart >= end) {
-                    break;
-                }
-
-                total +=
-                    Math.max(
-                        0,
-                        Math.min(
-                            end,
-                            intervalEnd
-                        ) -
-                        Math.max(
-                            start,
-                            intervalStart
-                        )
-                    );
-            }
-
-            return total;
-        }
-
-        #getOpenIntervalDuration(
-            start,
-            end
-        ) {
-            if (
-                !Number.isFinite(start) ||
-                !Number.isFinite(end) ||
-                end <= start ||
-                !this.#openEndedRange?.openEnded
-            ) {
-                return 0;
-            }
-
-            const intervalStart =
-                this.#dateToTimelineTime(
-                    this.#openEndedRange.startDate
-                );
-
-            if (!Number.isFinite(intervalStart)) {
-                return 0;
-            }
-
-            return Math.max(
-                0,
-                end -
-                    Math.max(
-                        start,
-                        intervalStart
-                    )
-            );
-        }
 
         #formatElapsedRenderedDuration(
             milliseconds
@@ -33910,26 +33609,7 @@
             let milliseconds;
 
             if (mode === "elapsed") {
-                const start =
-                    this.#scheduledStartMilliseconds;
-
-                const end =
-                    Math.max(
-                        start,
-                        timelineNow
-                    );
-
-                milliseconds =
-                    end -
-                    start -
-                    this.#getClosedIntervalDuration(
-                        start,
-                        end
-                    ) -
-                    this.#getOpenIntervalDuration(
-                        start,
-                        end
-                    );
+                milliseconds = this.#getCountedTimeElapsed(timelineNow);
             }
             else {
                 const goal =
