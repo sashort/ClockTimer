@@ -6086,7 +6086,11 @@ class SpeechMenu {
                 if (!probe || signal?.aborted) continue;
                 const context = SpeechMenu.#chainNextContext(element);
                 if (!memo.contexts.has(context)) memo.contexts.set(context, SpeechMenu.#digestCandidates(context));
-                const next = memo.contexts.get(context);
+                // A free-form value is one parameter. Do not manufacture a
+                // chain by matching that same item against each number word.
+                const next = element.hasAttribute("speech-open-ended")
+                    ? memo.contexts.get(context).filter(other => other !== element)
+                    : memo.contexts.get(context);
                 const step = {...probe, segmentTranscript: segment,
                     nextContext: context, context: projectedContext,
                     canContinue: SpeechMenu.#digestCanContinue(element, segment, candidates)};

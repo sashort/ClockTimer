@@ -67,6 +67,18 @@ const log=make(document.body,'log','^show log$','showLog');
 const hear=async(...args)=>{await speech.testTranscript(...args);await new Promise(setImmediate);};
 const fresh=()=>{speech.testReset();calls.length=0;errors.length=0;return speech.testBegin();};
 try {
+    const value=make(document.body,'value','^(?<timeValue>.+)$','showLog',{
+        'speech-open-ended':'','speech-preproc':'TestValues.normalize',
+        'speech-preproc-context':'duration','speech-preproc-field':'timeValue'});
+    const duration=fresh();
+    await hear(duration,'twenty two');
+    await hear(duration,'twenty two fifty');
+    assert.equal(calls.length,0,'interim number groups remain one growing value');
+    await hear(duration,'twenty two fifty six',true);
+    await duration.digestQueue;
+    assert.equal(duration.digestSteps.length,1,'a free-form value is one command, not a chain of number fragments');
+    assert.equal(duration.digestSteps[0].transcript,'0:22:56');
+    value.remove();
     let release;
     readyOutcome=()=>new Promise(resolve=>release=resolve);
     const u=fresh();
