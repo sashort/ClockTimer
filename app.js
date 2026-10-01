@@ -21688,48 +21688,12 @@
         void purpose;
     }
 
-    let semanticSpeechChain;
-    let semanticSpeechSequence = 0;
-    const activeSemanticAnnouncements =
-        new Set();
-    let exclusiveSemanticAnnouncementTail =
-        Promise.resolve();
-    let exclusiveSemanticAnnouncementPending =
-        0;
+    let semanticAnnouncementTail = Promise.resolve();
 
     function reserveSemanticSpeech() {
-        if (!semanticSpeechChain) {
-            const chain = {
-                last: 0
-            };
-
-            semanticSpeechChain =
-                chain;
-
-            queueMicrotask(
-                () => {
-                    if (
-                        semanticSpeechChain ===
-                            chain
-                    ) {
-                        semanticSpeechChain =
-                            undefined;
-                    }
-                }
-            );
-        }
-
-        const chain =
-            semanticSpeechChain;
-        const token =
-            ++semanticSpeechSequence;
-
-        chain.last =
-            token;
-
-        return () =>
-            chain.last ===
-                token;
+        // Every queued announcement retains its own speech, including events
+        // raised together during a single trip transition.
+        return () => true;
     }
 
     function waitForAnnouncementDelay(
@@ -21857,116 +21821,16 @@
         );
     }
 
-    function trackSemanticAnnouncement(
-        task
-    ) {
-        activeSemanticAnnouncements
-            .add(
-                task
-            );
-
-        task.then(
-            () =>
-                activeSemanticAnnouncements
-                    .delete(
-                        task
-                    ),
-            () =>
-                activeSemanticAnnouncements
-                    .delete(
-                        task
-                    )
-        );
-
+    function runSemanticAnnouncement(announcement, playback) {
+        if (typeof playback !== "function") return Promise.resolve(false);
+        const task = semanticAnnouncementTail.then(playback);
+        // Recover the queue after a failed entry while preserving that entry's
+        // rejection for its caller. Chime, pause, summary and details finish
+        // inside playback before the next entry starts.
+        semanticAnnouncementTail = task.catch(error => {
+            console.error("Announcement playback failed:", announcement, error);
+        });
         return task;
-    }
-
-    function runSemanticAnnouncement(
-        announcement,
-        playback,
-        {
-            exclusive = false
-        } = {}
-    ) {
-        if (
-            typeof playback !==
-                "function"
-        ) {
-            return Promise.resolve(
-                false
-            );
-        }
-
-        if (exclusive) {
-            exclusiveSemanticAnnouncementPending++;
-
-            const previousExclusive =
-                exclusiveSemanticAnnouncementTail
-                    .catch(
-                        () => {}
-                    );
-            const activeBefore =
-                [
-                    ...activeSemanticAnnouncements
-                ];
-
-            const task =
-                previousExclusive
-                    .then(
-                        async () => {
-                            if (
-                                activeBefore
-                                    .length
-                            ) {
-                                await Promise
-                                    .allSettled(
-                                        activeBefore
-                                    );
-                            }
-
-                            return playback();
-                        }
-                    );
-
-            exclusiveSemanticAnnouncementTail =
-                task
-                    .catch(
-                        error => {
-                            console.error(
-                                "Exclusive announcement playback failed:",
-                                announcement,
-                                error
-                            );
-                        }
-                    )
-                    .finally(
-                        () => {
-                            exclusiveSemanticAnnouncementPending =
-                                Math.max(
-                                    0,
-                                    exclusiveSemanticAnnouncementPending -
-                                        1
-                                );
-                        }
-                    );
-
-            return task;
-        }
-
-        const blocker =
-            exclusiveSemanticAnnouncementPending >
-                0
-                ? exclusiveSemanticAnnouncementTail
-                    .catch(
-                        () => {}
-                    )
-                : Promise.resolve();
-
-        return trackSemanticAnnouncement(
-            blocker.then(
-                playback
-            )
-        );
     }
 
     function playSemanticSong(name, options = {}) {

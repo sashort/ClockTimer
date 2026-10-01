@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const ctx=vm.createContext({console:{error:()=>{}}});
+vm.runInContext(source.slice(source.indexOf('    let semanticAnnouncementTail'),source.indexOf('    function waitForAnnouncementDelay'))+source.slice(source.indexOf('    function runSemanticAnnouncement('),source.indexOf('    function playSemanticSong('))+'\nglobalThis.enqueue=runSemanticAnnouncement; globalThis.reserve=reserveSemanticSpeech;',ctx);
+let release;const gate=new Promise(resolve=>release=resolve);const steps=[];
+const guard1=ctx.reserve(),guard2=ctx.reserve();assert.equal(guard1(),true);assert.equal(guard2(),true);
+const first=ctx.enqueue('trip-started',async()=>{steps.push('chime1');await gate;steps.push('pause1','summary1','details1');});
+const second=ctx.enqueue('trip-ended',async()=>{steps.push('chime2','pause2','summary2','details2');});
+await Promise.resolve();assert.deepEqual(steps,['chime1']);release();await Promise.all([first,second]);
+assert.deepEqual(steps,['chime1','pause1','summary1','details1','chime2','pause2','summary2','details2']);
+const failed=ctx.enqueue('failure',async()=>{throw Error('failed audio');});
+const after=ctx.enqueue('after',async()=>{steps.push('after');return true;});
+await assert.rejects(failed,/failed audio/);assert.equal(await after,true);
+assert.equal(await ctx.enqueue('invalid',undefined),false);
+console.log('PASS complete FIFO announcement sequencing, retained same-turn speech, failure recovery and invalid entries');
