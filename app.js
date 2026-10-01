@@ -315,7 +315,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-10-01-failfast-1";
+        "2026-10-01-command-digest-1";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -24188,7 +24188,8 @@
                 {
                     field,
                     kind,
-                    pattern
+                    pattern,
+                    provisional
                 }
             ) => {
                 if (kind === "keypad") {
@@ -24249,7 +24250,7 @@
                     normalized ===
                         undefined
                 ) {
-                    return text;
+                    return provisional ? false : text;
                 }
 
                 const start =
@@ -25380,10 +25381,10 @@
                 }
 
                 if (
-                    scheduledStartDialog
-                        .open &&
-                    !scheduledStartStandard
-                        .disabled &&
+                    (scheduledStartDialog.open ||
+                        (globalThis.SpeechMenu?.executionContext?.chain === true &&
+                         globalThis.SpeechMenu.executionContext.chainContext === "scheduled-start")) &&
+                    !scheduledStartStandard.disabled &&
                     tripDraft
                 ) {
                     const previous =
@@ -25963,7 +25964,9 @@
                 breakChoice
             ) {
                 if (
-                    !breakDialog.open
+                    !breakDialog.open &&
+                    !(globalThis.SpeechMenu?.executionContext?.chain === true &&
+                      globalThis.SpeechMenu.executionContext.chainContext === "break-choice")
                 ) {
                     return false;
                 }
@@ -25995,7 +25998,7 @@
                             `[data-break-type="${kind}"]`
                         );
 
-                if (!button) {
+                if (!button || button.disabled) {
                     return false;
                 }
 
@@ -26036,8 +26039,10 @@
                         );
 
                 if (
-                    !breakDialog.open ||
-                    !button
+                    (!breakDialog.open &&
+                     !(globalThis.SpeechMenu?.executionContext?.chain === true &&
+                       globalThis.SpeechMenu.executionContext.chainContext === "break-confirm")) ||
+                    !button || button.disabled
                 ) {
                     return false;
                 }

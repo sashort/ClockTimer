@@ -32,6 +32,7 @@ class SpeechMenu {
     static #silentGain;
     static #utterance;
     static #utteranceSequence = 0;
+    static #primedItems = new Map();
     static #preRollFrames = [];
     static #preRollSamples = 0;
     static #startPromise;
@@ -210,7 +211,9 @@ class SpeechMenu {
                             "speech-available",
                             "speech-open-ended",
                             "speech-chain-context",
-                            "speech-chain-next"
+                            "speech-chain-next",
+                            "speech-authorized",
+                            "primed"
                         ]
                     }
                 );
@@ -1755,6 +1758,12 @@ class SpeechMenu {
         reason = "speech-context-change"
     ) {
         SpeechMenu.#contextGeneration++;
+        const chains = [SpeechMenu.#utterance, ...SpeechMenu.#finishedUtterances.values()]
+            .filter(utterance => utterance?.chainActive && !utterance.chainCanceled && !utterance.digestFailed);
+        if (chains.length && !SpeechMenu.#stopped) {
+            for (const chain of chains) chain.contextGeneration = SpeechMenu.#contextGeneration;
+            return true;
+        }
 
         SpeechMenu.#preRollFrames =
             [];
@@ -2309,7 +2318,6 @@ class SpeechMenu {
         ) {
             const utterance =
                 SpeechMenu.#utterance;
-
             if (
                 !utterance.committed &&
                 !utterance.committing &&
@@ -2463,6 +2471,13 @@ class SpeechMenu {
             sampleCount,
             transcript: "",
             transcriptRevision: 0,
+            digestTranscript: "",
+            digestContext: undefined,
+            digestQueue: Promise.resolve(),
+            digestSteps: [],
+            chainActive: false,
+            chainCanceled: false,
+            digestFailed: false,
             noCandidateTranscript: "",
             firstTranscriptAt:
                 undefined,
@@ -2584,6 +2599,11 @@ class SpeechMenu {
             SpeechMenu.#utterance;
 
         if (!utterance) return;
+        utterance.digestClosed = true;
+        SpeechMenu.#clearPrimed(utterance);
+        if (["stopped", "muted", "speech-context-change", "surface-context-change"].includes(reason)) {
+            utterance.chainCanceled = true;
+        }
 
         SpeechMenu
             .#cancelContinuationPause(
@@ -3031,11 +3051,17 @@ class SpeechMenu {
         utterance.candidatePoolController =
             controller;
 
+        utterance.digestIsFinal = Boolean(isFinal);
+        const remainingTranscript = SpeechMenu.#digestRemainder(utterance, transcript);
+        if (remainingTranscript === undefined) {
+            SpeechMenu.#rejectDigest(utterance, "consumed-prefix-revised", transcript);
+            return;
+        }
         const pool =
             await SpeechMenu
                 .#refreshCandidatePool(
                     utterance,
-                    transcript,
+                    remainingTranscript,
                     controller.signal
                 );
 
@@ -3054,6 +3080,7 @@ class SpeechMenu {
 
         utterance.candidatePool =
             pool;
+        if (SpeechMenu.#digestCandidate(utterance, pool[0], remainingTranscript, isFinal)) return;
 
         const streamResult =
             await SpeechMenu
@@ -3263,6 +3290,136 @@ class SpeechMenu {
             );
     }
 
+    static #isPrimed(element) {
+        return Boolean(element?.hasAttribute("primed") &&
+            SpeechMenu.#primedItems.get(element) === SpeechMenu.#utterance?.id);
+    }
+
+    static #primeContext(utterance, context) {
+        if (!context || utterance.digestClosed) return;
+        for (const element of SpeechMenu.#chainContextCandidates(context)) {
+            SpeechMenu.#primedItems.set(element, utterance.id);
+            element.setAttribute("primed", "");
+        }
+    }
+
+    static #clearPrimed(utterance) {
+        for (const [element, owner] of SpeechMenu.#primedItems) {
+            if (!utterance || owner === utterance.id) {
+                element.removeAttribute("primed");
+                SpeechMenu.#primedItems.delete(element);
+            }
+        }
+    }
+
+    static #digestRemainder(utterance, transcript) {
+        const full = SpeechMenu.#normalizeTranscript(transcript);
+        const consumed = utterance.digestTranscript || "";
+        if (!consumed) return full;
+        if (full === consumed) return "";
+        return full.startsWith(consumed + " ") ? full.slice(consumed.length + 1) : undefined;
+    }
+
+    static #rejectDigest(utterance, reason, remainder) {
+        utterance.digestFailed = true;
+        if (reason === "consumed-prefix-revised") utterance.chainCanceled = true;
+        SpeechMenu.#clearPrimed(utterance);
+        if (SpeechMenu.#utterance === utterance) SpeechMenu.#finishUtterance(reason, false);
+        SpeechMenu.#emit("utteranceUnrecognized", {id: utterance.id, transcript: remainder, reason, fast: true});
+    }
+
+    static #queueDigestStep(utterance, step) {
+        const segment = step.segmentTranscript;
+        utterance.digestTranscript = [utterance.digestTranscript, segment].filter(Boolean).join(" ");
+        utterance.digestSteps.push(step);
+        utterance.digestContext = step.nextContext;
+        utterance.noCandidateTranscript = "";
+        SpeechMenu.#primeContext(utterance, step.nextContext);
+        SpeechMenu.#emit("speechCommandDigested", {utteranceId: utterance.id,
+            commandElement: step.commandElement, transcript: segment,
+            consumedTranscript: utterance.digestTranscript});
+        utterance.digestQueue = utterance.digestQueue.then(async () => {
+            if (utterance.chainCanceled || utterance.digestExecutionFailed || SpeechMenu.#stopped ||
+                utterance.sessionGeneration !== SpeechMenu.#sessionGeneration) {
+                utterance.chainCanceled = true;
+                SpeechMenu.#clearPrimed(utterance);
+                return false;
+            }
+            // UI visibility may lag; hard gates are always rechecked at execution.
+            if (!SpeechMenu.#candidateStateAvailable(step.commandElement, true)) {
+                utterance.digestExecutionFailed = true;
+                SpeechMenu.#rejectDigest(utterance, "chain-action-unavailable", segment);
+                return false;
+            }
+            utterance.commandChainExecuting = true;
+            utterance.digestExecutingContext = SpeechMenu.#chainContextTokens(step.commandElement)[0];
+            try {
+                const result = await SpeechMenu.#processElement(step.commandElement, segment,
+                    utterance.id, step.speechMenuElement, SpeechMenu.#shouldExecuteElement(step.commandElement),
+                    undefined, utterance.wallStartedAt, true, false,
+                    {chain: true, chainContext: step.context || utterance.digestExecutingContext});
+                if (!result) {
+                    utterance.digestExecutionFailed = true;
+                    SpeechMenu.#rejectDigest(utterance, "chain-action-failed", segment);
+                    return false;
+                }
+                utterance.hadCommittedCommand = true;
+                return true;
+            } finally {
+                utterance.commandChainExecuting = false;
+                utterance.digestExecutingContext = undefined;
+            }
+        }).catch(error => {
+            utterance.digestExecutionFailed = true;
+            SpeechMenu.#rejectDigest(utterance, "chain-action-error", segment);
+            SpeechMenu.#emit("speechMenuCommandError", {utteranceId: utterance.id, error});
+            return false;
+        });
+    }
+
+    static #digestCandidate(utterance, candidate, remainder, isFinal) {
+        if (!SpeechMenu.#executionEnabled) return false;
+        if (candidate?.kind !== "chain" && !utterance.chainActive) return false;
+        if (utterance.digestFailed || utterance.digestCommitted) return true;
+        utterance.chainActive = true;
+        SpeechMenu.#clearCandidatePool(utterance);
+        const steps = candidate?.chain || [];
+        let count = steps.length;
+        const last = steps[count - 1];
+        // A parameter can still grow: "four" -> "four fifteen". A next
+        // command establishes its boundary; otherwise wait for final decode.
+        if (!isFinal && last && (last.canContinue ||
+            /\(\?</.test(last.commandElement.getAttribute("speech-pattern") || "") ||
+            last.commandElement.hasAttribute("speech-open-ended")) && !candidate.pending) count--;
+        for (const step of steps.slice(0, count)) SpeechMenu.#queueDigestStep(utterance, step);
+        const consumedWords = steps.slice(0, count).reduce((n, step) =>
+            n + step.segmentTranscript.split(" ").length, 0);
+        const tail = remainder.split(" ").filter(Boolean).slice(consumedWords).join(" ");
+        utterance.digestPending = tail;
+        if (candidate?.invalid || (!candidate && tail)) {
+            if (SpeechMenu.#shouldFailFast(utterance, tail, isFinal)) {
+                SpeechMenu.#rejectDigest(utterance, "no-candidates", tail);
+                return true;
+            }
+        } else utterance.noCandidateTranscript = "";
+        if (isFinal) {
+            if (tail) SpeechMenu.#rejectDigest(utterance, "no-candidates", tail);
+            else {
+                utterance.committed = true;
+                utterance.digestCommitted = true;
+                SpeechMenu.#clearPrimed(utterance);
+                if (SpeechMenu.#utterance === utterance) SpeechMenu.#finishUtterance("digested", false);
+                void utterance.digestQueue.then(() => {
+                    if (!utterance.digestExecutionFailed && !utterance.chainCanceled && !SpeechMenu.#stopped &&
+                        utterance.sessionGeneration === SpeechMenu.#sessionGeneration) {
+                        SpeechMenu.#emit("utteranceCommitted", {id: utterance.id, transcript: utterance.transcript});
+                    }
+                });
+            }
+        }
+        return true;
+    }
+
     static #shouldFailFast(utterance, transcript, isFinal) {
         if (isFinal) return true;
         // Capture-only sessions keep complete mismatches for training/editor review.
@@ -3299,6 +3456,13 @@ class SpeechMenu {
             !utterance
         ) {
             return false;
+        }
+
+        if (SpeechMenu.#executionEnabled) {
+            utterance.chainActive = true;
+            for (const step of steps) SpeechMenu.#queueDigestStep(utterance, step);
+            await utterance.digestQueue;
+            return !utterance.digestExecutionFailed && !utterance.chainCanceled;
         }
 
         utterance.commandChainExecuting =
@@ -3621,6 +3785,17 @@ class SpeechMenu {
                 live: false
             }
         );
+
+        if (SpeechMenu.#executionEnabled) {
+            utterance.digestIsFinal = true;
+            const remaining = SpeechMenu.#digestRemainder(utterance, transcript);
+            if (remaining === undefined) {
+                SpeechMenu.#rejectDigest(utterance, "consumed-prefix-revised", transcript);
+                return;
+            }
+            const pool = await SpeechMenu.#refreshCandidatePool(utterance, remaining);
+            if (SpeechMenu.#digestCandidate(utterance, pool[0], remaining, true)) return;
+        }
 
         const streamResult =
             await SpeechMenu
@@ -5187,6 +5362,7 @@ class SpeechMenu {
     static #hasOpenContinuation(
         utterance
     ) {
+        if (utterance?.chainActive && !utterance.digestFailed) return true;
         const exactCandidate =
             SpeechMenu
                 .#exactCandidate(
@@ -5833,71 +6009,9 @@ class SpeechMenu {
                                 )
                                 .includes(
                                     key
-                                )
+                                ) && SpeechMenu.#candidateStateAvailable(element, true)
                     )
             );
-    }
-
-    static #chainPlanScore(
-        plan
-    ) {
-        if (!plan) {
-            return -1;
-        }
-
-        return (
-            (
-                plan.steps
-                    ?.length ||
-                0
-            ) *
-                10000 +
-            (
-                plan.pending
-                    ? 4000
-                    : 0
-            ) +
-            (
-                plan.exact
-                    ? 2000
-                    : 0
-            ) +
-            (
-                plan.terminal
-                    ? 1000
-                    : 0
-            ) +
-            (
-                plan.consumedWords ||
-                0
-            )
-        );
-    }
-
-    static #bestChainPlan(
-        current,
-        candidate
-    ) {
-        if (!candidate) {
-            return current;
-        }
-
-        if (!current) {
-            return candidate;
-        }
-
-        return (
-            SpeechMenu
-                .#chainPlanScore(
-                    candidate
-                ) >
-            SpeechMenu
-                .#chainPlanScore(
-                    current
-                )
-        )
-            ? candidate
-            : current;
     }
 
     static async #probeChainElement(
@@ -5927,411 +6041,87 @@ class SpeechMenu {
             );
     }
 
-    static async #planChainContext(
-        context,
-        words,
-        utterance,
-        signal,
-        depth = 0
-    ) {
-        if (
-            signal?.aborted ||
-            !context ||
-            !words?.length ||
-            depth > 8
-        ) {
-            return undefined;
-        }
+    static #digestCandidates(context) {
+        const contextual = context ? SpeechMenu.#chainContextCandidates(context) : [];
+        return [...new Set([...contextual, ...SpeechMenu.#availableCandidates()])];
+    }
 
-        const candidates =
-            SpeechMenu
-                .#chainContextCandidates(
-                    context
-                );
+    static #digestCanContinue(element, segment, candidates) {
+        return SpeechMenu.#elementDirectContinuationDepth(element, segment) !== undefined ||
+            candidates.some(other => other !== element &&
+                SpeechMenu.#elementDirectContinuationDepth(other, segment) !== undefined);
+    }
 
-        if (!candidates.length) {
-            return undefined;
-        }
-
+    static async #planDigest(candidates, words, utterance, signal, depth = 0, memo = new Map(), projectedContext = utterance.digestContext) {
+        if (signal?.aborted || !words.length) return undefined;
+        memo.elementIds ??= new Map([...document.querySelectorAll("[speech-pattern]")]
+            .map((element, index) => [element, index]));
+        memo.contexts ??= new Map();
+        memo.probes ??= new Map();
+        const key = String(projectedContext || "") + ":" +
+            candidates.map(element => memo.elementIds.get(element)).join(",") + ":" + words.join(" ");
+        if (memo.has(key)) return memo.get(key);
         let best;
-
+        const select = plan => {
+            if (!plan) return;
+            const score = candidate => (candidate.invalid || (utterance.digestIsFinal && candidate.pending) ? 0 : 1000000) +
+                candidate.steps.length * 10000 + (candidate.pending ? 4000 : 0) +
+                (candidate.exact ? 2000 : 0) + candidate.consumedWords;
+            if (!best || score(plan) > score(best)) best = plan;
+        };
         for (const element of candidates) {
-            if (signal?.aborted) {
-                return undefined;
-            }
-
-            for (
-                let end = 1;
-                end <= words.length;
-                end++
-            ) {
-                const segment =
-                    words
-                        .slice(
-                            0,
-                            end
-                        )
-                        .join(" ");
-
-                const probe =
-                    await SpeechMenu
-                        .#probeChainElement(
-                            element,
-                            segment,
-                            utterance,
-                            signal
-                        );
-
-                if (!probe) {
-                    continue;
-                }
-
-                const nextContext =
-                    SpeechMenu
-                        .#chainNextContext(
-                            element
-                        );
-                const remaining =
-                    words.slice(end);
-                const step = {
-                    ...probe,
-                    segmentTranscript:
-                        segment
-                };
-
-                if (
-                    remaining.length &&
-                    nextContext
-                ) {
-                    const tail =
-                        await SpeechMenu
-                            .#planChainContext(
-                                nextContext,
-                                remaining,
-                                utterance,
-                                signal,
-                                depth + 1
-                            );
-
-                    if (tail) {
-                        best =
-                            SpeechMenu
-                                .#bestChainPlan(
-                                    best,
-                                    {
-                                        ...tail,
-                                        steps: [
-                                            step,
-                                            ...tail
-                                                .steps
-                                        ],
-                                        consumedWords:
-                                            end +
-                                            (
-                                                tail
-                                                    .consumedWords ||
-                                                0
-                                            )
-                                    }
-                                );
-                    }
-
-                    continue;
-                }
-
+            if (signal?.aborted) return undefined;
+            const full = words.join(" ");
+            const partialDepth = SpeechMenu.#elementDirectContinuationDepth(element, full);
+            if (partialDepth !== undefined) select({steps: [], exact: false, continuation: true,
+                terminal: false, pending: {element, transcript: full}, consumedWords: 0,
+                remainder: full, depth: partialDepth});
+            for (let end = 1; end <= words.length; end++) {
+                const segment = words.slice(0, end).join(" ");
+                if (!memo.probes.has(element)) memo.probes.set(element, new Map());
+                const probes = memo.probes.get(element);
+                if (!probes.has(segment)) probes.set(segment,
+                    SpeechMenu.#probeChainElement(element, segment, utterance, signal));
+                const probe = await probes.get(segment);
+                if (!probe || signal?.aborted) continue;
+                const context = SpeechMenu.#chainNextContext(element);
+                if (!memo.contexts.has(context)) memo.contexts.set(context, SpeechMenu.#digestCandidates(context));
+                const next = memo.contexts.get(context);
+                const step = {...probe, segmentTranscript: segment,
+                    nextContext: context, context: projectedContext,
+                    canContinue: SpeechMenu.#digestCanContinue(element, segment, candidates)};
+                const remaining = words.slice(end);
                 if (remaining.length) {
-                    continue;
+                    const tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context);
+                    if (tail) select({...tail, steps: [step, ...tail.steps], consumedWords: end + tail.consumedWords});
+                    else select({steps: [step], exact: false, continuation: false, terminal: false,
+                        invalid: true, consumedWords: end, remainder: remaining.join(" ")});
+                } else {
+                    const future = context ? SpeechMenu.#chainContextCandidates(context) : [];
+                    select({steps: [step], exact: true, continuation: future.length > 0 || step.canContinue,
+                        terminal: future.length === 0 && !step.canContinue, consumedWords: end, remainder: ""});
                 }
-
-                const future =
-                    nextContext
-                        ? SpeechMenu
-                            .#chainContextCandidates(
-                                nextContext
-                            )
-                        : [];
-                const directContinuation =
-                    SpeechMenu
-                        .#elementDirectContinuationDepth(
-                            element,
-                            segment
-                        ) !==
-                        undefined;
-
-                best =
-                    SpeechMenu
-                        .#bestChainPlan(
-                            best,
-                            {
-                                steps: [
-                                    step
-                                ],
-                                exact: true,
-                                continuation:
-                                    future.length >
-                                        0 ||
-                                    directContinuation,
-                                terminal:
-                                    future.length ===
-                                        0,
-                                pending:
-                                    undefined,
-                                consumedWords:
-                                    end,
-                                depth:
-                                    directContinuation
-                                        ? SpeechMenu
-                                            .#elementDirectContinuationDepth(
-                                                element,
-                                                segment
-                                            )
-                                        : Number
-                                            .MAX_SAFE_INTEGER
-                            }
-                        );
-            }
-
-            const partialText =
-                words.join(" ");
-            const partialDepth =
-                SpeechMenu
-                    .#elementDirectContinuationDepth(
-                        element,
-                        partialText
-                    );
-
-            if (
-                partialDepth !==
-                undefined
-            ) {
-                best =
-                    SpeechMenu
-                        .#bestChainPlan(
-                            best,
-                            {
-                                steps: [],
-                                exact: false,
-                                continuation:
-                                    true,
-                                terminal:
-                                    false,
-                                pending: {
-                                    element,
-                                    transcript:
-                                        partialText
-                                },
-                                consumedWords:
-                                    words.length,
-                                depth:
-                                    partialDepth
-                            }
-                        );
             }
         }
-
+        memo.set(key, best);
         return best;
     }
 
-    static async #planCommandChain(
-        utterance,
-        transcript,
-        signal
-    ) {
-        const normalized =
-            SpeechMenu
-                .#normalizeTranscript(
-                    transcript
-                );
-        const words =
-            normalized
-                .split(" ")
-                .filter(Boolean);
-
-        if (!words.length) {
-            return undefined;
-        }
-
-        const roots =
-            SpeechMenu
-                .#availableCandidates()
-                .filter(
-                    element =>
-                        Boolean(
-                            SpeechMenu
-                                .#chainNextContext(
-                                    element
-                                )
-                        )
-                );
-
-        let best;
-
-        for (const element of roots) {
-            if (signal?.aborted) {
-                return undefined;
-            }
-
-            for (
-                let end = 1;
-                end <= words.length;
-                end++
-            ) {
-                const segment =
-                    words
-                        .slice(
-                            0,
-                            end
-                        )
-                        .join(" ");
-                const probe =
-                    await SpeechMenu
-                        .#probeChainElement(
-                            element,
-                            segment,
-                            utterance,
-                            signal
-                        );
-
-                if (!probe) {
-                    continue;
-                }
-
-                const nextContext =
-                    SpeechMenu
-                        .#chainNextContext(
-                            element
-                        );
-                const remaining =
-                    words.slice(end);
-                const rootStep = {
-                    ...probe,
-                    segmentTranscript:
-                        segment
-                };
-
-                if (remaining.length) {
-                    const tail =
-                        await SpeechMenu
-                            .#planChainContext(
-                                nextContext,
-                                remaining,
-                                utterance,
-                                signal,
-                                1
-                            );
-
-                    if (!tail) {
-                        continue;
-                    }
-
-                    best =
-                        SpeechMenu
-                            .#bestChainPlan(
-                                best,
-                                {
-                                    ...tail,
-                                    steps: [
-                                        rootStep,
-                                        ...tail.steps
-                                    ],
-                                    consumedWords:
-                                        end +
-                                        (
-                                            tail
-                                                .consumedWords ||
-                                            0
-                                        )
-                                }
-                            );
-                    continue;
-                }
-
-                const future =
-                    SpeechMenu
-                        .#chainContextCandidates(
-                            nextContext
-                        );
-                const directContinuation =
-                    SpeechMenu
-                        .#elementDirectContinuationDepth(
-                            element,
-                            segment
-                        ) !==
-                        undefined;
-
-                best =
-                    SpeechMenu
-                        .#bestChainPlan(
-                            best,
-                            {
-                                steps: [
-                                    rootStep
-                                ],
-                                exact: true,
-                                continuation:
-                                    future.length >
-                                        0 ||
-                                    directContinuation,
-                                terminal: false,
-                                pending:
-                                    undefined,
-                                consumedWords:
-                                    end,
-                                depth:
-                                    directContinuation
-                                        ? SpeechMenu
-                                            .#elementDirectContinuationDepth(
-                                                element,
-                                                segment
-                                            )
-                                        : Number
-                                            .MAX_SAFE_INTEGER
-                            }
-                        );
-            }
-        }
-
-        if (!best) {
-            return undefined;
-        }
-
-        const root =
-            best.steps?.[0];
-
-        return {
-            kind: "chain",
-            utteranceId:
-                utterance.id,
-            commandElement:
-                root
-                    ?.commandElement,
-            speechMenuElement:
-                root
-                    ?.speechMenuElement,
-            transcript:
-                normalized,
-            exact:
-                Boolean(
-                    best.exact
-                ),
-            continuation:
-                Boolean(
-                    best.continuation
-                ),
-            system: false,
-            depth:
-                best.depth ??
-                Number.MAX_SAFE_INTEGER,
-            order: -1,
-            chain:
-                best.steps || [],
-            pending:
-                best.pending,
-            terminal:
-                Boolean(
-                    best.terminal
-                )
-        };
+    static async #planCommandChain(utterance, transcript, signal) {
+        const normalized = SpeechMenu.#normalizeTranscript(transcript);
+        const words = normalized.split(" ").filter(Boolean);
+        if (!words.length) return undefined;
+        const best = await SpeechMenu.#planDigest(SpeechMenu.#digestCandidates(utterance.digestContext),
+            words, utterance, signal);
+        if (!best || (!best.steps.length && !utterance.chainActive)) return undefined;
+        const root = best.steps[0] || best.pending;
+        return {kind: "chain", utteranceId: utterance.id,
+            commandElement: root?.commandElement || root?.element,
+            speechMenuElement: root?.speechMenuElement, transcript: normalized,
+            exact: Boolean(best.exact), continuation: Boolean(best.continuation),
+            system: false, depth: best.depth ?? Number.MAX_SAFE_INTEGER, order: -1,
+            chain: best.steps, pending: best.pending, terminal: Boolean(best.terminal),
+            invalid: Boolean(best.invalid), remainder: best.remainder || ""};
     }
 
     static async #refreshCandidatePool(
@@ -6864,24 +6654,40 @@ class SpeechMenu {
     }
 
     static #candidateStateAvailable(
-        element
+        element,
+        projected = false
     ) {
+        const primed = projected || SpeechMenu.#isPrimed(element);
         if (
             !element ||
-            element.hasAttribute(
+            (!primed && element.hasAttribute(
                 "hidden"
-            ) ||
+            )) ||
             element.hasAttribute(
                 "disabled"
             ) ||
-            element.hasAttribute(
+            (!primed && element.hasAttribute(
                 "inert"
-            ) ||
-            element.getAttribute(
+            )) ||
+            (!primed && element.getAttribute(
                 "aria-hidden"
-            ) === "true"
+            ) === "true")
         ) {
             return false;
+        }
+
+        const authorization = element.getAttribute("speech-authorized");
+        if (authorization) {
+            const resolved = SpeechMenu.#resolve(authorization);
+            try {
+                if (!resolved || resolved.fn.call(resolved.owner, element) !== true) return false;
+            } catch { return false; }
+        }
+        // Projected contexts bypass UI readiness, never disabled/authorization.
+        if (primed) {
+            const targets = SpeechMenu.#resolveSpeechTarget(element).elements;
+            if (targets.length && targets.every(target => target.matches?.(":disabled, [disabled]"))) return false;
+            return true;
         }
 
         if (
@@ -6991,6 +6797,7 @@ class SpeechMenu {
         const topLevel = [];
         const defaults = [];
         const contextual = [];
+        const primed = [];
 
         for (const element of all) {
             if (
@@ -6999,6 +6806,11 @@ class SpeechMenu {
                         element
                     )
             ) {
+                continue;
+            }
+
+            if (SpeechMenu.#isPrimed(element)) {
+                primed.push(element);
                 continue;
             }
 
@@ -7081,10 +6893,12 @@ class SpeechMenu {
             );
 
             append(defaults);
+            append(primed);
             return result;
         }
 
         append(defaults);
+        append(primed);
 
         const openContainers =
             [
@@ -7976,7 +7790,8 @@ class SpeechMenu {
             argumentValues,
             target,
             responseSession,
-            outcomeValue
+            outcomeValue,
+            executionStartedAt
         }
     ) {
         try {
@@ -8078,9 +7893,7 @@ class SpeechMenu {
                 {
                     utteranceId,
                     utteranceStartedAt:
-                        executionStartedAt ||
-                        utterance
-                            ?.wallStartedAt,
+                        executionStartedAt,
                     commandElement:
                         element,
                     speechMenuElement,
@@ -8140,7 +7953,8 @@ class SpeechMenu {
         signal,
         executionStartedAt,
         awaitCompletion = false,
-        quietProvisional = false
+        quietProvisional = false,
+        executionMetadata
     ) {
         if (signal?.aborted) {
             return false;
@@ -8663,7 +8477,9 @@ class SpeechMenu {
                     utteranceStartedAt:
                         executionStartedAt ||
                         utterance
-                            ?.wallStartedAt
+                            ?.wallStartedAt,
+                    chain: executionMetadata?.chain === true || utterance?.commandChainExecuting === true,
+                    chainContext: executionMetadata?.chainContext || utterance?.digestExecutingContext
                 });
 
             let outcomeValue;
@@ -8713,6 +8529,10 @@ class SpeechMenu {
                 }
             );
 
+            // A chain depends on the action result, not on a response paint.
+            // Presentation continues independently after logical completion.
+            if (awaitCompletion && executionMetadata?.chain) outcomeValue = await outcomeValue;
+
             const completion =
                 SpeechMenu
                     .#completeSpeechExecution({
@@ -8733,10 +8553,11 @@ class SpeechMenu {
                                 target.elements.slice()
                         },
                         responseSession,
-                        outcomeValue
+                        outcomeValue,
+                        executionStartedAt: executionStartedAt || utterance?.wallStartedAt
                     });
 
-            if (awaitCompletion) {
+            if (awaitCompletion && !executionMetadata?.chain) {
                 return Boolean(
                     await completion
                 );
@@ -8751,7 +8572,7 @@ class SpeechMenu {
              * effects while the recognizer accepts and commits later
              * speech independently.
              */
-            return true;
+            return outcomeValue !== false;
         }
         catch (error) {
             SpeechMenu.#emit(
@@ -8794,6 +8615,8 @@ class SpeechMenu {
     }
 
     static async #releaseCapture() {
+        SpeechMenu.#clearPrimed();
+        if (SpeechMenu.#utterance) SpeechMenu.#utterance.chainCanceled = true;
         const captureNode =
             SpeechMenu.#captureNode;
 
