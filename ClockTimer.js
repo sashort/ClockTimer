@@ -1,3 +1,19 @@
+/*
+ * POST-MIGRATION RESPONSIBILITY NOTES
+ *
+ * Aggregate counted-time state belongs to TimeRangeGroup:
+ *   totalCountedTime
+ *   elapsedCountedTime
+ *   remainingCountedTime
+ *
+ * ClockTimer remains responsible for timer lifecycle/orchestration and should
+ * delegate aggregate counted-time queries to its TimeRangeGroup instances.
+ *
+ * The original ClockTimer implementation is preserved below. During manual
+ * application, replace duplicated aggregate counted-time calculations with
+ * group.totalCountedTime / elapsedCountedTime / remainingCountedTime.
+ */
+
 (() => {
     class ClockTimerUIState {
         constructor(values = {}) {
