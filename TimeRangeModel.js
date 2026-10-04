@@ -29,9 +29,7 @@ class TimeRangeTick {
 
     static #time(value) {
         const date = value instanceof Date ? value : new Date(value);
-        if (!Number.isFinite(date.getTime())) {
-            throw new TypeError("Tick times must be valid dates.");
-        }
+        if (!Number.isFinite(date.getTime())) throw new TypeError("Tick times must be valid dates.");
         return date.getTime();
     }
 }
@@ -42,7 +40,6 @@ class TimeRangeGroup extends EventTarget {
     #clock;
     #clockListener;
     #boundaries = [];
-    #active = true;
 
     constructor(clock = null, boundaries = []) {
         super();
@@ -62,18 +59,9 @@ class TimeRangeGroup extends EventTarget {
 
     setBoundaries(boundaries = []) {
         if (!Array.isArray(boundaries)) throw new TypeError("boundaries must be an array.");
-        const values = boundaries.map(TimeRangeGroup.#time);
-        values.sort((a, b) => a - b);
+        const values = boundaries.map(TimeRangeGroup.#time).sort((a, b) => a - b);
         this.#boundaries = [...new Set(values)];
         return this;
-    }
-
-    addEventListener(type, listener, options) {
-        return super.addEventListener(type, listener, options);
-    }
-
-    removeEventListener(type, listener, options) {
-        return super.removeEventListener(type, listener, options);
     }
 
     tick(currentTime, lastTickTime) {
@@ -84,35 +72,32 @@ class TimeRangeGroup extends EventTarget {
         this.#propagate(this.#head, tick);
     }
 
-    insert(range, before = null) {
+    insert(range, before = undefined) {
         if (!(range instanceof TimeRange) || range.group !== this) {
             throw new TypeError("Range must belong to this group.");
         }
-        if (range.previous || range.next || this.#head === range) {
-            return range;
+        if (range.previous || range.next || this.#head === range) return range;
+
+        let reference = before;
+        if (reference === undefined) {
+            reference = this.#head;
+            while (reference && reference.start.getTime() <= range.start.getTime()) reference = reference.next;
         }
-        if (before !== null && (!(before instanceof TimeRange) || before.group !== this)) {
+        if (reference !== null && reference !== undefined && (!(reference instanceof TimeRange) || reference.group !== this)) {
             throw new TypeError("before must belong to this group.");
         }
-        if (before === range) return range;
 
-        if (before) {
-            range.#previous = before.previous;
-            range.#next = before;
-            if (before.previous) before.previous.#next = range;
-            else this.#head = range;
-            before.#previous = range;
-        }
-        else if (!this.#tail) {
-            this.#head = this.#tail = range;
-        }
-        else {
-            range.#previous = this.#tail;
-            this.#tail.#next = range;
-            this.#tail = range;
-        }
-        if (!this.#tail) this.#tail = range;
-        this.dispatchEvent(new CustomEvent("insert", { detail: { range, previous: range.previous, next: range.next } }));
+        const previous = reference ? reference.previous : this.#tail;
+        if (previous) previous.#next = range;
+        else this.#head = range;
+        if (reference) reference.#previous = range;
+        else this.#tail = range;
+        range.#previous = previous || null;
+        range.#next = reference || null;
+
+        this.dispatchEvent(new CustomEvent("insert", {
+            detail: { range, previous: range.previous, next: range.next }
+        }));
         return range;
     }
 
@@ -126,7 +111,9 @@ class TimeRangeGroup extends EventTarget {
         else this.#tail = previous;
         range.#previous = null;
         range.#next = null;
-        this.dispatchEvent(new CustomEvent("remove", { detail: { range, previous, next } }));
+        this.dispatchEvent(new CustomEvent("remove", {
+            detail: { range, previous, next }
+        }));
         if (!this.#head) this.#detachClock();
         return true;
     }
@@ -135,35 +122,37 @@ class TimeRangeGroup extends EventTarget {
         if (!(range instanceof TimeRange) || range.group !== this) throw new TypeError("Range does not belong to this group.");
         const point = TimeRangeGroup.#time(boundary);
         if (point <= range.#start || point >= range.#end) throw new RangeError("Split boundary must be inside the range.");
-        const rightType = TimeRange.Type.EXPANDABLE;
-        const leftType = TimeRange.Type.COLLAPSABLE;
-        const right = TimeRange.#fromValidated(rightType, point, range.#end, this, range.element);
-        const oldType = range.#type;
-        range.#type = leftType;
+        const right = TimeRange.#fromValidated(TimeRange.Type.EXPANDABLE, point, range.#end, this);
+        const originalType = range.#type;
+        range.#type = TimeRange.Type.COLLAPSABLE;
         range.#end = point;
         this.insert(right, range.next);
         this.dispatchEvent(new CustomEvent("split", {
-            detail: { original: range, ranges: [range, right], boundary: new Date(point), previousType: oldType }
+            detail: { original: range, ranges: [range, right], boundary: new Date(point), previousType: originalType }
         }));
         return [range, right];
     }
 
     #propagate(range, tick) {
         let current = range;
-        while (current && tick.remainingDelta >= 0) {
-            const next = current.next;
+        while (current) {
             const outcome = current.#handleTick(tick);
             if (outcome === "stop") return;
-            current = current.next || next;
-            if (current === null) {
+            const next = current.next;
+            if (!next) {
                 if (outcome === "end") {
-                    const overrun = tick.currentTime.getTime() > range.#end;
                     this.dispatchEvent(new CustomEvent("end", {
-                        detail: { group: this, range, tick, overrun }
+                        detail: {
+                            group: this,
+                            range: current,
+                            tick,
+                            overrun: tick.currentTime.getTime() > current.#end
+                        }
                     }));
                 }
                 return;
             }
+            current = next;
         }
     }
 
@@ -186,12 +175,8 @@ class TimeRangeGroup extends EventTarget {
 
     #detachClock() {
         if (!this.#clock || !this.#clockListener) return;
-        if (typeof this.#clock.removeEventListener === "function") {
-            this.#clock.removeEventListener("tick", this.#clockListener);
-        }
-        else if (typeof this.#clock.off === "function") {
-            this.#clock.off("tick", this.#clockListener);
-        }
+        if (typeof this.#clock.removeEventListener === "function") this.#clock.removeEventListener("tick", this.#clockListener);
+        else if (typeof this.#clock.off === "function") this.#clock.off("tick", this.#clockListener);
         this.#clockListener = undefined;
     }
 
@@ -242,6 +227,9 @@ class TimeRange {
         const startMs = TimeRange.#time(start);
         const endMs = TimeRange.#time(end);
         if (endMs < startMs) throw new RangeError("TimeRange end must not precede start.");
+        if (startMs === endMs && normalizedType !== TimeRange.Type.EXPANDABLE) {
+            throw new RangeError("Only Expandable ranges may have zero length.");
+        }
 
         if (!group) {
             group = new TimeRangeGroup(clock, boundaries ?? []);
@@ -255,10 +243,11 @@ class TimeRange {
         const ranges = [];
         for (const piece of pieces) {
             TimeRange.#validatePlacement(piece.type, piece.start, piece.end, group);
-            const range = TimeRange.#fromValidated(piece.type, piece.start, piece.end, group, element);
+            const range = TimeRange.#fromValidated(piece.type, piece.start, piece.end, group, ranges.length === 0 ? element : null);
             group.insert(range);
             ranges.push(range);
         }
+        TimeRange.#validateZeroLengthExpandables(group);
         return { group, ranges };
     }
 
@@ -290,26 +279,29 @@ class TimeRange {
         }
 
         if (this.#type === TimeRange.Type.EXPANDABLE) {
-            if (now <= this.#start) return "continue";
+            if (now < this.#start) return "continue";
             if (cursor < this.#start) tick.advanceTo(this.#start);
-            if (tick.remainingDelta > 0) {
-                this.#end += tick.remainingDelta;
+            const delta = tick.remainingDelta;
+            if (delta > 0) {
+                this.#end += delta;
                 tick.advanceTo(now);
             }
             return "continue";
         }
 
         if (this.#type === TimeRange.Type.MOVEABLE) {
-            if (tick.remainingDelta > 0) {
-                this.#start += tick.remainingDelta;
-                this.#end += tick.remainingDelta;
+            const delta = tick.remainingDelta;
+            if (delta > 0) {
+                this.#start += delta;
+                this.#end += delta;
                 tick.advanceTo(now);
             }
             return "continue";
         }
 
         if (this.#type === TimeRange.Type.COLLAPSABLE) {
-            const remaining = Math.max(0, this.#end - Math.max(cursor, this.#start));
+            const activeStart = Math.max(cursor, this.#start);
+            const remaining = Math.max(0, this.#end - activeStart);
             const consumed = Math.min(tick.remainingDelta, remaining);
             if (consumed > 0) tick.advanceTo(cursor + consumed);
             if (consumed >= remaining) {
@@ -328,23 +320,63 @@ class TimeRange {
 
     static #validatePlacement(type, start, end, group) {
         for (let range = group.head; range; range = range.next) {
+            if (start === end && range.start.getTime() === start && range.end.getTime() === end) {
+                throw new Error("Only one zero-length range may occupy a given instant.");
+            }
             if (end <= range.#start || start >= range.#end) continue;
             throw new Error("TimeRange overlap is a contract violation.");
         }
-        const previous = group.tail;
-        if (!previous) return;
-        const previousType = previous.#type;
-        if (previousType === TimeRange.Type.EXPANDABLE && type === TimeRange.Type.EXPANDABLE) {
-            throw new Error("Adjacent Expandable ranges are illegal.");
+
+        const previous = TimeRange.#findPrevious(group, start, end);
+        const next = previous?.next ?? group.head;
+        TimeRange.#validateAdjacent(previous, type, next);
+    }
+
+    static #findPrevious(group, start, end) {
+        let previous = null;
+        for (let range = group.head; range && range.start.getTime() <= start; range = range.next) previous = range;
+        return previous;
+    }
+
+    static #validateAdjacent(previous, type, next) {
+        if (previous) {
+            if (previous.#type === TimeRange.Type.EXPANDABLE && type === TimeRange.Type.EXPANDABLE) {
+                throw new Error("Adjacent Expandable ranges are illegal.");
+            }
+            if (previous.#type === TimeRange.Type.MOVEABLE && type === TimeRange.Type.FIXED) {
+                throw new Error("Moveable followed by Fixed is illegal.");
+            }
+            if (previous.#type === TimeRange.Type.MOVEABLE && type === TimeRange.Type.EXPANDABLE) {
+                throw new Error("Moveable followed by Expandable is illegal.");
+            }
         }
-        if (previousType === TimeRange.Type.MOVEABLE && type === TimeRange.Type.FIXED) {
-            throw new Error("Moveable followed by Fixed is illegal.");
+        if (next) {
+            if (type === TimeRange.Type.EXPANDABLE && next.#type === TimeRange.Type.EXPANDABLE) {
+                throw new Error("Adjacent Expandable ranges are illegal.");
+            }
+            if (type === TimeRange.Type.MOVEABLE && next.#type === TimeRange.Type.FIXED) {
+                throw new Error("Moveable followed by Fixed is illegal.");
+            }
+            if (type === TimeRange.Type.MOVEABLE && next.#type === TimeRange.Type.EXPANDABLE) {
+                throw new Error("Moveable followed by Expandable is illegal.");
+            }
         }
-        if (previousType === TimeRange.Type.MOVEABLE && type === TimeRange.Type.EXPANDABLE) {
-            throw new Error("Moveable followed by Expandable is illegal.");
+        if (type === TimeRange.Type.MOVEABLE) {
+            let cursor = previous;
+            while (cursor && cursor.#type === TimeRange.Type.COLLAPSABLE) cursor = cursor.previous;
+            if (!cursor || (cursor.#type !== TimeRange.Type.EXPANDABLE && cursor.#type !== TimeRange.Type.MOVEABLE)) {
+                throw new Error("A Moveable must belong to a chain rooted in an Expandable.");
+            }
         }
-        if (type === TimeRange.Type.MOVEABLE && previousType !== TimeRange.Type.EXPANDABLE && previousType !== TimeRange.Type.MOVEABLE && previousType !== TimeRange.Type.COLLAPSABLE) {
-            throw new Error("A Moveable must be rooted in an Expandable/Moveable chain.");
+    }
+
+    static #validateZeroLengthExpandables(group) {
+        let zeroCount = 0;
+        for (let range = group.head; range; range = range.next) {
+            if (range.#type === TimeRange.Type.EXPANDABLE && range.#start === range.#end) {
+                zeroCount++;
+                if (zeroCount > 1) throw new Error("Only one zero-length Expandable is allowed in a group.");
+            }
         }
     }
 
@@ -354,11 +386,13 @@ class TimeRange {
         const sorted = [...new Set(points)].sort((a, b) => a - b);
         const pieces = [];
         let cursor = start;
+        let before = true;
         for (const boundary of sorted) {
-            pieces.push({ type: TimeRange.Type.COLLAPSABLE, start: cursor, end: boundary });
-            pieces.push({ type: TimeRange.Type.EXPANDABLE, start: boundary, end });
+            if (boundary > cursor) pieces.push({ type: before ? TimeRange.Type.COLLAPSABLE : TimeRange.Type.EXPANDABLE, start: cursor, end: boundary });
             cursor = boundary;
+            before = !before;
         }
+        if (end > cursor) pieces.push({ type: before ? TimeRange.Type.COLLAPSABLE : TimeRange.Type.EXPANDABLE, start: cursor, end });
         return pieces;
     }
 
