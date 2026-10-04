@@ -1,4 +1,29 @@
 class TimeRange extends HTMLElement {
+    /**
+     * Counted-time participation for this range.
+     * The owning TimeRangeGroup aggregates these values.
+     */
+    counted = {
+        total: 0,
+        elapsed: 0,
+        remaining: 0
+    };
+
+    setCountedTime(total, elapsed = 0, remaining = total - elapsed) {
+        if (!Number.isFinite(total) || total < 0) {
+            throw new Error("counted.total must be a non-negative number");
+        }
+        if (!Number.isFinite(elapsed) || elapsed < 0 || elapsed > total) {
+            throw new Error("counted.elapsed must be between 0 and counted.total");
+        }
+        if (!Number.isFinite(remaining) || remaining < 0 || remaining > total) {
+            throw new Error("counted.remaining must be between 0 and counted.total");
+        }
+        this.counted = { total, elapsed, remaining };
+        return this.counted;
+    }
+
+
     static #instances = [];
     static #percentGoal = 1;
     static #reordering = false;
