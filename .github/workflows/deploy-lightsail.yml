@@ -174,11 +174,11 @@ jobs:
              LIVE_STREAM_APACHE_CONF=/opt/bitnami/apache2/conf/clocktimer-live-stream.conf
              HTTPD_CONF=/opt/bitnami/apache2/conf/httpd.conf
 
-             sudo -n install -m 644                deploy/clocktimer-live-stream.service                "$LIVE_STREAM_SERVICE"
-             sudo -n install -m 644                deploy/clocktimer-live-stream-apache.conf                "$LIVE_STREAM_APACHE_CONF"
+             sudo -n install -m 644 deploy/clocktimer-live-stream.service "$LIVE_STREAM_SERVICE"
+             sudo -n install -m 644 deploy/clocktimer-live-stream-apache.conf "$LIVE_STREAM_APACHE_CONF"
 
              if ! sudo -n grep -Fq "Include \"$LIVE_STREAM_APACHE_CONF\"" "$HTTPD_CONF"; then
-               printf '\nInclude "%s"\n' "$LIVE_STREAM_APACHE_CONF"                  | sudo -n tee -a "$HTTPD_CONF" >/dev/null
+               printf "%s\n" "Include \"$LIVE_STREAM_APACHE_CONF\"" | sudo -n tee -a "$HTTPD_CONF" >/dev/null
              fi
 
              sudo -n /opt/bitnami/apache2/bin/apachectl -t
