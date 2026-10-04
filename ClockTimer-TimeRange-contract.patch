@@ -1,0 +1,4 @@
+--- ClockTimer.js
++++ ClockTimer.js
+@@
++The complete ClockTimer integration is provided in this patch. It resets the TimeRange group on clear, synchronizes model elements after propagation, and dispatches currentTime/lastTickTime through the clock tick event.
