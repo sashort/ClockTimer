@@ -68,6 +68,11 @@ jobs:
              git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
              git reset --hard "origin/$DEPLOY_BRANCH"
 
+             # inbound/ is intentionally outside Git and must be writable by PHP/Apache.
+             # Repair ownership and permissions on every deployment so uploads work even
+             # when the directory was previously created by a different user.
+             sudo -n install -d -o daemon -g daemon -m 700 /opt/bitnami/apache2/htdocs/inbound
+
              if [ -s "$ROLES_BACKUP" ]; then
                cp "$ROLES_BACKUP" SpeechFunctionRoles.js
                rm -f "$ROLES_BACKUP"
