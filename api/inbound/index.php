@@ -93,7 +93,7 @@ function handle_inbound_upload(): never
         api_error('A file with that name already exists in inbound.', 409, 'file_exists');
     }
 
-    $maxBytes = 20 * 1024 * 1024;
+    $maxBytes = 100 * 1024 * 1024;
     $contentLength = $_SERVER['CONTENT_LENGTH'] ?? null;
     if ($contentLength !== null && ctype_digit((string) $contentLength) && (int) $contentLength > $maxBytes) {
         api_error('The uploaded file is too large.', 413, 'file_too_large');
@@ -222,7 +222,7 @@ body{font-family:system-ui,sans-serif;max-width:720px;margin:48px auto;padding:0
 <body>
 <div class="card">
 <h1>Inbound File Upload</h1>
-<p class="muted">Drop a file below, or click to choose one. Maximum size: 20 MB.</p>
+<p class="muted">Drop a file below, or click to choose one. Maximum size: 100 MB.</p>
 <div id="drop" class="drop"><input id="file" type="file"><strong>Drag a file here</strong><br><span class="muted">or click to choose a file</span><div id="name" class="name"></div></div>
 <input id="token" class="token" type="password" autocomplete="off" placeholder="One-time token (anonymous access only)">
 <div class="row"><button id="clear" class="clear" type="button" disabled>Clear</button><button id="upload" class="upload" type="button" disabled>OK / Upload</button></div>
