@@ -28865,7 +28865,7 @@
                 );
             }
             const speechTargets = {
-                readyAt:"#newTripButton", ready:"#newTripButton",
+                readyAt:"#newTripButton", ready:"#newTripButton:enabled, #endTripButton:enabled",
                 breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
                 resume:"#downResumeButton",
                 changeGoal:"#goalPercentValue",

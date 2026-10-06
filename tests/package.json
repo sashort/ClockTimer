@@ -27,7 +27,7 @@
     "test:speech-chain": "node speech-command-digest.mjs && node speech-chain-actions.mjs",
     "test:speech-failfast": "node speech-failfast.mjs",
     "test:time-range": "node time-range-group.mjs && node counted-time-accounting.mjs && node time-range-ring-container.mjs",
-    "test:state-transactions": "node async-persistence.mjs && node clock-state-transactions.mjs && node app-state-transactions.mjs && node app-state-transactions.mjs --pointer-confirmation && node speech-command-digest.mjs"
+    "test:state-transactions": "node async-persistence.mjs && node clock-state-transactions.mjs && node app-state-transactions.mjs && node app-state-transactions.mjs --pointer-confirmation && node app-state-transactions.mjs --ready-finish && node speech-command-digest.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

@@ -106,7 +106,14 @@ if(process.argv.includes('--pointer-confirmation')) {
 assert.equal(timer.status,'running','confirmation starts the trip');
 assert(stored.some(e=>e.event==='trip.started'),'the confirmed trip reaches persistence');
 window.__testTime+=120000;
-await window.WMOFActions.endTrip();await settle();
+if(process.argv.includes('--ready-finish')) {
+    const finishReady=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(finishReady,'ready',true);await finishReady.digestQueue;await settle();
+    assert(!finishReady.digestExecutionFailed,'Ready finishes the active trip');
+    assert(stored.some(e=>e.event==='trip.stopped'),'Ready persists the completed trip');
+} else {
+    await window.WMOFActions.endTrip();await settle();
+}
 assert.equal(window.document.querySelector('#app').dataset.persistenceState,'confirmed','finishing the trip settles its transaction');
 const nextValue=window.SpeechMenu.testBegin();
 await window.SpeechMenu.testTranscript(nextValue,'twenty minutes',true);await nextValue.digestQueue;await settle();
