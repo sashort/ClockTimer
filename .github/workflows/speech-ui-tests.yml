@@ -22,6 +22,9 @@ on:
       - "UserLookup.js"
       - "HamburgerMenu.js"
       - "index.html"
+      - "index.php"
+      - "templates/index.html"
+      - "tests/time-range-bootstrap.mjs"
       - "app.css"
       - "api/admin/speech-editor/**"
       - "api/admin/access-tokens/**"
@@ -59,6 +62,7 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          node tests/time-range-bootstrap.mjs
           node --check TimeRangeModel.js
           node --check TimeRangeElement.js
           node --check RingContainer.js
