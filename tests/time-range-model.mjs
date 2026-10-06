@@ -39,19 +39,19 @@ dormant.group.tick(t("12:05"), t("11:55"));
 assert.equal(dormantRange.end.getTime(), t("12:05").getTime());
 
 const barrier = TimeRange.create({type: TimeRange.Type.FIXED, start: t("13:00"), end: t("13:30")});
-let endEvent;
-barrier.group.addEventListener(TimeRange.Events.END, event => { endEvent = event; });
+const endEvents = [];
+barrier.group.addEventListener("end", event => { endEvents.push(event); });
+assert.equal("END" in TimeRange.Events, false);
 barrier.group.tick(t("13:30"), t("13:20"));
-assert(endEvent);
-assert.equal(endEvent.detail.overrun, false);
 barrier.group.tick(t("13:31"), t("13:30"));
-assert.equal(endEvent.detail.overrun, true);
+assert.equal(endEvents.length, 0, "Reaching or passing the group end emits no redundant end event");
+assert.equal(barrier.group.tail.end.getTime(), t("13:30").getTime());
 
 const boundaries = TimeRange.create({type: TimeRange.Type.FIXED, start: t("14:00"), end: t("14:40"), boundaries: [t("14:20"), t("14:30")]});
 assert.equal(boundaries.ranges.length, 3);
 assert.equal(boundaries.ranges[0].type, TimeRange.Type.COLLAPSABLE);
-assert.equal(boundaries.ranges[1].type, TimeRange.Type.EXPANDABLE);
-assert.equal(boundaries.ranges[2].type, TimeRange.Type.COLLAPSABLE);
+assert.equal(boundaries.ranges[1].type, TimeRange.Type.COLLAPSABLE);
+assert.equal(boundaries.ranges[2].type, TimeRange.Type.EXPANDABLE);
 assert.equal(boundaries.ranges[0].end.getTime(), boundaries.ranges[1].start.getTime());
 assert.equal(boundaries.ranges[1].end.getTime(), boundaries.ranges[2].start.getTime());
 

@@ -12,6 +12,7 @@ on:
       - "ClockTimer.js"
       - "TimeRange.js"
       - "TimeRangeGroup.js"
+      - "TimeRangeModel.js"
       - "tests/time-range-*.mjs"
       - "tests/counted-time-accounting.mjs"
       - "tests/active-trip-restore.mjs"
@@ -59,6 +60,7 @@ jobs:
         run: |
           node --check TimeRange.js
           node --check TimeRangeGroup.js
+          node --check TimeRangeModel.js
           node --check ClockTimer.js
           node --check SpeechMenu.js
           node --check AdaptiveSpeechTiming.js
@@ -111,6 +113,10 @@ jobs:
       - name: Install test dependencies
         working-directory: tests
         run: npm install --no-audit --no-fund
+
+      - name: Check linked TimeRange group events
+        working-directory: tests
+        run: npm run test:time-range-model
 
       - name: Run speech tests
         working-directory: tests
