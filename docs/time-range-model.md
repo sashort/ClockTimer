@@ -109,6 +109,42 @@ the group ending, so there is no separate `end` event or `TimeRange.Events.END`.
 Existing `insert`, `remove`, `change`, and `split` events remain available outside
 updates and validation.
 
+## TimeRangeElement presentation adapter
+
+`TimeRangeElement.js` registers `<time-range>` for the typed model. It must be
+loaded after `TimeRangeModel.js`, in place of legacy `TimeRange.js`; loading both
+element implementations is rejected. The current application entry point still
+uses the legacy scripts until ClockTimer is migrated.
+
+```js
+const {group, ranges} = TimeRange.create({type: "Fixed", start, end, splitPoints});
+const element = TimeRangeElement.create(ranges[0]);
+host.appendChild(element);
+// Existing elements can instead be attached with element.bind(range).
+group.remove(element.rangeId); // remove every model piece of the logical range
+```
+
+The element exposes read-only `model`, `rangeId`, `ranges`, `startTime`, `endTime`,
+and `rangeLength` properties. `ranges` contains all current pieces sharing its
+logical ID, so collapsing the originally bound piece leaves its siblings visible.
+Dates are defensive copies. Interval properties and reflected attributes describe
+the last committed view; unfinished edits and failed validation do not update it.
+The element hides when no pieces remain and releases subscriptions on detachment.
+Reconnect reads current state; `bind(range)` releases the previous subscription.
+
+The element knows nothing about RingContainer. It has no geometry or animation
+code and works in an ordinary DOM host. It emits a bubbling, composed
+`time-range-changed` event with `detail: {range: element, before, after}`. Each
+snapshot contains `rangeId`, `type`, `startTime`, `endTime`, and `rangeLength`;
+creation/removal uses a null snapshot. RingContainer listens to this generic
+notification and owns the rendering work.
+
+`group.observeRanges(listener)` returns an unsubscribe function. Observers see
+committed membership changes and completed ticks, including normalization that
+crosses no boundaries, without introducing additional public group events. They
+are silent during updates, pending validation, and tick propagation. Disposal
+clears the views and subscriptions.
+
 ## Implementation layout
 
 Related operations are grouped together in the source: shared time helpers,

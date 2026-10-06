@@ -65,6 +65,7 @@ class TimeRangeGroup extends EventTarget {
     #reachedSplitPoints = new Map();
     static #nextSplitPointId = 0;
     #hasProcessedTick = false;
+    #rangeObservers = new EventTarget();
     constructor(clock = null, splitPoints = []) {
         super();
         this.#clock = clock;
@@ -83,6 +84,20 @@ class TimeRangeGroup extends EventTarget {
     get tickData() { return this.#tickData; }
     get lastTickTime() { return this.#lastValidTickTime === null ? null : new Date(this.#lastValidTickTime); }
     get validationSuspended() { return this.#updateDepth > 0 || this.#needsValidation; }
+
+    // Views observe committed collection state independently of boundary events.
+    // In particular, normalization may change the view without crossing a boundary.
+    observeRanges(listener) {
+        if (typeof listener !== "function") throw new TypeError("A range observer must be a function.");
+        const observers = this.#rangeObservers;
+        observers.addEventListener("change", listener);
+        return () => observers.removeEventListener("change", listener);
+    }
+    #notifyRangeObservers() {
+        if (!this.validationSuspended && !this.#processingBoundaries) {
+            this.#rangeObservers.dispatchEvent(new Event("change"));
+        }
+    }
 
     // Suspended edits resume validation on the next valid tick.
     beginUpdate() {
@@ -169,6 +184,7 @@ class TimeRangeGroup extends EventTarget {
         TimeRange._setNext(range, reference || null);
         this.#rangeCount++;
         this.dispatchEvent(new CustomEvent("insert", {detail: {range, previous: range.previous, next: range.next}}));
+        this.#notifyRangeObservers();
         return range;
     }
     // Public removal addresses the logical range, including all its split pieces.
@@ -193,11 +209,13 @@ class TimeRangeGroup extends EventTarget {
         TimeRange._setNext(range, null);
         this.#rangeCount--;
         this.dispatchEvent(new CustomEvent("remove", {detail: {range, previous, next}}));
+        this.#notifyRangeObservers();
         return true;
     }
     notifyRangeChanged(range) {
         if (!(range instanceof TimeRange) || range.group !== this) throw new TypeError("Range must belong to this group.");
         this.dispatchEvent(new CustomEvent("change", {detail: {group: this, range}}));
+        this.#notifyRangeObservers();
     }
     split(range, boundary) {
         if (!(range instanceof TimeRange) || range.group !== this) throw new TypeError("Range does not belong to this group.");
@@ -358,6 +376,7 @@ class TimeRangeGroup extends EventTarget {
             this.#processingBoundaries = null;
             this.#processingSplitPoints = null;
         }
+        this.#notifyRangeObservers();
     }
 
     // Propagate the shared tick cursor through member ranges.
@@ -506,6 +525,8 @@ class TimeRangeGroup extends EventTarget {
         this.#editedBoundaryResets.clear();
         this.#processingBoundaries = this.#processingSplitPoints = null;
         this.#needsValidation = this.#hasProcessedTick = false;
+        this.#notifyRangeObservers();
+        this.#rangeObservers = new EventTarget();
     }
     static #time(value) { return timeRangeMilliseconds(value); }
 }

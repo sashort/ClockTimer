@@ -13,6 +13,7 @@ on:
       - "TimeRange.js"
       - "TimeRangeGroup.js"
       - "TimeRangeModel.js"
+      - "TimeRangeElement.js"
       - "tests/time-range-*.mjs"
       - "tests/counted-time-accounting.mjs"
       - "tests/active-trip-restore.mjs"
@@ -61,6 +62,8 @@ jobs:
           node --check TimeRange.js
           node --check TimeRangeGroup.js
           node --check TimeRangeModel.js
+          node --check TimeRangeElement.js
+          node --check RingContainer.js
           node --check ClockTimer.js
           node --check SpeechMenu.js
           node --check AdaptiveSpeechTiming.js
@@ -117,6 +120,10 @@ jobs:
       - name: Check linked TimeRange group events
         working-directory: tests
         run: npm run test:time-range-model
+
+      - name: Check model-backed TimeRange element
+        working-directory: tests
+        run: npm run test:time-range-element
 
       - name: Run speech tests
         working-directory: tests
