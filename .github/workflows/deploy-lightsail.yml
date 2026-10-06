@@ -174,9 +174,10 @@ jobs:
              sudo -n install -m 644 deploy/clocktimer-live-stream.service "$LIVE_STREAM_SERVICE"
              sudo -n install -m 644 deploy/clocktimer-live-stream-apache.conf "$LIVE_STREAM_APACHE_CONF"
 
-             if ! sudo -n grep -Fq "Include \"$LIVE_STREAM_APACHE_CONF\"" "$HTTPD_CONF"; then
-               printf "%s\n" "Include \"$LIVE_STREAM_APACHE_CONF\"" | sudo -n tee -a "$HTTPD_CONF" >/dev/null
-             fi
+             # Replace this service include, including malformed quoting from older
+             # deployments, with one valid directive before checking Apache syntax.
+             sudo -n sed -i "\|^[[:space:]]*Include[[:space:]].*/clocktimer-live-stream[.]conf|d" "$HTTPD_CONF"
+             printf "Include \"%s\"\n" "$LIVE_STREAM_APACHE_CONF" | sudo -n tee -a "$HTTPD_CONF" >/dev/null
 
              sudo -n /opt/bitnami/apache2/bin/apachectl -t
              sudo -n systemctl daemon-reload
