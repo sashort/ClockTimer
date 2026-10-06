@@ -45,17 +45,27 @@ the boundary batches describe the normalized chain when tick processing finishes
 
 ## Entity identity
 
-Each range exposes read-only `rangeId`, `entityId`, and `entityType` properties.
-`rangeId` identifies one physical piece. All pieces made by splitting a logical
-range share `entityId` and retain its original `entityType`. Further splitting
-preserves those values; a merge retains the surviving piece's range ID.
+Each range exposes read-only `rangeId`, `pieceId`, `entityId`, and `entityType`
+properties. All pieces of one logical range share `rangeId` (also exposed as
+`entityId`) and retain its original `entityType`. `pieceId` identifies an individual
+piece. Further splitting preserves the logical ID; a merge retains the surviving
+piece's `pieceId`.
+
+Call `group.remove(range.rangeId)` to remove every piece of that logical range.
+The public method accepts only an ID, never a range object; an unknown ID returns
+`false`. Internal collapse and merge operations unlink only the affected piece.
 
 ## Tick and boundary events
 
 `group.tick(currentTime, lastTickTime)` processes clock ticks. The group retains
-the latest `TimeRangeTick` as `tickData`, including its current, previous, and
-cursor times. `group.lastTickTime` is the latest tick's current time; a subsequent
-`tick(currentTime)` uses it as the previous time. Empty groups also retain ticks.
+the latest valid `TimeRangeTick` as `tickData`, including its current, previous,
+and cursor times. `group.lastTickTime` is the last valid tick's current time.
+Ticks received during an update are ignored. After `endUpdate()`, elapsed time
+spans from that last valid time to the next tick that passes validation, including
+the entire suspended interval. Failed validation leaves this baseline unchanged.
+The supplied `lastTickTime` initializes the first tick; later ticks use the group's
+own last valid time, even if a clock reports a newer previous time during resume.
+Empty groups also retain valid ticks.
 The `clock` supplied to the group automatically forwards its `tick` events.
 
 After successful processing, the group emits zero, one, or both of:
@@ -98,3 +108,18 @@ Unchanged reached boundaries do not emit again. The final range boundary reports
 the group ending, so there is no separate `end` event or `TimeRange.Events.END`.
 Existing `insert`, `remove`, `change`, and `split` events remain available outside
 updates and validation.
+
+## Implementation layout
+
+Related operations are grouped together in the source: shared time helpers,
+tick cursor data, group edits, split-point management, membership and splitting,
+normalization and validation, tick propagation, event batching, and cleanup.
+Individual intervals and type-specific ticking stay on TimeRange; collection
+rules stay on TimeRangeGroup. Compatibility aliases remain available.
+
+The group derives its extent from its head and tail instead of maintaining a
+second start/end cache. Normalization uses sorted split-point lookup; event
+collection visits points that intersect each interval rather than scanning every
+point against every range. Removed members retain their original tick snapshots
+without causing repeated full-group scans. Both event families share the same
+transition and batch-delivery helpers.

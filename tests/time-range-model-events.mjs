@@ -11,12 +11,15 @@ try {
 
     const logical = TimeRange.create({type: 'Fixed', start: time(0), end: time(30), boundaries: [time(10), time(20)]});
     assert.equal(new Set(logical.ranges.map(range => range.entityId)).size, 1, 'Factory split pieces share one entity');
-    assert.equal(new Set(logical.ranges.map(range => range.rangeId)).size, 3, 'Each split piece has its own identity');
+    assert.equal(new Set(logical.ranges.map(range => range.rangeId)).size, 1, 'Split pieces share their public range ID');
+    assert.equal(new Set(logical.ranges.map(range => range.pieceId)).size, 3, 'Each piece has its own identity');
+    assert.throws(() => { logical.ranges[0].rangeId = 'replacement'; }, TypeError, 'rangeId is read-only');
     const originalEntity = logical.ranges[2].entityId;
     const pieces = logical.group.split(logical.ranges[2], time(25));
     assert.equal(pieces[0].entityId, originalEntity);
     assert.equal(pieces[1].entityId, originalEntity, 'Further splits preserve the original entity');
-    assert.notEqual(pieces[0].rangeId, pieces[1].rangeId);
+    assert.equal(pieces[0].rangeId, pieces[1].rangeId);
+    assert.notEqual(pieces[0].pieceId, pieces[1].pieceId);
     const separateEntity = TimeRange.create({type: 'Fixed', start: time(0), end: time(30)});
     assert.notEqual(separateEntity.ranges[0].entityId, originalEntity, 'Separately created ranges are separate entities');
 
@@ -28,9 +31,22 @@ try {
     const shape = group => collectRanges(group).map(range => [range.type,
         (range.start.getTime() - time(0).getTime()) / 60000,
         (range.end.getTime() - time(0).getTime()) / 60000]);
+    const removable = TimeRange.create({type: 'Fixed', start: time(0), end: time(30), splitPoints: [time(10), time(20)]});
+    const retained = TimeRange.create({group: removable.group, type: 'Fixed', start: time(40), end: time(50)}).ranges[0];
+    const removedPieces = [];
+    removable.group.addEventListener('remove', event => removedPieces.push(event.detail.range));
+    assert.throws(() => removable.group.remove(removable.ranges[1]), /rangeId/, 'Public removal rejects individual objects');
+    assert.equal(removable.group.size, 4);
+    assert.equal(removable.group.remove(removable.ranges[1].rangeId), true);
+    assert.deepEqual(removedPieces, Array.from(removable.ranges), 'Removing by ID removes every sibling piece');
+    assert.deepEqual(collectRanges(removable.group), [retained], 'Other logical ranges remain');
+    assert.equal(removable.group.size, 1);
+    assert(removable.ranges.every(range => range.previous === null && range.next === null));
+    assert.equal(removable.group.remove(removable.ranges[1].rangeId), false, 'An absent ID does nothing');
+
     const movedPoints = TimeRange.create({type: 'Fixed', start: time(0), end: time(30), splitPoints: [time(10), time(20)]});
     const entityId = movedPoints.ranges[0].entityId;
-    const survivingRangeId = movedPoints.ranges[0].rangeId;
+    const survivingPieceId = movedPoints.ranges[0].pieceId;
     const editEvents = [];
     for (const type of Object.values(TimeRange.Events)) movedPoints.group.addEventListener(type, event => editEvents.push(event));
     movedPoints.group.beginUpdate();
@@ -41,7 +57,7 @@ try {
     assert.deepEqual(shape(movedPoints.group), [['Collapsable', 0, 15], ['Collapsable', 15, 25], ['Expandable', 25, 30]],
         'Changed split points remove obsolete cuts and create the new cuts');
     assert(collectRanges(movedPoints.group).every(range => range.entityId === entityId));
-    assert.equal(movedPoints.group.head.rangeId, survivingRangeId);
+    assert.equal(movedPoints.group.head.pieceId, survivingPieceId);
     assert.equal(editEvents.length, 0, 'Future normalization produces neither boundary event');
     movedPoints.group.beginUpdate();
     movedPoints.group.setSplitPoints([]);
@@ -271,7 +287,7 @@ try {
     assert.equal(invalid.group.lastTickTime.getTime(), time(1).getTime());
     assert.equal(invalidEvents.length, 0);
     invalid.group.beginUpdate();
-    invalid.group.remove(overlapping);
+    invalid.group.remove(overlapping.rangeId);
     invalid.group.endUpdate();
     invalid.group.tick(time(20));
     assert.equal(invalidEvents.length, 1, 'A repaired update can validate and reconcile');
@@ -288,7 +304,7 @@ try {
     fromClock.group.addEventListener('boundary-reached', event => clockEvents.push(event.detail));
     clock.dispatchEvent(new window.CustomEvent('tick', {detail: {currentTime: time(10), lastTickTime: time(0)}}));
     assert.equal(clockEvents.length, 1, 'Clock ticks automatically generate boundary events');
-    fromClock.group.remove(fromClock.ranges[0]);
+    fromClock.group.remove(fromClock.ranges[0].rangeId);
     clock.dispatchEvent(new window.CustomEvent('tick', {detail: {currentTime: time(15), lastTickTime: time(10)}}));
     assert.equal(fromClock.group.lastTickTime.getTime(), time(15).getTime(), 'Empty groups retain tick data');
     const savedTime = fromClock.group.lastTickTime;
@@ -296,6 +312,51 @@ try {
     assert.equal(fromClock.group.lastTickTime.getTime(), time(15).getTime(), 'Stored tick times cannot be changed through date getters');
     fromClock.group.dispose();
     assert.equal(fromClock.group.tickData, null);
+
+    const paused = TimeRange.create({type: 'Expandable', start: time(0), end: time(10)});
+    paused.group.tick(time(5), time(0));
+    const validTick = paused.group.tickData;
+    const endBeforeUpdate = paused.group.endTime.getTime();
+    paused.group.beginUpdate();
+    paused.group.beginUpdate();
+    paused.group.tick(time(15), time(10));
+    paused.group.endUpdate();
+    const suspendedTick = new TimeRangeTick(time(20), time(15));
+    paused.group.tick(suspendedTick);
+    assert.equal(paused.group.tickData, validTick, 'Suspended ticks do not replace valid tick data');
+    assert.equal(paused.group.lastTickTime.getTime(), time(5).getTime());
+    paused.group.endUpdate();
+    paused.group.tick(new TimeRangeTick(time(30), time(25)));
+    assert.equal(paused.group.tickData.totalDelta, 25 * 60000, 'Resume includes the entire suspended interval');
+    assert.equal(paused.group.endTime.getTime() - endBeforeUpdate, 25 * 60000);
+    assert.equal(suspendedTick.cursorTime.getTime(), time(15).getTime());
+
+    const failedResume = TimeRange.create({type: 'Expandable', start: time(0), end: time(10)});
+    failedResume.group.tick(time(5), time(0));
+    failedResume.group.beginUpdate();
+    const conflict = TimeRange.create({group: failedResume.group, type: 'Fixed', start: time(1), end: time(3)}).ranges[0];
+    failedResume.group.endUpdate();
+    assert.throws(() => failedResume.group.tick(time(20), time(15)), /overlap/);
+    assert.equal(failedResume.group.lastTickTime.getTime(), time(5).getTime());
+    failedResume.group.beginUpdate();
+    failedResume.group.remove(conflict.rangeId);
+    failedResume.group.endUpdate();
+    failedResume.group.tick(time(30), time(25));
+    assert.equal(failedResume.group.tickData.totalDelta, 25 * 60000, 'Failed validation does not consume elapsed time');
+
+    const placement = TimeRange.create({type: 'Expandable', start: time(0), end: time(10)});
+    TimeRange.create({group: placement.group, type: 'Moveable', start: time(20), end: time(30)});
+    const placementSize = placement.group.size;
+    assert.throws(() => TimeRange.create({group: placement.group, type: 'Fixed', start: time(15), end: time(20)}), /rooted/);
+    assert.equal(placement.group.size, placementSize, 'A failed factory insertion leaves no orphaned ranges');
+
+    const disposing = TimeRange.create({type: 'Fixed', start: time(0), end: time(10)});
+    const disposingTail = TimeRange.create({group: disposing.group, type: 'Fixed', start: time(10), end: time(20)}).ranges[0];
+    disposing.group.dispose();
+    assert.equal(disposing.ranges[0].next, null);
+    assert.equal(disposingTail.previous, null);
+    assert.equal(disposing.group.remove(disposingTail.rangeId), false);
+    assert.equal(disposing.group.size, 0, 'Disposal leaves no linked orphaned members');
     console.log('PASS typed group tick batches, resets, silent nested updates, deferred validation, and end removal');
 } finally {
     await window.happyDOM.close();
