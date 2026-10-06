@@ -22,7 +22,8 @@
     "test:speech-index": "node speech-command-index.mjs && node speech-dialog-surfaces.mjs",
     "bench:speech-index": "node speech-command-performance.mjs",
     "test:speech-chain": "node speech-command-digest.mjs && node speech-chain-actions.mjs",
-    "test:speech-failfast": "node speech-failfast.mjs"
+    "test:speech-failfast": "node speech-failfast.mjs",
+    "test:time-range": "node time-range-group.mjs && node counted-time-accounting.mjs && node time-range-ring-container.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

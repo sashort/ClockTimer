@@ -24,7 +24,7 @@ window.fetch=async(url,options={})=>{
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
 window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'));
-for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer','CalendarRange','TripLog'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRange','TimeRangeGroup','ClockTimer','CalendarRange','TripLog'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');

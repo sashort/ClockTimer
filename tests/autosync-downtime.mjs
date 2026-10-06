@@ -58,7 +58,7 @@ window.fetch=async(url,options={})=>{
   };
 };
 
-for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer']){
+for(const name of ['TemporalFormat','RingContainer','TimeRange','TimeRangeGroup','ClockTimer']){
   window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 }
 

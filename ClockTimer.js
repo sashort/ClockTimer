@@ -1,19 +1,3 @@
-/*
- * POST-MIGRATION RESPONSIBILITY NOTES
- *
- * Aggregate counted-time state belongs to TimeRangeGroup:
- *   totalCountedTime
- *   elapsedCountedTime
- *   remainingCountedTime
- *
- * ClockTimer remains responsible for timer lifecycle/orchestration and should
- * delegate aggregate counted-time queries to its TimeRangeGroup instances.
- *
- * The original ClockTimer implementation is preserved below. During manual
- * application, replace duplicated aggregate counted-time calculations with
- * group.totalCountedTime / elapsedCountedTime / remainingCountedTime.
- */
-
 (() => {
     class ClockTimerUIState {
         constructor(values = {}) {
@@ -179,11 +163,11 @@
         #standardDuration;
 
         #tripStartMilliseconds;
-        #countedTimeElapsed = 0;
-        #lastCountedTick;
+        #timeRangeGroup = new TimeRangeGroup();
+        #intervalBoundaryRanges = new WeakMap();
+        #boundaryIntervalRecords = new WeakMap();
+        #boundaryResult = false;
         #countedStopTime;
-        #countedAccountingKey;
-        #countedExcludedSegments = [];
 
         #originalStartArguments;
 
@@ -510,6 +494,10 @@
 
         constructor() {
             super();
+            this.#timeRangeGroup.addEventListener("boundary-reached", ({ before, now }) => {
+                this.#boundaryResult = this.#handleIntervalElapsed(
+                    this.#boundaryIntervalRecords.get(before), before.endTime.getTime(), now);
+            });
 
             this.#shadowRoot =
                 this.attachShadow({
@@ -9153,10 +9141,10 @@
             }
 
             this.#tripStartMilliseconds = startTimeMilliseconds;
-            this.#countedTimeElapsed = 0;
-            this.#lastCountedTick = undefined;
+            this.#timeRangeGroup.clear();
+            this.#intervalBoundaryRanges = new WeakMap();
+            this.#boundaryIntervalRecords = new WeakMap();
             this.#countedStopTime = undefined;
-            this.#countedAccountingKey = undefined;
 
             this.#standardTime =
                 this.#formatStandardTime(
@@ -12734,32 +12722,29 @@
         }
 
         #updateIntervalElapsed(now) {
-            const record =
-                this.#pendingIntervalRecord;
-
-            if (!record || !Number.isFinite(now)) {
-                return false;
+            const record = this.#pendingIntervalRecord;
+            if (!record || !Number.isFinite(now)) return false;
+            const stored = Number(record.clockTimerElapsedBoundaryTimeline);
+            const boundary = Number.isFinite(stored) ? stored
+                : this.#getPendingIntervalElapsedBoundary(record);
+            if (!Number.isFinite(boundary)) return false;
+            let range = this.#intervalBoundaryRanges.get(record);
+            if (!range || range.endTime.getTime() !== boundary) {
+                range = customElements.get("time-range").createCountedRange(boundary, boundary);
+                this.#boundaryIntervalRecords.set(range, record);
+                this.#intervalBoundaryRanges.set(record, range);
             }
-
-            let boundary =
-                Number(
-                    record.clockTimerElapsedBoundaryTimeline
-                );
-
-            if (!Number.isFinite(boundary)) {
-                boundary =
-                    this.#getPendingIntervalElapsedBoundary(
-                        record
-                    );
+            this.#boundaryResult = false;
+            const dispatched = record.clockTimerElapsedDispatched === true;
+            const reached = this.#timeRangeGroup.checkBoundary(range, now);
+            // Existing elapsed decisions may need continued lifecycle work.
+            if (reached && dispatched) {
+                return this.#handleIntervalElapsed(record, boundary, now);
             }
+            return this.#boundaryResult;
+        }
 
-            if (
-                !Number.isFinite(boundary) ||
-                now < boundary
-            ) {
-                return false;
-            }
-
+        #handleIntervalElapsed(record, boundary, now) {
             let decision;
 
             if (
@@ -14329,11 +14314,10 @@
                 undefined;
 
             this.#tripStartMilliseconds = undefined;
-            this.#countedTimeElapsed = 0;
-            this.#lastCountedTick = undefined;
+            this.#timeRangeGroup.clear();
+            this.#intervalBoundaryRanges = new WeakMap();
+            this.#boundaryIntervalRecords = new WeakMap();
             this.#countedStopTime = undefined;
-            this.#countedAccountingKey = undefined;
-            this.#countedExcludedSegments = [];
 
             this.#originalStartArguments =
                 undefined;
@@ -32444,40 +32428,17 @@
             return segments;
         }
 
-        #countAccountingDuration(start, end) {
-            if (!Number.isFinite(start) || !Number.isFinite(end) ||
-                end <= start) return 0;
-            let counted = end - start;
-            for (const [left, right] of this.#countedExcludedSegments) {
-                if (left >= end) break;
-                counted -= Math.max(0,
-                    Math.min(end, right) - Math.max(start, left));
-            }
-            return Math.max(0, counted);
-        }
-
         #getCountedTimeElapsed(timelineNow) {
             const start = this.#getElapsedStartTimeMilliseconds();
             if (!Number.isFinite(start) || !Number.isFinite(timelineNow)) return 0;
             const end = Number.isFinite(this.#countedStopTime)
-                ? Math.min(timelineNow, this.#countedStopTime)
-                : timelineNow;
-            const exclusions = this.#getAccountingExclusions();
-            const key = JSON.stringify([start, exclusions]);
-            if (key !== this.#countedAccountingKey ||
-                !Number.isFinite(this.#lastCountedTick) ||
-                end < this.#lastCountedTick) {
-                this.#countedExcludedSegments = exclusions;
-                this.#countedTimeElapsed = this.#countAccountingDuration(start, end);
-                this.#countedAccountingKey = key;
-            }
-            else {
-                this.#countedTimeElapsed += this.#countAccountingDuration(
-                    Math.max(start, this.#lastCountedTick), end
-                );
-            }
-            this.#lastCountedTick = end;
-            return this.#countedTimeElapsed;
+                ? Math.min(timelineNow, this.#countedStopTime) : timelineNow;
+            const goal = Number(this.#renderedPercentGoal);
+            const required = Number.isFinite(goal) && goal > 0 && Number.isFinite(this.#standardDuration)
+                ? this.#standardDuration / goal : 0;
+            this.#timeRangeGroup.updateAccounting(start, end,
+                this.#getAccountingExclusions(), required);
+            return this.#timeRangeGroup.elapsedCountedTime;
         }
 
         #getSummaryTimelineNow(nowDate = new Date()) {
@@ -33610,8 +33571,11 @@
             const goal = Number(this.#renderedPercentGoal);
             const required = Number.isFinite(goal) && goal > 0 && Number.isFinite(this.#standardDuration)
                 ? this.#standardDuration / goal : undefined;
-            return this.#formatRemainingRenderedDuration(Number.isFinite(required)
-                ? required - this.#getCountedTimeElapsed(timelineNow) : undefined);
+            if (!Number.isFinite(required)) return this.#formatRemainingRenderedDuration(undefined);
+            this.#getCountedTimeElapsed(timelineNow);
+            return this.#formatRemainingRenderedDuration(
+                this.#timeRangeGroup.remainingCountedTime -
+                Math.max(0, this.#timeRangeGroup.totalCountedTime - required));
         }
 
         #renderTime_end({ now, timelineNow }) {

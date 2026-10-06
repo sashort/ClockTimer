@@ -13,7 +13,7 @@ const css=window.CSS; css.registerProperty=()=>{}; Object.defineProperty(window,
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});
 Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
 window.Element.prototype.animate = () => ({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
-for (const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer']) {
+for (const name of ['TemporalFormat','RingContainer','TimeRange','TimeRangeGroup','ClockTimer']) {
     window.eval(fs.readFileSync(new URL(`../${name}.js`,import.meta.url),'utf8'));
 }
 const timers = [];

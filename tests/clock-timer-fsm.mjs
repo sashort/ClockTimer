@@ -33,7 +33,7 @@ async function exercise(core, checkFSM) {
                 countedTimeMilliseconds:4800000},nonProduction:{trips:[]}}};
         return {ok:true,status:200,json:async()=>data,clone(){return this;}};
     };
-    for (const name of ['TemporalFormat','RingContainer','TimeRange']) {
+    for (const name of ['TemporalFormat','RingContainer','TimeRange','TimeRangeGroup']) {
         window.eval(fs.readFileSync(new URL(`../${name}.js`,import.meta.url),'utf8'));
     }
     window.eval(core);

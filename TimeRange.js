@@ -24,6 +24,27 @@ class TimeRange extends HTMLElement {
     }
 
 
+    // Detached accounting ranges share interval/count ownership without rendering.
+    static createCountedRange(start, end, now = end) {
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end < start ||
+            !Number.isFinite(now)) throw new RangeError("Invalid counted interval");
+        const range = document.createElement("time-range");
+        range.#startTime = new Date(start);
+        range.#endTime = new Date(end);
+        range.#rangeLength = end - start;
+        range.setCountedTime(end - start, Math.max(0, Math.min(end, now) - start));
+        return range;
+    }
+
+    updateCountedTime(now) {
+        const start = this.#startTime?.getTime();
+        const end = this.#endTime?.getTime();
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end < start ||
+            !Number.isFinite(now)) throw new RangeError("Invalid counted interval");
+        return this.setCountedTime(end - start,
+            Math.max(0, Math.min(end, now) - start));
+    }
+
     static #instances = [];
     static #percentGoal = 1;
     static #reordering = false;

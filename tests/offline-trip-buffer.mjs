@@ -37,7 +37,7 @@ window.fetch=async(url,options={})=>{
     }else if(path.endsWith('/trips/'))data={trips:[...trips.values()]};
     return {ok:true,status:200,json:async()=>data,text:async()=>JSON.stringify(data),clone(){return this;}};
 };
-for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRange','TimeRangeGroup','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 const storageKey='test.completedTrips';
 function clock(){const c=window.document.createElement('clock-timer');c.setAttribute('offline-trip-storage-key',storageKey);window.document.body.append(c);return c;}
 let c=clock();await c.connect('test','test');

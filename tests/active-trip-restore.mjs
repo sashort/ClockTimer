@@ -22,7 +22,7 @@ window.fetch=async(url,options={})=>{
  else data={aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
  return {ok:true,status:200,json:async()=>structuredClone(data),clone(){return this;}};
 };
-for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRange','TimeRangeGroup','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 const timer=window.document.createElement('clock-timer');window.document.body.append(timer);
 let restored;let renderedState;timer.addEventListener('activeTripRestored',event=>{restored=event.detail;});timer.addEventListener('uiStateChanged',event=>{renderedState=event.detail;});
 await timer.connect('test','test');

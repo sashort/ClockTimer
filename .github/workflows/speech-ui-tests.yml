@@ -10,6 +10,10 @@ on:
       - "SpeechEditorRuntime.js"
       - "app.js"
       - "ClockTimer.js"
+      - "TimeRange.js"
+      - "TimeRangeGroup.js"
+      - "tests/time-range-*.mjs"
+      - "tests/counted-time-accounting.mjs"
       - "LiveTripStream.js"
       - "IdentityContext.js"
       - "UserLookup.js"
@@ -52,6 +56,9 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          node --check TimeRange.js
+          node --check TimeRangeGroup.js
+          node --check ClockTimer.js
           node --check SpeechMenu.js
           node --check AdaptiveSpeechTiming.js
           node --check SherpaRecognizer.js
@@ -107,6 +114,8 @@ jobs:
       - name: Run speech tests
         working-directory: tests
         run: |
+          npm run test:time-range
+          npm run test:clock-fsm
           npm run test:speech-editor
           node adaptive-speech-timing.mjs
           npm run test:speech-phrases

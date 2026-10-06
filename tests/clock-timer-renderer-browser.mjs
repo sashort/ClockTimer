@@ -105,6 +105,7 @@ try {
         'TemporalFormat.js',
         'RingContainer.js',
         'TimeRange.js',
+        'TimeRangeGroup.js',
         'ClockTimer.js'
     ]) {
         await page.addScriptTag({

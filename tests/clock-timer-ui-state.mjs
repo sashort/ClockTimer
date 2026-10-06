@@ -8,7 +8,7 @@ window.eval(`const RealDate=Date;window.Date=class extends RealDate{constructor(
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
 window.Element.prototype.animate=()=>({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
-for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRange','TimeRangeGroup','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 
 const zeroRange=window.document.createElement('time-range');
 zeroRange.setAttribute('start-time','2026-09-19 12:00:00.000');zeroRange.setAttribute('end-time','2026-09-19 12:00:00.000');zeroRange.setAttribute('range-length','0');window.document.body.append(zeroRange);
