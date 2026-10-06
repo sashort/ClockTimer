@@ -29459,7 +29459,9 @@
             app.dataset.persistenceState = state;
             document.documentElement.dataset.persistenceState = state;
             status.hidden = state === "confirmed";
-            status.textContent = state === "reverted" ? "Reverted — the command could not be completed." : "Applying…";
+            status.textContent = state === "reverted"
+                ? `Reverted — ${detail.error?.message || "The command could not be completed."}`
+                : "Applying…";
         });
         stateTransactions.register("clock", {
             capture: () => clockTimer.captureState(),

@@ -59,7 +59,7 @@ storage.fail=true;
 assert.equal(await window.WMOFActions.toggleRenderedTime(),false);
 assert.equal(timer.renderedTimeMode,originalMode,'the UI restores the previous mode after a settings save fails');
 assert.equal(window.document.querySelector('#app').dataset.persistenceState,'reverted');
-assert.match(window.document.querySelector('.persistence-status').textContent,/Reverted/);
+assert.match(window.document.querySelector('.persistence-status').textContent,/Reverted.*Disk write failed/,'rollback shows the actual persistence failure');
 storage.fail=false;
 assert(await window.WMOFActions.toggleRenderedTime());
 assert.notEqual(timer.renderedTimeMode,originalMode);
@@ -156,9 +156,13 @@ window.__testTime+=60000;await timer.endInterval(new window.Date());await settle
 for(const phrase of ['down','downtime','down time']) {
     window.__testTime+=60000;
     await settle();
+    const downEventsBefore=stored.filter(e=>e.event==='interval.started'&&e.value.type?.toLowerCase()==='down').length;
     const downAttempt=window.SpeechMenu.testBegin();
     await window.SpeechMenu.testTranscript(downAttempt,phrase,true);await downAttempt.digestQueue;await settle();
     assert.equal(timer.getActiveIntervalState()?.intervalType,'down',phrase+' starts Down time');
+    assert(!downAttempt.digestExecutionFailed,phrase+' completes its transaction');
+    assert(downAttempt.digestSteps[0].commandElement.hasAttribute('speech-persist'),phrase+' is marked for persistence');
+    assert.equal(stored.filter(e=>e.event==='interval.started'&&e.value.type?.toLowerCase()==='down').length,downEventsBefore+1,phrase+' persists the Down event');
     assert.equal(window.SpeechMenu.started,true,phrase+' keeps recognition active');
     window.__testTime+=60000;await timer.endInterval(new window.Date());await settle();
 }
