@@ -30,8 +30,11 @@ class TimeRangeGroup extends EventTarget {
     #boundaryStates = new Map();
     #startBoundaryKeys = new Map();
     #processingBoundaries = null;
+    #editedBoundaryResets = new Set();
     #processingSplitPoints = null;
-    #reachedSplitPoints = new Set();
+    #splitPoints = [];
+    #reachedSplitPoints = new Map();
+    static #nextSplitPointId = 0;
     #hasProcessedTick = false;
     constructor(clock = null, boundaries = []) { super(); this.#clock = clock; this.setBoundaries(boundaries); if (clock) this.#attachClock(clock); }
     get head() { return this.#head; }
@@ -41,8 +44,8 @@ class TimeRangeGroup extends EventTarget {
     get duration() { return this.#startTime === null ? 0 : this.#endTime - this.#startTime; }
     get rangeCount() { return this.#rangeCount; }
     get size() { return this.#rangeCount; }
-    get boundaries() { return this.#boundaries.map(v => new Date(v)); }
-    get splitPoints() { return this.boundaries; }
+    get boundaries() { return this.#splitPoints.map(point => new Date(TimeRangeGroup.#time(point.time))); }
+    get splitPoints() { return [...this.#splitPoints]; }
     get tickData() { return this.#tickData; }
     get lastTickTime() { return this.#tickData?.currentTime ?? null; }
     get validationSuspended() { return this.#updateDepth > 0 || this.#needsValidation; }
@@ -134,9 +137,50 @@ class TimeRangeGroup extends EventTarget {
     setBoundaries(boundaries = []) { return this.setSplitPoints(boundaries); }
     setSplitPoints(splitPoints = []) {
         if (!Array.isArray(splitPoints)) throw new TypeError("splitPoints must be an array.");
-        this.#boundaries = [...new Set(splitPoints.map(TimeRangeGroup.#time))].sort((a,b)=>a-b);
+        const points = [], ids = new Set();
+        for (const value of splitPoints) {
+            let point;
+            if (value !== null && typeof value === "object" && "time" in value) {
+                point = value;
+                if (point.id === undefined) point.id = globalThis.crypto?.randomUUID?.() ?? `split-point-${++TimeRangeGroup.#nextSplitPointId}`;
+            } else {
+                const time = TimeRangeGroup.#time(value);
+                // Date-based callers retain identity when replacing an unchanged cut.
+                point = this.#splitPoints.find(existing => TimeRangeGroup.#time(existing.time) === time)
+                    ?? {id: globalThis.crypto?.randomUUID?.() ?? `split-point-${++TimeRangeGroup.#nextSplitPointId}`, time: new Date(time)};
+                if (ids.has(point.id) || points.some(existing => TimeRangeGroup.#time(existing.time) === time)) continue;
+            }
+            if (typeof point.id !== "string" || !point.id.length || ids.has(point.id)) throw new TypeError("Split point IDs must be unique non-empty strings.");
+            TimeRangeGroup.#time(point.time);
+            ids.add(point.id);
+            points.push(point);
+        }
+        this.#splitPoints = points;
+        this.#refreshSplitPoints();
         if (this.#head) this.#needsValidation = true;
         return this;
+    }
+    addSplitPoint(point) {
+        this.setSplitPoints([...this.#splitPoints, point]);
+        return this.#splitPoints.at(-1);
+    }
+    removeSplitPoint(pointOrId) {
+        const id = typeof pointOrId === "string" ? pointOrId : pointOrId?.id;
+        const points = this.#splitPoints.filter(point => point.id !== id);
+        if (points.length === this.#splitPoints.length) return false;
+        this.setSplitPoints(points);
+        return true;
+    }
+    #refreshSplitPoints() {
+        const times = [], ids = new Set();
+        for (const point of this.#splitPoints) {
+            if (typeof point.id !== "string" || !point.id.length || ids.has(point.id)) throw new TypeError("Split point IDs must be unique non-empty strings.");
+            ids.add(point.id);
+            times.push(TimeRangeGroup.#time(point.time));
+        }
+        const sorted = [...new Set(times)].sort((left, right) => left - right);
+        if (this.#head && (sorted.length !== this.#boundaries.length || sorted.some((time, index) => time !== this.#boundaries[index]))) this.#needsValidation = true;
+        this.#boundaries = sorted;
     }
     tick(currentTime, lastTickTime = this.lastTickTime ?? currentTime) {
         const tick = currentTime instanceof TimeRangeTick ? currentTime : new TimeRangeTick(currentTime, lastTickTime);
@@ -144,6 +188,7 @@ class TimeRangeGroup extends EventTarget {
             this.#tickData = tick;
             return;
         }
+        this.#refreshSplitPoints();
         // Validate the completed edit before advancing ranges or emitting boundary events.
         // A failure retains the pending validation and the last successful tick.
         if (this.#needsValidation) this.validateRanges();
@@ -151,9 +196,15 @@ class TimeRangeGroup extends EventTarget {
         this.#tickData = tick;
         this.#processingBoundaries = this.#snapshotBoundaries();
         this.#processingSplitPoints = this.#snapshotSplitPoints();
+        this.#editedBoundaryResets = new Set();
+        for (const [key, boundary] of this.#processingBoundaries) {
+            const previous = this.#boundaryStates.get(key);
+            const time = boundary.time.getTime();
+            if (previous?.reached && time !== previous.time && time > tick.lastTickTime.getTime()) this.#editedBoundaryResets.add(key);
+        }
         if (!this.#hasProcessedTick) {
             for (const [key, boundary] of this.#processingBoundaries) {
-                this.#boundaryStates.set(key, {reached: boundary.time.getTime() <= tick.lastTickTime.getTime()});
+                this.#boundaryStates.set(key, {reached: boundary.time.getTime() <= tick.lastTickTime.getTime(), time: boundary.time.getTime()});
             }
         }
         try {
@@ -183,13 +234,14 @@ class TimeRangeGroup extends EventTarget {
     }
     #snapshotSplitPoints() {
         const points = new Map();
-        for (const point of this.#boundaries) {
-            const entry = {time: new Date(point)};
+        for (const splitPoint of this.#splitPoints) {
+            const point = TimeRangeGroup.#time(splitPoint.time);
+            const entry = {splitPoint, time: new Date(point)};
             for (let range = this.#head; range; range = range.next) {
                 if (range.start.getTime() < point && range.end.getTime() >= point) entry.before = range;
                 if (range.start.getTime() <= point && range.end.getTime() > point) entry.after = range;
             }
-            if (entry.before || entry.after) points.set(point, entry);
+            if (entry.before || entry.after || this.#reachedSplitPoints.get(splitPoint.id)?.reached) points.set(splitPoint.id, entry);
         }
         return points;
     }
@@ -206,27 +258,37 @@ class TimeRangeGroup extends EventTarget {
         const now = tick.currentTime.getTime(), last = tick.lastTickTime.getTime();
         for (const [key, boundary] of this.#processingBoundaries) {
             const time = boundary.time.getTime();
-            const wasReached = this.#boundaryStates.get(key)?.reached ?? (!this.#hasProcessedTick && time <= last);
+            const previousState = this.#boundaryStates.get(key);
+            const wasReached = previousState?.reached ?? (!this.#hasProcessedTick && time <= last);
             const isReached = time <= now;
-            if (!wasReached && isReached) reached.push(boundary);
-            if (wasReached && !isReached) reset.push(boundary);
-            if (current.has(key)) states.set(key, {reached: isReached});
+            const wasReset = wasReached && (!isReached || this.#editedBoundaryResets.has(key));
+            if (wasReset) reset.push(boundary);
+            if ((!wasReached || wasReset) && isReached) reached.push(boundary);
+            if (current.has(key)) states.set(key, {reached: isReached, time});
         }
         this.#boundaryStates = states;
-        const splitPoints = [];
+        const splitPoints = [], resetSplitPoints = [];
         for (const [point, entry] of this.#snapshotSplitPoints()) this.#processingSplitPoints.set(point, {...this.#processingSplitPoints.get(point), ...entry});
-        for (const [point, entry] of this.#processingSplitPoints) {
-            const wasReached = this.#reachedSplitPoints.has(point) || (!this.#hasProcessedTick && point <= last);
-            if (!wasReached && point <= now) splitPoints.push(entry);
-            if (point <= now) this.#reachedSplitPoints.add(point);
+        const activeIds = new Set(this.#splitPoints.map(point => point.id));
+        for (const [id, entry] of this.#processingSplitPoints) {
+            if (!activeIds.has(id)) continue;
+            const point = entry.time.getTime();
+            const previousState = this.#reachedSplitPoints.get(id);
+            const wasReached = previousState?.reached ?? (!this.#hasProcessedTick && point <= last);
+            const isReached = point <= now;
+            const wasReset = wasReached && (!isReached || (previousState?.time !== undefined && point !== previousState.time && point > last));
+            if (wasReset) resetSplitPoints.push(entry);
+            if ((!wasReached || wasReset) && isReached) splitPoints.push(entry);
+            this.#reachedSplitPoints.set(id, {reached: isReached, time: point});
         }
-        this.#reachedSplitPoints = new Set([...this.#reachedSplitPoints].filter(point => this.#boundaries.includes(point)));
+        this.#reachedSplitPoints = new Map([...this.#reachedSplitPoints].filter(([id]) => activeIds.has(id)));
         this.#hasProcessedTick = true;
-        if (splitPoints.length) {
-            splitPoints.sort((left, right) => left.time.getTime() - right.time.getTime());
-            this.dispatchEvent(new CustomEvent("split-point-reached", {detail: {tick, splitPoints}}));
+        for (const [type, points] of [["split-point-reset", resetSplitPoints], ["split-point-reached", splitPoints]]) {
+            if (!points.length) continue;
+            points.sort((left, right) => left.time.getTime() - right.time.getTime());
+            this.dispatchEvent(new CustomEvent(type, {detail: {tick, splitPoints: points}}));
         }
-        for (const [type, boundaries] of [["boundary-reached", reached], ["boundary-reset", reset]]) {
+        for (const [type, boundaries] of [["boundary-reset", reset], ["boundary-reached", reached]]) {
             if (!boundaries.length) continue;
             boundaries.sort((a, b) => a.time.getTime() - b.time.getTime());
             this.dispatchEvent(new CustomEvent(type, {detail: {tick, boundaries}}));
@@ -261,6 +323,7 @@ class TimeRangeGroup extends EventTarget {
             this.#boundaryStates.set(right, endState);
             this.#boundaryStates.delete(range);
         }
+        if (this.#editedBoundaryResets.delete(range)) this.#editedBoundaryResets.add(right);
         const endBoundary = this.#processingBoundaries?.get(range);
         if (endBoundary) {
             this.#processingBoundaries.set(right, {...endBoundary, before: right});
@@ -294,7 +357,7 @@ class TimeRangeGroup extends EventTarget {
 
 class TimeRange {
     static Type=Object.freeze({FIXED:"Fixed",MOVEABLE:"Moveable",EXPANDABLE:"Expandable",COLLAPSABLE:"Collapsable"});
-    static Events=Object.freeze({SPLIT:"split",INSERT:"insert",REMOVE:"remove",CHANGE:"change",SPLIT_POINT_REACHED:"split-point-reached",BOUNDARY_REACHED:"boundary-reached",BOUNDARY_RESET:"boundary-reset"});
+    static Events=Object.freeze({SPLIT:"split",INSERT:"insert",REMOVE:"remove",CHANGE:"change",SPLIT_POINT_REACHED:"split-point-reached",SPLIT_POINT_RESET:"split-point-reset",BOUNDARY_REACHED:"boundary-reached",BOUNDARY_RESET:"boundary-reset"});
     static #newGroup; static #secret=Symbol("TimeRange"); static #nextId=0;
     #type;#start;#end;#group;#element;#previous=null;#next=null;
     #rangeId;#entityId;#entityType;

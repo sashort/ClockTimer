@@ -12,9 +12,23 @@ while an update is open, and the group emits no events during that update.
 The outermost `endUpdate()` schedules validation for the next tick; it emits
 nothing itself. An unmatched `endUpdate()` throws.
 
-Use `group.setSplitPoints(dates)` and `group.splitPoints`; the earlier
-`setBoundaries()` and `boundaries` names remain compatibility aliases.
+Split points are mutable objects with stable IDs: `{ id, time }`. Keep the ID
+unchanged when moving a point. `group.splitPoints` returns a copy of the collection
+containing the same objects, so changing a point's `time` edits that point.
+Use `setSplitPoints(points)`, `addSplitPoint(point)`, and `removeSplitPoint(pointOrId)`
+to edit membership. Objects without an ID receive one automatically. Duplicate
+IDs are rejected. Date-based input is still accepted and converted into objects;
+`setBoundaries()` accepts either form and `boundaries` returns Date snapshots.
 `TimeRange.create({ type, start, end, splitPoints, clock })` accepts initial points.
+
+```js
+const point = { id: "lunch-start", time: new Date("2026-10-06T12:00:00Z") };
+group.beginUpdate();
+group.addSplitPoint(point);
+point.time = new Date("2026-10-06T12:15:00Z");
+group.removeSplitPoint("obsolete-point");
+group.endUpdate(); // validation and notifications wait for the next tick
+```
 
 The next tick normalizes the ranges against the latest split points, reusing the
 existing splitting behavior. Portions before an internal split point are
@@ -64,10 +78,16 @@ gaps still have their corresponding boundary notifications. Both are
 }
 ```
 
-The group also emits `split-point-reached` with `detail: { tick, splitPoints }`.
-`splitPoints` is a chronological array of `{ time, before, after }` entries for
-ClockTimer split points reached during that tick. It emits once per reached point
-and batches multiple points into one event. At a split point between different
+The group also emits `split-point-reached` and `split-point-reset`, each with
+`detail: { tick, splitPoints }`. `splitPoints` is a chronological array of
+`{ splitPoint, time, before, after }` entries. `splitPoint` references the original
+mutable object; `time` is a Date snapshot that will not change if it moves later.
+A previously reached point moved after the stored tick time emits
+`split-point-reset` at the next tick. It becomes pending and can emit
+`split-point-reached` again. A delayed tick that has already passed the new time
+emits reset first, then reached. Multiple points are batched by event type;
+unchanged points do not repeatedly notify, and deleted points do not notify.
+At a split point between different
 entities, both `split-point-reached` and `boundary-reached` are emitted; between
 pieces of one entity, only `split-point-reached` is emitted.
 

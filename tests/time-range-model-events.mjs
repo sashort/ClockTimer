@@ -123,6 +123,82 @@ try {
     assert.deepEqual(Array.from(pointBatches[0].splitPoints, point => point.time.getTime()), [time(10).getTime(), time(20).getTime()],
         'A delayed tick batches all reached split points');
 
+    const movablePoint = {id: 'movable-cut', time: time(10)};
+    const movable = TimeRange.create({type: 'Fixed', start: time(0), end: time(100), splitPoints: [movablePoint]});
+    const movableEvents = [];
+    for (const type of ['split-point-reached', 'split-point-reset']) {
+        movable.group.addEventListener(type, event => movableEvents.push({type, ...event.detail}));
+    }
+    movable.group.tick(time(10), time(0));
+    assert.equal(movableEvents[0].splitPoints[0].splitPoint, movablePoint, 'Events reference the supplied split-point object');
+    assert.equal(movable.group.splitPoints[0], movablePoint);
+    movable.group.beginUpdate();
+    movablePoint.time = time(40);
+    const addedPoint = {id: 'temporary-cut', time: time(25)};
+    assert.equal(movable.group.addSplitPoint(addedPoint), addedPoint);
+    assert.equal(movable.group.removeSplitPoint(addedPoint), true);
+    assert.equal(movable.group.removeSplitPoint(addedPoint), false);
+    movable.group.endUpdate();
+    assert.equal(movableEvents.length, 1, 'Editing split-point objects emits nothing before the next tick');
+    movable.group.tick(time(10));
+    assert.deepEqual(movableEvents.map(event => event.type), ['split-point-reached', 'split-point-reset']);
+    assert.equal(movableEvents[1].splitPoints[0].splitPoint, movablePoint);
+    assert.equal(movableEvents[1].splitPoints[0].time.getTime(), time(40).getTime());
+    movable.group.tick(time(10));
+    assert.equal(movableEvents.length, 2, 'A reset is emitted only once');
+    movable.group.tick(time(40));
+    assert.equal(movableEvents.at(-1).type, 'split-point-reached', 'The same object can be reached again after resetting');
+    assert.equal(movableEvents.at(-1).splitPoints[0].splitPoint, movablePoint);
+    assert.equal(movableEvents[0].splitPoints[0].time.getTime(), time(10).getTime(), 'Event times remain snapshots after the object moves');
+
+    const resetPoints = [{id: 'first-cut', time: time(10)}, {id: 'second-cut', time: time(20)}];
+    const resetting = TimeRange.create({type: 'Fixed', start: time(0), end: time(100), splitPoints: resetPoints});
+    resetting.group.tick(time(20), time(0));
+    const resetBatches = [];
+    resetting.group.addEventListener('split-point-reset', event => resetBatches.push(event.detail));
+    resetting.group.beginUpdate();
+    resetPoints[0].time = time(60);
+    resetPoints[1].time = time(50);
+    resetting.group.endUpdate();
+    resetting.group.tick(time(20));
+    assert.equal(resetBatches.length, 1, 'One reset event batches every reset point');
+    assert.deepEqual(Array.from(resetBatches[0].splitPoints, entry => entry.splitPoint.id), ['second-cut', 'first-cut']);
+
+    const deletedEvents = [];
+    resetting.group.addEventListener('split-point-reached', event => deletedEvents.push(event.detail));
+    resetting.group.beginUpdate();
+    resetting.group.removeSplitPoint('first-cut');
+    resetting.group.removeSplitPoint('second-cut');
+    resetting.group.endUpdate();
+    resetting.group.tick(time(70));
+    assert.equal(deletedEvents.length, 0, 'Deleted points never produce later reached events');
+    assert.equal(resetting.group.splitPoints.length, 0);
+
+    const outsidePoint = {id: 'outside-cut', time: time(10)};
+    const outside = TimeRange.create({type: 'Fixed', start: time(0), end: time(10), splitPoints: [outsidePoint]});
+    outside.group.tick(time(10), time(0));
+    const outsideResets = [];
+    outside.group.addEventListener('split-point-reset', event => outsideResets.push(event.detail));
+    outside.group.beginUpdate();
+    outsidePoint.time = time(20);
+    outside.group.endUpdate();
+    outside.group.tick(time(10));
+    assert.equal(outsideResets.length, 1, 'Moving a reached point outside the group still resets it');
+    assert.equal(outsideResets[0].splitPoints[0].splitPoint, outsidePoint);
+    assert.throws(() => outside.group.setSplitPoints([{id: 'duplicate', time: time(10)}, {id: 'duplicate', time: time(20)}]), /unique/);
+
+    const catchupPoint = {id: 'catchup-cut', time: time(10)};
+    const catchup = TimeRange.create({type: 'Fixed', start: time(0), end: time(100), splitPoints: [catchupPoint]});
+    catchup.group.tick(time(10), time(0));
+    const catchupEvents = [];
+    for (const type of ['split-point-reset', 'split-point-reached']) catchup.group.addEventListener(type, event => catchupEvents.push(event));
+    catchup.group.beginUpdate();
+    catchupPoint.time = time(20);
+    catchup.group.endUpdate();
+    catchup.group.tick(time(30));
+    assert.deepEqual(catchupEvents.map(event => event.type), ['split-point-reset', 'split-point-reached'],
+        'A delayed tick reports the edit reset before reaching the moved point again');
+
     const chain = TimeRange.create({ type: 'Fixed', start: time(0), end: time(10) });
     const second = TimeRange.create({ group: chain.group, type: 'Fixed', start: time(10), end: time(20) }).ranges[0];
     const third = TimeRange.create({ group: chain.group, type: 'Fixed', start: time(25), end: time(30) }).ranges[0];
