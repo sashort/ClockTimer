@@ -5107,6 +5107,13 @@
 
                     switch (event?.event) {
                         case "interval.started": {
+                            // PHP's associative JSON decoding serializes an empty
+                            // attributes object as []; accept persisted events in
+                            // that form while retaining normal input validation.
+                            const attributes = Array.isArray(value.attributes) &&
+                                value.attributes.length === 0
+                                    ? {}
+                                    : value.attributes ?? {};
                             const inserted =
                                 this.#startIntervalLocal(
                                     value.type,
@@ -5117,8 +5124,7 @@
                                             value.length,
                                             "interval length"
                                         ),
-                                    value.attributes ??
-                                        {},
+                                    attributes,
                                     value.startBuffer === null ||
                                         value.startBuffer === undefined
                                         ? undefined
