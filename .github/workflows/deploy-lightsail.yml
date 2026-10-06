@@ -63,10 +63,14 @@ jobs:
                cp SpeechFunctionRoles.js "$ROLES_BACKUP"
              fi
 
-             # inbound/ is intentionally writable by Apache/PHP. Git-managed files in
-             # that directory can therefore be owned by daemon from prior deployments.
-             # Repair only the Git control files before Git needs to replace them;
-             # do not chown the whole directory, which would break uploaded-file ownership.
+             # Git needs directory access to replace tracked files in inbound/, which
+             # normally belongs to daemon with mode 700. Keep Apache/PHP access via
+             # the daemon group during deployment; leave uploaded-file ownership alone.
+             # Restore the private directory permissions even when a Git command fails.
+             trap "sudo -n install -d -o daemon -g daemon -m 700 /opt/bitnami/apache2/htdocs/inbound" EXIT
+             sudo -n install -d -o "$(id -un)" -g daemon -m 770 /opt/bitnami/apache2/htdocs/inbound
+
+             # Repair the Git control files after the directory becomes accessible.
              if [ -f inbound/.gitattributes ]; then
                sudo -n chown "$(id -un)":daemon inbound/.gitattributes
                sudo -n chmod u+rw inbound/.gitattributes
@@ -81,10 +85,9 @@ jobs:
              git checkout -B "$DEPLOY_BRANCH" "origin/$DEPLOY_BRANCH"
              git reset --hard "origin/$DEPLOY_BRANCH"
 
-             # inbound/ is intentionally outside Git and must be writable by PHP/Apache.
-             # Repair ownership and permissions on every deployment so uploads work even
-             # when the directory was previously created by a different user.
+             # Restore the upload directory after Git finishes replacing tracked files.
              sudo -n install -d -o daemon -g daemon -m 700 /opt/bitnami/apache2/htdocs/inbound
+             trap - EXIT
 
              if [ -s "$ROLES_BACKUP" ]; then
                cp "$ROLES_BACKUP" SpeechFunctionRoles.js
