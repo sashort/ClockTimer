@@ -81,7 +81,7 @@ for (const id of [
     assert.match(html, new RegExp(`id="${id}"`));
 }
 
-assert.match(html, /<script src="IdentityContext\.js"><\/script>/);
-assert.match(html, /<script src="UserLookup\.js"><\/script>/);
+assert.match(html, /<script src="IdentityContext\.js(?:\?[^" ]*)?"><\/script>/);
+assert.match(html, /<script src="UserLookup\.js(?:\?[^" ]*)?"><\/script>/);
 
 console.log("PASS shared user identity object and admin lookup UI");

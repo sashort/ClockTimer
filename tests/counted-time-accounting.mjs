@@ -114,7 +114,7 @@ try {
     const total = await fresh();
     window.fetch = async (url) => {
         const path = new URL(url,'https://clock.example/').pathname;
-        const data = path.endsWith('/users/')
+        const data = path.endsWith('/command-check/') ? {accepted:true} : path.endsWith('/users/')
             ? {csrfToken:'a'.repeat(64),user:{id:2},calendars:[]}
             : {tripId:999,eventId:1,aggregateBreakdown:{production:{tripCount:2,
                 standardTimeMilliseconds:5400000,

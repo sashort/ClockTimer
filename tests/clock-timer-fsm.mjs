@@ -26,7 +26,7 @@ async function exercise(core, checkFSM) {
     let eventId=1;
     window.fetch=async(url)=>{
         const path=new URL(url,'https://clock.example/').pathname;
-        const data=path.endsWith('/users/')
+        const data=path.endsWith('/command-check/') ? {accepted:true} : path.endsWith('/users/')
             ? {csrfToken:'a'.repeat(64),user:{id:2},calendars:[]}
             : {tripId:999,eventId:eventId++,trips:[],aggregateBreakdown:{production:{tripCount:2,
                 standardTimeMilliseconds:5400000,actualTimeMilliseconds:4800000,

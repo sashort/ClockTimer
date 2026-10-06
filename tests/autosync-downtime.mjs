@@ -26,7 +26,8 @@ window.fetch=async(url,options={})=>{
   const method=options.method||'GET';
 
   let data;
-  if(path.endsWith('/users/')){
+  if(path.endsWith('/command-check/')){data={accepted:true};}
+  else if(path.endsWith('/users/')){
     data={
       csrfToken:'a'.repeat(64),
       user:{id:2,username:'test',permissions:0},

@@ -388,7 +388,7 @@ assert.match(
 );
 assert.match(
     speechMenuAsyncSource,
-    /speechCommandDispatched[\s\S]*?const completion\s*=[\s\S]*?#completeSpeechExecution[\s\S]*?if \(awaitCompletion\)[\s\S]*?await completion[\s\S]*?void completion/
+    /speechCommandDispatched[\s\S]*?const completion\s*=[\s\S]*?#completeSpeechExecution[\s\S]*?if \(awaitCompletion(?: && !executionMetadata\?\.chain)?\)[\s\S]*?await completion[\s\S]*?void completion/
 );
 assert.match(
     speechMenuAsyncSource,
