@@ -47,7 +47,7 @@ speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', 
 window.eval(speechSource+'\nwindow.SpeechMenu=SpeechMenu;');
 window.eval(fs.readFileSync(new URL('../SpeechMicBar.js',import.meta.url),'utf8'));
 window.SpeechMenu.testBegin();
-window.eval(fs.readFileSync(new URL('../app.js',import.meta.url),'utf8'));
+window.eval(fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../app.js',import.meta.url),'utf8'));
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
@@ -90,6 +90,36 @@ await window.SpeechMenu.testTranscript(repeatedOff,'sync off',true);await repeat
 assert.equal(timer.autoSyncTripGoal,false,'a repeated sync off must remain off');
 assert.equal(window.SpeechMenu.started,true,'repeated sync off keeps recognition active');
 systemMenu.remove();
+if(process.argv.includes('--pointer-confirmation')) {
+    window.document.querySelector('#voiceEntryTouch').click();await settle();
+    assert(window.document.querySelector('#numberPadDialog')?.open,'touch opens the start numberpad');
+    for(const digit of '3000') await window.WMOFActions.enterNumberPadDigit(digit);
+    assert.equal(window.document.querySelector('#numberPadConfirm').disabled,false);
+    assert.equal(await window.WMOFActions.confirmNumberPad(),true,'numberpad OK starts and persists the trip');
+} else {
+    const valueAttempt=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(valueAttempt,'thirty minutes',true);await valueAttempt.digestQueue;await settle();
+    const okAttempt=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(okAttempt,'ok',true);await okAttempt.digestQueue;await settle();
+    assert(!okAttempt.digestExecutionFailed,'voice OK accepts and persists the entered trip time');
+}
+assert.equal(timer.status,'running','confirmation starts the trip');
+assert(stored.some(e=>e.event==='trip.started'),'the confirmed trip reaches persistence');
+window.__testTime+=120000;
+await window.WMOFActions.endTrip();await settle();
+assert.equal(window.document.querySelector('#app').dataset.persistenceState,'confirmed','finishing the trip settles its transaction');
+const nextValue=window.SpeechMenu.testBegin();
+await window.SpeechMenu.testTranscript(nextValue,'twenty minutes',true);await nextValue.digestQueue;await settle();
+assert(!nextValue.digestExecutionFailed,'the next trip time is recognized');
+assert.equal(window.document.querySelector('#voiceEntryValue').textContent,'0:20:00','the valid time is acknowledged before OK');
+assert.equal(window.document.querySelector('#voiceEntryValue').hidden,false,'the acknowledged time is visible');
+window.document.querySelector('#numberPadDialog')?.dispatchEvent(new window.Event('close'));
+assert.equal(window.document.querySelector('#voiceEntryValue').textContent,'0:20:00','a previous editor close preserves the acknowledged voice input');
+const nextOk=window.SpeechMenu.testBegin();
+await window.SpeechMenu.testTranscript(nextOk,'ok',true);await nextOk.digestQueue;await settle();
+assert(!nextOk.digestExecutionFailed,'the next trip confirmation succeeds after finishing a trip');
+assert.equal(timer.status,'running','the second trip starts without restarting the app');
+await timer.stop();await timer.clear();stored.length=0;
 await timer.start({standardTimeMilliseconds:3600000});
 window.__testTime+=60000;
 await timer.startInterval('lunch',1800000,{breakType:'lunch'},150000,150000);
@@ -127,5 +157,5 @@ for(const phrase of ['down','downtime','down time']) {
 }
 assert.equal(errors.length,0,errors.join('\n'));
 assert.equal(consoleErrors.length,0,consoleErrors.join('\n'));
-console.log('PASS Ready, Down aliases, sync-off microphone visibility, optimistic UI and rollback');
+console.log('PASS trip confirmation before and after End Trip, Ready, Down aliases, sync-off microphone visibility, optimistic UI and rollback');
 window.happyDOM.abort();

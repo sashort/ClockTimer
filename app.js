@@ -17178,7 +17178,7 @@
                     true
             });
 
-        resetNumberPad();
+        if (numberPadState === state) resetNumberPad();
 
         return closed;
     }
@@ -19981,19 +19981,15 @@
         );
 
         numberPadDialog.addEventListener("close", () => {
-            stopAllNumberPadAudio();
-            syncTripTransitionEditorLayout(
-                false
-            );
-
-            if (
-                preserveNumberPadStateOnClose
-            ) {
-                preserveNumberPadStateOnClose =
-                    false;
-
+            if (preserveNumberPadStateOnClose) {
+                preserveNumberPadStateOnClose = false;
                 return;
             }
+            // A delayed close from the touch editor must not clear a newer
+            // voice session or a touch editor that has already reopened.
+            if (voiceEntryState || numberPadDialog.open) return;
+            stopAllNumberPadAudio();
+            syncTripTransitionEditorLayout(false);
 
             resetNumberPad();
         });
@@ -29021,7 +29017,18 @@
             }
 
             element.toggleAttribute("data-speech-state-command", !String(actionName).startsWith("read"));
-            element.toggleAttribute("speech-persist", ["cancelDownTime", "changeActualStart", "changeCreationTime", "changeScheduledStart", "changeStandardTime", "closeActiveSurface", "confirmBreakPromptNo", "confirmBreakPromptYes", "confirmBreakType", "confirmCancelDownTime", "continueStartAt", "deferTrip", "lockEndTime", "openTripLog", "prepareStartMenu", "readTotalGoal", "readTripGoal", "resumeTrip", "saveDownDetails", "saveTripSettings", "scheduleStartAt", "startDownTime", "startScheduledTripEarly", "toggleSync"].includes(String(actionName)));
+            const persistsSpeechAction = [
+                "cancelDownTime", "changeActualStart", "changeCreationTime", "changeScheduledStart",
+                "changeStandardTime", "closeActiveSurface", "confirmNumberPad", "confirmBreakPromptNo",
+                "confirmBreakPromptYes", "confirmBreakType", "confirmCancelDownTime", "continueStartAt",
+                "deferTrip", "lockEndTime", "openTripLog", "prepareReadyAction", "prepareStartMenu",
+                "readTotalGoal", "readTripGoal", "resumeTrip", "saveDownDetails", "saveTripSettings",
+                "scheduleStartAt", "startDownTime", "startScheduledTripEarly", "toggleSync"
+            ].includes(String(actionName));
+            // Voice entry uses one action for values and controls; only its
+            // confirmation and defer commands can send a persistence request.
+            element.toggleAttribute("speech-persist", persistsSpeechAction ||
+                ["voiceEntryConfirm", "voiceEntryDefer"].includes(key));
 
             if (speechIntents[key]) {
                 element.dataset.speechIntent =
