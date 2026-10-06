@@ -202,31 +202,7 @@ jobs:
              sudo -n chmod 664 SpeechFunctionRoles.js
 
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
-             VERSION=$(git rev-parse --short=12 HEAD)
-             sed -i \
-               -e "s#href=\"app.css\"#href=\"app.css?v=$VERSION\"#" \
-               -e "s#src=\"TemporalFormat.js\"#src=\"TemporalFormat.js?v=$VERSION\"#" \
-               -e "s#src=\"RingContainer.js\"#src=\"RingContainer.js?v=$VERSION\"#" \
-               -e "s#src=\"TimeRangeModel.js\"#src=\"TimeRangeModel.js?v=$VERSION\"#" \
-               -e "s#src=\"TimeRangeElement.js\"#src=\"TimeRangeElement.js?v=$VERSION\"#" \
-               -e "s#src=\"ClockTimer.js\"#src=\"ClockTimer.js?v=$VERSION\"#" \
-               -e "s#src=\"IdentityContext.js\"#src=\"IdentityContext.js?v=$VERSION\"#" \
-               -e "s#src=\"UserLookup.js\"#src=\"UserLookup.js?v=$VERSION\"#" \
-               -e "s#src=\"LiveTripStream.js\"#src=\"LiveTripStream.js?v=$VERSION\"#" \
-               -e "s#src=\"HamburgerMenu.js\"#src=\"HamburgerMenu.js?v=$VERSION\"#" \
-               -e "s#src=\"app.js\"#src=\"app.js?v=$VERSION\"#" \
-               -e "s#src=\"SpeechFunctionRoles.js\"#src=\"SpeechFunctionRoles.js?v=$VERSION\"#" \
-               -e "s#src=\"SpeechFunctionRegistry.js\"#src=\"SpeechFunctionRegistry.js?v=$VERSION\"#" \
-               -e "s#src=\"UtilityFunctions.js\"#src=\"UtilityFunctions.js?v=$VERSION\"#" \
-               -e "s#src=\"SpeechProcessingFunctions.js\"#src=\"SpeechProcessingFunctions.js?v=$VERSION\"#" \
-               -e "s#src=\"ActionFunctions.js\"#src=\"ActionFunctions.js?v=$VERSION\"#" \
-               -e "s#src=\"InteractionFunctions.js\"#src=\"InteractionFunctions.js?v=$VERSION\"#" \
-               -e "s#src=\"PresentationSetters.js\"#src=\"PresentationSetters.js?v=$VERSION\"#" \
-               -e "s#src=\"CalendarRange.js\"#src=\"CalendarRange.js?v=$VERSION\"#" \
-               -e "s#src=\"TripLog.js\"#src=\"TripLog.js?v=$VERSION\"#" \
-               index.html templates/index.html
-             echo "Asset version: $VERSION"
-             grep -E "app\\.css\\?v=|app\\.js\\?v=" index.html
+             python3 scripts/stamp-version.py
 
              USERS_STATUS=$(curl -sS -o /tmp/clocktimer-users-health.json -w "%{http_code}" https://wmof.sashort-apps.com/api/users/)
              echo "Users API status: $USERS_STATUS"

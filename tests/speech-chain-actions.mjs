@@ -23,7 +23,7 @@ for(const kind of ['short-break','break','lunch']) {
 }
 const draft={};const message={hidden:false};const started=[];let autoStarts=0;
 const boundary=new Date('2026-10-01T10:00:00Z');
-const bindings={EnglishSpeechValuePreprocessor:Values,EnglishDurationParser:Duration,
+const bindings={announcementText:key=>key,EnglishSpeechValuePreprocessor:Values,EnglishDurationParser:Duration,
     scheduledStartDialog:{open:false},scheduledStartStandard:standard,tripDraft:draft,
     scheduledStartMessage:message,cancelScheduledStartSpeechPrompt(){},
     armScheduledStartAutoFromVoice(){autoStarts++;},updateScheduledStartDialog(){},

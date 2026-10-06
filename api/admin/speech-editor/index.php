@@ -555,6 +555,7 @@ header('Referrer-Policy: no-referrer');
         </form>
     </dialog>
 
+    <script src="../../../AsyncPersistence.js?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/../../../AsyncPersistence.js'), ENT_QUOTES)?>"></script>
     <script src="EditorActionFunctions.js?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/EditorActionFunctions.js'), ENT_QUOTES)?>"></script>
     <script src="RegexBuilder.js?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/RegexBuilder.js'), ENT_QUOTES)?>"></script>
     <script src="editor.js?v=<?=htmlspecialchars((string) @filemtime(__DIR__ . '/editor.js'), ENT_QUOTES)?>"></script>

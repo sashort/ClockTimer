@@ -5,6 +5,14 @@
     await announcementLanguage.load(document.documentElement.lang || "en-US");
     const announcementText = (key, values) => announcementLanguage.text(key, values);
 
+    try {
+        await globalThis.WMOFPersistence.ready;
+        await globalThis.WMOFPersistence.initializeLegacy(localStorage);
+    } catch (error) {
+        document.documentElement.dataset.persistenceState = "reverted";
+        globalThis.dispatchEvent(new CustomEvent("wmof:persistence-error", {detail: {error}}));
+    }
+
     const API_BASE = "https://wmof.sashort-apps.com/";
     const calendarRanges = new CalendarRange({baseUrl: API_BASE, databaseOnly: true,
         profile: document.documentElement.dataset.calendarProfile || "walmart-us"});
@@ -347,7 +355,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "2026-10-01-chime-speech-presets-1";
+        "ZHHTV6";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -543,7 +551,7 @@
 
                         if (!globalThis.SpeechMenu) {
                             await loadClassicScript(
-                                "SpeechMenu.js?v=language-pack-20261001"
+                                "SpeechMenu.js"
                             );
                         }
 
@@ -619,7 +627,7 @@
             globalThis
                 .WMOFActionFunctions
                 ?.invocationContext
-                ?.signal;
+                ?.signal || globalThis.WMOFStateTransactions?.current?.signal;
 
     const speechTransactionDate =
         () => {
@@ -5885,7 +5893,7 @@
                 data.trips.push(...page.trips);
             } while (page.trips.length === 1000);
             if (sequence !== tripLogRequestSequence) return;
-            safeStorageSet("wmof.tripLogCache", JSON.stringify({userId: signedInProfile?.id, trips: data.trips}));
+            safeStorageSet("wmof.tripLogCache", {userId: signedInProfile?.id, trips: data.trips});
             renderTripLog(data, calendar);
             if (sequence !== tripLogRequestSequence) return;
         window.dispatchEvent(
@@ -6003,7 +6011,7 @@
 
     function offlineTripLogData(calendar) {
         let cached;
-        try {cached = JSON.parse(safeStorageGet("wmof.tripLogCache") || "null");} catch {}
+        try {const raw = safeStorageGet("wmof.tripLogCache"); cached = typeof raw === "string" ? JSON.parse(raw) : raw;} catch {}
         const local = clockTimer.getLocalTripLog();
         const loginRequired = deliberatelyLoggedOut || (!signedInProfile && !cached && !local.length);
         const allTrips = new Map();
@@ -26103,7 +26111,7 @@
             },
 
             toggleSync(
-                syncState
+                syncAction
             ) {
                 if (
                     normalizedConnectionStatus() ===
@@ -26122,12 +26130,12 @@
                 let enabled;
 
                 if (
-                    syncState ===
+                    syncAction ===
                         undefined ||
-                    syncState ===
+                    syncAction ===
                         null ||
                     String(
-                        syncState
+                        syncAction
                     )
                         .trim() ===
                         ""
@@ -26136,16 +26144,16 @@
                         !current;
                 }
                 else if (
-                    typeof syncState ===
+                    typeof syncAction ===
                         "boolean"
                 ) {
                     enabled =
-                        syncState;
+                        syncAction;
                 }
                 else {
                     const requested =
                         String(
-                            syncState
+                            syncAction
                         )
                             .trim()
                             .toLowerCase();
@@ -28644,7 +28652,7 @@
             {
                 parameters: [
                     {
-                        name: "syncState",
+                        name: "syncAction",
                         type: "choice",
                         optional: true,
                         values: [
@@ -29011,6 +29019,9 @@
                     "speech-available"
                 );
             }
+
+            element.toggleAttribute("data-speech-state-command", !String(actionName).startsWith("read"));
+            element.toggleAttribute("speech-persist", ["cancelDownTime", "changeActualStart", "changeCreationTime", "changeScheduledStart", "changeStandardTime", "closeActiveSurface", "confirmBreakPromptNo", "confirmBreakPromptYes", "confirmBreakType", "confirmCancelDownTime", "continueStartAt", "deferTrip", "lockEndTime", "openTripLog", "prepareStartMenu", "readTotalGoal", "readTripGoal", "resumeTrip", "saveDownDetails", "saveTripSettings", "scheduleStartAt", "startDownTime", "startScheduledTripEarly", "toggleSync"].includes(String(actionName)));
 
             if (speechIntents[key]) {
                 element.dataset.speechIntent =
@@ -29427,6 +29438,74 @@
         }
 
     })();
+
+    const stateTransactions = globalThis.WMOFStateTransactions;
+    if (stateTransactions) {
+        const status = document.createElement("div");
+        status.className = "persistence-status";
+        status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
+        status.hidden = true; document.body.append(status);
+        const pendingAttempts = new Set();
+        stateTransactions.addEventListener("state", ({detail}) => {
+            if (detail.state === "pending") pendingAttempts.add(detail.id); else pendingAttempts.delete(detail.id);
+            const state = pendingAttempts.size ? "pending" : detail.state;
+            app.dataset.persistenceState = state;
+            document.documentElement.dataset.persistenceState = state;
+            status.hidden = state === "confirmed";
+            status.textContent = state === "reverted" ? "Reverted — the command could not be completed." : "Applying…";
+        });
+        stateTransactions.register("clock", {
+            capture: () => clockTimer.captureState(),
+            restore: snapshot => clockTimer.restoreState(snapshot),
+            begin: transaction => clockTimer.beginStateTransaction(transaction),
+            end: transaction => clockTimer.endStateTransaction(transaction)
+        });
+        stateTransactions.register("interface", {
+            capture: () => ({
+                focus: document.activeElement, audio: structuredClone(audioSettings), draft: tripDraft && {...tripDraft},
+                ready: pendingSpeechReady, numberPad: numberPadState, voice: voiceEntryState,
+                controls: [...document.querySelectorAll("dialog, [popover], input, select, textarea, [aria-expanded], [aria-pressed], .speech-focused")]
+                    .map(element => ({element, value: element.value, checked: element.checked,
+                        hidden: element.hidden, disabled: element.disabled, open: element.open,
+                        popover: element.hasAttribute("popover") && element.matches(":popover-open"),
+                        expanded: element.getAttribute("aria-expanded"), pressed: element.getAttribute("aria-pressed"),
+                        focused: element.classList.contains("speech-focused"), allowOk: element.allowOk}))
+            }),
+            restore: snapshot => {
+                audioSettings = snapshot.audio; tripDraft = snapshot.draft;
+                pendingSpeechReady = snapshot.ready; numberPadState = snapshot.numberPad; voiceEntryState = snapshot.voice;
+                const graphics = getGraphicalSettings(), preferences = getTripPreferences();
+                applyGraphicalSettings(graphics); fillGraphicalForm(graphics); fillTripPreferencesForm(preferences);
+                applyAudioOutputSettings();
+                clockTimer.configure({auto_goal: preferences.syncGoals});
+                clockTimer.autoRestartTripAfterLateBreak = preferences.lateBreakBehavior === "autoRestartTrip";
+                applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
+                applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
+                setTripLogPinned(getStoredTripLogPinned(), {persist: false});
+                setTripLogRange(getTripLogRange(), {persist: false, notify: false});
+                document.querySelectorAll(".speech-focused").forEach(element => element.classList.remove("speech-focused"));
+                for (const control of snapshot.controls) {
+                    const element = control.element; if (!element.isConnected) continue;
+                    if (control.value !== undefined) element.value = control.value;
+                    if (control.checked !== undefined) element.checked = control.checked;
+                    element.hidden = control.hidden;
+                    if (control.disabled !== undefined) element.disabled = control.disabled;
+                    if (element.tagName === "DIALOG" && element.open !== control.open) {
+                        if (control.open) element.showModal(); else element.close();
+                    }
+                    if (element.hasAttribute("popover")) {
+                        try {if (control.popover) element.showPopover(); else element.hidePopover();} catch {}
+                    }
+                    for (const [name, value] of [["aria-expanded", control.expanded], ["aria-pressed", control.pressed]]) {
+                        if (value === null) element.removeAttribute(name); else element.setAttribute(name, value);
+                    }
+                    element.classList.toggle("speech-focused", control.focused); element.allowOk = control.allowOk;
+                }
+                snapshot.focus?.isConnected && snapshot.focus.focus?.();
+                updateSummaryValues(); renderTripActionState(); renderSyncGoalsState();
+            }
+        });
+    }
 
     const graphicalSettings = getGraphicalSettings();
     const tripPreferences = getTripPreferences();

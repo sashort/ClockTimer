@@ -56,39 +56,15 @@
             )
     );
 
-    define(
-        "safeStorageGet",
-        key => {
-            try {
-                return localStorage
-                    .getItem(key);
-            }
-            catch {
-                return null;
-            }
-        }
-    );
-
-    define(
-        "safeStorageSet",
-        (
-            key,
-            value
-        ) => {
-            try {
-                localStorage
-                    .setItem(
-                        key,
-                        value
-                    );
-
-                return true;
-            }
-            catch {
-                return false;
-            }
-        }
-    );
+    // Reads use the hydrated memory view. Every durable operation is asynchronous.
+    define("safeStorageGet", key => globalThis.WMOFPersistence?.peek(key) ?? null);
+    define("safeStorageSet", (key, value) => {
+        let work;
+        try {work = globalThis.WMOFPersistence?.setItem(key, value) ?? Promise.reject(new Error("Storage is unavailable."));}
+        catch (error) {work = Promise.reject(error);}
+        work.catch(error => globalThis.dispatchEvent?.(new CustomEvent("wmof:persistence-error", {detail: {key, error}})));
+        return work;
+    });
 
     define(
         "formatDuration",

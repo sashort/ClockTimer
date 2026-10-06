@@ -7321,3 +7321,14 @@ speech-command {
 .trip-log-dialog > * { pointer-events: auto; }
 .trip-log-dialog::backdrop { background: transparent; }
 #tripLogPlaceholder { grid-row: 6; width: 100%; pointer-events: none; }
+
+.persistence-status {
+    position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    z-index: 10000; padding: .6rem 1rem; border-radius: .5rem;
+    background: #252525; color: #fff; font-size: .9rem;
+}
+.persistence-status[hidden] {display: none;}
+html[data-persistence-state="reverted"] .persistence-status {background: #752323;}
+
+.main-menu .app-version{padding:12px 14px;color:var(--wm-blue-light);font-size:14px;}
+.main-menu .app-version output{margin-left:8px;font-family:monospace;letter-spacing:.08em;}

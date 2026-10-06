@@ -1,5 +1,7 @@
+import {installAsyncStorage} from './async-storage-fixture.mjs';
 import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from './LanguageWindow.mjs';
 const window=new Window({url:'https://clock.example/',settings:{disableJavaScriptEvaluation:true}});
+const storage=installAsyncStorage(window);
 let recognition;
 window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abort(){this.onend?.();}};
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
@@ -24,7 +26,7 @@ window.fetch=async(url,options={})=>{
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
 window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'));
-for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','TripLog'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
@@ -255,7 +257,7 @@ assert.equal(c.status,'ready');
 assert.equal(c.currentTripId,undefined);
 assert.equal(window.document.querySelector('#app').dataset.tripState,'ready');
 assert.equal(window.document.querySelector('#activeTripControls').hidden,true);
-assert.equal(JSON.parse(window.localStorage.getItem('wmof.clock.completedTrips')).length,1);
+assert.equal((await storage.getItem('wmof.clock.completedTrips')).length,1);
 assert.equal(window.document.querySelector('#standardTimeValue').textContent,'---');
 assert.equal(window.document.querySelector('#renderedTimeValue').textContent,'---');
 assert.equal(window.document.querySelectorAll('#standardTimeValue .calculation-uncertain-icon, #renderedTimeValue .calculation-uncertain-icon, #currentPercentValue .calculation-uncertain-icon, #goalPercentValue .calculation-uncertain-icon').length,0);
@@ -287,7 +289,7 @@ console.log('PASS offline End Trip resets the main UI and uploads the completed 
 window.document.querySelector('#loginDialog').close();
 window.document.querySelector('#authButton').dispatchEvent(new window.PointerEvent('pointerup',{bubbles:true}));
 await settle();
-assert.equal(window.localStorage.getItem('wmof.deliberatelyLoggedOut'),'true');
+assert.equal(await storage.getItem('wmof.deliberatelyLoggedOut'),'true');
 assert.equal(window.document.querySelector('#loginDialog').open,false);
 console.log('PASS deliberate logout suppresses the automatic login dialog');
 const gear=window.document.querySelector('#tripLogSettingsButton');

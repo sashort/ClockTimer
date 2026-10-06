@@ -91,7 +91,7 @@
                 [...element.childNodes].some(node => node.nodeType === 3 && node.textContent.trim())) identify(element);
             if (element.shadowRoot) observe(element.shadowRoot);
         };
-        const scan = node => { if (node instanceof Element) visit(node); node.querySelectorAll?.('*').forEach(visit); };
+        const scan = node => { if (!node) return; if (node instanceof Element) visit(node); node.querySelectorAll?.('*').forEach(visit); };
         scan(root);
         const observer = new MutationObserver(records => {
             for (const record of records) {

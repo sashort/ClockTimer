@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {Window} from 'happy-dom';
+import {installAsyncStorage} from './async-storage-fixture.mjs';
 
 const window=new Window({url:'https://clock.example/',settings:{disableJavaScriptEvaluation:true}});
+const storage=installAsyncStorage(window);
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});
 Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
@@ -17,7 +19,8 @@ window.fetch=async(url,options={})=>{
     const body=options.body?JSON.parse(options.body):{};
     requests.push({path,options,body});
     let data={};
-    if(path.endsWith('/users/'))data={csrfToken:'a'.repeat(64),user:{id:userId,username:'test'}};
+    if(path.endsWith('/command-check/'))data={accepted:true};
+    else if(path.endsWith('/users/'))data={csrfToken:'a'.repeat(64),user:{id:userId,username:'test'}};
     else if(path.endsWith('/trips/')&&options.method==='POST'){
         const id=tokens.get(body.clientToken)||nextTripId++;
         tokens.set(body.clientToken,id);
@@ -54,7 +57,7 @@ async function complete(standard,minutes){
 offline=true;
 await complete(1200000,8);
 await complete(1800000,12);
-let queue=JSON.parse(window.localStorage.getItem(storageKey));
+let queue=await storage.getItem(storageKey);
 assert.equal(queue.length,2);
 assert.equal(c.getLocalTripLog().length,2);
 const localTotals=c.calculateOfflineTripTotals(c.getLocalTripLog(),'2026-09-18T00:00:00Z','2026-09-19T00:00:00Z');
@@ -76,32 +79,33 @@ const edited=c.getLocalTripLog().find(t=>String(t.id)===String(editable.id));
 assert.equal(edited.standardTimeMilliseconds,1500000);
 assert.equal(edited.nonProduction,true);
 assert(edited.events.some(event=>event.event==='interval.started'));
-assert.equal(JSON.parse(window.localStorage.getItem(storageKey))[0].payload.standardTimeMilliseconds,1500000);
+assert.equal((await storage.getItem(storageKey))[0].payload.standardTimeMilliseconds,1500000);
 console.log('PASS buffered trips retain settings and entry edits while offline');
 const removed=c.getLocalTripLog()[1];
 await c.tripEditorRequest(removed.id,{operation:'delete-trip',revision:'offline'});
 assert.equal(c.getLocalTripLog().length,1);
-assert.equal(JSON.parse(window.localStorage.getItem(storageKey)).length,2);
-assert.equal(JSON.parse(window.localStorage.getItem(storageKey))[1].deleted,true);
+assert.equal((await storage.getItem(storageKey)).length,2);
+assert.equal((await storage.getItem(storageKey))[1].deleted,true);
 console.log('PASS deleting an offline trip keeps a hidden tombstone transaction');
 
 c.remove();c=clock();
 assert.equal(c.status,'ready');
+await storage.flush();
 assert.equal(c.getLocalTripLog().length,1);
 offline=false;userId=3;await c.connect('other','test');
 assert.equal(trips.size,0);
-assert.equal(JSON.parse(window.localStorage.getItem(storageKey)).length,2);
+assert.equal((await storage.getItem(storageKey)).length,2);
 console.log('PASS refreshed clock restores the queue and never uploads it to a different account');
 
 userId=2;interruptStop=true;
 await assert.rejects(()=>c.connect('test','test'));
 assert.equal(events.size,2);
-assert.equal(JSON.parse(window.localStorage.getItem(storageKey)).length,2);
+assert.equal((await storage.getItem(storageKey)).length,2);
 // Refresh again after the stop event was accepted but the timing PATCH failed.
 c.remove();c=clock();await c.connect('test','test');
 assert.equal(trips.size,1);
 assert.equal(events.size,6);
-assert.equal(JSON.parse(window.localStorage.getItem(storageKey)).length,0);
+assert.equal((await storage.getItem(storageKey)).length,0);
 assert.deepEqual([...trips.values()].map(t=>[t.standardTimeMilliseconds,t.countedTimeMilliseconds]),[[1500000,480000]]);
 for(const trip of trips.values()){
     const tripEvents=[...events.values()].filter(e=>e.tripId===trip.id);
@@ -125,6 +129,6 @@ assert.equal(events.size,9);
 const activeId=c.currentTripId;
 assert.equal([...events.values()].filter(e=>e.tripId===activeId).length,1);
 assert.equal([...events.values()].filter(e=>e.tripId===activeId)[0].event,'trip.started');
-assert.equal(JSON.parse(window.localStorage.getItem(storageKey)).length,0);
+assert.equal((await storage.getItem(storageKey)).length,0);
 console.log('PASS reconnect drains completed trips while preserving a separate running trip');
 window.happyDOM.abort();

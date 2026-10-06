@@ -10,6 +10,18 @@ on:
       - "SpeechEditorRuntime.js"
       - "app.js"
       - "ClockTimer.js"
+      - "AsyncPersistence.js"
+      - "PersistenceWorker.js"
+      - "StateTransactions.js"
+      - "api/command-check/**"
+      - "api/_core/command_checks.php"
+      - "api/trip-events/**"
+      - "tests/command_checks.php"
+      - "tests/app-state-transactions.mjs"
+      - "scripts/stamp-version.py"
+      - "tests/build-version.py"
+      - "tests/async-*.mjs"
+      - "tests/clock-state-transactions.mjs"
       - "TimeRangeModel.js"
       - "TimeRangeElement.js"
       - "RingContainer.js"
@@ -67,6 +79,9 @@ jobs:
           node --check TimeRangeElement.js
           node --check RingContainer.js
           node --check ClockTimer.js
+          node --check AsyncPersistence.js
+          node --check PersistenceWorker.js
+          node --check StateTransactions.js
           node --check SpeechMenu.js
           node --check AdaptiveSpeechTiming.js
           node --check SherpaRecognizer.js
@@ -161,6 +176,7 @@ jobs:
           node new-user-qr.mjs
           node regex-builder.mjs
           node trip-log.mjs
+          npm run test:state-transactions
           node offline-trip-buffer.mjs
           node autosync-downtime.mjs
           node live-trip-stream.mjs
@@ -168,6 +184,8 @@ jobs:
           node deferred-trip.mjs
           node numberpad-meridiem.mjs
           php trip_editor.php
+          php command_checks.php
+          python3 build-version.py
           node speech-mic-pipeline.mjs
           node speech-goal-fail.mjs
           node speech-trip-transition.mjs

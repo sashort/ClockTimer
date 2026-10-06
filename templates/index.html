@@ -19,7 +19,7 @@
             catch {}
         })();
     </script>
-    <link rel="stylesheet" href="app.css?v=speech-dialogs-20261001">
+    <link rel="stylesheet" href="app.css?v=speech-dialogs-20261001&amp;build=ZHHTV6">
 </head>
 <body>
     <div class="portrait-orientation-notice" role="status" data-language-id="d3514694-12c8-52c9-b222-37a71145aea8">{{text:d3514694-12c8-52c9-b222-37a71145aea8:text0}}</div>
@@ -80,6 +80,7 @@
                 <div id="developerMenuGroup" class="developer-menu-group">
                     <button id="developerMenuButton" type="button" aria-expanded="false" aria-controls="developerSubmenu" data-language-id="8461371b-dd5d-5da0-b561-4d76102e9820">{{text:8461371b-dd5d-5da0-b561-4d76102e9820:text0}}</button>
                     <div id="developerSubmenu" class="developer-submenu" hidden>
+                        <div class="app-version">Version <output id="appVersion">ZHHTV6</output></div>
                         <button id="developerDocsButton" type="button" hidden data-language-id="f140723f-4ebe-54fd-b9c6-8d694f574c81">{{text:f140723f-4ebe-54fd-b9c6-8d694f574c81:text0}}</button>
                         <div id="speechToolsGroup" class="speech-tools-group">
                             <button id="speechMenuButton" type="button" aria-expanded="false" aria-controls="speechSubmenu">
@@ -193,28 +194,28 @@
 
         <speech-mic-bar id="speechMicBar" popover="manual" aria-label="{{text:da00905b-b83e-51af-8262-db740a72e892:aria-label}}" data-language-id="da00905b-b83e-51af-8262-db740a72e892"></speech-mic-bar>
         <speech-menu id="speechTopLevelMenu" speech-modal="top-level" data-speech-editor-id="builtin:menu:top-level">
-            <speech-command data-speech-editor-id="builtin:readyAt:page" data-speech-options-category="trip-actions" speech-chain-next="scheduled-start" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-target="#newTripButton" speech-function="WMOFActions.scheduleStartAt" speech-collect {{speech:2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2}} data-language-id="2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2"></speech-command>
-            <speech-command data-speech-editor-id="builtin:readyAtContinuation:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canContinueStartAt" data-speech-target="#newTripButton" speech-function="WMOFActions.continueStartAt" speech-collect {{speech:5898b6ac-6a4c-5288-8473-15e094bb2f2d}} data-language-id="5898b6ac-6a4c-5288-8473-15e094bb2f2d"></speech-command>
-            <speech-command data-speech-editor-id="builtin:ready:page" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-options-category="trip-actions" data-speech-target="#newTripButton" speech-function="WMOFActions.prepareStartMenu" {{speech:60783e3e-5bf2-506e-a445-c173e73ce003}} data-language-id="60783e3e-5bf2-506e-a445-c173e73ce003"></speech-command>
+            <speech-command data-speech-editor-id="builtin:readyAt:page" data-speech-options-category="trip-actions" speech-chain-next="scheduled-start" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-target="#newTripButton" speech-function="WMOFActions.scheduleStartAt" speech-persist speech-collect {{speech:2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2}} data-language-id="2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2"></speech-command>
+            <speech-command data-speech-editor-id="builtin:readyAtContinuation:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canContinueStartAt" data-speech-target="#newTripButton" speech-function="WMOFActions.continueStartAt" speech-persist speech-collect {{speech:5898b6ac-6a4c-5288-8473-15e094bb2f2d}} data-language-id="5898b6ac-6a4c-5288-8473-15e094bb2f2d"></speech-command>
+            <speech-command data-speech-editor-id="builtin:ready:page" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-options-category="trip-actions" data-speech-target="#newTripButton" speech-function="WMOFActions.prepareStartMenu" speech-persist {{speech:60783e3e-5bf2-506e-a445-c173e73ce003}} data-language-id="60783e3e-5bf2-506e-a445-c173e73ce003"></speech-command>
             <speech-command data-speech-editor-id="builtin:breakStart:page" data-speech-options-category="trip-actions" speech-chain-next="break-choice" speech-available="WMOFSpeechAvailability.canOpenBreakMenu" data-speech-target="#breakButton" speech-function="WMOFActions.openBreakMenu" {{speech:350ec85b-6400-5c1f-a3e1-df5de4fb7d28}} data-language-id="350ec85b-6400-5c1f-a3e1-df5de4fb7d28"></speech-command>
-            <speech-command data-speech-editor-id="builtin:down:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canStartDownTime" data-speech-target="#downButton" speech-function="WMOFActions.startDownTime" {{speech:6230b72b-f6ef-52e1-8a5b-4ed8c14c1260}} data-language-id="6230b72b-f6ef-52e1-8a5b-4ed8c14c1260"></speech-command>
+            <speech-command data-speech-editor-id="builtin:down:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canStartDownTime" data-speech-target="#downButton" speech-function="WMOFActions.startDownTime" speech-persist {{speech:6230b72b-f6ef-52e1-8a5b-4ed8c14c1260}} data-language-id="6230b72b-f6ef-52e1-8a5b-4ed8c14c1260"></speech-command>
             <speech-command data-speech-editor-id="builtin:breakEnd:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenBreakEndMenu" data-speech-target="#breakButton" speech-function="WMOFActions.openBreakEndMenu" {{speech:184c9bc6-85b3-5ea8-acfe-633214aaa7df}} data-language-id="184c9bc6-85b3-5ea8-acfe-633214aaa7df"></speech-command>
-            <speech-command data-speech-editor-id="builtin:resume:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canResumeTrip" data-speech-target="#downResumeButton" speech-function="WMOFActions.resumeTrip" {{speech:62b7f20d-b850-5190-a538-0ae797e0881e}} data-language-id="62b7f20d-b850-5190-a538-0ae797e0881e"></speech-command>
-            <speech-command data-speech-editor-id="builtin:tripGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTripGoal" {{speech:fb4bf723-f232-5baf-8af9-6f95d5b4aac0}} data-language-id="fb4bf723-f232-5baf-8af9-6f95d5b4aac0"></speech-command>
-            <speech-command data-speech-editor-id="builtin:totalGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTotalGoal" {{speech:b83de74a-5c68-510a-9f82-6a563ceb8313}} data-language-id="b83de74a-5c68-510a-9f82-6a563ceb8313"></speech-command>
+            <speech-command data-speech-editor-id="builtin:resume:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canResumeTrip" data-speech-target="#downResumeButton" speech-function="WMOFActions.resumeTrip" speech-persist {{speech:62b7f20d-b850-5190-a538-0ae797e0881e}} data-language-id="62b7f20d-b850-5190-a538-0ae797e0881e"></speech-command>
+            <speech-command data-speech-editor-id="builtin:tripGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTripGoal" speech-persist {{speech:fb4bf723-f232-5baf-8af9-6f95d5b4aac0}} data-language-id="fb4bf723-f232-5baf-8af9-6f95d5b4aac0"></speech-command>
+            <speech-command data-speech-editor-id="builtin:totalGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTotalGoal" speech-persist {{speech:b83de74a-5c68-510a-9f82-6a563ceb8313}} data-language-id="b83de74a-5c68-510a-9f82-6a563ceb8313"></speech-command>
             <speech-command data-speech-editor-id="builtin:changeGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" data-speech-target="#goalPercentValue" speech-function="WMOFActions.changeGoal" speech-collect {{speech:999a8ba4-49df-5b4a-8b70-b82bf72fab95}} data-language-id="999a8ba4-49df-5b4a-8b70-b82bf72fab95"></speech-command>
             <speech-command data-speech-editor-id="builtin:readGoalMode:page" data-speech-options-category="informational" data-speech-options-group="mode" speech-available="WMOFSpeechAvailability.canUseInformational" speech-function="WMOFActions.readGoalMode" {{speech:d5d4dd7f-cdae-5d04-90f8-863d95b8db28}} data-language-id="d5d4dd7f-cdae-5d04-90f8-863d95b8db28"></speech-command>
             <speech-command data-speech-editor-id="builtin:goalMode:page" data-speech-options-category="settings" data-speech-options-group="mode" speech-function="WMOFActions.changeGoalMode" {{speech:8d356eeb-5f5b-53d9-88c3-db25977e34de}} data-language-id="8d356eeb-5f5b-53d9-88c3-db25977e34de"></speech-command>
-            <speech-command data-speech-editor-id="builtin:sync:page" data-speech-options-category="settings" data-speech-target="#toggleSyncMenuButton,#toggleSyncGoalButton" speech-function="WMOFActions.toggleSync" {{speech:7e31faf4-6311-5ea5-89f1-82e4b7ad7031}} data-language-id="7e31faf4-6311-5ea5-89f1-82e4b7ad7031"></speech-command>
-            <speech-command data-speech-editor-id="builtin:lockEndTime:page" data-speech-options-category="settings" speech-available="WMOFSpeechAvailability.canLockEndTime" data-speech-target="#toggleRenderedTimeButton" speech-function="WMOFActions.lockEndTime" speech-collect {{speech:b217ace5-07f5-538b-9c59-1454b2840ee4}} data-language-id="b217ace5-07f5-538b-9c59-1454b2840ee4"></speech-command>
-            <speech-command data-speech-editor-id="builtin:showTripLog:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenTripLog" data-speech-target="#tripListMenuButton" speech-chain-surface="#tripLogDialog" speech-function="WMOFActions.openTripLog" {{speech:9cde5424-3c8a-5753-98a2-fa4fb27a6f12}} data-language-id="9cde5424-3c8a-5753-98a2-fa4fb27a6f12"></speech-command>
+            <speech-command data-speech-editor-id="builtin:sync:page" data-speech-options-category="settings" data-speech-target="#toggleSyncMenuButton,#toggleSyncGoalButton" speech-function="WMOFActions.toggleSync" speech-persist {{speech:7e31faf4-6311-5ea5-89f1-82e4b7ad7031}} data-language-id="7e31faf4-6311-5ea5-89f1-82e4b7ad7031"></speech-command>
+            <speech-command data-speech-editor-id="builtin:lockEndTime:page" data-speech-options-category="settings" speech-available="WMOFSpeechAvailability.canLockEndTime" data-speech-target="#toggleRenderedTimeButton" speech-function="WMOFActions.lockEndTime" speech-persist speech-collect {{speech:b217ace5-07f5-538b-9c59-1454b2840ee4}} data-language-id="b217ace5-07f5-538b-9c59-1454b2840ee4"></speech-command>
+            <speech-command data-speech-editor-id="builtin:showTripLog:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenTripLog" data-speech-target="#tripListMenuButton" speech-chain-surface="#tripLogDialog" speech-function="WMOFActions.openTripLog" speech-persist {{speech:9cde5424-3c8a-5753-98a2-fa4fb27a6f12}} data-language-id="9cde5424-3c8a-5753-98a2-fa4fb27a6f12"></speech-command>
             <speech-command data-speech-editor-id="builtin:hideTripLog:page" speech-available="WMOFSpeechAvailability.canCloseTripLog" data-speech-options-category="trip-actions" data-speech-target="#tripListMenuButton" speech-chain-surface="pop" speech-function="WMOFActions.closeTripLog" {{speech:85f37860-52a4-5ffc-ade9-7d925b98156f}} data-language-id="85f37860-52a4-5ffc-ade9-7d925b98156f"></speech-command>
-            <speech-command data-speech-editor-id="builtin:deferTrip:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canDeferTrip" data-speech-target="#tripDefer" speech-function="WMOFActions.deferTrip" {{speech:30464050-ddc4-57a0-ad5c-caffb7954c52}} data-language-id="30464050-ddc4-57a0-ad5c-caffb7954c52"></speech-command>
+            <speech-command data-speech-editor-id="builtin:deferTrip:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canDeferTrip" data-speech-target="#tripDefer" speech-function="WMOFActions.deferTrip" speech-persist {{speech:30464050-ddc4-57a0-ad5c-caffb7954c52}} data-language-id="30464050-ddc4-57a0-ad5c-caffb7954c52"></speech-command>
             <speech-command data-speech-editor-id="builtin:readRenderedTime:page" data-speech-options-category="informational" data-speech-options-group="time" speech-available="WMOFSpeechAvailability.canUseInformational" speech-function="WMOFActions.readRenderedTime" {{speech:ad30c460-2152-5b33-94a3-eae9427c92c2}} data-language-id="ad30c460-2152-5b33-94a3-eae9427c92c2"></speech-command>
             <speech-command data-speech-editor-id="builtin:renderedTimeMode:page" data-speech-options-category="settings" data-speech-options-group="time" speech-available="WMOFSpeechAvailability.canToggleRenderedTime" data-speech-target="#toggleRenderedTimeButton" speech-function="WMOFActions.toggleRenderedTime" {{speech:fc38aaf4-5ad4-5044-b382-74c8739bb024}} data-language-id="fc38aaf4-5ad4-5044-b382-74c8739bb024"></speech-command>
         </speech-menu>
         <speech-menu id="speechDefaultMenu" speech-modal="default" data-speech-editor-id="builtin:menu:default">
-            <speech-command data-speech-editor-id="builtin:close:page" speech-available="WMOFSpeechAvailability.canCloseSurface" data-speech-options-category="settings" speech-modal="system" data-speech-system-command="close" speech-chain-surface="pop" speech-function="SpeechMenu.close" {{speech:6922ca11-6086-5bbe-a9bf-e8b674c3a105}} data-language-id="6922ca11-6086-5bbe-a9bf-e8b674c3a105"></speech-command>
+            <speech-command data-speech-editor-id="builtin:close:page" speech-available="WMOFSpeechAvailability.canCloseSurface" data-speech-options-category="settings" speech-modal="system" data-speech-system-command="close" speech-chain-surface="pop" speech-function="SpeechMenu.close" speech-persist {{speech:6922ca11-6086-5bbe-a9bf-e8b674c3a105}} data-language-id="6922ca11-6086-5bbe-a9bf-e8b674c3a105"></speech-command>
         </speech-menu>
         <button id="tripLogButton" class="trip-log-button" type="button" aria-expanded="false" aria-controls="tripLogBody" data-language-id="93935264-6aa0-5850-80f1-aa77194349ad">{{text:93935264-6aa0-5850-80f1-aa77194349ad:text0}}</button>
         <span id="tripLogPlaceholder" aria-hidden="true" hidden></span>
@@ -873,7 +874,7 @@
                         <span class="trip-time-description" data-language-id="1797cf3e-ac2e-5d2f-9f82-32ce36c28e23">{{text:1797cf3e-ac2e-5d2f-9f82-32ce36c28e23:text0}}</span>
                     </div>
                     <output id="tripStandardTime" class="trip-time-value" data-language-id="4dc587dd-228b-52d0-8fbc-b283707d884d">{{text:4dc587dd-228b-52d0-8fbc-b283707d884d:text0}}</output>
-                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="{{text:ee91d711-3baf-5d23-a36e-efd9d844e5b4:aria-label}}" data-speech-editor-id="builtin:standardTime:trip-settings" data-speech-options-category="settings" data-speech-options-category="settings" data-speech-target="#tripSettingsDialog [data-trip-time-field=&quot;standard-time&quot;]" speech-function="WMOFActions.changeStandardTime" speech-collect {{speech:ee91d711-3baf-5d23-a36e-efd9d844e5b4}} data-language-id="ee91d711-3baf-5d23-a36e-efd9d844e5b4"><span aria-hidden="true"></span></button>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="{{text:ee91d711-3baf-5d23-a36e-efd9d844e5b4:aria-label}}" data-speech-editor-id="builtin:standardTime:trip-settings" data-speech-options-category="settings" data-speech-options-category="settings" data-speech-target="#tripSettingsDialog [data-trip-time-field=&quot;standard-time&quot;]" speech-function="WMOFActions.changeStandardTime" speech-persist speech-collect {{speech:ee91d711-3baf-5d23-a36e-efd9d844e5b4}} data-language-id="ee91d711-3baf-5d23-a36e-efd9d844e5b4"><span aria-hidden="true"></span></button>
                 </article>
                 <article class="trip-time-row" data-trip-time-row="scheduled-start">
                     <div class="trip-time-copy">
@@ -943,7 +944,7 @@
                     <span id="scheduledStartCountdownLabel" data-language-id="1c0ed395-31ca-5e80-a944-d0c0a1506bd9">{{text:1c0ed395-31ca-5e80-a944-d0c0a1506bd9:text0}}</span>
                     <strong id="scheduledStartCountdown" data-language-id="141a7295-97b0-5c78-a14b-aa52d9c97f32">{{text:141a7295-97b0-5c78-a14b-aa52d9c97f32:text0}}</strong>
                 </div>
-                <button id="scheduledStartStandard" class="scheduled-start-standard" type="button" data-speech-editor-id="builtin:standardTime:scheduledStartStandard" data-speech-options-category="settings" speech-chain-context="scheduled-start" data-speech-target="#scheduledStartStandard" speech-function="WMOFActions.changeStandardTime" speech-collect {{speech:000d3e14-f633-5b5b-be25-fdc1b43de4e9}} data-language-id="000d3e14-f633-5b5b-be25-fdc1b43de4e9">
+                <button id="scheduledStartStandard" class="scheduled-start-standard" type="button" data-speech-editor-id="builtin:standardTime:scheduledStartStandard" data-speech-options-category="settings" speech-chain-context="scheduled-start" data-speech-target="#scheduledStartStandard" speech-function="WMOFActions.changeStandardTime" speech-persist speech-collect {{speech:000d3e14-f633-5b5b-be25-fdc1b43de4e9}} data-language-id="000d3e14-f633-5b5b-be25-fdc1b43de4e9">
                     <span data-language-id="7917cb9f-fd05-586b-93a4-288b7a197147">{{text:7917cb9f-fd05-586b-93a4-288b7a197147:text0}}</span>
                     <strong id="scheduledStartStandardValue" data-language-id="6dc36e0b-9f45-5693-ba8f-791de2ae5e38">{{text:6dc36e0b-9f45-5693-ba8f-791de2ae5e38:text0}}</strong>
                 </button>
@@ -971,7 +972,7 @@
             </div>
             <speech-menu data-speech-editor-id="builtin:menu:breakDialog">
                 <speech-command data-speech-editor-id="builtin:breakChoice:breakDialog" data-speech-options-category="trip-actions" speech-chain-context="break-choice" speech-chain-next="break-confirm" data-speech-target="#breakDialog [data-break-type]" speech-function="WMOFActions.chooseBreakType" {{speech:61fc6ba8-190b-57c2-88b6-0975aa7f74b7}} data-language-id="61fc6ba8-190b-57c2-88b6-0975aa7f74b7"></speech-command>
-                <speech-command data-speech-editor-id="builtin:confirm:breakDialog" data-speech-options-category="trip-actions" speech-chain-context="break-confirm" data-speech-target="#breakDialog [data-break-type]" speech-function="WMOFActions.confirmBreakType" {{speech:febd0eee-c0b6-5464-b2dc-dc1b88802686}} data-language-id="febd0eee-c0b6-5464-b2dc-dc1b88802686"></speech-command>
+                <speech-command data-speech-editor-id="builtin:confirm:breakDialog" data-speech-options-category="trip-actions" speech-chain-context="break-confirm" data-speech-target="#breakDialog [data-break-type]" speech-function="WMOFActions.confirmBreakType" speech-persist {{speech:febd0eee-c0b6-5464-b2dc-dc1b88802686}} data-language-id="febd0eee-c0b6-5464-b2dc-dc1b88802686"></speech-command>
             </speech-menu>
         </section>
     </dialog>
@@ -988,7 +989,7 @@
                 <button id="cancelDownConfirmNo" type="button" data-language-id="11e3fc0d-4ec3-517b-ae80-614ce9eb6dd8">{{text:11e3fc0d-4ec3-517b-ae80-614ce9eb6dd8:text0}}</button>
             </div>
             <speech-menu data-speech-editor-id="builtin:menu:cancelDownConfirmDialog">
-                <speech-command data-speech-editor-id="builtin:confirm:cancelDownConfirmDialog" data-speech-intent="confirm" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-function="WMOFActions.confirmCancelDownTime" {{speech:af749d46-3585-5db7-8609-2f24db19c4d6}} data-language-id="af749d46-3585-5db7-8609-2f24db19c4d6"></speech-command>
+                <speech-command data-speech-editor-id="builtin:confirm:cancelDownConfirmDialog" data-speech-intent="confirm" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-function="WMOFActions.confirmCancelDownTime" speech-persist {{speech:af749d46-3585-5db7-8609-2f24db19c4d6}} data-language-id="af749d46-3585-5db7-8609-2f24db19c4d6"></speech-command>
             </speech-menu>
         </form>
     </dialog>
@@ -1161,40 +1162,42 @@
                 <button id="speechBreakConfirmCancel" type="button" data-language-id="ad5a8774-6788-58ea-95b4-b91cd00c1060">{{text:ad5a8774-6788-58ea-95b4-b91cd00c1060:text0}}</button>
             </div>
             <speech-menu data-speech-editor-id="builtin:menu:speechBreakConfirmDialog">
-                <speech-command data-speech-editor-id="builtin:yes:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmYes" speech-function="WMOFActions.confirmBreakPromptYes" {{speech:e746da78-898f-5d72-a941-f92314ed50d5}} data-language-id="e746da78-898f-5d72-a941-f92314ed50d5"></speech-command>
-                <speech-command data-speech-editor-id="builtin:no:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmNo" speech-function="WMOFActions.confirmBreakPromptNo" {{speech:7cd77eb9-76f0-5be9-9520-db405aed36be}} data-language-id="7cd77eb9-76f0-5be9-9520-db405aed36be"></speech-command>
+                <speech-command data-speech-editor-id="builtin:yes:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmYes" speech-function="WMOFActions.confirmBreakPromptYes" speech-persist {{speech:e746da78-898f-5d72-a941-f92314ed50d5}} data-language-id="e746da78-898f-5d72-a941-f92314ed50d5"></speech-command>
+                <speech-command data-speech-editor-id="builtin:no:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmNo" speech-function="WMOFActions.confirmBreakPromptNo" speech-persist {{speech:7cd77eb9-76f0-5be9-9520-db405aed36be}} data-language-id="7cd77eb9-76f0-5be9-9520-db405aed36be"></speech-command>
             </speech-menu>
         </form>
     </dialog>
 
     {{language-pack}}
-    <script src="LanguagePack.js?v=language-pack-20261001"></script>
-    <script src="TemporalFormat.js"></script>
-    <script src="RingContainer.js?v=history-layer-top-1"></script>
-    <script src="TimeRangeModel.js"></script>
-    <script src="TimeRangeElement.js"></script>
-    <script src="ClockTimer.js?v=sync-try-event-20261001"></script>
-    <script src="CalendarRange.js"></script>
-    <script src="TripLog.js?v=language-pack-20261001"></script>
-    <script src="ParameterParser.js"></script>
+    <script src="LanguagePack.js?v=language-pack-20261001&amp;build=ZHHTV6"></script>
+    <script src="StateTransactions.js?build=ZHHTV6"></script>
+    <script src="AsyncPersistence.js?build=ZHHTV6"></script>
+    <script src="TemporalFormat.js?build=ZHHTV6"></script>
+    <script src="RingContainer.js?v=history-layer-top-1&amp;build=ZHHTV6"></script>
+    <script src="TimeRangeModel.js?build=ZHHTV6"></script>
+    <script src="TimeRangeElement.js?build=ZHHTV6"></script>
+    <script src="ClockTimer.js?v=sync-try-event-20261001&amp;build=ZHHTV6"></script>
+    <script src="CalendarRange.js?build=ZHHTV6"></script>
+    <script src="TripLog.js?v=language-pack-20261001&amp;build=ZHHTV6"></script>
+    <script src="ParameterParser.js?build=ZHHTV6"></script>
     {{language-rules}}
-    <script src="SpeechFunctionRoles.js"></script>
-    <script src="SpeechFunctionRegistry.js"></script>
-    <script src="UtilityFunctions.js"></script>
-    <script src="SpeechProcessingFunctions.js"></script>
-    <script src="ActionFunctions.js?v=verb-validation-3"></script>
-    <script src="InteractionFunctions.js"></script>
-    <script src="PresentationSetters.js"></script>
-    <script src="AnnouncementLanguage.js?v=language-pack-20261001"></script>
-    <script src="AnnouncementCatalog.js?v=stable-announcement-types-20261001"></script>
-    <script src="api/audio/VoiceCatalog.js?v=language-aware-voices-1"></script>
-    <script src="api/audio/AudioEngine.js?v=dynamic-system-voices-1"></script>
-    <script src="IdentityContext.js"></script>
-    <script src="UserLookup.js?v=language-pack-20261001"></script>
-    <script src="LiveTripStream.js"></script>
-    <script src="PanePage.js?v=overflow-3"></script>
-    <script src="HamburgerMenu.js?v=language-pack-20261001"></script>
-    <script src="app.js?v=language-pack-20261001"></script>
-    <script src="SpeechEditorRuntime.js"></script>
+    <script src="SpeechFunctionRoles.js?build=ZHHTV6"></script>
+    <script src="SpeechFunctionRegistry.js?build=ZHHTV6"></script>
+    <script src="UtilityFunctions.js?build=ZHHTV6"></script>
+    <script src="SpeechProcessingFunctions.js?build=ZHHTV6"></script>
+    <script src="ActionFunctions.js?v=verb-validation-3&amp;build=ZHHTV6"></script>
+    <script src="InteractionFunctions.js?build=ZHHTV6"></script>
+    <script src="PresentationSetters.js?build=ZHHTV6"></script>
+    <script src="AnnouncementLanguage.js?v=language-pack-20261001&amp;build=ZHHTV6"></script>
+    <script src="AnnouncementCatalog.js?v=stable-announcement-types-20261001&amp;build=ZHHTV6"></script>
+    <script src="api/audio/VoiceCatalog.js?v=language-aware-voices-1&amp;build=ZHHTV6"></script>
+    <script src="api/audio/AudioEngine.js?v=dynamic-system-voices-1&amp;build=ZHHTV6"></script>
+    <script src="IdentityContext.js?build=ZHHTV6"></script>
+    <script src="UserLookup.js?v=language-pack-20261001&amp;build=ZHHTV6"></script>
+    <script src="LiveTripStream.js?build=ZHHTV6"></script>
+    <script src="PanePage.js?v=overflow-3&amp;build=ZHHTV6"></script>
+    <script src="HamburgerMenu.js?v=language-pack-20261001&amp;build=ZHHTV6"></script>
+    <script src="app.js?v=language-pack-20261001&amp;build=ZHHTV6"></script>
+    <script src="SpeechEditorRuntime.js?build=ZHHTV6"></script>
 </body>
 </html>

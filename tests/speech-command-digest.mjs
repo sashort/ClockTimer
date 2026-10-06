@@ -9,7 +9,7 @@ globalThis.ParameterParser=Function(fs.readFileSync(new URL('../ParameterParser.
 const parserSource=['DurationParser','SpokenTimeParser','PercentParser','SpeechValuePreprocessor'].map(name=>
     fs.readFileSync(new URL(`../lang/en-US/${name}.js`,import.meta.url),'utf8')).join('\n');
 const Values=Function(parserSource+'\nreturn EnglishSpeechValuePreprocessor;')();
-let source=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8');
+let source=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 if(process.env.SPEECH_INDEX_BASELINE) source=source.replace('static #indexedMatching = true','static #indexedMatching = false');
 source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testBegin() {
@@ -39,7 +39,10 @@ globalThis.TestChain=window.TestChain={
     breakStart(){calls.push(['break']);return true;},
     choice(breakChoice){calls.push(['choice',breakChoice]);return true;},
     okay(){calls.push(['okay']);return true;},
-    permitted(){return false;}
+    permitted(){return false;},
+    sync(syncAction){calls.push(['sync',syncAction]);return true;},
+    sleep(){calls.push(['sleep']);return true;}
+
 };
 globalThis.TestValues=window.TestValues={normalize(text,{pattern,kind,field,provisional}){
     const match=new RegExp(pattern,'i').exec(text);
@@ -70,6 +73,55 @@ const log=make(document.body,'log','^show log$','showLog',{'speech-modal':'top-l
 const hear=async(...args)=>{await speech.testTranscript(...args);await new Promise(setImmediate);};
 const fresh=()=>{speech.testReset();calls.length=0;errors.length=0;return speech.testBegin();};
 try {
+    // Independent command groups compete for the same unconsumed words.
+    const syncGroup=document.createElement('section');document.body.append(syncGroup);
+    const sleepGroup=document.createElement('section');document.body.append(sleepGroup);
+    const sync=make(syncGroup,'sync','^sync(?: (?<syncAction>on|off))?$','sync');
+    const sleep=make(sleepGroup,'sleep','^off$','sleep');
+    const competing=fresh();
+    await hear(competing,'sync');
+    assert.equal(calls.length,0,'sync yields while a valid continuation can form');
+    await hear(competing,'sync off');await competing.digestQueue;
+    assert.deepEqual(calls,[['sync','off']],'completed continuation wins across groups immediately');
+    await hear(competing,'sync off',true);await competing.digestQueue;
+    assert.deepEqual(calls,[['sync','off']],'final decode does not replay a winning attempt');
+    const chained=fresh();
+    await hear(chained,'sync off show log',true);await chained.digestQueue;
+    assert.deepEqual(calls,[['sync','off'],['log']],'losing group cannot consume the winning continuation');
+    const intentional=fresh();
+    await hear(intentional,'show log off',true);await intentional.digestQueue;
+    assert.deepEqual(calls,[['log'],['sleep']],'independent nonoverlapping commands still chain');
+    sync.remove();
+    const short=make(sleepGroup,'short','^sync$','sleep');
+    const longer=make(syncGroup,'longer','^sync off$','showLog');
+    const sibling=fresh();await hear(sibling,'sync');
+    assert.equal(calls.length,0,'short match yields to another group');
+    await hear(sibling,'sync off');await sibling.digestQueue;
+    assert.deepEqual(calls,[['log']],'other group replaces the yielded match');
+    longer.setAttribute('disabled','');
+    const unavailable=fresh();await hear(unavailable,'sync');await unavailable.digestQueue;
+    assert.deepEqual(calls,[['sleep']],'unavailable continuations do not delay execution');
+    longer.removeAttribute('disabled');
+    const enabled=fresh();await hear(enabled,'sync');
+    assert.equal(calls.length,0,'availability is reevaluated for every attempt');
+    await hear(enabled,'sync',true);await enabled.digestQueue;
+    assert.deepEqual(calls,[['sleep']],'final boundary releases the yielded short command');
+    short.remove();longer.remove();sleep.remove();syncGroup.remove();sleepGroup.remove();
+
+    let releasePreparation;
+    let preparationCount=0;
+    window.TestPreparation=globalThis.TestPreparation={async prepare(text){
+        if(++preparationCount===2) await new Promise(resolve=>releasePreparation=resolve);
+        return text;
+    }};
+    const deferred=make(document.body,'deferred','^deferred$','sleep',{'speech-preproc':'TestPreparation.prepare'});
+    deferred.removeAttribute('speech-collect');
+    const aborted=fresh();await hear(aborted,'deferred');
+    assert.equal(typeof releasePreparation,'function','action preparation is waiting');
+    speech.testFinish('muted',false);
+    releasePreparation();await aborted.digestQueue;
+    assert.equal(calls.length,0,'cancelled asynchronous preparation cannot commit an action');
+    deferred.remove();
     const value=make(document.body,'value','^(?<timeValue>.+)$','showLog',{
         'speech-open-ended':'','speech-preproc':'TestValues.normalize',
         'speech-preproc-context':'duration','speech-preproc-field':'timeValue'});
@@ -256,5 +308,49 @@ try {
     assert.deepEqual(calls,[['break'],['choice','lunch'],['okay']]);
     assert.equal(document.querySelectorAll('[primed]').length,0);
     breakRoot.remove();choice.remove();okay.remove();
+    let persistenceIntent;
+    globalThis.TestChain.capturePersist=()=>{persistenceIntent=speech.executionContext.persist;return true;};
+    const intent=make(document.body,'persist-intent','^save example$','capturePersist');
+    let intentAttempt=fresh();await hear(intentAttempt,'save example',true);await intentAttempt.digestQueue;
+    assert.equal(persistenceIntent,false,'unmarked commands stay client-only');
+    intent.setAttribute('speech-persist','');
+    intentAttempt=fresh();await hear(intentAttempt,'save example',true);await intentAttempt.digestQueue;
+    assert.equal(persistenceIntent,true,'speech-persist explicitly allows server work');
+    intent.setAttribute('speech-persist','false');
+    intentAttempt=fresh();await hear(intentAttempt,'save example',true);await intentAttempt.digestQueue;
+    assert.equal(persistenceIntent,false,'false explicitly disables server work');
+    intent.remove();
+
+    Function(fs.readFileSync(new URL('../StateTransactions.js',import.meta.url),'utf8'))();
+    Function(fs.readFileSync(new URL('../ActionFunctions.js',import.meta.url),'utf8'))();
+    window.WMOFActions=globalThis.WMOFActions;
+    const transactionStates=[];
+    const appState={breakType:'lunch',selection:undefined};
+    const transactions=globalThis.WMOFStateTransactions;
+    transactions.register('app',{capture:()=>({...appState}),restore:snapshot=>Object.assign(appState,snapshot)});
+    transactions.addEventListener('state',event=>transactionStates.push(event.detail.state));
+    globalThis.WMOFActionFunctions.define('openBreak',()=>false);
+    globalThis.WMOFActionFunctions.define('chooseLunch',()=>{calls.push(['choose-lunch']);appState.selection='lunch';return true;});
+    globalThis.WMOFActionFunctions.define('confirmLunch',()=>{calls.push(['confirm-lunch']);return true;});
+    const attemptRoot=make(document.body,'attempt-break','^break start$','showLog',{
+        'speech-chain-next':'attempt-choice','speech-available':'TestChain.permitted','data-speech-state-command':''});
+    attemptRoot.setAttribute('speech-function','WMOFActions.openBreak');
+    const attemptChoice=make(future,'attempt-choice','^lunch$','showLog',{
+        'speech-chain-context':'attempt-choice','speech-chain-next':'attempt-confirm','data-speech-state-command':''});
+    attemptChoice.setAttribute('speech-function','WMOFActions.chooseLunch');
+    const attemptConfirm=make(future,'attempt-confirm','^ok$','showLog',{
+        'speech-chain-context':'attempt-confirm','data-speech-state-command':''});
+    attemptConfirm.setAttribute('speech-function','WMOFActions.confirmLunch');
+    const invalidState=fresh();
+    await hear(invalidState,'break start lunch ok',true);await invalidState.digestQueue;
+    assert.deepEqual(transactionStates,['pending','reverted'],'invalid-state utterance is accepted, then reverted');
+    assert.deepEqual(calls,[],'Lunch and OK never execute after the root validation fails');
+    assert.equal(appState.breakType,'lunch','an existing break is preserved');
+    assert(invalidState.digestExecutionFailed);
+    attemptRoot.setAttribute('speech-authorized','TestChain.permitted');
+    const forbidden=fresh();await hear(forbidden,'break start lunch ok',true);await forbidden.digestQueue;
+    assert.equal(transactionStates.length,2,'optimistic attempts do not bypass authorization');
+    attemptRoot.remove();attemptChoice.remove();attemptConfirm.remove();
+    delete globalThis.WMOFStateTransactions;
     console.log('PASS incremental command digestion, priming, UI lag, parameter boundaries, ordered actions, invalid tails, failure, cancellation and hard gates');
 } finally {speech.testReset();await window.happyDOM.close();}

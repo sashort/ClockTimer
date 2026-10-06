@@ -36,3 +36,17 @@ Trip Log and the speech pad are native dialogs. Opening Trip Log preserves the u
 | 256 synthetic commands | 18.500 ms | 4.226 ms | 4.38× | 768 → 3 |
 | 1,024 synthetic commands | 72.556 ms | 17.658 ms | 4.11× | 3,072 → 3 |
 | App definitions | 0.961 ms | 0.756 ms | 1.27× | 27 → 12 |
+
+## Optimistic state changes and persistence
+
+Every registered state-changing action participates in the shared `StateTransactions` checkpoint and rollback mechanism. UI changes occur before the asynchronous result. A rejection or persistence failure restores the checkpoint and cancels dependent actions.
+
+`speech-persist` declares that a speech command may access the server. Omission or `speech-persist="false"` keeps the command client-only; the flag does not itself cause a request. Opening a local menu or selecting a value needs no server check. A command that actually persists a trip change calls `api/command-check/` with its request payload, waits for the server's explicit read-only decision, and sends the write only after acceptance. Event writes validate authoritative state again under the trip lock before inserting, covering changes between the check and write. The server owns business validation; the client enforces only the declared routing boundary.
+
+The speech editor preserves this attribute. Browser preferences and offline queues use asynchronous worker storage with staged writes and rollback; they remain on the client.
+
+Run `npm run test:state-transactions` from `tests`, and `php tests/command_checks.php` from the repository root, for the optimistic UI, persistence routing, rejection, failure, and dependent cancellation checks.
+
+## Release identification
+
+Developer tools shows `Version` with six random uppercase letters and digits. The Lightsail deploy workflow runs `python3 scripts/stamp-version.py` after checking out each release. Both page templates, script and style cache keys, and the speech runtime cache key use the same ID. `build-version.json` records the ID, Git commit, and UTC timestamp. Ask for the visible Version ID when investigating a live bug; a cached page retains its previous ID. Local updates can be stamped with the same command.

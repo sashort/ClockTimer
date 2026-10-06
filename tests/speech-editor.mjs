@@ -401,6 +401,13 @@ assert.equal(
     0
 );
 
+const persistedEntry={...entries[0],attrs:{...entries[0].attrs,'speech-persist':''}};
+window.WMOFSpeechEditorRuntime.apply([persistedEntry]);
+const persistedElement=window.document.querySelector('[data-speech-editor-id="builtin:breakStart:page"]');
+assert(persistedElement.hasAttribute('speech-persist'),'editor preserves an enabled boolean persistence option');
+window.WMOFSpeechEditorRuntime.apply([{...persistedEntry,attrs:{...persistedEntry.attrs,'speech-persist':'false'}}]);
+assert(!persistedElement.hasAttribute('speech-persist'),'editor can make a command client-only');
+
 console.log(
     "PASS speech editor runtime applies semantic speech menus and function discovery"
 );

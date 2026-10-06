@@ -2,3 +2,5 @@
 /sort-guides/
 /inbound/*
 !/inbound/.htaccess
+
+/build-version.json

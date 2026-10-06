@@ -140,6 +140,9 @@
         #syncUserId;
         #completedTripsRestored = false;
         #completedTripSyncPromise;
+        #completedTripsReady = Promise.resolve();
+        #stateTransactionSignal;
+        #stateTransaction;
 
         #replayingTripEvents =
             false;
@@ -1896,16 +1899,8 @@
 
             if (!this.#completedTripsRestored) {
                 this.#completedTripsRestored = true;
-                const key = this.getAttribute("offline-trip-storage-key");
-                if (key) {
-                    try {
-                        const saved = JSON.parse(localStorage.getItem(key) || "[]");
-                        if (Array.isArray(saved)) {
-                            this.#completedTripQueue = saved.filter(trip =>
-                                trip?.payload?.clientToken && Array.isArray(trip.events));
-                        }
-                    } catch {}
-                }
+                this.#completedTripsReady = this.#restoreCompletedTrips();
+                this.#completedTripsReady.catch(error => this.#emitClockTimerEvent("persistenceFailed", {error}));
             }
             this.#syncFaceBackgroundFromExternalCSS();
             this.#syncFaceBackgroundGeometry();
@@ -3149,6 +3144,19 @@
         }
 
         async #apiRequest(endpoint, { method = "GET", body, csrf = false, query, signal } = {}) {
+            const permission = globalThis.SpeechMenu?.executionContext?.persist ?? this.#stateTransaction?.remotePermission;
+            if (permission === false) throw new Error("This speech command is client-only; speech-persist is required for server access.");
+            signal ??= this.#stateTransactionSignal;
+            if (["trips", "trip-events", "trip-editor"].includes(endpoint) && !/^(GET|HEAD)$/i.test(method)) {
+                const decision = await this.#apiRequest("command-check", {method: "POST", csrf: true, signal,
+                    body: {endpoint, method, command: body}});
+                if (decision.accepted !== true) {
+                    const error = new Error(decision.reason || "The server rejected the command.");
+                    error.clockTimerCommandRejected = true;
+                    throw error;
+                }
+            }
+            if (signal?.aborted) throw new DOMException("The state change was cancelled.", "AbortError");
             const headers = { "Accept": "application/json" };
             const multipart=typeof FormData!=="undefined"&&body instanceof FormData;
             if (body !== undefined&&!multipart) {
@@ -3569,15 +3577,26 @@
                 );
         }
 
-        #saveCompletedTrips() {
+        async #restoreCompletedTrips() {
+            const key = this.getAttribute("offline-trip-storage-key");
+            if (!key) return;
+            const store = globalThis.WMOFPersistence;
+            if (!store) throw new Error("Asynchronous storage is unavailable.");
+            const saved = await store.getItem(key);
+            const trips = typeof saved === "string" ? JSON.parse(saved || "[]") : saved;
+            if (Array.isArray(trips)) this.#completedTripQueue = [...trips.filter(trip =>
+                trip?.payload?.clientToken && Array.isArray(trip.events)), ...this.#completedTripQueue];
+        }
+
+        async #saveCompletedTrips() {
             const key = this.getAttribute("offline-trip-storage-key");
             if (!key) return true;
+            await this.#completedTripsReady;
             try {
-                localStorage.setItem(key, JSON.stringify(this.#completedTripQueue));
+                if (!globalThis.WMOFPersistence) return false;
+                await globalThis.WMOFPersistence.setItem(key, this.#completedTripQueue);
                 return true;
-            } catch {
-                return false;
-            }
+            } catch {return false;}
         }
 
         #localLogEvents(snapshot) {
@@ -3607,7 +3626,7 @@
                     actualTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     allottedTimeMilliseconds: summary.allottedTimeMilliseconds,
-                    events: this.#localLogEvents(this.toJSON()).filter(event => event.event !== "trip.stopped")});
+                    events: this.#stateEvents().filter(event => event.event !== "trip.stopped")});
             }
             return trips;
         }
@@ -3638,11 +3657,14 @@
         }
 
         async #flushCompletedTrips() {
+            await this.#completedTripsReady;
             let uploaded = false;
-            for (const trip of [...this.#completedTripQueue]) {
+            for (const originalTrip of [...this.#completedTripQueue]) {
+                const trip = structuredClone(originalTrip);
+                this.#completedTripQueue = this.#completedTripQueue.map(item => item === originalTrip ? trip : item);
                 if (trip.userId !== undefined && trip.userId !== this.#syncUserId) continue;
                 trip.userId = this.#syncUserId;
-                this.#saveCompletedTrips();
+                if (!(await this.#saveCompletedTrips())) throw new Error("The offline trip checkpoint could not be saved.");
                 if (!Number.isInteger(trip.tripId)) {
                     const data = await this.#apiRequest("trips", {
                         method: "POST", csrf: true, body: trip.payload
@@ -3658,7 +3680,7 @@
                     });
                 }
                 trip.pending = false;
-                this.#saveCompletedTrips();
+                if (!(await this.#saveCompletedTrips())) throw new Error("The offline trip checkpoint could not be saved.");
                 for (const event of trip.events) {
                     if (event.synced) continue;
                     const data = await this.#apiRequest("trip-events", {
@@ -3680,7 +3702,7 @@
                         });
                     }
                     event.synced = true;
-                    this.#saveCompletedTrips();
+                    if (!(await this.#saveCompletedTrips())) throw new Error("The offline trip checkpoint could not be saved.");
                 }
                 if (trip.deleted) {
                     try {
@@ -3694,7 +3716,7 @@
                     }
                 }
                 this.#completedTripQueue = this.#completedTripQueue.filter(item => item !== trip);
-                this.#saveCompletedTrips();
+                if (!(await this.#saveCompletedTrips())) throw new Error("The offline trip checkpoint could not be saved.");
                 uploaded = true;
             }
             if (uploaded) this.#emitClockTimerEvent("completedTripsSynced", {synced: true});
@@ -3709,12 +3731,16 @@
                 return;
             }
 
-            void this.#protectedSync(
-                async () => {
-                    await this.#ensureTripPersisted();
-                    await this.#syncTripEvents();
+            const work = this.#protectedSync(async () => {
+                await this.#ensureTripPersisted();
+                await this.#syncTripEvents();
+            });
+            globalThis.WMOFStateTransactions?.track(this.#stateTransaction, work);
+            work.catch(error => {
+                if (!this.#stateTransaction && error?.name !== "AbortError") {
+                    this.#emitClockTimerEvent("persistenceFailed", {error});
                 }
-            ).catch(() => {});
+            });
         }
 
         #tripPersistencePayload() {
@@ -4912,6 +4938,77 @@
             }
         }
 
+        beginStateTransaction(transaction) {this.#stateTransactionSignal = transaction.signal; this.#stateTransaction = transaction;}
+        endStateTransaction(transaction) {
+            if (this.#stateTransactionSignal === transaction.signal) {this.#stateTransactionSignal = undefined; this.#stateTransaction = undefined;}
+        }
+        #stateEvents() {
+            if (!this.#hasStartProperties()) return [];
+            const events = [{event: "trip.started", timestamp: this.#timelineToISO(this.#getStartTimeMilliseconds()), value: {
+                standardTimeMilliseconds: this.#standardDuration,
+                creationTime: this.#formatStandardTime(this.#creationMilliseconds, {clock: true, includeHours: true}),
+                scheduledStart: this.#formatTimelineTime(this.#scheduledStartMilliseconds),
+                startTime: this.#formatTimelineTime(this.#getStartTimeMilliseconds()),
+                nonProduction: this.#nonProduction, creationAnchor: this.#getJSONCreationDate()?.toISOString(),
+                intervalElapsedBehavior: this.#intervalElapsedBehavior,
+                autoRestartTripAfterLateBreak: this.#autoRestartTripAfterLateBreak
+            }}];
+            for (const record of this.#insertedRanges) {
+                if (!this.#isIntervalType(record.type) || record.clockTimerPendingDelete || record.clockTimerBufferedIntervalRecordId) continue;
+                const intervalKey = record.clockTimerEventKey || `snapshot-${record.id}`;
+                const startBuffer = this.#getIntervalBufferRecord(record, "start");
+                const endBuffer = this.#getIntervalBufferRecord(record, "end");
+                const timestamp = this.#timelineToISO(record.clockTimerBufferedStartTimeline) || record.startDate.toISOString();
+                events.push({id: record.intervalId, event: "interval.started", timestamp, value: {
+                    type: record.type, intervalKey, length: record.openEnded ? null : record.rangeLength,
+                    attributes: {...record.otherAttributes}, startBuffer: startBuffer?.rangeLength ?? null,
+                    endBuffer: endBuffer?.rangeLength ?? null
+                }});
+                if (record.clockTimerExplicitlyEnded && Number.isFinite(record.clockTimerExplicitEndTimeline)) {
+                    events.push({event: "interval.ended", timestamp: this.#timelineToISO(record.clockTimerExplicitEndTimeline),
+                        value: {intervalKey, reason: "manual"}});
+                }
+                const approval = this.#getIntervalApprovalState(record);
+                if (approval) events.push({event: "interval.approval-changed", timestamp: new Date(Date.parse(timestamp) + 1).toISOString(),
+                    value: {intervalKey, state: approval.state, value: approval.value}});
+            }
+            if (!this.#started) events.push({event: "trip.stopped", timestamp: this.#timelineToISO(this.#getJSONTerminalTime()), value: {}});
+            return events;
+        }
+        captureState() {
+            // Checkpoints use model records, never the rendered ring DOM.
+            return {activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
+                attributes: [...this.attributes].map(attribute => [attribute.name, attribute.value]),
+                preparedTrip: this.#preparedTrip && {...this.#preparedTrip},
+                pending: this.#pendingTripEvents.map(event => ({...event, value: structuredClone(event.value)})),
+                completed: this.#completedTripQueue,
+                totals: this.#cloneAggregateSnapshot(this.#tripTotals), addedToAggregate: this.#tripAddedToAggregate};
+        }
+        restoreState(snapshot) {
+            const modelChanged = this.#started !== snapshot.started || this.#tripId !== snapshot.tripId ||
+                JSON.stringify(this.#stateEvents()) !== JSON.stringify(snapshot.events);
+            if (modelChanged) {
+                this.#pendingIntervalRecord = undefined;
+                if (snapshot.events.some(event => event.event === "trip.started")) {
+                    this.#applyTripEvents(snapshot.tripId || 1, {events: snapshot.events});
+                } else {
+                    this.#transitionLifecycle("stop"); this.#clearLocal();
+                }
+            }
+            this.#tripId = snapshot.tripId;
+            this.#preparedTrip = snapshot.preparedTrip;
+            this.#completedTripQueue = snapshot.completed;
+            this.#tripTotals = snapshot.totals;
+            this.#tripAddedToAggregate = snapshot.addedToAggregate;
+            this.#pendingTripEvents = snapshot.pending.map(event => ({...event,
+                record: event.record ? this.#insertedRanges.find(record =>
+                    record.clockTimerEventKey === event.record.clockTimerEventKey) : undefined}));
+            const attributes = new Map(snapshot.attributes);
+            for (const attribute of [...this.attributes]) if (!attributes.has(attribute.name)) this.removeAttribute(attribute.name);
+            for (const [name, value] of attributes) if (this.getAttribute(name) !== value) this.setAttribute(name, value);
+            this.#emitUIState("stateReverted");
+        }
+
         async loadTrip(tripId) {
             const numericTripId =
                 Number(tripId);
@@ -4950,6 +5047,10 @@
                     }
                 );
 
+            return this.#applyTripEvents(numericTripId, data);
+        }
+
+        #applyTripEvents(numericTripId, data) {
             const events =
                 Array.isArray(data.events)
                     ? [...data.events]
@@ -5032,6 +5133,7 @@
             try {
                 this.#pendingTripEvents =
                     [];
+                this.#pendingIntervalRecord = undefined;
 
                 // Replay replaces the current local model without stopping the persisted trip.
                 this.#transitionLifecycle("stop");
@@ -5895,6 +5997,7 @@
         }
 
         async resetCompletedTrip() {
+            await this.#completedTripsReady;
             if (this.#started || !this.#hasStartProperties()) {
                 throw new Error("Only a completed trip can be reset.");
             }
@@ -5908,7 +6011,7 @@
                 const payload = this.#tripPersistencePayload();
                 payload.clientToken ??= this.#createTripEventClientToken();
                 const summary = this.#buildSummarySnapshot(new Date()).trip;
-                this.#completedTripQueue.push({
+                this.#completedTripQueue = [...this.#completedTripQueue, {
                     userId: this.#syncUserId,
                     tripId: this.#tripId,
                     pending: this.#preparedTrip?.pending === true,
@@ -5916,12 +6019,12 @@
                     log: {...payload,
                         actualTimeMilliseconds: summary.actualTimeElapsedMilliseconds,
                         countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
-                        events: this.#localLogEvents(this.toJSON())},
+                        events: this.#stateEvents()},
                     events: this.#pendingTripEvents.map(({event, timestamp, value, clientToken, synced}) =>
                         ({event, timestamp, value, clientToken, synced}))
-                });
-                if (!this.#saveCompletedTrips()) {
-                    this.#completedTripQueue.pop();
+                }];
+                if (!(await this.#saveCompletedTrips())) {
+                    this.#completedTripQueue = this.#completedTripQueue.slice(0, -1);
                     throw new Error("The completed trip could not be buffered locally. Free browser storage and try again.");
                 }
             }
@@ -7226,9 +7329,15 @@
         }
 
         async tripEditorRequest(tripId, change) {
-            const buffered = this.#completedTripQueue.find(trip =>
+            await this.#completedTripsReady;
+            let buffered = this.#completedTripQueue.find(trip =>
                 String(trip.tripId || `offline-${trip.payload.clientToken}`) === String(tripId));
             if (buffered && this.#connectionState !== "connected") {
+                if (change) {
+                    const original = buffered;
+                    buffered = structuredClone(original);
+                    this.#completedTripQueue = this.#completedTripQueue.map(item => item === original ? buffered : item);
+                }
                 const response = () => ({
                     tripId,
                     events: buffered.log?.events || [],
@@ -7245,7 +7354,7 @@
                 if (!change) return response();
                 if (change.operation === "delete-trip") {
                     buffered.deleted = true;
-                    if (!this.#saveCompletedTrips()) throw new Error("The offline edit could not be saved.");
+                    if (!(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
                     return {tripId, deleted: true, queued: true, offline: true};
                 }
                 if (change.operation === "entries") {
@@ -7280,7 +7389,7 @@
                     };
                     for (const edit of change.changes || []) applyEntry(edit);
                     Object.assign(buffered, working);
-                    if (!this.#saveCompletedTrips()) throw new Error("The offline edit could not be saved.");
+                    if (!(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
                     return {...response(), offline:true};
                 }
                 if (change.operation === "settings") {
@@ -7342,7 +7451,7 @@
                         if (entry.end && rawEnded) rawEnded.timestamp=entry.end;
                     }
                 }
-                if (!this.#saveCompletedTrips()) throw new Error("The offline edit could not be saved.");
+                if (!(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
                 return {...response(), offline: true};
             }
             if (!(await this.#ensureConnected())) throw new Error("Connect before editing trips.");
@@ -13498,7 +13607,7 @@
                     nowDate
                 );
 
-            if (this.#pendingIntervalRecord) {
+            if (this.#pendingIntervalRecord && !this.#stateTransaction) {
                 return false;
             }
 
@@ -13507,11 +13616,12 @@
                     now
                 );
 
-            if (
-                currentInterval &&
-                !currentInterval.open
-            ) {
-                return false;
+            if (currentInterval && !currentInterval.open) {
+                if (!this.#stateTransaction) return false;
+                // Show the attempted replacement immediately. Its predecessor
+                // remains in the checkpoint until the server accepts or rejects.
+                currentInterval.record.clockTimerPendingDelete = true;
+                this.#pendingIntervalRecord = undefined;
             }
 
             if (

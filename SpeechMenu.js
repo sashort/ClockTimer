@@ -12,7 +12,7 @@ class SpeechCommandIndex {
         if (typeof Observer === 'function') {
             this.#observer = new Observer(records => this.#reconcile(records));
             this.#observer.observe(root, {subtree: true, childList: true, attributes: true,
-                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-chain-context', 'speech-chain-next', 'speech-chain-surface', 'speech-available',
+                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-chain-context', 'speech-chain-next', 'speech-chain-surface', 'speech-available',
                     'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
                     'speech-preproc-field', 'speech-collect', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
         }
@@ -540,6 +540,12 @@ class SpeechMenu {
     }
 
     static get executionContext() { return SpeechMenu.#executionContext; }
+    static withExecutionContext(context, operation) {
+        const previous = SpeechMenu.#executionContext;
+        SpeechMenu.#executionContext = context;
+        try {return operation();} finally {SpeechMenu.#executionContext = previous;}
+    }
+
     static get synthesizedSpeechActive() { return SpeechMenu.#synthesizedSpeech.size > 0; }
     static get pipeline() { return SpeechMenu.#pipeline; }
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
@@ -2062,6 +2068,7 @@ class SpeechMenu {
                         chain.expectedSurfaces.add(activeSurface);
                     } else {
                         chain.chainCanceled = true;
+                        void globalThis.WMOFStateTransactions?.rollback(`speech:${chain.id}`, new Error("Recognition context changed."));
                         SpeechMenu.#rejectDigest(chain, 'unexpected-modal', chain.digestPending || '');
                         continue;
                     }
@@ -2912,6 +2919,7 @@ class SpeechMenu {
         SpeechMenu.#clearPrimed(utterance);
         if (["stopped", "muted", "speech-context-change", "surface-context-change"].includes(reason)) {
             utterance.chainCanceled = true;
+            void globalThis.WMOFStateTransactions?.rollback(`speech:${utterance.id}`, new Error(reason));
         }
 
         SpeechMenu
@@ -3625,6 +3633,7 @@ class SpeechMenu {
     }
 
     static #rejectDigest(utterance, reason, remainder) {
+        void globalThis.WMOFStateTransactions?.rollback(`speech:${utterance.id}`, new Error(reason));
         utterance.digestFailed = true;
         utterance.valueCollectors?.clear();
         if (reason === "consumed-prefix-revised") utterance.chainCanceled = true;
@@ -3664,7 +3673,7 @@ class SpeechMenu {
                 return false;
             }
             // UI visibility may lag; hard gates are always rechecked at execution.
-            if (!SpeechMenu.#candidateStateAvailable(step.commandElement, true)) {
+            if (!(step.optimistic ? SpeechMenu.#canAttemptStateCommand(step.commandElement) : SpeechMenu.#candidateStateAvailable(step.commandElement, true))) {
                 utterance.digestExecutionFailed = true;
                 SpeechMenu.#rejectDigest(utterance, "chain-action-unavailable", segment);
                 return false;
@@ -3675,7 +3684,11 @@ class SpeechMenu {
                 const result = await SpeechMenu.#processElement(step.commandElement, segment,
                     utterance.id, step.speechMenuElement, SpeechMenu.#shouldExecuteElement(step.commandElement),
                     undefined, utterance.wallStartedAt, true, false,
-                    {chain: true, chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext});
+                    {chain: true, chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext,
+                        canCommit: () => !utterance.chainCanceled && !utterance.digestExecutionFailed &&
+                            !SpeechMenu.#stopped && utterance.sessionGeneration === SpeechMenu.#sessionGeneration &&
+                            (step.optimistic ? SpeechMenu.#canAttemptStateCommand(step.commandElement) : SpeechMenu.#candidateStateAvailable(step.commandElement, true))});
+                if (utterance.chainCanceled) return false;
                 if (!result) {
                     utterance.digestExecutionFailed = true;
                     utterance.digestSurfaceStack = step.surfaceStack;
@@ -3709,7 +3722,6 @@ class SpeechMenu {
         // A parameter can still grow: "four" -> "four fifteen". A next
         // command establishes its boundary; otherwise wait for final decode.
         if (!isFinal && last && (last.canContinue ||
-            /\(\?</.test(last.commandElement.getAttribute("speech-pattern") || "") ||
             last.commandElement.hasAttribute("speech-open-ended") ||
             last.commandElement.hasAttribute("speech-collect")) && !candidate.pending) count--;
         for (const step of steps.slice(0, count)) SpeechMenu.#queueDigestStep(utterance, step);
@@ -3730,9 +3742,15 @@ class SpeechMenu {
                 utterance.digestCommitted = true;
                 SpeechMenu.#clearPrimed(utterance);
                 if (SpeechMenu.#utterance === utterance) SpeechMenu.#finishUtterance("digested", false);
-                void utterance.digestQueue.then(() => {
+                void utterance.digestQueue.then(async () => {
                     if (!utterance.digestExecutionFailed && !utterance.chainCanceled && !SpeechMenu.#stopped &&
                         utterance.sessionGeneration === SpeechMenu.#sessionGeneration) {
+                        const transactions = globalThis.WMOFStateTransactions;
+                        if (transactions && !(await transactions.complete(`speech:${utterance.id}`))) {
+                            utterance.chainCanceled = true;
+                            SpeechMenu.#rejectDigest(utterance, "state-change-reverted", utterance.transcript);
+                            return;
+                        }
                         SpeechMenu.#emit("utteranceCommitted", {id: utterance.id, transcript: utterance.transcript});
                     }
                 });
@@ -6223,20 +6241,6 @@ class SpeechMenu {
                     pattern
                 );
 
-        if (
-            !element
-                ?.hasAttribute?.(
-                    "speech-open-ended"
-                ) &&
-            SpeechMenu
-                .#hasExactLiteralPhrase(
-                    phrases,
-                    transcript
-                )
-        ) {
-            return undefined;
-        }
-
         let depth;
 
         for (const phrase of phrases) {
@@ -6387,13 +6391,36 @@ class SpeechMenu {
         return [...new Set([...contextual, ...SpeechMenu.#availableCandidates(frames === undefined ? undefined : frames.at(-1)?.surface || null)])];
     }
 
+    static #canAttemptStateCommand(element) {
+        if (!element?.isConnected || !element.hasAttribute("data-speech-state-command") ||
+            element.matches("[disabled], [hidden], [inert], [aria-hidden='true']")) return false;
+        const authorization = element.getAttribute("speech-authorized");
+        if (authorization) {
+            const resolved = SpeechMenu.#resolve(authorization);
+            try {if (!resolved || resolved.fn.call(resolved.owner, element) !== true) return false;}
+            catch {return false;}
+        }
+        return true;
+    }
+    static #stateAttemptCandidates(context, frames) {
+        const available = SpeechMenu.#digestCandidates(context, frames);
+        const surface = frames?.at(-1)?.surface;
+        return [...new Set([...available, ...SpeechMenu.#index().elements().filter(element => {
+            if (!SpeechMenu.#canAttemptStateCommand(element)) return false;
+            const contexts = SpeechMenu.#chainContextTokens(element);
+            if (contexts.length) return contexts.includes(context);
+            const owner = element.closest('dialog, [popover], [speech-scope]');
+            return !owner || owner === surface;
+        })])];
+    }
+
     static #digestCanContinue(element, segment, candidates) {
         return SpeechMenu.#elementDirectContinuationDepth(element, segment) !== undefined ||
             candidates.some(other => other !== element &&
                 SpeechMenu.#elementDirectContinuationDepth(other, segment) !== undefined);
     }
 
-    static async #planDigest(candidates, words, utterance, signal, depth = 0, memo = new Map(), projectedContext = utterance.digestContext, projectedFrames = utterance.digestSurfaceStack) {
+    static async #planDigest(candidates, words, utterance, signal, depth = 0, memo = new Map(), projectedContext = utterance.digestContext, projectedFrames = utterance.digestSurfaceStack, optimistic = false) {
         if (signal?.aborted || !words.length) return undefined;
         memo.elementIds ??= new Map(SpeechMenu.#index().elements()
             .map((element, index) => [element, index]));
@@ -6408,10 +6435,11 @@ class SpeechMenu {
             candidates.map(element => memo.elementIds.get(element)).join(",") + ":" + words.join(" ");
         if (memo.has(key)) return memo.get(key);
         let best;
+        // A longer command owns its words before shorter commands can split them.
         const select = plan => {
             if (!plan) return;
             const score = candidate => (candidate.invalid || (utterance.digestIsFinal && candidate.pending) ? 0 : 1000000) +
-                candidate.steps.length * 10000 + (candidate.pending ? 4000 : 0) +
+                (candidate.steps[0]?.segmentTranscript.split(" ").length || 0) * 10000 + (candidate.pending ? 4000 : 0) +
                 (candidate.exact ? 2000 : 0) + candidate.consumedWords;
             if (!best || score(plan) > score(best)) best = plan;
         };
@@ -6458,16 +6486,16 @@ class SpeechMenu {
                 const nextSurface = frames?.at(-1)?.surface;
                 if (nextSurface && !memo.surfaces.has(nextSurface)) memo.surfaces.set(nextSurface, memo.surfaces.size);
                 const contextKey = String(context || '') + ':' + (nextSurface ? memo.surfaces.get(nextSurface) : frames ? 'page' : 'actual');
-                if (!memo.contexts.has(contextKey)) memo.contexts.set(contextKey, SpeechMenu.#digestCandidates(context, frames));
+                if (!memo.contexts.has(contextKey)) memo.contexts.set(contextKey, optimistic ? SpeechMenu.#stateAttemptCandidates(context, frames) : SpeechMenu.#digestCandidates(context, frames));
                 const next = memo.contexts.get(contextKey);
-                const step = {...probe, segmentTranscript: segment,
+                const step = {...probe, segmentTranscript: segment, optimistic,
                     nextContext: context, nextSurfaceStack: frames, context: projectedContext,
                     surfaceStack: projectedFrames,
                     surface: projectedFrames?.at(-1)?.surface,
                     canContinue: SpeechMenu.#digestCanContinue(element, segment, candidates)};
                 const remaining = words.slice(end);
                 if (remaining.length) {
-                    const tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context, frames);
+                    const tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context, frames, optimistic);
                     if (tail) select({...tail, steps: [step, ...tail.steps], consumedWords: end + tail.consumedWords});
                     else select({steps: [step], exact: false, continuation: false, terminal: false,
                         invalid: true, consumedWords: end, remainder: remaining.join(" ")});
@@ -6499,6 +6527,14 @@ class SpeechMenu {
             if (generation === SpeechMenu.#index().generation) break;
             best = undefined;
             utterance.valueCollectors?.clear();
+        }
+        // Invalid-state commands are attempted only after valid groups have had
+        // priority. A formed command can be accepted on an interim update. Authorization and
+        // explicit command disabling remain hard gates.
+        if (((!best?.steps.length && !best?.pending) || best?.invalid) && SpeechMenu.#executionEnabled && globalThis.WMOFStateTransactions) {
+            const attempted = await SpeechMenu.#planDigest(SpeechMenu.#stateAttemptCandidates(utterance.digestContext, utterance.digestSurfaceStack),
+                words, utterance, signal, 0, new Map(), utterance.digestContext, utterance.digestSurfaceStack, true);
+            if (attempted?.exact) best = attempted;
         }
         if (!best || (!best.steps.length && !utterance.chainActive)) return undefined;
         const root = best.steps[0] || best.pending;
@@ -8822,6 +8858,9 @@ class SpeechMenu {
             };
         }
 
+        // Preparation may have awaited while this attempt lost its right to act.
+        if (signal?.aborted || executionMetadata?.canCommit?.() === false) return false;
+
         const responseSession =
             globalThis
                 .WMOFPresentationSetters
@@ -8861,7 +8900,8 @@ class SpeechMenu {
                             ?.wallStartedAt,
                     chain: executionMetadata?.chain === true || utterance?.commandChainExecuting === true,
                     chainContext: executionMetadata?.chainContext || utterance?.digestExecutingContext,
-                    chainSurface: executionMetadata?.chainSurface
+                    chainSurface: executionMetadata?.chainSurface,
+                    persist: element.hasAttribute("speech-persist") && element.getAttribute("speech-persist") !== "false"
                 });
 
             let outcomeValue;

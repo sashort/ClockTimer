@@ -1,5 +1,6 @@
-(() => {
+(async () => {
     "use strict";
+    await globalThis.WMOFPersistence?.ready;
 
     const $ = id =>
         document.getElementById(id);
@@ -150,6 +151,7 @@
         "speech-response-timeout",
         "speech-modal",
         "speech-index",
+        "speech-persist",
         "speech-chain-context",
         "speech-chain-next"
     ];
@@ -7936,13 +7938,16 @@
             };
 
             try {
-                localStorage
+                globalThis.WMOFPersistence
                     .setItem(
                         WORKSPACE_STORAGE,
                         JSON.stringify(
                             state
                         )
-                    );
+                    ).catch(() => {
+                        document.documentElement.dataset.persistenceState = "reverted";
+                        restoreWorkspace();
+                    });
             }
             catch {}
 
@@ -8317,7 +8322,7 @@
 
             if (persist) {
                 try {
-                    localStorage
+                    globalThis.WMOFPersistence
                         .setItem(
                             WORKSPACE_STORAGE,
                             JSON.stringify({
@@ -8327,7 +8332,10 @@
                                     layout.right,
                                 sizes: {}
                             })
-                        );
+                        ).catch(() => {
+                            document.documentElement.dataset.persistenceState = "reverted";
+                            restoreWorkspace();
+                        });
                 }
                 catch {}
             }
@@ -8344,8 +8352,8 @@
             try {
                 state =
                     JSON.parse(
-                        localStorage
-                            .getItem(
+                        globalThis.WMOFPersistence
+                            .peek(
                                 WORKSPACE_STORAGE
                             ) ||
                         "null"
@@ -8363,7 +8371,7 @@
                 )
             ) {
                 applyWorkspacePreset(
-                    "authoring"
+                    "authoring", {persist: false}
                 );
 
                 return;

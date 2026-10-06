@@ -15,6 +15,7 @@
         "speech-chain-surface",
         "speech-noun",
         "speech-authorized",
+        "speech-persist",
         "speech-collect"
     ];
     const created = new Map();
@@ -70,6 +71,7 @@
                         name ===
                             "speech-chain-next" ||
                         name === "speech-authorized" ||
+                        name === "speech-persist" ||
                         name === "speech-collect"
                     ) &&
                     value === undefined
@@ -93,6 +95,10 @@
                     value = undefined;
                 }
 
+                if (name === "speech-persist") {
+                    element.toggleAttribute(name, value === true || value === "" || value === "true");
+                    continue;
+                }
                 if (
                     typeof value === "string" &&
                     value !== ""

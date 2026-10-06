@@ -449,12 +449,23 @@
                             let result;
 
                             try {
-                                result =
-                                    implementations
-                                        .get(
-                                            normalized
-                                        )
-                                        (...args);
+                                const implementation = implementations.get(normalized);
+                                const transactions = globalThis.WMOFStateTransactions;
+                                const speech = globalThis.SpeechMenu?.executionContext;
+                                const actionContext = invocationContext;
+                                const invoke = () => {
+                                    const previous = invocationContext;
+                                    invocationContext = actionContext;
+                                    try {
+                                        return globalThis.SpeechMenu?.withExecutionContext
+                                            ? globalThis.SpeechMenu.withExecutionContext(speech, () => implementation(...args))
+                                            : implementation(...args);
+                                    } finally {invocationContext = previous;}
+                                };
+                                result = transactions && !normalized.startsWith("read") ? transactions.run(normalized, invoke, {
+                                        group: speech?.chain ? `speech:${speech.utteranceId}` : undefined,
+                                        chain: speech?.chain === true, persist: speech ? speech.persist === true : undefined
+                                    }) : implementation(...args);
                             }
                             finally {
                                 invocationContext =
@@ -956,6 +967,9 @@
             supplied = {},
             explicitContext
         ) => {
+            const transactions = globalThis.WMOFStateTransactions;
+            const transaction = transactions?.current;
+            const speechContext = globalThis.SpeechMenu?.executionContext;
             const normalized =
                 normalizeName(name);
 
@@ -1101,10 +1115,10 @@
                                     )
                             );
 
-                    result =
-                        await action(
-                            ...args
-                        );
+                    const invoke = () => globalThis.SpeechMenu?.withExecutionContext
+                        ? globalThis.SpeechMenu.withExecutionContext(speechContext, () => action(...args))
+                        : action(...args);
+                    result = await (transaction ? transactions.withTransaction(transaction, invoke) : invoke());
 
                     if (
                         result ===

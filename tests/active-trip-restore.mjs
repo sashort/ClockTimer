@@ -20,7 +20,8 @@ const postedEvents=[];
 window.fetch=async(url,options={})=>{
  const parsed=new URL(url,'https://clock.example/'),path=parsed.pathname;
  let data;
- if(path.endsWith('/users/'))data={csrfToken:'a'.repeat(64),user:{id:2},calendars:[]};
+ if(path.endsWith('/command-check/'))data={accepted:true};
+ else if(path.endsWith('/users/'))data={csrfToken:'a'.repeat(64),user:{id:2},calendars:[]};
  else if(path.endsWith('/trip-events/')&&options.method==='POST'){
   const body=JSON.parse(options.body);
   let stored=postedEvents.find(event=>event.clientToken===body.clientToken);
