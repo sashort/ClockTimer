@@ -67,7 +67,7 @@ async function rebuild(c,id,label){
   copy.remove();c.remove();
 }
 try{
-  for(const name of ['TemporalFormat','RingContainer','TimeRange','TimeRangeGroup','ClockTimer'])window.eval(fs.readFileSync(new URL(`../${name}.js`,import.meta.url),'utf8'));
+  for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer'])window.eval(fs.readFileSync(new URL(`../${name}.js`,import.meta.url),'utf8'));
   let c=await fresh();
   const prepared=await c.prepareTrip({at:new window.Date()});
   console.log('PREPARED',JSON.stringify(prepared),'NETWORK',c.networkStatus);

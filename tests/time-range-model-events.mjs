@@ -44,6 +44,19 @@ try {
     assert(removable.ranges.every(range => range.previous === null && range.next === null));
     assert.equal(removable.group.remove(removable.ranges[1].rangeId), false, 'An absent ID does nothing');
 
+    const gapEdit = TimeRange.create({type: 'Fixed', start: time(0), end: time(10), splitPoints: [time(30)]});
+    const gapRange = TimeRange.create({group: gapEdit.group, type: 'Fixed', start: time(20), end: time(40)}).ranges[0];
+    gapEdit.group.tick(time(25), time(0));
+    const gapResets = [];
+    gapEdit.group.addEventListener('boundary-reset', event => gapResets.push(...event.detail.boundaries));
+    gapEdit.group.beginUpdate();
+    gapEdit.group.setRangeInterval(gapRange.rangeId, time(35), time(60));
+    gapEdit.group.endUpdate();
+    gapEdit.group.tick(time(27));
+    assert.equal(gapResets.length, 1, 'Replacing split pieces preserves reached entrance history');
+    assert.equal(gapResets[0].after.rangeId, gapRange.rangeId);
+    assert.equal(gapResets[0].time.getTime(), time(35).getTime());
+
     const movedPoints = TimeRange.create({type: 'Fixed', start: time(0), end: time(30), splitPoints: [time(10), time(20)]});
     const entityId = movedPoints.ranges[0].entityId;
     const survivingPieceId = movedPoints.ranges[0].pieceId;

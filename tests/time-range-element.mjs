@@ -62,6 +62,9 @@ try {
     assert.equal(element.hidden, false);
     assert.equal(element.startTime.getTime(), time(10).getTime());
     assert.equal(element.rangeId, split.ranges[1].rangeId);
+    assert.equal(element.transitionTo({startTime: time(12), endTime: time(25)}), true);
+    assert.equal(element.startTime.getTime(), time(12).getTime(), 'Editing uses the surviving model piece');
+    assert.equal(element.rangeId, split.ranges[1].rangeId, 'Editing preserves logical identity');
     assert.equal(logical.group.remove(logical.ranges[0].rangeId), true);
     assert.equal(element.hidden, false, 'Rebinding releases the old group');
     split.group.remove(element.rangeId);
@@ -97,6 +100,14 @@ try {
         assert.equal(changes.length, 1, 'Generic change notifications bubble to any consumer');
         assert.equal(standalone.RingContainer, undefined);
         assert.equal(view.style.clipPath, '', 'The element performs no geometry work');
+        view.clockTimerApprovalReadOnly = true;
+        assert.throws(() => view.setAttribute('approved', ''), /ClockTimer/);
+        view.clockTimerDerivedReadOnly = true;
+        assert.throws(() => view.transitionTo({startTime: time(0), endTime: time(20)}), /cannot be modified/);
+        view.clockTimerInternalMutation = true;
+        view.setAttribute('approved', '');
+        delete view.clockTimerInternalMutation;
+        delete view.clockTimerDerivedReadOnly;
         simple.group.beginUpdate();
         standalone.TimeRange.create({group: simple.group, type: 'Fixed', start: time(1), end: time(3)});
         simple.group.endUpdate();
@@ -106,8 +117,8 @@ try {
     } finally {
         await standalone.happyDOM.close();
     }
-    assert.throws(() => window.eval(fs.readFileSync(new URL('../TimeRange.js', import.meta.url), 'utf8')),
-        /already|declared|defined|registered/i, 'The legacy element cannot be loaded alongside this one');
+    assert.throws(() => window.eval(fs.readFileSync(new URL('../TimeRangeElement.js', import.meta.url), 'utf8')),
+        /already|declared|defined|registered|instead/i, 'A registered element cannot be silently replaced');
     console.log('PASS model-backed TimeRangeElement identity, committed updates, split/removal, lifecycle, and RingContainer layout');
 } finally {
     await window.happyDOM.close();

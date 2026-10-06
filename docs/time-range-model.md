@@ -1,8 +1,9 @@
 # Linked TimeRange model
 
 `TimeRangeModel.js` defines the typed linked model (Fixed, Moveable, Expandable,
-Collapsable). It is separate from the counted-time `TimeRangeGroup.js` currently
-loaded by ClockTimer. Do not load both implementations into the same global scope.
+Collapsable), including individual counted state and group totals. ClockTimer
+loads this model and the `TimeRangeElement.js` presentation adapter. The former
+`TimeRange.js` and `TimeRangeGroup.js` implementations have been retired.
 
 ## Updates and split points
 
@@ -113,8 +114,8 @@ updates and validation.
 
 `TimeRangeElement.js` registers `<time-range>` for the typed model. It must be
 loaded after `TimeRangeModel.js`, in place of legacy `TimeRange.js`; loading both
-element implementations is rejected. The current application entry point still
-uses the legacy scripts until ClockTimer is migrated.
+element implementations is rejected. The application entry point and its test
+fixtures now load the model and adapter together.
 
 ```js
 const {group, ranges} = TimeRange.create({type: "Fixed", start, end, splitPoints});
@@ -131,6 +132,13 @@ Dates are defensive copies. Interval properties and reflected attributes describ
 the last committed view; unfinished edits and failed validation do not update it.
 The element hides when no pieces remain and releases subscriptions on detachment.
 Reconnect reads current state; `bind(range)` releases the previous subscription.
+Declarative `start-time`, `end-time`, and `range-length` attributes hydrate a
+model on connection. Later attribute edits and `transitionTo({startTime, endTime})`
+delegate to `TimeRangeGroup.setRangeInterval(rangeId, start, end, type)`; validation
+and authoritative interval data remain in the model. Logical edits preserve IDs,
+split against the current points, and retain boundary-reset history even when an
+original piece has collapsed. Controller approval/derived-range mutation guards
+are retained. `TimeRange.setInterval()` is available for editing one model piece.
 
 The element knows nothing about RingContainer. It has no geometry or animation
 code and works in an ordinary DOM host. It emits a bubbling, composed
@@ -144,6 +152,25 @@ committed membership changes and completed ticks, including normalization that
 crosses no boundaries, without introducing additional public group events. They
 are silent during updates, pending validation, and tick propagation. Disposal
 clears the views and subscriptions.
+
+## ClockTimer integration and counted state
+
+ClockTimer creates model-backed elements, then processes their groups before
+projecting the current productive interval onto its views. Accounting has its own
+model group, so removing visual rings cannot change counted time. Each accounting
+member stores read-only counted values; group totals sum these values. ClockTimer
+passes normalized exclusions and the required productive allowance to
+`updateAccounting()`. Matching inputs reuse the existing members. Splitting and
+merging distribute/preserve individual counted values, and edits invalidate the
+accounting cache.
+
+Pending lifecycle intervals use a separate model group. ClockTimer supplies the
+scheduled interval and tick time; it handles batched `boundary-reached` events to
+apply the existing elapsed policy. It no longer calls an explicit `checkBoundary`
+method. Deadline edits use `beginUpdate()`/`endUpdate()`, preserving the group's
+valid tick baseline and letting the next tick normalize and reconcile changes.
+Start/reset clears both groups and their interval-record associations. Stored
+Down restoration and resume persistence keep their existing lifecycle contract.
 
 ## Implementation layout
 

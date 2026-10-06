@@ -10,10 +10,10 @@ on:
       - "SpeechEditorRuntime.js"
       - "app.js"
       - "ClockTimer.js"
-      - "TimeRange.js"
-      - "TimeRangeGroup.js"
       - "TimeRangeModel.js"
       - "TimeRangeElement.js"
+      - "RingContainer.js"
+      - "tests/clock-timer-renderer-browser.mjs"
       - "tests/time-range-*.mjs"
       - "tests/counted-time-accounting.mjs"
       - "tests/active-trip-restore.mjs"
@@ -59,8 +59,6 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
-          node --check TimeRange.js
-          node --check TimeRangeGroup.js
           node --check TimeRangeModel.js
           node --check TimeRangeElement.js
           node --check RingContainer.js
@@ -125,12 +123,24 @@ jobs:
         working-directory: tests
         run: npm run test:time-range-element
 
-      - name: Run speech tests
+      - name: Check ClockTimer model migration and accounting
         working-directory: tests
         run: |
           npm run test:time-range
           npm run test:active-restore
           npm run test:clock-fsm
+
+      - name: Install browser for rendering checks
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Check ClockTimer browser rendering
+        working-directory: tests
+        run: npm run test:clock-renderer
+
+      - name: Run speech tests
+        working-directory: tests
+        run: |
           npm run test:speech-editor
           node adaptive-speech-timing.mjs
           npm run test:speech-phrases

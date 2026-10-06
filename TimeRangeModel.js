@@ -66,6 +66,7 @@ class TimeRangeGroup extends EventTarget {
     static #nextSplitPointId = 0;
     #hasProcessedTick = false;
     #rangeObservers = new EventTarget();
+    #accountingKey;
     constructor(clock = null, splitPoints = []) {
         super();
         this.#clock = clock;
@@ -84,6 +85,51 @@ class TimeRangeGroup extends EventTarget {
     get tickData() { return this.#tickData; }
     get lastTickTime() { return this.#lastValidTickTime === null ? null : new Date(this.#lastValidTickTime); }
     get validationSuspended() { return this.#updateDepth > 0 || this.#needsValidation; }
+
+    // Counted intervals are model members, independent of their DOM presentation.
+    get timeRanges() { return this.#ranges(); }
+    get totalCountedTime() { return this.#sumCounted("total"); }
+    get elapsedCountedTime() { return this.#sumCounted("elapsed"); }
+    get remainingCountedTime() { return this.#sumCounted("remaining"); }
+    #sumCounted(field) { return this.#ranges().reduce((sum, range) => sum + range.counted[field], 0); }
+    updateAccounting(start, end, exclusions = [], required = 0) {
+        const key = JSON.stringify([start, end, exclusions, required]);
+        if (key === this.#accountingKey) return this;
+        this.beginUpdate();
+        try {
+            this.clear();
+            let cursor = start, earned = 0;
+            const add = (left, right, elapsed) => {
+                if (!(right > left)) return;
+                const range = TimeRange.create({group: this, type: "Fixed", start: left, end: right}).ranges[0];
+                range.setCountedTime(right - left, elapsed ? right - left : 0);
+                if (elapsed) earned += right - left;
+            };
+            for (const [left, right] of exclusions) {
+                if (left >= end) break;
+                if (right <= cursor) continue;
+                add(cursor, Math.min(left, end), true);
+                cursor = Math.max(cursor, right);
+            }
+            add(cursor, end, true);
+            add(end, end + Math.max(0, required - earned), false);
+        } finally {
+            this.endUpdate();
+        }
+        this.tick(end, end);
+        this.#accountingKey = key;
+        return this;
+    }
+    clear() {
+        for (const range of this.#ranges()) this._removePiece(range);
+        this.#boundaryStates.clear();
+        this.#startBoundaryKeys.clear();
+        this.#reachedSplitPoints.clear();
+        this.#tickData = this.#lastValidTickTime = null;
+        this.#hasProcessedTick = false;
+        this.#accountingKey = undefined;
+        return this;
+    }
 
     // Views observe committed collection state independently of boundary events.
     // In particular, normalization may change the view without crossing a boundary.
@@ -168,6 +214,55 @@ class TimeRangeGroup extends EventTarget {
     }
 
     // Membership changes and entity-preserving splits.
+    setRangeInterval(rangeId, start, end, type) {
+        const members = this.#ranges().filter(range => range.rangeId === rangeId);
+        if (!members.length) return false;
+        start = TimeRangeGroup.#time(start);
+        end = TimeRangeGroup.#time(end);
+        type ??= members[0].entityType;
+        if (!Object.values(TimeRange.Type).includes(type)) throw new TypeError("Unknown TimeRange type.");
+        TimeRange._validateInterval({startMilliseconds: start, endMilliseconds: end, type});
+        const pieces = TimeRange._splitInterval(type, start, end, this.boundaries);
+        if (members.length === 1 && pieces.length === 1) {
+            members[0].setInterval(start, end, type);
+            return true;
+        }
+        const replacements = pieces.map(piece => TimeRange._fromValidated(piece.type,
+            piece.start, piece.end, this, rangeId, type));
+        if (!this.validationSuspended) {
+            this.#validateChain([...this.#ranges().filter(range => range.rangeId !== rangeId), ...replacements]
+                .sort((left, right) => left.startMilliseconds - right.startMilliseconds));
+        }
+        // Preserve the logical ending's crossing history across physical replacement.
+        const endState = this.#boundaryStates.get(members.at(-1));
+        const startKey = this.#startBoundaryKeys.get(members[0]);
+        const counted = members.reduce((sum, range) => ({total: sum.total + range.counted.total,
+            elapsed: sum.elapsed + range.counted.elapsed, remaining: sum.remaining + range.counted.remaining}),
+            {total: 0, elapsed: 0, remaining: 0});
+        this.#updateDepth++;
+        try {
+            for (const member of members) {
+                this._removePiece(member);
+                this.#startBoundaryKeys.delete(member);
+            }
+            let elapsed = counted.elapsed, remaining = counted.remaining, allocated = 0;
+            for (const [index, range] of replacements.entries()) {
+                this.insert(range);
+                const total = index === replacements.length - 1 ? counted.total - allocated
+                    : counted.total * range.duration / (end - start);
+                const earned = Math.min(total, elapsed);
+                const pending = Math.min(total - earned, remaining);
+                range.setCountedTime(total, earned, pending);
+                allocated += total; elapsed -= earned; remaining -= pending;
+            }
+            if (endState) this.#boundaryStates.set(replacements.at(-1), endState);
+            if (startKey) this.#startBoundaryKeys.set(replacements[0], startKey);
+        } finally {
+            this.#updateDepth--;
+        }
+        this.notifyRangeChanged(replacements[0]);
+        return true;
+    }
     insert(range, before = undefined) {
         if (!(range instanceof TimeRange) || range.group !== this) throw new TypeError("Range must belong to this group.");
         if (range.previous || range.next || this.#head === range) return range;
@@ -183,6 +278,7 @@ class TimeRangeGroup extends EventTarget {
         TimeRange._setPrevious(range, previous || null);
         TimeRange._setNext(range, reference || null);
         this.#rangeCount++;
+        this.#accountingKey = undefined;
         this.dispatchEvent(new CustomEvent("insert", {detail: {range, previous: range.previous, next: range.next}}));
         this.#notifyRangeObservers();
         return range;
@@ -208,12 +304,14 @@ class TimeRangeGroup extends EventTarget {
         TimeRange._setPrevious(range, null);
         TimeRange._setNext(range, null);
         this.#rangeCount--;
+        this.#accountingKey = undefined;
         this.dispatchEvent(new CustomEvent("remove", {detail: {range, previous, next}}));
         this.#notifyRangeObservers();
         return true;
     }
     notifyRangeChanged(range) {
         if (!(range instanceof TimeRange) || range.group !== this) throw new TypeError("Range must belong to this group.");
+        this.#accountingKey = undefined;
         this.dispatchEvent(new CustomEvent("change", {detail: {group: this, range}}));
         this.#notifyRangeObservers();
     }
@@ -222,8 +320,10 @@ class TimeRangeGroup extends EventTarget {
         const point = TimeRangeGroup.#time(boundary);
         if (point <= range.startMilliseconds || point >= range.endMilliseconds) throw new RangeError("Split boundary must be inside the range.");
         const right = TimeRange._fromValidated(TimeRange.Type.EXPANDABLE, point, range.endMilliseconds,
-            this, range.element, range.entityId, range.entityType);
+            this, range.entityId, range.entityType);
         const previousType = range.type;
+        const counted = range.counted;
+        const fraction = (point - range.startMilliseconds) / range.duration;
         // Splitting creates an interior boundary; the original end belongs to right.
         const endState = this.#boundaryStates.get(range);
         if (endState) {
@@ -238,6 +338,13 @@ class TimeRangeGroup extends EventTarget {
         }
         TimeRange._setTypeAndEnd(range, TimeRange.Type.COLLAPSABLE, point);
         this.insert(right, range.next);
+        if (counted.total > 0) {
+            const leftTotal = counted.total * fraction, rightTotal = counted.total - leftTotal;
+            const leftElapsed = Math.min(leftTotal, counted.elapsed);
+            const rightRemaining = Math.min(rightTotal, counted.remaining);
+            range.setCountedTime(leftTotal, leftElapsed, counted.remaining - rightRemaining);
+            right.setCountedTime(rightTotal, counted.elapsed - leftElapsed, rightRemaining);
+        }
         this.dispatchEvent(new CustomEvent("split", {detail: {original: range,
             ranges: [range, right], boundary: new Date(point), previousType}}));
         return [range, right];
@@ -312,6 +419,12 @@ class TimeRangeGroup extends EventTarget {
     _validateInsertion(ranges) {
         this.#validateChain([...this.#ranges(), ...ranges].sort((left, right) => left.startMilliseconds - right.startMilliseconds));
     }
+    _validateEdit(range, candidate) {
+        if (!this.validationSuspended) {
+            this.#validateChain(this.#ranges().map(member => member === range ? candidate : member)
+                .sort((left, right) => left.startMilliseconds - right.startMilliseconds));
+        }
+    }
     #validateChain(ranges) {
         const types = TimeRange.Type;
         let previous = null, chainRoot = null, zeroLengthExpandables = 0;
@@ -327,6 +440,9 @@ class TimeRangeGroup extends EventTarget {
         }
     }
     #merge(left, right) {
+        const counted = {total: left.counted.total + right.counted.total,
+            elapsed: left.counted.elapsed + right.counted.elapsed,
+            remaining: left.counted.remaining + right.counted.remaining};
         // The surviving end keeps the reached/pending state of its original owner.
         if (right.endMilliseconds >= left.endMilliseconds) {
             const state = this.#boundaryStates.get(right);
@@ -335,8 +451,8 @@ class TimeRangeGroup extends EventTarget {
             TimeRange._setTypeAndEnd(left, left.type, right.endMilliseconds);
         }
         this.#boundaryStates.delete(right);
-        if (left.element === null && right.element !== null) left.setElement(right.element);
         this._removePiece(right);
+        left.setCountedTime(counted.total, counted.elapsed, counted.remaining);
         this.notifyRangeChanged(left);
     }
 
@@ -525,6 +641,7 @@ class TimeRangeGroup extends EventTarget {
         this.#editedBoundaryResets.clear();
         this.#processingBoundaries = this.#processingSplitPoints = null;
         this.#needsValidation = this.#hasProcessedTick = false;
+        this.#accountingKey = undefined;
         this.#notifyRangeObservers();
         this.#rangeObservers = new EventTarget();
     }
@@ -544,11 +661,12 @@ class TimeRange {
     static #newGroup;
     static #secret = Symbol("TimeRange");
     static #nextId = 0;
-    #type; #start; #end; #group; #element;
+    #type; #start; #end; #group;
     #previous = null; #next = null;
     #pieceId; #entityId; #entityType;
+    #counted = Object.freeze({total: 0, elapsed: 0, remaining: 0});
 
-    constructor(secret, type, start, end, group, element = null, entityId = null, entityType = type) {
+    constructor(secret, type, start, end, group, entityId = null, entityType = type) {
         if (secret !== TimeRange.#secret) throw new TypeError("TimeRange constructor is private; use TimeRange.create().");
         this.#pieceId = globalThis.crypto?.randomUUID?.() ?? `time-range-${++TimeRange.#nextId}`;
         this.#entityId = entityId ?? this.#pieceId;
@@ -557,11 +675,10 @@ class TimeRange {
         this.#start = start;
         this.#end = end;
         this.#group = group;
-        this.#element = element;
     }
 
     // Build and validate the whole insertion before exposing any of its pieces.
-    static create({type, group = null, clock = null, splitPoints, boundaries, start, end, element = null} = {}) {
+    static create({type, group = null, clock = null, splitPoints, boundaries, start, end} = {}) {
         type = TimeRange.#normalizeType(type);
         start = timeRangeMilliseconds(start, "TimeRange times must be valid dates.");
         end = timeRangeMilliseconds(end, "TimeRange times must be valid dates.");
@@ -575,7 +692,7 @@ class TimeRange {
         const ranges = [];
         for (const piece of TimeRange.#splitAtPoints(type, start, end, group.boundaries)) {
             ranges.push(TimeRange._fromValidated(piece.type, piece.start, piece.end, group,
-                ranges.length ? null : element, ranges[0]?.entityId, type));
+                ranges[0]?.entityId, type));
         }
         if (!group.validationSuspended) group._validateInsertion(ranges);
         for (const range of ranges) group.insert(range);
@@ -584,6 +701,14 @@ class TimeRange {
 
     // Dates are defensive copies; numeric accessors avoid allocations internally.
     static get lastCreatedGroup() { return TimeRange.#newGroup; }
+    static createCountedRange(start, end, now = end) {
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end < start || !Number.isFinite(now)) {
+            throw new RangeError("Invalid counted interval.");
+        }
+        const range = TimeRange.create({type: end > start ? "Fixed" : "Expandable", start, end}).ranges[0];
+        range.setCountedTime(end - start, Math.max(0, Math.min(end, now) - start));
+        return range;
+    }
     get rangeId() { return this.#entityId; }
     get pieceId() { return this.#pieceId; }
     get entityId() { return this.#entityId; }
@@ -595,14 +720,35 @@ class TimeRange {
     get endMilliseconds() { return this.#end; }
     get duration() { return this.#end - this.#start; }
     get group() { return this.#group; }
-    get element() { return this.#element; }
     get previous() { return this.#previous; }
     get next() { return this.#next; }
+    get counted() { return this.#counted; }
 
-    setElement(element) {
-        if (this.#element !== null && this.#element !== element) throw new Error("A TimeRange element can only be assigned once.");
-        this.#element = element;
+    // Controllers edit interval data here; elements never store authoritative times.
+    setInterval(start, end, type = this.#type) {
+        start = timeRangeMilliseconds(start);
+        end = timeRangeMilliseconds(end);
+        type = TimeRange.#normalizeType(type);
+        const candidate = {startMilliseconds: start, endMilliseconds: end, type, duration: end - start};
+        TimeRange._validateInterval(candidate);
+        this.#group._validateEdit(this, candidate);
+        this.#start = start;
+        this.#end = end;
+        this.#type = type;
+        if (this.#group.timeRanges.filter(range => range.rangeId === this.rangeId).length === 1) this.#entityType = type;
+        this.#group.notifyRangeChanged(this);
         return this;
+    }
+    setCountedTime(total, elapsed = 0, remaining = total - elapsed) {
+        if (!Number.isFinite(total) || total < 0 || !Number.isFinite(elapsed) || elapsed < 0 || elapsed > total ||
+            !Number.isFinite(remaining) || remaining < 0 || remaining > total) throw new RangeError("Invalid counted time.");
+        this.#counted = Object.freeze({total, elapsed, remaining});
+        this.#group.notifyRangeChanged(this);
+        return this.#counted;
+    }
+    updateCountedTime(now) {
+        if (!Number.isFinite(now)) throw new RangeError("Invalid counted interval.");
+        return this.setCountedTime(this.duration, Math.max(0, Math.min(this.#end, now) - this.#start));
     }
 
     // Each member consumes or advances the shared cursor according to its type.
@@ -635,10 +781,13 @@ class TimeRange {
                 break;
             }
             case TimeRange.Type.COLLAPSABLE: {
-                const active = Math.max(cursor, this.#start);
+                if (now < this.#start) return "stop";
+                // A gap advances the cursor before consuming this interval.
+                if (cursor < this.#start) tick.advanceTo(this.#start);
+                const active = tick.cursorMilliseconds;
                 const remaining = Math.max(0, this.#end - active);
                 const consumed = Math.min(tick.remainingDelta, remaining);
-                if (consumed > 0) tick.advanceTo(cursor + consumed);
+                if (consumed > 0) tick.advanceTo(active + consumed);
                 if (consumed < remaining) return "stop";
                 this.#group._removePiece(this);
                 break;
@@ -651,8 +800,9 @@ class TimeRange {
     static _setPrevious(range, previous) { range.#previous = previous; }
     static _setNext(range, next) { range.#next = next; }
     static _setTypeAndEnd(range, type, end) { range.#type = type; range.#end = end; }
-    static _fromValidated(type, start, end, group, element = null, entityId = null, entityType = type) {
-        return new TimeRange(TimeRange.#secret, type, start, end, group, element, entityId, entityType);
+    static _splitInterval(type, start, end, points) { return TimeRange.#splitAtPoints(type, start, end, points); }
+    static _fromValidated(type, start, end, group, entityId = null, entityType = type) {
+        return new TimeRange(TimeRange.#secret, type, start, end, group, entityId, entityType);
     }
     static _validateInterval(range) {
         const start = range.startMilliseconds, end = range.endMilliseconds;

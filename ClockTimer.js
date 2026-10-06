@@ -164,6 +164,7 @@
 
         #tripStartMilliseconds;
         #timeRangeGroup = new TimeRangeGroup();
+        #intervalTimeRangeGroup = new TimeRangeGroup();
         #intervalBoundaryRanges = new WeakMap();
         #boundaryIntervalRecords = new WeakMap();
         #boundaryResult = false;
@@ -494,9 +495,15 @@
 
         constructor() {
             super();
-            this.#timeRangeGroup.addEventListener("boundary-reached", ({ before, now }) => {
-                this.#boundaryResult = this.#handleIntervalElapsed(
-                    this.#boundaryIntervalRecords.get(before), before.endTime.getTime(), now);
+            // The model processes ticks and batches crossings; ClockTimer applies
+            // the lifecycle decision only to the interval's ending boundary.
+            this.#intervalTimeRangeGroup.addEventListener("boundary-reached", ({ detail }) => {
+                for (const {before, time} of detail.boundaries) {
+                    const record = this.#boundaryIntervalRecords.get(before);
+                    if (!record) continue;
+                    this.#boundaryResult = this.#handleIntervalElapsed(
+                        record, time.getTime(), detail.tick.currentMilliseconds);
+                }
             });
 
             this.#shadowRoot =
@@ -9148,6 +9155,7 @@
 
             this.#tripStartMilliseconds = startTimeMilliseconds;
             this.#timeRangeGroup.clear();
+            this.#intervalTimeRangeGroup.clear();
             this.#intervalBoundaryRanges = new WeakMap();
             this.#boundaryIntervalRecords = new WeakMap();
             this.#countedStopTime = undefined;
@@ -12735,16 +12743,24 @@
                 : this.#getPendingIntervalElapsedBoundary(record);
             if (!Number.isFinite(boundary)) return false;
             let range = this.#intervalBoundaryRanges.get(record);
-            if (!range || range.endTime.getTime() !== boundary) {
-                range = customElements.get("time-range").createCountedRange(boundary, boundary);
+            if (!range || !this.#intervalTimeRangeGroup.timeRanges.includes(range)) {
+                this.#intervalTimeRangeGroup.clear();
+                range = TimeRange.create({group: this.#intervalTimeRangeGroup,
+                    type: "Fixed", start: Math.min(record.start ?? boundary - 1, boundary - 1), end: boundary}).ranges[0];
                 this.#boundaryIntervalRecords.set(range, record);
                 this.#intervalBoundaryRanges.set(record, range);
+                // Seed a valid pending tick even when restoration is already late.
+                this.#intervalTimeRangeGroup.tick(Math.min(now, boundary) - 1);
+            } else if (range.endMilliseconds !== boundary) {
+                this.#intervalTimeRangeGroup.beginUpdate();
+                try { range.setInterval(Math.min(range.startMilliseconds, boundary - 1), boundary); }
+                finally { this.#intervalTimeRangeGroup.endUpdate(); }
             }
             this.#boundaryResult = false;
             const dispatched = record.clockTimerElapsedDispatched === true;
-            const reached = this.#timeRangeGroup.checkBoundary(range, now);
+            this.#intervalTimeRangeGroup.tick(now);
             // Existing elapsed decisions may need continued lifecycle work.
-            if (reached && dispatched) {
+            if (record.clockTimerElapsedDispatched === true && dispatched) {
                 return this.#handleIntervalElapsed(record, boundary, now);
             }
             return this.#boundaryResult;
@@ -14321,6 +14337,7 @@
 
             this.#tripStartMilliseconds = undefined;
             this.#timeRangeGroup.clear();
+            this.#intervalTimeRangeGroup.clear();
             this.#intervalBoundaryRanges = new WeakMap();
             this.#boundaryIntervalRecords = new WeakMap();
             this.#countedStopTime = undefined;
@@ -30788,10 +30805,13 @@
                 dynamic = false
             } = {}
         ) {
-            const range =
-                document.createElement(
-                    "time-range"
-                );
+            // Bind the view at creation; interval authority stays in the model.
+            const modelStart = TemporalFormat.parseDateTime(this.#formatTimelineTime(start), new Date());
+            const modelEnd = new Date(modelStart.getTime() + Math.max(0, end - start));
+            const range = TimeRangeElement.create(TimeRange.create({
+                type: modelEnd > modelStart ? "Fixed" : "Expandable",
+                start: modelStart, end: modelEnd
+            }).ranges[0]);
 
             range.setAttribute(
                 "type",
@@ -32124,11 +32144,22 @@
             this.#updateOpenEndedRange(nowDate);
             this.#updateOpenOverwriteRange(nowDate);
             const state = this.#started ? this.#getOperatingState(nowDate) : "inactive";
+            this.#processRangeModelTicks(nowDate);
             this.#dispatch("tick", [state], { nowDate });
             this.#emitCadenceTick(nowDate);
         }
 
         #tick_inactive() {}
+
+        #processRangeModelTicks(nowDate) {
+            // Validate before projecting productive time, which excludes Down
+            // and Break periods. Exiting views no longer participate in ticking.
+            const groups = new Set();
+            for (const range of this.#getManagedTimeRanges()) {
+                if (range.timeRangeExiting !== true && range.model) groups.add(range.model.group);
+            }
+            for (const group of groups) group.tick(nowDate);
+        }
 
         #tick_interval(context) {
             // Interval rendering advances while counted time remains governed

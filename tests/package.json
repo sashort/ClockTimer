@@ -21,6 +21,7 @@
     "test:clock-fsm": "node clock-timer-fsm.mjs",
     "test:time-range-model": "node time-range-model.mjs && node time-range-model-events.mjs",
     "test:time-range-element": "node time-range-element.mjs",
+    "test:clock-renderer": "node clock-timer-renderer-browser.mjs",
     "test:speech-index": "node speech-command-index.mjs && node speech-dialog-surfaces.mjs",
     "bench:speech-index": "node speech-command-performance.mjs",
     "test:speech-chain": "node speech-command-digest.mjs && node speech-chain-actions.mjs",
@@ -29,5 +30,9 @@
   },
   "dependencies": {
     "happy-dom": "20.14.5"
+  },
+  "devDependencies": {
+    "playwright": "1.55.0",
+    "pngjs": "7.0.0"
   }
 }

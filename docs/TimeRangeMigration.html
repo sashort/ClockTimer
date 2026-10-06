@@ -22,6 +22,13 @@ button{padding:.5rem .8rem;border:1px solid #777;border-radius:6px;background:#f
 <p><strong>TimeRangeGroup</strong> owns aggregate counted time and emits a boundary event when a boundary is reached.</p>
 <p><strong>ClockTimer</strong> owns timer lifecycle/orchestration and reacts to group events.</p>
 <p><strong>RingContainer</strong> owns presentation.</p>
+<p>The running application now uses <code>TimeRangeModel.js</code> and its
+<code>TimeRangeElement.js</code> DOM adapter. The former element and counted-group
+implementations have been retired. ClockTimer consumes tick-driven boundary
+batches and model-owned counted totals. See <a href="time-range-model.md">the
+current model contract</a> for update transactions, split points, identity,
+presentation notifications, and the batched event format. The fragments below
+illustrate the original migration responsibilities.</p>
 </section>
 
 <section>
