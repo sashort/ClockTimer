@@ -36,6 +36,9 @@ if ($method === 'GET') {
         $actor = current_user();
         $target = find_user_account(db(), require_positive_int($_GET, 'userId'));
         require_user_edit_access($actor, $target);
+        $credentials = db()->prepare('SELECT login_id FROM users WHERE id = :id');
+        $credentials->execute([':id' => $target['id']]);
+        $target['login_id'] = $credentials->fetchColumn() ?: null;
         json_response(['user' => $target]);
     }
     json_response([

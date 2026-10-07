@@ -7,8 +7,19 @@
                 selector
             );
 
+    const PROFILE_MESSAGES = {"lookupTitle": "7352d256-5ea0-4d55-a4e5-4ba1a0a49168", "loading": "d9c06d11-c59c-43c9-8721-644bc5a05a62", "saving": "0e5209c0-dea6-47f0-b5b4-e6bcd74a4a72", "saved": "633b0a46-0daf-4c19-81db-2cf11ce573a9", "failed": "38f72634-abe6-4b50-a15b-040423a0f4de", "loadFailed": "6ea6fe0a-02a1-4237-bcf0-fa47fb98e364"};
+
     class WMOFUserLookup {
         #endpoint;
+        #usersEndpoint;
+        #canEdit;
+        #canAssignPermissions;
+        #onProfileSaved;
+        #mode = "edit";
+        #profile;
+        #profileRequest = 0;
+        #profileBusy = false;
+        #profilePhase = "search";
         #identityContext;
         #canLookup;
         #canViewLive;
@@ -36,6 +47,9 @@
             identityContext =
                 globalThis
                     .WMOFIdentityContext,
+            onProfileSaved = () => {},
+            canEdit = () => false,
+            canAssignPermissions = () => false,
             canLookup =
                 () => false,
             canViewLive =
@@ -50,6 +64,10 @@
                     "api/admin/user-lookup/",
                     baseUrl
                 );
+            this.#usersEndpoint = new URL("api/users/", baseUrl);
+            this.#canEdit = canEdit;
+            this.#onProfileSaved = onProfileSaved;
+            this.#canAssignPermissions = canAssignPermissions;
             this.#identityContext =
                 identityContext;
             this.#canLookup =
@@ -84,8 +102,99 @@
             this.#selectedMeta =
                 $("#userLookupSelectedMeta");
 
+            $("#editProfileSave")?.addEventListener("click", () => void this.saveProfile());
+            $("#userLookupButton")?.addEventListener("click", () => this.setMode("edit"));
+            this.#identityContext?.addEventListener?.("identity-selected", () => {if(!this.#profileBusy) void this.loadProfile();});
+            this.#identityContext?.addEventListener?.("identity-cleared", () => this.clearProfile());
+            this.#dialog?.addEventListener("close", () => this.clearProfile());
             this.#wire();
             this.sync();
+        }
+
+        get state() {
+            return Object.freeze({mode:this.#mode, phase:this.#profilePhase,
+                open:Boolean(this.#dialog?.open), selectedAccountId:this.#profile?.id ?? null,
+                canSearch:Boolean(this.#canLookup()),
+                canSave:Boolean(this.#mode === "edit" && this.#profile && !this.#profileBusy && this.#canEdit()),
+                canAssignPermissions:Boolean(this.#canAssignPermissions())});
+        }
+        setMode(mode) {
+            this.#mode = mode === "lookup" ? "lookup" : "edit";
+            const title = this.#dialog?.querySelector("h2");
+            if(title) title.textContent = this.#mode === "lookup" ? this.#text("lookupTitle") : globalThis.WMOFLanguagePack.text("209678ee-e86a-5bff-9284-9eb3c7bba875");
+            if (this.#mode === "lookup") this.clearProfile();
+            else if (this.currentIdentity) void this.loadProfile();
+        }
+        #text(key) {return globalThis.WMOFLanguagePack.text(PROFILE_MESSAGES[key]);}
+        clearProfile() {
+            ++this.#profileRequest;
+            this.#profile = undefined;
+            this.#profileBusy = false;
+            this.#profilePhase = "search";
+            const editor = $("#profileEditor");
+            if(editor) {editor.hidden = true; for(const input of editor.querySelectorAll("input")) input.value = "";}
+        }
+        async loadProfile() {
+            this.clearProfile();
+            const identity = this.currentIdentity;
+            if (this.#mode !== "edit" || !identity || !this.#canEdit()) return false;
+            const request = this.#profileRequest, url = new URL(this.#usersEndpoint);
+            const editor = $("#profileEditor"), fields = $("#profileEditorFields"), status = $("#editProfileStatus");
+            this.#profilePhase = "loading";
+            editor.hidden = false; fields.disabled = true; $("#editProfileSave").disabled = true;
+            status.textContent = this.#text("loading");
+            url.searchParams.set("userId", String(identity.userId));
+            try {
+                const response = await fetch(url,{credentials:"same-origin",cache:"no-store"});
+                const data = await response.json();
+                if(request !== this.#profileRequest) return false;
+                if(!response.ok || !data.user) throw new Error(data.message || this.#text("loadFailed"));
+                this.#profile = data.user;
+                this.#profilePhase = "editing";
+                const mapping = {AccountId:"id",FirstName:"first_name",LastName:"last_name",PreferredName:"preferred_name",Username:"username",LoginId:"login_id",Permissions:"permissions"};
+                for(const [key,column] of Object.entries(mapping)) $("#editProfile"+key).value = String(data.user[column] ?? "");
+                $("#editProfilePermissions").disabled = !this.#canAssignPermissions();
+                fields.disabled = false; $("#editProfileSave").disabled = false; status.textContent = "";
+                return true;
+            } catch(error) {
+                if(request === this.#profileRequest) {this.#profilePhase = "error";status.textContent = error.message || this.#text("loadFailed");}
+                return false;
+            }
+        }
+        async saveProfile() {
+            if(!this.state.canSave) return false;
+            const fields = $("#profileEditorFields"), status = $("#editProfileStatus");
+            if([...fields.querySelectorAll("input")].some(input => !input.reportValidity())) return false;
+            const target = this.#profile.id, request = this.#profileRequest;
+            const input = {action:"update",userId:target};
+            for(const [key,field] of Object.entries({firstName:"FirstName",lastName:"LastName",preferredName:"PreferredName",username:"Username"})) input[key] = $("#editProfile"+field).value;
+            const password = $("#editProfilePassword").value, pin = $("#editProfilePin").value, loginId = $("#editProfileLoginId").value;
+            if(password) input.password = password;
+            if(pin) input.pin = pin;
+            if(loginId !== (this.#profile.login_id ?? "")) input.loginId = loginId;
+            if(this.#canAssignPermissions() && Number($("#editProfilePermissions").value) !== Number(this.#profile.permissions)) input.permissions = Number($("#editProfilePermissions").value);
+            this.#profilePhase = "saving";
+            this.#profileBusy = true; fields.disabled = true; $("#editProfileSave").disabled = true; status.textContent = this.#text("saving");
+            try {
+                const sessionResponse = await fetch(this.#usersEndpoint,{credentials:"same-origin",cache:"no-store"});
+                const session = await sessionResponse.json();
+                if(!sessionResponse.ok || typeof session.csrfToken !== "string") throw new Error(session.message || this.#text("failed"));
+                if(request !== this.#profileRequest) return false;
+                const response = await fetch(this.#usersEndpoint,{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json","X-CSRF-Token":session.csrfToken},body:JSON.stringify(input)});
+                const data = await response.json();
+                if(request !== this.#profileRequest) return false;
+                if(!response.ok || !data.user) throw new Error(data.message || this.#text("failed"));
+                this.#onProfileSaved(data.user);
+                this.#identityContext.select(data.user);
+                const reloaded = await this.loadProfile();
+                if(reloaded && this.currentIdentity?.userId === target) status.textContent = this.#text("saved");
+                return true;
+            } catch(error) {
+                if(request === this.#profileRequest) {this.#profilePhase = "error";status.textContent = error.message || this.#text("failed");}
+                return false;
+            } finally {
+                if(request === this.#profileRequest){this.#profileBusy = false; fields.disabled = false; $("#editProfileSave").disabled = false; $("#editProfilePassword").value = ""; $("#editProfilePin").value = "";}
+            }
         }
 
         get currentIdentity() {
@@ -100,8 +209,8 @@
                     "submit",
                     event => {
                         event.preventDefault();
-                        void this
-                            .search();
+                        if (document.activeElement?.closest?.("#profileEditor")) void this.saveProfile();
+                        else void this.search();
                     }
                 );
 
@@ -687,6 +796,7 @@
         }
 
         clearSearch() {
+            this.clearProfile();
             this
                 .#searchAbort
                 ?.abort?.();
@@ -795,6 +905,7 @@
                 .#searchAbort
                 ?.abort?.();
 
+            if (!append) this.clearProfile();
             const controller =
                 new AbortController();
 
@@ -848,6 +959,7 @@
                     throw error;
                 }
 
+                if (controller.signal.aborted || this.#searchAbort !== controller) return [];
                 const incoming =
                     (
                         Array.isArray(
@@ -919,6 +1031,8 @@
                 this
                     .#renderResults();
 
+                if(!append && incoming.length === 0) this.#profilePhase = "error";
+                if(!append && incoming.length === 1) this.#identityContext.select(incoming[0]);
                 return this
                     .#identities;
             }

@@ -7372,3 +7372,16 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 .login-dialog .login-digit-sequence {gap:clamp(4px,2vw,12px);max-width:100%;}
 .login-dialog .login-digit-sequence input {min-width:0;width:clamp(42px,14vw,64px);}
 .login-dialog .login-legacy-switch {margin-bottom:16px;}
+
+/* Account surfaces share the safe viewport above the microphone. */
+#liveStreamDialog, #userLookupDialog {
+    position:fixed; inset:var(--login-safe-top,0px) 0 auto; margin:auto;
+    top:calc(var(--login-safe-top,0px) + var(--login-safe-height,100dvh) / 2);
+    transform:translateY(-50%); box-sizing:border-box;
+    width:min(720px,calc(100vw - 24px));
+    max-height:max(0px,calc(var(--login-safe-height,100dvh) - 16px));
+    overflow:auto; overscroll-behavior:contain;
+}
+#profileEditorFields {border:0; padding:0; min-width:0;}
+#profileEditorFields input {min-width:0; max-width:100%;}
+.profile-edit-icon svg {width:28px;height:28px;overflow:visible;}

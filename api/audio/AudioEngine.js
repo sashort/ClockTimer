@@ -1,7 +1,124 @@
 (() => {
     "use strict";
 
+
+    // Legacy definitions remain untouched; custom sound controls opt into a separate model.
+    class OscillatorInstrument {
+        constructor(definition) { this.definition = definition; }
+        static from(definition) {
+            const custom = definition.class === "expressive" ||
+                ["excitation", "velocityTone", "variation", "repeatDamping", "samples", "strikeStrength", "chorus"].some(key => key in definition) ||
+                definition.partials?.some(partial => partial.envelope);
+            if (definition.class && !["oscillator", "expressive"].includes(definition.class))
+                throw new TypeError("Unknown instrument class: " + definition.class);
+            return custom ? new ExpressiveInstrument(definition) : new OscillatorInstrument(definition);
+        }
+        forEvent() { return this.definition; }
+        async prepare() {}
+    }
+
+    class ExpressiveInstrument extends OscillatorInstrument {
+        #buffers = new Map();
+        static number(value, fallback, min = 0, max = Infinity) {
+            if (value === undefined) return fallback;
+            const n = Number(value);
+            if (!Number.isFinite(n) || n < min || n > max) throw new RangeError("Invalid expressive instrument value");
+            return n;
+        }
+        constructor(definition) {
+            super(definition);
+            const n = ExpressiveInstrument.number;
+            for (const partial of definition.partials || []) {
+                n(partial.ratio, 1, 0.0001); n(partial.gain, 1);
+                for (const key of ["attack", "decay", "release"]) n(partial.envelope?.[key], 0);
+                n(partial.envelope?.sustain, 1, 0, 1);
+            }
+            n(definition.strikeStrength, undefined, 0, 1);
+            n(definition.variation?.gain, 0, 0, 1);
+            n(definition.variation?.detuneCents, 0, 0, 100);
+            n(definition.repeatDamping?.release, 0.02, 0.001, 5);
+            n(definition.excitation?.amount, 0, 0, 1);
+            n(definition.excitation?.decay, 0.04, 0.001, 5);
+            if (definition.chorus) {
+                n(definition.chorus.rate, 0.6, 0.01, 10);
+                n(definition.chorus.delay, 0.016, 0.001, 0.1);
+                n(definition.chorus.depth, 0.0025, 0, 0.02);
+                n(definition.chorus.wet, 0.3, 0, 1);
+                if ((definition.chorus.depth ?? 0.0025) >= (definition.chorus.delay ?? 0.016))
+                    throw new RangeError("Chorus depth must be less than its delay");
+            }
+            n(definition.velocityTone?.brightness, 0, -1, 4);
+            n(definition.velocityTone?.filterOctaves, 0, -4, 4);
+            if (definition.samples && (!Array.isArray(definition.samples) || !definition.samples.length))
+                throw new TypeError("Instrument samples must be a nonempty array");
+            for (const sample of definition.samples || []) {
+                if (!sample.url || !Number.isFinite(Number(sample.rootFrequency)) || sample.rootFrequency <= 0)
+                    throw new TypeError("Sample requires URL and positive rootFrequency");
+                if (sample.loopStart !== undefined || sample.loopEnd !== undefined) {
+                    n(sample.loopStart, 0); n(sample.loopEnd, 0, 0.001);
+                    if (sample.loopEnd === undefined || sample.loopEnd <= (sample.loopStart ?? 0) || sample.naturalDecay)
+                        throw new RangeError("Invalid sample sustain loop");
+                }
+                n(sample.minVelocity, 0, 0, 1); n(sample.maxVelocity, 1, 0, 1); n(sample.gain, 1);
+                if ((sample.minVelocity ?? 0) > (sample.maxVelocity ?? 1)) throw new RangeError("Invalid sample velocity range");
+            }
+        }
+        async prepare(context) {
+            await Promise.all((this.definition.samples || []).map(async sample => {
+                if (!this.#buffers.has(sample.url)) {
+                    const response = await fetch(sample.url);
+                    if (!response.ok) throw new Error("Instrument sample could not be loaded: " + sample.url);
+                    const buffer = await context.decodeAudioData(await response.arrayBuffer());
+                    if (sample.loopEnd > buffer.duration) throw new RangeError("Sample sustain loop exceeds recording duration");
+                    this.#buffers.set(sample.url, buffer);
+                }
+            }));
+        }
+        forEvent(event, velocity = 1) {
+            const d = this.definition, n = ExpressiveInstrument.number;
+            const strikeStrength = n(event.strikeStrength ?? d.strikeStrength, velocity, 0, 1);
+            // Stable event-derived variation makes offline renders and tests reproducible.
+            let seed = Number(d.variation?.seed ?? 1) >>> 0;
+            for (const character of `${event.offset}:${event.tone}`) seed = Math.imul(seed ^ character.charCodeAt(0), 16777619) >>> 0;
+            const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 * 2 - 1; };
+            const gain = 1 + random() * n(d.variation?.gain, 0);
+            const cents = random() * n(d.variation?.detuneCents, 0);
+            const partials = (d.partials || [{ratio:1,gain:1}]).map(partial => ({...partial,
+                gain: (partial.gain ?? 1) * gain * Math.max(0, 1 + n(d.velocityTone?.brightness, 0, -1, 4) * strikeStrength * Math.min(1, ((partial.ratio ?? 1) - 1) / 4)),
+                detune: (partial.detune ?? 0) + cents}));
+            const release = Math.max(d.envelope?.release ?? 0, ...partials.map(partial => partial.envelope?.release ?? 0));
+            const result = {...d, partials, envelope:{...d.envelope, release}, __expressive:this, __gainVariation:gain, __detuneVariation:cents, __strikeStrength:strikeStrength};
+            if (d.filter) result.filter = {...d.filter, frequency:(d.filter.frequency ?? 5000) * 2 ** (n(d.velocityTone?.filterOctaves, 0, -4, 4) * strikeStrength)};
+            if (d.excitation) result.noise = {amount:d.excitation.amount ?? 0, decay:d.excitation.decay ?? 0.04};
+            return result;
+        }
+        sampleFor(frequency, velocity, event) {
+            const candidates = (this.definition.samples || []).filter(sample => velocity >= (sample.minVelocity ?? 0) && velocity <= (sample.maxVelocity ?? 1));
+            if (!candidates.length) throw new RangeError("No sample layer covers this velocity");
+            const nearest = Math.min(...candidates.map(sample => Math.abs(Math.log2(frequency / sample.rootFrequency))));
+            const variants = candidates.filter(sample => Math.abs(Math.abs(Math.log2(frequency / sample.rootFrequency)) - nearest) < 1e-8);
+            let strike = 0;
+            for (const character of `${event.offset}:${event.tone}`) strike = (Math.imul(strike, 31) + character.charCodeAt(0)) >>> 0;
+            const index = strike % variants.length;
+            const sample = variants[index];
+            return {...sample, buffer:this.#buffers.get(sample.url)};
+        }
+        static envelope(param, source, start, end, gain) {
+            const attack = Math.min(end, start + (source.attack ?? 0));
+            const decay = Math.min(end, attack + (source.decay ?? 0));
+            const sustain = gain * (source.sustain ?? 1);
+            param.setValueAtTime(source.attack > 0 ? 0 : gain, start);
+            if (attack > start) param.linearRampToValueAtTime(gain, attack);
+            if (decay > attack) param.exponentialRampToValueAtTime(Math.max(0.000001, sustain), decay);
+            else param.setValueAtTime(sustain, attack);
+            param.setValueAtTime(sustain, Math.max(decay, end));
+            param.linearRampToValueAtTime(0, end + (source.release ?? 0));
+        }
+    }
+    globalThis.WMOFInstrumentClasses = Object.freeze({OscillatorInstrument, ExpressiveInstrument});
+
     class WMOFAudioEngine {
+        #instrumentModels = new WeakMap();
         #catalogPromise;
         #preparePromise;
         #context;
@@ -236,6 +353,7 @@
                     instruments
                 )
             ) {
+                OscillatorInstrument.from(instrument);
                 const fallback =
                     instrument
                         ?.phoneFallback;
@@ -610,6 +728,15 @@
                 text = text.slice(0, -3).trim();
             }
 
+            if (text.startsWith("[")) {
+                const match = text.match(/^\[([^\]]+)\]\s*~\s*\[([^\]]+)\]$/);
+                if (!match || sustain) throw new Error("Roll notation requires [notes] ~ [notes], without a sustain suffix.");
+                const groups = match.slice(1).map(group => group.trim().split(/\s+/).filter(Boolean));
+                if (groups.some(group => !group.length)) throw new Error("Roll chords cannot be empty.");
+                groups.flat().forEach(note => this.#frequency(note));
+                return { kind: "roll", groups };
+            }
+
             for (const operator of ["~", "/", "\\"]) {
                 const index = text.indexOf(operator);
 
@@ -691,7 +818,9 @@
                     ),
                 release:
                     number(
-                        source.release,
+                        instrument.class === "expressive" || instrument.partials?.some(partial => partial.envelope)
+                            ? Math.max(source.release ?? 0, ...(instrument.partials || []).map(partial => partial.envelope?.release ?? 0))
+                            : source.release,
                         0
                     )
             };
@@ -748,6 +877,7 @@
                             }
 
                             return {
+                                ...(partial.envelope ? {envelope: partial.envelope} : {}),
                                 ratio,
                                 gain:
                                     Number.isFinite(
@@ -1689,6 +1819,17 @@
             songGain,
             instrumentResource
         ) {
+            const strikes = this.rollStrikes(event);
+            if (strikes) return strikes.reduce((end, strike) => Math.max(end,
+                this.#scheduleTone(context, entry, strike, instrument, bpm, songGain, instrumentResource)), entry.startedAt);
+
+            let model = this.#instrumentModels.get(instrument);
+            if (!model) {
+                model = OscillatorInstrument.from(instrument);
+                this.#instrumentModels.set(instrument, model);
+            }
+            const originalInstrument = instrument;
+            instrument = model.forEvent(event, this.#dynamic(event.dynamic).start);
             const nodesBefore =
                 new Set(
                     entry.nodes
@@ -1749,7 +1890,7 @@
             const startAt =
                 entry.startedAt +
                 offsetBeats *
-                    beatSeconds;
+                    beatSeconds + this.#noteDelayMs(event) / 1000;
             const effectEnd =
                 startAt +
                 Math.max(
@@ -1766,9 +1907,9 @@
                 );
             const envelope =
                 this.#instrumentEnvelope(
-                    instrument
+                    instrument.__expressive ? {envelope:{attack:0,decay:0,sustain:1,release:instrument.envelope.release}} : instrument
                 );
-            const endAt =
+            let endAt =
                 noteEnd +
                 envelope.release;
             const dynamic =
@@ -1923,6 +2064,11 @@
                     );
             }
 
+            if (instrument.__expressive) {
+                // The partial/sample envelopes own the release; do not multiply them by a shared ADSR.
+                envelopeGain.gain.cancelScheduledValues(startAt);
+                envelopeGain.gain.setValueAtTime(1, startAt);
+            }
             let sourceDestination =
                 envelopeGain;
             let filterNode;
@@ -2226,6 +2372,40 @@
                 }
             }
 
+            // Optional per-voice chorus leaves every existing instrument's routing intact.
+            if (instrument.chorus && (instrument.chorus.wet ?? 0.3) > 0) {
+                const chorus = instrument.chorus;
+                const mix = context.createGain();
+                const dry = context.createGain();
+                const wet = chorus.wet ?? 0.3;
+                dry.gain.setValueAtTime(1 - wet, startAt);
+                outputNode.connect(dry); dry.connect(mix);
+                entry.nodes.add(mix); entry.nodes.add(dry);
+                const lfo = context.createOscillator();
+                lfo.type = "sine";
+                lfo.frequency.setValueAtTime(chorus.rate ?? 0.6, startAt);
+                entry.nodes.add(lfo);
+                for (const side of [-1, 1]) {
+                    const delayed = context.createDelay(0.15);
+                    const modulation = context.createGain();
+                    const level = context.createGain();
+                    delayed.delayTime.setValueAtTime(chorus.delay ?? 0.016, startAt);
+                    modulation.gain.setValueAtTime(side * (chorus.depth ?? 0.0025), startAt);
+                    level.gain.setValueAtTime(wet / 2, startAt);
+                    lfo.connect(modulation); modulation.connect(delayed.delayTime);
+                    outputNode.connect(delayed); delayed.connect(level);
+                    if (typeof context.createStereoPanner === "function") {
+                        const pan = context.createStereoPanner();
+                        pan.pan.setValueAtTime(side, startAt);
+                        level.connect(pan); pan.connect(mix); entry.nodes.add(pan);
+                    } else level.connect(mix);
+                    for (const node of [delayed, modulation, level]) entry.nodes.add(node);
+                }
+                lfo.start(startAt);
+                lfo.stop(endAt + (chorus.delay ?? 0.016) + (chorus.depth ?? 0.0025));
+                outputNode = mix;
+            }
+
             outputNode.connect(
                 instrumentResource
                     ?.input ||
@@ -2261,9 +2441,47 @@
                     beatSeconds
             };
 
+            if (instrument.repeatDamping) {
+                entry.expressiveVoices ??= new Map();
+                const voices = entry.expressiveVoices.get(originalInstrument) || new Map();
+                const key = event.tone;
+                const prior = voices.get(key);
+                if (prior && prior.start <= startAt && prior.end > startAt) {
+                    // Web Audio holds the actual envelope value at the new strike, avoiding clicks.
+                    prior.param.cancelAndHoldAtTime(startAt);
+                    prior.param.linearRampToValueAtTime(0, startAt + (instrument.repeatDamping.release ?? 0.02));
+                }
+                voices.set(key, {param:dynamicGain.gain,start:startAt,end:endAt});
+                entry.expressiveVoices.set(originalInstrument, voices);
+            }
+            if (instrument.samples) {
+                if (tone.kind !== "note") throw new TypeError("Sample instruments currently require ordinary notes or bracketed rolls");
+                const frequency = this.#frequency(tone.note);
+                const sample = model.sampleFor(frequency, instrument.__strikeStrength, event);
+                if (!sample.buffer) throw new Error("Instrument sample was not prepared");
+                const source = context.createBufferSource();
+                const gain = context.createGain();
+                source.buffer = sample.buffer;
+                if (sample.loopEnd !== undefined) {
+                    source.loop = true; source.loopStart = sample.loopStart ?? 0; source.loopEnd = sample.loopEnd;
+                }
+                const playbackRate = frequency / sample.rootFrequency * 2 ** (instrument.__detuneVariation / 1200);
+                source.playbackRate.setValueAtTime(playbackRate, startAt);
+                const sampleGain = (sample.gain ?? 1) * instrument.__gainVariation;
+                if (sample.naturalDecay) {
+                    gain.gain.setValueAtTime(sampleGain, startAt);
+                    endAt = startAt + sample.buffer.duration / playbackRate;
+                    // Natural recorded decay owns the end; ignore the written note's gate.
+                    envelopeGain.gain.cancelScheduledValues(startAt);
+                    envelopeGain.gain.setValueAtTime(1, startAt);
+                } else ExpressiveInstrument.envelope(gain.gain, instrument.envelope, startAt, noteEnd, sampleGain);
+                source.connect(gain); gain.connect(sourceDestination);
+                entry.nodes.add(source); entry.nodes.add(gain);
+                source.start(startAt); source.stop(endAt);
+            }
             for (
                 const partial of
-                partials
+                (instrument.samples ? [] : partials)
             ) {
                 const oscillator =
                     context
@@ -2289,6 +2507,10 @@
                         startAt
                     );
 
+                if (instrument.__expressive) {
+                    ExpressiveInstrument.envelope(partialGain.gain,
+                        partial.envelope || originalInstrument.envelope || {}, startAt, noteEnd, partial.gain);
+                }
                 this.#schedulePitch(
                     oscillator,
                     tone,
@@ -2919,6 +3141,63 @@
 
         }
 
+        // Bracketed groups distinguish struck tremolo from the legacy semitone pitch trill.
+        rollStrikes(event, defaultStep = "1/4") {
+            if (!String(event?.tone || "").trim().startsWith("[")) return undefined;
+            const tone = this.#parseTone(event.tone);
+            const lengths = String(event.length ?? "1").split(",");
+            if (lengths.length !== 1) throw new Error("Roll length is one duration of repeated strikes.");
+            const length = this.#beats(lengths[0]);
+            const step = this.#beats(event.rollStep ?? defaultStep);
+            if (!(step > 0) || !Number.isFinite(step)) throw new RangeError("Roll step must be greater than zero.");
+            const count = Math.ceil(length / step);
+            if (count * Math.max(...tone.groups.map(group => group.length)) > 4096) throw new RangeError("Too many roll strikes.");
+            const offset = this.#beats(event.offset);
+            const strikes = [];
+            for (let index = 0; index < count; index++) {
+                const at = index * step;
+                for (const note of tone.groups[index % 2]) strikes.push({ ...event, tone: note,
+                    offset: String(offset + at), length: String(Math.min(step, length - at)) });
+            }
+            return strikes;
+        }
+
+        #noteDelayMs(event) {
+            const delay = Number(event?.noteDelayMs ?? 0);
+            if (!Number.isFinite(delay) || delay < 0) throw new RangeError("Note delay must be a finite non-negative number.");
+            return delay;
+        }
+
+        loudnessGain(song, instrument = song?.instrument) {
+            const measured = song?.loudness;
+            if (!measured || measured.instrument !== instrument || !Number.isFinite(measured.rmsDbFS) ||
+                !Number.isFinite(measured.peakDbFS) || !(measured.referenceToneVolume > 0)) return 1;
+            // Only attenuate: preserve dynamics, user volume, and peak headroom.
+            const balance = Math.pow(10, (-20 - measured.rmsDbFS) / 20);
+            const headroom = 0.85 * measured.referenceToneVolume / Math.pow(10, measured.peakDbFS / 20);
+            return Math.max(0, Math.min(1, balance, headroom));
+        }
+
+        // Musical metadata only; announcements decide when speech is permitted.
+        songTiming(song, { bpm = song?.bpm ?? 120, toneVelocity = 1, startBeat = 0 } = {}) {
+            const tempo = Number(bpm) * Number(toneVelocity);
+            if (!Number.isFinite(tempo) || tempo <= 0) throw new RangeError("Song BPM must be greater than zero.");
+            const beatMs = 60000 / tempo;
+            const notes = (song?.events || []).flatMap(event => this.rollStrikes(event) ?? [event]).filter(event => event?.tone && this.#beats(event.offset) >= startBeat)
+                .map(event => {
+                    const lengths = String(event.length ?? "1").split(",");
+                    const offset = this.#beats(event.offset) - startBeat;
+                    const effect = this.#beats(lengths[0]);
+                    const sustain = lengths.length > 1 ? this.#beats(lengths[1]) : 0;
+                    const delayMs = this.#noteDelayMs(event);
+                    return Object.freeze({ offsetMs: offset * beatMs + delayMs, noteDelayMs: delayMs, durationMs: (effect + sustain) * beatMs,
+                        sustainStartMs: sustain > 0 && String(event.tone).endsWith("...") ? (offset + effect) * beatMs + delayMs : null });
+                });
+            return Object.freeze({ bpm: tempo, noteCount: notes.length, notes: Object.freeze(notes),
+                durationMs: notes.reduce((end, note) => Math.max(end, note.offsetMs + note.durationMs), 0),
+                sustainStartMs: notes.reduce((first, note) => note.sustainStartMs === null ? first : Math.min(first ?? Infinity, note.sustainStartMs), null) });
+        }
+
         async startSong(
             name,
             {
@@ -2935,7 +3214,8 @@
                 includeSpeech = true,
                 useSelectedInstrument =
                     true,
-                startBeat = 0
+                startBeat = 0,
+                normalizeLoudness = true
             } = {}
         ) {
             const catalog = await this.prepare();
@@ -3021,7 +3301,8 @@
                         ? Math.max(0, Number(volume))
                         : 1
                 ) *
-                effectiveToneVolume;
+                effectiveToneVolume * (normalizeLoudness && !this.#isPhone()
+                    ? this.loudnessGain(song, useSelectedInstrument && this.#outputSettings.instrument || song.instrument) : 1);
             const shouldLoop =
                 loop === undefined
                     ? Boolean(song.loop)
@@ -3091,6 +3372,16 @@
                 };
 
             resolveInstrument();
+            // Samples load asynchronously before scheduling; no network work occurs per strike.
+            if (includeTones) {
+                const definitions = new Set([resolveInstrument().instrument,
+                    ...(song.events || []).filter(event => event.tone).map(event => resolveInstrument(event.instrument).instrument)]);
+                await Promise.all(Array.from(definitions, async definition => {
+                    let model = this.#instrumentModels.get(definition);
+                    if (!model) { model = OscillatorInstrument.from(definition); this.#instrumentModels.set(definition, model); }
+                    await model.prepare(context);
+                }));
+            }
 
             let resolveFinished;
 
@@ -3185,58 +3476,31 @@
                 60 /
                 tempo;
 
-            const chimeDurationBeats =
-                hasChime
-                    ? preparedEvents.reduce(
-                        (
-                            longest,
-                            record
-                        ) => {
-                            const event =
-                                record.event;
+            const timing = this.songTiming(song, { bpm: tempo, startBeat: playbackStartBeat });
+            const chimeDurationBeats = hasChime ? timing.durationMs / (beatSeconds * 1000) : 0;
 
-                            if (!event?.tone) {
-                                return longest;
-                            }
-
-                            const lengthParts =
-                                String(
-                                    event.length ??
-                                    "1"
-                                )
-                                    .split(",")
-                                    .map(
-                                        part =>
-                                            part.trim()
-                                    );
-                            const effectBeats =
-                                this.#beats(
-                                    lengthParts[0]
-                                );
-                            const sustainBeats =
-                                lengthParts.length >
-                                    1
-                                    ? this.#beats(
-                                        lengthParts[1]
-                                    )
-                                    : 0;
-                            const relativeOffset =
-                                Math.max(
-                                    0,
-                                    record.offset -
-                                        playbackStartBeat
-                                );
-
-                            return Math.max(
-                                longest,
-                                relativeOffset +
-                                    effectBeats +
-                                    sustainBeats
-                            );
-                        },
-                        0
-                    )
-                    : 0;
+            const audibleChimeDurationMs = hasChime ? preparedEvents.flatMap(record =>
+                (this.rollStrikes(record.event) || [record.event]).map(event => ({event,offset:this.#beats(event.offset)}))
+            ).reduce((longest, record) => {
+                if (!record.event?.tone) return longest;
+                const lengths = String(record.event.length ?? "1").split(",");
+                const beats = lengths.reduce((sum, part) => sum + this.#beats(part), record.offset - playbackStartBeat);
+                const definition = resolveInstrument(record.event.instrument).instrument;
+                const release = this.#instrumentEnvelope(definition).release;
+                const model = this.#instrumentModels.get(definition);
+                if (definition.samples && model) {
+                    const shaped = model.forEvent(record.event, this.#dynamic(record.event.dynamic).start);
+                    const tone = this.#parseTone(record.event.tone);
+                    if (tone.kind !== "note") throw new TypeError("Sample instruments currently require ordinary notes or bracketed rolls");
+                    const frequency = this.#frequency(tone.note);
+                    const sample = model.sampleFor(frequency, shaped.__strikeStrength, record.event);
+                    if (sample.naturalDecay) {
+                        const rate = frequency / sample.rootFrequency * 2 ** (shaped.__detuneVariation / 1200);
+                        return Math.max(longest, (record.offset-playbackStartBeat)*beatSeconds*1000 + this.#noteDelayMs(record.event) + sample.buffer.duration/rate*1000);
+                    }
+                }
+                return Math.max(longest, beats * beatSeconds * 1000 + this.#noteDelayMs(record.event) + release * 1000);
+            }, 0) : 0;
 
             const musicalChimeEndAt =
                 entry.startedAt +
@@ -3498,6 +3762,13 @@
                             ) *
                                 1000
                         ),
+                    audibleChimeDurationMs,
+                    audibleChimeEndsInMs: Math.max(0, (entry.startedAt - context.currentTime) * 1000 + audibleChimeDurationMs),
+                    timing,
+                    loudness: song.loudness,
+                    sustainStartsInMs: hasChime && timing.sustainStartMs !== null
+                        ? Math.max(0, (entry.startedAt - context.currentTime) * 1000 + timing.sustainStartMs)
+                        : null,
                     finished,
                     stop: () =>
                         this.stopSong(

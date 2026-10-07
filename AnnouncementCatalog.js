@@ -13,7 +13,7 @@
         "trip-resumed-from-down": 11, "trip-ended": 12, "goal-failed": 13,
         "lunch-clock-out": 14, "lunch-clock-in": 15, "setting-change": 16,
         "goal-change": 17, "range-change": 18, "sync-state": 19, "sync-goal": 20,
-        "syncTry": 21
+        "syncTry": 21, "setting-on": 22, "setting-off": 23, "setting-unchanged": 24
     });
 
     const titleFromKey =
@@ -116,6 +116,10 @@
                         definition.song ||
                         normalizedKey
                     ).trim(),
+                speechStart: Object.freeze({
+                    anchor: definition.speechStart?.anchor === "sustain" ? "sustain" : "end",
+                    paddingMs: Math.max(0, Number(definition.speechStart?.paddingMs) || 0)
+                }),
                 layers:
                     Object.freeze(
                         layers
@@ -170,10 +174,10 @@
         ["trip-resumed-early", "Trip Resumed Early"],
         ["trip-resumed-automatically", "Trip Resumed Automatically"],
         ["trip-resumed-after-break", "Trip Resumed After Break"],
-        ["down-time-started", "Down Time Started"],
+        ["down-time-started", "Down Time Started", {speechStart: {anchor: "sustain"}}],
         ["trip-resumed-from-down", "Trip Resumed From Down"],
         ["trip-ended", "Trip Ended", {masterOverrides: ["summary", "details"]}],
-        ["goal-failed", "Goal Failed"],
+        ["goal-failed", "Goal Failed", {speechStart: {anchor: "sustain"}}],
         ["lunch-clock-out", "Lunch Clock Out"],
         ["lunch-clock-in", "Lunch Clock In"]
     ];
@@ -204,7 +208,7 @@
             group:
                 "Settings",
             song:
-                "info-tone",
+                "setting-on",
             layers: [
                 "chime",
                 "summary"
@@ -220,7 +224,7 @@
             group:
                 "Settings",
             song:
-                "info-tone",
+                "setting-on",
             layers: [
                 "chime",
                 "summary"
@@ -236,7 +240,7 @@
             group:
                 "Settings",
             song:
-                "info-tone",
+                "setting-on",
             layers: [
                 "chime",
                 "summary"
@@ -269,6 +273,10 @@
             ]
         }
     );
+
+    for (const [key, labelId] of [["setting-on", "f51b9112-97c7-4b20-9f68-97c713b41be8"], ["setting-off", "bffcf746-ef53-4938-ab1b-bb673c87da96"], ["setting-unchanged", "27e6ba4f-75ff-4673-810f-1c36e265987f"]]) {
+        register(key, {label:globalThis.WMOFLanguagePack.text(labelId), group:"Settings", song:key, layers:["chime", "summary"]});
+    }
 
     const api = {
         id(key) { return typeIds[String(key || "").trim()]; },

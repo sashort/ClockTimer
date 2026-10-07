@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const html=fs.readFileSync(new URL('../diagnostics/audio-routing/index.html',import.meta.url),'utf8');
+const code=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const elements=new Map();const element=id=>{if(!elements.has(id))elements.set(id,{textContent:'',onclick:null});return elements.get(id)};
+const calls=[];let stops=0,speechCalls=0;
+const window={addEventListener(){},speechSynthesis:{speaking:false,speak(){speechCalls++},cancel(){}}};
+const context=vm.createContext({window,document:{getElementById:element,querySelector:s=>element(s.slice(1))},navigator:{userAgent:'routing-test',mediaDevices:{enumerateDevices:async()=>[],getUserMedia:async request=>{calls.push(request);const track={label:'Test microphone',readyState:'live',stop(){this.readyState='ended';stops++},getSettings(){return {...request.audio,sampleRate:48000,channelCount:1}}};return {getTracks:()=>[track],getAudioTracks:()=>[track]}}}},Audio:class{constructor(){this.currentTime=0;}async play(){}},SpeechSynthesisUtterance:class{},speechSynthesis:window.speechSynthesis,isSecureContext:true,console});
+vm.runInContext(code,context);
+assert.equal(calls.length,0,'Page load must not acquire microphone');assert.equal(speechCalls,0,'Page load must not start speech');
+await element('processed').onclick();assert.equal(calls[0].audio.echoCancellation,true);assert.equal(calls[0].audio.noiseSuppression,false);assert.equal(calls[0].audio.autoGainControl,false);
+await element('raw').onclick();assert.equal(stops,1,'Changing capture mode stops old capture');assert.equal(calls[1].audio.echoCancellation,false);assert.equal(calls[1].audio.noiseSuppression,false);assert.equal(calls[1].audio.autoGainControl,false);
+await element('stop').onclick();assert.equal(stops,2,'Stop releases every acquired track');assert.equal(element('state').textContent,'Microphone off');
+await element('speech').onclick();assert.equal(speechCalls,1);await element('media').onclick();await element('report').onclick();assert.match(element('log').textContent, /"activeCaptureTracks":0/);
+const wav=fs.readFileSync(new URL('../diagnostics/audio-routing/test-tone.wav',import.meta.url));assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal((wav.length-44)/96000,.65);
+console.log('PASS no startup capture/speech, processed/raw isolation, full track release, separate media/speech paths, supported-feature reporting and tone asset');

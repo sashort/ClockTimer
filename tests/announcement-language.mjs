@@ -6,7 +6,7 @@ const requests=[];
 const alternate=structuredClone(english);alternate.locale='xx-XX';
 alternate.announcements['trip-started'].details='Goal {goal}; remaining {duration}';
 alternate.announcements['break-started'].summary='Alternate break';
-const ctx=vm.createContext({fetch:async url=>{requests.push(url);return {ok:!url.includes('zz-ZZ'),json:async()=>structuredClone(url.includes('xx-XX')?alternate:english)};}});
+const ctx=vm.createContext({WMOFLanguagePack:{text:id=>id},fetch:async url=>{requests.push(url);return {ok:!url.includes('zz-ZZ'),json:async()=>structuredClone(url.includes('xx-XX')?alternate:english)};}});
 vm.runInContext(fs.readFileSync(new URL('../AnnouncementLanguage.js',import.meta.url),'utf8'),ctx);
 const language=ctx.WMOFAnnouncementLanguage;
 assert.throws(()=>language.text('announcements.trip-started.summary'),/not loaded/);
@@ -14,7 +14,7 @@ await language.load('en');assert.equal(language.locale,'en-US');assert.equal(req
 assert.equal(language.text('announcements.trip-started.summary'),'Trip started.');
 assert.equal(language.text('announcements.trip-started.details',{duration:'one hour',goal:'Standard Goal'}),'one hour until Standard Goal.');
 assert.equal(language.text('messages.settings.volume',{percent:0}),'Volume 0%');
-assert.equal(language.text('messages.scope.pay-period'),'Check');
+assert.equal(language.text('messages.scope.pay-period'),'Money');
 assert.throws(()=>language.text('announcements.trip-started.details',{duration:'one hour'}),/Missing announcement value: goal/);
 assert.throws(()=>language.text('missing'),/Unknown announcement template/);
 assert.equal(language.text('messages.readback.metric',{label:'Value',value:'{another}'}),'Value {another}');
@@ -29,7 +29,7 @@ const catalog=JSON.parse(fs.readFileSync(new URL('../api/audio/catalog.json',imp
 assert.ok(Object.values(catalog.songs).every(song=>song.events.every(event=>!event.speech)));
 for(const type of ['break-started','short-break-started','lunch-started','trip-resumed-automatically','down-time-started','trip-resumed-from-down','lunch-clock-in','lunch-clock-out']) assert.ok(language.summary(type));
 const app=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
-const references=[...app.matchAll(/announcementText\("([^"]+)"/g)].map(match=>match[1]);
+const references=[...app.matchAll(/announcementText\("([^"]+)"\s*[,)]/g)].map(match=>match[1]);
 const lookup=key=>key.split('.').reduce((value,part)=>value?.[part],english);
 for(const key of references) assert.equal(typeof lookup(key),'string',`Missing English template ${key}`);
 for(const type of ['trip-started-early','trip-started-late','trip-resumed-early','trip-resumed-after-break']){

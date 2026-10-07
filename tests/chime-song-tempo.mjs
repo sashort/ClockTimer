@@ -4,7 +4,7 @@ import vm from 'node:vm';
 const app=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
 assert.doesNotMatch(app,/\bbpm:\s*\d/,'Announcement calls must use song tempo');
 const engine=fs.readFileSync(new URL('../api/audio/AudioEngine.js',import.meta.url),'utf8');
-const expression=engine.match(/const tempo =\s*([\s\S]*?);/)[1];
+const expression=engine.slice(engine.indexOf('        async startSong(')).match(/const tempo =\s*([\s\S]*?);/)[1];
 const catalog=JSON.parse(fs.readFileSync(new URL('../api/audio/catalog.json',import.meta.url),'utf8'));
 for(const name of ['trip-started','trip-ended','trip-transition','lunch-clock-in','goal-failed']) {
  const song=catalog.songs[name];

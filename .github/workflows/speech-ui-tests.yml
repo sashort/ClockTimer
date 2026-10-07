@@ -129,6 +129,8 @@ jobs:
           php -l migrations/007_live_streams.php
           php -l migrations/008_live_stream_websocket.php
           php -l migrations/009_lookup_users.php
+          php -l api/_core/user_accounts.php
+          php -l api/users/index.php
 
       - name: Install test dependencies
         working-directory: tests
@@ -208,3 +210,33 @@ jobs:
       - name: Check optimistic UI transitions and speech recovery
         working-directory: tests
         run: npm run test:state-transactions
+
+  audio-profile-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+      - name: Check released audio, diagnostics, profile editing, and login
+        working-directory: tests
+        run: |
+          node voice-catalog.mjs
+          node announcement-language.mjs
+          node announcement-timing.mjs
+          node chime-song-tempo.mjs
+          node expressive-instruments.mjs
+          node easter-egg-arrangement.mjs
+          node audio-routing-diagnostic.mjs
+          node profile-editor.mjs
+          node trip-log-layout.mjs
+          php voice-login.php
+          node --check ../api/audio/AudioEngine.js
+          node --check ../UserLookup.js
+          node --check ../app.js
+          php -l ../api/_core/user_accounts.php
+          php -l ../api/users/index.php

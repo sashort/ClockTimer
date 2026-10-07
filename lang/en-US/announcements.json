@@ -100,6 +100,15 @@
     "voice-pad-number-pad": {
       "id": "217a08ba-6559-4d22-964e-cb252bdcd9ae",
       "summary": "Switched to number pad."
+    },
+    "setting-on": {
+      "id": "3cd33514-f4b4-4ea2-9816-2dec81902c9e"
+    },
+    "setting-off": {
+      "id": "28b87bb1-2bbd-446f-b563-96dc70d81e7c"
+    },
+    "setting-unchanged": {
+      "id": "41f91f65-f4e4-4198-a3e4-2ac82d464588"
     }
   },
   "messages": {
@@ -194,7 +203,7 @@
       "title": "Trip Summary",
       "range": "{scope} range.",
       "noData": "No trip data available.",
-      "loading": "Loading trip data\u2026",
+      "loading": "Loading trip data…",
       "loadFailed": "Trip data could not be loaded.",
       "tripCountLabel": "Trips",
       "tripCount": "{count} trips.",

@@ -4,7 +4,13 @@
     const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
     await announcementLanguage.load(document.documentElement.lang || "en-US");
     const announcementText = (key, values) => announcementLanguage.text(key, values);
-    void globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceLogin.applicationStarting"));
+    let startupAnnouncementPending = true;
+    let finishStartupAnnouncement;
+    const startupAnnouncementFinished = new Promise(resolve => { finishStartupAnnouncement = () => { startupAnnouncementPending = false; resolve(); }; });
+    const startupSpoken = globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceLogin.applicationStarting"), {
+        onEnd: finishStartupAnnouncement, onError: finishStartupAnnouncement
+    });
+    if (!startupSpoken) finishStartupAnnouncement();
 
     try {
         await globalThis.WMOFPersistence.ready;
@@ -927,7 +933,7 @@
     const identityMeta =
         identity => {
             if (!identity) {
-                return "Use User Lookup to select an identity.";
+                return "Use Account Lookup to select an identity.";
             }
 
             const formal =
@@ -1037,6 +1043,9 @@
                     identityContext,
                     canLookup:
                         canLookupUsers,
+                    onProfileSaved: user => {if(Number(user.id) === Number(signedInProfile?.id)) populateProfile(user);},
+                    canEdit: () => Boolean(Number(signedInProfile?.permissions) & (2 | PERMISSION_SUPERUSER)),
+                    canAssignPermissions: () => Boolean(Number(signedInProfile?.permissions) & PERMISSION_SUPERUSER),
                     canViewLive:
                         canViewLiveStreams,
                     currentUserId:
@@ -1441,7 +1450,7 @@
                                     1
                             ) {
                                 throw new Error(
-                                    "Select a user with User Lookup."
+                                    "Select a user with Account Lookup."
                                 );
                             }
 
@@ -1685,6 +1694,7 @@
                         }
                     }
 
+                    userLookup?.setMode("lookup");
                     openDialog(
                         "userLookupDialog",
                         {
@@ -3090,7 +3100,7 @@
         const micVisible=speechRecognitionEnabled() && speechMicBar && !speechMicBar.hidden && popoverIsOpen(speechMicBar);
         const micTop=micVisible ? Number(speechMicBar.getSafeTop?.() ?? speechMicBar.getBoundingClientRect().top) : bottom;
         const safeBottom=Number.isFinite(micTop) ? Math.min(bottom,micTop) : bottom;
-        for(const dialog of [loginDialog,legacyLoginDialog]){
+        for(const dialog of [loginDialog,legacyLoginDialog,$("#liveStreamDialog"),$("#userLookupDialog")]){
             dialog.style.setProperty("--login-safe-top",top+"px");
             dialog.style.setProperty("--login-safe-height",Math.max(0,safeBottom-top)+"px");
         }
@@ -3098,12 +3108,16 @@
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
     function announceVoiceLogin(text) {
         if(!loginIsOpen())return;
-        if(loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady){pendingLoginAnnouncement=text;return;}
+        if(startupAnnouncementPending || (loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady)){
+            pendingLoginAnnouncement=text;
+            if(startupAnnouncementPending) void startupAnnouncementFinished.then(announceLoginAfterModelReady);
+            return;
+        }
         pendingLoginAnnouncement=undefined;void globalThis.WMOFAudio?.speak?.(text);
     }
     function announceLoginAfterModelReady(){
         if(globalThis.SpeechMenu?.modelReady && pendingVoiceLoginSwitch && legacyLoginDialog.open && !voiceLoginBusy){pendingVoiceLoginSwitch=false;switchToVoiceLogin();}
-        if(globalThis.SpeechMenu?.modelReady && loginIsOpen() && pendingLoginAnnouncement){
+        if((loginInputMode !== "pin" || globalThis.SpeechMenu?.modelReady) && loginIsOpen() && pendingLoginAnnouncement){
             const text=pendingLoginAnnouncement;pendingLoginAnnouncement=undefined;announceVoiceLogin(text);
         }
     }
@@ -3654,6 +3668,7 @@
 
         return {
             lang: announcementLanguage.locale,
+            speechStart: globalThis.WMOFAnnouncementCatalog?.get?.(announcement)?.speechStart,
             speechVolume:
                 resolve("volume"),
             toneVolume:
@@ -6213,6 +6228,10 @@
             tripLogSettingsButton?.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("6753d87f-95b6-5469-8e1c-f0c6b8408f0e"));
         }
         tripLogView.setSettingsVisible(tripLogSettingsVisible);
+        // Data changes can replace the list with settings or change the home
+        // trip state. Reconcile the open shell, never the closed button slot.
+        refreshTripLogBoundaryLayout();
+        requestAnimationFrame(refreshTripLogBoundaryLayout);
     }
 
     function setTripProductionFilter(value, {notify=true}={}) {
@@ -14442,7 +14461,7 @@
     speechMicBar?.addEventListener("speech-surface-boundary-change",refreshLoginBoundary);
     for(const type of ["resize","scroll"])globalThis.visualViewport?.addEventListener(type,refreshLoginBoundary);
     globalThis.addEventListener("resize",refreshLoginBoundary);
-    for(const dialog of [loginDialog,legacyLoginDialog])dialog.addEventListener("opening",refreshLoginBoundary);
+    for(const dialog of [loginDialog,legacyLoginDialog,$("#liveStreamDialog"),$("#userLookupDialog")])dialog.addEventListener("opening",refreshLoginBoundary);
 
     $("#loginLegacySwitch").textContent=voiceLoginText("legacyLogin");
     $("#loginLegacyUsernameLabel").textContent=voiceLoginText("usernameLabel");$("#loginLegacyPasswordLabel").textContent=voiceLoginText("passwordLabel");
@@ -18853,6 +18872,7 @@
         const login = Object.freeze({open:loginIsOpen(), method:loginInputMode, stage:voiceLoginStage, pending:voiceLoginBusy, cancelPrimed:pinCancelPrimed, voiceRequested:pendingVoiceLoginSwitch,
             digitCount:loginInputMode === "pin" ? loginDigitSlots[voiceLoginStage].filter(Boolean).length : 0});
         const actions = Object.freeze({
+            editProfile: Boolean(userLookup?.state.canSave),
             loginInput: login.open && !login.pending,
             loginDigits: login.open && !login.pending && login.method === "pin",
             loginPassword: login.open && !login.pending && login.method === "password",
@@ -18889,6 +18909,7 @@
         });
         const primaryAction = kind ? "endInterval" : interval === "down" ? "resume" : live ? "endTrip" : "ready";
         const value = {
+            profileEditor: userLookup?.state,
             clock: timerState,
             pending: globalThis.WMOFStateTransactions?.pending || Object.freeze([]),
             speechRecognition,
@@ -21361,6 +21382,8 @@
 
         app.dataset.tripState = nextTripState;
         app.dataset.state = clockTimer.status;
+        refreshTripLogBoundaryLayout();
+        requestAnimationFrame(refreshTripLogBoundaryLayout);
         activeTripControls.hidden = !running;
         renderTripActionState();
         syncNewTripButtonAvailability();
@@ -21866,6 +21889,7 @@
     }
 
     const semanticAnnouncementQueue = { pointer: 0, announced: new Set(), length: 0 };
+    let commandAnnouncementCount = 0;
     const semanticAnnouncementContexts = [];
     let semanticAnnouncementDraining = false;
     let semanticAnnouncementScheduled = false;
@@ -22144,7 +22168,7 @@
                     completeAnnouncement(entry, false, error);
                 } finally {
                     entry.playing = false;
-                    previousAnnouncementDelayMs = entry.componentDelayMs;
+                    previousAnnouncementDelayMs = component.nextDelayMs ?? entry.componentDelayMs;
                     previousAnnouncementCompletedAt = Date.now();
                     previousAnnouncementEntry = entry;
                 }
@@ -22162,6 +22186,7 @@
     }
 
     function runSemanticAnnouncement(announcement, playback, { id = announcement, priority, phasePriorities = {} } = {}) {
+        commandAnnouncementCount++;
         const components = (Array.isArray(playback) ? playback : typeof playback === "function" ? [{ phase: "summary", play: playback }] : [])
             .filter(component => typeof component?.play === "function");
         if (!components.length) return Promise.resolve(false);
@@ -22189,24 +22214,40 @@
 
     function announcementComponents(audio, songName, chimeEnabled, speech, output, guard, options = {}) {
         const components = [];
-        if (chimeEnabled && audio?.startSong) components.push({ phase: "chime", delayMs: output.speechDelayMs, play: async () => {
+        let audioCanceled = false;
+        const speechStart = output.speechStart || { anchor: "end", paddingMs: 0 };
+        const chimeComponent = { phase: "chime", delayMs: output.speechDelayMs, play: async function () {
             let played = false;
             try {
                 const song = await audio.startSong(songName, { ...output, ...options, includeSpeech: false });
-                await song?.finished;
-                played = Boolean(song?.hasChime);
+                if (song?.hasChime && Number.isFinite(song.chimeEndsInMs)) {
+                    const atSustain = speechStart.anchor === "sustain" && Number.isFinite(song.sustainStartsInMs);
+                    const anchorMs = atSustain ? song.sustainStartsInMs : song.chimeEndsInMs;
+                    // Speech follows the musical timeline; natural instrument tails may continue underneath.
+                    // Normal padding remains the queue's rate-scaled margin; sustain speech has none.
+                    this.nextDelayMs = atSustain ? 0 : undefined;
+                    const elapsed = waitForAnnouncementDelay(anchorMs + (Number(speechStart.paddingMs) || 0));
+                    const ended = await Promise.race([elapsed.then(() => true),
+                        Promise.resolve(song.finished).then(result => result?.reason === "stopped" || result?.reason === "error" ? false : elapsed.then(() => true))]);
+                    played = ended;
+                    audioCanceled = ended === false;
+                } else {
+                    await song?.finished;
+                    played = Boolean(song?.hasChime);
+                }
             } catch (error) {
                 console.error("Audio playback failed:", songName, error);
             }
             options.onChime?.(played);
             return played;
-        }});
+        }};
+        if (chimeEnabled && audio?.startSong) components.push(chimeComponent);
         const parts = Array.isArray(speech) ? speech : [speech];
         parts.forEach((part, index) => {
             const text = typeof part === "object" ? part?.text : part;
             if (!String(text || "").trim() || !audio?.speak) return;
             components.push({ phase: part?.phase || (index === 0 ? "summary" : "details"), delayMs: output.speechDelayMs,
-                play: () => speakSemanticAndWait(audio, text, { ...output, ...options, ...(part?.options || {}) }, guard) });
+                play: () => speakSemanticAndWait(audio, text, { ...output, ...options, ...(part?.options || {}) }, () => !audioCanceled && (!guard || guard() !== false)) });
         });
         return components;
     }
@@ -24391,6 +24432,52 @@
         canCloseSurface: () => readInteractionState().actions.cancel
     });
 
+    const voiceFeedbackSnapshots = new WeakMap();
+
+    function commandFeedbackState() {
+        const state = clockTimer.uiState;
+        const switches = {sync:getSyncGoalsState(), recognition:speechRecognitionEnabled(),
+            awake:!globalThis.SpeechMenu?.muted, chime:audioSettings.masters.chime,
+            speech:audioSettings.masters.summary, details:audioSettings.masters.details};
+        const values = {switches, surfaces:[...document.querySelectorAll('dialog[open]')].map(el=>el.id),
+            trip:clockTimer.currentTripId ?? null, active:Boolean(state?.trip_active),
+            interval:state?.interval_state?.intervalType || state?.active_interval_type,
+            breakType:state?.active_break_type, mode:clockTimer.percentMode,
+            renderedTime:clockTimer.renderedTimeMode, range:getTripLogRange(),
+            goals:[clockTimer.getAttribute('trip-goal'),clockTimer.getAttribute('total-goal')],
+            standard:tripDraft?.standardTimeMilliseconds ?? tripSettingsSession?.values.standardTimeMilliseconds ?? clockTimer.standardTimeMilliseconds,
+            start:clockTimer.startTime, scheduled:clockTimer.scheduledStart, creationDate:clockTimer.creationDate,
+            creationTime:clockTimer.creationTime, nonProduction:clockTimer.nonProduction,
+            filter:clockTimer.productionFilter, includeCurrent:getTripLogIncludeCurrent(),
+            endTimeLock:endTimeGoalOverride?.deadline?.getTime?.() ?? null,
+            tripSettings:tripSettingsSession?.values || null, draft:tripDraft || null,
+            audio:audioSettings, logSettings:tripLogSettingsVisible,
+            editor:numberPadState ? [numberPadState.source,numberPadState.pending,numberPadState.mode,numberPadState.pendingDate,numberPadState.meridiem] : null,
+            prompt:speechBreakPromptState ? [speechBreakPromptState.mode,speechBreakPromptState.kind,speechBreakPromptState.hidden] : null,
+            login:[loginInputMode,voiceLoginStage,$('#loginUsername').value,$('#loginPassword').value],
+            summary:completedTripSummary?.invocation || null, log:getTripListState(),
+            volume:audioSettings.volume, speechRate:audioSettings.speechVelocity, chimeRate:audioSettings.toneVelocity};
+        return {key:JSON.stringify(values), switches};
+    }
+
+    function settingChimeOutcome(options = {}) {
+        if (Object.hasOwn(options, 'previous')) {
+            if (Object.is(options.previous, options.next)) return 'setting-unchanged';
+            if (typeof options.next === 'boolean') return options.next ? 'setting-on' : 'setting-off';
+            if (typeof options.next === 'number' && options.next < options.previous) return 'setting-off';
+            return 'setting-on';
+        }
+        const before = voiceFeedbackSnapshots.get(globalThis.SpeechMenu?.executionContext)?.semantic;
+        if (!before) return options.unchanged ? 'setting-unchanged' : 'setting-on';
+        return stateFeedbackChime(before, commandFeedbackState());
+    }
+
+    function stateFeedbackChime(before, after) {
+        if(before.key === after.key) return 'setting-unchanged';
+        const changed = Object.keys(after.switches).filter(key=>before.switches[key] !== after.switches[key]);
+        return changed.length && changed.every(key=>after.switches[key] === false) ? 'setting-off' : 'setting-on';
+    }
+
     const dictateSpeechMetric =
         (
             label,
@@ -24455,11 +24542,10 @@
                     )
                     .trim();
 
-            globalThis
-                .WMOFAudio
-                ?.speak?.(
-                    spokenResponse
-                );
+            void confirmInformationalChange("setting-unchanged", response, {
+                spokenValue:spokenResponse, eventName:"readback:"+labelText,
+                responseDisplay:codeValue ? {prefix:labelText,code:displayValue} : undefined
+            });
 
             return {
                 speechResponse: {
@@ -24491,7 +24577,9 @@
                     false,
                 ignoreSummaryMaster =
                     false,
-                eventName = announcement
+                eventName = announcement,
+                feedbackSong,
+                ignoreChimeMaster = false
             } = {}
         ) => {
             const response =
@@ -24530,7 +24618,7 @@
             const chime =
                 consumeAnnouncementAction(
                     announcement,
-                    "chime"
+                    "chime", {ignoreMaster:ignoreChimeMaster}
                 );
             const summary =
                 consumeAnnouncementAction(
@@ -24563,7 +24651,7 @@
 
             void runSemanticAnnouncement(
                 eventName,
-                announcementComponents(audio, announcementSongName(announcement), chime.perform,
+                announcementComponents(audio, feedbackSong || (["goal-change","range-change"].includes(announcement) ? settingChimeOutcome() : announcementSongName(announcement)), chime.perform,
                 summary.perform ? spokenResponse : "", output, speechGuard),
                 {
                     exclusive,
@@ -24594,16 +24682,17 @@
     const confirmSettingChange =
         (
             value,
-            options
+            options = {}
         ) =>
             confirmInformationalChange(
                 "setting-change",
                 value,
-                options
+                {...options, feedbackSong:options.feedbackSong || settingChimeOutcome(options)}
             );
 
     const changeGlobalAudioRate =
         deltaPercent => {
+            const previous = audioSettings.speechVelocity;
             audioSettings.speechVelocity =
                 stepAudioVelocity(
                     audioSettings
@@ -24621,6 +24710,7 @@
                 announcementText("messages.settings.speechRate", { percent:
                     formatAudioVelocityPercent(audioSettings.speechVelocity, AUDIO_SPEECH_VELOCITY_MAX) }),
                 {
+                    previous, next:audioSettings.speechVelocity,
                     useGlobalAudioSettings:
                         true
                 }
@@ -24644,6 +24734,7 @@
                 return false;
             }
 
+            const previous = audioSettings.speechVelocity;
             audioSettings.speechVelocity =
                 audioVelocityAtPercent(
                     value,
@@ -24659,6 +24750,7 @@
                 announcementText("messages.settings.speechRate", { percent:
                     formatAudioVelocityPercent(audioSettings.speechVelocity, AUDIO_SPEECH_VELOCITY_MAX) }),
                 {
+                    previous, next:audioSettings.speechVelocity,
                     useGlobalAudioSettings:
                         true
                 }
@@ -24667,6 +24759,7 @@
 
     const setMasterSpeech =
         enabled => {
+            const previous = [audioSettings.masters.summary, audioSettings.masters.details];
             const next =
                 Boolean(enabled);
 
@@ -24684,6 +24777,7 @@
                     ? announcementText("messages.settings.speechOn")
                     : announcementText("messages.settings.speechOff"),
                 {
+                    feedbackSong:previous.every(value=>value === next) ? "setting-unchanged" : next ? "setting-on" : "setting-off",
                     useGlobalAudioSettings:
                         true,
                     ignoreSummaryMaster:
@@ -24696,17 +24790,20 @@
         const preset = CHIME_RATES.find(preset =>
             preset.label.toLowerCase() === String(rate ?? "").trim().toLowerCase());
         if (!preset) return false;
+        const previous = audioSettings.toneVelocity;
         audioSettings.toneVelocity = preset.value;
         renderAudioSettings();
         applyAudioOutputSettings();
         saveAudioSettings();
         return confirmSettingChange(announcementText("messages.settings.chimeRate", { rate: announcementText(`messages.settings.chime${preset.label}`) }), {
+            previous, next:preset.value,
             useGlobalAudioSettings: true
         });
     };
 
     const setMasterChime =
         enabled => {
+            const previous = audioSettings.masters.chime;
             audioSettings.masters.chime =
                 Boolean(enabled);
 
@@ -24719,6 +24816,8 @@
                     ? announcementText("messages.settings.chimeOn")
                     : announcementText("messages.settings.chimeOff"),
                 {
+                    previous, next:audioSettings.masters.chime,
+                    ignoreChimeMaster:previous && !audioSettings.masters.chime,
                     useGlobalAudioSettings:
                         true
                 }
@@ -24727,6 +24826,7 @@
 
     const changeGlobalAudioVolume =
         deltaPercent => {
+            const previous = audioSettings.volume;
             audioSettings.volume =
                 stepAudioVolume(
                     audioSettings
@@ -24741,6 +24841,7 @@
             return confirmSettingChange(
                 announcementText("messages.settings.volume", { percent: Math.round(audioSettings.volume * 100) }),
                 {
+                    previous, next:audioSettings.volume,
                     useGlobalAudioSettings:
                         true
                 }
@@ -24764,6 +24865,7 @@
                 return false;
             }
 
+            const previous = audioSettings.volume;
             audioSettings.volume =
                 audioVolumeAtPercent(
                     value
@@ -24776,6 +24878,7 @@
             return confirmSettingChange(
                 announcementText("messages.settings.volume", { percent: Math.round(audioSettings.volume * 100) }),
                 {
+                    previous, next:audioSettings.volume,
                     useGlobalAudioSettings:
                         true
                 }
@@ -26156,7 +26259,8 @@
                 return confirmSettingChange(
                     getSyncGoalsState()
                         ? announcementText("announcements.syncTry.on")
-                        : announcementText("announcements.syncTry.off")
+                        : announcementText("announcements.syncTry.off"),
+                    {previous:current,next:enabled}
                 );
             },
 
@@ -26246,7 +26350,7 @@
                 }
                 catch {
                     return confirmSettingChange(
-                        announcementText("announcements.syncTry.failed")
+                        announcementText("announcements.syncTry.failed"), {feedbackSong:"goal-failed"}
                     );
                 }
 
@@ -26260,7 +26364,7 @@
                         enabled
                 ) {
                     return confirmSettingChange(
-                        announcementText("announcements.syncTry.failed")
+                        announcementText("announcements.syncTry.failed"), {feedbackSong:"goal-failed"}
                     );
                 }
 
@@ -29573,7 +29677,8 @@
         const value = !state?.pending ? "" : state.mode === "percent"
             ? formatSpokenPercent(Number(state.pending)) : state.mode === "absolute"
                 ? renderAbsoluteDigits(state.pending) : formatGoalFailureDuration(timeDigitsToMilliseconds(state.pending));
-        return {
+        const snapshot = {
+            semantic:commandFeedbackState(), announcementCount:commandAnnouncementCount,
             rangeCommand, summaryInvocation: completedTripSummary?.invocation,
             surface: globalThis.SpeechMenu?.activeSurface?.id,
             source: state?.source, startsTrip: state?.startsTripOnConfirm,
@@ -29593,6 +29698,8 @@
             sync: getSyncGoalsState(), mode: clockTimer.percentMode, range: getTripLogRange(),
             standard: tripDraft?.standardTimeMilliseconds ?? tripSettingsSession?.values.standardTimeMilliseconds ?? clockTimer.standardTimeMilliseconds
         };
+        if(context) voiceFeedbackSnapshots.set(context, snapshot);
+        return snapshot;
     }
 
     function voiceCommandFeedback({element, context, snapshot: before, result}) {
@@ -29678,8 +29785,19 @@
                     break;
             }
         }
-        // TTS is fire-and-forget. It never delays UI execution or persistence.
-        for (const part of parts.filter(Boolean)) globalThis.WMOFAudio?.speak?.(part);
+        const messages = parts.filter(Boolean);
+        const song = stateFeedbackChime(before.semantic, after.semantic);
+        const switchChanged = Object.keys(after.semantic.switches).some(key=>before.semantic.switches[key] !== after.semantic.switches[key]);
+        if(result !== false && before.announcementCount === commandAnnouncementCount &&
+            (song === "setting-unchanged" || switchChanged)) {
+            const chime = consumeAnnouncementAction(song, "chime");
+            const output = audioAnnouncementOutput(song);
+            void runSemanticAnnouncement(song, announcementComponents(globalThis.WMOFAudio, song, chime.perform,
+                messages, output, reserveSemanticSpeech()), {id:nextSemanticAnnouncementId++});
+        } else {
+            // Existing lifecycle feedback remains independent of persistence.
+            for (const part of messages) globalThis.WMOFAudio?.speak?.(part);
+        }
     }
 
     globalThis.SpeechMenu?.setFeedbackAdapter?.({capture: captureVoiceCommandFeedback, complete: voiceCommandFeedback});

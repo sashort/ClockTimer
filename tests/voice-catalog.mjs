@@ -211,7 +211,7 @@ const audioEngine =
 
 assert.match(
     html,
-    /id="audioVoice"[\s\S]*?<option value="system\|">System Default<\/option>/
+    /id="audioVoice"[\s\S]*?<option value="system\|"[^>]*>System Default<\/option>/
 );
 assert.match(
     html,
@@ -219,7 +219,7 @@ assert.match(
 );
 assert.match(
     app,
-    /const AUDIO_LANGUAGE = "en-US"/
+    /const AUDIO_LANGUAGE = globalThis\.WMOFLanguagePack\?\.locale \|\| "en-US"/
 );
 assert.match(
     app,

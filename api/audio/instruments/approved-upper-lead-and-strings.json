@@ -1,0 +1,132 @@
+{
+  "status": "Instrument sound approved 2026-10-07; surrounding arrangement and added vibrato under review; preview not yet integrated in catalog",
+  "leadSource": "instrument-echo-upper-register-solo-v80.wav",
+  "leadGain": 0.5,
+  "leadReductionDb": -6.0206,
+  "stringDelaySeconds": 0,
+  "stringsEcho": {
+    "timeSeconds": 0.27,
+    "feedback": 0.42,
+    "wet": 0.38
+  },
+  "stringsVolume": "RMS matched to quieter lead",
+  "strings": {
+    "voicesDetuneCents": [
+      -7,
+      -2,
+      3,
+      8
+    ],
+    "attackSeconds": 0.07,
+    "releaseSeconds": 0.72,
+    "harmonics": 12,
+    "bowedEnsembleVibratoHz": [
+      4.7,
+      4.87,
+      5.04,
+      5.21
+    ]
+  },
+  "masterGain": 1,
+  "phrase": [
+    {
+      "pitch": "C5",
+      "beat": 0,
+      "lengthBeats": 1.5
+    },
+    {
+      "pitch": "Eb5",
+      "beat": 2,
+      "lengthBeats": 1.5
+    },
+    {
+      "pitch": "G5",
+      "beat": 4,
+      "lengthBeats": 1.5
+    },
+    {
+      "pitch": "Eb5",
+      "beat": 6,
+      "lengthBeats": 1.5
+    },
+    {
+      "pitch": "C5",
+      "beat": 8,
+      "lengthBeats": 1.5
+    },
+    {
+      "pitch": "Eb5",
+      "beat": 10,
+      "lengthBeats": 1.5
+    },
+    {
+      "pitch": "G5",
+      "beat": 12,
+      "lengthBeats": 4
+    }
+  ],
+  "leadSettings": {
+    "status": "Unapproved standalone preview; not installed in song",
+    "reference": "Recording (5).m4a, supplied 2026-10-07",
+    "model": "Additive approximation using harmonic balance measured in the reference, not an exact sampled reproduction",
+    "harmonicGains": [
+      0.95,
+      1,
+      0.82,
+      0.55,
+      0.25,
+      0.12,
+      0.07,
+      0.04
+    ],
+    "attackSeconds": 0.025,
+    "decaySeconds": 0.16,
+    "sustainLevel": 0.78,
+    "releaseSeconds": 0.4,
+    "vibratoHz": 5.1,
+    "vibratoCents": 7,
+    "echoSeconds": 0.27,
+    "echoFeedback": 0.42,
+    "echoWet": 0.38,
+    "peakTarget": 0.9,
+    "bpm": 225,
+    "phrase": [
+      {
+        "pitch": "C5",
+        "beat": 0,
+        "lengthBeats": 1.5
+      },
+      {
+        "pitch": "Eb5",
+        "beat": 2,
+        "lengthBeats": 1.5
+      },
+      {
+        "pitch": "G5",
+        "beat": 4,
+        "lengthBeats": 1.5
+      },
+      {
+        "pitch": "Eb5",
+        "beat": 6,
+        "lengthBeats": 1.5
+      },
+      {
+        "pitch": "C5",
+        "beat": 8,
+        "lengthBeats": 1.5
+      },
+      {
+        "pitch": "Eb5",
+        "beat": 10,
+        "lengthBeats": 1.5
+      },
+      {
+        "pitch": "G5",
+        "beat": 12,
+        "lengthBeats": 4
+      }
+    ],
+    "transposeSemitones": 24
+  }
+}

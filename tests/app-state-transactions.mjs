@@ -4,9 +4,9 @@ const window=new Window({url:'https://clock.example/',settings:{disableJavaScrip
 const storage=installAsyncStorage(window);
 window.__testTime=Date.parse('2026-10-06T12:00:00Z');
 window.eval(`const OriginalDate=Date;window.Date=class extends OriginalDate {constructor(...args){super(...(args.length?args:[window.__testTime]));}static now(){return window.__testTime;}};`);
-const spoken=[];
-if(process.argv.includes('--voice-feedback')) window.WMOFAudio={speak(text,options={}){spoken.push(String(text));queueMicrotask(()=>options.onEnd?.());return true;},
-    async startSong(){return {hasChime:true,finished:Promise.resolve()};}};
+const spoken=[],chimes=[];let finishStartup;
+if(process.argv.includes('--voice-feedback')) window.WMOFAudio={speak(text,options={}){spoken.push(String(text));if(process.argv.includes("--startup-speech") && text === "Application is starting") finishStartup=options.onEnd;else queueMicrotask(()=>options.onEnd?.());return true;},
+    async startSong(name){chimes.push(name);return {hasChime:true,finished:Promise.resolve()};}};
 let recognition;
 window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abort(){this.onend?.();}};
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
@@ -72,6 +72,26 @@ const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
 const states=[];
 window.WMOFStateTransactions.addEventListener('state',event=>states.push(event.detail.state));
+if(process.argv.includes('--setting-chimes')) {
+ const hear=async(transcript,action)=>{const start=chimes.length;await window.SpeechMenu.withExecutionContext({transcript},()=>window.WMOFActions[action]());await settle();return chimes.slice(start);};
+ assert.deepEqual(await hear('speech off','setSpeechMaster'),['setting-off']);
+ assert.deepEqual(await hear('speech on','setSpeechMaster'),['setting-on']);
+ assert.deepEqual(await hear('speech on','setSpeechMaster'),['setting-unchanged']);
+ assert.deepEqual(await hear('chime off','setChimeMaster'),['setting-off'],'final off cue remains audible before chime master is disabled');
+ const before=chimes.length;await window.WMOFActions.readGoalMode();await settle();assert.equal(chimes.length,before,'chime master suppresses readback chime');
+ assert.deepEqual(await hear('chime on','setChimeMaster'),['setting-on']);
+ const start=chimes.length;await window.WMOFActions.readGoalMode();await settle();assert.deepEqual(chimes.slice(start),['setting-unchanged'],'informational command uses unchanged chime');
+ const rateStart=chimes.length;await window.WMOFActions.setChimeRate('Medium');await settle();assert.deepEqual(chimes.slice(rateStart),['setting-unchanged'],'same value pointer setting uses unchanged chime');
+ console.log('PASS setting on/off/unchanged, final chime-off cue, disabled master, readback and unchanged rate');
+}
+if(process.argv.includes('--startup-speech')) {
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();
+ await window.WMOFActions.switchToVoiceLogin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+ assert.equal(spoken.filter(t=>t==='Please login using voice').length,0,'ready model must not overtake startup announcement');
+ assert(window.WMOFInteractionState.state,'UI initialized while startup audio is pending');
+ finishStartup();await settle();assert.equal(spoken.filter(t=>t==='Please login using voice').length,1,'release latest prompt after startup speech completes');
+ console.log('PASS startup speech completion barrier without blocking UI/model initialization');
+}
 if(process.argv.includes('--voice-login')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const legacyDialog=window.document.querySelector('#legacyLoginDialog');
@@ -687,7 +707,7 @@ if(process.argv.includes('--voice-feedback')) {
     assert(!dialog.open,'the combined utterance still skips the dialog');
     translatedStart.setAttribute('speech-skippable','');
     await speakCommand('end lunch ok');
-    await speakCommand('sync off');await speakCommand('sync off');assert(spoken.includes('Sync already off.'));
+    await speakCommand('sync off');const beforeSyncLoop=chimes.length;await speakCommand('sync off');assert(spoken.includes('Sync already off.'));if(process.argv.includes('--setting-chimes'))assert.deepEqual(chimes.slice(beforeSyncLoop),['setting-unchanged'],'unchanged sync loopback gets exactly one neutral chime');
     await speakCommand('sleep');assert(spoken.includes('Voice recognition off.'));
     await speakCommand('wake');assert(spoken.includes('Voice recognition on.'));
     await speakCommand('off');assert(spoken.includes('Microphone deactivated.'));

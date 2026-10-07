@@ -50,9 +50,8 @@ function account_fields(array $input, bool $creating): array
     }
     if (array_key_exists('loginId', $input) || array_key_exists('pin', $input)) {
         require_once __DIR__ . '/voice_login.php';
-        if (!array_key_exists('loginId', $input) || !array_key_exists('pin', $input)) api_error('Assign user ID and PIN together.', 422, 'invalid_argument');
-        $fields['login_id'] = four_digit_credential($input['loginId'], 'loginId');
-        $fields['pin_hash'] = password_hash(four_digit_credential($input['pin'], 'pin'), PASSWORD_BCRYPT);
+        if (array_key_exists('loginId', $input)) $fields['login_id'] = four_digit_credential($input['loginId'], 'loginId');
+        if (array_key_exists('pin', $input)) $fields['pin_hash'] = password_hash(four_digit_credential($input['pin'], 'pin'), PASSWORD_BCRYPT);
     }
     return $fields;
 }
@@ -72,6 +71,18 @@ function save_user_account(PDO $pdo, array $input, bool $creating): array
         require_user_edit_access($actor, $target);
     }
     if ((array_key_exists('loginId', $input) || array_key_exists('pin', $input)) && !has_permission($actor, PERMISSION_MODIFY_USERS)) api_error('Assigning main-page login credentials requires an administrator.', 403, 'permission_required');
+    if (array_key_exists('loginId', $input) || array_key_exists('pin', $input)) {
+        $existing = null;
+        if (!$creating) {
+            $query = $pdo->prepare('SELECT login_id, pin_hash FROM users WHERE id = :id');
+            $query->execute([':id' => $userId]);
+            $existing = $query->fetch();
+        }
+        if ((!$existing || !$existing['login_id'] || !$existing['pin_hash']) &&
+            (!array_key_exists('loginId', $input) || !array_key_exists('pin', $input))) {
+            api_error('Assign user ID and PIN together.', 422, 'invalid_argument');
+        }
+    }
     $fields = account_fields($input, $creating);
     if (array_key_exists('permissions', $input)) {
         $fields['permissions'] = require_permission_assignment($actor, $input['permissions']);
