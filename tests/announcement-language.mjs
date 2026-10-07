@@ -41,5 +41,5 @@ const types=ctx.WMOFAnnouncementCatalog;
 assert.equal(types.id('trip-started'),1);assert.equal(types.id('syncTry'),21);
 const ids=types.list().map(entry=>entry.id);assert.ok(ids.every(id=>Number.isSafeInteger(id)&&id>0));
 assert.equal(new Set(ids).size,ids.length);
-assert.match(app,/id: eventName/);assert.doesNotMatch(app,/id: eventName \+ ":" \+ spokenResponse/);
+assert.match(app,/id: nextSemanticAnnouncementId\+\+/);assert.doesNotMatch(app,/id: eventName \+ ":" \+ spokenResponse/);
 console.log('PASS English resource loading, runtime templates, language switching, fallback, caching, validation and music/speech separation');

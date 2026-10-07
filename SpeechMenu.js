@@ -3485,12 +3485,7 @@ class SpeechMenu {
         if (
             pool.length &&
             utterance.lastExactCandidate &&
-            !utterance
-                .lastExactCandidate
-                .commandElement
-                ?.hasAttribute?.(
-                    "speech-open-ended"
-                ) &&
+            !SpeechMenu.#isOpenEndedParameter(utterance.lastExactCandidate.commandElement) &&
             !utterance.committed &&
             !utterance.committing
         ) {
@@ -5982,11 +5977,7 @@ class SpeechMenu {
         };
 
         if (
-            !exactCandidate
-                .commandElement
-                ?.hasAttribute?.(
-                    "speech-open-ended"
-                )
+            !SpeechMenu.#isOpenEndedParameter(exactCandidate.commandElement)
         ) {
             SpeechMenu
                 .#armCandidateHardDeadline(
@@ -6234,10 +6225,7 @@ class SpeechMenu {
         }
 
         if (
-            !element
-                ?.hasAttribute?.(
-                    "speech-open-ended"
-                ) &&
+            !SpeechMenu.#isOpenEndedParameter(element) &&
             SpeechMenu
                 .#hasExactLiteralPhrase(
                     group.phrases,
@@ -6423,6 +6411,10 @@ class SpeechMenu {
             );
     }
 
+    static #isOpenEndedParameter(element) {
+        return Boolean(element?.hasAttribute?.("speech-open-ended") || element?.hasAttribute?.("speech-collect"));
+    }
+
     // Collect an opaque sequence using the item's own matching/preprocessing
     // contract. No language, numeric format, or value type is assumed.
     static async #collectSpeechSequence(element, words, utterance, signal, probe) {
@@ -6552,7 +6544,7 @@ class SpeechMenu {
                     nextContext: context, nextSurfaceStack: frames, context: projectedContext,
                     surfaceStack: projectedFrames,
                     surface: projectedFrames?.at(-1)?.surface,
-                    canContinue: SpeechMenu.#digestCanContinue(element, segment, candidates)};
+                    canContinue: SpeechMenu.#isOpenEndedParameter(element) || SpeechMenu.#digestCanContinue(element, segment, candidates)};
                 const remaining = words.slice(end);
                 if (remaining.length) {
                     const tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context, frames, optimistic);
@@ -6698,11 +6690,7 @@ class SpeechMenu {
                             return false;
                         }
 
-                        const openEnded =
-                            element
-                                .hasAttribute?.(
-                                    "speech-open-ended"
-                                );
+                        const openEnded = SpeechMenu.#isOpenEndedParameter(element);
 
                         const previousOpenEndedExact =
                             openEnded &&

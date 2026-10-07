@@ -7,7 +7,7 @@ Object.assign(globalThis,{window,document:window.document,Element:window.Element
     HTMLElement:window.HTMLElement,EventTarget:window.EventTarget,CustomEvent:window.CustomEvent,
     getComputedStyle:window.getComputedStyle.bind(window)});
 globalThis.ParameterParser=Function(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nreturn ParameterParser;')();
-let source=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8');
+let source=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 // Expose the real live-transcript path only inside this test's loaded class.
 source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testBegin(aborted) {

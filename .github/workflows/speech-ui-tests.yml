@@ -198,7 +198,7 @@ jobs:
 
   ui-state-consistency:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -207,6 +207,11 @@ jobs:
       - name: Install test dependencies
         working-directory: tests
         run: npm install --no-audit --no-fund
+      - name: Check FSM loopback sounds and voice login
+        working-directory: tests
+        run: |
+          node app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only
+          node app-state-transactions.mjs --voice-login --voice-feedback
       - name: Check optimistic UI transitions and speech recovery
         working-directory: tests
         run: npm run test:state-transactions
@@ -232,6 +237,9 @@ jobs:
           node expressive-instruments.mjs
           node easter-egg-arrangement.mjs
           node audio-routing-diagnostic.mjs
+          node fsm-loopback-feedback.mjs
+          node speech-command-digest.mjs
+          node speech-failfast.mjs
           node profile-editor.mjs
           node trip-log-layout.mjs
           php voice-login.php

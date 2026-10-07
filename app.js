@@ -3113,7 +3113,12 @@
             if(startupAnnouncementPending) void startupAnnouncementFinished.then(announceLoginAfterModelReady);
             return;
         }
-        pendingLoginAnnouncement=undefined;void globalThis.WMOFAudio?.speak?.(text);
+        pendingLoginAnnouncement=undefined;
+        const context=globalThis.SpeechMenu?.executionContext;
+        const before=context && voiceFeedbackSnapshots.get(context)?.semantic;
+        if(before && stateFeedbackChime(before,commandFeedbackState()) === "setting-unchanged") {
+            void confirmInformationalChange("setting-unchanged",text,{ignoreSummaryMaster:true});
+        } else void globalThis.WMOFAudio?.speak?.(text);
     }
     function announceLoginAfterModelReady(){
         if(globalThis.SpeechMenu?.modelReady && pendingVoiceLoginSwitch && legacyLoginDialog.open && !voiceLoginBusy){pendingVoiceLoginSwitch=false;switchToVoiceLogin();}
@@ -24454,7 +24459,7 @@
             audio:audioSettings, logSettings:tripLogSettingsVisible,
             editor:numberPadState ? [numberPadState.source,numberPadState.pending,numberPadState.mode,numberPadState.pendingDate,numberPadState.meridiem] : null,
             prompt:speechBreakPromptState ? [speechBreakPromptState.mode,speechBreakPromptState.kind,speechBreakPromptState.hidden] : null,
-            login:[loginInputMode,voiceLoginStage,$('#loginUsername').value,$('#loginPassword').value],
+            login:[loginInputMode,voiceLoginStage,loginDigitSlots.id,loginDigitSlots.pin,pinCancelPrimed,voiceLoginBusy,pendingVoiceLoginSwitch,$('#loginUsername').value,$('#loginPassword').value],
             summary:completedTripSummary?.invocation || null, log:getTripListState(),
             volume:audioSettings.volume, speechRate:audioSettings.speechVelocity, chimeRate:audioSettings.toneVelocity};
         return {key:JSON.stringify(values), switches};
@@ -24655,7 +24660,7 @@
                 summary.perform ? spokenResponse : "", output, speechGuard),
                 {
                     exclusive,
-                    id: eventName
+                    id: nextSemanticAnnouncementId++
                 }
             )
                 .catch(
@@ -26159,6 +26164,11 @@
                 const previousRange =
                     getTripLogRange();
 
+                if (previousMode === requestedMode && (!requestedRange || requestedRange === previousRange)) {
+                    return requestedRange
+                        ? confirmInformationalChange("range-change", announcementText("messages.settings.viewing", {scope:totalScopeLabel()}), {feedbackSong:"setting-unchanged"})
+                        : confirmSettingChange(announcementText("messages.voiceFeedback.modeAlready", {mode:previousMode}), {previous:previousMode,next:previousMode});
+                }
                 if (requestedRange) {
                     setTripLogRange(requestedRange, {announce: false});
                 }
@@ -26191,7 +26201,8 @@
 
                 if (requestedRange) {
                     return confirmInformationalChange("range-change",
-                        announcementText("messages.settings.viewing", {scope: totalScopeLabel()}));
+                        announcementText("messages.settings.viewing", {scope: totalScopeLabel()}),
+                        {feedbackSong:settingChimeOutcome({previous:previousMode+":"+previousRange,next:appliedMode+":"+getTripLogRange()})});
                 }
                 if (
                     !rangeChanged &&
@@ -26211,7 +26222,8 @@
                                 .slice(1);
 
                 return confirmSettingChange(
-                    announcementText("messages.settings.mode", { scope: label })
+                    announcementText("messages.settings.mode", { scope: label }),
+                    {previous:previousMode,next:appliedMode}
                 );
             },
 
@@ -26260,7 +26272,7 @@
                     getSyncGoalsState()
                         ? announcementText("announcements.syncTry.on")
                         : announcementText("announcements.syncTry.off"),
-                    {previous:current,next:enabled}
+                    {unchanged:true,feedbackSong:"setting-unchanged"}
                 );
             },
 
@@ -26343,6 +26355,10 @@
                     }
                 }
 
+                if (current === enabled) {
+                    return confirmSettingChange(announcementText("messages.voiceFeedback.syncAlready", {state:enabled ? "on" : "off"}), {previous:current,next:enabled});
+                }
+
                 try {
                     setSyncGoals(
                         enabled
@@ -26378,7 +26394,8 @@
                 return confirmSettingChange(
                     enabled
                         ? announcementText("announcements.syncTry.on")
-                        : announcementText("announcements.syncTry.off")
+                        : announcementText("announcements.syncTry.off"),
+                    {previous:current,next:enabled}
                 );
             },
 
@@ -29768,9 +29785,9 @@
                 case "wake": add("listening"); break;
                 case "disableSpeechRecognition": if (!before.voice) add("off"); break;
                 case "toggleSync":
-                    if (before.sync === after.sync) add("syncAlready", {state: after.sync ? "on" : "off"}); break;
+                    if (before.announcementCount === commandAnnouncementCount && before.sync === after.sync) add("syncAlready", {state: after.sync ? "on" : "off"}); break;
                 case "changeGoalMode":
-                    if (!before.rangeCommand && before.mode === after.mode && before.range === after.range) add("modeAlready", {mode: after.mode}); break;
+                    if (before.announcementCount === commandAnnouncementCount && !before.rangeCommand && before.mode === after.mode && before.range === after.range) add("modeAlready", {mode: after.mode}); break;
                 case "changeStandardTime":
                     if (before.standard === after.standard) add("standardAlready", {duration: formatGoalFailureDuration(after.standard)}); break;
                 case "confirmNumberPad":

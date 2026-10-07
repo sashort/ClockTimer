@@ -5235,6 +5235,22 @@
         "text0": "fc903a96-b0d8-4101-ae17-212694abbc70"
       },
       "attributes": {}
+    },
+    "ee2b7bfc-08e7-45a6-bc65-6c7f5d272b21": {
+      "elementId": "ee2b7bfc-08e7-45a6-bc65-6c7f5d272b21",
+      "source": "easterEggSongSelect/option:3",
+      "texts": {
+        "text0": "af76ffc3-db3b-4dca-96f4-8947cce8a7de"
+      },
+      "attributes": {}
+    },
+    "6622cb0c-1ee3-4246-afb7-24d8cf0eba41": {
+      "elementId": "6622cb0c-1ee3-4246-afb7-24d8cf0eba41",
+      "source": "bluetoothAudioTestLink",
+      "texts": {
+        "text0": "cd358b3b-3309-4e87-b944-db1757f3167a"
+      },
+      "attributes": {}
     }
   },
   "selects": {
@@ -5297,6 +5313,11 @@
         "elementId": "5e1e8346-6a89-59e4-a4f4-4f630ac5363b",
         "value": "chrome-velocity",
         "textId": "56f594cb-98cd-5db9-9aa0-63296c99bbea"
+      },
+      {
+        "elementId": "ee2b7bfc-08e7-45a6-bc65-6c7f5d272b21",
+        "value": "chime-easter-egg",
+        "textId": "af76ffc3-db3b-4dca-96f4-8947cce8a7de"
       }
     ],
     "3a0b82c7-c5d3-5719-bd57-ae3469627cd2": [

@@ -85,3 +85,7 @@ const lowerDrive=song.events.filter(event=>event.instrument==='easter-egg-low-dr
 const render=catalog.instruments[runtimeSong.instrument];assert.equal(runtimeSong.events.length,1);assert.equal(runtimeSong.events[0].tone,'C4');assert.equal(render.samples[0].naturalDecay,true);assert.equal(render.samples[0].rootFrequency,261.6255653005986);
 const wav=fs.readFileSync(new URL('../'+render.samples[0].url,import.meta.url));assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal(wav.readUInt32LE(24),48000);assert.equal((wav.length-44)/96000,66);
 assert.equal((await import('node:crypto')).createHash('sha256').update(wav).digest('hex'),runtimeSong.approvedMix.sha256,'Deploy the exact approved WAV');console.log('PASS exact approved mix, natural-decay sample, full duration and preserved editable score');
+
+const songOptions=JSON.parse(fs.readFileSync(new URL('../lang/en-US/associations.json',import.meta.url),'utf8')).selects['af44f0e0-01a0-57a7-9b13-d56b283ac0b8'];
+assert(songOptions.some(option=>option.value==='chime-easter-egg'),'The approved song must be selectable in the generated main page');
+assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'), /<select id="easterEggSongSelect"[^>]*>[\s\S]*?<option value="chime-easter-egg"/,'The static page must offer the approved song too');

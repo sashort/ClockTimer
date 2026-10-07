@@ -5769,6 +5769,16 @@
       "id": "27e6ba4f-75ff-4673-810f-1c36e265987f",
       "text": "Setting Unchanged",
       "default": "Setting Unchanged"
+    },
+    "af76ffc3-db3b-4dca-96f4-8947cce8a7de": {
+      "id": "af76ffc3-db3b-4dca-96f4-8947cce8a7de",
+      "text": "Chime Mix",
+      "default": "Chime Mix"
+    },
+    "cd358b3b-3309-4e87-b944-db1757f3167a": {
+      "id": "cd358b3b-3309-4e87-b944-db1757f3167a",
+      "text": "Bluetooth Audio Test",
+      "default": "Bluetooth Audio Test"
     }
   }
 }

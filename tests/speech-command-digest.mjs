@@ -149,6 +149,8 @@ try {
     assert.deepEqual(calls,[['log'],['log']]);
     value.remove();
     const sequence=make(document.body,'sequence','^(?<label>rouge(?: pomme)?)$','showLog',{'speech-collect':''});
+    const sequencePlan=await speech.planCommandChain('rouge');
+    assert(sequencePlan.continuation && !sequencePlan.terminal,'Every collecting parameter stays open in stream classification');
     const opaque=fresh();
     await hear(opaque,'rouge');
     await hear(opaque,'rouge pomme');

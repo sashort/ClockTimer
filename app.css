@@ -740,7 +740,8 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
     border-left: 12px solid rgb(0 30 96 / 96%);
 }
 
-.main-menu .hamburger-menu-popover button {
+.main-menu .hamburger-menu-popover button,
+.main-menu #bluetoothAudioTestLink {
     width: 100%;
     border: 0;
     padding: 16px 20px;
@@ -7385,3 +7386,7 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 #profileEditorFields {border:0; padding:0; min-width:0;}
 #profileEditorFields input {min-width:0; max-width:100%;}
 .profile-edit-icon svg {width:28px;height:28px;overflow:visible;}
+
+.main-menu #bluetoothAudioTestLink {box-sizing:border-box;text-decoration:none;}
+.main-menu #bluetoothAudioTestLink:hover,
+.main-menu #bluetoothAudioTestLink:focus-visible {background:rgb(255 255 255 / 10%);}

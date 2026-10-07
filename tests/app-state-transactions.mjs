@@ -70,10 +70,13 @@ window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+// Happy DOM can retain parsed attributes without initial upgrade callbacks.
+// Align this fixture's mode attribute with the initialized model before exercising setters.
+if(process.argv.includes('--setting-chimes')) timer.configure({goal_type:timer.percentMode});
 const states=[];
 window.WMOFStateTransactions.addEventListener('state',event=>states.push(event.detail.state));
 if(process.argv.includes('--setting-chimes')) {
- const hear=async(transcript,action)=>{const start=chimes.length;await window.SpeechMenu.withExecutionContext({transcript},()=>window.WMOFActions[action]());await settle();return chimes.slice(start);};
+ const hear=async(transcript,action,...args)=>{const start=chimes.length;await window.SpeechMenu.withExecutionContext({transcript},()=>window.WMOFActions[action](...args));await settle();return chimes.slice(start);};
  assert.deepEqual(await hear('speech off','setSpeechMaster'),['setting-off']);
  assert.deepEqual(await hear('speech on','setSpeechMaster'),['setting-on']);
  assert.deepEqual(await hear('speech on','setSpeechMaster'),['setting-unchanged']);
@@ -365,6 +368,18 @@ if(process.argv.includes('--scheduled-standard')) {
         assert(value.hadCommittedCommand && !value.digestExecutionFailed,phrase+' is accepted');
         assert.match(window.document.querySelector('#scheduledStartStandardValue').textContent,expected===1800000?/30/:/40/,'standard duration updates');
     }
+    const growing=window.SpeechMenu.testBegin();
+    const beforeDuration=window.document.querySelector('#scheduledStartStandardValue').textContent;
+    for(const phrase of ['standard time ten','standard time ten minutes','standard time ten minutes thirty','standard time ten minutes thirty seconds']) {
+        const plan=await window.SpeechMenu.planCommandChain(phrase);
+        assert(plan?.continuation && !plan?.terminal,phrase+' remains extendable for every recognition path');
+        await window.SpeechMenu.testTranscript(growing,phrase,false);await growing.digestQueue;await settle();
+        assert.equal(growing.digestSteps.length,0,phrase+' must remain uncommitted while collecting');
+        assert.equal(window.document.querySelector('#scheduledStartStandardValue').textContent,beforeDuration,'an interim duration cannot arm scheduled-start acceptance');
+    }
+    await window.SpeechMenu.testTranscript(growing,'standard time ten minutes thirty seconds',true);await growing.digestQueue;await settle();
+    assert.equal(growing.digestSteps.length,1,'one final duration action');
+    assert.equal(growing.digestSteps[0].transcript,'standard time 0:10:30','commit the complete continued duration');
     const cancel=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(cancel,'cancel',true);await cancel.digestQueue;await settle();
     assert(!window.document.querySelector('#scheduledStartDialog').open,'Cancel remains available after bare time input');
     console.log('PASS scheduled start accepts standard time prefix or duration alone');
@@ -421,6 +436,24 @@ assert.equal(window.WMOFSpeechAvailability.canUseReady(),beforeStaleButton.actio
 window.WMOFInteractionState.refresh();
 checkInteractionState();
 assert(stored.some(e=>e.event==='trip.started'),'the confirmed trip reaches persistence');
+if(process.argv.includes('--loopback-only')) {
+    const say=async phrase=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await settle();assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' is accepted');};
+    for(const mode of ['trip','auto','total','year','money','week','day']) {
+        await say(mode+' mode');spoken.length=0;const start=chimes.length;
+        await say(mode+' mode');
+        assert.deepEqual(chimes.slice(start),['setting-unchanged'],mode+' repeated mode cue');
+        assert.equal(spoken.length,1,mode+' speaks once');
+    }
+    await say('sync off');
+    for(const [phrase,cue] of [['sync off','setting-unchanged'],['sync on','setting-on'],['sync on','setting-unchanged'],['sync off','setting-off'],['sync off','setting-unchanged'],['sync status','setting-unchanged'],['mode','setting-unchanged']]) {
+        spoken.length=0;const start=chimes.length;await say(phrase);
+        assert.deepEqual(chimes.slice(start),[cue],phrase+' emits exactly one expected cue');
+        assert.equal(spoken.length,1,phrase+' speaks once');
+    }
+    assert.equal(errors.length,0,errors.join('\n'));assert.equal(consoleErrors.length,0,consoleErrors.join('\n'));
+    console.log('PASS FSM mode/range and sync loopbacks: one unchanged chime and one response; real sync changes use on/off cues');
+    window.happyDOM.abort();process.exit(0);
+}
 window.__testTime+=120000;
 if(process.argv.includes('--trip-summary')) {
     const activeId=timer.currentTripId;
@@ -708,6 +741,23 @@ if(process.argv.includes('--voice-feedback')) {
     translatedStart.setAttribute('speech-skippable','');
     await speakCommand('end lunch ok');
     await speakCommand('sync off');const beforeSyncLoop=chimes.length;await speakCommand('sync off');assert(spoken.includes('Sync already off.'));if(process.argv.includes('--setting-chimes'))assert.deepEqual(chimes.slice(beforeSyncLoop),['setting-unchanged'],'unchanged sync loopback gets exactly one neutral chime');
+    if(process.argv.includes('--setting-chimes')) {
+        for(const mode of ['trip','auto','total','year','money','week','day']) {
+            await speakCommand(mode+' mode');spoken.length=0;const start=chimes.length;
+            const repeatedMode=await speakCommand(mode+' mode');
+            assert(repeatedMode.hadCommittedCommand && !repeatedMode.digestExecutionFailed,JSON.stringify({mode,focus:window.WMOFInteractionState.state.focus,steps:repeatedMode.digestSteps.map(s=>s.commandElement.getAttribute('speech-function')),failed:repeatedMode.digestExecutionFailed}));
+            assert.deepEqual(chimes.slice(start),['setting-unchanged'],mode+' voice loopback plays one unchanged chime '+JSON.stringify({spoken,steps:repeatedMode.digestSteps.map(s=>s.commandElement.getAttribute('speech-function')),mode:timer.percentMode}));
+            assert.equal(spoken.length,1,mode+' voice loopback speaks once');
+        }
+        const readStart=chimes.length;await speakCommand('sync status');
+        assert.deepEqual(chimes.slice(readStart),['setting-unchanged'],'sync status is informational');
+        for(const enabled of ['on','off']) {
+            await speakCommand('sync '+enabled);spoken.length=0;const start=chimes.length;
+            await speakCommand('sync '+enabled);
+            assert.deepEqual(chimes.slice(start),['setting-unchanged'],'sync '+enabled+' voice loopback');
+            assert.equal(spoken.length,1,'sync '+enabled+' speaks once');
+        }
+    }
     await speakCommand('sleep');assert(spoken.includes('Voice recognition off.'));
     await speakCommand('wake');assert(spoken.includes('Voice recognition on.'));
     await speakCommand('off');assert(spoken.includes('Microphone deactivated.'));

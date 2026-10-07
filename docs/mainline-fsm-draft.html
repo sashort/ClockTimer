@@ -109,7 +109,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     "One utterance cannot execute both a short command and its preempting continuation.",
     "Returning from Trip Log preserves underlying editor value and surface.",
     "Ready / End Trip uses one immutable timestamp for end/start boundary.",
-    "End <break type> OK skips question and dialog; standalone final End <break type> shows both.",
+    "End \u003cbreak type> OK skips question and dialog; standalone final End \u003cbreak type> shows both.",
     "Scheduled Start accepts a valid duration with or without the Standard Time prefix.",
     "Break Selector is pointer-only; voice start commands use a typed OK/Cancel dialog.",
     "Localized command patterns dispatch neutral interval identifiers; core logic does not parse English break names.",
@@ -140,7 +140,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "trip": "No active trip",
       "facet": "",
       "commands": [
-        "Ready at <clock time> [continuation]",
+        "Ready at \u003cclock time> [continuation]",
         "Ready / New Trip",
         "Log / settings / modes"
       ],
@@ -155,7 +155,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "commands": [
         "Off / Sleep [when listening]",
         "Cancel / Close [top surface]",
-        "At <time> / Defer Trip",
+        "At \u003ctime> / Defer Trip",
         "Say a duration / Touch"
       ],
       "family": "mainline"
@@ -265,7 +265,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "commands": [
         "Off / Sleep [when listening]",
         "Cancel / Close [top surface]",
-        "Standard time <duration>",
+        "Standard time \u003cduration>",
         "Edit standard time"
       ],
       "family": "scheduling"
@@ -329,7 +329,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "title": "Start interval confirmation",
       "focus": "Voice start confirmation dialog",
       "trip": "Running or Down",
-      "facet": "Are you ready to start your <break type>?",
+      "facet": "Are you ready to start your \u003cbreak type>?",
       "commands": [
         "Cancel / Close [keep trip state]",
         "OK / Okay / O K [start selected interval]"
@@ -435,7 +435,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "title": "End break confirmation",
       "focus": "Break End dialog",
       "trip": "Break / Lunch",
-      "facet": "Are you ready to end your <break type>? Choices: OK or Cancel.",
+      "facet": "Are you ready to end your \u003cbreak type>? Choices: OK or Cancel.",
       "commands": [
         "Cancel / Close [keep current interval]",
         "OK / Okay / O K [end break]"
@@ -884,7 +884,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Voice: clear both sequences and restart ID",
         "User / Username: clear inputs and switch login method",
         "Cancel: clear and restart ID entry",
-        "<number sequence> (exactly four digits)",
+        "\u003cnumber sequence> (exactly four digits)",
         "OK: next stage / verify PIN"
       ],
       "family": "login",
@@ -907,7 +907,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Cancel: clear PIN, stay on PIN entry, announce Password; prime second Cancel",
         "Voice: clear all and return to User ID",
         "User / Username: clear inputs and open username/password modal",
-        "<number sequence> (exactly four digits)",
+        "\u003cnumber sequence> (exactly four digits)",
         "OK: authenticate ID/PIN"
       ],
       "family": "login",
@@ -971,7 +971,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Cancel: clear User ID and return to ID entry",
         "Voice: clear all and restart ID",
         "User / Username: open separate username/password modal",
-        "<number sequence>: begin fresh PIN; reset Cancel sequence",
+        "\u003cnumber sequence>: begin fresh PIN; reset Cancel sequence",
         "OK: requires four PIN digits"
       ],
       "family": "login",
@@ -1138,7 +1138,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "parameter_collection": "Keep an accepted prefix provisional until the parameter boundary; consume the longest valid complete value."
       }
     },
     {
@@ -1164,7 +1165,12 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+        },
+        "parameter_collection": "Keep an accepted prefix provisional until the parameter boundary; consume the longest valid complete value."
       }
     },
     {
@@ -1450,7 +1456,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "pointer",
+          "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+        }
       }
     },
     {
@@ -1762,7 +1772,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "UNRESOLVED: specify exact boundary/condition.",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "rejection",
+          "rule": "Rejected or unrecognized input retains state; no successful unchanged cue."
+        }
       }
     },
     {
@@ -1788,14 +1802,18 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "rejection",
+          "rule": "Rejected or unrecognized input retains state; no successful unchanged cue."
+        }
       }
     },
     {
       "id": "S01",
       "source": "R0",
       "target": "S0",
-      "label": "Ready at <clock time>",
+      "label": "Ready at \u003cclock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -1808,7 +1826,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Ready at <clock time>",
+        "trigger": "Ready at \u003cclock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -1821,7 +1839,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S02",
       "source": "V0",
       "target": "S0",
-      "label": "At <clock time>",
+      "label": "At \u003cclock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -1834,7 +1852,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "At <clock time>",
+        "trigger": "At \u003cclock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -1847,7 +1865,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S03",
       "source": "V1",
       "target": "S0",
-      "label": "At <clock time>",
+      "label": "At \u003cclock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -1860,7 +1878,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "At <clock time>",
+        "trigger": "At \u003cclock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -1873,7 +1891,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S04",
       "source": "S0",
       "target": "S1",
-      "label": "[Standard Time] <duration>",
+      "label": "[Standard Time] \u003cduration>",
       "mode": "voice",
       "audio": "standard",
       "guard": "",
@@ -1886,20 +1904,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "[Standard Time] <duration>",
+        "trigger": "[Standard Time] \u003cduration>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "parameter_collection": "Keep an accepted prefix provisional until the parameter boundary; consume the longest valid complete value."
       }
     },
     {
       "id": "S05",
       "source": "S1",
       "target": "S1",
-      "label": "[Standard Time] <duration> (replace)",
+      "label": "[Standard Time] \u003cduration> (replace)",
       "mode": "voice",
       "audio": "standard",
       "guard": "",
@@ -1912,13 +1931,18 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "[Standard Time] <duration> (replace)",
+        "trigger": "[Standard Time] \u003cduration> (replace)",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+        },
+        "parameter_collection": "Keep an accepted prefix provisional until the parameter boundary; consume the longest valid complete value."
       }
     },
     {
@@ -2494,7 +2518,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "superseded",
+          "rule": "Legacy selector voice edge is inactive; replacement commands use confirmation dialogs."
+        }
       }
     },
     {
@@ -4415,9 +4443,9 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "persist": false,
       "restore": null,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "local pre-release / 2026-10-07",
+        "evidence": "tests/app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only; exactly one expected cue and one response. Browser Bluetooth routing is not covered by these state tests."
       },
       "skippable": false,
       "contract": {
@@ -4427,7 +4455,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "unchanged",
+          "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+        }
       }
     },
     {
@@ -4441,9 +4473,9 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "persist": false,
       "restore": null,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "local pre-release / 2026-10-07",
+        "evidence": "tests/app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only; exactly one expected cue and one response. Browser Bluetooth routing is not covered by these state tests."
       },
       "skippable": false,
       "contract": {
@@ -4453,7 +4485,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "unchanged",
+          "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+        }
       }
     },
     {
@@ -4649,9 +4685,9 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "persist": false,
       "restore": null,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "local pre-release / 2026-10-07",
+        "evidence": "tests/app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only; exactly one expected cue and one response. Browser Bluetooth routing is not covered by these state tests."
       },
       "skippable": false,
       "contract": {
@@ -4661,7 +4697,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "unchanged",
+          "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+        }
       }
     },
     {
@@ -4857,9 +4897,9 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "persist": false,
       "skippable": false,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "local pre-release / 2026-10-07",
+        "evidence": "tests/app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only; exactly one expected cue and one response. Browser Bluetooth routing is not covered by these state tests."
       },
       "contract": {
         "trigger": "Auto Mode [already selected]",
@@ -4868,7 +4908,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "unchanged",
+          "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+        }
       }
     },
     {
@@ -4882,9 +4926,9 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "persist": false,
       "skippable": false,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "local pre-release / 2026-10-07",
+        "evidence": "tests/app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only; exactly one expected cue and one response. Browser Bluetooth routing is not covered by these state tests."
       },
       "contract": {
         "trigger": "Trip Mode [already selected]",
@@ -4893,7 +4937,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "unchanged",
+          "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+        }
       }
     },
     {
@@ -4907,9 +4955,9 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "persist": false,
       "skippable": false,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "local pre-release / 2026-10-07",
+        "evidence": "tests/app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only; exactly one expected cue and one response. Browser Bluetooth routing is not covered by these state tests."
       },
       "contract": {
         "trigger": "Total / range Mode [already selected]",
@@ -4918,7 +4966,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "loopback_feedback": {
+          "classification": "unchanged",
+          "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+        }
       }
     },
     {
@@ -6047,7 +6099,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-ID-VOICE",
       "source": "LOGIN-ID",
       "target": "LOGIN-ID",
-      "label": "<number sequence>: populate ID cells",
+      "label": "\u003cnumber sequence>: populate ID cells",
       "mode": "voice",
       "audio": "silent",
       "guard": "listening; no more than four digits",
@@ -6060,13 +6112,17 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "<number sequence>: populate ID cells",
+        "trigger": "\u003cnumber sequence>: populate ID cells",
         "guard": "listening; no more than four digits",
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
         "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+        }
       }
     },
     {
@@ -6092,7 +6148,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
         "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "pointer",
+          "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+        }
       }
     },
     {
@@ -6151,7 +6211,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-PIN-VOICE",
       "source": "LOGIN-PIN",
       "target": "LOGIN-PIN",
-      "label": "<number sequence>: populate masked PIN cells",
+      "label": "\u003cnumber sequence>: populate masked PIN cells",
       "mode": "voice",
       "audio": "silent",
       "guard": "",
@@ -6164,13 +6224,17 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "<number sequence>: populate masked PIN cells",
+        "trigger": "\u003cnumber sequence>: populate masked PIN cells",
         "guard": "",
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
         "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+        }
       }
     },
     {
@@ -6196,7 +6260,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
         "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "pointer",
+          "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+        }
       }
     },
     {
@@ -6326,7 +6394,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
         "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "conditional",
+          "rule": "Clearing existing credentials changes input; repeated already-empty input and unchanged focus uses setting-unchanged before the repeated prompt."
+        }
       }
     },
     {
@@ -6352,7 +6424,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
         "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "pointer",
+          "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+        }
       }
     },
     {
@@ -6456,7 +6532,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "conditional",
+          "rule": "Clearing existing credentials changes input; repeated already-empty input and unchanged focus uses setting-unchanged before the repeated prompt."
+        }
       }
     },
     {
@@ -6638,7 +6718,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "conditional",
+          "rule": "Clearing existing credentials changes input; repeated already-empty input and unchanged focus uses setting-unchanged before the repeated prompt."
+        }
       }
     },
     {
@@ -6794,7 +6878,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -6820,7 +6908,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -6846,7 +6938,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -6872,7 +6968,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -6898,7 +6998,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -6924,7 +7028,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -6950,7 +7058,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -6976,7 +7088,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7002,7 +7118,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7028,7 +7148,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7054,7 +7178,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7080,7 +7208,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7106,7 +7238,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7132,7 +7268,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7158,7 +7298,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7184,7 +7328,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7243,7 +7391,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-PIN-REPLACE",
       "source": "LOGIN-PIN",
       "target": "LOGIN-PIN",
-      "label": "Fresh <number sequence> replaces PIN",
+      "label": "Fresh \u003cnumber sequence> replaces PIN",
       "mode": "voice",
       "audio": "silent",
       "guard": "not pending; recognition listening",
@@ -7256,20 +7404,24 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Fresh <number sequence> replaces PIN",
+        "trigger": "Fresh \u003cnumber sequence> replaces PIN",
         "guard": "not pending; recognition listening",
         "state_changes": "Fresh four-digit group replaces the selected credential. Additional complete groups keep the latest group. A digit after a full group begins a new group; any entry resets Cancel sequence.",
         "timing": "Immediate local UI change.",
         "persistence": "None.",
         "rollback": "None.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+        }
       }
     },
     {
       "id": "LOGIN-ID-REPLACE",
       "source": "LOGIN-ID",
       "target": "LOGIN-ID",
-      "label": "Fresh <number sequence> replaces User ID",
+      "label": "Fresh \u003cnumber sequence> replaces User ID",
       "mode": "voice",
       "audio": "silent",
       "guard": "not pending; recognition listening",
@@ -7282,13 +7434,17 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Fresh <number sequence> replaces User ID",
+        "trigger": "Fresh \u003cnumber sequence> replaces User ID",
         "guard": "not pending; recognition listening",
         "state_changes": "Replace selected ID with fresh four digits; preserve leading zeros; no decimals. Existing sequence entry feedback owns speech.",
         "timing": "Immediate local UI change.",
         "persistence": "None.",
         "rollback": "None.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+        }
       }
     },
     {
@@ -7418,7 +7574,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7444,7 +7604,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7470,7 +7634,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7496,7 +7664,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+        }
       }
     },
     {
@@ -7522,7 +7694,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None.",
         "rollback": "None; local UI change.",
-        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback",
+        "loopback_feedback": {
+          "classification": "pointer",
+          "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+        }
       }
     },
     {
@@ -9621,11 +9797,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     },
     "login-id": {
       "id": "login-id",
-      "chime": "None",
+      "chime": "setting-unchanged only for an already-empty, unchanged voice loopback",
       "notes": "",
       "summary": "Please login using voice",
       "details": "None",
       "sequence": [
+        {
+          "kind": "Chime",
+          "text": "setting-unchanged only for an already-empty, unchanged voice loopback",
+          "optional": true,
+          "id": "login-id-unchanged",
+          "suppression_rules": [
+            "AUD-USER"
+          ],
+          "skippable": false
+        },
         {
           "id": "login-id-speech",
           "kind": "Summary",
@@ -9638,7 +9824,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           ]
         }
       ],
-      "footer": "English text from messages.voiceLogin. No digits or PIN are read back.",
+      "footer": "English text from messages.voiceLogin. No digits or PIN are read back. A repeated command with unchanged credential input/focus gets one unchanged cue before this prompt. Clearing input changes attributes and is not an unchanged loopback.",
       "order_note": "Single spoken component."
     },
     "login-pin": {
@@ -9687,11 +9873,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     },
     "login-user": {
       "id": "login-user",
-      "chime": "None",
+      "chime": "setting-unchanged only for an already-empty, unchanged voice loopback",
       "notes": "",
       "summary": "Login with username and password.",
       "details": "None",
       "sequence": [
+        {
+          "kind": "Chime",
+          "text": "setting-unchanged only for an already-empty, unchanged voice loopback",
+          "optional": true,
+          "id": "login-user-unchanged",
+          "suppression_rules": [
+            "AUD-USER"
+          ],
+          "skippable": false
+        },
         {
           "id": "login-user-speech",
           "kind": "Summary",
@@ -9704,7 +9900,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           ]
         }
       ],
-      "footer": "English text from messages.voiceLogin. No digits or PIN are read back.",
+      "footer": "English text from messages.voiceLogin. No digits or PIN are read back. A repeated command with unchanged credential input/focus gets one unchanged cue before this prompt. Clearing input changes attributes and is not an unchanged loopback.",
       "order_note": "Single spoken component."
     },
     "application-starting": {
@@ -9752,7 +9948,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "order_note": "Single spoken component."
     }
   },
-  "chart_revision": "13 / profile editor and Drop-In",
+  "chart_revision": "14 / loopback feedback audit and menu access",
   "implementation_status": "Draft of shared-state implementation and latest requested workflows. Local automated evidence does not establish deployment coverage.",
   "state_contract": {
     "focus": {
@@ -9887,13 +10083,330 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "on": "setting-on: existing info-tone rising C2 to G2.",
       "off": "setting-off: falling G2 to C2.",
       "unchanged": "setting-unchanged: two short equal-pitch G2 taps. Used by informational readbacks (time, mode, sync status, remaining time/end time), successful unchanged settings, and successful loopbacks with unchanged semantic state.",
-      "mechanism": "Existing SpeechMenu feedback adapter captures semantic state before a command and compares after completion. Clock elapsed time and persistence bookkeeping are excluded. Clearing values, changing focus/recognition/trip state are changes, not automatically unchanged self-loops. Setting booleans use on/off outcomes; explicit setters compare previous/next. A prior semantic announcement prevents duplicate fallback chimes. Chime and speech are queued in listening order without blocking UI/persistence. Rejections do not get unchanged feedback. Skippable intermediate feedback remains suppressed by continuation handling.",
+      "mechanism": "Existing SpeechMenu feedback adapter captures semantic state before a command and compares after completion. Clock elapsed time and persistence bookkeeping are excluded. Clearing values, changing focus/recognition/trip state are changes, not automatically unchanged self-loops. Setting booleans use on/off outcomes; explicit setters compare previous/next. A prior semantic announcement prevents duplicate fallback chimes. Chime and speech are queued in listening order without blocking UI/persistence. Rejections do not get unchanged feedback. Skippable intermediate feedback remains suppressed by continuation handling. Informational invocations receive distinct queue IDs. Sync and mode/range setters compare their own prior/resulting values before redundant mutations. Login credentials and cancel flags are included in the comparison.",
       "master": "Honor disabled chimes/custom rows. Turning chime master off emits one final off acknowledgement using prior enabled state.",
       "error": "Down Time and Goal Failed use the approved G-to-C slide over C minor on cinematic-pulse-bass: 4 beats sliding, then 9/2 beats sustained (three times the original 3/2 beat hold).",
       "tests": [
         "tests/app-state-transactions.mjs --voice-feedback --setting-chimes",
         "tests/chime-song-tempo.mjs"
-      ]
+      ],
+      "fsm_loopback_audit": {
+        "source": "Every transition with source === target",
+        "count": 43,
+        "edges": [
+          {
+            "transition": "E03",
+            "source": "V1",
+            "mode": "voice",
+            "classification": "attribute-change",
+            "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+          },
+          {
+            "transition": "E14",
+            "source": "N1",
+            "mode": "pointer",
+            "classification": "pointer",
+            "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+          },
+          {
+            "transition": "E26",
+            "source": "V1",
+            "mode": "automatic",
+            "classification": "rejection",
+            "rule": "Rejected or unrecognized input retains state; no successful unchanged cue."
+          },
+          {
+            "transition": "E27",
+            "source": "V0",
+            "mode": "voice",
+            "classification": "rejection",
+            "rule": "Rejected or unrecognized input retains state; no successful unchanged cue."
+          },
+          {
+            "transition": "S05",
+            "source": "S1",
+            "mode": "voice",
+            "classification": "attribute-change",
+            "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+          },
+          {
+            "transition": "B04",
+            "source": "B1",
+            "mode": "voice",
+            "classification": "superseded",
+            "rule": "Legacy selector voice edge is inactive; replacement commands use confirmation dialogs."
+          },
+          {
+            "transition": "M09",
+            "source": "SI",
+            "mode": "voice",
+            "classification": "unchanged",
+            "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+          },
+          {
+            "transition": "M10",
+            "source": "SO",
+            "mode": "voice",
+            "classification": "unchanged",
+            "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+          },
+          {
+            "transition": "M18",
+            "source": "HT",
+            "mode": "voice",
+            "classification": "unchanged",
+            "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+          },
+          {
+            "transition": "M19",
+            "source": "GA",
+            "mode": "voice",
+            "classification": "unchanged",
+            "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+          },
+          {
+            "transition": "M20",
+            "source": "GT",
+            "mode": "voice",
+            "classification": "unchanged",
+            "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+          },
+          {
+            "transition": "M21",
+            "source": "GL",
+            "mode": "voice",
+            "classification": "unchanged",
+            "rule": "One setting-unchanged chime, then one readback; honor masters and continuation suppression."
+          },
+          {
+            "transition": "LOGIN-ID-VOICE",
+            "source": "LOGIN-ID",
+            "mode": "voice",
+            "classification": "attribute-change",
+            "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+          },
+          {
+            "transition": "LOGIN-ID-POINTER",
+            "source": "LOGIN-ID",
+            "mode": "pointer",
+            "classification": "pointer",
+            "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+          },
+          {
+            "transition": "LOGIN-PIN-VOICE",
+            "source": "LOGIN-PIN",
+            "mode": "voice",
+            "classification": "attribute-change",
+            "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+          },
+          {
+            "transition": "LOGIN-PIN-POINTER",
+            "source": "LOGIN-PIN",
+            "mode": "pointer",
+            "classification": "pointer",
+            "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+          },
+          {
+            "transition": "LOGIN-CANCEL-LOGIN-ID",
+            "source": "LOGIN-ID",
+            "mode": "voice",
+            "classification": "conditional",
+            "rule": "Clearing existing credentials changes input; repeated already-empty input and unchanged focus uses setting-unchanged before the repeated prompt."
+          },
+          {
+            "transition": "LOGIN-PCANCEL-LOGIN-ID",
+            "source": "LOGIN-ID",
+            "mode": "pointer",
+            "classification": "pointer",
+            "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+          },
+          {
+            "transition": "LOGIN-VOICE-LOGIN-ID",
+            "source": "LOGIN-ID",
+            "mode": "voice",
+            "classification": "conditional",
+            "rule": "Clearing existing credentials changes input; repeated already-empty input and unchanged focus uses setting-unchanged before the repeated prompt."
+          },
+          {
+            "transition": "LOGIN-USER-LOGIN-USER",
+            "source": "LOGIN-USER",
+            "mode": "voice",
+            "classification": "conditional",
+            "rule": "Clearing existing credentials changes input; repeated already-empty input and unchanged focus uses setting-unchanged before the repeated prompt."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-ID-SLEEP",
+            "source": "LOGIN-ID",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-ID-WAKE",
+            "source": "LOGIN-ID",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-ID-OFF",
+            "source": "LOGIN-ID",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-ID-ON",
+            "source": "LOGIN-ID",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-PIN-SLEEP",
+            "source": "LOGIN-PIN",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-PIN-WAKE",
+            "source": "LOGIN-PIN",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-PIN-OFF",
+            "source": "LOGIN-PIN",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-PIN-ON",
+            "source": "LOGIN-PIN",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-USER-SLEEP",
+            "source": "LOGIN-USER",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-USER-WAKE",
+            "source": "LOGIN-USER",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-USER-OFF",
+            "source": "LOGIN-USER",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-USER-ON",
+            "source": "LOGIN-USER",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-WAIT-SLEEP",
+            "source": "LOGIN-WAIT",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-WAIT-WAKE",
+            "source": "LOGIN-WAIT",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-WAIT-OFF",
+            "source": "LOGIN-WAIT",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-WAIT-ON",
+            "source": "LOGIN-WAIT",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-PIN-REPLACE",
+            "source": "LOGIN-PIN",
+            "mode": "voice",
+            "classification": "attribute-change",
+            "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+          },
+          {
+            "transition": "LOGIN-ID-REPLACE",
+            "source": "LOGIN-ID",
+            "mode": "voice",
+            "classification": "attribute-change",
+            "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-PIN-CANCEL-SLEEP",
+            "source": "LOGIN-PIN-CANCEL",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-PIN-CANCEL-WAKE",
+            "source": "LOGIN-PIN-CANCEL",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-PIN-CANCEL-OFF",
+            "source": "LOGIN-PIN-CANCEL",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-RECOG-LOGIN-PIN-CANCEL-ON",
+            "source": "LOGIN-PIN-CANCEL",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "Recognition attribute changes within the login focus region; use recognition lifecycle announcement, never classify solely by identical node IDs."
+          },
+          {
+            "transition": "LOGIN-PVOICE-WAIT",
+            "source": "LOGIN-USER",
+            "mode": "pointer",
+            "classification": "pointer",
+            "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+          }
+        ],
+        "requirement": "A node self-loop is not proof of unchanged semantic state. Compare persistent/UI attributes, excluding elapsed time and bookkeeping.",
+        "runtime_regressions": [
+          "M09",
+          "M10",
+          "M18",
+          "M19",
+          "M20",
+          "M21"
+        ],
+        "coverage": "All self-loop contracts reviewed; runtime tests separately verify Sync On/Off, Auto/Trip/Total and year/money/week/day, readbacks, and login workflow. Do not infer runtime pass from this contract audit."
+      }
     },
     "announcement-timing": {
       "ownership": "AnnouncementCatalog owns speechStart.anchor and paddingMs; songs only provide notes, tempo, measured loudness and musical timing. No speech policy or spoken text in songs.",
@@ -9913,7 +10426,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     "chime-easter-egg": {
       "status": "Local audio mix; no speech trigger assigned",
       "tempo": 225,
-      "duration_seconds": 64.0,
+      "duration_seconds": 64,
       "key": "C natural minor",
       "beat": "Steady unchanged-inspired pulse: one note every beat, identical note length, and equal gaps between every successive pulse note. May vary pitch in C minor; pauses during refrains, returns to original G afterward and in the ending.",
       "layers": [
@@ -10070,7 +10583,130 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "sustain-loops": "Optional sample loopStart/loopEnd values in seconds enable long wind phrases. Loop bounds validated against decoded recordings. Flute assets use crossfaded loop boundaries; note release remains 130 ms.",
         "oboe-release": "480 ms release after the written note end, allowing a gentle falling tail and overlap into the next note. Speech remains anchored to its scheduled time."
       },
-      "mix": "Shawm-inspired modeled reed replaces the oboe lead. Brighter harmonic body is derived from licensed oboe recordings, not claimed to be an authentic shawm recording. Soft per-note releases, louder slides and 80s electronic percussion remain."
+      "mix": "Shawm-inspired modeled reed replaces the oboe lead. Brighter harmonic body is derived from licensed oboe recordings, not claimed to be an authentic shawm recording. Soft per-note releases, louder slides and 80s electronic percussion remain.",
+      "approvedMix": {
+        "version": "v89",
+        "sha256": "35f69733d26fcc787142a4002a9e8e53c496c895268e502f113e44ce0d623a75",
+        "durationSeconds": 66,
+        "musicDurationSeconds": 61.86666666666667,
+        "settings": "api/audio/instruments/approved-easter-egg-final-mix.json"
+      },
+      "arrangement": {
+        "openingNotes": 32,
+        "introStageBeats": 8,
+        "mainStartsAtBeat": 56,
+        "stages": [
+          {
+            "voice": "easter-egg-steady-beat",
+            "beat": 0
+          },
+          {
+            "voice": "easter-egg-eighties-snare",
+            "beat": 24
+          },
+          {
+            "voice": "easter-egg-sub-bass",
+            "beat": 24
+          },
+          {
+            "voice": "easter-egg-low-driving-beat",
+            "beat": 24
+          },
+          {
+            "voice": "easter-egg-eighties-kick",
+            "beat": 32
+          },
+          {
+            "voice": "cinematic-pulse-bass",
+            "beat": 32
+          },
+          {
+            "voice": "easter-egg-pulse-lead",
+            "beat": 48
+          },
+          {
+            "voice": "easter-egg-hiphop-hat",
+            "beat": 48
+          },
+          {
+            "voice": "easter-egg-hiphop-clap",
+            "beat": 50
+          },
+          {
+            "voice": "easter-egg-featured-slides",
+            "beat": 208
+          }
+        ],
+        "endingStartsAtBeat": 224,
+        "endingBeats": 8,
+        "openingGroups": [
+          {
+            "beats": 8,
+            "tone": "G2"
+          },
+          {
+            "beats": 8,
+            "tone": "Eb2"
+          },
+          {
+            "beats": 8,
+            "tone": "F2"
+          },
+          {
+            "beats": 8,
+            "tone": "G3"
+          }
+        ],
+        "openingSoloBeats": 24,
+        "octaveLayerStartsAtBeat": 24,
+        "leadRhythm": "Syncopated notes with offbeat accents, three-quarter-beat gates and long falling release",
+        "leadOctave": 2,
+        "synthIntroRhythm": "First group: C3, Eb3, G3, Eb3. Second group: C3, Eb3, G3; remove final Eb3 and hold preceding G3 for four beats through its slot. Busy notes begin at beat 48.",
+        "percussionLayerStartsAtBeat": 48,
+        "lowerDrivingBeatStartsAtBeat": 24,
+        "recordedPhrase": {
+          "starts": [
+            "151/2",
+            "183/2",
+            "279/2",
+            "311/2"
+          ],
+          "pitches": [
+            "G2",
+            "F2",
+            "Eb2",
+            "C2"
+          ],
+          "offsets": [
+            "0",
+            "3/2",
+            "5/2",
+            "3"
+          ],
+          "lengths": [
+            "5/4",
+            "1/3",
+            "1/3",
+            "1"
+          ],
+          "profiles": [
+            "easter-egg-recorded-phrase-0",
+            "easter-egg-recorded-phrase-1",
+            "easter-egg-recorded-phrase-2",
+            "easter-egg-recorded-phrase-3"
+          ],
+          "articulation": "12 ms attacks; individual short releases; no delay or reverb; long-short-quick-held rhythm"
+        }
+      },
+      "playback": "Exact approved v89 render via asynchronous cached sample loading; source score retained in catalog scoreEvents."
+    },
+    "parameter-collection": {
+      "requirement": "A speech-collect parameter is open-ended in digest, candidate and recognition-stream classification, even after a valid prefix. A next command or final utterance decode establishes its boundary. No hard terminal deadline or early stream cut may apply the earliest valid duration.",
+      "scheduled_start": "Standard Time prefix is optional. Accumulate the complete duration before changeStandardTime can apply it or arm scheduled-start acceptance.",
+      "tests": [
+        "tests/speech-command-digest.mjs",
+        "tests/app-state-transactions.mjs --scheduled-standard"
+      ]
     }
   },
   "unresolved_contracts": [
