@@ -1,16 +1,69 @@
 (async () => {
     "use strict";
 
+    let audioActivated = false;
+    let enableStartupAudio;
+    const startupAudioEnabled = new Promise(resolve => { enableStartupAudio = resolve; });
+    let startStartupAnnouncement;
+    let startupAudioDialog;
+    const activateStartupAudio = () => {
+        if (audioActivated) return;
+        audioActivated = true;
+        // Resume in the OK handler without waiting for async catalog loading.
+        void globalThis.WMOFAudio?.unlock?.();
+        startupAudioDialog.close();
+        startupAudioDialog.remove();
+        startStartupAnnouncement?.();
+        enableStartupAudio();
+    };
+
     const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
     await announcementLanguage.load(document.documentElement.lang || "en-US");
     const announcementText = (key, values) => announcementLanguage.text(key, values);
     let startupAnnouncementPending = true;
+    let startupAnnouncementStarted = false;
     let finishStartupAnnouncement;
     const startupAnnouncementFinished = new Promise(resolve => { finishStartupAnnouncement = () => { startupAnnouncementPending = false; resolve(); }; });
-    const startupSpoken = globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceLogin.applicationStarting"), {
-        onEnd: finishStartupAnnouncement, onError: finishStartupAnnouncement
+    startStartupAnnouncement = () => {
+        if (startupAnnouncementStarted) return;
+        startupAnnouncementStarted = true;
+        try {
+            const startupSpoken = globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceLogin.applicationStarting"), {
+                onEnd: finishStartupAnnouncement, onError: finishStartupAnnouncement
+            });
+            if (!startupSpoken) finishStartupAnnouncement();
+        } catch (error) {
+            finishStartupAnnouncement();
+        }
+    };
+    startupAudioDialog = document.createElement("dialog");
+    startupAudioDialog.id = "startupAudioDialog";
+    startupAudioDialog.className = "app-dialog startup-audio-dialog";
+    startupAudioDialog.setAttribute("aria-labelledby", "startupAudioTitle");
+    const startupForm = document.createElement("form");
+    const startupTitle = document.createElement("h2");
+    startupTitle.id = "startupAudioTitle";
+    startupTitle.textContent = announcementText("messages.voiceLogin.applicationStarting");
+    const startupInstructions = document.createElement("p");
+    startupInstructions.textContent = announcementText("messages.voiceLogin.enableAudioPrompt");
+    const startupActions = document.createElement("div");
+    startupActions.className = "dialog-actions";
+    const startupOK = document.createElement("button");
+    startupOK.id = "startupAudioOK";
+    startupOK.type = "submit";
+    startupOK.className = "primary-action";
+    startupOK.textContent = announcementText("messages.voiceLogin.enableAudioAction");
+    startupActions.append(startupOK);
+    startupForm.append(startupTitle, startupInstructions, startupActions);
+    startupAudioDialog.append(startupForm);
+    document.body.append(startupAudioDialog);
+    startupAudioDialog.addEventListener("cancel", event => event.preventDefault());
+    startupForm.addEventListener("submit", event => {
+        event.preventDefault();
+        activateStartupAudio();
     });
-    if (!startupSpoken) finishStartupAnnouncement();
+    startupAudioDialog.showModal();
+    if (!globalThis.WMOFAudio?.speak) finishStartupAnnouncement();
 
     try {
         await globalThis.WMOFPersistence.ready;
@@ -8402,6 +8455,10 @@
     }
 
     function openDialogElement(dialog, { duration = 250, reason = "user" } = {}) {
+        if (startupAudioDialog.open) {
+            void startupAudioEnabled.then(() => openDialogElement(dialog, {duration, reason}));
+            return false;
+        }
         if (
             !dialog ||
             dialog.open ||

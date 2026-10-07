@@ -211,7 +211,7 @@ jobs:
         working-directory: tests
         run: |
           node app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only
-          node app-state-transactions.mjs --voice-login --voice-feedback
+          node app-state-transactions.mjs --voice-login --voice-feedback --startup-speech
       - name: Check optimistic UI transitions and speech recovery
         working-directory: tests
         run: npm run test:state-transactions

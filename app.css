@@ -7390,3 +7390,6 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 .main-menu #bluetoothAudioTestLink {box-sizing:border-box;text-decoration:none;}
 .main-menu #bluetoothAudioTestLink:hover,
 .main-menu #bluetoothAudioTestLink:focus-visible {background:rgb(255 255 255 / 10%);}
+
+.startup-audio-dialog { text-align: center; max-width: min(420px, calc(100vw - 32px)); }
+.startup-audio-dialog form { padding-top: 16px; }

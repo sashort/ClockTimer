@@ -1041,6 +1041,21 @@
         "focus": "liveStreamDialog",
         "profileEditorPhase": "DROP-IN"
       }
+    },
+    "STARTUP-AUDIO": {
+      "id": "STARTUP-AUDIO",
+      "title": "Startup: enable audio",
+      "focus": "Single-OK startup modal (#startupAudioDialog)",
+      "trip": "Existing session/trip state preserved while initialization continues",
+      "facet": "Speech model and persistence load independently; startup speech waits for OK",
+      "commands": [
+        "Pointer / keyboard OK: initialize audio and release startup announcement"
+      ],
+      "family": "login",
+      "binding": {
+        "focus": "startupAudioDialog",
+        "audioActivated": false
+      }
     }
   },
   "transitions": [
@@ -8131,6 +8146,32 @@
         "persistence": "Read-only or client focus change",
         "rollback": "Keep editable non-secret input on rejected save; show error."
       }
+    },
+    {
+      "id": "STARTUP-OK-LOGIN",
+      "source": "STARTUP-AUDIO",
+      "target": "LOGIN-ID",
+      "label": "OK: enable audio",
+      "mode": "pointer",
+      "audio": "application-starting",
+      "guard": "Login required; wait for initialization and model readiness before login speech",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "local / 2026-10-07",
+        "evidence": "app-state-transactions.mjs --voice-feedback --startup-speech --voice-login"
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Startup OK (pointer or keyboard activation)",
+        "guard": "Audio not yet activated; login required",
+        "state_changes": "audioActivated=true; remove startup modal; queued login handoff can proceed",
+        "timing": "Invoke audio unlock and speak synchronously in submit handler; login prompt waits for speech completion and recognition model readiness",
+        "persistence": "Client-only",
+        "rollback": "No remote mutation",
+        "verification": "No speech before OK; repeated OK speaks once; initialization remains responsive"
+      }
     }
   ],
   "audio": {
@@ -9862,13 +9903,13 @@
       "id": "application-starting",
       "chime": "None",
       "notes": "",
-      "summary": "Application is starting",
+      "summary": "Application is loading",
       "details": "None",
       "sequence": [
         {
           "id": "application-starting-speech",
           "kind": "Summary",
-          "text": "Application is starting",
+          "text": "Application is loading",
           "optional": false,
           "skippable": false,
           "suppression_rules": [
@@ -9877,7 +9918,7 @@
           ]
         }
       ],
-      "footer": "English messages.voiceLogin.applicationStarting; emitted at app startup before persistence/runtime initialization and the login prompt.",
+      "footer": "English messages.voiceLogin.applicationStarting; queued at app startup and released once by the startup dialog OK button, after initializing Web Audio in that handler. A single-OK startup dialog displays the loading title and Press OK to enable audio; Escape cannot dismiss it. Other modal handoffs wait for OK. Persistence/runtime initialization continues while waiting; login prompts wait for startup completion and model readiness.",
       "order_note": "Single spoken component."
     },
     "login-failed": {
@@ -10028,7 +10069,7 @@
     "aggregation": "TripAggregates shared calculations: latest row wins per String(id); anonymous rows remain distinct. Range bounds inclusive from CalendarRange.tripWindow. Counted time uses persisted counted milliseconds, fallback actual; active trip counted=max(allotted,counted). percent=standard/counted (null at zero); banked=round(standard/goalPercent-counted). Summary includes both production/nonproduction, excludes running/current ID. Log keeps its production filter and existing active-trip inclusion rule. Results are immutable state.tripAggregates children, UI invocation stays state.tripSummary.",
     "login": "Main page authenticates an admin-assigned four-digit login ID and four-digit PIN. Database primary user ID remains distinct. PIN stored as bcrypt hash. Main-page connect-pin validates exact ASCII digits and leading zeros; other pages retain connect username/password. Failed match retains ID and returns to empty PIN entry. Server enforces per-ID and per-origin limits. Admin assignment requires modify-users permission and target access. English Voice selects four-digit login; User or Username (including User name) selects legacy login. Both commands clear all inputs and repeat the destination prompt, including same-mode loopbacks. Tiny pointer buttons switch modes. Recognition state is preserved; speech requires listening.",
     "login-input": "ID prompt Please login using voice; four digits and OK enter PIN stage, announcing Password. Cancel in either stage clears both and repeats ID prompt. PIN cells render *. On success English speech is Login successful, say standard time or ready at. Off/sleep preserves stage and digits; pointer entry remains available. Wake/on resumes the same stage. English vocabulary and messages are selected-language resources. Recognition status and enable/wake control are visible in both login methods. Only listening exposes login voice commands; pointer/keyboard controls remain available unless login is pending. Recognition lifecycle and local digit/method commands bypass the persistence queue. Rejected pending switches return immediately. Recognition events do not replay login prompts; existing recognition feedback owns its announcement. Username/password is a separate legacy modal; only one login modal is open. First PIN Cancel clears only PIN and repeats Password; the second clears ID too. Voice restarts ID entry. Both modals are centered in the visual viewport above the visible mic/options safe top, constrain their height, and scroll internally on short screens. Boundary recalculates on mic/options changes and visual viewport resize/scroll. A fresh four-digit sequence replaces the selected ID/PIN; consecutive complete groups keep the latest group, including an eight-digit utterance. First PIN Cancel clears PIN and primes a second Cancel; the second clears both credentials and returns to ID. New entry, confirmation, or switching methods resets this sequence. Cancel Cancel works in one utterance. Recognition changes preserve it. Rejected PIN login clears only PIN, resets cancelPrimed, retains User ID, announces Login failed. Password, and permits retry. Login via voice from the legacy modal waits there with voiceRequested=true until the model is ready, then transfers automatically.",
-    "startup": "At launch announce Application is starting. Four-digit login UI can accept pointer input while the recognition model loads. Voice login commands are unavailable in speechRecognition=starting. Defer the voice ID/PIN prompt until SpeechMenu.modelReady after recognizer, VAD and audio capture initialization; release only the latest prompt for the current login modal. Username/password pointer entry remains available during loading. The legacy modal remains open when Login via voice is requested before readiness; model-ready fulfillment performs the transfer. The startup announcement is English-specific. Login announcements wait for startup speech onEnd/onError in addition to model readiness. UI and recognition initialization continue while startup playback is pending; unsupported speech releases the barrier immediately. Only the latest prompt for the still-open current modal is released.",
+    "startup": "At launch queue Application is loading; the startup dialog OK button initializes audio and releases it exactly once. No automatic startup speech before user activation. Four-digit login UI can accept pointer input while the recognition model loads. Voice login commands are unavailable in speechRecognition=starting. Defer the voice ID/PIN prompt until SpeechMenu.modelReady after recognizer, VAD and audio capture initialization; release only the latest prompt for the current login modal. Username/password pointer entry remains available during loading. The legacy modal remains open when Login via voice is requested before readiness; model-ready fulfillment performs the transfer. The startup announcement is English-specific. Login announcements wait for startup speech onEnd/onError in addition to model readiness. UI and recognition initialization continue while startup playback is pending; unsupported speech releases the barrier immediately. Only the latest prompt for the still-open current modal is released. Startup focus is STARTUP-AUDIO, with a single OK button usable by pointer or keyboard; other dialog openings wait for activation. OK is required even if a prior session is authenticated, then the restored main state is used rather than opening login. The startup dialog owns the English loading announcement. Browser speech needs activation, so the loading title is visible before OK and spoken after OK.",
     "login-authentication": "REQUIREMENT: Login is never optimistic. Keep the active login modal open and disable credential submit/change while authentication is pending. Do not show success, populate a newly authenticated profile, or close the modal until the server accepts credentials. Login uses explicit request/response handling and does not enter optimistic trip-persistence transactions. Rejected PIN login retains ID, clears PIN/cancelPrimed, stays on PIN, and announces Login failed. Password.",
     "profile-editor": "Admin Edit Profile searches through account lookup; a single match selects and loads authoritative profile details automatically, multiple matches require selecting one. No match renders an error and clears the editor. Autogenerated account ID is readonly and excluded from writes; names, preferred name, username, replacement password, four-digit login ID, replacement PIN and permissions are editable subject to server authorization. Existing password/PIN are never returned or populated. Empty replacement secrets retain credentials; initial voice credentials require ID and PIN together, later independent edits preserve the other credential. Loading and saving disable editing; success is shown only after server confirmation. Rejected saves retain editable non-secret input and show the server error. Stale detail responses cannot populate a different selected account. Actor permissions are rechecked at the server.",
     "drop-in": "English Live Stream label becomes Drop-In. Drop-In retains the Account Lookup window and selected identity workflow independent of profile modification permission. Account Lookup hides profile editing controls. Both windows fit in the safe viewport above the mic bar and its expanded panes, recomputing on opening, resize, viewport scroll and mic boundary change; content scrolls inside the modal. Recognition off restores full viewport space. Edit Profile icon: person, magnifying glass lower left, pencil lower right.",

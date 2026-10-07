@@ -4,8 +4,8 @@ const window=new Window({url:'https://clock.example/',settings:{disableJavaScrip
 const storage=installAsyncStorage(window);
 window.__testTime=Date.parse('2026-10-06T12:00:00Z');
 window.eval(`const OriginalDate=Date;window.Date=class extends OriginalDate {constructor(...args){super(...(args.length?args:[window.__testTime]));}static now(){return window.__testTime;}};`);
-const spoken=[],chimes=[];let finishStartup;
-if(process.argv.includes('--voice-feedback')) window.WMOFAudio={speak(text,options={}){spoken.push(String(text));if(process.argv.includes("--startup-speech") && text === "Application is starting") finishStartup=options.onEnd;else queueMicrotask(()=>options.onEnd?.());return true;},
+const spoken=[],chimes=[],startupAudioCalls=[];let finishStartup;
+if(process.argv.includes('--voice-feedback')) window.WMOFAudio={unlock(){startupAudioCalls.push('unlock');return new Promise(()=>{});},speak(text,options={}){startupAudioCalls.push('speak');spoken.push(String(text));if(process.argv.includes("--startup-speech") && text === "Application is loading") finishStartup=options.onEnd;else queueMicrotask(()=>options.onEnd?.());return true;},
     async startSong(name){chimes.push(name);return {hasChime:true,finished:Promise.resolve()};}};
 let recognition;
 window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abort(){this.onend?.();}};
@@ -87,7 +87,20 @@ if(process.argv.includes('--setting-chimes')) {
  const rateStart=chimes.length;await window.WMOFActions.setChimeRate('Medium');await settle();assert.deepEqual(chimes.slice(rateStart),['setting-unchanged'],'same value pointer setting uses unchanged chime');
  console.log('PASS setting on/off/unchanged, final chime-off cue, disabled master, readback and unchanged rate');
 }
+if(!process.argv.includes('--startup-speech')) {
+ window.document.querySelector('#startupAudioOK').click();await settle();
+}
 if(process.argv.includes('--startup-speech')) {
+ assert.equal(spoken.length,0,'no startup speech before a user gesture');
+ assert.deepEqual(startupAudioCalls,[],'audio is not initialized before OK');
+ assert(window.document.querySelector('#startupAudioDialog').open,'startup dialog is shown while initialization continues');
+ window.document.dispatchEvent(new window.Event('pointerdown'));
+ assert.equal(spoken.length,0,'only OK releases startup speech');
+ const startupButton=window.document.querySelector('#startupAudioOK');
+ startupButton.click();startupButton.click();
+ assert.equal(spoken.filter(t=>t==='Application is loading').length,1,'OK releases startup exactly once');
+ assert.deepEqual(startupAudioCalls,['unlock','speak'],'unlock is invoked before speaking, without awaiting catalog work');
+ assert.equal(window.document.querySelector('#startupAudioDialog'),null,'OK removes startup dialog');
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();
  await window.WMOFActions.switchToVoiceLogin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
  assert.equal(spoken.filter(t=>t==='Please login using voice').length,0,'ready model must not overtake startup announcement');
@@ -100,7 +113,7 @@ if(process.argv.includes('--voice-login')) {
  const legacyDialog=window.document.querySelector('#legacyLoginDialog');
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
  assert.equal(window.WMOFInteractionState.state.login.stage,'id');
- assert(spoken.includes('Application is starting'),'startup announces Application is starting');
+ assert(spoken.includes('Application is loading'),'startup announces Application is loading');
  window.SpeechMenu.testModelReady(false);const promptsBefore=spoken.filter(t=>t==='Please login using voice').length;
  await window.WMOFActions.switchToVoiceLogin();assert.equal(spoken.filter(t=>t==='Please login using voice').length,promptsBefore,'login prompt waits for model readiness');assert(!window.WMOFSpeechAvailability.canUseLogin());
  window.SpeechMenu.testModelReady(true);await window.WMOFActions.handleSpeechRuntimeStarted();await settle();assert.equal(spoken.filter(t=>t==='Please login using voice').length,promptsBefore+1,'model-ready event releases the pending login prompt');

@@ -254,7 +254,9 @@
       "recognitionPasswordSleeping": "Voice recognition is sleeping. Enter your username and password below or wake voice recognition.",
       "loginTitle": "Login",
       "loginAction": "Login",
-      "applicationStarting": "Application is starting",
+      "applicationStarting": "Application is loading",
+      "enableAudioPrompt": "Press OK to enable audio.",
+      "enableAudioAction": "OK",
       "legacyFailed": "Login failed."
     }
   }
