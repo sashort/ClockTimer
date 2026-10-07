@@ -411,3 +411,11 @@ assert(!persistedElement.hasAttribute('speech-persist'),'editor can make a comma
 console.log(
     "PASS speech editor runtime applies semantic speech menus and function discovery"
 );
+
+const skippableEntry={...persistedEntry,attrs:{...persistedEntry.attrs,'speech-skippable':'true'}};
+window.WMOFSpeechEditorRuntime.apply([skippableEntry]);
+assert(persistedElement.hasAttribute('speech-skippable'),'editor applies skippable feedback');
+window.WMOFSpeechEditorRuntime.apply([{...skippableEntry,attrs:{...skippableEntry.attrs,'speech-skippable':'false'}}]);
+assert.equal(persistedElement.getAttribute('speech-skippable'),'false','an explicit false survives as an override of a builtin default');
+window.WMOFSpeechEditorRuntime.apply([{...skippableEntry,attrs:{...skippableEntry.attrs,'speech-skippable':''}}]);
+assert.equal(persistedElement.getAttribute('speech-skippable'),'false','blank preserves the current default');

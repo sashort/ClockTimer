@@ -14,10 +14,6 @@
       "id": "6552c89a-5807-5ccf-8755-8e411b5c3de5",
       "pattern": "^(?:ready|ruddy|rudd)$"
     },
-    "f1892f87-4a17-50fc-bfc6-5a26a24c114c": {
-      "id": "f1892f87-4a17-50fc-bfc6-5a26a24c114c",
-      "pattern": "^break start$"
-    },
     "fa9fc390-ba88-5ee6-8702-1fb6e7b81947": {
       "id": "fa9fc390-ba88-5ee6-8702-1fb6e7b81947",
       "pattern": "^down(?: time)?$"
@@ -93,7 +89,7 @@
     },
     "ac142905-7527-5832-97fb-00bd047e44f2": {
       "id": "ac142905-7527-5832-97fb-00bd047e44f2",
-      "pattern": "^(?<breakChoice>10|15|long|short|lunch)$"
+      "pattern": "^(?<breakChoice>10|15|break|long|short|lunch)$"
     },
     "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012": {
       "id": "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012",
@@ -174,11 +170,6 @@
       "pattern": "^(?:ready|ruddy|rudd)$",
       "command": "ready"
     },
-    "6de24515-cbba-565f-a856-a588dc240656": {
-      "id": "6de24515-cbba-565f-a856-a588dc240656",
-      "pattern": "^break start$",
-      "command": "breakStart"
-    },
     "fd26842e-d902-537c-b813-3f94de48dad0": {
       "id": "fd26842e-d902-537c-b813-3f94de48dad0",
       "pattern": "^(?<breakChoice>10|15|break|long|short|lunch)$",
@@ -238,11 +229,6 @@
       "id": "a80f3b5d-027e-5d10-a44a-abefefddcece",
       "pattern": "^down(?: time)?$",
       "command": "down"
-    },
-    "fc5cbca8-9f11-5edd-bf7f-0c49ae4f1569": {
-      "id": "fc5cbca8-9f11-5edd-bf7f-0c49ae4f1569",
-      "pattern": "^break end$",
-      "command": "breakEnd"
     },
     "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39": {
       "id": "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39",
@@ -407,6 +393,36 @@
       "id": "acde1058-233d-58b3-add4-8acf62004b71",
       "pattern": "^softer$",
       "source": "SpeechMicBar.js:52610"
+    },
+    "9d72dea6-abb5-5476-bcf7-49a962c21ac3": {
+      "id": "9d72dea6-abb5-5476-bcf7-49a962c21ac3",
+      "pattern": "^start break$",
+      "command": "startBreak"
+    },
+    "ba5b6e70-3dee-5b8b-be9e-52e619e9ad84": {
+      "id": "ba5b6e70-3dee-5b8b-be9e-52e619e9ad84",
+      "pattern": "^start short break$",
+      "command": "startShortBreak"
+    },
+    "8ab48bb3-86dd-57cf-901c-6f5e58041c22": {
+      "id": "8ab48bb3-86dd-57cf-901c-6f5e58041c22",
+      "pattern": "^start lunch$",
+      "command": "startLunch"
+    },
+    "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c": {
+      "id": "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c",
+      "pattern": "^end break$",
+      "command": "endBreak"
+    },
+    "afa08a22-a3f1-5ce0-b917-b50e240dbb5c": {
+      "id": "afa08a22-a3f1-5ce0-b917-b50e240dbb5c",
+      "pattern": "^end short break$",
+      "command": "endShortBreak"
+    },
+    "06d3cd12-727e-5e36-8163-d78ccde03b44": {
+      "id": "06d3cd12-727e-5e36-8163-d78ccde03b44",
+      "pattern": "^end lunch$",
+      "command": "endLunch"
     }
   },
   "preprocessors": {
@@ -598,7 +614,6 @@
         "readyAt": "7cfc2b56-03bc-56ea-a11c-3cb3679456cc",
         "readyAtContinuation": "8e3d3f08-975b-53c6-9729-127b6c376ddf",
         "ready": "af3af6f3-1e52-544f-bf23-a914078c78b7",
-        "breakStart": "6de24515-cbba-565f-a856-a588dc240656",
         "breakChoice": "fd26842e-d902-537c-b813-3f94de48dad0",
         "confirm": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
         "yes": "1dffbcc6-dfcd-5681-bd6d-e44e0804ecc7",
@@ -611,7 +626,6 @@
         "voiceEntryTouch": "956ded15-a3b9-5d29-bf13-50c65e7c8a66",
         "voiceEntryDefer": "ec58c797-85c9-5b9d-864a-6572a2157d50",
         "down": "a80f3b5d-027e-5d10-a44a-abefefddcece",
-        "breakEnd": "fc5cbca8-9f11-5edd-bf7f-0c49ae4f1569",
         "resume": "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39",
         "tripGoal": "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f",
         "totalGoal": "32cacf3a-7da9-59a1-8944-857bce67d349",
@@ -628,7 +642,13 @@
         "deferTrip": "b16fe1e6-3da7-57b4-adb4-a8c2da63030e",
         "readRenderedTime": "1ef88583-92a7-56ff-b847-eeb3ff18a6b3",
         "renderedTimeMode": "348676a8-1088-56aa-9c44-b247f2dc9d1b",
-        "keypadValue": "d1fc965f-6fdb-551a-a7e0-60079b90fb3e"
+        "keypadValue": "d1fc965f-6fdb-551a-a7e0-60079b90fb3e",
+        "startBreak": "9d72dea6-abb5-5476-bcf7-49a962c21ac3",
+        "startShortBreak": "ba5b6e70-3dee-5b8b-be9e-52e619e9ad84",
+        "startLunch": "8ab48bb3-86dd-57cf-901c-6f5e58041c22",
+        "endBreak": "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c",
+        "endShortBreak": "afa08a22-a3f1-5ce0-b917-b50e240dbb5c",
+        "endLunch": "06d3cd12-727e-5e36-8163-d78ccde03b44"
       }
     },
     "ui": {}

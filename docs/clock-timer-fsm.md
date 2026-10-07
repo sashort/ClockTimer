@@ -1,5 +1,30 @@
 # ClockTimer state dispatch
 
+## Approved mainline interaction chart
+
+The [interactive mainline FSM](mainline-fsm.html) is the approved reference for
+focus, trip phase, command availability, transitions, and ordered audio feedback.
+It was approved on 6 October 2026 against version J8KMSL, commit
+`2b137e138a2f570dc35295f7dc3545e59bbc4a08`.
+
+The chart includes 41 states/state families and 144 active transitions (three retired IDs are retained) with stable IDs.
+Pointer transitions use single lines, voice uses double lines, system automatic
+transitions use dashed lines, and persistence rollback uses dotted lines.
+Green means tested and passed, red means tested and failed, and gray means
+untested; chart approval does not imply that transitions have been tested.
+Record the tested application version and evidence alongside each result.
+
+Use the hamburger menu for pointer and touch gestures. The + / − controls expand
+and collapse voice feedback tables in playback order. Save HTML retains recorded
+results in a self-contained copy; Export SVG captures the current view.
+The [structured model](mainline-fsm.json) supports test and implementation
+references. Keep it consistent with the model embedded in the HTML. The
+[flat mainline SVG](mainline-fsm.svg) is a static overview; other groups are
+available in the interactive chart.
+
+For the existing authenticated Developer → Docs endpoint, use
+`/api/docs/?path=mainline-fsm.html`.
+
 ClockTimer's core uses an explicit trip lifecycle and named handler families.
 `#transitionLifecycle(event)` moves between `ready`, `running`, and `stopped`.
 `start`, `stop`, and `reset` are the supported events. Replay and deletion use
@@ -86,3 +111,32 @@ fit/overflow, Down cancellation, and lifecycle resets.
 For an implementation comparison, set `CLOCK_TIMER_BASELINE` to a saved previous
 ClockTimer.js. The test compares timing summaries, all three time displays, goal
 selection, and rendered range boundaries against that source in a separate DOM.
+
+## Voice feedback and break confirmation
+
+The Break Selector is pointer-only. Voice uses **Start Break**, **Start Short
+Break**, or **Start Lunch**, optionally followed by **OK**. **Break Start** is
+removed. Without OK, voice opens and speaks “Are you ready to start your
+<break type>?” with OK/Cancel. OK starts the selected interval; Cancel keeps the
+trip state. With OK in the same utterance, both the question and dialog are
+suppressed, including incremental recognition.
+
+The new start transitions B420–B425 are skippable. Retired voice selector
+transitions retain their IDs for reference. `speech-skippable` is configurable
+in the speech editor; an explicit false preserves its announcement in a chain.
+
+Break, Lunch and Short Break announce the selected type and its matching end
+command: **End Break**, **End Short Break**, or **End Lunch**, optionally followed
+by **OK**. Standalone commands ask “Are you ready to end your <break type>?”
+with OK/Cancel. The same utterance with OK skips both question and dialog.
+Only the command matching the active interval is eligible. Resume applies to
+Down Time.
+
+Command patterns, question templates, interval labels and button captions come
+from language resources. Mainline actions pass semantic identifiers (`break`,
+`short-break`, `lunch`) to one shared workflow; they do not parse English labels.
+The regression fixture also exercises translated start/confirmation phrases.
+
+In Scheduled Start, `[Standard Time] <duration>` has an optional prefix:
+`standard time thirty minutes` and `thirty minutes` set the same field.
+The optional prefix applies only to the scheduled-start surface.

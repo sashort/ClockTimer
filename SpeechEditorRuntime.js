@@ -16,6 +16,7 @@
         "speech-noun",
         "speech-authorized",
         "speech-persist",
+        "speech-skippable",
         "speech-collect"
     ];
     const created = new Map();
@@ -72,6 +73,7 @@
                             "speech-chain-next" ||
                         name === "speech-authorized" ||
                         name === "speech-persist" ||
+                        name === "speech-skippable" ||
                         name === "speech-collect"
                     ) &&
                     value === undefined
@@ -95,6 +97,11 @@
                     value = undefined;
                 }
 
+                if (name === "speech-skippable") {
+                    if (value === undefined || value === "") continue;
+                    element.setAttribute(name, value === false || value === "false" ? "false" : "");
+                    continue;
+                }
                 if (name === "speech-persist") {
                     element.toggleAttribute(name, value === true || value === "" || value === "true");
                     continue;

@@ -4,6 +4,9 @@ const window=new Window({url:'https://clock.example/',settings:{disableJavaScrip
 const storage=installAsyncStorage(window);
 window.__testTime=Date.parse('2026-10-06T12:00:00Z');
 window.eval(`const OriginalDate=Date;window.Date=class extends OriginalDate {constructor(...args){super(...(args.length?args:[window.__testTime]));}static now(){return window.__testTime;}};`);
+const spoken=[];
+if(process.argv.includes('--voice-feedback')) window.WMOFAudio={speak(text,options={}){spoken.push(String(text));queueMicrotask(()=>options.onEnd?.());return true;},
+    async startSong(){return {hasChime:true,finished:Promise.resolve()};}};
 let recognition;
 window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abort(){this.onend?.();}};
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
@@ -48,9 +51,15 @@ speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', 
     static testTranscript(u,text,final=true){return SpeechMenu.#handleLiveTranscript(u,text,final);}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
 window.eval(speechSource+'\nwindow.SpeechMenu=SpeechMenu;');
+window.SpeechMenu.events.addEventListener('speechFeedbackError',e=>errors.push(e.detail.error?.stack||String(e.detail.error)));
 window.eval(fs.readFileSync(new URL('../SpeechMicBar.js',import.meta.url),'utf8'));
 window.SpeechMenu.testBegin();
-window.eval(fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../app.js',import.meta.url),'utf8'));
+if(process.argv.includes('--voice-feedback')) window.eval(fs.readFileSync(new URL('../AnnouncementCatalog.js',import.meta.url),'utf8'));
+let appSource=fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../app.js',import.meta.url),'utf8');
+// The fixture freezes Date.now for trip boundaries; eliminate audio pauses
+// so its frozen wall clock cannot accumulate an artificial playback backlog.
+if(process.argv.includes('--voice-feedback')) appSource=appSource.replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;', 'const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;');
+window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
@@ -71,6 +80,20 @@ assert.equal(requests.filter(r=>r.path.endsWith("/command-check/")).length,check
 await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+if(process.argv.includes('--scheduled-standard')) {
+    const scheduled=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(scheduled,'ready at eleven fifty nine pm',true);await scheduled.digestQueue;await settle();
+    assert(window.document.querySelector('#scheduledStartDialog').open,'scheduled start opens its workflow');
+    for(const [phrase,expected] of [['standard time thirty minutes',1800000],['forty minutes',2400000]]) {
+        const value=window.SpeechMenu.testBegin();
+        await window.SpeechMenu.testTranscript(value,phrase,true);await value.digestQueue;await settle();
+        assert(value.hadCommittedCommand && !value.digestExecutionFailed,phrase+' is accepted');
+        assert.match(window.document.querySelector('#scheduledStartStandardValue').textContent,expected===1800000?/30/:/40/,'standard duration updates');
+    }
+    const cancel=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(cancel,'cancel',true);await cancel.digestQueue;await settle();
+    assert(!window.document.querySelector('#scheduledStartDialog').open,'Cancel remains available after bare time input');
+    console.log('PASS scheduled start accepts standard time prefix or duration alone');
+}
 const readyAttempt=window.SpeechMenu.testBegin();
 await window.SpeechMenu.testTranscript(readyAttempt,'ready',true);await readyAttempt.digestQueue;await settle();
 assert(!readyAttempt.digestExecutionFailed,'ready starts its workflow');
@@ -217,9 +240,9 @@ const originalIntervalKeys=timer.captureState().events.filter(event=>event.event
 const eventsBefore=stored.length;
 holdCheck=true;
 const attempt=window.SpeechMenu.testBegin();
-const transcriptWork=window.SpeechMenu.testTranscript(attempt,'break start lunch ok');
+const transcriptWork=window.SpeechMenu.testTranscript(attempt,'start lunch ok');
 await settle();
-assert(releaseCheck,'persisted commands call the server check');
+assert(releaseCheck,'persisted commands call the server check: '+JSON.stringify({steps:attempt.digestSteps.map(s=>[s.commandElement.getAttribute('speech-function'),s.text]),failed:attempt.digestExecutionFailed,errors,consoleErrors,command:window.document.querySelector('[data-speech-editor-id="builtin:startLunch:page"]')?.outerHTML}));
 assert(timer.captureState().events.some(event=>event.event==='interval.started'&&!originalIntervalKeys.includes(event.value.intervalKey)),'the attempted outcome appears before the server decides');
 assert.equal(stored.length,eventsBefore,'no write occurs while server validation is pending');
 releaseCheck();await transcriptWork;
@@ -247,6 +270,87 @@ for(const [phrase,resume] of [['down','resumed'],['downtime','resume'],['down ti
     assert(!timer.getActiveIntervalState(),resume+' ends Down time');
     assert(resumeAttempt.hadCommittedCommand,resume+' executes its command');
     assert(!resumeAttempt.digestExecutionFailed,resume+' persists successfully');
+}
+if(process.argv.includes('--voice-feedback')) {
+    const speakCommand=async phrase=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await settle();return u;};
+    const dialog=window.document.querySelector('#speechBreakConfirmDialog');
+    const obsolete=await speakCommand('break start');
+    assert(!obsolete.hadCommittedCommand && !dialog.open,'Break Start is removed');
+    assert(!window.document.querySelector('#breakDialog speech-command'),'Break Selector has no voice commands');
+    for(const [phrase,label,type,summary] of [
+        ['start break','break','break','Break'],
+        ['start short break','short break','break','Short Break'],
+        ['start lunch','lunch','lunch','Lunch']]) {
+        spoken.length=0;
+        const selection=await speakCommand(phrase);
+        assert(selection.hadCommittedCommand && !selection.digestExecutionFailed,phrase+' is accepted');
+        assert(dialog.open,'voice opens the confirmation dialog');
+        assert(!window.document.querySelector('#breakDialog').open,'voice never opens the pointer selector');
+        assert.equal(window.document.querySelector('#speechBreakConfirmMessage').textContent,'Are you ready to start your '+label+'?');
+        assert.equal(window.document.querySelector('#speechBreakConfirmYes').textContent,'OK');
+        assert(window.document.querySelector('#speechBreakConfirmNo').hidden,'only OK and Cancel are offered');
+        assert(!timer.getActiveIntervalState(),'without OK, no interval starts');
+        assert(spoken.includes('Are you ready to start your '+label+'?'),'standalone start speaks its question');
+        await speakCommand('cancel');assert(!timer.getActiveIntervalState(),'Cancel leaves the trip running');
+        await speakCommand(phrase);await speakCommand('ok');
+        assert.equal(timer.getActiveIntervalState()?.intervalType,type,'a separate OK starts the selected interval');
+        assert(spoken.includes(summary+' Started. Say end '+label+' to end your '+label+'.'),'the final start announcement is preserved');
+        const beforeWrongEnd=timer.getActiveIntervalState().intervalKey;
+        const wrongEnd=await speakCommand(label==='break'?'end lunch ok':'end break ok');
+        assert(!wrongEnd.hadCommittedCommand && timer.getActiveIntervalState()?.intervalKey===beforeWrongEnd,'a mismatched end command cannot end the active interval');
+        await speakCommand('end '+label);
+        assert(dialog.open && spoken.includes('Are you ready to end your '+label+'?'),'standalone Break end asks its question');
+        const key=timer.getActiveIntervalState().intervalKey;
+        await speakCommand('cancel');assert.equal(timer.getActiveIntervalState()?.intervalKey,key,'end Cancel retains the interval');
+        await speakCommand('end '+label+' ok');assert(!timer.getActiveIntervalState(),'combined end ends it');
+        for(const incremental of [false,true]) {
+            spoken.length=0;
+            const before=animationCalls.filter(c=>c.target?.id==='speechBreakConfirmDialog').length;
+            const chain=window.SpeechMenu.testBegin();
+            if(incremental) {
+                await window.SpeechMenu.testTranscript(chain,phrase,false);await chain.digestQueue;await settle();
+                assert(!dialog.open,'interim start defers confirmation');
+            }
+            await window.SpeechMenu.testTranscript(chain,phrase+' ok',true);await chain.digestQueue;await settle();
+            assert(!chain.digestExecutionFailed && timer.getActiveIntervalState(),phrase+' OK starts the interval');
+            assert(!dialog.open && !window.document.querySelector('#breakDialog').open,'combined start skips both dialogs');
+            assert(!spoken.some(t=>t.startsWith('Are you ready')||t.includes('selected. Say OK')||t.includes('Choose Short Break')),'combined start skips intermediate feedback');
+            assert(spoken.includes(summary+' Started. Say end '+label+' to end your '+label+'.'),'combined start retains outcome speech');
+            const end=window.SpeechMenu.testBegin();
+            if(incremental) {
+                await window.SpeechMenu.testTranscript(end,'end '+label,false);await end.digestQueue;await settle();
+                assert(!dialog.open,'interim end defers confirmation');
+            }
+            await window.SpeechMenu.testTranscript(end,'end '+label+' ok',true);await end.digestQueue;await settle();
+            assert(!end.digestExecutionFailed && !timer.getActiveIntervalState(),'combined end completes');
+            assert(!spoken.includes('Are you ready to end your '+label+'?'),'combined end skips its question');
+            assert.equal(animationCalls.filter(c=>c.target?.id==='speechBreakConfirmDialog').length,before,'combined commands do not flash a dialog');
+        }
+    }
+    const translatedStart=window.document.querySelector('[data-speech-editor-id="builtin:startLunch:page"]');
+    const translatedEnd=window.document.querySelector('[data-speech-editor-id="builtin:endLunch:page"]');
+    const translatedOK=window.document.querySelector('[data-speech-editor-id="builtin:confirm:speechBreakConfirmDialog"]');
+    const endPattern=translatedEnd.getAttribute('speech-pattern'),startPattern=translatedStart.getAttribute('speech-pattern'),okPattern=translatedOK.getAttribute('speech-pattern');
+    translatedEnd.setAttribute('speech-pattern','^terminer repas$');translatedStart.setAttribute('speech-pattern','^commencer repas$');translatedOK.setAttribute('speech-pattern','^daccord$');
+    window.SpeechMenu.refresh();await settle();
+    const translated=await speakCommand('commencer repas daccord');
+    assert(!translated.digestExecutionFailed && timer.getActiveIntervalState()?.intervalType==='lunch','translated command phrases use the same neutral workflow');
+    assert(!dialog.open,'translated confirmation chain suppresses its dialog');
+    const translatedFinish=await speakCommand('terminer repas daccord');
+    assert(!translatedFinish.digestExecutionFailed && !timer.getActiveIntervalState(),'translated end phrases use the same neutral workflow');
+    translatedEnd.setAttribute('speech-pattern',endPattern);
+    translatedStart.setAttribute('speech-pattern',startPattern);translatedOK.setAttribute('speech-pattern',okPattern);window.SpeechMenu.refresh();await settle();
+    translatedStart.setAttribute('speech-skippable','false');spoken.length=0;
+    await speakCommand('start lunch ok');
+    assert(spoken.includes('Are you ready to start your lunch?'),'Skippable=false retains the localized question');
+    assert(!dialog.open,'the combined utterance still skips the dialog');
+    translatedStart.setAttribute('speech-skippable','');
+    await speakCommand('end lunch ok');
+    await speakCommand('sync off');await speakCommand('sync off');assert(spoken.includes('Sync already off.'));
+    await speakCommand('sleep');assert(spoken.includes('Speech sleeping.'));
+    await speakCommand('wake');assert(spoken.includes('Listening.'));
+    await speakCommand('off');assert(spoken.includes('Speech off.'));
+    console.log('PASS replacement start commands, pointer-only selector, OK/Cancel confirmation, and incremental start/end dialog and speech suppression for all interval types');
 }
 assert.equal(errors.length,0,errors.join('\n'));
 assert.equal(consoleErrors.length,0,consoleErrors.join('\n'));

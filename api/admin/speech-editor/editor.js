@@ -152,6 +152,7 @@
         "speech-modal",
         "speech-index",
         "speech-persist",
+        "speech-skippable",
         "speech-chain-context",
         "speech-chain-next"
     ];
@@ -5763,7 +5764,8 @@
                     "speech-preproc-context",
                     "speech-preproc-field",
                     "speech-response-timeout",
-                    "speech-index"
+                    "speech-index",
+                    "speech-skippable"
                 ]
             ) {
                 const input =

@@ -12,7 +12,7 @@ class SpeechCommandIndex {
         if (typeof Observer === 'function') {
             this.#observer = new Observer(records => this.#reconcile(records));
             this.#observer.observe(root, {subtree: true, childList: true, attributes: true,
-                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-chain-context', 'speech-chain-next', 'speech-chain-surface', 'speech-available',
+                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-skippable', 'speech-chain-context', 'speech-chain-next', 'speech-chain-surface', 'speech-available',
                     'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
                     'speech-preproc-field', 'speech-collect', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
         }
@@ -241,6 +241,28 @@ class SpeechMenu {
     static #executionEnabled = true;
     static #systemExecutionPassthrough = false;
     static #executionContext;
+    static #feedbackAdapter;
+
+    static setFeedbackAdapter(adapter) { SpeechMenu.#feedbackAdapter = adapter; }
+
+    static #flushCommandFeedback(utterance, accepted) {
+        const callbacks = utterance?.feedbackCallbacks || [];
+        if (utterance) utterance.feedbackCallbacks = [];
+        if (accepted) for (const callback of callbacks) callback();
+    }
+
+    static #commandFeedback(element, context, snapshot, result, utterance) {
+        const run = () => {
+            if (context.skippable && context.hasContinuation?.()) return;
+            try { SpeechMenu.#feedbackAdapter?.complete?.({element, context, snapshot, result}); }
+            catch (error) { SpeechMenu.#emit("speechFeedbackError", {error, utteranceId: context.utteranceId}); }
+        };
+        // Keep UI execution immediate. Only optional speech waits while an
+        // interim transcript can still continue into another command.
+        if (context.skippable && context.chain && utterance && !utterance.digestCommitted) {
+            (utterance.feedbackCallbacks ||= []).push(run);
+        } else if (!utterance?.chainCanceled && !utterance?.digestExecutionFailed) run();
+    }
     static #synthesizedSpeech = new Map();
     static #synthesizedSpeechSequence = 0;
     static #synthesizedSpeechGraceMilliseconds = 750;
@@ -3633,6 +3655,7 @@ class SpeechMenu {
 
     static #rejectDigest(utterance, reason, remainder) {
         void globalThis.WMOFStateTransactions?.rollback(`speech:${utterance.id}`, new Error(reason));
+        SpeechMenu.#flushCommandFeedback(utterance, false);
         utterance.digestFailed = true;
         utterance.valueCollectors?.clear();
         if (reason === "consumed-prefix-revised") utterance.chainCanceled = true;
@@ -3684,6 +3707,9 @@ class SpeechMenu {
                     utterance.id, step.speechMenuElement, SpeechMenu.#shouldExecuteElement(step.commandElement),
                     undefined, utterance.wallStartedAt, true, false,
                     {chain: true, chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext,
+                        hasContinuation: () => utterance.digestSteps.indexOf(step) < utterance.digestSteps.length - 1,
+                        nextCommand: () => utterance.digestSteps[utterance.digestSteps.indexOf(step) + 1]?.commandElement.getAttribute("speech-function"),
+                        isFinal: () => utterance.digestCommitted,
                         canCommit: () => !utterance.chainCanceled && !utterance.digestExecutionFailed &&
                             !SpeechMenu.#stopped && utterance.sessionGeneration === SpeechMenu.#sessionGeneration &&
                             (step.optimistic ? SpeechMenu.#canAttemptStateCommand(step.commandElement) : SpeechMenu.#candidateStateAvailable(step.commandElement, true))});
@@ -3742,6 +3768,7 @@ class SpeechMenu {
                 SpeechMenu.#clearPrimed(utterance);
                 if (SpeechMenu.#utterance === utterance) SpeechMenu.#finishUtterance("digested", false);
                 void utterance.digestQueue.then(async () => {
+                    if (utterance.digestExecutionFailed || utterance.chainCanceled) SpeechMenu.#flushCommandFeedback(utterance, false);
                     if (!utterance.digestExecutionFailed && !utterance.chainCanceled && !SpeechMenu.#stopped &&
                         utterance.sessionGeneration === SpeechMenu.#sessionGeneration) {
                         const transactions = globalThis.WMOFStateTransactions;
@@ -3750,6 +3777,7 @@ class SpeechMenu {
                             SpeechMenu.#rejectDigest(utterance, "state-change-reverted", utterance.transcript);
                             return;
                         }
+                        SpeechMenu.#flushCommandFeedback(utterance, true);
                         SpeechMenu.#emit("utteranceCommitted", {id: utterance.id, transcript: utterance.transcript});
                     }
                 });
@@ -8900,9 +8928,15 @@ class SpeechMenu {
                     chain: executionMetadata?.chain === true || utterance?.commandChainExecuting === true,
                     chainContext: executionMetadata?.chainContext || utterance?.digestExecutingContext,
                     chainSurface: executionMetadata?.chainSurface,
+                    skippable: element.hasAttribute("speech-skippable") && element.getAttribute("speech-skippable") !== "false",
+                    hasContinuation: executionMetadata?.hasContinuation,
+                    nextCommand: executionMetadata?.nextCommand,
+                    isFinal: executionMetadata?.isFinal,
                     persist: element.hasAttribute("speech-persist") && element.getAttribute("speech-persist") !== "false"
                 });
 
+            const feedbackContext = SpeechMenu.#executionContext;
+            const feedbackSnapshot = SpeechMenu.#feedbackAdapter?.capture?.(element, feedbackContext);
             let outcomeValue;
 
             try {
@@ -8918,6 +8952,13 @@ class SpeechMenu {
                 SpeechMenu.#executionContext =
                     previousExecutionContext;
             }
+
+            if (outcomeValue?.then) {
+                outcomeValue = Promise.resolve(outcomeValue).then(result => {
+                    SpeechMenu.#commandFeedback(element, feedbackContext, feedbackSnapshot, result, utterance);
+                    return result;
+                });
+            } else SpeechMenu.#commandFeedback(element, feedbackContext, feedbackSnapshot, outcomeValue, utterance);
 
             if (outcomeValue === false) {
                 globalThis

@@ -55,6 +55,6 @@ ctx.WMOFAudio={...audio,load:async()=>{throw Error('Speech must not be read from
 const catalogSong=ctx.song('break-started');await flush();assert.deepEqual(order,['Catalog chime']);
 const catalogUrgent=ctx.enqueue('catalog-urgent',parts('Catalog urgent'),{priority:20});
 await flush();assert.deepEqual(order,['Catalog chime']);catalogFinish();await flush();assert.deepEqual(order,['Catalog chime','Catalog urgent']);
-finishSpeech();await flush();assert.deepEqual(order,['Catalog chime','Catalog urgent','Break started']);
+finishSpeech();await flush();assert.deepEqual(order,['Catalog chime','Catalog urgent','Break Started. Say end break to end your break.']);
 finishSpeech();await Promise.all([catalogSong,catalogUrgent]);await flush();
 console.log('PASS independent component priorities, sync interleaving, internal reordering, boundary-only interruption, cancellation and disabled summaries');

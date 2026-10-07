@@ -288,6 +288,16 @@ header('Referrer-Policy: no-referrer');
                     </label>
 
                     <label class="field">
+                        <span>Skippable speech</span>
+                        <select name="speech-skippable">
+                            <option value="">Use command default</option>
+                            <option value="true">Skip when this utterance continues</option>
+                            <option value="false">Always announce</option>
+                        </select>
+                        <small class="field-hint">Suppresses intermediate feedback, while the command still runs immediately.</small>
+                    </label>
+
+                    <label class="field">
                         <span>speech-modal</span>
                         <select id="modalValue" name="speech-modal">
                             <option value="">Blank — inherit structural scope</option>

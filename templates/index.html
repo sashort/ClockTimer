@@ -197,9 +197,7 @@
             <speech-command data-speech-editor-id="builtin:readyAt:page" data-speech-options-category="trip-actions" speech-chain-next="scheduled-start" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-target="#newTripButton" speech-function="WMOFActions.scheduleStartAt" speech-persist speech-collect {{speech:2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2}} data-language-id="2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2"></speech-command>
             <speech-command data-speech-editor-id="builtin:readyAtContinuation:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canContinueStartAt" data-speech-target="#newTripButton" speech-function="WMOFActions.continueStartAt" speech-persist speech-collect {{speech:5898b6ac-6a4c-5288-8473-15e094bb2f2d}} data-language-id="5898b6ac-6a4c-5288-8473-15e094bb2f2d"></speech-command>
             <speech-command data-speech-editor-id="builtin:ready:page" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-options-category="trip-actions" data-speech-target="#newTripButton:enabled, #endTripButton:enabled" speech-function="WMOFActions.prepareStartMenu" speech-persist {{speech:60783e3e-5bf2-506e-a445-c173e73ce003}} data-language-id="60783e3e-5bf2-506e-a445-c173e73ce003"></speech-command>
-            <speech-command data-speech-editor-id="builtin:breakStart:page" data-speech-options-category="trip-actions" speech-chain-next="break-choice" speech-available="WMOFSpeechAvailability.canOpenBreakMenu" data-speech-target="#breakButton" speech-function="WMOFActions.openBreakMenu" {{speech:350ec85b-6400-5c1f-a3e1-df5de4fb7d28}} data-language-id="350ec85b-6400-5c1f-a3e1-df5de4fb7d28"></speech-command>
             <speech-command data-speech-editor-id="builtin:down:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canStartDownTime" data-speech-target="#downButton" speech-function="WMOFActions.startDownTime" speech-persist {{speech:6230b72b-f6ef-52e1-8a5b-4ed8c14c1260}} data-language-id="6230b72b-f6ef-52e1-8a5b-4ed8c14c1260"></speech-command>
-            <speech-command data-speech-editor-id="builtin:breakEnd:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenBreakEndMenu" data-speech-target="#breakButton" speech-function="WMOFActions.openBreakEndMenu" {{speech:184c9bc6-85b3-5ea8-acfe-633214aaa7df}} data-language-id="184c9bc6-85b3-5ea8-acfe-633214aaa7df"></speech-command>
             <speech-command data-speech-editor-id="builtin:resume:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canResumeTrip" data-speech-target="#downResumeButton" speech-function="WMOFActions.resumeTrip" speech-persist {{speech:62b7f20d-b850-5190-a538-0ae797e0881e}} data-language-id="62b7f20d-b850-5190-a538-0ae797e0881e"></speech-command>
             <speech-command data-speech-editor-id="builtin:tripGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTripGoal" speech-persist {{speech:fb4bf723-f232-5baf-8af9-6f95d5b4aac0}} data-language-id="fb4bf723-f232-5baf-8af9-6f95d5b4aac0"></speech-command>
             <speech-command data-speech-editor-id="builtin:totalGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTotalGoal" speech-persist {{speech:b83de74a-5c68-510a-9f82-6a563ceb8313}} data-language-id="b83de74a-5c68-510a-9f82-6a563ceb8313"></speech-command>
@@ -471,7 +469,7 @@
                                 </div>
                             </section>
                         </div>
-                    
+
                         </div>
                     </details>
 
@@ -500,7 +498,7 @@
                             <input id="tickMarks" name="tickMarks" value="[10]">
                         </div>
                         <label data-language-id="170c3180-75e1-58d8-a7c0-6ab392107802">{{text:170c3180-75e1-58d8-a7c0-6ab392107802:text0}}<input name="indicatorSymbol" value="▲"></label>
-                    
+
                         </div>
                     </details>
 
@@ -905,7 +903,7 @@
                     <output id="tripCreationTime" class="trip-time-value" data-language-id="54734488-e5d3-5dd8-8b14-52780596d1a7">{{text:54734488-e5d3-5dd8-8b14-52780596d1a7:text0}}</output>
                     <button class="trip-time-edit" type="button" data-trip-time-field="creation-time" aria-label="{{text:b7e31880-64cf-50cb-ad1f-3f6b2c39b892:aria-label}}" data-language-id="b7e31880-64cf-50cb-ad1f-3f6b2c39b892"><span aria-hidden="true"></span></button>
                 </article>
-            
+
             </section>
 
             <div class="trip-settings-options">
@@ -970,10 +968,7 @@
                 <button class="break-type-button lunch" type="button" data-break-type="lunch" data-language-id="793a7c5d-ccd6-5087-96b1-36ebe02ae944">{{text:793a7c5d-ccd6-5087-96b1-36ebe02ae944:text0}}</button>
                 <button class="break-type-button" type="button" data-break-type="short-break" data-language-id="43173dcd-e064-5736-b0a8-28d686feefda">{{text:43173dcd-e064-5736-b0a8-28d686feefda:text0}}</button>
             </div>
-            <speech-menu data-speech-editor-id="builtin:menu:breakDialog">
-                <speech-command data-speech-editor-id="builtin:breakChoice:breakDialog" data-speech-options-category="trip-actions" speech-chain-context="break-choice" speech-chain-next="break-confirm" data-speech-target="#breakDialog [data-break-type]" speech-function="WMOFActions.chooseBreakType" {{speech:61fc6ba8-190b-57c2-88b6-0975aa7f74b7}} data-language-id="61fc6ba8-190b-57c2-88b6-0975aa7f74b7"></speech-command>
-                <speech-command data-speech-editor-id="builtin:confirm:breakDialog" data-speech-options-category="trip-actions" speech-chain-context="break-confirm" data-speech-target="#breakDialog [data-break-type]" speech-function="WMOFActions.confirmBreakType" speech-persist {{speech:febd0eee-c0b6-5464-b2dc-dc1b88802686}} data-language-id="febd0eee-c0b6-5464-b2dc-dc1b88802686"></speech-command>
-            </speech-menu>
+
         </section>
     </dialog>
 

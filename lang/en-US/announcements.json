@@ -13,17 +13,17 @@
       "id": "5639c8f8-6a85-525e-8bd7-2dd123ca90ad"
     },
     "break-started": {
-      "summary": "Break started",
+      "summary": "Break Started. Say end break to end your break.",
       "speechOptions": {},
       "id": "41cd16c1-160d-5279-b699-fd05128164c9"
     },
     "short-break-started": {
-      "summary": "Short Break started",
+      "summary": "Short Break Started. Say end short break to end your short break.",
       "speechOptions": {},
       "id": "66102f48-2b07-5554-8563-1867da690e49"
     },
     "lunch-started": {
-      "summary": "Lunch started",
+      "summary": "Lunch Started. Say end lunch to end your lunch.",
       "speechOptions": {},
       "id": "0fe91ff0-f7b8-5edf-ac18-a0e717aed311"
     },
@@ -146,6 +146,39 @@
       "endTime": "End Time",
       "overBy": "Over by {duration}",
       "mode": "Mode"
+    },
+    "voiceFeedback": {
+      "entryCancelled": "Trip entry cancelled.",
+      "editCancelled": "Edit cancelled.",
+      "scheduledCancelled": "Scheduled start cancelled.",
+      "numberPad": "Number pad.",
+      "deferred": "Trip deferred.",
+      "breakChoices": "Choose Short Break, Break, or Lunch.",
+      "breakSelected": "{choice} selected. Say OK to start.",
+      "cancelledRunning": "Cancelled. Trip still running.",
+      "cancelledDown": "Cancelled. Down time continues.",
+      "intervalContinues": "{interval} continues.",
+      "downRemoved": "Down time removed. Trip running.",
+      "downContinues": "Down time continues.",
+      "settingsSaved": "Trip settings saved.",
+      "fieldSaved": "{field} set to {value}.",
+      "logOpened": "Trip log.",
+      "logClosed": "Trip log closed.",
+      "sleeping": "Speech sleeping.",
+      "listening": "Listening.",
+      "off": "Speech off.",
+      "syncAlready": "Sync already {state}.",
+      "modeAlready": "Already in {mode} mode.",
+      "standardAlready": "Standard time is already {duration}.",
+      "invalidValue": "{prompt}",
+      "breakEndQuestion": "Are you ready to end your {type}?",
+      "breakStartQuestion": "Are you ready to start your {type}?",
+      "breakNotStarted": "Break not started.",
+      "intervalTypes": {
+        "break": "break",
+        "short-break": "short break",
+        "lunch": "lunch"
+      }
     }
   }
 }

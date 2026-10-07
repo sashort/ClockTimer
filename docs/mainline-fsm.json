@@ -1,0 +1,4214 @@
+{
+  "title": "ClockTimer mainline FSM",
+  "status": "APPROVED",
+  "reference_version": "J8KMSL",
+  "reference_commit": "2b137e138a2f570dc35295f7dc3545e59bbc4a08",
+  "definition": "State = focused surface + trip phase, with input/selection validity substates. Persistence and configuration are orthogonal dimensions.",
+  "priority": "System interruption first; a valid fully formed continuation owns its prefix before shorter conflicting commands. Within a tier, no new total command ranking is proposed.",
+  "symbols": {
+    "single": "Pointer interaction",
+    "double": "Voice interaction",
+    "dotted": "Persistence rejection / failure restores checkpoint",
+    "dash": "System automatic transition",
+    "diamond": "Component may be omitted",
+    "dagger": "Runtime suppression / queue rules apply",
+    "empty": "No component",
+    "skippable": "Intermediate feedback is suppressed when this utterance continues; UI action still executes immediately."
+  },
+  "sources": [
+    "app.js: endCurrentIntervalOrTrip, parseVoiceEntryTranscript, installSpeechCommand, WMOFSpeechAvailability, interface transaction adapter",
+    "SpeechMenu.js: planDigest, dismissSurface, command continuations",
+    "ClockTimer.js: lifecycle, available_actions, active intervals, restoreState",
+    "AnnouncementCatalog.js",
+    "lang/en-US/announcements.json",
+    "api/audio/catalog.json"
+  ],
+  "parameters": {
+    "T": [
+      "ready",
+      "running",
+      "short break",
+      "break",
+      "lunch",
+      "buffer",
+      "down",
+      "other",
+      "deferred",
+      "stopped"
+    ],
+    "P": [
+      "Home",
+      "Voicepad",
+      "Numpad",
+      "Scheduled Start",
+      "Trip Settings"
+    ],
+    "F": [
+      "standard duration",
+      "scheduled start",
+      "actual start",
+      "creation time",
+      "trip goal",
+      "total goal",
+      "end-time lock"
+    ]
+  },
+  "test_invariants": [
+    "UI focus, trip phase and enabled commands agree after every transition.",
+    "Immediate optimistic outcome; no server write before validation accepts.",
+    "Rejected action restores exact checkpoint and cancels dependent actions.",
+    "A new editor never reuses a prior value or confirmation flag.",
+    "Delayed close events cannot clear or close a newer editor.",
+    "Sync Off preserves microphone visibility and recognition.",
+    "One utterance cannot execute both a short command and its preempting continuation.",
+    "Returning from Trip Log preserves underlying editor value and surface.",
+    "Ready / End Trip uses one immutable timestamp for end/start boundary.",
+    "End <break type> OK skips question and dialog; standalone final End <break type> shows both.",
+    "Scheduled Start accepts a valid duration with or without the Standard Time prefix.",
+    "Break Selector is pointer-only; voice start commands use a typed OK/Cancel dialog.",
+    "Localized command patterns dispatch neutral interval identifiers; core logic does not parse English break names.",
+    "Only the End command matching the active semantic interval type is eligible."
+  ],
+  "review_points": [
+    "Confirm preferred mode grouping and state names.",
+    "Approve the proposed presentation priority tiers; eligibility is dynamic, not a single fixed numeric rank.",
+    "Review conditional Lunch question and automatic late-break restart branches.",
+    "Confirm whether authentication/settings/training should be added beyond mainline scope.",
+    "Voice/screen lane boxes stay at their original heights in the reset view; rotation changes the projection only."
+  ],
+  "states": {
+    "R0": {
+      "id": "R0",
+      "title": "Ready",
+      "focus": "Home",
+      "trip": "No active trip",
+      "facet": "",
+      "commands": [
+        "Ready at <clock time> [continuation]",
+        "Ready / New Trip",
+        "Log / settings / modes"
+      ],
+      "family": "mainline"
+    },
+    "V0": {
+      "id": "V0",
+      "title": "Voicepad: empty",
+      "focus": "Voicepad",
+      "trip": "No active trip",
+      "facet": "Value missing",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "At <time> / Defer Trip",
+        "Say a duration / Touch"
+      ],
+      "family": "mainline"
+    },
+    "V1": {
+      "id": "V1",
+      "title": "Voicepad: valid value",
+      "focus": "Voicepad",
+      "trip": "No active trip",
+      "facet": "Value acknowledged",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "OK / Okay / O K",
+        "Replace value / Touch / Defer"
+      ],
+      "family": "mainline"
+    },
+    "N0": {
+      "id": "N0",
+      "title": "Numpad: empty",
+      "focus": "Numpad",
+      "trip": "No active trip",
+      "facet": "Value missing",
+      "commands": [
+        "Cancel / Back",
+        "Digits / Voice / Defer Trip",
+        "OK disabled"
+      ],
+      "family": "mainline"
+    },
+    "N1": {
+      "id": "N1",
+      "title": "Numpad: valid value",
+      "focus": "Numpad",
+      "trip": "No active trip",
+      "facet": "Value valid",
+      "commands": [
+        "Cancel / Back",
+        "OK",
+        "Digits / Clear / Voice"
+      ],
+      "family": "mainline"
+    },
+    "R1": {
+      "id": "R1",
+      "title": "Trip running",
+      "focus": "Home",
+      "trip": "Running",
+      "facet": "",
+      "commands": [
+        "Off / Sleep [listening]",
+        "Ready / End Trip",
+        "Start [Short] Break / Start Lunch [optional OK]",
+        "Down Time / Goals / Sync / Log / Time"
+      ],
+      "family": "mainline"
+    },
+    "W": {
+      "id": "W",
+      "title": "Next editor: resetting",
+      "focus": "Voicepad or Numpad",
+      "trip": "Stopped previous trip",
+      "facet": "Previous trip reset pending",
+      "commands": [
+        "Cancel / Close",
+        "Enter or replace value",
+        "OK waits for reset"
+      ],
+      "family": "mainline"
+    },
+    "ST": {
+      "id": "ST",
+      "title": "Stopped",
+      "focus": "Home",
+      "trip": "Stopped completed trip",
+      "facet": "Transient or restored completed trip",
+      "commands": [
+        "Ready / New Trip",
+        "Log / edit completed trip"
+      ],
+      "family": "mainline"
+    },
+    "D": {
+      "id": "D",
+      "title": "Deferred trip",
+      "focus": "Home",
+      "trip": "Deferred reservation",
+      "facet": "No active countdown",
+      "commands": [
+        "Ready / New Trip",
+        "Log / trip settings"
+      ],
+      "family": "scheduling"
+    },
+    "S0": {
+      "id": "S0",
+      "title": "Scheduled: needs duration",
+      "focus": "Scheduled Start dialog",
+      "trip": "No active trip",
+      "facet": "Start disabled",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Standard time <duration>",
+        "Edit standard time"
+      ],
+      "family": "scheduling"
+    },
+    "S1": {
+      "id": "S1",
+      "title": "Scheduled: duration valid",
+      "focus": "Scheduled Start dialog",
+      "trip": "No active trip",
+      "facet": "Future start / valid duration",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Start [early] / Start Now",
+        "Start on time / Auto start"
+      ],
+      "family": "scheduling"
+    },
+    "SR": {
+      "id": "SR",
+      "title": "Scheduled: due or late",
+      "focus": "Scheduled Start dialog",
+      "trip": "No active trip",
+      "facet": "Due or past scheduled time",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Start scheduled / Start Now",
+        "Edit standard time"
+      ],
+      "family": "scheduling"
+    },
+    "SE": {
+      "id": "SE",
+      "title": "Scheduled time editor",
+      "focus": "Voicepad or Numpad",
+      "trip": "No active trip",
+      "facet": "Returns to Scheduled Start",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "OK [valid]",
+        "Time / duration entry"
+      ],
+      "family": "scheduling"
+    },
+    "B0": {
+      "id": "B0",
+      "title": "Break Selector (pointer only)",
+      "focus": "Break type dialog",
+      "trip": "Running or Down",
+      "facet": "Capture origin T",
+      "commands": [
+        "Pointer Close / Cancel",
+        "Pointer Short Break / Break / Lunch [start]"
+      ],
+      "family": "intervals"
+    },
+    "B1": {
+      "id": "B1",
+      "title": "Start interval confirmation",
+      "focus": "Voice start confirmation dialog",
+      "trip": "Running or Down",
+      "facet": "Are you ready to start your <break type>?",
+      "commands": [
+        "Cancel / Close [keep trip state]",
+        "OK / Okay / O K [start selected interval]"
+      ],
+      "family": "intervals"
+    },
+    "B10": {
+      "id": "B10",
+      "title": "Short break",
+      "focus": "Home",
+      "trip": "Break (short)",
+      "facet": "Active interval",
+      "commands": [
+        "Off / Sleep [listening]",
+        "End Short Break OK [end without question]",
+        "End Short Break / pointer End [confirmation]",
+        "Log / settings"
+      ],
+      "family": "intervals"
+    },
+    "B15": {
+      "id": "B15",
+      "title": "Break",
+      "focus": "Home",
+      "trip": "Break",
+      "facet": "Active interval",
+      "commands": [
+        "Off / Sleep [listening]",
+        "End Break OK [end without question]",
+        "End Break / pointer End [confirmation]",
+        "Log / settings"
+      ],
+      "family": "intervals"
+    },
+    "BL": {
+      "id": "BL",
+      "title": "Lunch",
+      "focus": "Home",
+      "trip": "Lunch",
+      "facet": "Active interval",
+      "commands": [
+        "Off / Sleep [listening]",
+        "End Lunch OK [end without question]",
+        "End Lunch / pointer End [confirmation]",
+        "Log / settings"
+      ],
+      "family": "intervals"
+    },
+    "BUF": {
+      "id": "BUF",
+      "title": "Buffer",
+      "focus": "Home",
+      "trip": "Buffer",
+      "facet": "Lead-in or tail; retain interval kind",
+      "commands": [
+        "Resume / Ready [if valid]",
+        "Log / settings"
+      ],
+      "family": "intervals"
+    },
+    "OTHER": {
+      "id": "OTHER",
+      "title": "Other interval",
+      "focus": "Home",
+      "trip": "Other",
+      "facet": "Restored or configured interval",
+      "commands": [
+        "Resume / Ready [if valid]",
+        "Log / settings"
+      ],
+      "family": "intervals"
+    },
+    "DOWN": {
+      "id": "DOWN",
+      "title": "Down Time",
+      "focus": "Home",
+      "trip": "Down",
+      "facet": "Same trip remains active",
+      "commands": [
+        "Cancel [delete confirmation]",
+        "Resume / Ready",
+        "Start [Short] Break / Start Lunch [optional OK]",
+        "Log"
+      ],
+      "family": "intervals"
+    },
+    "CD": {
+      "id": "CD",
+      "title": "Delete Down confirmation",
+      "focus": "Delete Down dialog",
+      "trip": "Down",
+      "facet": "Origin = Down",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "OK [delete Down interval]",
+        "No / Cancel [keep Down]"
+      ],
+      "family": "intervals"
+    },
+    "BE": {
+      "id": "BE",
+      "title": "End break confirmation",
+      "focus": "Break End dialog",
+      "trip": "Break / Lunch",
+      "facet": "Are you ready to end your <break type>? Choices: OK or Cancel.",
+      "commands": [
+        "Cancel / Close [keep current interval]",
+        "OK / Okay / O K [end break]"
+      ],
+      "family": "intervals"
+    },
+    "BS": {
+      "id": "BS",
+      "title": "Legacy lunch question (retired)",
+      "focus": "Break Start prompt",
+      "trip": "Running",
+      "facet": "Retired: replaced by typed start confirmation.",
+      "commands": [],
+      "family": "intervals",
+      "retired": true
+    },
+    "TS": {
+      "id": "TS",
+      "title": "Trip settings",
+      "focus": "Trip Settings dialog",
+      "trip": "T unchanged",
+      "facet": "T = originating trip phase",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Save / OK [valid]",
+        "Edit a time field"
+      ],
+      "family": "ancillary"
+    },
+    "EV": {
+      "id": "EV",
+      "title": "Edit value by voice",
+      "focus": "Voicepad",
+      "trip": "T unchanged",
+      "facet": "Field F; return surface P",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "OK [valid]",
+        "Replace value / Touch"
+      ],
+      "family": "ancillary"
+    },
+    "EN": {
+      "id": "EN",
+      "title": "Edit value by touch",
+      "focus": "Numpad",
+      "trip": "T unchanged",
+      "facet": "Field F; return surface P",
+      "commands": [
+        "Cancel / Back",
+        "OK [valid]",
+        "Digits / Clear / Voice"
+      ],
+      "family": "ancillary"
+    },
+    "LOG": {
+      "id": "LOG",
+      "title": "Trip log",
+      "focus": "Trip Log dialog",
+      "trip": "T unchanged",
+      "facet": "Return to originating surface P",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Hide / Close Trip Log",
+        "Log selection / permitted edits"
+      ],
+      "family": "ancillary"
+    },
+    "GA": {
+      "id": "GA",
+      "title": "Auto mode",
+      "focus": "Same focus",
+      "trip": "T unchanged",
+      "facet": "Goal mode = Auto",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Trip Mode / Total Mode",
+        "Mode [read]"
+      ],
+      "family": "modes"
+    },
+    "GT": {
+      "id": "GT",
+      "title": "Trip mode",
+      "focus": "Same focus",
+      "trip": "T unchanged",
+      "facet": "Goal mode = Trip",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Auto Mode / Total Mode",
+        "Trip Goal / Mode [read]"
+      ],
+      "family": "modes"
+    },
+    "GL": {
+      "id": "GL",
+      "title": "Total mode",
+      "focus": "Same focus",
+      "trip": "T unchanged",
+      "facet": "Day / Week / Check / Month / Year",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Auto / Trip / Range Mode",
+        "Total Goal / Mode [read]"
+      ],
+      "family": "modes"
+    },
+    "SO": {
+      "id": "SO",
+      "title": "Sync Off",
+      "focus": "Same focus",
+      "trip": "T unchanged",
+      "facet": "Synchronization disabled",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Sync On / Sync",
+        "Sync Status"
+      ],
+      "family": "modes"
+    },
+    "SI": {
+      "id": "SI",
+      "title": "Sync On",
+      "focus": "Same focus",
+      "trip": "T unchanged",
+      "facet": "Effective sync depends on trip",
+      "commands": [
+        "Off / Sleep [when listening]",
+        "Cancel / Close [top surface]",
+        "Sync Off / Sync",
+        "Sync Status"
+      ],
+      "family": "modes"
+    },
+    "MIC": {
+      "id": "MIC",
+      "title": "Listening",
+      "focus": "Current surface",
+      "trip": "T unchanged",
+      "facet": "Recognizer active",
+      "commands": [
+        "Off / Sleep",
+        "Cancel / Close",
+        "Eligible local / persisted commands"
+      ],
+      "family": "modes"
+    },
+    "SLEEP": {
+      "id": "SLEEP",
+      "title": "Sleeping",
+      "focus": "Current surface",
+      "trip": "T unchanged",
+      "facet": "Mic paused; preserve editor",
+      "commands": [
+        "Wake / Off"
+      ],
+      "family": "modes"
+    },
+    "OFF": {
+      "id": "OFF",
+      "title": "Recognition Off",
+      "focus": "Current surface",
+      "trip": "T unchanged",
+      "facet": "No voice commands",
+      "commands": [
+        "Enable microphone [screen]"
+      ],
+      "family": "modes"
+    },
+    "F": {
+      "id": "F",
+      "title": "Checkpoint restored",
+      "focus": "Checkpoint focus",
+      "trip": "Checkpoint trip",
+      "facet": "Reverted banner; not a new trip phase",
+      "commands": [
+        "Re-evaluate all available commands",
+        "Retry / replace value / cancel"
+      ],
+      "family": "validation"
+    },
+    "P": {
+      "id": "P",
+      "title": "Optimistic outcome",
+      "focus": "New focused surface",
+      "trip": "New trip phase",
+      "facet": "Validation / async save pending",
+      "commands": [
+        "Higher-priority eligible commands",
+        "Dependent actions remain cancellable"
+      ],
+      "family": "validation"
+    },
+    "C": {
+      "id": "C",
+      "title": "Accepted outcome",
+      "focus": "Same as optimistic",
+      "trip": "Same as optimistic",
+      "facet": "Validated; acknowledged save",
+      "commands": [
+        "Commands eligible in accepted state"
+      ],
+      "family": "validation"
+    },
+    "HT": {
+      "id": "HT",
+      "title": "Home: originating phase T",
+      "focus": "Home",
+      "trip": "T unchanged",
+      "facet": "Context family; expand T/P when testing",
+      "family": "ancillary",
+      "commands": [
+        "Eligible system interruption",
+        "Commands valid for restored T / P"
+      ]
+    },
+    "RP": {
+      "id": "RP",
+      "title": "Return to originating surface",
+      "focus": "Originating surface P",
+      "trip": "T unchanged",
+      "facet": "Context family; expand T/P when testing",
+      "family": "ancillary",
+      "commands": [
+        "Eligible system interruption",
+        "Commands valid for restored T / P"
+      ]
+    }
+  },
+  "transitions": [
+    {
+      "id": "E01",
+      "source": "R0",
+      "target": "V0",
+      "label": "Ready / Ruddy / Rudd",
+      "mode": "voice",
+      "audio": "prompt",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E02",
+      "source": "V0",
+      "target": "V1",
+      "label": "Valid duration",
+      "mode": "voice",
+      "audio": "value",
+      "guard": "typed parser accepts",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E03",
+      "source": "V1",
+      "target": "V1",
+      "label": "Replace valid duration",
+      "mode": "voice",
+      "audio": "value",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E04",
+      "source": "V1",
+      "target": "R1",
+      "label": "OK / Okay / O K",
+      "mode": "voice",
+      "audio": "start",
+      "guard": "valid duration",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E05",
+      "source": "V0",
+      "target": "R0",
+      "label": "Cancel / Castle / Close",
+      "mode": "voice",
+      "audio": "entry-cancelled",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E06",
+      "source": "V1",
+      "target": "R0",
+      "label": "Cancel / Castle / Close",
+      "mode": "voice",
+      "audio": "entry-cancelled",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E07",
+      "source": "V0",
+      "target": "N0",
+      "label": "Touch / Keypad / Number Pad",
+      "mode": "voice",
+      "audio": "pointer-entry",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E08",
+      "source": "V1",
+      "target": "N1",
+      "label": "Touch / Keypad / Number Pad",
+      "mode": "voice",
+      "audio": "pointer-entry",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E09",
+      "source": "N0",
+      "target": "V0",
+      "label": "Voice",
+      "mode": "voice",
+      "audio": "prompt",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E10",
+      "source": "N1",
+      "target": "V1",
+      "label": "Voice",
+      "mode": "voice",
+      "audio": "prompt",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E11",
+      "source": "R0",
+      "target": "N0",
+      "label": "New Trip [speech off]",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E12",
+      "source": "R0",
+      "target": "V0",
+      "label": "New Trip [speech on]",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E13",
+      "source": "N0",
+      "target": "N1",
+      "label": "Enter valid digits",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E14",
+      "source": "N1",
+      "target": "N1",
+      "label": "Edit valid digits",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E15",
+      "source": "N1",
+      "target": "N0",
+      "label": "Clear value",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E16",
+      "source": "N1",
+      "target": "R1",
+      "label": "Press OK",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E17",
+      "source": "N0",
+      "target": "R0",
+      "label": "Cancel",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E18",
+      "source": "N1",
+      "target": "R0",
+      "label": "Cancel",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E19",
+      "source": "R1",
+      "target": "W",
+      "label": "Ready / Ruddy / Rudd",
+      "mode": "voice",
+      "audio": "finish",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E20",
+      "source": "R1",
+      "target": "W",
+      "label": "End Trip",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E21",
+      "source": "W",
+      "target": "V0",
+      "label": "Reset completes; speech on",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E22",
+      "source": "W",
+      "target": "N0",
+      "label": "Reset completes; speech off",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E23",
+      "source": "R1",
+      "target": "ST",
+      "label": "Stop without next editor",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E24",
+      "source": "ST",
+      "target": "V0",
+      "label": "Ready",
+      "mode": "voice",
+      "audio": "prompt",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E25",
+      "source": "ST",
+      "target": "N0",
+      "label": "New Trip [speech off]",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E26",
+      "source": "V1",
+      "target": "V1",
+      "label": "Invalid / unrecognized value",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "retain previous accepted value",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "E27",
+      "source": "V0",
+      "target": "V0",
+      "label": "OK with no valid value",
+      "mode": "voice",
+      "audio": "invalid-value",
+      "guard": "reject; no trip write",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S01",
+      "source": "R0",
+      "target": "S0",
+      "label": "Ready at <clock time>",
+      "mode": "voice",
+      "audio": "schedule",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S02",
+      "source": "V0",
+      "target": "S0",
+      "label": "At <clock time>",
+      "mode": "voice",
+      "audio": "schedule",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S03",
+      "source": "V1",
+      "target": "S0",
+      "label": "At <clock time>",
+      "mode": "voice",
+      "audio": "schedule",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S04",
+      "source": "S0",
+      "target": "S1",
+      "label": "[Standard Time] <duration>",
+      "mode": "voice",
+      "audio": "standard",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --scheduled-standard; local automated fixture, not Lightsail verification."
+      },
+      "skippable": false
+    },
+    {
+      "id": "S05",
+      "source": "S1",
+      "target": "S1",
+      "label": "[Standard Time] <duration> (replace)",
+      "mode": "voice",
+      "audio": "standard",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --scheduled-standard; local automated fixture, not Lightsail verification."
+      },
+      "skippable": false
+    },
+    {
+      "id": "S06",
+      "source": "S0",
+      "target": "SE",
+      "label": "Edit standard time",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S07",
+      "source": "S1",
+      "target": "SE",
+      "label": "Edit scheduled field",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S08",
+      "source": "SE",
+      "target": "S1",
+      "label": "OK [valid]",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S09",
+      "source": "SE",
+      "target": "S0",
+      "label": "Cancel; duration missing",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S10",
+      "source": "S1",
+      "target": "R1",
+      "label": "Start / Start Now [early]",
+      "mode": "voice",
+      "audio": "start",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S11",
+      "source": "S1",
+      "target": "R1",
+      "label": "Start early button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S12",
+      "source": "S1",
+      "target": "R1",
+      "label": "Auto due + valid duration",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S13",
+      "source": "S1",
+      "target": "SR",
+      "label": "Due time; Auto not armed",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S14",
+      "source": "SR",
+      "target": "R1",
+      "label": "Start scheduled / now",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S15",
+      "source": "S0",
+      "target": "R0",
+      "label": "Cancel / Close",
+      "mode": "voice",
+      "audio": "schedule-cancelled",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S16",
+      "source": "S1",
+      "target": "R0",
+      "label": "Cancel / Close",
+      "mode": "voice",
+      "audio": "schedule-cancelled",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S17",
+      "source": "SR",
+      "target": "R0",
+      "label": "Cancel",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S18",
+      "source": "V0",
+      "target": "D",
+      "label": "Defer Trip",
+      "mode": "voice",
+      "audio": "deferred",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S19",
+      "source": "V1",
+      "target": "D",
+      "label": "Defer Trip",
+      "mode": "voice",
+      "audio": "deferred",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S20",
+      "source": "N0",
+      "target": "D",
+      "label": "Defer Trip button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S21",
+      "source": "N1",
+      "target": "D",
+      "label": "Defer Trip button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S22",
+      "source": "D",
+      "target": "V0",
+      "label": "Ready; same reservation",
+      "mode": "voice",
+      "audio": "prompt",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "S23",
+      "source": "D",
+      "target": "N0",
+      "label": "New Trip; same reservation",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B01",
+      "source": "R1",
+      "target": "B0",
+      "label": "Break Start / Start Break",
+      "mode": "voice",
+      "audio": "break-options",
+      "guard": "Superseded by localized Start Break / Start Short Break / Start Lunch confirmation.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": true,
+      "retired": true
+    },
+    {
+      "id": "B02",
+      "source": "DOWN",
+      "target": "B0",
+      "label": "Break Start / Start Break",
+      "mode": "voice",
+      "audio": "break-options",
+      "guard": "Superseded by localized Start Break / Start Short Break / Start Lunch confirmation.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": true,
+      "retired": true
+    },
+    {
+      "id": "B03",
+      "source": "B0",
+      "target": "B1",
+      "label": "10 / 15 / Short / Break / Lunch",
+      "mode": "voice",
+      "audio": "break-choice",
+      "guard": "Superseded by localized Start Break / Start Short Break / Start Lunch confirmation.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": true,
+      "retired": true
+    },
+    {
+      "id": "B04",
+      "source": "B1",
+      "target": "B1",
+      "label": "Change choice",
+      "mode": "voice",
+      "audio": "break-choice",
+      "guard": "Superseded by localized Start Break / Start Short Break / Start Lunch confirmation.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": true,
+      "retired": true
+    },
+    {
+      "id": "B05",
+      "source": "B1",
+      "target": "B10",
+      "label": "OK [Short break]",
+      "mode": "voice",
+      "audio": "short-break-started",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; voice OK starts the selected interval."
+      },
+      "skippable": false
+    },
+    {
+      "id": "B05P",
+      "source": "B0",
+      "target": "B10",
+      "label": "Press Short break",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B06",
+      "source": "B1",
+      "target": "B15",
+      "label": "OK [Break]",
+      "mode": "voice",
+      "audio": "break-started",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; voice OK starts the selected interval."
+      },
+      "skippable": false
+    },
+    {
+      "id": "B06P",
+      "source": "B0",
+      "target": "B15",
+      "label": "Press Break",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B07",
+      "source": "B1",
+      "target": "BL",
+      "label": "OK [Lunch]",
+      "mode": "voice",
+      "audio": "lunch-started",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; voice OK starts the selected interval."
+      },
+      "skippable": false
+    },
+    {
+      "id": "B07P",
+      "source": "B0",
+      "target": "BL",
+      "label": "Press Lunch",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B08",
+      "source": "R1",
+      "target": "B0",
+      "label": "Break button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B09",
+      "source": "DOWN",
+      "target": "B0",
+      "label": "Break button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B10",
+      "source": "B0",
+      "target": "R1",
+      "label": "Cancel / Close [origin Running]",
+      "mode": "voice",
+      "audio": "cancelled-running",
+      "guard": "Break Selector is pointer-only.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B11",
+      "source": "B1",
+      "target": "R1",
+      "label": "Cancel / Close [origin Running]",
+      "mode": "voice",
+      "audio": "cancelled-running",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B12",
+      "source": "B0",
+      "target": "DOWN",
+      "label": "Cancel / Close [origin Down]",
+      "mode": "voice",
+      "audio": "cancelled-down",
+      "guard": "Break Selector is pointer-only.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B13",
+      "source": "R1",
+      "target": "BS",
+      "label": "Conditional lunch question",
+      "mode": "voice",
+      "audio": "question",
+      "guard": "Superseded by localized Start Break / Start Short Break / Start Lunch confirmation.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B14",
+      "source": "BS",
+      "target": "BL",
+      "label": "Yes",
+      "mode": "voice",
+      "audio": "lunch-started",
+      "guard": "Superseded by localized Start Break / Start Short Break / Start Lunch confirmation.",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B15",
+      "source": "BS",
+      "target": "B15",
+      "label": "No",
+      "mode": "voice",
+      "audio": "break-started",
+      "guard": "Superseded by localized Start Break / Start Short Break / Start Lunch confirmation.",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B16",
+      "source": "BS",
+      "target": "R1",
+      "label": "Cancel",
+      "mode": "voice",
+      "audio": "cancelled-running",
+      "guard": "Superseded by localized Start Break / Start Short Break / Start Lunch confirmation.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B200",
+      "source": "B10",
+      "target": "R1",
+      "label": "Resume / Ready",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B300",
+      "source": "B10",
+      "target": "R1",
+      "label": "Resume / End interval button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B400",
+      "source": "B10",
+      "target": "BE",
+      "label": "End Short Break",
+      "mode": "voice",
+      "audio": "break-end-question",
+      "guard": "Matching active interval only. Combined OK skips the confirmation dialog and question.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; local automated fixture, not Lightsail verification."
+      },
+      "skippable": true
+    },
+    {
+      "id": "B500",
+      "source": "B10",
+      "target": "BUF",
+      "label": "Clock boundary [buffer enabled]",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B201",
+      "source": "B15",
+      "target": "R1",
+      "label": "Resume / Ready",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B301",
+      "source": "B15",
+      "target": "R1",
+      "label": "Resume / End interval button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B401",
+      "source": "B15",
+      "target": "BE",
+      "label": "End Break",
+      "mode": "voice",
+      "audio": "break-end-question",
+      "guard": "Matching active interval only. Combined OK skips the confirmation dialog and question.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; local automated fixture, not Lightsail verification."
+      },
+      "skippable": true
+    },
+    {
+      "id": "B501",
+      "source": "B15",
+      "target": "BUF",
+      "label": "Clock boundary [buffer enabled]",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B202",
+      "source": "BL",
+      "target": "R1",
+      "label": "Resume / Ready",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false,
+      "retired": true
+    },
+    {
+      "id": "B302",
+      "source": "BL",
+      "target": "R1",
+      "label": "Resume / End interval button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B402",
+      "source": "BL",
+      "target": "BE",
+      "label": "End Lunch",
+      "mode": "voice",
+      "audio": "break-end-question",
+      "guard": "Matching active interval only. Combined OK skips the confirmation dialog and question.",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; local automated fixture, not Lightsail verification."
+      },
+      "skippable": true
+    },
+    {
+      "id": "B502",
+      "source": "BL",
+      "target": "BUF",
+      "label": "Clock boundary [buffer enabled]",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B203",
+      "source": "BUF",
+      "target": "R1",
+      "label": "Resume / Ready",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B303",
+      "source": "BUF",
+      "target": "R1",
+      "label": "Resume / End interval button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B204",
+      "source": "OTHER",
+      "target": "R1",
+      "label": "Resume / Ready",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B304",
+      "source": "OTHER",
+      "target": "R1",
+      "label": "Resume / End interval button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B60",
+      "source": "BUF",
+      "target": "R1",
+      "label": "Auto resume boundary",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B61",
+      "source": "BUF",
+      "target": "W",
+      "label": "Late-break restart policy",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B62",
+      "source": "BE",
+      "target": "R1",
+      "label": "OK / Okay / O K",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B63",
+      "source": "BE",
+      "target": "B15",
+      "label": "Cancel [restore origin]",
+      "mode": "voice",
+      "audio": "interval-continues",
+      "guard": "Captured original break kind is Break (15 minutes).",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D01",
+      "source": "R1",
+      "target": "DOWN",
+      "label": "Down / Downtime / Down Time",
+      "mode": "voice",
+      "audio": "down-time-started",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D02",
+      "source": "R1",
+      "target": "DOWN",
+      "label": "Down button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D03",
+      "source": "DOWN",
+      "target": "R1",
+      "label": "Resume / Resumed / Ready",
+      "mode": "voice",
+      "audio": "trip-resumed-from-down",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D04",
+      "source": "DOWN",
+      "target": "R1",
+      "label": "Resume button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D05",
+      "source": "DOWN",
+      "target": "CD",
+      "label": "Cancel",
+      "mode": "voice",
+      "audio": "question",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D06",
+      "source": "DOWN",
+      "target": "CD",
+      "label": "Cancel Down button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D07",
+      "source": "CD",
+      "target": "R1",
+      "label": "OK: delete interval",
+      "mode": "voice",
+      "audio": "down-deleted",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D08",
+      "source": "CD",
+      "target": "R1",
+      "label": "Press OK",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D09",
+      "source": "CD",
+      "target": "DOWN",
+      "label": "No / Cancel / Close",
+      "mode": "voice",
+      "audio": "down-continues",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "D10",
+      "source": "CD",
+      "target": "DOWN",
+      "label": "No / Cancel button",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A01",
+      "source": "HT",
+      "target": "TS",
+      "label": "Trip settings",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A02",
+      "source": "TS",
+      "target": "EN",
+      "label": "Edit time field",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A03",
+      "source": "EN",
+      "target": "EV",
+      "label": "Voice",
+      "mode": "voice",
+      "audio": "prompt",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A04",
+      "source": "EV",
+      "target": "EN",
+      "label": "Touch",
+      "mode": "voice",
+      "audio": "pointer-entry",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A05",
+      "source": "EV",
+      "target": "RP",
+      "label": "OK [return surface P]",
+      "mode": "voice",
+      "audio": "edit-field-saved",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A06",
+      "source": "EN",
+      "target": "RP",
+      "label": "OK [return surface P]",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A07",
+      "source": "TS",
+      "target": "HT",
+      "label": "Save / OK [restore T]",
+      "mode": "voice",
+      "audio": "settings-saved",
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A08",
+      "source": "TS",
+      "target": "HT",
+      "label": "Save [restore T]",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A09",
+      "source": "EV",
+      "target": "RP",
+      "label": "Cancel / Close [return P]",
+      "mode": "voice",
+      "audio": "edit-cancelled",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A10",
+      "source": "EN",
+      "target": "RP",
+      "label": "Cancel [return P]",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A11",
+      "source": "HT",
+      "target": "LOG",
+      "label": "Log / Trip Log",
+      "mode": "voice",
+      "audio": "log-opened",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A12",
+      "source": "EV",
+      "target": "LOG",
+      "label": "Log / Trip Log",
+      "mode": "voice",
+      "audio": "log-opened",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A13",
+      "source": "LOG",
+      "target": "RP",
+      "label": "Close [return P]",
+      "mode": "voice",
+      "audio": "log-closed",
+      "guard": "P may instead be Home, settings, or Scheduled Start",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "A14",
+      "source": "LOG",
+      "target": "RP",
+      "label": "Close [return P]",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M01",
+      "source": "GA",
+      "target": "GT",
+      "label": "Trip Mode",
+      "mode": "voice",
+      "audio": "mode",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M01P",
+      "source": "GA",
+      "target": "GT",
+      "label": "Select Trip Mode",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M02",
+      "source": "GT",
+      "target": "GL",
+      "label": "Total / range Mode",
+      "mode": "voice",
+      "audio": "mode",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M02P",
+      "source": "GT",
+      "target": "GL",
+      "label": "Select Total / range Mode",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M03",
+      "source": "GL",
+      "target": "GA",
+      "label": "Auto Mode",
+      "mode": "voice",
+      "audio": "mode",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M03P",
+      "source": "GL",
+      "target": "GA",
+      "label": "Select Auto Mode",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M04",
+      "source": "GA",
+      "target": "GL",
+      "label": "Total / range Mode",
+      "mode": "voice",
+      "audio": "mode",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M04P",
+      "source": "GA",
+      "target": "GL",
+      "label": "Select Total / range Mode",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M05",
+      "source": "GL",
+      "target": "GT",
+      "label": "Trip Mode",
+      "mode": "voice",
+      "audio": "mode",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M05P",
+      "source": "GL",
+      "target": "GT",
+      "label": "Select Trip Mode",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M06",
+      "source": "GT",
+      "target": "GA",
+      "label": "Auto Mode",
+      "mode": "voice",
+      "audio": "mode",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M06P",
+      "source": "GT",
+      "target": "GA",
+      "label": "Select Auto Mode",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M07",
+      "source": "SO",
+      "target": "SI",
+      "label": "Sync On / Sync",
+      "mode": "voice",
+      "audio": "sync",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M08",
+      "source": "SI",
+      "target": "SO",
+      "label": "Sync Off / Sync",
+      "mode": "voice",
+      "audio": "sync",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M09",
+      "source": "SI",
+      "target": "SI",
+      "label": "Sync On [idempotent]",
+      "mode": "voice",
+      "audio": "sync-already-on",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M10",
+      "source": "SO",
+      "target": "SO",
+      "label": "Sync Off [idempotent]",
+      "mode": "voice",
+      "audio": "sync-already-off",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M11",
+      "source": "SO",
+      "target": "SI",
+      "label": "Enable Sync",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M12",
+      "source": "SI",
+      "target": "SO",
+      "label": "Disable Sync",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M13",
+      "source": "MIC",
+      "target": "SLEEP",
+      "label": "Sleep",
+      "mode": "voice",
+      "audio": "speech-sleep",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M14",
+      "source": "SLEEP",
+      "target": "MIC",
+      "label": "Wake",
+      "mode": "voice",
+      "audio": "speech-wake",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M15",
+      "source": "MIC",
+      "target": "OFF",
+      "label": "Off",
+      "mode": "voice",
+      "audio": "speech-off",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M16",
+      "source": "SLEEP",
+      "target": "OFF",
+      "label": "Off",
+      "mode": "voice",
+      "audio": "speech-off",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M17",
+      "source": "OFF",
+      "target": "MIC",
+      "label": "Enable microphone",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M18",
+      "source": "HT",
+      "target": "HT",
+      "label": "Time / When / Mode / Sync Status",
+      "mode": "voice",
+      "audio": "read",
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "F01",
+      "source": "P",
+      "target": "C",
+      "label": "Server accepts; save succeeds",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "F02",
+      "source": "P",
+      "target": "F",
+      "label": "Server rejects / write fails",
+      "mode": "failure",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": "exact checkpoint",
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "F03",
+      "source": "F",
+      "target": "P",
+      "label": "Retry / new valid command",
+      "mode": "voice",
+      "audio": "retry-feedback",
+      "guard": "fresh availability / permissions",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "F04",
+      "source": "F",
+      "target": "P",
+      "label": "Retry / new valid action",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": true,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "F05",
+      "source": "P",
+      "target": "F",
+      "label": "Consumed prefix revised / aborted",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": "exact checkpoint",
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B630",
+      "source": "BE",
+      "target": "B10",
+      "label": "Cancel: original Short break",
+      "mode": "voice",
+      "audio": "interval-continues",
+      "guard": "origin was B10",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "B631",
+      "source": "BE",
+      "target": "BL",
+      "label": "Cancel: original Lunch",
+      "mode": "voice",
+      "audio": "interval-continues",
+      "guard": "origin was BL",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": false
+    },
+    {
+      "id": "M19",
+      "source": "GA",
+      "target": "GA",
+      "label": "Auto Mode [already selected]",
+      "mode": "voice",
+      "audio": "mode-already-GA",
+      "guard": "Requested mode and range unchanged.",
+      "persist": false,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      }
+    },
+    {
+      "id": "M20",
+      "source": "GT",
+      "target": "GT",
+      "label": "Trip Mode [already selected]",
+      "mode": "voice",
+      "audio": "mode-already-GT",
+      "guard": "Requested mode and range unchanged.",
+      "persist": false,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      }
+    },
+    {
+      "id": "M21",
+      "source": "GL",
+      "target": "GL",
+      "label": "Total / range Mode [already selected]",
+      "mode": "voice",
+      "audio": "mode-already-GL",
+      "guard": "Requested mode and range unchanged.",
+      "persist": false,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      }
+    },
+    {
+      "id": "B410",
+      "source": "B10",
+      "target": "R1",
+      "label": "End Short Break OK",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "Matching active interval only. Combined OK skips the confirmation dialog and question.",
+      "persist": true,
+      "restore": "B10",
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; local automated fixture, not Lightsail verification."
+      },
+      "skippable": false
+    },
+    {
+      "id": "B411",
+      "source": "B15",
+      "target": "R1",
+      "label": "End Break OK",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "Matching active interval only. Combined OK skips the confirmation dialog and question.",
+      "persist": true,
+      "restore": "B15",
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; local automated fixture, not Lightsail verification."
+      },
+      "skippable": false
+    },
+    {
+      "id": "B412",
+      "source": "BL",
+      "target": "R1",
+      "label": "End Lunch OK",
+      "mode": "voice",
+      "audio": "resume",
+      "guard": "Matching active interval only. Combined OK skips the confirmation dialog and question.",
+      "persist": true,
+      "restore": "BL",
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; local automated fixture, not Lightsail verification."
+      },
+      "skippable": false
+    },
+    {
+      "id": "B420",
+      "source": "R1",
+      "target": "B1",
+      "label": "Start Break",
+      "mode": "voice",
+      "audio": "break-start-question",
+      "guard": "Selected type: Break. Standalone final command asks OK/Cancel; chained OK skips dialog/question.",
+      "persist": false,
+      "restore": "R1",
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; includes translated command patterns."
+      },
+      "skippable": true
+    },
+    {
+      "id": "B423",
+      "source": "DOWN",
+      "target": "B1",
+      "label": "Start Break",
+      "mode": "voice",
+      "audio": "break-start-question",
+      "guard": "Selected type: Break. Standalone final command asks OK/Cancel; chained OK skips dialog/question.",
+      "persist": false,
+      "restore": "DOWN",
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": true
+    },
+    {
+      "id": "B421",
+      "source": "R1",
+      "target": "B1",
+      "label": "Start Short Break",
+      "mode": "voice",
+      "audio": "break-start-question",
+      "guard": "Selected type: Short Break. Standalone final command asks OK/Cancel; chained OK skips dialog/question.",
+      "persist": false,
+      "restore": "R1",
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; includes translated command patterns."
+      },
+      "skippable": true
+    },
+    {
+      "id": "B424",
+      "source": "DOWN",
+      "target": "B1",
+      "label": "Start Short Break",
+      "mode": "voice",
+      "audio": "break-start-question",
+      "guard": "Selected type: Short Break. Standalone final command asks OK/Cancel; chained OK skips dialog/question.",
+      "persist": false,
+      "restore": "DOWN",
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": true
+    },
+    {
+      "id": "B422",
+      "source": "R1",
+      "target": "B1",
+      "label": "Start Lunch",
+      "mode": "voice",
+      "audio": "break-start-question",
+      "guard": "Selected type: Lunch. Standalone final command asks OK/Cancel; chained OK skips dialog/question.",
+      "persist": false,
+      "restore": "R1",
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback; includes translated command patterns."
+      },
+      "skippable": true
+    },
+    {
+      "id": "B425",
+      "source": "DOWN",
+      "target": "B1",
+      "label": "Start Lunch",
+      "mode": "voice",
+      "audio": "break-start-question",
+      "guard": "Selected type: Lunch. Standalone final command asks OK/Cancel; chained OK skips dialog/question.",
+      "persist": false,
+      "restore": "DOWN",
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      },
+      "skippable": true
+    },
+    {
+      "id": "B430",
+      "source": "R1",
+      "target": "B10",
+      "label": "Start Short Break OK",
+      "mode": "voice",
+      "audio": "short-break-started",
+      "guard": "Complete command chain; skip start confirmation and question.",
+      "persist": true,
+      "restore": "R1",
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback."
+      }
+    },
+    {
+      "id": "B433",
+      "source": "DOWN",
+      "target": "B10",
+      "label": "Start Short Break OK",
+      "mode": "voice",
+      "audio": "short-break-started",
+      "guard": "Complete command chain; skip start confirmation and question.",
+      "persist": true,
+      "restore": "DOWN",
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      }
+    },
+    {
+      "id": "B431",
+      "source": "R1",
+      "target": "B15",
+      "label": "Start Break OK",
+      "mode": "voice",
+      "audio": "break-started",
+      "guard": "Complete command chain; skip start confirmation and question.",
+      "persist": true,
+      "restore": "R1",
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback."
+      }
+    },
+    {
+      "id": "B434",
+      "source": "DOWN",
+      "target": "B15",
+      "label": "Start Break OK",
+      "mode": "voice",
+      "audio": "break-started",
+      "guard": "Complete command chain; skip start confirmation and question.",
+      "persist": true,
+      "restore": "DOWN",
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      }
+    },
+    {
+      "id": "B432",
+      "source": "R1",
+      "target": "BL",
+      "label": "Start Lunch OK",
+      "mode": "voice",
+      "audio": "lunch-started",
+      "guard": "Complete command chain; skip start confirmation and question.",
+      "persist": true,
+      "restore": "R1",
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "LOCAL 2b137e1 + working-tree changes",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback."
+      }
+    },
+    {
+      "id": "B435",
+      "source": "DOWN",
+      "target": "BL",
+      "label": "Start Lunch OK",
+      "mode": "voice",
+      "audio": "lunch-started",
+      "guard": "Complete command chain; skip start confirmation and question.",
+      "persist": true,
+      "restore": "DOWN",
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": ""
+      }
+    }
+  ],
+  "audio": {
+    "silent": {
+      "id": "silent",
+      "chime": "None",
+      "notes": "",
+      "summary": "None",
+      "details": "None",
+      "footer": "No dedicated speech or chime for this navigation action.",
+      "sequence": [],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "prompt": {
+      "id": "prompt",
+      "chime": "None",
+      "notes": "",
+      "summary": "Say Duration",
+      "details": "None",
+      "footer": "For other fields: Say Time or Say Percent. Prompt only while this editor is still current.",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Say Duration",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "value": {
+      "id": "value",
+      "chime": "None",
+      "notes": "",
+      "summary": "{spoken value}",
+      "details": "Say OK to {action}",
+      "footer": "Second phrase follows value speech by 220 ms. New value, close, or a changed editor cancels stale feedback.",
+      "sequence": [
+        {
+          "kind": "Value",
+          "text": "{spoken value}",
+          "optional": true
+        },
+        {
+          "kind": "Prompt",
+          "text": "Say OK to {action}",
+          "optional": true
+        }
+      ],
+      "order_note": "Value readback finishes, then a 220 ms pause, then the confirmation prompt. A newer value or changed editor cancels stale feedback."
+    },
+    "start": {
+      "id": "start",
+      "chime": "trip-started",
+      "notes": "G2 / B2 / D#3",
+      "summary": "Trip started.",
+      "details": "{duration} until {goal}.",
+      "footer": "Early / late use corresponding announcement. Reserved transition chime can change summary to Trip in Progress.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "trip-started",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Trip started.",
+          "optional": true
+        },
+        {
+          "kind": "Details",
+          "text": "{duration} until {goal}.",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "finish": {
+      "id": "finish",
+      "chime": "trip-transition",
+      "notes": "D#3 / B2 / G2 / B2 / D#3",
+      "summary": "Trip ended. {scope} percent: {percent}.",
+      "details": "{duration} banked toward {goal}, OR over {goal}.",
+      "footer": "5-note cue when End and Start chimes enabled; End-only: trip-ended; Start-only: trip-started. Suppress ordinary End cue and reserve later Start cue once.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "trip-transition (or enabled End/Start cue)",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Trip ended.",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "{scope} percent: {percent}.",
+          "optional": true
+        },
+        {
+          "kind": "Details",
+          "text": "{duration} banked toward {goal}, OR {duration} over {goal}.",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback. Trip ended and the percent sentence are combined in one summary utterance, in that order."
+    },
+    "schedule": {
+      "id": "schedule",
+      "chime": "None",
+      "notes": "",
+      "summary": "Say standard time",
+      "details": "None",
+      "footer": "When standard duration exists, prompt becomes Say Start to start early. Automatic start requires its configured arm/guard.",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Say standard time",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "standard": {
+      "id": "standard",
+      "chime": "info-tone",
+      "notes": "C2 / G2",
+      "summary": "Standard Time Set to {time}",
+      "details": "None",
+      "footer": "A spoken standard time can arm scheduled Auto Start. Unchanged values do not need a new confirmation cue. Same value: Standard time is already {duration}; scheduled prompt may follow.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "info-tone",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Standard Time Set to {time}",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "short-break-started": {
+      "id": "short-break-started",
+      "chime": "short-break-started",
+      "notes": "D#3 / B2 / G2",
+      "summary": "Short Break Started. Say end short break to end your short break.",
+      "details": "None",
+      "footer": "Chime and summary are independently enabled. When entering a break from Down, preserve resume bookkeeping but suppress the intermediate resume announcement.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "short-break-started",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Short Break Started. Say end short break to end your short break.",
+          "optional": false
+        }
+      ],
+      "order_note": "Chime first, then both spoken sentences in this order, in one summary utterance."
+    },
+    "break-started": {
+      "id": "break-started",
+      "chime": "break-started",
+      "notes": "D#3 / B2 / G2",
+      "summary": "Break Started. Say end break to end your break.",
+      "details": "None",
+      "footer": "Chime and summary are independently enabled. When entering a break from Down, preserve resume bookkeeping but suppress the intermediate resume announcement.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "break-started",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Break Started. Say end break to end your break.",
+          "optional": false
+        }
+      ],
+      "order_note": "Chime first, then both spoken sentences in this order, in one summary utterance."
+    },
+    "lunch-started": {
+      "id": "lunch-started",
+      "chime": "lunch-started",
+      "notes": "D#3 / B2 / G2",
+      "summary": "Lunch Started. Say end lunch to end your lunch.",
+      "details": "None",
+      "footer": "Chime and summary are independently enabled. When entering a break from Down, preserve resume bookkeeping but suppress the intermediate resume announcement.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "lunch-started",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Lunch Started. Say end lunch to end your lunch.",
+          "optional": false
+        }
+      ],
+      "order_note": "Chime first, then both spoken sentences in this order, in one summary utterance."
+    },
+    "down-time-started": {
+      "id": "down-time-started",
+      "chime": "down-time-started",
+      "notes": "D#3 / B2 / G2 / D#3 / B2 / G2",
+      "summary": "Down time started",
+      "details": "None",
+      "footer": "Chime and summary are independently enabled. When entering a break from Down, preserve resume bookkeeping but suppress the intermediate resume announcement.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "down-time-started",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Down time started",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "trip-resumed-from-down": {
+      "id": "trip-resumed-from-down",
+      "chime": "trip-resumed-from-down",
+      "notes": "G2 / D#3",
+      "summary": "Trip resumed",
+      "details": "None",
+      "footer": "Chime and summary are independently enabled. When entering a break from Down, preserve resume bookkeeping but suppress the intermediate resume announcement.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "trip-resumed-from-down",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Trip resumed",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "resume": {
+      "id": "resume",
+      "chime": "trip-resumed-early",
+      "notes": "G2 / B2 / D#3",
+      "summary": "Trip resumed early. OR Trip resumed.",
+      "details": "{duration} saved. OR {duration} lost.",
+      "footer": "Choose early / after-break profile from interval timing. Automatic resume has its own summary. Late-break restart policy may finish the old trip.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "trip-resumed-early",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Trip resumed early. OR Trip resumed.",
+          "optional": true
+        },
+        {
+          "kind": "Details",
+          "text": "{duration} saved. OR {duration} lost.",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "sync": {
+      "id": "sync",
+      "chime": "info-tone",
+      "notes": "C2 / G2",
+      "summary": "Sync On / Sync Off",
+      "details": "Sync Goal {percent} [if emitted]",
+      "footer": "Offline / blocked: Cannot sync offline / Not enough time to sync / Sync Fail. Sync Off must preserve mic and focused editor.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "info-tone",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "Sync On / Sync Off",
+          "optional": true
+        },
+        {
+          "kind": "Details",
+          "text": "Sync Goal {percent} [if emitted]",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback. Sync On / Off and Sync Goal are separate guarded announcements, each with its own enabled chime; do not assume both are always emitted."
+    },
+    "mode": {
+      "id": "mode",
+      "chime": "info-tone",
+      "notes": "C2 / G2",
+      "summary": "{scope} Mode",
+      "details": "None",
+      "footer": "Unchanged setting can return without a new announcement. Focus and trip phase do not change.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "info-tone",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "{scope} Mode",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "log": {
+      "id": "log",
+      "chime": "None",
+      "notes": "",
+      "summary": "None",
+      "details": "None",
+      "footer": "Trip Log preserves underlying editor value. Closing returns to the actual top originating surface.",
+      "sequence": [],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "question": {
+      "id": "question",
+      "chime": "None",
+      "notes": "",
+      "summary": "{current question}",
+      "details": "None",
+      "footer": "Exact Break Start / End prompt depends on the selected workflow. Yes, No and Cancel are scoped to this dialog.",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "{current question}",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "read": {
+      "id": "read",
+      "chime": "info-tone",
+      "notes": "C2 / G2",
+      "summary": "{requested metric / state}",
+      "details": "None",
+      "footer": "Readback preserves focus, trip, and pending value. Follow the configured announcement output.",
+      "sequence": [
+        {
+          "kind": "Chime",
+          "text": "info-tone",
+          "optional": true
+        },
+        {
+          "kind": "Summary",
+          "text": "{requested metric / state}",
+          "optional": true
+        }
+      ],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "failure": {
+      "id": "failure",
+      "chime": "None",
+      "notes": "",
+      "summary": "None (Reverted banner is visual)",
+      "details": "None",
+      "footer": "Restore model, editor value, focus, controls, and workflow locks; cancel dependent actions. Re-evaluate command availability.",
+      "sequence": [],
+      "order_note": "Read from top to bottom in playback order. Omitted components are skipped. Other queued announcements can intervene between components according to phase priority; this table is not a guarantee of uninterrupted playback."
+    },
+    "entry-cancelled": {
+      "id": "entry-cancelled",
+      "chime": "None",
+      "notes": "",
+      "summary": "Trip entry cancelled.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Trip entry cancelled.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "pointer-entry": {
+      "id": "pointer-entry",
+      "chime": "None",
+      "notes": "",
+      "summary": "Number pad.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Number pad.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "invalid-value": {
+      "id": "invalid-value",
+      "chime": "None",
+      "notes": "",
+      "summary": "Say a valid {field value}.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Say a valid {field value}.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "schedule-cancelled": {
+      "id": "schedule-cancelled",
+      "chime": "None",
+      "notes": "",
+      "summary": "Scheduled start cancelled.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Scheduled start cancelled.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "deferred": {
+      "id": "deferred",
+      "chime": "None",
+      "notes": "",
+      "summary": "Trip deferred.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Trip deferred.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "break-options": {
+      "id": "break-options",
+      "chime": "None",
+      "notes": "",
+      "summary": "Choose Short Break, Break, or Lunch.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Choose Short Break, Break, or Lunch.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "break-choice": {
+      "id": "break-choice",
+      "chime": "None",
+      "notes": "",
+      "summary": "{choice} selected. Say OK to start.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "{choice} selected. Say OK to start.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "cancelled-running": {
+      "id": "cancelled-running",
+      "chime": "None",
+      "notes": "",
+      "summary": "Cancelled. Trip still running.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Cancelled. Trip still running.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "cancelled-down": {
+      "id": "cancelled-down",
+      "chime": "None",
+      "notes": "",
+      "summary": "Cancelled. Down time continues.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Cancelled. Down time continues.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "interval-continues": {
+      "id": "interval-continues",
+      "chime": "None",
+      "notes": "",
+      "summary": "{interval} continues.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "{interval} continues.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "down-deleted": {
+      "id": "down-deleted",
+      "chime": "None",
+      "notes": "",
+      "summary": "Down time removed. Trip running.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Down time removed. Trip running.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "down-continues": {
+      "id": "down-continues",
+      "chime": "None",
+      "notes": "",
+      "summary": "Down time continues.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Down time continues.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "settings-saved": {
+      "id": "settings-saved",
+      "chime": "None",
+      "notes": "",
+      "summary": "Trip settings saved.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Trip settings saved.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "edit-cancelled": {
+      "id": "edit-cancelled",
+      "chime": "None",
+      "notes": "",
+      "summary": "Edit cancelled. [then destination prompt, if applicable]",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Edit cancelled. [then destination prompt, if applicable]",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "log-opened": {
+      "id": "log-opened",
+      "chime": "None",
+      "notes": "",
+      "summary": "Trip log.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Trip log.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "log-closed": {
+      "id": "log-closed",
+      "chime": "None",
+      "notes": "",
+      "summary": "Trip log closed. [then destination prompt, if applicable]",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Trip log closed. [then destination prompt, if applicable]",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "speech-sleep": {
+      "id": "speech-sleep",
+      "chime": "None",
+      "notes": "",
+      "summary": "Speech sleeping.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Speech sleeping.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "speech-wake": {
+      "id": "speech-wake",
+      "chime": "None",
+      "notes": "",
+      "summary": "Listening.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Listening.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "speech-off": {
+      "id": "speech-off",
+      "chime": "None",
+      "notes": "",
+      "summary": "Speech off.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Speech off.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "retry-feedback": {
+      "id": "retry-feedback",
+      "chime": "None",
+      "notes": "",
+      "summary": "{actual command feedback}",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "{actual command feedback}",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "break-end-question": {
+      "id": "break-end-question",
+      "chime": "None",
+      "notes": "",
+      "summary": "Are you ready to end your {break type}?",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Question",
+          "text": "Are you ready to end your {break type}?",
+          "optional": false
+        }
+      ],
+      "footer": "Localized question names the active interval. End Break OK / End Short Break OK / End Lunch OK skip both question and dialog, including incremental recognition. Only the matching end command is eligible.",
+      "order_note": "Heard top to bottom."
+    },
+    "sync-already-on": {
+      "id": "sync-already-on",
+      "chime": "None",
+      "notes": "",
+      "summary": "Sync already on.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Sync already on.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "sync-already-off": {
+      "id": "sync-already-off",
+      "chime": "None",
+      "notes": "",
+      "summary": "Sync already off.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Sync already off.",
+          "optional": false
+        }
+      ],
+      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "order_note": "Heard top to bottom."
+    },
+    "mode-already-GA": {
+      "id": "mode-already-GA",
+      "chime": "None",
+      "notes": "",
+      "summary": "Already in Auto mode.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Already in Auto mode.",
+          "optional": false
+        }
+      ],
+      "footer": "The requested mode and range already match; no state mutation.",
+      "order_note": "Single acknowledgement."
+    },
+    "mode-already-GT": {
+      "id": "mode-already-GT",
+      "chime": "None",
+      "notes": "",
+      "summary": "Already in Trip mode.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Already in Trip mode.",
+          "optional": false
+        }
+      ],
+      "footer": "The requested mode and range already match; no state mutation.",
+      "order_note": "Single acknowledgement."
+    },
+    "mode-already-GL": {
+      "id": "mode-already-GL",
+      "chime": "None",
+      "notes": "",
+      "summary": "Already in Total / range mode.",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "Already in Total / range mode.",
+          "optional": false
+        }
+      ],
+      "footer": "The requested mode and range already match; no state mutation.",
+      "order_note": "Single acknowledgement."
+    },
+    "edit-field-saved": {
+      "id": "edit-field-saved",
+      "chime": "None",
+      "notes": "",
+      "summary": "{field} set to {value}.",
+      "details": "{destination prompt, when applicable}",
+      "sequence": [
+        {
+          "kind": "Summary",
+          "text": "{field} set to {value}.",
+          "optional": false
+        },
+        {
+          "kind": "Prompt",
+          "text": "{destination prompt, when applicable}",
+          "optional": true
+        }
+      ],
+      "footer": "No trip-start lifecycle announcement for an ordinary field edit.",
+      "order_note": "Field outcome before destination prompt."
+    },
+    "break-start-question": {
+      "id": "break-start-question",
+      "chime": "None",
+      "notes": "",
+      "summary": "Are you ready to start your {break type}?",
+      "details": "None",
+      "sequence": [
+        {
+          "kind": "Question",
+          "text": "Are you ready to start your {break type}?",
+          "optional": false
+        }
+      ],
+      "footer": "Localized template and interval labels. Skippable: Start Break OK, Start Short Break OK and Start Lunch OK suppress the question and dialog; only the final started outcome is heard. Without OK, show and speak the question.",
+      "order_note": "Heard top to bottom."
+    }
+  },
+  "approved_on": "2026-10-06",
+  "chart_revision": 5,
+  "implementation_status": "Localized type-specific Start/End commands with optional OK; pointer-only selector; skippable confirmation dialogs and speech. Local working tree, not deployed."
+}

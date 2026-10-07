@@ -297,7 +297,7 @@ foreach ($macros as $macro) {
     }
 }
 
-$allowedAttributes = ['speech-template', 'speech-pattern', 'speech-function', 'speech-preproc', 'speech-preproc-context', 'speech-preproc-field', 'speech-response-timeout', 'speech-modal', 'speech-index', 'speech-chain-context', 'speech-chain-next', 'speech-persist'];
+$allowedAttributes = ['speech-template', 'speech-pattern', 'speech-function', 'speech-preproc', 'speech-preproc-context', 'speech-preproc-field', 'speech-response-timeout', 'speech-modal', 'speech-index', 'speech-chain-context', 'speech-chain-next', 'speech-persist', 'speech-skippable'];
 $seen = [];
 
 foreach ($entries as $entry) {
@@ -312,6 +312,7 @@ foreach ($entries as $entry) {
         if ($name === 'speech-pattern' && $value !== '' && @preg_match('~' . str_replace('~', '\\~', $value) . '~i', '') === false) api_error('Invalid speech pattern.', 422, 'invalid_pattern');
         if (in_array($name, ['speech-function', 'speech-preproc'], true) && $value !== '' && !preg_match('/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/D', $value)) api_error('Invalid function name.', 422, 'invalid_function');
         if ($name === 'speech-persist' && !in_array($value, ['', 'true', 'false'], true)) api_error('speech-persist must be true or false.', 422, 'invalid_speech_persist');
+        if ($name === 'speech-skippable' && !in_array($value, ['', 'true', 'false'], true)) api_error('speech-skippable must be true or false.', 422, 'invalid_speech_skippable');
         if ($name === 'speech-index' && $value !== '' && !preg_match('/^-?(?:\d+|\d*\.\d+)$/D', $value)) api_error('speech-index must be numeric.', 422, 'invalid_speech_index');
         if ($name === 'speech-response-timeout' && $value !== '' && !preg_match('/^(?:persistent|none|manual|\d+(?:\.\d+)?(?:ms|s)?)$/iD', $value)) api_error('speech-response-timeout must be a duration or persistent.', 422, 'invalid_speech_response_timeout');
         if ($name === 'speech-chain-next' && $value !== '' && !preg_match('/^[A-Za-z0-9:_-]+$/D', $value)) api_error('speech-chain-next must be a context name.', 422, 'invalid_speech_chain');

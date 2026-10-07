@@ -6991,6 +6991,7 @@
                     record.clockTimerEventKey,
                 type: currentType,
                 intervalType: String(intervalType || currentType || "").trim(),
+                breakType: this.#getSemanticIntervalDetail(record).breakType,
                 phase: String(phase || currentType || "").trim(),
                 open,
                 startTime: this.#timelineToISO(start),

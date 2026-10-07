@@ -20944,7 +20944,7 @@
     let speechBreakPromptState;
 
     function openSpeechBreakPrompt(
-        mode
+        mode, kind
     ) {
         const dialog =
             $("#speechBreakConfirmDialog");
@@ -20961,6 +20961,16 @@
             return false;
         }
 
+        // Finish an old close before creating a new confirmation. Its delayed
+        // callback must never clear or close the newly opened prompt.
+        if (dialog.classList.contains("dialog-closing")) {
+            clearTimeout(dialogCloseTimers.get(dialog));
+            dialogCloseTimers.delete(dialog);
+            dialog.classList.remove("dialog-closing");
+            dialog.close();
+            emitUIEvent(dialog, "closed", {reason: "speech-break-reopen", immediate: true});
+        }
+
         if (mode === "start") {
             title.textContent =
                 globalThis.WMOFLanguagePack.text("cbf94a84-680d-55ec-883a-c3b8f50dff5d");
@@ -20970,6 +20980,12 @@
             speechBreakPromptState = {
                 mode: "start"
             };
+        }
+        else if (mode === "start-selected") {
+            const label = announcementText(`messages.voiceFeedback.intervalTypes.${kind}`);
+            title.textContent = label;
+            message.textContent = announcementText("messages.voiceFeedback.breakStartQuestion", {type: label});
+            speechBreakPromptState = {mode, kind};
         }
         else if (mode === "end") {
             const active =
@@ -20992,18 +21008,15 @@
                 return false;
             }
 
-            const label =
-                type === "lunch"
-                    ? "Lunch"
-                    : "Break";
+            kind = kind || activeSpeechBreakKind();
+            const label = announcementText(`messages.voiceFeedback.intervalTypes.${kind}`);
 
             title.textContent =
                 globalThis.WMOFLanguagePack.text("b1fd082a-02bb-57b0-b3ed-90ea53d9f026", {value0: (label)});
-            message.textContent =
-                globalThis.WMOFLanguagePack.text("3c163e32-eac5-52d3-9485-de84030ded1b", {value0: (label.toLowerCase())});
+            message.textContent = announcementText("messages.voiceFeedback.breakEndQuestion", {type: label});
 
             speechBreakPromptState = {
-                mode: "end",
+                mode: "end", kind,
                 intervalType:
                     type
             };
@@ -21012,6 +21025,12 @@
             return false;
         }
 
+        const end = mode === "end" || mode === "start-selected";
+        $("#speechBreakConfirmYes").textContent = globalThis.WMOFLanguagePack.text(end ? "3520a2c2-f2a8-5a01-a06f-68530dea7b08" : "eb69bd25-6a47-568a-a450-c85ea667c25c");
+        $("#speechBreakConfirmNo").hidden = end;
+        $("#speechBreakConfirmNo").disabled = end;
+        dialog.querySelector(".dialog-actions").classList.toggle("two-actions", end);
+        dialog.querySelector(".dialog-actions").classList.toggle("three-actions", !end);
         return openDialog(
             "speechBreakConfirmDialog",
             {
@@ -21019,6 +21038,38 @@
                     `speech-break-${mode}`
             }
         );
+    }
+
+    function activeSpeechBreakKind(date = new Date()) {
+        const active = clockTimer.getActiveIntervalState?.(date);
+        if (active?.intervalType === "lunch") return "lunch";
+        if (active?.intervalType !== "break") return undefined;
+        return ["short", "short-break"].includes(active.breakType) ? "short-break" : "break";
+    }
+
+    function requestSpeechBreakEnd(kind) {
+        const date = speechTransactionDate();
+        const active = clockTimer.getActiveIntervalState?.(date);
+        if (!active || activeSpeechBreakKind(date) !== kind) return false;
+        const context = globalThis.SpeechMenu?.executionContext;
+        if (context?.chain && (context.isFinal?.() !== true ||
+            context.nextCommand?.() === "WMOFActions.confirmBreakPromptYes")) {
+            speechBreakPromptState = {mode: "end", kind, hidden: true, intervalType: active.intervalType,
+                intervalKey: active.intervalKey, utteranceId: context.utteranceId};
+            return true;
+        }
+        return openSpeechBreakPrompt("end", kind);
+    }
+
+    function requestSpeechBreakStart(kind) {
+        if (!['break', 'short-break', 'lunch'].includes(kind) || breakButton?.disabled) return false;
+        const context = globalThis.SpeechMenu?.executionContext;
+        if (context?.chain && (context.isFinal?.() !== true ||
+            context.nextCommand?.() === "WMOFActions.confirmBreakPromptYes")) {
+            speechBreakPromptState = {mode: "start-selected", kind, hidden: true, utteranceId: context.utteranceId};
+            return true;
+        }
+        return openSpeechBreakPrompt("start-selected", kind);
     }
 
     function clearSpeechBreakPrompt() {
@@ -24190,6 +24241,15 @@
                 );
             },
 
+            canConfirmBreakEnd() {
+                return ["end", "start-selected"].includes(speechBreakPromptState?.mode) && ($("#speechBreakConfirmDialog")?.open ||
+                    (speechBreakPromptState.hidden && speechBreakPromptState.utteranceId === globalThis.SpeechMenu?.executionContext?.utteranceId));
+            },
+
+            canAnswerLunchQuestion() {
+                return speechBreakPromptState?.mode === "start" && $("#speechBreakConfirmDialog")?.open;
+            },
+
             canOpenBreakEndMenu() {
                 const type =
                     String(
@@ -24209,6 +24269,10 @@
                 );
             },
 
+            canEndBreak() { return activeSpeechBreakKind() === "break"; },
+            canEndShortBreak() { return activeSpeechBreakKind() === "short-break"; },
+            canEndLunch() { return activeSpeechBreakKind() === "lunch"; },
+
             canResumeTrip() {
                 const type =
                     String(
@@ -24223,9 +24287,7 @@
                         .toLowerCase();
 
                 return (
-                    type === "down" ||
-                    type === "break" ||
-                    type === "lunch"
+                    type === "down"
                 );
             },
 
@@ -25009,6 +25071,7 @@
                 const signal =
                     currentActionSignal();
 
+                if (globalThis.WMOFSpeechAvailability.canOpenBreakEndMenu()) return openSpeechBreakPrompt("end");
                 if (tripIsLive()) {
                     return endCurrentIntervalOrTrip(
                         speechTransactionDate(),
@@ -25458,6 +25521,10 @@
                 );
             },
 
+            openBreakStartMenu() { return requestSpeechBreakStart("break"); },
+            openShortBreakStartMenu() { return requestSpeechBreakStart("short-break"); },
+            openLunchStartMenu() { return requestSpeechBreakStart("lunch"); },
+
             chooseBreakType(
                 breakChoice
             ) {
@@ -25638,13 +25705,12 @@
                 );
             },
 
-            openBreakEndMenu() {
-                return openSpeechBreakPrompt(
-                    "end"
-                );
-            },
+            openBreakEndMenu() { return requestSpeechBreakEnd("break"); },
+            openShortBreakEndMenu() { return requestSpeechBreakEnd("short-break"); },
+            openLunchEndMenu() { return requestSpeechBreakEnd("lunch"); },
 
             async resumeTrip() {
+                if (clockTimer.getActiveIntervalState?.(speechTransactionDate())?.intervalType !== "down") return false;
                 const transactionTime =
                     speechTransactionDate();
 
@@ -25662,6 +25728,7 @@
             },
 
             async endTrip() {
+                if (globalThis.WMOFSpeechAvailability.canOpenBreakEndMenu()) return openSpeechBreakPrompt("end");
                 const transactionTime =
                     speechTransactionDate();
                 const signal =
@@ -26721,13 +26788,24 @@
                 const state =
                     speechBreakPromptState;
 
-                if (
-                    !dialog?.open ||
-                    !state
-                ) {
+                const context = globalThis.SpeechMenu?.executionContext;
+                const virtual = state?.hidden && context?.chain && ["break-end-confirm", "break-start-confirm"].includes(context.chainContext) &&
+                    state.utteranceId === context.utteranceId;
+                if ((!dialog?.open && !virtual) || !state) {
                     return false;
                 }
 
+                if (state.mode === "start-selected") {
+                    if (!virtual) closeDialog(dialog, {reason: "speech-break-confirmed"});
+                    clearSpeechBreakPrompt();
+                    return startBreakInterval(state.kind, transactionTime);
+                }
+                if (virtual) {
+                    const active = clockTimer.getActiveIntervalState?.(transactionTime);
+                    if (active?.intervalKey !== state.intervalKey || active.intervalType !== state.intervalType) return false;
+                    clearSpeechBreakPrompt();
+                    return await clockTimer.endInterval(transactionTime) !== false;
+                }
                 closeDialog(
                     dialog,
                     {
@@ -28869,7 +28947,7 @@
             }
             const speechTargets = {
                 readyAt:"#newTripButton", ready:"#newTripButton:enabled, #endTripButton:enabled",
-                breakStart:"#breakButton", down:"#downButton", breakEnd:"#breakButton",
+                startBreak:"#breakButton", startShortBreak:"#breakButton", startLunch:"#breakButton", down:"#downButton", endBreak:"#breakButton", endShortBreak:"#breakButton", endLunch:"#breakButton",
                 resume:"#downResumeButton",
                 changeGoal:"#goalPercentValue",
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
@@ -28913,8 +28991,12 @@
             const speechChainNext = {
                 readyAt:
                     "scheduled-start",
-                breakStart:
-                    "break-choice",
+                startBreak: "break-start-confirm",
+                startShortBreak: "break-start-confirm",
+                startLunch: "break-start-confirm",
+                endBreak: "break-end-confirm",
+                endShortBreak: "break-end-confirm",
+                endLunch: "break-end-confirm",
                 breakChoice:
                     "break-confirm"
             };
@@ -28923,9 +29005,13 @@
                 readyAt: "trip-actions",
                 readyAtContinuation: "trip-actions",
                 ready: "trip-actions",
-                breakStart: "trip-actions",
+                startBreak: "trip-actions",
+                startShortBreak: "trip-actions",
+                startLunch: "trip-actions",
                 down: "trip-actions",
-                breakEnd: "trip-actions",
+                endBreak: "trip-actions",
+                endShortBreak: "trip-actions",
+                endLunch: "trip-actions",
                 resume: "trip-actions",
                 tripGoal: "goals",
                 totalGoal: "goals",
@@ -28972,12 +29058,14 @@
                     "WMOFSpeechAvailability.canUseReady",
                 readyAtContinuation:
                     "WMOFSpeechAvailability.canContinueStartAt",
-                breakStart:
-                    "WMOFSpeechAvailability.canOpenBreakMenu",
+                startBreak: "WMOFSpeechAvailability.canOpenBreakMenu",
+                startShortBreak: "WMOFSpeechAvailability.canOpenBreakMenu",
+                startLunch: "WMOFSpeechAvailability.canOpenBreakMenu",
                 down:
                     "WMOFSpeechAvailability.canStartDownTime",
-                breakEnd:
-                    "WMOFSpeechAvailability.canOpenBreakEndMenu",
+                endBreak: "WMOFSpeechAvailability.canEndBreak",
+                endShortBreak: "WMOFSpeechAvailability.canEndShortBreak",
+                endLunch: "WMOFSpeechAvailability.canEndLunch",
                 resume:
                     "WMOFSpeechAvailability.canResumeTrip",
                 lockEndTime:
@@ -29030,6 +29118,9 @@
             ].includes(String(actionName));
             // Voice entry uses one action for values and controls; only its
             // confirmation and defer commands can send a persistence request.
+            if (!element.hasAttribute("speech-skippable")) {
+                element.toggleAttribute("speech-skippable", ["openBreakMenu", "openBreakStartMenu", "openShortBreakStartMenu", "openLunchStartMenu", "chooseBreakType", "openBreakEndMenu", "openShortBreakEndMenu", "openLunchEndMenu"].includes(actionName));
+            }
             element.toggleAttribute("speech-persist", persistsSpeechAction ||
                 ["voiceEntryConfirm", "voiceEntryDefer"].includes(key));
 
@@ -29118,7 +29209,9 @@
                 element.dataset.speechTarget = element.id ? `#${element.id}` : '#tripSettingsDialog [data-trip-time-field="standard-time"]';
                 element.dataset.speechOptionsCategory =
                     "settings";
-                element.setAttribute("speech-pattern", englishSpeech.commands.standardTime);
+                element.setAttribute("speech-pattern", element === scheduledStartStandard
+                    ? englishSpeech.commands.standardTime.replace("^standard(?: time)? ", "^(?:standard(?: time)? )?")
+                    : englishSpeech.commands.standardTime);
                 element.setAttribute("speech-function", "WMOFActions.changeStandardTime");
                 element.setAttribute("speech-collect", "");
                 element.setAttribute("speech-preproc", "WMOFSpeechProcessing.normalizeSpeechValue");
@@ -29126,8 +29219,8 @@
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
             for (const [key, fn] of [
-                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["breakStart","openBreakMenu"], ["down","startDownTime"],
-                ["breakEnd","openBreakEndMenu"], ["resume","resumeTrip"],
+                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["startBreak","openBreakStartMenu"], ["startShortBreak","openShortBreakStartMenu"], ["startLunch","openLunchStartMenu"], ["down","startDownTime"],
+                ["endBreak","openBreakEndMenu"], ["endShortBreak","openShortBreakEndMenu"], ["endLunch","openLunchEndMenu"], ["resume","resumeTrip"],
                 ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
                 ["changeGoal","changeGoal"],
                 ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
@@ -29142,8 +29235,7 @@
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
             }
-            installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
-            installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
+            // Break Selector is pointer-only; voice uses the OK/Cancel prompt.
 
             const earlyStartStandardEditorCommand =
                 installSpeechCommand(
@@ -29416,7 +29508,7 @@
         speechBreakConfirmDialog
             ?.addEventListener(
                 "close",
-                clearSpeechBreakPrompt
+                () => { if (!speechBreakConfirmDialog.open) clearSpeechBreakPrompt(); }
             );
 
         if (
@@ -29444,10 +29536,133 @@
                 false
             );
 
+            for (const key of ["yes", "no"]) {
+                speechBreakConfirmDialog.querySelector(`[data-speech-editor-id="builtin:${key}:speechBreakConfirmDialog"]`)
+                    ?.setAttribute("speech-available", "WMOFSpeechAvailability.canAnswerLunchQuestion");
+            }
+            const confirmEnd = installSpeechCommand("confirm", "confirmBreakPromptYes", speechBreakConfirmDialog, false);
+            confirmEnd?.setAttribute("speech-chain-context", "break-end-confirm break-start-confirm");
+            confirmEnd?.setAttribute("speech-chain-surface", "pop");
+            confirmEnd?.setAttribute("speech-available", "WMOFSpeechAvailability.canConfirmBreakEnd");
             SpeechMenu.refresh();
         }
 
     })();
+
+    function captureVoiceCommandFeedback() {
+        const state = numberPadState;
+        const interval = clockTimer.getActiveIntervalState?.(new Date());
+        const value = !state?.pending ? "" : state.mode === "percent"
+            ? formatSpokenPercent(Number(state.pending)) : state.mode === "absolute"
+                ? renderAbsoluteDigits(state.pending) : formatGoalFailureDuration(timeDigitsToMilliseconds(state.pending));
+        return {
+            surface: globalThis.SpeechMenu?.activeSurface?.id,
+            source: state?.source, startsTrip: state?.startsTripOnConfirm,
+            field: state && (voiceEntryDescriptor(state) || state.title || "Value"), value,
+            invalidPrompt: state && voiceEntryInvalidPrompt(),
+            valueValid: Boolean(state && numberPadValueValid()),
+            voice: Boolean(voiceEntryState),
+            interval: interval?.intervalType,
+            intervalLabel: interval ? announcementText(`messages.voiceFeedback.intervalTypes.${activeSpeechBreakKind() || "break"}`) : "",
+            breakPromptMode: speechBreakPromptState?.mode,
+            hiddenBreakPrompt: Boolean(speechBreakPromptState?.hidden),
+            question: speechBreakPromptState?.mode === "start-selected"
+                ? announcementText("messages.voiceFeedback.breakStartQuestion", {type: announcementText(`messages.voiceFeedback.intervalTypes.${speechBreakPromptState.kind}`)})
+                : speechBreakPromptState?.mode === "end" ? announcementText("messages.voiceFeedback.breakEndQuestion", {type: announcementText(`messages.voiceFeedback.intervalTypes.${speechBreakPromptState.kind}`)})
+                    : $("#speechBreakConfirmMessage")?.textContent,
+            choice: breakDialog.querySelector("[data-break-type].speech-focused")?.dataset.breakType,
+            sync: getSyncGoalsState(), mode: clockTimer.percentMode, range: getTripLogRange(),
+            standard: tripDraft?.standardTimeMilliseconds ?? tripSettingsSession?.values.standardTimeMilliseconds ?? clockTimer.standardTimeMilliseconds
+        };
+    }
+
+    function voiceCommandFeedback({element, context, snapshot: before, result}) {
+        if (!before) return;
+        const action = element.getAttribute("speech-function")?.split(".").at(-1);
+        const transcript = String(context.transcript || "").trim().toLowerCase();
+        if (["openBreakEndMenu", "openShortBreakEndMenu", "openLunchEndMenu"].includes(action) && result !== false && speechBreakPromptState?.hidden &&
+            speechBreakPromptState.utteranceId === context.utteranceId && context.isFinal?.() === true && !context.hasContinuation?.()) {
+            // A standalone final utterance materializes its deferred dialog.
+            openSpeechBreakPrompt("end");
+        }
+        if (["openBreakStartMenu", "openShortBreakStartMenu", "openLunchStartMenu"].includes(action) && result !== false && speechBreakPromptState?.hidden &&
+            speechBreakPromptState.utteranceId === context.utteranceId && context.isFinal?.() === true && !context.hasContinuation?.()) {
+            openSpeechBreakPrompt("start-selected", speechBreakPromptState.kind);
+        }
+        const after = captureVoiceCommandFeedback();
+        const parts = [];
+        const add = (key, values) => parts.push(announcementText(`messages.voiceFeedback.${key}`, values));
+        const returnedPrompt = () => {
+            if (after.voice && !context.hasContinuation?.()) {
+                const prompt = voiceEntryPromptForState(numberPadState);
+                if (prompt) parts.push(prompt);
+            }
+        };
+        const cancelled = () => {
+            switch (before.surface) {
+                case "voiceEntrySurface": case "numberPadDialog":
+                    add(before.source === "new-trip" ? "entryCancelled" : "editCancelled"); break;
+                case "scheduledStartDialog": add("scheduledCancelled"); break;
+                case "breakDialog": add(before.interval === "down" ? "cancelledDown" : "cancelledRunning"); break;
+                case "speechBreakConfirmDialog":
+                    if (before.breakPromptMode === "end") add("intervalContinues", {interval: before.intervalLabel});
+                    else if (before.breakPromptMode === "start-selected") add("breakNotStarted");
+                    else add("cancelledRunning"); break;
+                case "cancelDownConfirmDialog": add("downContinues"); break;
+                case "tripLogDialog": add("logClosed"); break;
+                case "tripSettingsDialog": add("editCancelled"); break;
+            }
+            returnedPrompt();
+        };
+        if (result === false) {
+            if (action === "handleVoiceEntrySpeech" && /^(?:ok(?:ay)?|o\s+k)$/.test(transcript) && before.voice && !before.valueValid)
+                add("invalidValue", {prompt: before.invalidPrompt});
+        } else {
+            switch (action) {
+                case "cancel": case "close": case "closeActiveSurface": case "cancelNumberPadEdit":
+                case "cancelBreakPrompt": cancelled(); break;
+                case "openBreakMenu":
+                    if (after.surface === "speechBreakConfirmDialog") parts.push(after.question); else add("breakChoices"); break;
+                case "openBreakStartMenu": case "openShortBreakStartMenu": case "openLunchStartMenu": parts.push(after.question); break;
+                case "chooseBreakType":
+                    add("breakSelected", {choice: after.choice === "lunch" ? "Lunch" : after.choice === "short-break" ? "Short break" : "Break"}); break;
+                case "openBreakEndMenu": case "openShortBreakEndMenu": case "openLunchEndMenu": parts.push(after.question); break;
+                case "prepareReadyAction": case "endTrip":
+                    if (after.surface === "speechBreakConfirmDialog") parts.push(after.question); break;
+                case "confirmBreakPromptNo":
+                    if (before.breakPromptMode === "end") add("intervalContinues", {interval: before.intervalLabel}); break;
+                case "continueDownTime": add("downContinues"); break;
+                case "confirmCancelDownTime": add("downRemoved"); break;
+                case "deferTrip": add("deferred"); break;
+                case "openTripLog": add("logOpened"); break;
+                case "closeTripLog": add("logClosed"); returnedPrompt(); break;
+                case "saveTripSettings": if (!before.startsTrip) add("settingsSaved"); break;
+                case "sleep": add("sleeping"); break;
+                case "wake": add("listening"); break;
+                case "disableSpeechRecognition": add("off"); break;
+                case "toggleSync":
+                    if (before.sync === after.sync) add("syncAlready", {state: after.sync ? "on" : "off"}); break;
+                case "changeGoalMode":
+                    if (before.mode === after.mode && before.range === after.range) add("modeAlready", {mode: after.mode}); break;
+                case "changeStandardTime":
+                    if (before.standard === after.standard) add("standardAlready", {duration: formatGoalFailureDuration(after.standard)}); break;
+                case "confirmNumberPad":
+                    if (!before.startsTrip) {add("fieldSaved", {field: before.field, value: before.value}); returnedPrompt();} break;
+                case "handleVoiceEntrySpeech":
+                    if (/^(?:touch|keypad|number pad)$/.test(transcript)) add("numberPad");
+                    else if (/^(?:cancel|castle|close)$/.test(transcript)) cancelled();
+                    else if (transcript === "defer trip") add("deferred");
+                    else if (/^(?:ok(?:ay)?|o\s+k)$/.test(transcript) && !before.startsTrip) {
+                        add("fieldSaved", {field: before.field, value: before.value}); returnedPrompt();
+                    }
+                    break;
+            }
+        }
+        // TTS is fire-and-forget. It never delays UI execution or persistence.
+        for (const part of parts.filter(Boolean)) globalThis.WMOFAudio?.speak?.(part);
+    }
+
+    globalThis.SpeechMenu?.setFeedbackAdapter?.({capture: captureVoiceCommandFeedback, complete: voiceCommandFeedback});
 
     const stateTransactions = globalThis.WMOFStateTransactions;
     if (stateTransactions) {
@@ -29475,7 +29690,7 @@
         stateTransactions.register("interface", {
             capture: () => ({
                 focus: document.activeElement, audio: structuredClone(audioSettings), draft: tripDraft && {...tripDraft},
-                ready: pendingSpeechReady,
+                ready: pendingSpeechReady, breakPrompt: speechBreakPromptState && {...speechBreakPromptState},
                 numberPad: numberPadState && {...numberPadState, tripDefaults: numberPadState.tripDefaults && {...numberPadState.tripDefaults}},
                 voice: voiceEntryState && {...voiceEntryState}, voiceValue: voiceEntryValue?.textContent || "",
                 workflowLocked: newTripWorkflowLocked, stagedTime: stagedStandardTimeMilliseconds,
@@ -29491,7 +29706,7 @@
             }),
             restore: snapshot => {
                 audioSettings = snapshot.audio; tripDraft = snapshot.draft;
-                pendingSpeechReady = snapshot.ready; numberPadState = snapshot.numberPad; voiceEntryState = snapshot.voice;
+                pendingSpeechReady = snapshot.ready; speechBreakPromptState = snapshot.breakPrompt; numberPadState = snapshot.numberPad; voiceEntryState = snapshot.voice;
                 newTripWorkflowLocked = snapshot.workflowLocked; stagedStandardTimeMilliseconds = snapshot.stagedTime;
                 endingIntoNewTrip = snapshot.endingIntoNewTrip; preserveNumberPadStateOnClose = snapshot.preserveNumberPadStateOnClose;
                 uiReturnStack.splice(0, uiReturnStack.length, ...snapshot.returnStack);
