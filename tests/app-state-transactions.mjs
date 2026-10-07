@@ -490,6 +490,12 @@ if(process.argv.includes('--saved-ready')) {
     await settle();
     assert(window.SpeechMenu.testAvailable().includes(ready),'Ready remains selected while End Trip is shown');
 }
+if(process.argv.includes('--pointer-confirmation')) {
+    // Retain the old keypad's closing frame to reproduce the fast CI finish race.
+    const oldPad=window.document.querySelector('#numberPadDialog');
+    if(!oldPad.open) oldPad.showModal();
+    oldPad.classList.add('dialog-closing');
+}
 if(process.argv.includes('--ready-finish')) {
     const finishReady=window.SpeechMenu.testBegin();
     await window.SpeechMenu.testTranscript(finishReady,'ruddy',true);await finishReady.digestQueue;await settle();

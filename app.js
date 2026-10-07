@@ -8447,12 +8447,13 @@
     }
 
     function closeDialog(dialog, { reason = "user", immediate = false } = {}) {
-        if (
-            !dialog?.open ||
-            dialog.classList.contains("dialog-closing")
-        ) return false;
-        const proceed = emitUIEvent(dialog, "closing", { reason, immediate }, true);
-        if (!proceed) return false;
+        if (!dialog?.open) return false;
+        const alreadyClosing=dialog.classList.contains("dialog-closing");
+        if (alreadyClosing && !immediate) return false;
+        if (alreadyClosing) {
+            clearTimeout(dialogCloseTimers.get(dialog));
+            dialogCloseTimers.delete(dialog);
+        } else if (!emitUIEvent(dialog, "closing", {reason,immediate}, true)) return false;
 
         const duration =
             immediate
@@ -22879,6 +22880,11 @@
             return;
         }
 
+        // A completed trip owns focus even if its old editor is still fading out.
+        if (item.awaitConfirmation && completedTripSummary?.invocation.reason === "trip-ended" &&
+            numberPadDialog?.open && numberPadDialog.classList.contains("dialog-closing")) {
+            closeDialog(numberPadDialog,{reason:"trip-summary",immediate:true});
+        }
         tripTransitionOverlayTitle.textContent = item.title;
         $("#tripTransitionSummaryActions").hidden = !item.awaitConfirmation;
         if (tripTransitionOverlay.open) tripTransitionOverlay.close();
