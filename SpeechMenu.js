@@ -2,6 +2,7 @@
 class SpeechCommandIndex {
     #trees = new Map();
     #records = new Map();
+    #nextOrder = 0;
     #observer;
     generation = 0;
 
@@ -54,7 +55,7 @@ class SpeechCommandIndex {
         if (!pattern || !this.root.contains(element)) {this.#remove(element); return;}
         const modalMode = element.getAttribute('speech-modal') ?? element.closest('speech-menu')?.getAttribute('speech-modal');
         const reserved = ['SpeechMenu.close', 'SpeechMenu.cancel'].includes(element.getAttribute('speech-function'));
-        const scope = reserved ? 'system' : ['system', 'top-level', 'default'].includes(modalMode) ? modalMode
+        const scope = reserved ? 'system' : ['system', 'top-level', 'default', ''].includes(modalMode) ? modalMode || 'default'
             : element.closest('dialog, [popover], details, [speech-scope]') || null;
         const nouns = element.getAttribute('speech-noun') || '';
         const previous = this.#records.get(element);
@@ -79,7 +80,7 @@ class SpeechCommandIndex {
             if (words.length) node.commands.add(element);
             else tree.fallback.add(element);
         }
-        this.#records.set(element, {pattern, nouns, path, scope, tree});
+        this.#records.set(element, {pattern, nouns, path, scope, tree, order: this.#nextOrder++});
         if (primedOwner !== undefined) {tree.primed.set(element, primedOwner); element.setAttribute('primed', '');}
         this.generation++;
     }
@@ -120,6 +121,20 @@ class SpeechCommandIndex {
 
     flush() {if (this.#observer) this.#reconcile(this.#observer.takeRecords());}
     elements() {this.flush(); return [...this.#records.keys()];}
+    // Load only active scope buckets. Definitions stay registered, so closing a
+    // dialog unloads its commands without rebuilding patterns or prefix trees.
+    activeElements(surface, openContainers = []) {
+        this.flush();
+        const selected = new Set();
+        for (const [scope, tree] of this.#trees) {
+            const global = typeof scope === 'string';
+            const active = global || (surface ? scope && surface.contains(scope)
+                : scope === null || openContainers.some(container => container.contains(scope)));
+            for (const element of active ? tree.descendants : tree.primed.keys()) selected.add(element);
+        }
+        // Preserve existing tie-breaking order across scope buckets.
+        return [...selected].sort((a, b) => this.#records.get(a).order - this.#records.get(b).order);
+    }
     prime(element, owner) {
         this.flush();
         const record = this.#records.get(element);
@@ -543,18 +558,19 @@ class SpeechMenu {
     static async cancel() { return SpeechMenu.#dismissSurface('cancel'); }
 
     static async #dismissSurface(intent) {
-        const projected = SpeechMenu.#executionContext?.chainSurface;
+        const context = SpeechMenu.#executionContext;
+        const projected = context?.chainSurface;
         const surface = SpeechMenu.activeSurface;
         if (projected && projected !== surface) return false;
         const handlers = SpeechMenu.#surfaceHandlers.get(surface);
         if (!handlers || !surface?.isConnected || handlers.isOpen?.() === false ||
             handlers.canClose?.(intent) === false) return false;
         const handler = intent === 'cancel' ? handlers.cancel || handlers.close : handlers.close;
-        const result = await handler({intent, surface, context: SpeechMenu.#executionContext});
+        const result = await handler({intent, surface, context});
         if (result === false) return false;
-        SpeechMenu.#index().clearSurfacePrimed(surface, SpeechMenu.#executionContext?.utteranceId);
-        const owner = SpeechMenu.#utterance?.id === SpeechMenu.#executionContext?.utteranceId
-            ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(SpeechMenu.#executionContext?.utteranceId);
+        SpeechMenu.#index().clearSurfacePrimed(surface, context?.utteranceId);
+        const owner = SpeechMenu.#utterance?.id === context?.utteranceId
+            ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(context?.utteranceId);
         owner?.expectedSurfaces?.delete(surface);
         SpeechMenu.#index().flush();
         return true;
@@ -3735,6 +3751,26 @@ class SpeechMenu {
         });
     }
 
+    static #completeDigest(utterance) {
+        return utterance.digestCompletion ??= (async () => {
+            await utterance.digestQueue;
+            const transactions = globalThis.WMOFStateTransactions;
+            const group = `speech:${utterance.id}`;
+            if (utterance.digestExecutionFailed || utterance.chainCanceled) {
+                await transactions?.rollback(group, new Error("The speech command was cancelled."));
+                SpeechMenu.#flushCommandFeedback(utterance, false);
+                return false;
+            }
+            if (transactions && !(await transactions.complete(group))) {
+                utterance.chainCanceled = true;
+                SpeechMenu.#rejectDigest(utterance, "state-change-reverted", utterance.transcript);
+                return false;
+            }
+            SpeechMenu.#flushCommandFeedback(utterance, true);
+            return true;
+        })();
+    }
+
     static #digestCandidate(utterance, candidate, remainder, isFinal) {
         if (!SpeechMenu.#executionEnabled) return false;
         if (candidate?.kind !== "chain" && !utterance.chainActive) return false;
@@ -3767,19 +3803,8 @@ class SpeechMenu {
                 utterance.digestCommitted = true;
                 SpeechMenu.#clearPrimed(utterance);
                 if (SpeechMenu.#utterance === utterance) SpeechMenu.#finishUtterance("digested", false);
-                void utterance.digestQueue.then(async () => {
-                    if (utterance.digestExecutionFailed || utterance.chainCanceled) SpeechMenu.#flushCommandFeedback(utterance, false);
-                    if (!utterance.digestExecutionFailed && !utterance.chainCanceled && !SpeechMenu.#stopped &&
-                        utterance.sessionGeneration === SpeechMenu.#sessionGeneration) {
-                        const transactions = globalThis.WMOFStateTransactions;
-                        if (transactions && !(await transactions.complete(`speech:${utterance.id}`))) {
-                            utterance.chainCanceled = true;
-                            SpeechMenu.#rejectDigest(utterance, "state-change-reverted", utterance.transcript);
-                            return;
-                        }
-                        SpeechMenu.#flushCommandFeedback(utterance, true);
-                        SpeechMenu.#emit("utteranceCommitted", {id: utterance.id, transcript: utterance.transcript});
-                    }
+                void SpeechMenu.#completeDigest(utterance).then(accepted => {
+                    if (accepted) SpeechMenu.#emit("utteranceCommitted", {id: utterance.id, transcript: utterance.transcript});
                 });
             }
         }
@@ -3825,10 +3850,12 @@ class SpeechMenu {
         }
 
         if (SpeechMenu.#executionEnabled) {
+            // A silence boundary is a final command boundary too. Use the
+            // same transaction settlement as the recognizer's final decode.
             utterance.chainActive = true;
+            utterance.digestCommitted = true;
             for (const step of steps) SpeechMenu.#queueDigestStep(utterance, step);
-            await utterance.digestQueue;
-            return !utterance.digestExecutionFailed && !utterance.chainCanceled;
+            return SpeechMenu.#completeDigest(utterance);
         }
 
         utterance.commandChainExecuting =
@@ -7237,7 +7264,14 @@ class SpeechMenu {
     }
 
     static #availableCandidates(projectedSurface) {
-        const all = SpeechMenu.#index().elements();
+        const dialog = projectedSurface === undefined
+            ? (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll("dialog[open]")].at(-1)
+            : projectedSurface;
+        const openContainers = dialog ? [] : [
+            ...document.querySelectorAll("details[open]"),
+            ...[...document.querySelectorAll("[popover], [speech-scope]")].filter(SpeechMenu.#openPopover)
+        ];
+        const all = SpeechMenu.#index().activeElements(dialog, openContainers);
 
         const system = [];
         const topLevel = [];
@@ -7320,10 +7354,6 @@ class SpeechMenu {
         append(system);
         append(topLevel);
 
-        const dialog = projectedSurface === undefined
-            ? (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll("dialog[open]")].at(-1)
-            : projectedSurface;
-
         if (dialog) {
             append(
                 contextual.filter(
@@ -7341,24 +7371,6 @@ class SpeechMenu {
 
         append(defaults);
         append(primed);
-
-        const openContainers =
-            [
-                ...document
-                    .querySelectorAll(
-                        "details[open]"
-                    ),
-                ...[
-                    ...document
-                        .querySelectorAll(
-                            "[popover], [speech-scope]"
-                        )
-                ]
-                    .filter(
-                        SpeechMenu
-                            .#openPopover
-                    )
-            ];
 
         for (const container of openContainers) {
             append(

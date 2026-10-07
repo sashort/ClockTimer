@@ -8,7 +8,7 @@ Object.assign(globalThis,{window,document:window.document,Element:window.Element
     requestAnimationFrame:cb=>queueMicrotask(()=>cb(performance.now()))});
 globalThis.ParameterParser=Function(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+';return ParameterParser;')();
 globalThis.Bench=window.Bench={run(){return true;}};
-let source=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8');
+let source=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r/g,'');
 source=source.replace('        if (signal?.aborted) {\n            return undefined;\n        }\n\n        return SpeechMenu\n            .#processElement(',
     '        globalThis.probeCount++;\n        if (signal?.aborted) return undefined;\n        return SpeechMenu\n            .#processElement(');
 source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;',`

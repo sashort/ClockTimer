@@ -49,6 +49,10 @@ let speechSource=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'ut
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testBegin(){SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={beginUtterance(){},setHotwords(){},abortUtterance(){},finishUtterance(){}};SpeechMenu.#beginUtterance(window.__testTime-performance.timeOrigin);return SpeechMenu.#utterance;}
     static testTranscript(u,text,final=true){return SpeechMenu.#handleLiveTranscript(u,text,final);}
+    static testFinish(){SpeechMenu.#finishUtterance("vad-silence",true);}
+    static testFinal(u,text){return SpeechMenu.#handleCompletedTranscript(u,text);}
+    static testAvailable(){return SpeechMenu.#availableCandidates();}
+    static async testSilence(u,text){u.transcript=text;u.candidatePool=await SpeechMenu.#refreshCandidatePool(u,text);return SpeechMenu.#commitUtterance(u);}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
 window.eval(speechSource+'\nwindow.SpeechMenu=SpeechMenu;');
 window.SpeechMenu.events.addEventListener('speechFeedbackError',e=>errors.push(e.detail.error?.stack||String(e.detail.error)));
@@ -80,6 +84,37 @@ assert.equal(requests.filter(r=>r.path.endsWith("/command-check/")).length,check
 await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+if(process.argv.includes('--scheduled-cancel')) {
+    const deadline=(work,label)=>Promise.race([work,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' did not settle')),2000))]);
+    for(const cancelBeforeFinal of [false,true]) {
+        const scheduled=window.SpeechMenu.testBegin();
+        await window.SpeechMenu.testTranscript(scheduled,'ready at eleven fifty nine pm',!cancelBeforeFinal);await deadline(scheduled.digestQueue,'Ready At');await settle();
+        if(cancelBeforeFinal) {window.SpeechMenu.testFinish();await window.SpeechMenu.testFinal(scheduled,'ready at eleven fifty nine pm');await deadline(scheduled.digestQueue,'Ready At final');await settle();}
+        assert(window.document.querySelector('#scheduledStartDialog').open,'Ready At opens the standard-time prompt');
+        const cancel=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(cancel,'cancel',!cancelBeforeFinal);await deadline(cancel.digestQueue,'Cancel');
+        if(cancelBeforeFinal) {window.SpeechMenu.testFinish();await window.SpeechMenu.testFinal(cancel,'cancel');await deadline(cancel.digestQueue,'Cancel final');}await settle();
+        assert(!window.document.querySelector('#scheduledStartDialog').open,'Cancel closes scheduled start without entering a duration');
+        assert.notEqual(window.document.querySelector('#app').dataset.persistenceState,'pending','Cancel clears Applying');
+        const retry=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(retry,'ready',true);await deadline(retry.digestQueue,'Ready retry');await settle();
+        assert(!retry.digestExecutionFailed && window.document.querySelector('#voiceEntrySurface').open,'new commands execute after Cancel');
+        const close=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(close,'cancel',true);await deadline(close.digestQueue,'retry Cancel');await settle();
+    }
+    const silence=window.SpeechMenu.testBegin();
+    assert(await deadline(window.SpeechMenu.testSilence(silence,'ready at eleven fifty nine pm'),'Ready At silence'),'silence commits Ready At');
+    await settle();assert(window.document.querySelector('#scheduledStartDialog').open,'silence commitment opens scheduled start');
+    assert.notEqual(window.document.querySelector('#app').dataset.persistenceState,'pending','silence commitment must settle its state transaction');
+    const silenceCancel=window.SpeechMenu.testBegin();
+    assert(await deadline(window.SpeechMenu.testSilence(silenceCancel,'cancel'),'Cancel silence'),'silence commits Cancel');
+    await settle();assert(!window.document.querySelector('#scheduledStartDialog').open,'silence Cancel closes the scheduled dialog');
+    assert.notEqual(window.document.querySelector('#app').dataset.persistenceState,'pending','silence Cancel clears Applying');
+    assert(!window.SpeechMenu.testAvailable().some(e=>e.closest('dialog')?.id==='scheduledStartDialog'),'Cancel unloads scheduled-dialog commands');
+    const next=window.SpeechMenu.testBegin();assert(await deadline(window.SpeechMenu.testSilence(next,'ready'),'Ready after silence Cancel'));
+    assert(window.document.querySelector('#voiceEntrySurface').open,'Ready works after silence Cancel');
+    const closeNext=window.SpeechMenu.testBegin();assert(await deadline(window.SpeechMenu.testSilence(closeNext,'cancel'),'Cancel next editor'));
+    await settle();
+    assert(!window.SpeechMenu.testAvailable().some(e=>e.closest('dialog')?.id==='voiceEntrySurface'),'Cancel unloads the voice editor commands');
+    console.log('PASS Ready At → standard-time prompt → Cancel releases pending work and allows retry');
+}
 if(process.argv.includes('--scheduled-standard')) {
     const scheduled=window.SpeechMenu.testBegin();
     await window.SpeechMenu.testTranscript(scheduled,'ready at eleven fifty nine pm',true);await scheduled.digestQueue;await settle();

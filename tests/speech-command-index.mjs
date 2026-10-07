@@ -53,3 +53,22 @@ assert(!index.candidates(['unrelated']).has(noun),'noun paths avoid regex fallba
 noun.setAttribute('speech-noun','log');assert(!index.candidates(['trip','log']).has(noun),'noun edits update registration');
 noun.remove();assert(!index.elements().includes(noun));
 console.log('PASS noun aliases, noun edits, noun branch gating and removal');
+
+const closed = window.document.createElement('dialog');root.append(closed);
+const inactive = window.document.createElement('speech-command');inactive.setAttribute('speech-pattern','^confirm hidden$');closed.append(inactive);
+const foreground = window.document.createElement('dialog');root.append(foreground);
+const current = window.document.createElement('speech-command');current.setAttribute('speech-pattern','^confirm active$');foreground.append(current);
+const system = add('^cancel$');system.setAttribute('speech-function','SpeechMenu.cancel');
+const defaultCommand = add('^help$');defaultCommand.setAttribute('speech-modal','');
+assert(!index.activeElements(null).includes(inactive),'closed dialog scope is unloaded');
+assert(index.activeElements(foreground).includes(current),'active dialog scope is loaded');
+assert(!index.activeElements(foreground).includes(inactive),'other dialog scopes stay unloaded');
+assert(index.activeElements(foreground).includes(system),'reserved system commands remain loaded');
+assert(index.activeElements(foreground).includes(defaultCommand),'empty modal is the default scope');
+index.prime(inactive,20);assert(index.activeElements(foreground).includes(inactive),'same-utterance projected commands remain eligible');
+index.clearPrimed(20);assert(!index.activeElements(foreground).includes(inactive),'clearing projection unloads its scope');
+const details=window.document.createElement('details');root.append(details);details.append(current);
+assert(index.activeElements(null,[details]).includes(current),'open container commands load');
+assert(!index.activeElements(null,[]).includes(current),'closed container commands unload');
+foreground.append(current);assert(index.activeElements(foreground).includes(current),'moving a command updates its scope immediately');
+console.log('PASS centralized active scope loading, unloading, global commands, projection and scope migration');
