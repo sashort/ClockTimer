@@ -304,17 +304,27 @@
             <p id="voiceLoginPrompt" role="status"></p>
             <label id="loginIdRow"><span id="loginIdLabel"></span><input id="loginUsername" name="loginId" type="hidden"><span class="login-digit-sequence" data-login-sequence="id"><input data-login-digit="id" data-digit-index="0" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="1" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="2" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="3" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"></span></label>
             <label id="loginPinRow" hidden><span id="loginPinLabel"></span><input id="loginPassword" name="pin" type="hidden"><span class="login-digit-sequence" data-login-sequence="pin"><input data-login-digit="pin" data-digit-index="0" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="1" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="2" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="3" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"></span></label>
-            <div id="loginLegacyFields" hidden>
-                <label><span id="loginLegacyUsernameLabel"></span><input id="loginLegacyUsername" name="username" autocomplete="username" disabled></label>
-                <label><span id="loginLegacyPasswordLabel"></span><input id="loginLegacyPassword" name="password" type="password" autocomplete="current-password" disabled></label>
-            </div>
             <p id="loginRecognitionStatus" class="login-recognition-status" role="status"></p><button id="loginEnableRecognition" type="button"></button>
             <p id="loginError" class="form-error" role="alert"></p>
             <div class="dialog-actions">
                 <button id="loginButton" class="primary-action" type="submit" value="login"></button><button id="loginDigitsCancel" type="button"></button>
             </div>
             <button id="loginLegacySwitch" class="login-legacy-switch" type="button"></button>
-            <button id="loginVoiceSwitch" class="login-legacy-switch" type="button" hidden></button>
+        </form>
+    </dialog>
+
+    <dialog id="legacyLoginDialog" class="app-dialog login-dialog legacy-login-dialog">
+        <form id="legacyLoginForm" method="dialog">
+            <header class="dialog-header"><h2 id="legacyLoginTitle"></h2></header>
+            <div id="loginLegacyFields">
+                <label><span id="loginLegacyUsernameLabel"></span><input id="loginLegacyUsername" name="username" autocomplete="username" disabled></label>
+                <label><span id="loginLegacyPasswordLabel"></span><input id="loginLegacyPassword" name="password" type="password" autocomplete="current-password" disabled></label>
+            </div>
+            <p id="legacyLoginRecognitionStatus" class="login-recognition-status" role="status"></p>
+            <button id="legacyLoginEnableRecognition" type="button"></button>
+            <p id="legacyLoginError" class="form-error" role="alert"></p>
+            <div class="dialog-actions"><button id="legacyLoginButton" class="primary-action" type="submit"></button><button id="legacyLoginCancel" type="button"></button></div>
+            <button id="loginVoiceSwitch" class="login-legacy-switch" type="button"></button>
         </form>
     </dialog>
 

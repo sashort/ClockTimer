@@ -215,6 +215,7 @@ class SpeechMenu {
     static #indexedMatching = true;
     static #index() { return SpeechMenu.#commandIndex ??= new SpeechCommandIndex(); }
     static #stopped = true;
+    static #modelReady = false;
     static #sleeping = false;
     static #listeningSuspensions = 0;
     static #events = new EventTarget();
@@ -589,6 +590,7 @@ class SpeechMenu {
     static get pipeline() { return SpeechMenu.#pipeline; }
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
+    static get modelReady() {return SpeechMenu.#modelReady;}
     static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
     static get listeningSuspended() { return SpeechMenu.#listeningSuspensions > 0; }
@@ -1176,8 +1178,8 @@ class SpeechMenu {
             return false;
         }
 
-        if (SpeechMenu.started) return true;
         if (SpeechMenu.#startPromise) return SpeechMenu.#startPromise;
+        if (SpeechMenu.started && SpeechMenu.#modelReady) return true;
 
         SpeechMenu.#language =
             typeof language === "string" && language.trim()
@@ -1191,6 +1193,7 @@ class SpeechMenu {
 
         SpeechMenu.#sleeping = false;
         SpeechMenu.#stopped = false;
+        SpeechMenu.#modelReady = false;
 
         const generation = ++SpeechMenu.#sessionGeneration;
 
@@ -1393,6 +1396,7 @@ class SpeechMenu {
                     {once: true}
                 );
 
+                SpeechMenu.#modelReady = true;
                 SpeechMenu.#emit("started", {
                     language:
                         SpeechMenu.#language,

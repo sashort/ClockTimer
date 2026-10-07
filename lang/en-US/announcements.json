@@ -215,7 +215,7 @@
       "idPrompt": "Please login using voice",
       "pinPrompt": "Password",
       "invalid": "Enter exactly four digits, then say OK.",
-      "failed": "Login failed. Please login using voice",
+      "failed": "Login failed. Password",
       "userIdLabel": "User ID",
       "pinLabel": "PIN",
       "adminTitle": "Assign main-page login",
@@ -242,7 +242,11 @@
       "recognitionStarting": "Voice recognition is starting. You can continue entering your login below.",
       "recognitionSuspended": "Voice recognition is paused. You can continue entering your login below.",
       "recognitionPasswordOff": "Voice recognition is off. Enter your username and password below or enable voice recognition.",
-      "recognitionPasswordSleeping": "Voice recognition is sleeping. Enter your username and password below or wake voice recognition."
+      "recognitionPasswordSleeping": "Voice recognition is sleeping. Enter your username and password below or wake voice recognition.",
+      "loginTitle": "Login",
+      "loginAction": "Login",
+      "applicationStarting": "Application is starting",
+      "legacyFailed": "Login failed."
     }
   }
 }

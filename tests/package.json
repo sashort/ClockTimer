@@ -28,7 +28,8 @@
     "test:speech-failfast": "node speech-failfast.mjs",
     "test:time-range": "node time-range-group.mjs && node counted-time-accounting.mjs && node time-range-ring-container.mjs",
     "test:state-transactions": "node trip-summary.mjs && node clock-state-contract.mjs && node async-persistence.mjs && node clock-state-transactions.mjs && node app-state-transactions.mjs && node app-state-transactions.mjs --pointer-confirmation && node app-state-transactions.mjs --ready-finish && node app-state-transactions.mjs --ready-finish --saved-ready --voice-feedback --range-voice --summary-state --voicepad-gate --trip-summary && node app-state-transactions.mjs --voice-feedback && node app-state-transactions.mjs --scheduled-standard && node app-state-transactions.mjs --scheduled-cancel && node speech-command-digest.mjs",
-    "test:voice-login": "node app-state-transactions.mjs --voice-login --voice-feedback"
+    "test:voice-login": "node app-state-transactions.mjs --voice-login --voice-feedback",
+    "test:login-layout:windows": "node login-modal-layout-browser.cjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

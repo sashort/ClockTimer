@@ -7355,3 +7355,20 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 .login-dialog .login-legacy-switch { justify-self:center; padding:4px 6px; border:0; background:transparent; color:var(--wm-blue-light); font:inherit; font-size:12px; font-weight:400; text-decoration:underline; cursor:pointer; }
 .login-dialog #loginLegacyFields { display:grid; gap:16px; }
 .login-dialog #loginLegacyFields label { display:grid; gap:8px; }
+
+/* Center login surfaces in the visible viewport above the mic and its option panes. */
+.login-dialog {
+    position:fixed;
+    inset:var(--login-safe-top,0px) 0 auto;
+    margin:auto;
+    top:calc(var(--login-safe-top,0px) + var(--login-safe-height,100dvh) / 2);
+    transform:translateY(-50%);
+    box-sizing:border-box;
+    width:min(440px,calc(100vw - 24px));
+    max-height:max(0px,calc(var(--login-safe-height,100dvh) - 16px));
+    overflow:auto;
+    overscroll-behavior:contain;
+}
+.login-dialog .login-digit-sequence {gap:clamp(4px,2vw,12px);max-width:100%;}
+.login-dialog .login-digit-sequence input {min-width:0;width:clamp(42px,14vw,64px);}
+.login-dialog .login-legacy-switch {margin-bottom:16px;}

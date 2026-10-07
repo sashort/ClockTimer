@@ -832,7 +832,7 @@
     "LOGIN-ID": {
       "id": "LOGIN-ID",
       "title": "Login: user ID",
-      "focus": "Login dialog",
+      "focus": "Four-digit login modal (#loginDialog)",
       "trip": "Previous trip/clock state preserved until authenticated restore",
       "facet": "Four separate cells; typed and spoken entry share digits",
       "commands": [
@@ -848,21 +848,22 @@
         "login.stage": "id",
         "speechRecognition": "orthogonal; pointer entry works off/sleep",
         "login.pending": false,
-        "login.method": "pin"
+        "login.method": "pin",
+        "focus": "loginDialog"
       }
     },
     "LOGIN-PIN": {
       "id": "LOGIN-PIN",
       "title": "Login: PIN",
-      "focus": "Login dialog",
+      "focus": "Four-digit login modal (#loginDialog)",
       "trip": "Previous trip/clock state preserved until authenticated restore",
       "facet": "Four separate cells; typed and spoken entry share digits",
       "commands": [
-        "Voice: clear both sequences and restart ID",
-        "User / Username: clear inputs and switch login method",
-        "Cancel: clear and restart ID entry",
+        "Cancel: clear PIN, stay on PIN entry, announce Password; prime second Cancel",
+        "Voice: clear all and return to User ID",
+        "User / Username: clear inputs and open username/password modal",
         "<number sequence> (exactly four digits)",
-        "OK: next stage / verify PIN"
+        "OK: authenticate ID/PIN"
       ],
       "family": "login",
       "binding": {
@@ -870,7 +871,9 @@
         "login.stage": "pin",
         "speechRecognition": "orthogonal; pointer entry works off/sleep",
         "login.pending": false,
-        "login.method": "pin"
+        "login.method": "pin",
+        "focus": "loginDialog",
+        "login.cancelPrimed": false
       }
     },
     "LOGIN-WAIT": {
@@ -894,7 +897,7 @@
     "LOGIN-USER": {
       "id": "LOGIN-USER",
       "title": "Login: username/password",
-      "focus": "Login dialog",
+      "focus": "Separate username/password modal (#legacyLoginDialog)",
       "trip": "Previous trip/clock state preserved until authenticated restore",
       "facet": "Legacy username/password inputs; voice switching remains available",
       "commands": [
@@ -909,7 +912,32 @@
         "login.stage": "id",
         "speechRecognition": "orthogonal; pointer entry works off/sleep",
         "login.pending": false,
-        "login.method": "password"
+        "login.method": "password",
+        "focus": "legacyLoginDialog"
+      }
+    },
+    "LOGIN-PIN-CANCEL": {
+      "id": "LOGIN-PIN-CANCEL",
+      "title": "Login: PIN cleared once",
+      "focus": "Four-digit login modal (#loginDialog)",
+      "trip": "Previous trip/clock state preserved until authenticated restore",
+      "facet": "Confirmed User ID retained; second consecutive Cancel clears ID too",
+      "commands": [
+        "Cancel: clear User ID and return to ID entry",
+        "Voice: clear all and restart ID",
+        "User / Username: open separate username/password modal",
+        "<number sequence>: begin fresh PIN; reset Cancel sequence",
+        "OK: requires four PIN digits"
+      ],
+      "family": "login",
+      "binding": {
+        "login.open": true,
+        "login.stage": "pin",
+        "speechRecognition": "orthogonal; pointer entry works off/sleep",
+        "login.pending": false,
+        "login.method": "pin",
+        "focus": "loginDialog",
+        "login.cancelPrimed": true
       }
     }
   },
@@ -5864,7 +5892,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -5890,7 +5918,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -5916,7 +5944,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -5942,7 +5970,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -5968,7 +5996,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -5994,7 +6022,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6020,7 +6048,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6046,7 +6074,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6072,7 +6100,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6098,17 +6126,17 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
     {
       "id": "LOGIN-REJECT",
       "source": "LOGIN-WAIT",
-      "target": "LOGIN-ID",
+      "target": "LOGIN-PIN",
       "label": "Mismatch / failure",
       "mode": "failure",
-      "audio": "login-id",
+      "audio": "login-failed",
       "guard": "login.method == pin",
       "persist": false,
       "restore": null,
@@ -6121,10 +6149,10 @@
       "contract": {
         "trigger": "Mismatch / failure",
         "guard": "",
-        "state_changes": "Login region only; recognition state remains independent.",
-        "timing": "Immediate input and stage change; asynchronous authentication.",
+        "state_changes": "Retain confirmed User ID; clear PIN and cancelPrimed; remain on PIN stage; show failure; announce Login failed. Password.",
+        "timing": "Update failure UI after asynchronous rejection; immediately accept fresh PIN entry.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Handled rejection in login UI; never restore entered PIN or show a success announcement.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6150,7 +6178,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6176,18 +6204,18 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
     {
       "id": "LOGIN-CANCEL-LOGIN-PIN",
       "source": "LOGIN-PIN",
-      "target": "LOGIN-ID",
-      "label": "Cancel: clear both sequences",
+      "target": "LOGIN-PIN-CANCEL",
+      "label": "Cancel: clear PIN and repeat Password",
       "mode": "voice",
-      "audio": "login-id",
-      "guard": "",
+      "audio": "login-pin",
+      "guard": "login.stage == pin and cancelPrimed == false",
       "persist": false,
       "restore": null,
       "test": {
@@ -6198,22 +6226,22 @@
       "skippable": false,
       "contract": {
         "trigger": "Cancel: clear both sequences",
-        "guard": "",
-        "state_changes": "Login region only; recognition state remains independent.",
-        "timing": "Immediate input and stage change; asynchronous authentication.",
-        "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "guard": "login.stage == pin and cancelPrimed == false",
+        "state_changes": "Clear PIN and error; retain User ID; set cancelPrimed true; focus PIN. Say Password.",
+        "timing": "Immediate local self-loop, each Cancel repeats Password.",
+        "persistence": "None.",
+        "rollback": "None.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
     {
       "id": "LOGIN-PCANCEL-LOGIN-PIN",
       "source": "LOGIN-PIN",
-      "target": "LOGIN-ID",
-      "label": "Press Cancel",
+      "target": "LOGIN-PIN-CANCEL",
+      "label": "Press Cancel: clear PIN and repeat Password",
       "mode": "pointer",
-      "audio": "login-id",
-      "guard": "",
+      "audio": "login-pin",
+      "guard": "login.stage == pin and cancelPrimed == false",
       "persist": false,
       "restore": null,
       "test": {
@@ -6224,11 +6252,11 @@
       "skippable": false,
       "contract": {
         "trigger": "Press Cancel",
-        "guard": "",
-        "state_changes": "Login region only; recognition state remains independent.",
-        "timing": "Immediate input and stage change; asynchronous authentication.",
-        "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "guard": "login.stage == pin and cancelPrimed == false",
+        "state_changes": "Clear PIN and error; retain User ID; set cancelPrimed true; focus PIN. Say Password.",
+        "timing": "Immediate local self-loop, each Cancel repeats Password.",
+        "persistence": "None.",
+        "rollback": "None.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6254,7 +6282,7 @@
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6277,7 +6305,7 @@
       "contract": {
         "trigger": "Voice: clear and restart ID",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6303,7 +6331,7 @@
       "contract": {
         "trigger": "User[name]: clear and use username/password",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6329,7 +6357,7 @@
       "contract": {
         "trigger": "Press Login with username and password",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6355,7 +6383,7 @@
       "contract": {
         "trigger": "Voice: clear and restart ID",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6381,7 +6409,7 @@
       "contract": {
         "trigger": "User[name]: clear and use username/password",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6407,7 +6435,7 @@
       "contract": {
         "trigger": "Press Login with username and password",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6433,7 +6461,7 @@
       "contract": {
         "trigger": "Voice: clear and restart ID",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6459,7 +6487,7 @@
       "contract": {
         "trigger": "User[name]: clear and use username/password",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6473,7 +6501,7 @@
       "label": "Press Login via voice",
       "mode": "pointer",
       "audio": "login-id",
-      "guard": "Login open and not pending",
+      "guard": "Login open, not pending, and speech model ready",
       "persist": false,
       "restore": null,
       "test": {
@@ -6485,7 +6513,7 @@
       "contract": {
         "trigger": "Press Login via voice",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6511,7 +6539,7 @@
       "contract": {
         "trigger": "Cancel: clear and restart ID",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6537,7 +6565,7 @@
       "contract": {
         "trigger": "Press Cancel",
         "guard": "Login open and not pending",
-        "state_changes": "Clear both digit sequences and legacy fields; set login method and focus; preserve recognition state.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate, repeat destination announcement even on loopback.",
         "persistence": "None for method switching.",
         "rollback": "None; local UI change.",
@@ -6563,10 +6591,10 @@
       "contract": {
         "trigger": "OK after four PIN digits",
         "guard": "four-digit ID and PIN; not already pending",
-        "state_changes": "Login region only; recognition state remains independent.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "Existing users/connect endpoint; legacy username/password validation.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -6589,10 +6617,10 @@
       "contract": {
         "trigger": "Mismatch / failure",
         "guard": "",
-        "state_changes": "Keep username/password form, show error, clear password.",
+        "state_changes": "Clear all credentials; close the source modal immediately and open the destination modal (unless loopback); keep recognition unchanged.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
         "persistence": "connect-pin reads credentials; rate counters persisted; admin-only credential assignment.",
-        "rollback": "Mismatch clears secrets and restarts ID entry.",
+        "rollback": "Authentication rejection retains User ID, clears PIN, and returns to PIN; local entry changes do not require persistence rollback.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     },
@@ -7009,6 +7037,370 @@
         "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
         "persistence": "None. Existing authentication request continues independently.",
         "rollback": "None; credential input is preserved.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-SECOND-CANCEL-voice",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-ID",
+      "label": "Second consecutive Cancel: clear ID too",
+      "mode": "voice",
+      "audio": "login-id",
+      "guard": "cancelPrimed and not pending",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Second consecutive Cancel: clear ID too",
+        "guard": "cancelPrimed and not pending",
+        "state_changes": "Clear both ID and PIN, reset Cancel sequence, enter ID stage; announce Please login using voice.",
+        "timing": "Immediate local UI change.",
+        "persistence": "None.",
+        "rollback": "None.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-SECOND-CANCEL-pointer",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-ID",
+      "label": "Second consecutive Cancel: clear ID too",
+      "mode": "pointer",
+      "audio": "login-id",
+      "guard": "cancelPrimed and not pending",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Second consecutive Cancel: clear ID too",
+        "guard": "cancelPrimed and not pending",
+        "state_changes": "Clear both ID and PIN, reset Cancel sequence, enter ID stage; announce Please login using voice.",
+        "timing": "Immediate local UI change.",
+        "persistence": "None.",
+        "rollback": "None.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-PIN-REPLACE",
+      "source": "LOGIN-PIN",
+      "target": "LOGIN-PIN",
+      "label": "Fresh <number sequence> replaces PIN",
+      "mode": "voice",
+      "audio": "silent",
+      "guard": "not pending; recognition listening",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Fresh <number sequence> replaces PIN",
+        "guard": "not pending; recognition listening",
+        "state_changes": "Fresh four-digit group replaces the selected credential. Additional complete groups keep the latest group. A digit after a full group begins a new group; any entry resets Cancel sequence.",
+        "timing": "Immediate local UI change.",
+        "persistence": "None.",
+        "rollback": "None.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-ID-REPLACE",
+      "source": "LOGIN-ID",
+      "target": "LOGIN-ID",
+      "label": "Fresh <number sequence> replaces User ID",
+      "mode": "voice",
+      "audio": "silent",
+      "guard": "not pending; recognition listening",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Fresh <number sequence> replaces User ID",
+        "guard": "not pending; recognition listening",
+        "state_changes": "Replace selected ID with fresh four digits; preserve leading zeros; no decimals. Existing sequence entry feedback owns speech.",
+        "timing": "Immediate local UI change.",
+        "persistence": "None.",
+        "rollback": "None.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-PIN-CANCEL-INPUT",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-PIN",
+      "label": "Enter fresh PIN digits",
+      "mode": "voice",
+      "audio": "silent",
+      "guard": "not pending; recognition listening",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Enter fresh PIN digits",
+        "guard": "not pending; recognition listening",
+        "state_changes": "Enter PIN digits and set cancelPrimed false.",
+        "timing": "Immediate local UI change.",
+        "persistence": "None.",
+        "rollback": "None.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-PIN-CANCEL-PINPUT",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-PIN",
+      "label": "Type fresh PIN digits",
+      "mode": "pointer",
+      "audio": "silent",
+      "guard": "not pending",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Type fresh PIN digits",
+        "guard": "not pending",
+        "state_changes": "Typed/pasted PIN digits reset cancelPrimed; share the same credential slots.",
+        "timing": "Immediate local UI change.",
+        "persistence": "None.",
+        "rollback": "None.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-VOICE-LOGIN-PIN-CANCEL",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-ID",
+      "label": "Voice: reset ID",
+      "mode": "voice",
+      "audio": "login-id",
+      "guard": "not pending; recognition listening",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Voice: reset ID",
+        "guard": "not pending; recognition listening",
+        "state_changes": "Clear both credentials and Cancel sequence; transfer modal if needed; repeat destination announcement.",
+        "timing": "Immediate local UI change.",
+        "persistence": "None.",
+        "rollback": "None.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-USER-LOGIN-PIN-CANCEL",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-USER",
+      "label": "User[name]: username/password modal",
+      "mode": "voice",
+      "audio": "login-user",
+      "guard": "not pending; recognition listening",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "User[name]: username/password modal",
+        "guard": "not pending; recognition listening",
+        "state_changes": "Clear both credentials and Cancel sequence; transfer modal if needed; repeat destination announcement.",
+        "timing": "Immediate local UI change.",
+        "persistence": "None.",
+        "rollback": "None.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-RECOG-LOGIN-PIN-CANCEL-SLEEP",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-PIN-CANCEL",
+      "label": "Recognition sleeping / muted",
+      "mode": "automatic",
+      "audio": "silent",
+      "guard": "speechRecognition changes to sleeping",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Recognition sleeping / muted",
+        "guard": "speechRecognition changes to sleeping",
+        "state_changes": "Only speechRecognition and status/enable controls change. Preserve method, stage, digit slots, username/password and pending authentication. Preserve cancelPrimed.",
+        "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
+        "persistence": "None. Existing authentication request continues independently.",
+        "rollback": "None; credential input is preserved.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-RECOG-LOGIN-PIN-CANCEL-WAKE",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-PIN-CANCEL",
+      "label": "Recognition wakes",
+      "mode": "automatic",
+      "audio": "silent",
+      "guard": "speechRecognition changes from sleeping to listening",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Recognition wakes",
+        "guard": "speechRecognition changes from sleeping to listening",
+        "state_changes": "Only speechRecognition and status/enable controls change. Preserve method, stage, digit slots, username/password and pending authentication. Preserve cancelPrimed.",
+        "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
+        "persistence": "None. Existing authentication request continues independently.",
+        "rollback": "None; credential input is preserved.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-RECOG-LOGIN-PIN-CANCEL-OFF",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-PIN-CANCEL",
+      "label": "Recognition off",
+      "mode": "automatic",
+      "audio": "silent",
+      "guard": "speechRecognition changes to off",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Recognition off",
+        "guard": "speechRecognition changes to off",
+        "state_changes": "Only speechRecognition and status/enable controls change. Preserve method, stage, digit slots, username/password and pending authentication. Preserve cancelPrimed.",
+        "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
+        "persistence": "None. Existing authentication request continues independently.",
+        "rollback": "None; credential input is preserved.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-RECOG-LOGIN-PIN-CANCEL-ON",
+      "source": "LOGIN-PIN-CANCEL",
+      "target": "LOGIN-PIN-CANCEL",
+      "label": "Recognition enabled",
+      "mode": "automatic",
+      "audio": "silent",
+      "guard": "speechRecognition changes to listening",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Recognition enabled",
+        "guard": "speechRecognition changes to listening",
+        "state_changes": "Only speechRecognition and status/enable controls change. Preserve method, stage, digit slots, username/password and pending authentication. Preserve cancelPrimed.",
+        "timing": "Immediate local lifecycle action; never waits for authentication or persistence.",
+        "persistence": "None. Existing authentication request continues independently.",
+        "rollback": "None; credential input is preserved.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-PVOICE-WAIT",
+      "source": "LOGIN-USER",
+      "target": "LOGIN-USER",
+      "label": "Login via voice: wait for model",
+      "mode": "pointer",
+      "audio": "silent",
+      "guard": "not pending; model not ready",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Press Login via voice",
+        "guard": "Login open and not pending",
+        "state_changes": "Set login.voiceRequested=true; keep legacy modal and credentials visible; start/await model loading; disable repeat request.",
+        "timing": "Immediate, repeat destination announcement even on loopback.",
+        "persistence": "None.",
+        "rollback": "None; local UI change.",
+        "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
+      }
+    },
+    {
+      "id": "LOGIN-MODEL-HANDOFF",
+      "source": "LOGIN-USER",
+      "target": "LOGIN-ID",
+      "label": "Model ready: fulfill voice-login request",
+      "mode": "automatic",
+      "audio": "login-id",
+      "guard": "login.voiceRequested and model ready and not pending",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Local login tests; not deployed."
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Press Login via voice",
+        "guard": "Login open and not pending",
+        "state_changes": "Clear credentials and voiceRequested, close legacy modal, open four-digit modal, focus ID and announce its prompt.",
+        "timing": "Immediate, repeat destination announcement even on loopback.",
+        "persistence": "None.",
+        "rollback": "None; local UI change.",
         "verification": "tests/voice-login.php; tests/app-state-transactions.mjs --voice-login --voice-feedback"
       }
     }
@@ -8623,9 +9015,53 @@
       ],
       "footer": "English text from messages.voiceLogin. No digits or PIN are read back.",
       "order_note": "Single spoken component."
+    },
+    "application-starting": {
+      "id": "application-starting",
+      "chime": "None",
+      "notes": "",
+      "summary": "Application is starting",
+      "details": "None",
+      "sequence": [
+        {
+          "id": "application-starting-speech",
+          "kind": "Summary",
+          "text": "Application is starting",
+          "optional": false,
+          "skippable": false,
+          "suppression_rules": [
+            "AUD-STALE",
+            "AUD-CANCEL"
+          ]
+        }
+      ],
+      "footer": "English messages.voiceLogin.applicationStarting; emitted at app startup before persistence/runtime initialization and the login prompt.",
+      "order_note": "Single spoken component."
+    },
+    "login-failed": {
+      "id": "login-failed",
+      "chime": "None",
+      "notes": "",
+      "summary": "Login failed. Password",
+      "details": "None",
+      "sequence": [
+        {
+          "id": "login-failed-speech",
+          "kind": "Summary",
+          "text": "Login failed. Password",
+          "optional": false,
+          "skippable": false,
+          "suppression_rules": [
+            "AUD-STALE",
+            "AUD-CANCEL"
+          ]
+        }
+      ],
+      "footer": "English messages.voiceLogin.failed; confirmed ID is retained, PIN cleared, retry stays on PIN.",
+      "order_note": "Single spoken component."
     }
   },
-  "chart_revision": 10,
+  "chart_revision": 13,
   "implementation_status": "Draft of shared-state implementation and latest requested workflows. Local automated evidence does not establish deployment coverage.",
   "state_contract": {
     "focus": {
@@ -8718,7 +9154,7 @@
     },
     "login": {
       "region": "Authentication",
-      "meaning": "Open, stage id/pin, pending and entered digit count. Raw PIN is private and never in global state. Four cells support voice digit streams and pointer typing. Recognition is the existing orthogonal speechRecognition attribute. Method pin/password selects credential UI. Voice and User[name] are local switches, including clearing loopbacks. Busy login blocks switches. Shared state actions loginInput/loginDigits/loginPassword/loginSwitch drive both buttons and speech availability."
+      "meaning": "Open, stage id/pin, pending and entered digit count. Raw PIN is private and never in global state. Four cells support voice digit streams and pointer typing. Recognition is the existing orthogonal speechRecognition attribute. Method pin/password selects credential UI. Voice and User[name] are local switches, including clearing loopbacks. Busy login blocks switches. Shared state actions loginInput/loginDigits/loginPassword/loginSwitch drive both buttons and speech availability. cancelPrimed distinguishes first/second PIN Cancel; credentials remain private. Speech model loading maps to shared speechRecognition=starting."
     }
   },
   "contracts": {
@@ -8731,8 +9167,10 @@
     "settings": "Settings focus coexists with trip/clock/range regions. Closing settings restores prior focus; persistence rejection restores state and dependent changes.",
     "locale": "Semantic state/range IDs remain stable. UI text, spoken command vocabulary, recognition patterns and announcement templates belong to the selected language pack.",
     "aggregation": "TripAggregates shared calculations: latest row wins per String(id); anonymous rows remain distinct. Range bounds inclusive from CalendarRange.tripWindow. Counted time uses persisted counted milliseconds, fallback actual; active trip counted=max(allotted,counted). percent=standard/counted (null at zero); banked=round(standard/goalPercent-counted). Summary includes both production/nonproduction, excludes running/current ID. Log keeps its production filter and existing active-trip inclusion rule. Results are immutable state.tripAggregates children, UI invocation stays state.tripSummary.",
-    "login": "Main page authenticates an admin-assigned four-digit login ID and four-digit PIN. Database primary user ID remains distinct. PIN stored as bcrypt hash. Main-page connect-pin validates exact ASCII digits and leading zeros; other pages retain connect username/password. Failed match resets ID entry. Server enforces per-ID and per-origin limits. Admin assignment requires modify-users permission and target access. English Voice selects four-digit login; User or Username (including User name) selects legacy login. Both commands clear all inputs and repeat the destination prompt, including same-mode loopbacks. Tiny pointer buttons switch modes. Recognition state is preserved; speech requires listening.",
-    "login-input": "ID prompt Please login using voice; four digits and OK enter PIN stage, announcing Password. Cancel in either stage clears both and repeats ID prompt. PIN cells render *. On success English speech is Login successful, say standard time or ready at. Off/sleep preserves stage and digits; pointer entry remains available. Wake/on resumes the same stage. English vocabulary and messages are selected-language resources. Recognition status and enable/wake control are visible in both login methods. Only listening exposes login voice commands; pointer/keyboard controls remain available unless login is pending. Recognition lifecycle and local digit/method commands bypass the persistence queue. Rejected pending switches return immediately. Recognition events do not replay login prompts; existing recognition feedback owns its announcement."
+    "login": "Main page authenticates an admin-assigned four-digit login ID and four-digit PIN. Database primary user ID remains distinct. PIN stored as bcrypt hash. Main-page connect-pin validates exact ASCII digits and leading zeros; other pages retain connect username/password. Failed match retains ID and returns to empty PIN entry. Server enforces per-ID and per-origin limits. Admin assignment requires modify-users permission and target access. English Voice selects four-digit login; User or Username (including User name) selects legacy login. Both commands clear all inputs and repeat the destination prompt, including same-mode loopbacks. Tiny pointer buttons switch modes. Recognition state is preserved; speech requires listening.",
+    "login-input": "ID prompt Please login using voice; four digits and OK enter PIN stage, announcing Password. Cancel in either stage clears both and repeats ID prompt. PIN cells render *. On success English speech is Login successful, say standard time or ready at. Off/sleep preserves stage and digits; pointer entry remains available. Wake/on resumes the same stage. English vocabulary and messages are selected-language resources. Recognition status and enable/wake control are visible in both login methods. Only listening exposes login voice commands; pointer/keyboard controls remain available unless login is pending. Recognition lifecycle and local digit/method commands bypass the persistence queue. Rejected pending switches return immediately. Recognition events do not replay login prompts; existing recognition feedback owns its announcement. Username/password is a separate legacy modal; only one login modal is open. First PIN Cancel clears only PIN and repeats Password; the second clears ID too. Voice restarts ID entry. Both modals are centered in the visual viewport above the visible mic/options safe top, constrain their height, and scroll internally on short screens. Boundary recalculates on mic/options changes and visual viewport resize/scroll. A fresh four-digit sequence replaces the selected ID/PIN; consecutive complete groups keep the latest group, including an eight-digit utterance. First PIN Cancel clears PIN and primes a second Cancel; the second clears both credentials and returns to ID. New entry, confirmation, or switching methods resets this sequence. Cancel Cancel works in one utterance. Recognition changes preserve it. Rejected PIN login clears only PIN, resets cancelPrimed, retains User ID, announces Login failed. Password, and permits retry. Login via voice from the legacy modal waits there with voiceRequested=true until the model is ready, then transfers automatically.",
+    "startup": "At launch announce Application is starting. Four-digit login UI can accept pointer input while the recognition model loads. Voice login commands are unavailable in speechRecognition=starting. Defer the voice ID/PIN prompt until SpeechMenu.modelReady after recognizer, VAD and audio capture initialization; release only the latest prompt for the current login modal. Username/password pointer entry remains available during loading. The legacy modal remains open when Login via voice is requested before readiness; model-ready fulfillment performs the transfer. The startup announcement is English-specific.",
+    "login-authentication": "REQUIREMENT: Login is never optimistic. Keep the active login modal open and disable credential submit/change while authentication is pending. Do not show success, populate a newly authenticated profile, or close the modal until the server accepts credentials. Login uses explicit request/response handling and does not enter optimistic trip-persistence transactions. Rejected PIN login retains ID, clears PIN/cancelPrimed, stays on PIN, and announces Login failed. Password."
   },
   "unresolved_contracts": [
     "Audit all legacy transition guards against implementation; a prose guard is not an executable predicate.",
