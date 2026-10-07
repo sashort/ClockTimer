@@ -10020,7 +10020,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "sleeping",
         "suspended"
       ],
-      "meaning": "One recognition attribute. Voicepad is eligible only while listening with a visible mic bar. Temporary playback suspension is not an off action.",
+      "meaning": "One recognition attribute. Voicepad is eligible only while listening with a visible mic bar. Temporary playback suspension is not an off action. Capture policy: echo cancellation, noise suppression and automatic gain control are off. Recognition off stops its microphone tracks and capture AudioContext and clears the Drop-In clone; sleeping retains capture for voice wake. Re-enabling starts a fresh capture session.",
       "source": "readInteractionState()",
       "region": "Recognition"
     },
@@ -10748,6 +10748,17 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "tests/speech-command-digest.mjs",
         "tests/app-state-transactions.mjs --scheduled-standard"
       ]
+    },
+    "microphone-capture": {
+      "capture": {
+        "echoCancellation": false,
+        "noiseSuppression": false,
+        "autoGainControl": false
+      },
+      "off": "Stop SpeechMenu capture tracks and AudioContext. The stopped event releases the Drop-In publisher clone before awaiting peer track replacement. Preserve trip and login data; existing voicepad-to-numberpad fallback applies.",
+      "sleep": "Keep capture for wake commands; do not enable echo cancellation.",
+      "enable": "Start a fresh capture session; shared recognition state moves through starting to listening. Login announcements continue to wait for model readiness.",
+      "evidence": "Pixel 6 Chrome: processing-off capture preserves Bluetooth tone output; echo-cancellation-on switches ordinary audio and Web Audio to phone. Automated microphone-capture-lifecycle.mjs checks capture policy, off/stop/restart, sleep/wake and slow-peer clone release. Physical app routing and recognition quality require device verification."
     }
   },
   "unresolved_contracts": [

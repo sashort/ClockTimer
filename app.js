@@ -2781,20 +2781,10 @@
                 const speechMenu =
                     globalThis.SpeechMenu;
 
-                if (!speechMenu?.started) {
-                    speechRecognitionSuspended =
-                        false;
-                    return false;
-                }
-
-                if (!speechRecognitionSuspended) {
-                    speechMenu
-                        .suspendListening?.(
-                            "speech-recognition-disabled"
-                        );
-                    speechRecognitionSuspended =
-                        true;
-                }
+                // Off releases capture. Sleep remains a listening state so
+                // the wake command can still be recognized.
+                speechRecognitionSuspended = false;
+                await speechMenu?.stop?.();
 
                 return true;
             }
@@ -2811,21 +2801,7 @@
             const speechMenu =
                 globalThis.SpeechMenu;
 
-            if (
-                speechRecognitionSuspended &&
-                speechMenu?.started
-            ) {
-                speechMenu
-                    .resumeListening?.(
-                        "speech-recognition-disabled"
-                    );
-                speechRecognitionSuspended =
-                    false;
-                return true;
-            }
-
-            speechRecognitionSuspended =
-                false;
+            speechRecognitionSuspended = false;
 
             const englishLanguage =
                 globalThis.WMOFLanguages?.[AUDIO_LANGUAGE];

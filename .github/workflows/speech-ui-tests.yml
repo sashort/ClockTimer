@@ -237,6 +237,7 @@ jobs:
           node expressive-instruments.mjs
           node easter-egg-arrangement.mjs
           node audio-routing-diagnostic.mjs
+          node microphone-capture-lifecycle.mjs
           node fsm-loopback-feedback.mjs
           node speech-command-digest.mjs
           node speech-failfast.mjs

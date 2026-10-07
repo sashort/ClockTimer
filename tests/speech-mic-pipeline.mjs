@@ -987,18 +987,8 @@ assert.match(
     /const destination =[\s\S]*getTripLogBottomRect\(\)[\s\S]*destination\.top - topRect\.top/
 );
 
-assert.match(
-    app,
-    /const disableSpeechRecognitionRuntime =[\s\S]*setSpeechButtonState\([\s\S]*false[\s\S]*setSpeechLayoutState\([\s\S]*false[\s\S]*suspendListening\?\.\([\s\S]*"speech-recognition-disabled"/
-);
-assert.match(
-    app,
-    /const enableSpeechRecognitionRuntime =[\s\S]*speechRecognitionSuspended[\s\S]*speechMenu\?\.started[\s\S]*resumeListening\?\.\([\s\S]*"speech-recognition-disabled"[\s\S]*return true/
-);
-assert.doesNotMatch(
-    app,
-    /const disableSpeechRecognitionRuntime =[\s\S]{0,1400}SpeechMenu[\s\S]{0,250}\.stop\?\.\(/
-);
+assert.match(app, /const disableSpeechRecognitionRuntime =[\s\S]*await speechMenu\?\.stop\?\.\(\)/);
+assert.match(app, /const enableSpeechRecognitionRuntime =[\s\S]*await speechMenu\?\.start\?\.\(/);
 assert.match(
     app,
     /if \(enabled\) \{[\s\S]*await disableSpeechRecognitionRuntime\(\)[\s\S]*return;/
@@ -1432,7 +1422,7 @@ assert.match(
     speechMenuSource,
     /extrapolatePhrases\(\)[\s\S]*#refreshRecognizerHotwords\(\)[\s\S]*return SpeechMenu\.#phrases/
 );
-assert.match(speechMenuSource, /echoCancellation:\s*true/);
+assert.match(speechMenuSource, /echoCancellation:\s*false/);
 assert.match(speechMenuSource, /noiseSuppression:\s*false/);
 assert.match(speechMenuSource, /autoGainControl:\s*false/);
 assert.match(speechMenuSource, /static #executionEnabled = true;/);

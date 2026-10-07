@@ -951,7 +951,7 @@
                             .getUserMedia({
                                 audio: {
                                     echoCancellation:
-                                        true,
+                                        false,
                                     noiseSuppression:
                                         false,
                                     autoGainControl:
@@ -1155,6 +1155,16 @@
         }
 
         async clearPublisherMicrophone() {
+            // Release the cloned capture before waiting on peer senders.
+            this
+                .#stopStream(
+                    this
+                        .#publisherMicrophoneStream
+                );
+
+            this.#publisherMicrophoneStream =
+                undefined;
+
             for (
                 const entry of
                 this
@@ -1170,15 +1180,6 @@
                 }
                 catch {}
             }
-
-            this
-                .#stopStream(
-                    this
-                        .#publisherMicrophoneStream
-                );
-
-            this.#publisherMicrophoneStream =
-                undefined;
 
             return true;
         }
