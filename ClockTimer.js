@@ -1761,8 +1761,16 @@
                 down_visible: tripActive && normalActions,
                 primary_action: Object.freeze(primaryAction)
             });
+            const intervalPhase = interval?.phase;
+            const clockPhase = intervalPhase === "start-buffer" ? "opening-buffer"
+                : intervalPhase === "end-buffer" ? "closing-buffer"
+                : intervalPhase || (this.#started && this.#getCurrentTimelineTime(now) > this.#standardEnd ? "overtime" : state);
             const values = {
                 state,
+                clock_phase: clockPhase,
+                interval_state: interval ? Object.freeze({...interval}) : null,
+                timer_type: this.#getTimerType(),
+                dispatch_state: this.getDispatchState(now),
                 state_class: `clock-timer-state-${state}`,
                 previous_state: options.previousState ?? this.#uiPreviousState,
                 transition: options.transition || "snapshot",
@@ -1777,6 +1785,9 @@
                 goal_type: this.#percentMode,
                 effective_goal_type: scope,
                 auto_goal_active: this.#percentMode === "auto" && this.#autoSyncTripGoal,
+                sync_enabled: this.#autoSyncTripGoal,
+                auto_goal_order: Object.freeze(this.#getPercentageOrder().split("_")),
+                active_break_type: interval?.breakType || null,
                 standard_time_header_text: `${scopeLabel} Standard Time`,
                 standard_time_component: this.#component(
                     standardText,
@@ -4683,17 +4694,18 @@
             return true;
         }
 
-        async connect(username, password) {
+        async connect(username, password, {credentialType = "password"} = {}) {
             if (typeof username !== "string" || username.trim() === "" || typeof password !== "string") {
                 throw new TypeError("username and password are required.");
             }
 
+            if (credentialType === "pin" && (!/^[0-9]{4}$/.test(username) || !/^[0-9]{4}$/.test(password))) throw new TypeError("User ID and PIN must each have four digits.");
             let data;
 
             try {
                 data = await this.#apiRequest("users", {
                     method: "POST",
-                    body: { action: "connect", username: username.trim(), password }
+                    body: credentialType === "pin" ? {action: "connect-pin", loginId: username, pin: password} : { action: "connect", username: username.trim(), password }
                 });
 
                 if (

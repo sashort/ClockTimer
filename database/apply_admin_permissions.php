@@ -32,6 +32,7 @@ try {
         '007_live_streams',
         '008_live_stream_websocket',
         '009_lookup_users',
+        '010_voice_login',
     ] as $id) {
         $result = apply_migration($pdo, $id, 0);
         echo $id . ($result['alreadyApplied'] ? " already recorded.\n" : " applied and recorded.\n");

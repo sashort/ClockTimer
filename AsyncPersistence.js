@@ -11,7 +11,10 @@
             worker.addEventListener("message", ({data}) => {
                 const request = this.#requests.get(data.id); if (!request) return;
                 this.#requests.delete(data.id);
-                data.error ? request.reject(new Error(data.error)) : request.resolve(data.result);
+                if (data.error) {
+                    const error = new Error(data.error);error.name = data.errorName || "Error";error.retryable = data.retryable === true;
+                    request.reject(error);
+                } else request.resolve(data.result);
             });
             worker.addEventListener("error", event => {
                 this.#failure = new Error(event.message || "Browser storage is unavailable.");
@@ -49,7 +52,9 @@
             const work = this.#queue.then(async () => {
                 await this.#ready;
                 if (signal?.aborted) throw new DOMException("The state change was cancelled.", "AbortError");
-                await this.#request("batch", undefined, entries);
+                const persist = () => this.#request("batch", undefined, entries);
+                if (globalThis.WMOFStateTransactions?.active) await globalThis.WMOFStateTransactions.retry(persist, {signal});
+                else await persist();
                 if (!signal?.aborted) for (const [key, value] of entries) this.#cache.set(key, value);
                 return true;
             });

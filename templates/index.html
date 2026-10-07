@@ -196,7 +196,7 @@
         <speech-menu id="speechTopLevelMenu" speech-modal="top-level" data-speech-editor-id="builtin:menu:top-level">
             <speech-command data-speech-editor-id="builtin:readyAt:page" data-speech-options-category="trip-actions" speech-chain-next="scheduled-start" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-target="#newTripButton" speech-function="WMOFActions.scheduleStartAt" speech-persist speech-collect {{speech:2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2}} data-language-id="2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2"></speech-command>
             <speech-command data-speech-editor-id="builtin:readyAtContinuation:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canContinueStartAt" data-speech-target="#newTripButton" speech-function="WMOFActions.continueStartAt" speech-persist speech-collect {{speech:5898b6ac-6a4c-5288-8473-15e094bb2f2d}} data-language-id="5898b6ac-6a4c-5288-8473-15e094bb2f2d"></speech-command>
-            <speech-command data-speech-editor-id="builtin:ready:page" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-options-category="trip-actions" data-speech-target="#newTripButton:enabled, #endTripButton:enabled" speech-function="WMOFActions.prepareStartMenu" speech-persist {{speech:60783e3e-5bf2-506e-a445-c173e73ce003}} data-language-id="60783e3e-5bf2-506e-a445-c173e73ce003"></speech-command>
+            <speech-command data-speech-editor-id="builtin:ready:page" speech-available="WMOFSpeechAvailability.canUseReady" data-speech-options-category="trip-actions" data-speech-target="#newTripButton:enabled, #endTripButton:enabled" speech-function="WMOFActions.prepareReadyAction" speech-persist {{speech:60783e3e-5bf2-506e-a445-c173e73ce003}} data-language-id="60783e3e-5bf2-506e-a445-c173e73ce003"></speech-command>
             <speech-command data-speech-editor-id="builtin:down:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canStartDownTime" data-speech-target="#downButton" speech-function="WMOFActions.startDownTime" speech-persist {{speech:6230b72b-f6ef-52e1-8a5b-4ed8c14c1260}} data-language-id="6230b72b-f6ef-52e1-8a5b-4ed8c14c1260"></speech-command>
             <speech-command data-speech-editor-id="builtin:resume:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canResumeTrip" data-speech-target="#downResumeButton" speech-function="WMOFActions.resumeTrip" speech-persist {{speech:62b7f20d-b850-5190-a538-0ae797e0881e}} data-language-id="62b7f20d-b850-5190-a538-0ae797e0881e"></speech-command>
             <speech-command data-speech-editor-id="builtin:tripGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTripGoal" speech-persist {{speech:fb4bf723-f232-5baf-8af9-6f95d5b4aac0}} data-language-id="fb4bf723-f232-5baf-8af9-6f95d5b4aac0"></speech-command>
@@ -301,12 +301,20 @@
             <header class="dialog-header">
                 <h2 data-language-id="0864a74a-e4f6-547b-9fae-a7d605026c84">{{text:0864a74a-e4f6-547b-9fae-a7d605026c84:text0}}</h2>
             </header>
-            <label data-language-id="f46c959b-99a7-5f47-9fd6-69d0ec431b64">{{text:f46c959b-99a7-5f47-9fd6-69d0ec431b64:text0}}<input id="loginUsername" name="username" autocomplete="username" required></label>
-            <label data-language-id="9ca81bca-2dd9-57e5-b440-d52f5297afe5">{{text:9ca81bca-2dd9-57e5-b440-d52f5297afe5:text0}}<input id="loginPassword" name="password" type="password" autocomplete="current-password" required></label>
+            <p id="voiceLoginPrompt" role="status"></p>
+            <label id="loginIdRow"><span id="loginIdLabel"></span><input id="loginUsername" name="loginId" type="hidden"><span class="login-digit-sequence" data-login-sequence="id"><input data-login-digit="id" data-digit-index="0" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="1" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="2" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="3" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"></span></label>
+            <label id="loginPinRow" hidden><span id="loginPinLabel"></span><input id="loginPassword" name="pin" type="hidden"><span class="login-digit-sequence" data-login-sequence="pin"><input data-login-digit="pin" data-digit-index="0" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="1" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="2" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="3" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"></span></label>
+            <div id="loginLegacyFields" hidden>
+                <label><span id="loginLegacyUsernameLabel"></span><input id="loginLegacyUsername" name="username" autocomplete="username" disabled></label>
+                <label><span id="loginLegacyPasswordLabel"></span><input id="loginLegacyPassword" name="password" type="password" autocomplete="current-password" disabled></label>
+            </div>
+            <p id="loginRecognitionStatus" class="login-recognition-status" role="status"></p><button id="loginEnableRecognition" type="button"></button>
             <p id="loginError" class="form-error" role="alert"></p>
             <div class="dialog-actions">
-                <button id="loginButton" class="primary-action" type="submit" value="login" data-language-id="1c3cb680-dbc5-512f-a50d-54197fa35a02">{{text:1c3cb680-dbc5-512f-a50d-54197fa35a02:text0}}</button>
+                <button id="loginButton" class="primary-action" type="submit" value="login"></button><button id="loginDigitsCancel" type="button"></button>
             </div>
+            <button id="loginLegacySwitch" class="login-legacy-switch" type="button"></button>
+            <button id="loginVoiceSwitch" class="login-legacy-switch" type="button" hidden></button>
         </form>
     </dialog>
 
@@ -341,6 +349,12 @@
                 <label data-language-id="680400ff-a026-5b68-acba-7e9bd329d3da">{{text:680400ff-a026-5b68-acba-7e9bd329d3da:text0}}<input id="profileUsername" name="username" autocomplete="username"></label>
                 <label data-language-id="2c53e325-0630-57ae-81a2-ccb477518a85">{{text:2c53e325-0630-57ae-81a2-ccb477518a85:text0}}<input id="profilePassword" name="password" type="password" value="••••••••" disabled></label>
                 <button id="resetPasswordButton" class="secondary-action" type="button" data-language-id="7b64ce6f-7e36-505b-a104-f58f2439818e">{{text:7b64ce6f-7e36-505b-a104-f58f2439818e:text0}}</button>
+            </fieldset>
+            <fieldset id="mainLoginAdminFields" hidden><legend id="mainLoginAdminTitle"></legend>
+                <label><span id="mainLoginAccountLabel"></span><input id="mainLoginAccount" inputmode="numeric" type="text"></label>
+                <label><span id="mainLoginIdLabel"></span><input id="mainLoginId" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+                <label><span id="mainLoginPinLabel"></span><input id="mainLoginPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+                <button id="assignMainLogin" type="button"></button><p id="mainLoginAssignmentStatus" role="status"></p>
             </fieldset>
             <fieldset>
                 <legend data-language-id="76acff1f-2236-5dce-82be-8f5c93e2a718">{{text:76acff1f-2236-5dce-82be-8f5c93e2a718:text0}}</legend>
@@ -1137,12 +1151,27 @@
         </form>
     </dialog>
 
-    <section id="tripTransitionOverlay" class="trip-transition-overlay" popover="manual" role="status" aria-live="polite" aria-atomic="true" hidden>
+    <dialog id="tripTransitionOverlay" class="trip-transition-overlay" aria-labelledby="tripTransitionOverlayTitle" hidden>
         <div class="trip-transition-overlay-panel">
             <h2 id="tripTransitionOverlayTitle" data-language-id="e2d231dd-d881-5bfa-b9fc-f16ad296a813">{{text:e2d231dd-d881-5bfa-b9fc-f16ad296a813:text0}}</h2>
             <div id="tripTransitionOverlayDetails" class="trip-transition-overlay-details"></div>
+            <div id="tripTransitionSummaryActions" class="dialog-actions two-actions" hidden>
+                <button id="tripTransitionSummaryOk" class="primary-action" type="button" data-language-id="555c713a-48df-4120-a905-b6e468ffb855">{{text:555c713a-48df-4120-a905-b6e468ffb855:text0}}</button>
+                <button id="tripTransitionSummaryCancel" type="button" data-language-id="81345b5d-1895-4d2f-b30b-552dbc4ac80e">{{text:81345b5d-1895-4d2f-b30b-552dbc4ac80e:text0}}</button>
+            </div>
         </div>
-    </section>
+    </dialog>
+
+    <dialog id="voicePadRecognitionDialog" class="app-dialog" aria-labelledby="voicePadRecognitionTitle">
+        <section>
+            <header class="dialog-header"><h2 id="voicePadRecognitionTitle" data-language-id="55cc03db-b29d-449a-9b68-e2c3c283c3f4">{{text:55cc03db-b29d-449a-9b68-e2c3c283c3f4:text0}}</h2></header>
+            <p data-language-id="1be05b41-f908-472d-b77c-fbd88a45694b">{{text:1be05b41-f908-472d-b77c-fbd88a45694b:text0}}</p>
+            <div class="dialog-actions two-actions">
+                <button id="voicePadRecognitionOk" class="primary-action" type="button" data-language-id="71c1d83b-4a32-4854-a9eb-af1386848ec1">{{text:71c1d83b-4a32-4854-a9eb-af1386848ec1:text0}}</button>
+                <button id="voicePadRecognitionCancel" type="button" data-language-id="36448f0b-e2b9-4e7e-8f48-a73c6d360407">{{text:36448f0b-e2b9-4e7e-8f48-a73c6d360407:text0}}</button>
+            </div>
+        </section>
+    </dialog>
 
     <dialog id="speechBreakConfirmDialog" class="app-dialog">
         <form method="dialog">
@@ -1173,6 +1202,8 @@
     <script src="TimeRangeElement.js?build=ZHHTV6"></script>
     <script src="ClockTimer.js?v=sync-try-event-20261001&amp;build=ZHHTV6"></script>
     <script src="CalendarRange.js?build=ZHHTV6"></script>
+    <script src="DigitSequence.js"></script>
+    <script src="TripAggregates.js"></script>
     <script src="TripLog.js?v=language-pack-20261001&amp;build=ZHHTV6"></script>
     <script src="ParameterParser.js?build=ZHHTV6"></script>
     {{language-rules}}

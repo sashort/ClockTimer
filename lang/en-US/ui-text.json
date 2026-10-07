@@ -164,8 +164,8 @@
     },
     "ef8ae894-770d-5f0f-9cb7-fd42eb85ea70": {
       "id": "ef8ae894-770d-5f0f-9cb7-fd42eb85ea70",
-      "text": "Pay Period",
-      "default": "Pay Period"
+      "text": "Money",
+      "default": "Money"
     },
     "5be6cfcb-7f80-5f2c-9ce0-16dcdd44b953": {
       "id": "5be6cfcb-7f80-5f2c-9ce0-16dcdd44b953",
@@ -5270,9 +5270,9 @@
     },
     "ff8216fc-6cdb-4cbb-a433-1d2bae1e8232": {
       "id": "ff8216fc-6cdb-4cbb-a433-1d2bae1e8232",
-      "text": "Pay Period",
+      "text": "Money",
       "source": "TripLog.js:9104",
-      "default": "Pay Period"
+      "default": "Money"
     },
     "ed109a97-8e31-4c93-85cb-6dfb4480c0f7": {
       "id": "ed109a97-8e31-4c93-85cb-6dfb4480c0f7",
@@ -5639,6 +5639,36 @@
       "text": "User lookup failed.",
       "source": "UserLookup.js:22872",
       "default": "User lookup failed."
+    },
+    "555c713a-48df-4120-a905-b6e468ffb855": {
+      "id": "555c713a-48df-4120-a905-b6e468ffb855",
+      "text": "OK",
+      "default": "OK"
+    },
+    "81345b5d-1895-4d2f-b30b-552dbc4ac80e": {
+      "id": "81345b5d-1895-4d2f-b30b-552dbc4ac80e",
+      "text": "Cancel",
+      "default": "Cancel"
+    },
+    "55cc03db-b29d-449a-9b68-e2c3c283c3f4": {
+      "id": "55cc03db-b29d-449a-9b68-e2c3c283c3f4",
+      "text": "Voice Pad",
+      "default": "Voice Pad"
+    },
+    "1be05b41-f908-472d-b77c-fbd88a45694b": {
+      "id": "1be05b41-f908-472d-b77c-fbd88a45694b",
+      "text": "Voice Pad requires speech recognition enabled. Say OK to turn on speech recognition",
+      "default": "Voice Pad requires speech recognition enabled. Say OK to turn on speech recognition"
+    },
+    "71c1d83b-4a32-4854-a9eb-af1386848ec1": {
+      "id": "71c1d83b-4a32-4854-a9eb-af1386848ec1",
+      "text": "OK",
+      "default": "OK"
+    },
+    "36448f0b-e2b9-4e7e-8f48-a73c6d360407": {
+      "id": "36448f0b-e2b9-4e7e-8f48-a73c6d360407",
+      "text": "Cancel",
+      "default": "Cancel"
     }
   }
 }

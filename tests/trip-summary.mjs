@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const ctx=vm.createContext({});vm.runInContext(fs.readFileSync(new URL('../TripAggregates.js',import.meta.url),'utf8'),ctx);
+const rangeWindow={startTime:'2026-10-07T00:00:00Z',endTime:'2026-10-07T23:59:59.999Z'};
+const row=(id,startTime,standard,counted,extra={})=>({id,startTime,standardTimeMilliseconds:standard,actualTimeMilliseconds:counted+100,countedTimeMilliseconds:counted,...extra});
+const trips=[row(1,rangeWindow.startTime,1000,800),row(2,rangeWindow.endTime,2000,1200,{nonProduction:true}),row(3,'2026-10-08T00:00:00Z',9000,9000),row(4,'2026-10-06T23:59:59.999Z',9000,9000),row(5,'2026-10-07 12:00:00',9000,9000),row('offline-active','2026-10-07T12:00:00Z',9000,9000,{running:true})];
+let result=ctx.TripAggregates.calculate({trips,rangeWindow,currentTripId:5,goalPercent:1.2});
+assert.equal(result.tripCount,2);assert.equal(result.standardTimeMilliseconds,3000);assert.equal(result.countedTimeMilliseconds,2000);assert.equal(result.actualTimeMilliseconds,2200);assert.equal(result.percent,1.5);assert.equal(result.bankedTimeMilliseconds,500);assert(Object.isFrozen(result));
+result=ctx.TripAggregates.calculate({trips:[...trips,row(1,rangeWindow.startTime,2000,1600)],rangeWindow,currentTripId:'5'});
+assert.equal(result.tripCount,2,'numeric/string IDs deduplicate; current trip ID excluded');assert.equal(result.standardTimeMilliseconds,4000,'local completed record replaces server record');
+result=ctx.TripAggregates.calculate({trips:[],rangeWindow});assert.equal(result.tripCount,0);assert.equal(result.percent,null);
+result=ctx.TripAggregates.calculate({trips:[row(1,rangeWindow.startTime,1000,0)],rangeWindow});assert.equal(result.tripCount,1);assert.equal(result.percent,null,'zero counted time does not create Infinity');
+result=ctx.TripAggregates.calculate({trips:[row(1,rangeWindow.startTime,1000,1500)],rangeWindow});assert.equal(result.bankedTimeMilliseconds,-500,'over-goal time retains sign');
+assert.throws(()=>ctx.TripAggregates.calculate({trips:[],rangeWindow:{startTime:'invalid',endTime:'invalid'}}),/Invalid/);
+console.log('PASS range boundaries, completed/current trips, nonproduction, local deduplication, totals, percent and goal calculations');
+
+const active = row('active',rangeWindow.startTime,2000,1000,{running:true,allottedTimeMilliseconds:1500});
+const completed = row('done',rangeWindow.startTime,1000,500);
+const excluded=ctx.TripAggregates.calculate({trips:[completed,active],rangeWindow,includeActiveTrip:false});
+const included=ctx.TripAggregates.calculate({trips:[completed,active],rangeWindow,includeActiveTrip:true});
+assert.equal(excluded.tripCount,1);assert.equal(excluded.percent,2);
+assert.equal(included.tripCount,2);assert.equal(included.countedTimeMilliseconds,2000);assert.equal(included.percent,1.5);
+assert.equal(included.includeActiveTrip,true);
+assert.equal(ctx.TripAggregates.calculate({trips:[{standardTimeMilliseconds:100,actualTimeMilliseconds:100},{standardTimeMilliseconds:100,actualTimeMilliseconds:300}]}).percent,.5,'anonymous rows must not deduplicate');
+console.log('PASS shared active-trip inclusion, allotted floor, persisted counted time and fallback');

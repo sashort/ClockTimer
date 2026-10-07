@@ -691,9 +691,9 @@
       "persist": false,
       "restore": null,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "T83GIF / 26a4dff",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback verifies exactly one Trip entry cancelled announcement, return to Ready, and no trip write for empty/valid values through final-decode and silence completion. Local automated fixture; no live audio assertion."
       },
       "skippable": false
     },
@@ -708,9 +708,9 @@
       "persist": false,
       "restore": null,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "T83GIF / 26a4dff",
+        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --voice-feedback verifies exactly one Trip entry cancelled announcement, return to Ready, and no trip write for empty/valid values through final-decode and silence completion. Local automated fixture; no live audio assertion."
       },
       "skippable": false
     },
@@ -3767,7 +3767,7 @@
           "optional": false
         }
       ],
-      "footer": "Voice feedback confirms the current surface or outcome. Destination prompts are omitted when the same utterance continues.",
+      "footer": "Required on successful voice cancellation from either empty or valid trip entry back to Ready. Speak once; no chime. Pointer cancellation does not use this voice announcement.",
       "order_note": "Heard top to bottom."
     },
     "pointer-entry": {
@@ -4209,6 +4209,6 @@
     }
   },
   "approved_on": "2026-10-06",
-  "chart_revision": 5,
+  "chart_revision": 6,
   "implementation_status": "Localized type-specific Start/End commands with optional OK; pointer-only selector; skippable confirmation dialogs and speech. Local working tree, not deployed."
 }

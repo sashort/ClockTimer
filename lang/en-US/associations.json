@@ -5099,6 +5099,54 @@
       "attributes": {
         "aria-label": "96d96805-81c0-5bce-b8af-5de8eb18a86d"
       }
+    },
+    "555c713a-48df-4120-a905-b6e468ffb855": {
+      "elementId": "555c713a-48df-4120-a905-b6e468ffb855",
+      "source": "tripTransitionSummaryOk",
+      "texts": {
+        "text0": "555c713a-48df-4120-a905-b6e468ffb855"
+      },
+      "attributes": {}
+    },
+    "81345b5d-1895-4d2f-b30b-552dbc4ac80e": {
+      "elementId": "81345b5d-1895-4d2f-b30b-552dbc4ac80e",
+      "source": "tripTransitionSummaryCancel",
+      "texts": {
+        "text0": "81345b5d-1895-4d2f-b30b-552dbc4ac80e"
+      },
+      "attributes": {}
+    },
+    "55cc03db-b29d-449a-9b68-e2c3c283c3f4": {
+      "elementId": "55cc03db-b29d-449a-9b68-e2c3c283c3f4",
+      "source": "voicePadRecognitionTitle",
+      "texts": {
+        "text0": "55cc03db-b29d-449a-9b68-e2c3c283c3f4"
+      },
+      "attributes": {}
+    },
+    "1be05b41-f908-472d-b77c-fbd88a45694b": {
+      "elementId": "1be05b41-f908-472d-b77c-fbd88a45694b",
+      "source": "voicePadRecognitionMessage",
+      "texts": {
+        "text0": "1be05b41-f908-472d-b77c-fbd88a45694b"
+      },
+      "attributes": {}
+    },
+    "71c1d83b-4a32-4854-a9eb-af1386848ec1": {
+      "elementId": "71c1d83b-4a32-4854-a9eb-af1386848ec1",
+      "source": "voicePadRecognitionOk",
+      "texts": {
+        "text0": "71c1d83b-4a32-4854-a9eb-af1386848ec1"
+      },
+      "attributes": {}
+    },
+    "36448f0b-e2b9-4e7e-8f48-a73c6d360407": {
+      "elementId": "36448f0b-e2b9-4e7e-8f48-a73c6d360407",
+      "source": "voicePadRecognitionCancel",
+      "texts": {
+        "text0": "36448f0b-e2b9-4e7e-8f48-a73c6d360407"
+      },
+      "attributes": {}
     }
   },
   "selects": {

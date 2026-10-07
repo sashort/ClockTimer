@@ -73,7 +73,8 @@
       "total": "{scope} percent: {percent}.",
       "banked": "{duration} banked toward {goal}.",
       "over": "{duration} over {goal}.",
-      "id": "a4e6d697-96d8-5603-a8ef-517d3d36fb9b"
+      "id": "a4e6d697-96d8-5603-a8ef-517d3d36fb9b",
+      "newTripPrompt": "Say OK to start a new trip."
     },
     "goal-failed": {
       "standard": "Standard Goal Failed.",
@@ -91,6 +92,14 @@
       "failed": "Sync Fail",
       "goal": "Sync Goal {percent}",
       "id": "33c1ed3d-ea40-5598-85b8-ec94020472c2"
+    },
+    "voice-pad-recognition-required": {
+      "id": "81f42d82-8483-44fa-963c-4598e76f214c",
+      "summary": "Voice Pad requires speech recognition enabled. Say OK to turn on speech recognition"
+    },
+    "voice-pad-number-pad": {
+      "id": "217a08ba-6559-4d22-964e-cb252bdcd9ae",
+      "summary": "Switched to number pad."
     }
   },
   "messages": {
@@ -106,7 +115,7 @@
       "trip": "Trip",
       "day": "Day",
       "week": "Week",
-      "pay-period": "Check",
+      "pay-period": "Money",
       "month": "Month",
       "year": "Year",
       "custom": "Total",
@@ -164,9 +173,9 @@
       "fieldSaved": "{field} set to {value}.",
       "logOpened": "Trip log.",
       "logClosed": "Trip log closed.",
-      "sleeping": "Speech sleeping.",
-      "listening": "Listening.",
-      "off": "Speech off.",
+      "sleeping": "Voice recognition off.",
+      "listening": "Voice recognition on.",
+      "off": "Microphone deactivated.",
       "syncAlready": "Sync already {state}.",
       "modeAlready": "Already in {mode} mode.",
       "standardAlready": "Standard time is already {duration}.",
@@ -178,7 +187,62 @@
         "break": "break",
         "short-break": "short break",
         "lunch": "lunch"
-      }
+      },
+      "summaryClosed": "Trip Summary closed."
+    },
+    "tripSummary": {
+      "title": "Trip Summary",
+      "range": "{scope} range.",
+      "noData": "No trip data available.",
+      "loading": "Loading trip data\u2026",
+      "loadFailed": "Trip data could not be loaded.",
+      "tripCountLabel": "Trips",
+      "tripCount": "{count} trips.",
+      "standardLabel": "Standard time",
+      "standard": "Standard time: {duration}.",
+      "actualLabel": "Actual time",
+      "actual": "Actual time: {duration}.",
+      "countedLabel": "Counted time",
+      "counted": "Counted time: {duration}.",
+      "percentLabel": "Percent",
+      "percent": "{percent}.",
+      "bankedLabel": "Banked toward range goal",
+      "banked": "{duration} banked toward the range goal.",
+      "overLabel": "Over range goal",
+      "over": "{duration} over the range goal."
+    },
+    "voiceLogin": {
+      "idPrompt": "Please login using voice",
+      "pinPrompt": "Password",
+      "invalid": "Enter exactly four digits, then say OK.",
+      "failed": "Login failed. Please login using voice",
+      "userIdLabel": "User ID",
+      "pinLabel": "PIN",
+      "adminTitle": "Assign main-page login",
+      "accountLabel": "Account ID",
+      "assign": "Assign ID and PIN",
+      "assigned": "Main-page login assigned.",
+      "success": "Login successful, say standard time or ready at",
+      "recognitionOff": "Voice recognition is off. Enter digits below or enable voice recognition.",
+      "recognitionSleeping": "Voice recognition is sleeping. Enter digits below or wake voice recognition.",
+      "recognitionListening": "Voice recognition is on. Say four digits, then OK.",
+      "enableRecognition": "Enable voice recognition",
+      "ok": "OK",
+      "cancel": "Cancel",
+      "idDigit": "User ID digit {index}",
+      "pinDigit": "PIN digit {index}",
+      "assignmentFailed": "Assignment failed.",
+      "unauthorized": "Not authorized.",
+      "legacyLogin": "Login with username and password",
+      "usernameLabel": "Username",
+      "passwordLabel": "Password",
+      "voiceLogin": "Login via voice",
+      "passwordModePrompt": "Login with username and password.",
+      "recognitionPasswordListening": "Voice recognition is on. Say Voice to login using your user ID and PIN.",
+      "recognitionStarting": "Voice recognition is starting. You can continue entering your login below.",
+      "recognitionSuspended": "Voice recognition is paused. You can continue entering your login below.",
+      "recognitionPasswordOff": "Voice recognition is off. Enter your username and password below or enable voice recognition.",
+      "recognitionPasswordSleeping": "Voice recognition is sleeping. Enter your username and password below or wake voice recognition."
     }
   }
 }

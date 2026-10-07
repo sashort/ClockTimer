@@ -1,0 +1,12 @@
+{
+  "issues": [
+    {
+      "id": "KNOWN-COLOR-001",
+      "title": "Some range color changes do not update immediately",
+      "priority": "low",
+      "status": "deferred",
+      "reported": "2026-10-07",
+      "scope": "Graphical settings / range rendering"
+    }
+  ]
+}

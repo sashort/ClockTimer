@@ -18,21 +18,13 @@
             ? duration(value)
             : '---';
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
-    const counted = trip => {
-        const stored=Number.isSafeInteger(trip?.countedTimeMilliseconds)&&trip.countedTimeMilliseconds>=0
-            ? trip.countedTimeMilliseconds
-            : Number.isSafeInteger(trip?.actualTimeMilliseconds)&&trip.actualTimeMilliseconds>=0
-                ? trip.actualTimeMilliseconds
-                : 0;
-        if(!trip?.running)return stored;
-        const allotted=Number.isSafeInteger(trip?.allottedTimeMilliseconds)&&trip.allottedTimeMilliseconds>=0
-            ? trip.allottedTimeMilliseconds
-            : stored;
-        return Math.max(allotted,stored);
+    const counted = trip => TripAggregates.counted(trip);
+    const aggregate = (trips, parent = false) => TripAggregates.calculate({trips,
+        includeActiveTrip: !parent || trips.some(trip => trip.running && trip.includeInParentPercent)});
+    const percent = (trips, parent = false) => {
+        const result = aggregate(trips, parent);
+        return result.percent === null ? '—' : `${(result.percent * 100).toFixed(2)}%`;
     };
-    const percent = (trips,parent=false) => {const included=parent?trips.filter(t=>!t.running||t.includeInParentPercent):trips;const standard=included.reduce((a,t)=>a+t.standardTimeMilliseconds,0),actual=included.reduce((a,t)=>a+counted(t),0);return actual>0?`${(standard/actual*100).toFixed(2)}%`:'—';};
-    const parentTrips = trips => trips.filter(trip=>!trip.running||trip.includeInParentPercent);
-    const total = (trips,key) => trips.reduce((a,t)=>a+(Number(t[key])||0),0);
     const uncertainIcon = () => {
         const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');
         icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('class','calculation-uncertain-icon');
@@ -58,7 +50,7 @@
                 } else if(index>=0) trips.splice(index,1);
             }
             trips.sort((a,b)=>Date.parse(iso(b.startTime))-Date.parse(iso(a.startTime))||b.id-a.id);
-            this.trips=trips;const fragment=document.createDocumentFragment();
+            this.trips=trips;this.aggregation=aggregate(trips,true);const fragment=document.createDocumentFragment();
             if(!trips.length)this.settingsVisible=true;
             let settings=this.root.querySelector('.trip-log-settings');
             const reuseSettings=Boolean(settings);
@@ -76,7 +68,7 @@
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
             emphasis.append(node('strong',`${trips.length} ${trips.length===1?globalThis.WMOFLanguagePack.text("3b289746-71b2-4ac3-90dd-00a0402ba34f"):globalThis.WMOFLanguagePack.text("1c1bf8a6-f452-4dfa-8d43-ed38d4bcae1f")}`),node('strong',percent(trips,true),'trip-log-actual'));
             if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());
-            const overviewTrips=parentTrips(trips);overview.append(emphasis,node('div',`Standard ${duration(total(overviewTrips,'standardTimeMilliseconds'))} · Actual ${duration(overviewTrips.reduce((sum,trip)=>sum+counted(trip),0))}`,'trip-log-times'));fragment.append(overview);
+            const totals=aggregate(trips,true);overview.append(emphasis,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.countedTimeMilliseconds)}`,'trip-log-times'));fragment.append(overview);
             const columns=node('div',undefined,'trip-log-column-header');columns.setAttribute('role','row');for(const label of [globalThis.WMOFLanguagePack.text("5e8f393d-72a7-4b30-ba1e-69bbd765354f"),globalThis.WMOFLanguagePack.text("07613a20-4d6c-4fdf-a16d-6c94d28e5590"),globalThis.WMOFLanguagePack.text("77f1eddd-89b9-4e22-9fe1-aeeb4d060722"),globalThis.WMOFLanguagePack.text("c755d5bf-3277-4630-a938-898b8b6172dd"),'']){const cell=node('span',label);cell.setAttribute('role','columnheader');columns.append(cell);}fragment.append(columns);
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
@@ -124,7 +116,7 @@
             for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group'),active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
                 const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${group.length} trips · ${percent(group,true)}`,'trip-log-actual'));
                 if(this.incomplete)heading.lastElementChild.append(uncertainIcon());
-                const aggregateTrips=parentTrips(group);summary.append(heading,node('div',`Standard ${duration(total(aggregateTrips,'standardTimeMilliseconds'))} · Actual ${duration(aggregateTrips.reduce((sum,trip)=>sum+counted(trip),0))}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
+                const totals=aggregate(group,true);summary.append(heading,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.countedTimeMilliseconds)}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
             return fragment;
         }
         trip(trip) {

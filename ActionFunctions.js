@@ -462,9 +462,10 @@
                                             : implementation(...args);
                                     } finally {invocationContext = previous;}
                                 };
-                                result = transactions && !normalized.startsWith("read") ? transactions.run(normalized, invoke, {
+                                // Local input and runtime lifecycle actions must not wait for persistence.
+                                result = transactions && metadata.get(normalized)?.transaction !== false && !normalized.startsWith("read") ? transactions.run(normalized, invoke, {
                                         group: speech?.chain ? `speech:${speech.utteranceId}` : undefined,
-                                        chain: speech?.chain === true, persist: speech ? speech.persist === true : undefined
+                                        chain: speech?.chain === true, persist: speech ? speech.persist === true : undefined, signal: actionContext?.signal
                                     }) : implementation(...args);
                             }
                             finally {

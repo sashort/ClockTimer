@@ -11,7 +11,7 @@ function openDatabase() {
             db.onversionchange = () => {db.close(); database = undefined;};
             resolve(db);
         };
-    });
+    }).catch(error => {database = undefined;throw error;});
 }
 async function operate({operation, key, value}) {
     const db = await openDatabase();
@@ -42,5 +42,6 @@ self.onmessage = ({data}) => {
     const work = queue.then(() => operate(data));
     queue = work.catch(() => {});
     work.then(result => self.postMessage({id: data.id, result}),
-        error => self.postMessage({id: data.id, error: error.message || String(error)}));
+        error => self.postMessage({id: data.id, error: error.message || String(error), errorName: error.name,
+            retryable: !["DataCloneError", "SecurityError", "NotSupportedError"].includes(error.name)}));
 };

@@ -68,6 +68,7 @@ async function exercise(core, checkFSM) {
                 const flags=timer.getDispatchState(new window.Date());
                 assert(Object.isFrozen(flags));
                 assert.equal(flags.percentageOrder,sync?expectedOrder:order);
+                assert.equal(timer.getUIState(new window.Date()).auto_goal_order.join('_'),flags.percentageOrder,'goal sequence is ready in every mode');
                 assert.equal(flags.state,'running');
                 assert.equal(flags.sync,sync?'on':'off');
                 assert.equal(flags.startRelation,'on_time');

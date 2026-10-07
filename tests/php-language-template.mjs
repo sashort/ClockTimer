@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import os from 'node:os';
 import {execFileSync} from 'node:child_process';
 import {Window} from 'happy-dom';
 const php=process.env.CLOCK_TIMER_PHP || 'php';
-const root=path.resolve(new URL('..',import.meta.url).pathname);
+const root=fileURLToPath(new URL('..',import.meta.url));
 const invoke=lang=>execFileSync(php,['-n','-r',`$_GET['lang']=${JSON.stringify(lang)}; include ${JSON.stringify(root+'/index.php')};`],{encoding:'utf8'});
 const original=fs.readFileSync(root+'/index.html','utf8');
 const defaultPage=execFileSync(php,['-n',root+'/index.php'],{encoding:'utf8'});

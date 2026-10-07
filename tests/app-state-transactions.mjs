@@ -15,10 +15,11 @@ const animationCalls=[];window.Element.prototype.animate=function(keyframes,opti
 const consoleErrors=[];window.console.error=(...args)=>consoleErrors.push(args.map(a=>a?.stack||String(a)).join(' '));
 const errors=[];window.addEventListener('error',e=>{errors.push(e.message);});
 const rules={weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'};
-let rejectTripStop=false;let holdTripCheck=false;let releaseTripCheck;let rejectTripStart=false;let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];
+let summaryTrips=[];let rejectTripStop=false;let holdTripCheck=false;let releaseTripCheck;let rejectTripStart=false;let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];let holdLogin=false,releaseLogin;
 window.fetch=async(url,options={})=>{
  const path=new URL(url,'https://clock.example/').pathname;requests.push({path,options});
  const input=options.body?JSON.parse(options.body):null;
+ if(holdLogin&&path.endsWith('/users/')&&options.method==='POST')await new Promise(resolve=>releaseLogin=resolve);
  if(path.endsWith('/trip-events/')&&options.method==='POST') stored.push({...input,id:eventId++});
  if(path.endsWith('/trip-editor/')&&input) {
     if(input.operation==='entry') stored.find(e=>e.event==='interval.started'&&e.value.intervalKey===input.entry.intervalKey).timestamp=input.entry.start;
@@ -33,12 +34,12 @@ window.fetch=async(url,options={})=>{
  path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',first_name:'Alex',last_name:'Driver',preferred_name:'Al',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
  path.endsWith('/trip-events/')?(options.method==='POST'?{eventId:eventId-1}:{tripId,events:structuredClone(stored)}):
  path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
- {tripId, trips:[],aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
+ {tripId, trips:summaryTrips,aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
 window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
 installEnglishPack(window);
-for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
@@ -69,7 +70,103 @@ const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
 const states=[];
 window.WMOFStateTransactions.addEventListener('state',event=>states.push(event.detail.state));
+if(process.argv.includes('--voice-login')) {
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
+ assert.equal(window.WMOFInteractionState.state.login.stage,'id');
+ const speak=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await settle();return u;};
+ const id=await speak('zero zero four two okay');assert(!id.digestExecutionFailed,'ID sequence plus OK must execute: '+JSON.stringify({errors,consoleErrors,stage:window.WMOFInteractionState.state.login,value:window.document.querySelector('#loginUsername').value}));
+ assert.equal(window.WMOFInteractionState.state.login.stage,'pin');assert.equal(window.document.querySelector('#loginUsername').value,'0042');
+ assert(spoken.includes('Password'),'ID confirmation announces PIN prompt');
+ await window.WMOFActions.enterLoginDigits('zero zero seven three');
+ assert.deepEqual([...dialog.querySelectorAll('[data-login-digit="pin"]')].map(e=>e.value),['*','*','*','*']);
+ assert(!spoken.includes('0073'),'PIN must not be spoken back');
+ const preserveRecognition=async()=>{
+  const snapshot=JSON.stringify(window.WMOFInteractionState.state.login),idValue=window.document.querySelector('#loginUsername').value,pinValue=window.document.querySelector('#loginPassword').value;
+  const username=window.document.querySelector('#loginLegacyUsername').value,password=window.document.querySelector('#loginLegacyPassword').value;
+  await window.SpeechMenu.sleep();await settle();assert.equal(window.WMOFInteractionState.state.speechRecognition,'sleeping');
+  assert.equal(JSON.stringify(window.WMOFInteractionState.state.login),snapshot,'sleep preserves login state');assert(!window.WMOFSpeechAvailability.canSwitchToVoiceLogin());
+  assert(!window.SpeechMenu.testAvailable().some(e=>e.closest('dialog')===dialog),'sleep unloads login speech commands');
+  assert.equal(window.document.querySelector('#loginEnableRecognition').hidden,false);
+  await window.SpeechMenu.wake();await window.WMOFActions.handleSpeechRuntimeMuted(false);await settle();
+  assert.equal(window.WMOFInteractionState.state.speechRecognition,'listening');assert.equal(JSON.stringify(window.WMOFInteractionState.state.login),snapshot);
+  await window.WMOFActions.handleSpeechRuntimeStopped();await settle();assert.equal(window.WMOFInteractionState.state.speechRecognition,'off');
+  assert.equal(JSON.stringify(window.WMOFInteractionState.state.login),snapshot,'off preserves login state');assert(!window.WMOFSpeechAvailability.canUseLogin());
+  assert.equal(window.document.querySelector('#loginEnableRecognition').hidden,false,'enable recognition available in either login mode');
+  assert.equal(window.document.querySelector('#loginButton').disabled,window.WMOFInteractionState.state.login.pending,'pointer availability follows login pending state, not recognition');
+  window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();assert.equal(window.WMOFInteractionState.state.speechRecognition,'listening');
+  assert.equal(window.document.querySelector('#loginUsername').value,idValue);assert.equal(window.document.querySelector('#loginPassword').value,pinValue);
+  assert.equal(window.document.querySelector('#loginLegacyUsername').value,username);assert.equal(window.document.querySelector('#loginLegacyPassword').value,password);
+ };
+ await preserveRecognition();
+
+ const loginPosts=()=>requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length;
+ const beforeSwitch=loginPosts();await speak('user');
+ assert.equal(window.WMOFInteractionState.state.login.method,'password');
+ assert.equal(window.document.querySelector('#loginPassword').value,'','switch clears PIN');
+ assert.equal(window.document.querySelector('#loginLegacyFields').hidden,false);
+ assert.equal(window.document.querySelector('#loginVoiceSwitch').hidden,false);
+ assert(spoken.includes('Login with username and password.'));
+ assert.equal(window.WMOFSpeechAvailability.canUseLogin(),false);
+ await speak('one two three four okay');assert.equal(loginPosts(),beforeSwitch,'digit commands cannot submit the password form');
+ window.document.querySelector('#loginLegacyPassword').value='fixture-secret';await preserveRecognition();await speak('voice');
+ assert.equal(window.WMOFInteractionState.state.login.method,'pin');
+ assert.equal(window.document.querySelector('#loginLegacyPassword').value,'','switch clears password');
+ assert.equal(window.document.querySelector('#loginVoiceSwitch').hidden,true);
+ assert(spoken.includes('Please login using voice'));
+ await speak('username');assert.equal(window.WMOFInteractionState.state.login.method,'password');
+ window.document.querySelector('#loginVoiceSwitch').click();assert.equal(window.WMOFInteractionState.state.login.method,'pin');
+ await speak('user name');assert.equal(window.WMOFInteractionState.state.login.method,'password');await speak('voice');
+
+ await window.WMOFActions.enterLoginDigits('one two');const voiceAnnouncements=spoken.filter(t=>t==='Please login using voice').length;await speak('voice');
+ assert.equal(window.document.querySelector('#loginUsername').value,'');assert.equal(spoken.filter(t=>t==='Please login using voice').length,voiceAnnouncements+1,'Voice loop repeats its prompt');
+ await speak('user');window.document.querySelector('#loginLegacyUsername').value='stale-user';window.document.querySelector('#loginLegacyPassword').value='stale-password';
+ const passwordAnnouncements=spoken.filter(t=>t==='Login with username and password.').length;await speak('username');
+ assert.equal(window.document.querySelector('#loginLegacyUsername').value,'');assert.equal(window.document.querySelector('#loginLegacyPassword').value,'');
+ assert.equal(spoken.filter(t=>t==='Login with username and password.').length,passwordAnnouncements+1,'Username loop repeats its prompt');await speak('voice');
+ assert.equal(loginPosts(),beforeSwitch,'method switches stay client-side');
+
+ await window.WMOFActions.cancelLoginDigits();assert.equal(window.WMOFInteractionState.state.login.stage,'id');assert.equal(window.document.querySelector('#loginPassword').value,'');
+ const cells=[...dialog.querySelectorAll('[data-login-digit="id"]')];for(let i=0;i<4;i++)cells[i].dispatchEvent(new window.KeyboardEvent('keydown',{key:'0042'[i],bubbles:true,cancelable:true}));
+ assert.equal(window.document.querySelector('#loginUsername').value,'0042');await window.WMOFActions.confirmLoginDigits();
+
+ await window.WMOFActions.enterLoginDigits('zero zero seven three');holdLogin=true;
+ const pendingLogin=window.WMOFActions.confirmLoginDigits();await settle();assert.equal(window.WMOFInteractionState.state.login.pending,true);
+ for(const id of ['loginButton','loginDigitsCancel','loginLegacySwitch','loginVoiceSwitch'])assert.equal(window.document.querySelector('#'+id).disabled,true,id+' disabled while pending');
+ assert.equal(window.WMOFSpeechAvailability.canSwitchToPasswordLogin(),false,'pending login unloads method switch');
+ assert.equal(await window.WMOFActions.switchToPasswordLogin(),false);assert.equal(await window.WMOFActions.cancelLoginDigits(),false);
+ await preserveRecognition();holdLogin=false;releaseLogin();await pendingLogin;
+
+ const login=requests.find(r=>r.path.endsWith('/users/')&&r.options.method==='POST'&&JSON.parse(r.options.body).action==='connect-pin');assert(login,'PIN confirmation must reach the PIN login endpoint');
+ assert.deepEqual(JSON.parse(login.options.body),{action:'connect-pin',loginId:'0042',pin:'0073'});
+ assert(spoken.includes('Login successful, say standard time or ready at'));
+ assert.equal(window.document.querySelector('#loginPassword').value,'');await new Promise(r=>setTimeout(r,1000));assert(!dialog.open,'successful authentication closes the modal');
+
+ dialog.showModal();await window.WMOFActions.cancelLoginDigits();window.document.querySelector('#loginLegacySwitch').click();
+ window.document.querySelector('#loginLegacyUsername').value='fixture-user';window.document.querySelector('#loginLegacyPassword').value='fixture-password';
+ window.document.querySelector('#loginForm').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await settle();
+ const legacy=requests.find(r=>r.path.endsWith('/users/')&&r.options.method==='POST'&&JSON.parse(r.options.body).action==='connect');
+ assert(legacy,'legacy form uses the original connect endpoint');assert.deepEqual(JSON.parse(legacy.options.body),{action:'connect',username:'fixture-user',password:'fixture-password'});
+ assert.equal(window.document.querySelector('#loginLegacyPassword').value,'');
+ assert.equal(errors.length,0,errors.join('\n'));console.log('PASS login switches/loopbacks, scoped commands, cleared credentials, recognition preservation and responsive pending authentication');
+
+ await storage.flush();window.happyDOM.abort();process.exit(0);
+}
 const originalMode=timer.renderedTimeMode;
+const checkInteractionState = () => {
+    const state = window.WMOFInteractionState.state;
+    assert(Object.isFrozen(state) && Object.isFrozen(state.actions), 'shared interaction state is immutable');
+    const pairs = {canStartTrip:'startTrip',canUseReady:'ready',canOpenBreakMenu:'startBreak',canStartDownTime:'startDown',
+        canResumeTrip:'resume',canCancelDownTime:'cancelDown',canEndBreak:'endBreak',canEndShortBreak:'endShortBreak',canEndLunch:'endLunch'};
+    for (const [predicate, action] of Object.entries(pairs)) assert.equal(window.WMOFSpeechAvailability[predicate](),state.actions[action], predicate+' uses the shared snapshot');
+    assert.equal(window.document.querySelector('#newTripButton').disabled, !state.actions.startTrip,'New Trip agrees with state');
+    assert.equal(window.document.querySelector('#endTripButton').disabled, !state.actions[state.controls.primaryAction],'primary action agrees with state');
+    const ready = window.document.querySelector('[data-speech-editor-id="builtin:ready:page"]');
+    assert.equal(window.SpeechMenu.testAvailable().includes(ready), state.actions.ready, 'Ready selection agrees with state');
+    const expectedOrder = [...state.goals.autoOrder].sort();
+    assert.deepEqual(expectedOrder, ['standard','total','trip'], 'Auto order contains each goal once');
+    return state;
+};
 const checksBefore=requests.filter(r=>r.path.endsWith("/command-check/")).length;
 storage.fail=true;
 assert.equal(await window.WMOFActions.toggleRenderedTime(),false);
@@ -83,7 +180,98 @@ assert.equal(window.document.querySelector('.persistence-status').hidden,true);
 assert.equal(requests.filter(r=>r.path.endsWith("/command-check/")).length,checksBefore,"local preference commands do not call server validation");
 await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
-await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
+await settle();
+if(process.argv.includes('--voicepad-gate')) {
+    const button=window.document.querySelector('#speechRecognitionButton');
+    await window.WMOFActions.handleSpeechRuntimeStopped();await settle();
+    const beforeRequests=requests.length;
+    await window.WMOFVoiceEntry.open({mode:'time', source:'test-voice-gate', confirmTarget:'home', cancelTarget:'home'});await settle();
+    const gate=window.document.querySelector('#voicePadRecognitionDialog');
+    assert(gate.open, 'recognition off shows the requirement prompt');
+    assert.equal(window.WMOFInteractionState.state.speechRecognition,'off');
+    assert.equal(window.WMOFInteractionState.state.actions.openVoicePad,false);
+    assert(!window.WMOFVoiceEntry.active, 'recognition off cannot open a voicepad');
+    assert(gate.textContent.includes('Voice Pad requires speech recognition enabled. Say OK to turn on speech recognition'));
+    window.document.querySelector('#voicePadRecognitionCancel').click();await settle();
+    assert(!gate.open && !window.WMOFVoiceEntry.active, 'Cancel preserves current screen');
+    assert.equal(requests.length,beforeRequests, 'requirement prompt and Cancel do not persist');
+    const startRecognition=window.SpeechMenu.start;
+    window.SpeechMenu.start=async()=>{window.SpeechMenu.testBegin();window.document.querySelector('#speechMicBar').isOpen=true;return true;};
+    await window.WMOFVoiceEntry.open({mode:'time',source:'test-voice-gate',confirmTarget:'home',cancelTarget:'home'});await settle();
+    window.document.querySelector('#voicePadRecognitionOk').click();await settle();
+    assert(!gate.open && window.WMOFVoiceEntry.active,'OK enables recognition before opening requested voicepad');
+    assert.equal(window.WMOFInteractionState.state.speechRecognition,'listening');
+    const value=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(value,'ten minutes',true);await value.digestQueue;await settle();
+    const entryValue=window.WMOFInteractionState.state.editor.value;
+    await window.SpeechMenu.sleep();await settle();
+    assert(!window.WMOFVoiceEntry.active && window.document.querySelector('#numberPadDialog').open,'sleep automatically opens keypad');
+    assert.equal(window.WMOFInteractionState.state.speechRecognition,'sleeping');
+    assert.equal(window.WMOFInteractionState.state.editor.value,entryValue,'sleep preserves entered value');
+    if(process.argv.includes('--voice-feedback'))assert(spoken.includes('Voice recognition off. Switched to number pad.'));
+    window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+    await window.WMOFActions.switchNumberPadToVoice();await settle();
+    assert(window.WMOFVoiceEntry.active,'enabled recognition permits keypad to voice switching');
+    await window.WMOFActions.handleSpeechRuntimeStopped();await settle();
+    assert(!window.WMOFVoiceEntry.active && window.document.querySelector('#numberPadDialog').open,'off automatically opens keypad');
+    assert.equal(window.WMOFInteractionState.state.editor.value,entryValue,'off preserves entered value');
+    if(process.argv.includes('--voice-feedback'))assert(spoken.includes('Microphone deactivated. Switched to number pad.'));
+    await window.WMOFActions.closeActiveSurface();await settle();
+    window.SpeechMenu.start=startRecognition;
+    window.SpeechMenu.testBegin();
+    await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
+await settle();
+    assert(window.WMOFInteractionState.state.actions.openVoicePad, 'active visible recognition allows voicepad: '+JSON.stringify({speech:window.WMOFInteractionState.state.speechRecognition,started:window.SpeechMenu.started,hidden:window.document.querySelector('#speechMicBar').hidden,popover:window.document.querySelector('#speechMicBar').matches(':popover-open'),state:window.document.querySelector('#speechMicBar').getAttribute('state')}));
+}
+if(process.argv.includes('--trip-summary')) {
+    const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,'trip summary',true);await u.digestQueue;await settle();
+    assert(u.hadCommittedCommand && !u.digestExecutionFailed,'Trip Summary is available with no active trip');
+    const dialog=window.document.querySelector('#tripTransitionOverlay');
+    assert(dialog.open && dialog.textContent.includes('No trip data available.'),'empty selected range renders no data');
+    assert.equal(window.document.querySelector('#tripTransitionOverlayTitle').textContent,'Trip Summary');
+    assert.equal(window.WMOFInteractionState.state.tripSummary.invocation.reason,'requested');
+    assert.equal(window.WMOFInteractionState.state.tripSummary.invocation.method,'voice');
+    assert(!spoken.includes('Say OK to start a new trip.'),'requested summary suppresses new-trip prompt');
+    if(process.argv.includes('--voice-feedback'))assert(spoken.includes('No trip data available.'));
+    window.document.querySelector('#tripTransitionSummaryOk').click();await settle();
+    assert(!dialog.open && !window.WMOFVoiceEntry.active,'requested summary OK only dismisses');
+}
+if(process.argv.includes('--range-voice')) {
+    for(const [phrase,range,label] of [['year','year','Year'],['money','pay-period','Money'],['money mode','pay-period','Money'],['week','week','Week'],['day','day','Day']]) {
+        spoken.length=0;
+        const utterance=window.SpeechMenu.testBegin();
+        await window.SpeechMenu.testTranscript(utterance,phrase,true);await utterance.digestQueue;await settle();
+        assert(utterance.hadCommittedCommand && !utterance.digestExecutionFailed,phrase+' selects range');
+        assert.equal(window.WMOFInteractionState.state.tripLogRange,range,phrase+' retains canonical range identifier');
+        assert.equal(timer.percentMode,'total');
+        assert.equal(window.document.querySelector('#tripLogRangeSelect').value,range);
+        const expected=window.WMOFAnnouncementLanguage.text('messages.settings.viewing',{scope:label});
+        assert.deepEqual(spoken,[expected],phrase+' has exactly one final range announcement');
+    }
+    await window.WMOFActions.changeGoalMode('trip');await settle();
+    console.log('PASS English year/money/week/day, canonical tripLogRange and exactly one announcement');
+}
+if(process.argv.includes('--voice-feedback')) {
+    for (const silence of [false, true]) for (const validValue of [false, true]) {
+        const say = async phrase => {
+            const u = window.SpeechMenu.testBegin();
+            if (silence) assert(await window.SpeechMenu.testSilence(u, phrase));
+            else {await window.SpeechMenu.testTranscript(u, phrase, true);await u.digestQueue;}
+            await settle();
+        };
+        await say('ready');
+        if (validValue) await say('ten minutes');
+        spoken.length = 0;
+        const writesBefore = stored.length;
+        await say('cancel');
+        assert(!window.document.querySelector('#voiceEntrySurface').open, 'voice Cancel returns to main');
+        assert.equal(timer.status, 'ready', 'voice Cancel leaves no active trip');
+        assert.equal(stored.length, writesBefore, 'voice Cancel does not persist a trip');
+        assert.equal(spoken.filter(text => text === 'Trip entry cancelled.').length, 1,
+            `voice Cancel announces once: ${validValue ? 'valid value' : 'empty value'}, ${silence ? 'silence' : 'final decode'}`);
+    }
+    console.log('PASS E05/E06 voicepad Cancel announces once for empty/valid values through final and silence paths');
+}
 if(process.argv.includes('--scheduled-cancel')) {
     const deadline=(work,label)=>Promise.race([work,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' did not settle')),2000))]);
     for(const cancelBeforeFinal of [false,true]) {
@@ -174,8 +362,49 @@ if(process.argv.includes('--pointer-confirmation')) {
     assert(!okAttempt.digestExecutionFailed,'voice OK accepts and persists the entered trip time');
 }
 assert.equal(timer.status,'running','confirmation starts the trip');
+checkInteractionState();
+const beforeStaleButton=window.WMOFInteractionState.state;
+window.document.querySelector('#endTripButton').disabled=true;
+assert.equal(window.WMOFSpeechAvailability.canUseReady(),beforeStaleButton.actions.ready,'a stale button flag cannot disable a valid command');
+window.WMOFInteractionState.refresh();
+checkInteractionState();
 assert(stored.some(e=>e.event==='trip.started'),'the confirmed trip reaches persistence');
 window.__testTime+=120000;
+if(process.argv.includes('--trip-summary')) {
+    const activeId=timer.currentTripId;
+    const at=new window.Date(window.__testTime-3600000).toISOString();
+    summaryTrips=[{id:901,startTime:at,standardTimeMilliseconds:600000,actualTimeMilliseconds:500000,countedTimeMilliseconds:400000},
+        {id:902,startTime:at,standardTimeMilliseconds:300000,actualTimeMilliseconds:250000,countedTimeMilliseconds:200000,nonProduction:true},
+        {id:activeId,startTime:at,standardTimeMilliseconds:999999,actualTimeMilliseconds:999999,countedTimeMilliseconds:999999}];
+    spoken.length=0;
+    const writes=requests.filter(r=>['POST','PATCH','DELETE'].includes(r.options.method)).length;
+    const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,'trip summary',true);await u.digestQueue;await settle();
+    assert(u.hadCommittedCommand && !u.digestExecutionFailed,'Trip Summary is available during a trip');
+    const result=window.WMOFInteractionState.state.tripAggregates.tripSummary;
+    assert(Object.isFrozen(window.WMOFInteractionState.state.tripAggregates));
+    assert.equal(result.includeActiveTrip,false);
+    assert(!('calculation' in window.WMOFInteractionState.state.tripSummary),'derived data belongs only in tripAggregates');
+    assert.equal(result.tripCount,2,'summary excludes current trip even when server reports a completed-looking record');
+    assert.equal(result.standardTimeMilliseconds,900000);assert.equal(result.countedTimeMilliseconds,600000);
+    assert.equal(result.percent,1.5);assert.equal(result.actualTimeMilliseconds,750000);
+    assert.equal(timer.currentTripId,activeId);assert.equal(timer.status,'running','requested summary does not stop current trip');
+    assert.equal(requests.filter(r=>['POST','PATCH','DELETE'].includes(r.options.method)).length,writes,'summary performs no writes');
+    assert(!spoken.includes('Say OK to start a new trip.'));
+    const cancel=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(cancel,'cancel',true);await cancel.digestQueue;await settle();
+    assert(!window.document.querySelector('#tripTransitionOverlay').open && timer.status==='running','summary Cancel preserves running trip');
+    summaryTrips=[];
+    console.log('PASS Trip Summary command, no-data announcement, all-range totals excluding active trip, no mutations and no new-trip prompt');
+}
+if(process.argv.includes('--saved-ready')) {
+    window.eval(fs.readFileSync(new URL('../SpeechEditorRuntime.js',import.meta.url),'utf8'));
+    await settle();
+    const ready = window.document.querySelector('[data-speech-editor-id="builtin:ready:page"]');
+    const attrs = Object.fromEntries([...ready.attributes].filter(a=>a.name.startsWith('speech-')).map(a=>[a.name,a.value]));
+    attrs['speech-function'] = 'WMOFActions.prepareStartMenu';
+    window.WMOFSpeechEditorRuntime.apply([{kind:'existing',id:'builtin:ready:page',attrs}]);
+    await settle();
+    assert(window.SpeechMenu.testAvailable().includes(ready),'Ready remains selected while End Trip is shown');
+}
 if(process.argv.includes('--ready-finish')) {
     const finishReady=window.SpeechMenu.testBegin();
     await window.SpeechMenu.testTranscript(finishReady,'ruddy',true);await finishReady.digestQueue;await settle();
@@ -185,6 +414,29 @@ if(process.argv.includes('--ready-finish')) {
     await window.WMOFActions.endTrip();await settle();
 }
 assert.equal(window.document.querySelector('#app').dataset.persistenceState,'confirmed','finishing the trip settles its transaction');
+checkInteractionState();
+const summary = window.document.querySelector('#tripTransitionOverlay');
+assert(summary.open, 'finishing keeps the last-trip summary open');
+assert(!window.document.querySelector('#voiceEntrySurface').open, 'finishing does not open voice entry before OK');
+assert(!window.document.querySelector('#numberPadDialog')?.open, 'finishing does not open the keypad before OK');
+assert.equal(window.WMOFInteractionState.state.actions.confirmSummary,true);
+assert.equal(window.WMOFInteractionState.state.tripSummary.invocation.reason,'trip-ended');
+assert.equal(window.WMOFInteractionState.state.tripSummary.invocation.method,'system');
+if(process.argv.includes('--summary-state')) {
+    await new Promise(resolve=>setTimeout(resolve,7500));
+    assert(summary.open, 'the summary stays open beyond the former timeout');
+}
+const acceptSummary = async () => {
+    const utterance=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(utterance,'okay',true);await utterance.digestQueue;await settle();
+    assert(utterance.hadCommittedCommand && !utterance.digestExecutionFailed, 'spoken summary OK executes');
+    assert(!summary.open, 'summary OK dismisses summary');
+    assert(window.document.querySelector('#voiceEntrySurface').open, 'spoken summary OK opens voicepad when mic is active');
+};
+if(process.argv.includes('--voice-feedback')) {
+    assert.equal(spoken.at(-1),'Say OK to start a new trip.','summary prompt is spoken last');
+}
+await acceptSummary();
 const nextValue=window.SpeechMenu.testBegin();
 await window.SpeechMenu.testTranscript(nextValue,'twenty minutes',true);await nextValue.digestQueue;await settle();
 assert(!nextValue.digestExecutionFailed,'the next trip time is recognized');
@@ -202,6 +454,7 @@ const tripIdBeforeFailedStop=timer.currentTripId;
 const writesBeforeFailedStop=stored.filter(e=>e.event==='trip.stopped').length;
 assert.equal(await window.WMOFActions.endTrip(),false,'rejected trip finish reports failure');await settle();
 assert.equal(timer.status,'running','failed finish restores the running trip');
+checkInteractionState();
 assert.equal(timer.currentTripId,tripIdBeforeFailedStop,'failed finish preserves the same trip');
 assert.equal(stored.filter(e=>e.event==='trip.stopped').length,writesBeforeFailedStop,'rejected finish does not write a stop event');
 assert.equal(window.document.querySelector('#app').dataset.tripState,'running','the UI agrees with the restored trip');
@@ -218,10 +471,27 @@ const hear=async(text)=>{
     assert.equal(window.WMOFStateTransactions.active,undefined,text+' leaves no unfinished transaction');
     return utterance;
 };
-for(const [value,confirmation] of [['tutu minutes','okay'],['ten minutes','o k'],['five minutes','ok']]) {
+for(const [cycle,[value,confirmation]] of [['tutu minutes','okay'],['ten minutes','o k'],['five minutes','ok']].entries()) {
     window.__testTime+=60000;
     await window.WMOFActions.endTrip();await settle();
-    assert.equal(window.document.querySelector('#voiceEntrySurface').open,true,'finishing opens the next input');
+    if(cycle===0) {
+        await hear('cancel');
+        assert(!summary.open && !window.WMOFVoiceEntry.active && !window.document.querySelector('#numberPadDialog')?.open,'spoken summary Cancel returns to no-trip state');
+        assert.equal(timer.status,'ready');
+        assert(!window.WMOFInteractionState.state.actions.confirmSummary);
+        await hear('ready');
+        window.document.querySelector('#voiceEntryTouch').click();await settle();
+    } else if(cycle===1) {
+        window.document.querySelector('#tripTransitionSummaryCancel').click();await settle();
+        assert(!summary.open && timer.status==='ready','pointer summary Cancel returns to no-trip state');
+        await hear('ready');
+        window.document.querySelector('#voiceEntryTouch').click();await settle();
+    } else {
+        window.document.querySelector('#tripTransitionSummaryOk').click();await settle();
+    }
+    assert(window.document.querySelector('#numberPadDialog').open && !window.WMOFVoiceEntry.active,'pointer summary OK opens keypad even when speech is enabled');
+    await window.WMOFActions.switchNumberPadToVoice();await settle();
+    assert.equal(window.document.querySelector('#voiceEntrySurface').open,true,'explicit voice switch opens the next input');
     assert.equal(window.document.querySelector('#voiceEntryValue').hidden,true,'new input cannot reuse the previous value');
     window.document.querySelector('#voiceEntryTouch').click();await settle();
     assert.equal(window.document.querySelector('#numberPadDialog').open,true,'next input switches to the number pad');
@@ -241,6 +511,7 @@ for(const [value,confirmation] of [['tutu minutes','okay'],['ten minutes','o k']
 }
 window.__testTime+=60000;
 await window.WMOFActions.endTrip();await settle();
+await acceptSummary();
 await hear('twenty minutes');
 rejectTripStart=true;holdTripCheck=true;
 const writesBeforeRejection=requests.filter(r=>r.options.method==='POST'&&r.path.endsWith('/trips/')).length;
@@ -261,7 +532,7 @@ rejectTripStart=false;
 await hear('fifteen minutes');
 await hear('okay');
 assert.equal(timer.status,'running','a new value can be confirmed after rejection');
-await timer.stop();await timer.clear();stored.length=0;
+await timer.stop();await window.WMOFActions.cancelTripSummary();await timer.clear();stored.length=0;
 await timer.start({standardTimeMilliseconds:3600000});
 window.__testTime+=60000;
 await timer.startInterval('lunch',1800000,{breakType:'lunch'},150000,150000);
@@ -295,6 +566,7 @@ for(const [phrase,resume] of [['down','resumed'],['downtime','resume'],['down ti
     const downAttempt=window.SpeechMenu.testBegin();
     await window.SpeechMenu.testTranscript(downAttempt,phrase,true);await downAttempt.digestQueue;await settle();
     assert.equal(timer.getActiveIntervalState()?.intervalType,'down',phrase+' starts Down time');
+    assert.equal(checkInteractionState().tripStatus,'down');
     assert(!downAttempt.digestExecutionFailed,phrase+' completes its transaction');
     assert(downAttempt.digestSteps[0].commandElement.hasAttribute('speech-persist'),phrase+' is marked for persistence');
     assert.equal(stored.filter(e=>e.event==='interval.started'&&e.value.type?.toLowerCase()==='down').length,downEventsBefore+1,phrase+' persists the Down event');
@@ -303,6 +575,7 @@ for(const [phrase,resume] of [['down','resumed'],['downtime','resume'],['down ti
     const resumeAttempt=window.SpeechMenu.testBegin();
     await window.SpeechMenu.testTranscript(resumeAttempt,resume,true);await resumeAttempt.digestQueue;await settle();
     assert(!timer.getActiveIntervalState(),resume+' ends Down time');
+    assert.equal(checkInteractionState().tripStatus,'running');
     assert(resumeAttempt.hadCommittedCommand,resume+' executes its command');
     assert(!resumeAttempt.digestExecutionFailed,resume+' persists successfully');
 }
@@ -320,6 +593,7 @@ if(process.argv.includes('--voice-feedback')) {
         const selection=await speakCommand(phrase);
         assert(selection.hadCommittedCommand && !selection.digestExecutionFailed,phrase+' is accepted');
         assert(dialog.open,'voice opens the confirmation dialog');
+        assert.equal(checkInteractionState().focus,'speechBreakConfirmDialog');
         assert(!window.document.querySelector('#breakDialog').open,'voice never opens the pointer selector');
         assert.equal(window.document.querySelector('#speechBreakConfirmMessage').textContent,'Are you ready to start your '+label+'?');
         assert.equal(window.document.querySelector('#speechBreakConfirmYes').textContent,'OK');
@@ -382,9 +656,9 @@ if(process.argv.includes('--voice-feedback')) {
     translatedStart.setAttribute('speech-skippable','');
     await speakCommand('end lunch ok');
     await speakCommand('sync off');await speakCommand('sync off');assert(spoken.includes('Sync already off.'));
-    await speakCommand('sleep');assert(spoken.includes('Speech sleeping.'));
-    await speakCommand('wake');assert(spoken.includes('Listening.'));
-    await speakCommand('off');assert(spoken.includes('Speech off.'));
+    await speakCommand('sleep');assert(spoken.includes('Voice recognition off.'));
+    await speakCommand('wake');assert(spoken.includes('Voice recognition on.'));
+    await speakCommand('off');assert(spoken.includes('Microphone deactivated.'));
     console.log('PASS replacement start commands, pointer-only selector, OK/Cancel confirmation, and incremental start/end dialog and speech suppression for all interval types');
 }
 assert.equal(errors.length,0,errors.join('\n'));

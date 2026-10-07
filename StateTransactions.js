@@ -5,6 +5,34 @@
         register(name, adapter) {this.#adapters.set(name, adapter); return () => this.#adapters.delete(name);}
         get current() {return this.#current;}
         get active() {return this.#active;}
+        get pending() {return Object.freeze([...this.#groups.values()].filter(t=>t.status === "pending")
+            .map(t=>Object.freeze({id:t.id, action:t.action, retrying:Boolean(t.retrying), attempt:t.retryAttempt || 0})));}
+        async retry(operation, {signal, transaction = this.#current || this.#active, valid = () => true,
+            delay = attempt => Math.min(150 * 2 ** Math.min(attempt - 1, 4), 2000)} = {}) {
+            signal ??= transaction?.signal;
+            let attempt = 0;
+            for (;;) {
+                if (signal?.aborted) throw new DOMException("The command was cancelled.", "AbortError");
+                try {
+                    const result = await operation();
+                    if (transaction?.retrying) {transaction.retrying = false;this.#emit("pending", transaction);}
+                    return result;
+                } catch (error) {
+                    if (signal?.aborted || error.retryable !== true || !valid()) throw error;
+                    if (transaction && transaction.status !== "pending") throw new DOMException("The command was cancelled.", "AbortError");
+                    attempt++;
+                    if (transaction) {transaction.retrying = true;transaction.retryAttempt = attempt;this.#emit("retrying", transaction, error);}
+                    await new Promise((resolve, reject) => {
+                        const finish = () => {signal?.removeEventListener("abort", cancel);resolve();};
+                        const timer = setTimeout(finish, delay(attempt));
+                        const cancel = () => {clearTimeout(timer);signal?.removeEventListener("abort", cancel);
+                            reject(new DOMException("The command was cancelled.", "AbortError"));};
+                        signal?.addEventListener("abort", cancel, {once:true});
+                        if (signal?.aborted) cancel();
+                    });
+                }
+            }
+        }
         withTransaction(transaction, operation) {
             if (transaction?.signal.aborted) throw new DOMException("The command was cancelled.", "AbortError");
             const previous = this.#current;
@@ -27,11 +55,17 @@
             }
             return transaction;
         }
-        run(action, operation, {group, chain = false, persist} = {}) {
+        run(action, operation, {group, chain = false, persist, signal} = {}) {
             // Nested actions are part of the caller's attempt, not a queue behind themselves.
             if (this.#current) return operation(this.#current);
             group ??= Symbol(action);
             const transaction = this.#begin(group, action);
+            if (signal) {
+                const cancel = () => {void this.rollback(group, new DOMException("The command was cancelled.", "AbortError"));};
+                (transaction.signalLinks ||= []).push(() => signal.removeEventListener("abort", cancel));
+                signal.addEventListener("abort", cancel, {once:true});
+                if (signal.aborted) cancel();
+            }
             const work = transaction.queue.then(async () => {
                 if (transaction.predecessor) await transaction.predecessor.settled;
                 transaction.predecessor = undefined;
@@ -90,6 +124,7 @@
         #end(transaction) {
             if (this.#active === transaction) this.#active = undefined;
             for (const adapter of this.#adapters.values()) adapter.end?.(transaction);
+            for (const unlink of transaction.signalLinks || []) unlink();
             this.#groups.delete(transaction.group); transaction.settle(transaction.status);
             transaction.snapshots.clear(); transaction.writes.clear(); transaction.undo.length = 0;
             if (this.#last === transaction) this.#last = undefined;

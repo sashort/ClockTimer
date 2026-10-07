@@ -17,7 +17,7 @@ function find_user_account(PDO $pdo, int $userId, bool $lock = false): array
 
 function account_fields(array $input, bool $creating): array
 {
-    $allowed = ['action', 'userId', 'firstName', 'lastName', 'preferredName', 'username', 'password', 'permissions'];
+    $allowed = ['action', 'userId', 'firstName', 'lastName', 'preferredName', 'username', 'password', 'permissions', 'loginId', 'pin'];
     foreach ($input as $key => $value) {
         if (!in_array($key, $allowed, true)) {
             api_error('Unknown account field.', 422, 'invalid_argument');
@@ -48,6 +48,12 @@ function account_fields(array $input, bool $creating): array
         }
         $fields['password_hash'] = password_hash($password, PASSWORD_BCRYPT);
     }
+    if (array_key_exists('loginId', $input) || array_key_exists('pin', $input)) {
+        require_once __DIR__ . '/voice_login.php';
+        if (!array_key_exists('loginId', $input) || !array_key_exists('pin', $input)) api_error('Assign user ID and PIN together.', 422, 'invalid_argument');
+        $fields['login_id'] = four_digit_credential($input['loginId'], 'loginId');
+        $fields['pin_hash'] = password_hash(four_digit_credential($input['pin'], 'pin'), PASSWORD_BCRYPT);
+    }
     return $fields;
 }
 
@@ -65,6 +71,7 @@ function save_user_account(PDO $pdo, array $input, bool $creating): array
         $target = find_user_account($pdo, $userId, true);
         require_user_edit_access($actor, $target);
     }
+    if ((array_key_exists('loginId', $input) || array_key_exists('pin', $input)) && !has_permission($actor, PERMISSION_MODIFY_USERS)) api_error('Assigning main-page login credentials requires an administrator.', 403, 'permission_required');
     $fields = account_fields($input, $creating);
     if (array_key_exists('permissions', $input)) {
         $fields['permissions'] = require_permission_assignment($actor, $input['permissions']);
@@ -86,7 +93,7 @@ function save_user_account(PDO $pdo, array $input, bool $creating): array
         $pdo->prepare($sql)->execute($parameters);
     } catch (PDOException $error) {
         if (($error->errorInfo[1] ?? null) === 1062) {
-            api_error('That username is already in use.', 409, 'username_conflict');
+            api_error('That username or main-page user ID is already in use.', 409, 'account_identity_conflict');
         }
         throw $error;
     }

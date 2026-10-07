@@ -36,7 +36,7 @@
     },
     "17bb8ab5-2caa-5ec3-915d-5c6978e62143": {
       "id": "17bb8ab5-2caa-5ec3-915d-5c6978e62143",
-      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|check|month|year)$"
+      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|money|month|year)$"
     },
     "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8": {
       "id": "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8",
@@ -44,7 +44,7 @@
     },
     "42dad3d4-16d6-5256-9799-b4d1b61eff12": {
       "id": "42dad3d4-16d6-5256-9799-b4d1b61eff12",
-      "pattern": "^(?<goalMode>auto|total|trip|day|week|check|month|year)(?: mode)?$"
+      "pattern": "^(?<goalMode>auto|total|trip|day|week|money|month|year)(?: mode)?$"
     },
     "76d4ec7f-de0f-5a9a-bc27-a7e91391ae09": {
       "id": "76d4ec7f-de0f-5a9a-bc27-a7e91391ae09",
@@ -247,7 +247,7 @@
     },
     "a195f1e5-4693-5f11-80e8-ad6bcff662fd": {
       "id": "a195f1e5-4693-5f11-80e8-ad6bcff662fd",
-      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|check|month|year)$",
+      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|money|month|year)$",
       "command": "changeGoal",
       "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
@@ -258,7 +258,7 @@
     },
     "79d635a9-c4f4-5646-be1c-3d4b9596d241": {
       "id": "79d635a9-c4f4-5646-be1c-3d4b9596d241",
-      "pattern": "^(?<goalMode>auto|total|trip|day|week|check|month|year)(?: mode)?$",
+      "pattern": "^(?<goalMode>auto|total|trip|day|week|money|month|year)(?: mode)?$",
       "command": "goalMode"
     },
     "e8af9836-0b68-572f-a3e2-5a80249855d0": {
@@ -423,6 +423,23 @@
       "id": "06d3cd12-727e-5e36-8163-d78ccde03b44",
       "pattern": "^end lunch$",
       "command": "endLunch"
+    },
+    "5a5fb15c-7f35-4539-9e7e-e12cc81043eb": {
+      "id": "5a5fb15c-7f35-4539-9e7e-e12cc81043eb",
+      "pattern": "^trip summary$",
+      "command": "tripSummary"
+    },
+    "ca8315b4-5d42-4aa7-9987-e0edbfe08048": {
+      "id": "ca8315b4-5d42-4aa7-9987-e0edbfe08048",
+      "pattern": "^(?<digits>(?:[0-9]+|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]+|zero|oh|one|two|three|four|five|six|seven|eight|nine))*)(?:\\s+(?<confirmation>ok|okay|o\\s+k))?$"
+    },
+    "6554460d-3a71-486e-baae-6388767527d9": {
+      "id": "6554460d-3a71-486e-baae-6388767527d9",
+      "pattern": "^user(?:\\s*name)?$"
+    },
+    "50e02b33-bf99-4c4b-bbf4-66688736fbdf": {
+      "id": "50e02b33-bf99-4c4b-bbf4-66688736fbdf",
+      "pattern": "^voice$"
     }
   },
   "preprocessors": {
@@ -648,7 +665,31 @@
         "startLunch": "8ab48bb3-86dd-57cf-901c-6f5e58041c22",
         "endBreak": "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c",
         "endShortBreak": "afa08a22-a3f1-5ce0-b917-b50e240dbb5c",
-        "endLunch": "06d3cd12-727e-5e36-8163-d78ccde03b44"
+        "endLunch": "06d3cd12-727e-5e36-8163-d78ccde03b44",
+        "tripSummary": "5a5fb15c-7f35-4539-9e7e-e12cc81043eb",
+        "loginDigits": "ca8315b4-5d42-4aa7-9987-e0edbfe08048",
+        "loginVoice": "50e02b33-bf99-4c4b-bbf4-66688736fbdf",
+        "loginUsername": "6554460d-3a71-486e-baae-6388767527d9"
+      },
+      "ranges": {
+        "day": "day",
+        "week": "week",
+        "money": "pay-period",
+        "month": "month",
+        "year": "year"
+      },
+      "digits": {
+        "zero": "0",
+        "one": "1",
+        "two": "2",
+        "three": "3",
+        "four": "4",
+        "five": "5",
+        "six": "6",
+        "seven": "7",
+        "eight": "8",
+        "nine": "9",
+        "oh": "0"
       }
     },
     "ui": {}

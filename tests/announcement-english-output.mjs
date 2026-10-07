@@ -11,9 +11,9 @@ assert.deepEqual(Array.from(ctx.timing({timeDifferenceMilliseconds:60000},'trip-
 assert.deepEqual(Array.from(ctx.timing({timeDifferenceMilliseconds:-60000},'trip-started-late')),['Trip started late.','60000 ms lost.']);
 const trip={summary:{scope:'trip',trip:{standardTimeMilliseconds:3600000,countedTimeElapsedMilliseconds:600000,percentGoal:1},total:{countedPercent:1.1}}};
 assert.equal(ctx.start(trip),'3000000 ms until Standard Goal.');
-assert.deepEqual(Array.from(ctx.end(trip)),['Trip ended. Day percent: 110 percent.','3000000 ms banked toward Standard Goal.']);
+assert.deepEqual(Array.from(ctx.end(trip)),['Trip ended. Day percent: 110 percent.','3000000 ms banked toward Standard Goal.','Say OK to start a new trip.']);
 trip.summary.trip.countedTimeElapsedMilliseconds=4000000;
-assert.deepEqual(Array.from(ctx.end(trip)),['Trip ended. Day percent: 110 percent.','400000 ms over Standard Goal.']);
+assert.deepEqual(Array.from(ctx.end(trip)),['Trip ended. Day percent: 110 percent.','400000 ms over Standard Goal.','Say OK to start a new trip.']);
 assert.deepEqual(Array.from(ctx.failure({goals:[{type:'standard',percent:1},{type:'total',percent:.8}],fallback:{type:'trip',percent:1.2,remainingMilliseconds:1000}})),['Standard Goal Failed. Day Goal Failed.','1000 ms until Trip Goal 120 percent. Overtime in progress.']);
 summary=false;
 assert.deepEqual(Array.from(ctx.timing({timeDifferenceMilliseconds:1000},'trip-resumed-early')),['','1000 ms saved.']);

@@ -210,6 +210,8 @@ class SpeechMenu {
     static #surfaceOrder = [];
     static #surfaceListeners = new Map();
     static #commandIndex;
+    static #selectionState;
+    static get selectionState() {return SpeechMenu.#selectionState;}
     static #indexedMatching = true;
     static #index() { return SpeechMenu.#commandIndex ??= new SpeechCommandIndex(); }
     static #stopped = true;
@@ -7165,7 +7167,10 @@ class SpeechMenu {
         // Projected contexts bypass UI readiness, never disabled/authorization.
         if (primed) {
             const targets = SpeechMenu.#resolveSpeechTarget(element).elements;
-            if (targets.length && targets.every(target => target.matches?.(":disabled, [disabled]"))) return false;
+            // A command with semantic availability uses the shared state;
+            // its representative pointer target may intentionally be disabled.
+            if (!element.hasAttribute("speech-available") && targets.length &&
+                targets.every(target => target.matches?.(":disabled, [disabled]"))) return false;
             return true;
         }
 
@@ -7264,6 +7269,13 @@ class SpeechMenu {
     }
 
     static #availableCandidates(projectedSurface) {
+        const previous = SpeechMenu.#selectionState;
+        SpeechMenu.#selectionState = previous || globalThis.WMOFInteractionState?.state;
+        try {return SpeechMenu.#selectAvailableCandidates(projectedSurface);}
+        finally {SpeechMenu.#selectionState = previous;}
+    }
+
+    static #selectAvailableCandidates(projectedSurface) {
         const dialog = projectedSurface === undefined
             ? (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll("dialog[open]")].at(-1)
             : projectedSurface;
@@ -8933,6 +8945,7 @@ class SpeechMenu {
                     utteranceId,
                     transcript:
                         text,
+                    arguments: Object.freeze(argumentValues.slice()),
                     utteranceStartedAt:
                         executionStartedAt ||
                         utterance

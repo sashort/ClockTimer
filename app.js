@@ -1945,6 +1945,8 @@
         const permissions =
             Number(user.permissions) || 0;
 
+        $("#mainLoginAdminFields").hidden = !(permissions & (2 | PERMISSION_SUPERUSER));
+        $("#mainLoginAccount").value = String(user.id);
         const canCreateUsers =
             Boolean(
                 permissions &
@@ -2913,6 +2915,10 @@
     let stagedStandardTimeMilliseconds;
     let tripDraft;
     let newTripWorkflowLocked = false;
+    let interactionStateReady = false;
+    let interactionStateSnapshot;
+    let interactionStateKey;
+    let interactionStateRevision = 0;
 
     function refreshSpeechCommandContext() {
         queueMicrotask(
@@ -2932,9 +2938,7 @@
             return false;
         }
 
-        button.disabled =
-            newTripWorkflowLocked ||
-            tripIsLive();
+        button.disabled = !readInteractionState().actions.startTrip;
 
         return !button.disabled;
     }
@@ -2976,6 +2980,9 @@
     let tripStartsNowExitTimer;
     const tripTransitionOverlayQueue = [];
     let tripTransitionOverlayActive = false;
+    let completedTripSummary;
+    let tripSummaryRequestController;
+    let tripSummaryRequestSequence = 0;
     let tripTransitionOverlayTimer;
     let tripTransitionOverlayHideTimer;
     let audioAnnouncementDraft;
@@ -3049,6 +3056,70 @@
     let connectionCloudSequence = 0;
     let connectionCloudSettleTimer;
     let loginDialogFullyOpen = false;
+    let voiceLoginStage = "id", voiceLoginBusy = false, loginInputMode="pin";
+    let loginDigitSlots = {id:["","","",""],pin:["","","",""]};
+    function syncLoginDigits() {
+        for(const stage of ["id","pin"]){
+            $(stage === "id" ? "#loginUsername" : "#loginPassword").value=loginDigitSlots[stage].join("");
+            for(const input of loginDialog.querySelectorAll('[data-login-digit="'+stage+'"]')){
+                input.value=loginDigitSlots[stage][Number(input.dataset.digitIndex)] ? (stage === "pin" ? "*" : loginDigitSlots[stage][Number(input.dataset.digitIndex)]) : "";
+                input.disabled=voiceLoginBusy || stage !== voiceLoginStage;
+            }
+        }
+    }
+    function syncLoginRecognition() {
+        if(!loginDialog.open)return;
+        const state=readInteractionState().speechRecognition;
+        const key=state === "listening" ? (loginInputMode === "password" ? "recognitionPasswordListening" : "recognitionListening")
+            : state === "sleeping" ? (loginInputMode === "password" ? "recognitionPasswordSleeping" : "recognitionSleeping") : state === "starting" ? "recognitionStarting"
+            : state === "suspended" ? "recognitionSuspended" : (loginInputMode === "password" ? "recognitionPasswordOff" : "recognitionOff");
+        $("#loginRecognitionStatus").hidden=false;
+        $("#loginRecognitionStatus").textContent=voiceLoginText(key);
+        $("#loginEnableRecognition").hidden=state === "listening";
+        $("#loginEnableRecognition").disabled=state === "starting";
+    }
+
+    function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
+    function announceVoiceLogin(text) {if(loginDialog.open) void globalThis.WMOFAudio?.speak?.(text);}
+    function resetVoiceLogin(announce = true) {
+        loginInputMode="pin";$("#loginLegacyFields").hidden=true;$("#voiceLoginPrompt").hidden=false;$("#loginRecognitionStatus").hidden=false;$("#loginLegacySwitch").hidden=false;$("#loginVoiceSwitch").hidden=true;
+        for(const id of ["loginLegacyUsername","loginLegacyPassword"]){$("#"+id).value="";$("#"+id).disabled=true;$("#"+id).required=false;}
+        loginDigitSlots={id:["","","",""],pin:["","","",""]};
+        voiceLoginStage = "id";$("#loginUsername").value = "";$("#loginPassword").value = "";
+        $("#loginIdRow").hidden = false;$("#loginPinRow").hidden = true;
+        $("#loginUsername").disabled = false;$("#loginPassword").disabled = true;
+        $("#voiceLoginPrompt").textContent = voiceLoginText("idPrompt");
+        $("#loginError").textContent = "";
+        syncLoginDigits();syncLoginRecognition();
+        if(announce) announceVoiceLogin(voiceLoginText("idPrompt"));
+        renderInteractionControls();return true;
+    }
+    function enterLoginDigits(digits, confirmation) {
+        if(!readInteractionState().actions.loginDigits) return false;
+        const value = DigitSequence.parse(digits, globalThis.WMOFLanguagePack.language.speech.digits);
+        const input = $(voiceLoginStage === "pin" ? "#loginPassword" : "#loginUsername");
+        if(value === null || input.value.length + value.length > 4){$("#loginError").textContent=voiceLoginText("invalid");return false;}
+        for(const digit of value){const index=loginDigitSlots[voiceLoginStage].indexOf("");if(index<0)return false;loginDigitSlots[voiceLoginStage][index]=digit;}
+        syncLoginDigits();renderInteractionControls();
+        return confirmation ? confirmLoginDigits() : true;
+    }
+    async function confirmLoginDigits() {
+        if(!readInteractionState().actions.loginDigits) return false;
+        const input=$(voiceLoginStage === "pin" ? "#loginPassword" : "#loginUsername");
+        if(!/^[0-9]{4}$/.test(input.value)){$("#loginError").textContent=voiceLoginText("invalid");announceVoiceLogin(voiceLoginText("invalid"));return false;}
+        $("#loginError").textContent="";
+        if(voiceLoginStage === "id"){
+            voiceLoginStage="pin";$("#loginUsername").disabled=true;$("#loginIdRow").hidden=true;
+            $("#loginPassword").disabled=false;$("#loginPinRow").hidden=false;
+            $("#voiceLoginPrompt").textContent=voiceLoginText("pinPrompt");syncLoginDigits();loginDialog.querySelector('[data-login-digit="pin"]').focus({preventScroll:true});
+            announceVoiceLogin(voiceLoginText("pinPrompt"));renderInteractionControls();return true;
+        }
+        voiceLoginBusy=true;syncLoginDigits();$("#loginButton").disabled=true;renderInteractionControls();
+        try {await actions.connectUser($("#loginUsername").value,$("#loginPassword").value,{credentialType:"pin"});void globalThis.WMOFAudio?.speak?.(voiceLoginText("success"));return true;}
+        catch(error){resetVoiceLogin(false);$("#loginError").textContent=error?.message || voiceLoginText("failed");announceVoiceLogin(voiceLoginText("failed"));return false;}
+        finally{voiceLoginBusy=false;loginDigitSlots.pin=["","","",""];syncLoginDigits();$("#loginPassword").value="";$("#loginButton").disabled=false;renderInteractionControls();}
+    }
+
     let clockTimerTapTimer;
     let clockTimerLastTapAt = -Infinity;
     let renderedTimeLongPressTimer;
@@ -5327,7 +5398,8 @@
         value,
         {
             persist = true,
-            notify = true
+            notify = true,
+            announce = true
         } = {}
     ) {
         const previousRange =
@@ -5367,7 +5439,7 @@
         else void resolveTripLogCalendar(range).catch(() => {});
 
         if (
-            notify &&
+            notify && announce &&
             range !== previousRange
         ) {
             void confirmInformationalChange(
@@ -5408,6 +5480,7 @@
         }
         showTripRangeError();
         window.dispatchEvent(new CustomEvent("wmof:trip-log-range-changed", {detail: {range}}));
+        if (completedTripSummary && tripTransitionOverlay.open) showTripSummary({automatic: completedTripSummary.invocation.reason === "trip-ended", invocation: completedTripSummary.invocation});
         syncScopeUI();
         renderClockTimerUIState(
             clockTimer.uiState
@@ -6683,6 +6756,10 @@
     }
 
     function getSyncGoalsState() {
+        return interactionStateReady ? readInteractionState().sync : computeSyncGoalsState();
+    }
+
+    function computeSyncGoalsState() {
         if (tripIsLive()) {
             return Boolean(
                 clockTimer.autoSyncTripGoal
@@ -8508,11 +8585,14 @@
     }, true);
 
     loginDialog.addEventListener("opening", () => {
+        resetVoiceLogin(false);
         loginDialogFullyOpen = false;
     });
 
     loginDialog.addEventListener("opened", () => {
         loginDialogFullyOpen = true;
+        announceVoiceLogin(voiceLoginText("idPrompt"));
+        syncLoginRecognition();
 
         if (
             connectionCloudPhase ===
@@ -8535,6 +8615,8 @@
     });
 
     loginDialog.addEventListener("cancel", event => {
+        event.preventDefault();
+        if(!voiceLoginBusy) resetVoiceLogin();
         if (!loginConfirmedThisLoad && !speechEditorPreview) {
             event.preventDefault();
         }
@@ -8557,7 +8639,7 @@
         if (!opened) return false;
 
         requestAnimationFrame(() => {
-            $("#loginUsername")?.focus({ preventScroll: true });
+            loginDialog.querySelector('[data-login-digit="id"]')?.focus({ preventScroll: true });
         });
         return true;
     }
@@ -8573,7 +8655,7 @@
         if (!opened) return;
 
         requestAnimationFrame(() => {
-            $("#loginUsername")?.focus({ preventScroll: true });
+            loginDialog.querySelector('[data-login-digit="id"]')?.focus({ preventScroll: true });
         });
     }
 
@@ -8970,7 +9052,7 @@
         app.dataset.clockTimerState = state.state;
         app.dataset.tripState = state.trip_active ? "running" : "ready";
         app.dataset.state = state.state;
-        app.dataset.intervalState = state.active_interval_type || (state.trip_active ? "normal" : "none");
+        app.dataset.intervalState = readInteractionState(state).interval || (state.trip_active ? "normal" : "none");
         app.classList.forEach(name => {
             if (name.startsWith("clock-timer-state-")) app.classList.remove(name);
         });
@@ -9015,22 +9097,11 @@
                     ? globalThis.WMOFLanguagePack.text("b38453e0-4e17-54b9-9d0a-f735c48e467d") + totalScopeLabel() + globalThis.WMOFLanguagePack.text("833e2f37-720d-5bdc-88fa-8b56c1a15e8b")
                     : globalThis.WMOFLanguagePack.text("8f2b966f-88bd-56f0-9837-c1f63999b513")
         );
-        const controls = state.controls;
-        if (controls) {
-            activeTripControls.hidden = !controls.active_trip_visible;
-            tripActionRow.hidden = !controls.trip_action_row_visible;
-            breakButton.hidden = !controls.break_visible;
-            downButton.hidden = !controls.down_visible;
-            endTripButton.hidden = !controls.primary_action?.visible;
-            endTripButton.disabled = controls.primary_action?.enabled === false;
-            endTripButton.textContent = controls.primary_action?.text || globalThis.WMOFLanguagePack.text("c74e61ab-77bd-5cb0-b085-793b18c0c270");
-            setEndTripButtonIntervalPalette(state.active_interval_type);
-        }
-        if (
-            String(state.active_interval_type || "")
-                .toLowerCase() === "down"
-        ) {
-            renderTripActionState();
+        renderInteractionControls(readInteractionState(state));
+        if (state.active_interval_type === "down") {
+            const interval = clockTimer.getActiveIntervalState?.(new Date());
+            downElapsedValue.value = formatDuration(interval?.elapsedMilliseconds || 0).replace(/^0(?=\d:)/, "");
+            downElapsedValue.textContent = downElapsedValue.value;
         }
         renderEndTimeGoalLock();
         renderSyncGoalsState(state);
@@ -14304,6 +14375,67 @@
 
     $("#loginButton").addEventListener("click", enterPortraitFullscreen);
 
+    for(const input of loginDialog.querySelectorAll('[data-login-digit]')){
+        input.setAttribute('aria-label',announcementText('messages.voiceLogin.'+(input.dataset.loginDigit==='pin'?'pinDigit':'idDigit'),{index:Number(input.dataset.digitIndex)+1}));
+        const setDigits=(text)=>{
+            if(voiceLoginBusy||input.dataset.loginDigit!==voiceLoginStage)return;
+            const digits=DigitSequence.parse(text,{});if(digits===null)return;
+            let index=Number(input.dataset.digitIndex);if(digits.length>4-index)return;
+            for(const digit of digits)loginDigitSlots[voiceLoginStage][index++]=digit;
+            syncLoginDigits();renderInteractionControls();
+            loginDialog.querySelector('[data-login-digit="'+voiceLoginStage+'"][data-digit-index="'+Math.min(3,index)+'"]')?.focus({preventScroll:true});
+        };
+        input.addEventListener('beforeinput',event=>{event.preventDefault();if(event.inputType.startsWith('delete')){loginDigitSlots[input.dataset.loginDigit][Number(input.dataset.digitIndex)]="";syncLoginDigits();}else if(event.data)setDigits(event.data);});
+        input.addEventListener('paste',event=>{event.preventDefault();setDigits(event.clipboardData.getData('text'));});
+        input.addEventListener('keydown',event=>{if(/^[0-9]$/.test(event.key)){event.preventDefault();setDigits(event.key);}else if(event.key==='Backspace'||event.key==='Delete'){event.preventDefault();const index=Number(input.dataset.digitIndex);loginDigitSlots[input.dataset.loginDigit][index]="";syncLoginDigits();if(event.key==='Backspace'&&index)loginDialog.querySelector('[data-login-digit="'+voiceLoginStage+'"][data-digit-index="'+(index-1)+'"]')?.focus();}});
+    }
+    $("#loginEnableRecognition").textContent=voiceLoginText("enableRecognition");
+    $("#loginEnableRecognition").addEventListener("click",async()=>{
+        try{if(globalThis.SpeechMenu?.muted){await globalThis.SpeechMenu.wake();actions.handleSpeechRuntimeMuted(false);}else{setSpeechButtonState(true,false);setSpeechLayoutState(true);await enableSpeechRecognitionRuntime();}}catch(error){$("#loginError").textContent=error.message;}syncLoginRecognition();
+    });
+    for(const type of ["muted","unmuted"])globalThis.SpeechMenu?.events?.addEventListener?.(type,()=>queueMicrotask(syncLoginRecognition));
+    document.addEventListener("speech-runtime-ready",syncLoginRecognition);
+    $("#loginLegacySwitch").textContent=voiceLoginText("legacyLogin");
+    $("#loginLegacyUsernameLabel").textContent=voiceLoginText("usernameLabel");$("#loginLegacyPasswordLabel").textContent=voiceLoginText("passwordLabel");
+    function switchToPasswordLogin() {
+        if(!readInteractionState().actions.loginSwitch)return false;
+        resetVoiceLogin(false);loginInputMode="password";
+        $("#voiceLoginPrompt").hidden=true;$("#loginIdRow").hidden=true;$("#loginPinRow").hidden=true;
+        $("#loginLegacyFields").hidden=false;$("#loginLegacySwitch").hidden=true;$("#loginVoiceSwitch").hidden=false;
+        for(const id of ["loginLegacyUsername","loginLegacyPassword"]){$("#"+id).disabled=false;$("#"+id).required=true;}
+        syncLoginRecognition();$("#loginLegacyUsername").focus({preventScroll:true});renderInteractionControls();
+        announceVoiceLogin(voiceLoginText("passwordModePrompt"));return true;
+    }
+    function switchToVoiceLogin() {
+        if(!readInteractionState().actions.loginSwitch)return false;
+        resetVoiceLogin();loginDialog.querySelector('[data-login-digit="id"]').focus({preventScroll:true});return true;
+    }
+    $("#loginLegacySwitch").addEventListener("click",switchToPasswordLogin);
+    $("#loginVoiceSwitch").textContent=voiceLoginText("voiceLogin");
+    $("#loginVoiceSwitch").addEventListener("click",switchToVoiceLogin);
+    async function submitLegacyLogin(){
+        if(!readInteractionState().actions.loginPassword)return false;voiceLoginBusy=true;$("#loginButton").disabled=true;$("#loginError").textContent="";renderInteractionControls();
+        try{await actions.connectUser($("#loginLegacyUsername").value,$("#loginLegacyPassword").value);void globalThis.WMOFAudio?.speak?.(voiceLoginText("success"));return true;}
+        catch(error){$("#loginError").textContent=error.message||voiceLoginText("failed");return false;}
+        finally{voiceLoginBusy=false;$("#loginLegacyPassword").value="";$("#loginButton").disabled=false;renderInteractionControls();}
+    }
+    $("#loginButton").textContent=voiceLoginText("ok");$("#loginDigitsCancel").textContent=voiceLoginText("cancel");
+    $("#loginIdLabel").textContent=voiceLoginText("userIdLabel");$("#loginPinLabel").textContent=voiceLoginText("pinLabel");
+    $("#loginDigitsCancel").addEventListener("click",()=>{if(!voiceLoginBusy) resetVoiceLogin();});
+    for(const [id,key] of [["mainLoginAdminTitle","adminTitle"],["mainLoginAccountLabel","accountLabel"],["mainLoginIdLabel","userIdLabel"],["mainLoginPinLabel","pinLabel"],["assignMainLogin","assign"]])$("#"+id).textContent=voiceLoginText(key);
+    $("#assignMainLogin").addEventListener("click",async()=>{
+        const status=$("#mainLoginAssignmentStatus"),button=$("#assignMainLogin");status.textContent="";
+        const loginId=$("#mainLoginId").value,pin=$("#mainLoginPin").value,account=$("#mainLoginAccount").value;
+        if(!/^[0-9]{4}$/.test(loginId)||!/^[0-9]{4}$/.test(pin)||! /^[1-9][0-9]*$/.test(account)){status.textContent=voiceLoginText("invalid");return;}
+        button.disabled=true;
+        try{
+            const sessionResponse=await fetch(API_BASE+"/users/",{credentials:"same-origin",headers:{Accept:"application/json"}}),session=await sessionResponse.json();
+            if(!sessionResponse.ok||typeof session.csrfToken!=="string")throw new Error(session.message||voiceLoginText("unauthorized"));
+            const response=await fetch(API_BASE+"/users/",{method:"PATCH",credentials:"same-origin",headers:{"Content-Type":"application/json","X-CSRF-Token":session.csrfToken},body:JSON.stringify({action:"update",userId:Number(account),loginId,pin})}),result=await response.json();
+            if(!response.ok)throw new Error(result.message||voiceLoginText("assignmentFailed"));
+            status.textContent=voiceLoginText("assigned");
+        }catch(error){status.textContent=error.message;}finally{$("#mainLoginPin").value="";button.disabled=false;}
+    });
     $("#loginForm").addEventListener(
         "submit",
         globalThis
@@ -14320,22 +14452,7 @@
                     error.textContent =
                         "";
 
-                    try {
-                        await globalThis
-                            .WMOFActions
-                            .connectUser(
-                                $("#loginUsername")
-                                    .value,
-                                $("#loginPassword")
-                                    .value
-                            );
-                    }
-                    catch (failure) {
-                        error.textContent =
-                            failure
-                                ?.message ||
-                            globalThis.WMOFLanguagePack.text("6420d898-9a7c-5db6-a0d3-baab37b7ec1b");
-                    }
+                    if(loginInputMode==="password")await submitLegacyLogin();else await confirmLoginDigits();
                 }
             )
     );
@@ -15934,7 +16051,7 @@
             globalThis.WMOFLanguagePack.text("c64ce58e-7565-5625-b06f-411e48bc02f4")
         );
 
-        const valid = numberPadValueValid();
+        const valid = readInteractionState().actions.confirmValue;
         const startsTrip = Boolean(numberPadState.startsTripOnConfirm);
         const confirmAction = startsTrip ? "start" : "confirm";
         numberPadConfirm.dataset.action = confirmAction;
@@ -15946,7 +16063,7 @@
 
         setOkAllowed(
             numberPadDialog,
-            !numberPadConfirm.disabled
+            valid
         );
 
         const settingsVisible =
@@ -16231,21 +16348,54 @@
         return state;
     }
 
-    function resolveValueEditorInputMode(
-        inputMode
-    ) {
-        if (
-            inputMode === "voice" ||
-            inputMode === "touch"
-        ) {
-            return inputMode;
-        }
+    function voicePadAvailable() {
+        if (interactionStateReady) return readInteractionState().actions.openVoicePad;
+        return speechRecognitionEnabled() && Boolean(globalThis.SpeechMenu?.started) &&
+            !speechRecognitionSuspended && speechMicBar && !speechMicBar.hidden && popoverIsOpen(speechMicBar);
+    }
 
-        return globalThis
-            .SpeechMenu
-            ?.executionContext
-                ? "voice"
-                : "touch";
+    let voicePadEnableRequest;
+    function requestVoicePadRecognition(continueOpening) {
+        const dialog = $("#voicePadRecognitionDialog");
+        voicePadEnableRequest = {continueOpening};
+        if (!dialog.open) dialog.showModal();
+        void globalThis.WMOFAudio?.speak?.(announcementText("announcements.voice-pad-recognition-required.summary"));
+        return true;
+    }
+
+    function cancelVoicePadRecognition() {
+        voicePadEnableRequest = undefined;
+        $("#voicePadRecognitionDialog").close();
+        return true;
+    }
+
+    async function confirmVoicePadRecognition() {
+        const request = voicePadEnableRequest;
+        if (!request || speechActivationPending) return false;
+        speechActivationPending = true;
+        setSpeechButtonState(true, false);
+        setSpeechLayoutState(true);
+        try {
+            const started = await enableSpeechRecognitionRuntime();
+            if (!started) throw new Error("Speech recognition could not be enabled.");
+            speechActivationPending = false;
+            if (voicePadEnableRequest !== request) return false;
+            // Starting recognition also reveals the mic bar. Check it before
+            // changing focus so an unsuccessful enable never opens a voicepad.
+            if (!voicePadAvailable()) throw new Error("Speech recognition is not ready.");
+            cancelVoicePadRecognition();
+            return request.continueOpening();
+        } catch (error) {
+            setSpeechButtonState(false, false); setSpeechLayoutState(false);
+            console.error(error);
+            return false;
+        } finally {speechActivationPending = false;}
+    }
+
+    function resolveValueEditorInputMode(inputMode) {
+        if (inputMode === "voice") return "voice";
+        const speechPath = inputMode === "voice" || (inputMode !== "touch" && Boolean(globalThis.SpeechMenu?.executionContext));
+        return speechPath && voicePadAvailable() ? "voice" : "touch";
     }
 
     async function openTouchValueEditor(
@@ -17184,13 +17334,8 @@
     }
 
     async function switchNumberPadToVoice() {
-        if (
-            !numberPadState ||
-            !numberPadDialog
-                ?.open
-        ) {
-            return false;
-        }
+        if (!numberPadState || !numberPadDialog?.open) return false;
+        if (!voicePadAvailable()) return requestVoicePadRecognition(() => switchNumberPadToVoice());
 
         const snapshot = {
             ...numberPadState
@@ -17221,6 +17366,19 @@
         return openVoiceValueEditor(
             snapshot
         );
+    }
+
+    let voicePadFallback;
+    function reconcileVoicePadRecognition() {
+        if (!voiceEntryState || voicePadAvailable()) return voicePadFallback || Promise.resolve(false);
+        if (voicePadFallback) return voicePadFallback;
+        const status = readInteractionState().speechRecognition === "sleeping" ? "sleeping" : "off";
+        const recognitionAnnouncement = announcementText(`messages.voiceFeedback.${status}`);
+        voicePadFallback = switchVoiceEntryToTouch().then(() => {
+            void globalThis.WMOFAudio?.speak?.(recognitionAnnouncement + " " + announcementText("announcements.voice-pad-number-pad.summary"));
+            return true;
+        }).finally(() => {voicePadFallback = undefined;});
+        return voicePadFallback;
     }
 
     async function switchVoiceEntryToTouch() {
@@ -17627,6 +17785,8 @@
         ) {
             return false;
         }
+
+        if (!voicePadAvailable()) return requestVoicePadRecognition(() => openVoiceValueEditor(state, {signal}));
 
         numberPadState =
             state;
@@ -18589,6 +18749,155 @@
                 .tripState ===
                 "running"
         );
+    }
+
+    // The single interaction snapshot combines timer and workflow state.
+    // DOM button flags are outputs of this model, never inputs to availability.
+    function readInteractionState(timerState = clockTimer.uiState) {
+        const selected = globalThis.SpeechMenu?.selectionState;
+        if (selected && timerState === clockTimer.uiState) return selected;
+        const live = Boolean(timerState?.trip_active);
+        const interval = String(timerState?.interval_state?.intervalType || timerState?.active_interval_type || "").toLowerCase();
+        const kind = interval === "lunch" ? "lunch" : interval === "break"
+            ? ["short", "short-break"].includes(timerState.active_break_type) ? "short-break" : "break" : null;
+        const paused = interval === "break" || interval === "lunch" || interval === "down";
+        const surfaces = [...document.querySelectorAll('dialog[open]')].map(element=>element.id);
+        const focus = globalThis.SpeechMenu?.activeSurface?.id || surfaces.at(-1) || "main";
+        const editor = interactionStateReady ? numberPadState : undefined;
+        const prompt = interactionStateReady ? speechBreakPromptState : undefined;
+        const range = getTripLogRange();
+        const speechRecognition = speechActivationPending ? "starting"
+            : !speechRecognitionEnabled() || !globalThis.SpeechMenu?.started ? "off"
+            : speechRecognitionSuspended || globalThis.SpeechMenu?.listeningSuspended ||
+                !speechMicBar || speechMicBar.hidden || !popoverIsOpen(speechMicBar) ? "suspended"
+            : globalThis.SpeechMenu?.muted ? "sleeping" : "listening";
+        const login = Object.freeze({open:loginDialog.open, method:loginInputMode, stage:voiceLoginStage, pending:voiceLoginBusy,
+            digitCount:loginInputMode === "pin" ? loginDigitSlots[voiceLoginStage].filter(Boolean).length : 0});
+        const actions = Object.freeze({
+            loginInput: login.open && !login.pending,
+            loginDigits: login.open && !login.pending && login.method === "pin",
+            loginPassword: login.open && !login.pending && login.method === "password",
+            loginSwitch: login.open && !login.pending,
+            openVoicePad: speechRecognition === "listening",
+            confirmSummary: Boolean(completedTripSummary),
+            startTrip: !live && !newTripWorkflowLocked && !completedTripSummary,
+            endTrip: live && !paused,
+            ready: live ? !paused : !newTripWorkflowLocked && !completedTripSummary,
+            // Explicit optimistic replacement commands remain available. A
+            // duplicate break is validated asynchronously and can revert.
+            startBreak: true,
+            openBreakSelector: !paused,
+            startDown: interval !== "down",
+            endBreak: kind === "break",
+            endShortBreak: kind === "short-break",
+            endLunch: kind === "lunch",
+            endInterval: kind !== null,
+            resume: interval === "down",
+            cancelDown: interval === "down",
+            informational: live,
+            continueStartAt: !live && interactionStateReady && (pendingSpeechReady !== undefined || newTripWorkflowLocked),
+            confirmValue: Boolean(editor && numberPadValueValid()),
+            confirmBreak: Boolean(prompt && ["end", "start-selected"].includes(prompt.mode) &&
+                (surfaces.includes("speechBreakConfirmDialog") || prompt.hidden)),
+            answerLunch: Boolean(prompt?.mode === "start" && surfaces.includes("speechBreakConfirmDialog")),
+            openLog: getTripListState() !== "open",
+            closeLog: getTripListState() === "open",
+            deferTrip: Boolean(editor?.workflow === "new-trip" && tripDraft &&
+                (surfaces.includes("numberPadDialog") || surfaces.includes("voiceEntrySurface"))),
+            cancel: Boolean(surfaces.length || getTripListState() === "open" || speechMicBar?.optionsOpen ||
+                globalThis.WMOFActionFunctions?.isInterruptGroupActive?.("primary-surface") ||
+                [...document.querySelectorAll("[popover]")].some(element=>element !== speechMicBar && popoverIsOpen(element)))
+        });
+        const primaryAction = kind ? "endInterval" : interval === "down" ? "resume" : live ? "endTrip" : "ready";
+        const value = {
+            clock: timerState,
+            pending: globalThis.WMOFStateTransactions?.pending || Object.freeze([]),
+            speechRecognition,
+            session: Object.freeze({userId: signedInProfile?.id || null, permissions: Number(signedInProfile?.permissions) || 0,
+                connection: clockTimer.networkStatus || "unknown"}),
+            clockPhase: timerState?.clock_phase || timerState?.state || "ready",
+            tripStatus: kind || (live ? interval || "running" : timerState?.state || "ready"),
+            tripActive: live, tripId: clockTimer.currentTripId ?? null, interval: interval || null,
+            focus, surfaces: Object.freeze(surfaces),
+            login,
+            tripSummary: completedTripSummary ? Object.freeze(Object.fromEntries(
+                Object.entries(completedTripSummary).filter(([key]) => key !== "calculation"))) : null,
+            tripAggregates: Object.freeze({tripLog: tripLogView?.aggregation || null,
+                tripSummary: completedTripSummary?.calculation || null}),
+            workflowLocked: newTripWorkflowLocked,
+            sync: interactionStateReady ? computeSyncGoalsState() : Boolean(timerState?.sync_enabled),
+            mode: clockTimer.percentMode === "total" ? range : clockTimer.percentMode,
+            goalMode: clockTimer.percentMode, goalScope: range, tripLogRange: range,
+            goalSequence: timerState?.auto_goal_order || Object.freeze([]),
+            goals: Object.freeze({trip: timerState?.trip_goal_component?.value ?? null,
+                total: timerState?.total_goal_component?.value ?? null,
+                autoOrder: Object.freeze([...(timerState?.auto_goal_order || [])])}),
+            editor: Object.freeze({open: Boolean(editor), valid: actions.confirmValue,
+                source: editor?.source || null, value: editor?.pending || "", mode: editor?.mode || null,
+                date: editor?.pendingDate || null, meridiem: editor?.meridiem || null, workflow: editor?.workflow || null,
+                confirmation: editor?.startsTripOnConfirm ? "start-trip" : editor?.source || null}),
+            actions,
+            controls: Object.freeze({primaryAction,
+                primaryText: live ? timerState?.controls?.primary_action?.text || "End Trip"
+                    : globalThis.WMOFLanguagePack.text("1cf0b3f1-858c-50c8-8cb9-8b3af9e1decd"),
+                activeTripVisible: live, primaryVisible: interval !== "down",
+                actionRowVisible: !paused, breakVisible: !paused, downVisible: !paused,
+                downVisiblePanel: interval === "down"})
+        };
+        const key = JSON.stringify(value);
+        if (key !== interactionStateKey) {
+            interactionStateKey = key;
+            interactionStateSnapshot = Object.freeze({...value, revision: ++interactionStateRevision});
+        }
+        return interactionStateSnapshot;
+    }
+
+    function renderInteractionControls(state = readInteractionState()) {
+        const {actions, controls} = state;
+        for(const id of ["loginButton","loginDigitsCancel"])$("#"+id).disabled=!actions.loginInput;
+        for(const id of ["loginLegacySwitch","loginVoiceSwitch"])$("#"+id).disabled=!actions.loginSwitch;
+        for(const id of ["loginLegacyUsername","loginLegacyPassword"])$("#"+id).disabled=!actions.loginPassword;
+        for(const input of loginDialog.querySelectorAll('[data-login-digit]'))input.disabled=!actions.loginDigits || input.dataset.loginDigit!==state.login.stage;
+        newTripButton.disabled = !actions.startTrip;
+        activeTripControls.hidden = !controls.activeTripVisible;
+        tripActionRow.hidden = !controls.actionRowVisible;
+        breakButton.hidden = !controls.breakVisible;
+        breakButton.disabled = !actions.openBreakSelector;
+        downButton.hidden = !controls.downVisible;
+        downButton.disabled = !actions.startDown;
+        endTripButton.hidden = !controls.primaryVisible;
+        endTripButton.disabled = !actions[controls.primaryAction];
+        endTripButton.textContent = controls.primaryText;
+        downTripControls.hidden = !controls.downVisiblePanel;
+        downCancelButton.disabled = !actions.cancelDown;
+        downResumeButton.disabled = !actions.resume;
+        setEndTripButtonIntervalPalette(state.interval);
+    }
+
+    // Both names are persisted in speech-editor configurations. Keep their
+    // behavior identical so a saved legacy name still follows the trip state.
+    async function prepareReadyWorkflow() {
+        const signal =
+            currentActionSignal();
+
+        if (globalThis.WMOFSpeechAvailability.canOpenBreakEndMenu()) return openSpeechBreakPrompt("end");
+        if (tripIsLive()) {
+            return endCurrentIntervalOrTrip(
+                speechTransactionDate(),
+                {
+                    signal
+                }
+            );
+        }
+
+        armSpeechReadyContinuation();
+
+        return openStartMenuWorkflow({
+            preserveSpeechContinuation:
+                true,
+            inputMode:
+                "voice"
+        });
     }
 
     function syncDraftStandardTimeReturnFrame(
@@ -20642,63 +20951,14 @@
 
     function renderTripActionState(now = new Date()) {
         renderSyncGoalsState();
-        if (!tripIsLive()) {
-            app.dataset.intervalState = "none";
-            downTripControls.hidden = true;
-            endTripButton.hidden = false;
-            tripActionRow.hidden = false;
-            setEndTripButtonIntervalPalette();
-            endTripButton.textContent = globalThis.WMOFLanguagePack.text("1cf0b3f1-858c-50c8-8cb9-8b3af9e1decd");
-            tripActionRow.hidden = false;
-            breakButton.hidden = false;
-            downButton.hidden = false;
-            return;
-        }
-
-        const instant = now instanceof Date && !Number.isNaN(now.getTime())
-            ? now
-            : new Date();
-        const interval = clockTimer.getActiveIntervalState?.(instant);
-        const intervalType = String(interval?.intervalType || "").toLowerCase();
-
-        if (intervalType === "down") {
-            app.dataset.intervalState = "down";
-            setEndTripButtonIntervalPalette();
-            downElapsedValue.value = formatDuration(interval.elapsedMilliseconds)
-                .replace(/^0(?=\d:)/, "");
+        const state = readInteractionState(clockTimer.getUIState(now));
+        app.dataset.intervalState = state.interval || (state.tripActive ? "normal" : "none");
+        renderInteractionControls(state);
+        if (state.actions.resume) {
+            const interval = clockTimer.getActiveIntervalState?.(now);
+            downElapsedValue.value = formatDuration(interval?.elapsedMilliseconds || 0).replace(/^0(?=\d:)/, "");
             downElapsedValue.textContent = downElapsedValue.value;
-            downTripControls.hidden = false;
-            endTripButton.hidden = true;
-            tripActionRow.hidden = true;
-            return;
         }
-
-        downTripControls.hidden = true;
-
-        if (intervalType === "break" || intervalType === "lunch") {
-            app.dataset.intervalState = "break";
-            activeTripControls.hidden = false;
-            endTripButton.hidden = false;
-            endTripButton.disabled = false;
-            setEndTripButtonIntervalPalette(
-                intervalType
-            );
-            const label = intervalType === "lunch" ? "Lunch" : "Break";
-            endTripButton.textContent =
-                globalThis.WMOFLanguagePack.text("5f86b39a-0618-5446-a3f3-6455a079beeb", {value0: (label), value1: (formatIntervalClock(interval.remainingMilliseconds))});
-            tripActionRow.hidden = true;
-            breakButton.hidden = true;
-            downButton.hidden = true;
-            return;
-        }
-
-        app.dataset.intervalState = "normal";
-        endTripButton.hidden = false;
-        setEndTripButtonIntervalPalette();
-        endTripButton.textContent = globalThis.WMOFLanguagePack.text("42cbe432-c0c6-500f-a98e-9368c2675d45");
-        tripActionRow.hidden = false;
-        breakButton.hidden = false;
-        downButton.hidden = false;
     }
 
     async function endCurrentIntervalOrTrip(
@@ -20764,181 +21024,39 @@
             return;
         }
 
-        // A Ready transition is one atomic wall-clock boundary: the
-        // completed trip stops at the exact millisecond the next trip starts.
-        // Store the boundary as an immutable number so neither async work nor a
-        // Date object mutation can make the two sides drift apart.
-        const transitionTimestamp =
-            effectiveTime.getTime();
+        await clockTimer.stop(effectiveTime);
+        if (signal?.aborted || clockTimer.status !== "stopped") return false;
+        await clockTimer.resetCompletedTrip();
+        renderTripActionState();
+        return true;
+    }
 
-        endingIntoNewTrip =
-            true;
+    function dismissCompletedTripSummary() {
+        tripSummaryRequestSequence++;
+        tripSummaryRequestController?.abort();
+        tripSummaryRequestController = undefined;
+        completedTripSummary = undefined;
+        clearTimeout(tripTransitionOverlayTimer);
+        clearTimeout(tripTransitionOverlayHideTimer);
+        tripTransitionOverlayQueue.length = 0;
+        tripTransitionOverlayActive = false;
+        tripTransitionOverlay.classList.remove("is-visible");
+        tripTransitionOverlay.close();
+        tripTransitionOverlay.hidden = true;
+        resetTripTransitionEditorLayout();
+        renderTripActionState();
+        return true;
+    }
 
-        // Suppress exactly the next ordinary chime: the legacy 3-note
-        // End Trip cue emitted by tripEnded.
-        incrementSemanticDisable(
-            "chime"
-        );
-
-        const stopPromise =
-            clockTimer.stop(
-                new Date(
-                    transitionTimestamp
-                )
-            );
-
-        if (
-            clockTimer.status !==
-                "stopped"
-        ) {
-            try {
-                await stopPromise;
-            }
-            finally {
-                endingIntoNewTrip =
-                    false;
-            }
-
-            return false;
-        }
-
-        if (signal?.aborted) {
-            endingIntoNewTrip =
-                false;
-            return false;
-        }
-
-        const completedTripResetPromise =
-            Promise
-                .resolve(
-                    stopPromise
-                )
-                .finally(
-                    () => {
-                        endingIntoNewTrip =
-                            false;
-                    }
-                )
-                .then(
-                    () =>
-                        clockTimer
-                            .resetCompletedTrip()
-                );
-
-        // Observe immediately; the action below awaits this same promise so a
-        // rejected finish restores the entire optimistic transition.
-        completedTripResetPromise.catch(() => {});
-
-        const opened =
-            await beginNewTripWorkflow({
-                initialValue: "",
-                tripMoment:
-                    new Date(
-                        transitionTimestamp
-                    ),
-                inputMode:
-                    speechRecognitionEnabled()
-                        ? "voice"
-                        : "touch",
-                endStartTransition: true,
-                completedTripResetPromise,
-                signal
-            });
-
-        const speech =
-            pendingEndStartTripSpeech;
-
-        pendingEndStartTripSpeech =
-            undefined;
-
-        if (signal?.aborted) {
-            return false;
-        }
-
-        if (
-            opened &&
-            tripDraftUsesEndStartTransition()
-        ) {
-            const endChimeEnabled =
-                audioCellUserEnabled(
-                    "trip-ended",
-                    "chime"
-                );
-            const startChimeEnabled =
-                audioCellUserEnabled(
-                    "trip-started",
-                    "chime"
-                );
-            const audio =
-                globalThis.WMOFAudio;
-            let transitionSong;
-
-            if (
-                endChimeEnabled &&
-                startChimeEnabled
-            ) {
-                transitionSong =
-                    "trip-transition";
-            }
-            else if (endChimeEnabled) {
-                transitionSong =
-                    "trip-ended";
-            }
-            else if (startChimeEnabled) {
-                transitionSong =
-                    "trip-started";
-            }
-
-            const transitionSpeechOutput =
-                audioAnnouncementOutput(
-                    "trip-ended"
-                );
-            const transitionChimeAllowed =
-                Boolean(
-                    transitionSong &&
-                    consumeSemanticAction(
-                        "chime"
-                    )
-                );
-            const reserveStartChime =
-                transitionChimeAllowed &&
-                startChimeEnabled;
-
-            if (reserveStartChime) {
-                // Reserve this immediately so a very fast Start action cannot
-                // consume its own chime before the queued transition begins.
-                incrementSemanticDisable(
-                    "chime"
-                );
-            }
-
-            void runSemanticAnnouncement(
-                "trip-ended",
-                announcementComponents(audio, transitionSong, transitionChimeAllowed, speech, transitionSpeechOutput, undefined,
-                { onChime: played => { if (reserveStartChime && !played) cancelSemanticDisable("chime"); } }),
-                {
-                    exclusive:
-                        announcementSpeechIgnoresMaster(
-                            "trip-ended"
-                        )
-                }
-            )
-                .catch(
-                    error =>
-                        console.error(
-                            "Trip transition announcement failed:",
-                            error
-                        )
-                );
-        }
-        else if (speech) {
-            void playSemanticSongThenSpeak(
-                "trip-ended",
-                speech
-            );
-        }
-        await completedTripResetPromise;
-        return opened;
+    async function confirmCompletedTripSummary() {
+        if (!completedTripSummary) return false;
+        if (completedTripSummary.invocation.reason !== "trip-ended") return dismissCompletedTripSummary();
+        // Decide before opening/closing surfaces: a pointer confirmation never
+        // inherits the enabled microphone's preference for speech entry.
+        const speechPath = Boolean(globalThis.SpeechMenu?.executionContext);
+        const inputMode = speechPath && voicePadAvailable() ? "voice" : "touch";
+        dismissCompletedTripSummary();
+        return beginNewTripWorkflow({initialValue: "", inputMode, signal: currentActionSignal()});
     }
 
     let speechBreakPromptState;
@@ -21062,7 +21180,7 @@
     }
 
     function requestSpeechBreakStart(kind) {
-        if (!['break', 'short-break', 'lunch'].includes(kind) || breakButton?.disabled) return false;
+        if (!['break', 'short-break', 'lunch'].includes(kind) || !readInteractionState().actions.startBreak) return false;
         const context = globalThis.SpeechMenu?.executionContext;
         if (context?.chain && (context.isFinal?.() !== true ||
             context.nextCommand?.() === "WMOFActions.confirmBreakPromptYes")) {
@@ -22290,7 +22408,7 @@
             }
         }
 
-        return [parts.slice(0, summaryCount).join(" "), parts.slice(summaryCount).join(" ")];
+        return [parts.slice(0, summaryCount).join(" "), parts.slice(summaryCount).join(" "), announcementText("announcements.trip-ended.newTripPrompt")];
     }
 
     let lunchClockCueState;
@@ -22635,8 +22753,12 @@
             return;
         }
 
-        tripTransitionOverlayTitle.textContent =
-            item.title;
+        tripTransitionOverlayTitle.textContent = item.title;
+        $("#tripTransitionSummaryActions").hidden = !item.awaitConfirmation;
+        if (tripTransitionOverlay.open) tripTransitionOverlay.close();
+        tripTransitionOverlay.hidden = false;
+        if (item.awaitConfirmation) tripTransitionOverlay.showModal();
+        else tripTransitionOverlay.show();
         tripTransitionOverlayDetails
             .replaceChildren(
                 ...item.rows
@@ -22713,6 +22835,10 @@
             tripTransitionOverlayHideTimer
         );
 
+        if (item.awaitConfirmation) {
+            renderTripActionState();
+            return;
+        }
         tripTransitionOverlayTimer =
             setTimeout(
                 () => {
@@ -22742,8 +22868,8 @@
                                 }
                                 catch {}
 
-                                tripTransitionOverlay.hidden =
-                                    true;
+                                tripTransitionOverlay.close();
+                                tripTransitionOverlay.hidden = true;
                                 tripTransitionOverlayActive =
                                     false;
 
@@ -22768,10 +22894,11 @@
 
     function enqueueTripTransitionOverlay(
         title,
-        rows
+        rows,
+        awaitConfirmation = false
     ) {
         const item = {
-            title,
+            title, awaitConfirmation,
             rows:
                 rows.filter(
                     Boolean
@@ -22779,7 +22906,7 @@
         };
 
         if (
-            tripTransitionOverlayActive
+            tripTransitionOverlayActive && !awaitConfirmation
         ) {
             tripTransitionOverlayQueue
                 .push(
@@ -22796,82 +22923,95 @@
         );
     }
 
-    function showTripEndTransitionOverlay(
-        detail
-    ) {
-        const total =
-            detail?.summary?.total;
-        const countedPercent =
-            Number(
-                total?.countedPercent
-            );
-        const remaining =
-            renderedGoalRemainingMilliseconds(
-                detail
-            );
-        const goalLabel =
-            renderedGoalLabel(
-                detail
-            );
-        const rows = [];
-
-        if (
-            Number.isFinite(
-                countedPercent
-            )
-        ) {
-            rows.push(
-                tripTransitionRow(
-                    totalScopeLabel() +
-                        " Percent",
-                    formatActualPercent(
-                        countedPercent
-                    )
-                )
-            );
-        }
-
-        if (
-            Number.isFinite(
-                remaining
-            ) &&
-            goalLabel
-        ) {
-            if (
-                remaining >
-                0
-            ) {
-                rows.push(
-                    tripTransitionRow(
-                        "Banked Toward " +
-                            goalLabel,
-                        formatTripTransitionDuration(
-                            remaining
-                        )
-                    )
-                );
-            }
-            else if (
-                remaining <
-                0
-            ) {
-                rows.push(
-                    tripTransitionRow(
-                        "Over " +
-                            goalLabel,
-                        formatTripTransitionDuration(
-                            remaining
-                        )
-                    )
-                );
-            }
-        }
-
-        enqueueTripTransitionOverlay(
-            "Trip Ended",
-            rows
-        );
+    function tripSummaryText(key, values) {
+        return announcementText("messages.tripSummary." + key, values);
     }
+
+    function renderCalculatedTripSummary(summary, request) {
+        const rows = [], speech = [tripSummaryText("title"), tripSummaryText("range", {scope: request.scope})];
+        if (!summary.tripCount) {
+            rows.push({label: "", value: tripSummaryText("noData")});
+            speech.push(tripSummaryText("noData"));
+        } else {
+            rows.push({label: tripSummaryText("tripCountLabel"), value: String(summary.tripCount)});
+            speech.push(tripSummaryText("tripCount", {count: summary.tripCount}));
+            for (const [key, value] of [["standard", summary.standardTimeMilliseconds], ["actual", summary.actualTimeMilliseconds], ["counted", summary.countedTimeMilliseconds]]) {
+                rows.push({label: tripSummaryText(key + "Label"), value: formatDuration(value)});
+                speech.push(tripSummaryText(key, {duration: formatGoalFailureDuration(value)}));
+            }
+            rows.push({label: tripSummaryText("percentLabel"), value: summary.percent === null ? "—" : formatActualPercent(summary.percent)});
+            if (summary.percent !== null) speech.push(tripSummaryText("percent", {percent: formatSpokenPercent(summary.percent)}));
+            const key = summary.bankedTimeMilliseconds >= 0 ? "banked" : "over";
+            const duration = Math.abs(summary.bankedTimeMilliseconds);
+            rows.push({label: tripSummaryText(key + "Label"), value: formatDuration(duration)});
+            speech.push(tripSummaryText(key, {duration: formatGoalFailureDuration(duration)}));
+        }
+        // Only automatic end-of-trip summaries offer the next trip.
+        if (request.invocation.reason === "trip-ended") speech.push(announcementText("announcements.trip-ended.newTripPrompt"));
+        completedTripSummary = Object.freeze({...request, calculation: summary, loading: false});
+        renderTripTransitionOverlayItem({title: tripSummaryText("title"), rows, awaitConfirmation: true});
+        const audio = globalThis.WMOFAudio;
+        const guard = () => completedTripSummary?.requestId === request.requestId;
+        const output = audioAnnouncementOutput(request.invocation.reason === "trip-ended" ? "trip-ended" : "range-change");
+        void runSemanticAnnouncement("trip-summary", announcementComponents(audio, undefined, false,
+            speech.map((text, index) => ({phase: index === 0 ? "summary" : "details", text})), output, guard)).catch(console.error);
+    }
+
+    async function loadTripSummary(request, localTrips, signal) {
+        const calendar = await resolveTripLogCalendar(request.range);
+        if (signal.aborted || completedTripSummary?.requestId !== request.requestId) return;
+        const rangeWindow = CalendarRange.tripWindow(calendar);
+        let cached;
+        try {const value = safeStorageGet("wmof.tripLogCache"); cached = typeof value === "string" ? JSON.parse(value) : value;} catch {}
+        let trips = cached?.userId === signedInProfile?.id ? cached.trips || [] : [];
+        if (!deliberatelyLoggedOut && clockTimer.networkStatus !== "offline") {
+            const url = new URL("api/trips/", API_BASE);
+            url.search = new URLSearchParams({result: "list", minDateTime: rangeWindow.startTime, maxDateTime: rangeWindow.endTime,
+                nonProductionFilter: "all", productionFilter: "all", limit: "1000"});
+            const loaded = [];
+            let page;
+            do {
+                url.searchParams.set("offset", String(loaded.length));
+                const response = await fetch(url, {signal, credentials: "same-origin", headers: {Accept: "application/json"}});
+                page = await response.json();
+                if (!response.ok) throw new Error(page.message || tripSummaryText("loadFailed"));
+                loaded.push(...(page.trips || []));
+            } while (page.trips?.length === 1000);
+            trips = loaded;
+        }
+        if (signal.aborted || completedTripSummary?.requestId !== request.requestId || request.range !== getTripLogRange()) return;
+        const summary = TripAggregates.calculate({trips: [...trips, ...localTrips], rangeWindow,
+            currentTripId: request.currentTripId, includeActiveTrip: false, goalPercent: request.goalPercent});
+        renderCalculatedTripSummary(summary, request);
+    }
+
+    function showTripSummary({automatic = false, invocation} = {}) {
+        tripSummaryRequestController?.abort();
+        tripSummaryRequestController = new AbortController();
+        const signal = tripSummaryRequestController.signal;
+        const request = Object.freeze({invocation: invocation || Object.freeze({
+            reason: automatic ? "trip-ended" : "requested",
+            method: automatic ? "system" : globalThis.SpeechMenu?.executionContext ? "voice" : "pointer"
+        }), requestId: ++tripSummaryRequestSequence,
+            range: getTripLogRange(), scope: totalScopeLabel(),
+            currentTripId: tripIsLive() ? clockTimer.currentTripId ?? null : null,
+            goalPercent: clockTimer.getSummarySnapshot().total?.percentGoal || 1, loading: true});
+        const localTrips = clockTimer.getLocalTripLog().map(trip => ({...trip}));
+        completedTripSummary = request;
+        tripTransitionOverlayQueue.length = 0;
+        enqueueTripTransitionOverlay(tripSummaryText("title"), [{label: "", value: tripSummaryText("loading")}], true);
+        // Lookup is a cancellable read, independent of UI/command completion.
+        // It performs no remote writes and never holds Applying on screen.
+        void loadTripSummary(request, localTrips, signal).catch(error => {
+            if (signal.aborted || completedTripSummary?.requestId !== request.requestId) return;
+            completedTripSummary = Object.freeze({...request, loading: false, error: true});
+            renderTripTransitionOverlayItem({title: tripSummaryText("title"), rows: [{label: "", value: tripSummaryText("loadFailed")}], awaitConfirmation: true});
+            void globalThis.WMOFAudio?.speak?.(tripSummaryText("loadFailed"));
+        });
+        return true;
+    }
+
+    function showTripEndTransitionOverlay() { return showTripSummary({automatic: true}); }
 
     async function onTripStarted(event) {
         globalThis
@@ -23074,38 +23214,12 @@
             );
         }
 
-        showTripEndTransitionOverlay(
-            event.detail
-        );
-
         reserveSemanticEvent(event, "Trip ended");
-
-        const speech =
-            tripEndTotalSpeech(
-                event.detail
-            );
-
-        if (
-            endingIntoNewTrip
-        ) {
-            pendingEndStartTripSpeech =
-                speech;
-
-            // The direct end->start workflow preloads one chime suppression.
-            // Attempting the ordinary End Trip cue here consumes that slot,
-            // so the legacy 3-note cue is skipped without special casing the
-            // audio helper itself.
-            consumeSemanticAction(
-                "chime"
-            );
-
-            return;
-        }
-
-        void playSemanticSongThenSpeak(
-            "trip-ended",
-            speech
-        );
+        const audio = globalThis.WMOFAudio;
+        const chime = consumeAnnouncementAction("trip-ended", "chime");
+        void runSemanticAnnouncement("trip-ended", announcementComponents(audio, announcementSongName("trip-ended"),
+            chime.perform, [], audioAnnouncementOutput("trip-ended"))).catch(console.error);
+        showTripEndTransitionOverlay(event.detail);
     }
 
     function onTotalGoalSet(event) {
@@ -24110,6 +24224,10 @@
                         )
                 ].at(-1);
 
+            if (dialog?.id === "voicePadRecognitionDialog") return cancelVoicePadRecognition();
+            if (dialog === loginDialog) return voiceLoginBusy ? false : resetVoiceLogin();
+            if (dialog === tripTransitionOverlay && completedTripSummary) return dismissCompletedTripSummary();
+
             if (!dialog) {
                 if (
                     getTripListState() ===
@@ -24161,238 +24279,37 @@
             );
         };
 
-    globalThis
-        .WMOFSpeechAvailability =
-        Object.freeze({
-            canStartTrip() {
-                return (
-                    !tripIsLive() &&
-                    !$("#newTripButton")
-                        ?.disabled
-                );
-            },
-
-            canUseReady() {
-                if (!tripIsLive()) {
-                    return (
-                        !$("#newTripButton")
-                            ?.disabled
-                    );
-                }
-
-                const type =
-                    String(
-                        clockTimer
-                            .getActiveIntervalState
-                            ?.(
-                                new Date()
-                            )
-                            ?.intervalType ||
-                        ""
-                    )
-                        .toLowerCase();
-
-                return ![
-                    "break",
-                    "lunch",
-                    "down"
-                ].includes(
-                    type
-                );
-            },
-
-            canContinueStartAt() {
-                return (
-                    (
-                        pendingSpeechReady !==
-                            undefined ||
-                        newTripWorkflowLocked
-                    ) &&
-                    !tripIsLive()
-                );
-            },
-
-            canUseInformational() {
-                return tripIsLive();
-            },
-
-            canOpenBreakMenu() {
-                return !breakButton?.disabled;
-            },
-
-            canStartDownTime() {
-                const activeIntervalType =
-                    String(
-                        clockTimer
-                            .getActiveIntervalState
-                            ?.(
-                                new Date()
-                            )
-                            ?.intervalType ||
-                        ""
-                    )
-                        .trim()
-                        .toLowerCase();
-
-                return (
-                    activeIntervalType !==
-                        "down" &&
-                    !downButton?.disabled
-                );
-            },
-
-            canConfirmBreakEnd() {
-                return ["end", "start-selected"].includes(speechBreakPromptState?.mode) && ($("#speechBreakConfirmDialog")?.open ||
-                    (speechBreakPromptState.hidden && speechBreakPromptState.utteranceId === globalThis.SpeechMenu?.executionContext?.utteranceId));
-            },
-
-            canAnswerLunchQuestion() {
-                return speechBreakPromptState?.mode === "start" && $("#speechBreakConfirmDialog")?.open;
-            },
-
-            canOpenBreakEndMenu() {
-                const type =
-                    String(
-                        clockTimer
-                            .getActiveIntervalState
-                            ?.(
-                                new Date()
-                            )
-                            ?.intervalType ||
-                        ""
-                    )
-                        .toLowerCase();
-
-                return (
-                    type === "break" ||
-                    type === "lunch"
-                );
-            },
-
-            canEndBreak() { return activeSpeechBreakKind() === "break"; },
-            canEndShortBreak() { return activeSpeechBreakKind() === "short-break"; },
-            canEndLunch() { return activeSpeechBreakKind() === "lunch"; },
-
-            canResumeTrip() {
-                const type =
-                    String(
-                        clockTimer
-                            .getActiveIntervalState
-                            ?.(
-                                new Date()
-                            )
-                            ?.intervalType ||
-                        ""
-                    )
-                        .toLowerCase();
-
-                return (
-                    type === "down"
-                );
-            },
-
-            canCancelDownTime() {
-                return Boolean(
-                    downCancelButton &&
-                    !downCancelButton.hidden &&
-                    !downCancelButton.disabled &&
-                    String(
-                        clockTimer
-                            .getActiveIntervalState
-                            ?.(
-                                new Date()
-                            )
-                            ?.intervalType ||
-                        ""
-                    )
-                        .toLowerCase() ===
-                        "down"
-                );
-            },
-
-            canLockEndTime() {
-                return tripIsLive();
-            },
-
-            canOpenTripLog() {
-                return (
-                    getTripListState() !==
-                    "open"
-                );
-            },
-
-            canCloseTripLog() {
-                return (
-                    getTripListState() ===
-                    "open"
-                );
-            },
-
-            canDeferTrip() {
-                return Boolean(
-                    numberPadDialog?.open &&
-                    numberPadState
-                        ?.workflow ===
-                        "new-trip" &&
-                    tripDraft
-                );
-            },
-
-            canToggleRenderedTime() {
-                return tripIsLive();
-            },
-
-            canCloseSurface() {
-                if (
-                    globalThis
-                        .WMOFActionFunctions
-                        ?.isInterruptGroupActive?.(
-                            "primary-surface"
-                        )
-                ) {
-                    return true;
-                }
-
-                if (
-                    speechMicBar
-                        ?.optionsOpen
-                ) {
-                    return true;
-                }
-
-                if (
-                    [
-                        ...document
-                            .querySelectorAll(
-                                "dialog[open]"
-                            )
-                    ].length
-                ) {
-                    return true;
-                }
-
-                if (
-                    getTripListState() ===
-                        "open"
-                ) {
-                    return true;
-                }
-
-                return [
-                    ...document
-                        .querySelectorAll(
-                            "[popover]"
-                        )
-                ].some(
-                    element =>
-                        element !==
-                            speechMicBar &&
-                        popoverIsOpen(
-                            element
-                        )
-                );
-            }
-        });
+    interactionStateReady = true;
+    globalThis.WMOFInteractionState = Object.freeze({
+        get state() {return readInteractionState();},
+        refresh() {const state = readInteractionState();renderInteractionControls(state);return state;}
+    });
+    globalThis.WMOFSpeechAvailability = Object.freeze({
+        canSwitchToPasswordLogin: () => {const state=readInteractionState();return state.actions.loginSwitch && state.speechRecognition === "listening";},
+        canSwitchToVoiceLogin: () => {const state=readInteractionState();return state.actions.loginSwitch && state.speechRecognition === "listening";},
+        canUseLogin: () => {const state=readInteractionState();return state.actions.loginDigits && state.speechRecognition === "listening";},
+        canConfirmTripSummary: () => readInteractionState().actions.confirmSummary,
+        canStartTrip: () => readInteractionState().actions.startTrip,
+        canUseReady: () => readInteractionState().actions.ready,
+        canContinueStartAt: () => readInteractionState().actions.continueStartAt,
+        canUseInformational: () => readInteractionState().actions.informational,
+        canOpenBreakMenu: () => readInteractionState().actions.startBreak,
+        canStartDownTime: () => readInteractionState().actions.startDown,
+        canConfirmBreakEnd: () => readInteractionState().actions.confirmBreak,
+        canAnswerLunchQuestion: () => readInteractionState().actions.answerLunch,
+        canOpenBreakEndMenu: () => readInteractionState().actions.endInterval,
+        canEndBreak: () => readInteractionState().actions.endBreak,
+        canEndShortBreak: () => readInteractionState().actions.endShortBreak,
+        canEndLunch: () => readInteractionState().actions.endLunch,
+        canResumeTrip: () => readInteractionState().actions.resume,
+        canCancelDownTime: () => readInteractionState().actions.cancelDown,
+        canLockEndTime: () => readInteractionState().actions.informational,
+        canOpenTripLog: () => readInteractionState().actions.openLog,
+        canCloseTripLog: () => readInteractionState().actions.closeLog,
+        canDeferTrip: () => readInteractionState().actions.deferTrip,
+        canToggleRenderedTime: () => readInteractionState().actions.informational,
+        canCloseSurface: () => readInteractionState().actions.cancel
+    });
 
     const dictateSpeechMetric =
         (
@@ -25067,39 +24984,12 @@
                 return openStartMenuWorkflow();
             },
 
-            async prepareReadyAction() {
-                const signal =
-                    currentActionSignal();
-
-                if (globalThis.WMOFSpeechAvailability.canOpenBreakEndMenu()) return openSpeechBreakPrompt("end");
-                if (tripIsLive()) {
-                    return endCurrentIntervalOrTrip(
-                        speechTransactionDate(),
-                        {
-                            signal
-                        }
-                    );
-                }
-
-                armSpeechReadyContinuation();
-
-                return openStartMenuWorkflow({
-                    preserveSpeechContinuation:
-                        true,
-                    inputMode:
-                        "voice"
-                });
+            prepareReadyAction() {
+                return prepareReadyWorkflow();
             },
 
             prepareStartMenu() {
-                armSpeechReadyContinuation();
-
-                return openStartMenuWorkflow({
-                    preserveSpeechContinuation:
-                        true,
-                    inputMode:
-                        "voice"
-                });
+                return prepareReadyWorkflow();
             },
 
             disableSpeechRecognition() {
@@ -25241,56 +25131,69 @@
                 return closeActiveSpeechSurface(targetSurface);
             },
 
-            handleSpeechRuntimeStarted() {
-                setSpeechButtonState(
-                    true,
-                    false
-                );
+            handleSpeechRuntimeStarted: {
+                metadata: {transaction: false},
+                implementation: function() {
+                    queueMicrotask(syncLoginRecognition);
+                    setSpeechButtonState(
+                        true,
+                        false
+                    );
 
-                setSpeechLayoutState(
-                    true
-                );
+                    setSpeechLayoutState(
+                        true
+                    );
 
-                return true;
-            },
-
-            handleSpeechRuntimeStopped() {
-                cancelPendingSpeechReady();
-
-                setSpeechButtonState(
-                    false,
-                    false
-                );
-
-                setSpeechLayoutState(
-                    false
-                );
-
-                if (speechTrainingActive) {
-                    stopInAppSpeechTraining({
-                        forced:
-                            true
-                    });
+                    return true;
                 }
-
-                syncSpeechTrainingControls();
-
-                return true;
             },
 
-            handleSpeechRuntimeMuted(
-                muted = true
-            ) {
-                setSpeechButtonState(
-                    true,
-                    Boolean(
-                        muted
-                    )
-                );
+            handleSpeechRuntimeStopped: {
+                metadata: {transaction: false},
+                implementation: async function() {
+                    queueMicrotask(syncLoginRecognition);
+                    cancelPendingSpeechReady();
 
-                syncSpeechTrainingControls();
+                    setSpeechButtonState(
+                        false,
+                        false
+                    );
 
-                return true;
+                    setSpeechLayoutState(
+                        false
+                    );
+
+                    if (speechTrainingActive) {
+                        stopInAppSpeechTraining({
+                            forced:
+                                true
+                        });
+                    }
+
+                    syncSpeechTrainingControls();
+                    await reconcileVoicePadRecognition();
+
+                    return true;
+                }
+            },
+
+            handleSpeechRuntimeMuted: {
+                metadata: {transaction: false},
+                implementation: function(
+                    muted = true
+                ) {
+                    setSpeechButtonState(
+                        true,
+                        Boolean(
+                            muted
+                        )
+                    );
+
+                    syncSpeechTrainingControls();
+                    queueMicrotask(syncLoginRecognition);
+
+                    return true;
+                }
             },
 
             handleSpeechUtteranceStarted() {
@@ -25491,7 +25394,7 @@
                 reason = "break"
             ) {
                 if (
-                    breakButton?.disabled
+                    !readInteractionState().actions.openBreakSelector
                 ) {
                     return false;
                 }
@@ -25727,6 +25630,17 @@
                 );
             },
 
+            enterLoginDigits: {metadata:{transaction:false}, implementation(digits, confirmation) {return enterLoginDigits(digits, confirmation);}},
+            switchToPasswordLogin: {metadata:{transaction:false}, implementation() {return switchToPasswordLogin();}},
+            switchToVoiceLogin: {metadata:{transaction:false}, implementation() {return switchToVoiceLogin();}},
+            confirmLoginDigits() {return confirmLoginDigits();},
+            cancelLoginDigits: {metadata:{transaction:false}, implementation() {return voiceLoginBusy ? false : resetVoiceLogin();}},
+            readTripSummary() { return showTripSummary(); },
+            confirmVoicePadRecognition() { return confirmVoicePadRecognition(); },
+            cancelVoicePadRecognition() { return cancelVoicePadRecognition(); },
+            confirmTripSummary() { return confirmCompletedTripSummary(); },
+            cancelTripSummary() { return completedTripSummary ? dismissCompletedTripSummary() : false; },
+
             async endTrip() {
                 if (globalThis.WMOFSpeechAvailability.canOpenBreakEndMenu()) return openSpeechBreakPrompt("end");
                 const transactionTime =
@@ -25953,13 +25867,7 @@
                         .trim()
                         .toLowerCase();
 
-                const rangeByScope = {
-                    day: "day",
-                    week: "week",
-                    check: "pay-period",
-                    month: "month",
-                    year: "year"
-                };
+                const rangeByScope = globalThis.WMOFLanguagePack.language.speech.ranges || {};
 
                 if (
                     normalizedScope ===
@@ -26041,13 +25949,7 @@
                     )
                         .trim()
                         .toLowerCase();
-                const rangeByMode = {
-                    day: "day",
-                    week: "week",
-                    check: "pay-period",
-                    month: "month",
-                    year: "year"
-                };
+                const rangeByMode = globalThis.WMOFLanguagePack.language.speech.ranges || {};
                 const requestedRange =
                     rangeByMode[
                         mode
@@ -26075,9 +25977,7 @@
                     getTripLogRange();
 
                 if (requestedRange) {
-                    setTripLogRange(
-                        requestedRange
-                    );
+                    setTripLogRange(requestedRange, {announce: false});
                 }
 
                 const appliedMode =
@@ -26106,6 +26006,10 @@
                     previousMode !==
                     appliedMode;
 
+                if (requestedRange) {
+                    return confirmInformationalChange("range-change",
+                        announcementText("messages.settings.viewing", {scope: totalScopeLabel()}));
+                }
                 if (
                     !rangeChanged &&
                     !modeChanged
@@ -26947,7 +26851,8 @@
 
             async connectUser(
                 username,
-                password
+                password,
+                credentials = {}
             ) {
                 if (
                     normalizedConnectionStatus() ===
@@ -26970,7 +26875,7 @@
                                 String(
                                     password ||
                                     ""
-                                )
+                                ), credentials
                             );
 
                     if (
@@ -29113,7 +29018,7 @@
                 "changeStandardTime", "closeActiveSurface", "confirmNumberPad", "confirmBreakPromptNo",
                 "confirmBreakPromptYes", "confirmBreakType", "confirmCancelDownTime", "continueStartAt",
                 "deferTrip", "lockEndTime", "openTripLog", "prepareReadyAction", "prepareStartMenu",
-                "readTotalGoal", "readTripGoal", "resumeTrip", "saveDownDetails", "saveTripSettings",
+                "readTotalGoal", "readTripGoal", "readTripSummary", "resumeTrip", "saveDownDetails", "saveTripSettings",
                 "scheduleStartAt", "startDownTime", "startScheduledTripEarly", "toggleSync"
             ].includes(String(actionName));
             // Voice entry uses one action for values and controls; only its
@@ -29344,6 +29249,34 @@
                     close: dismiss, cancel: dismiss
                 });
             }
+            for(const [key,fn,predicate] of [["loginUsername","switchToPasswordLogin","canSwitchToPasswordLogin"],["loginVoice","switchToVoiceLogin","canSwitchToVoiceLogin"]]) {
+                const command=installSpeechCommand(key,fn,loginDialog,false);
+                if(command)command.setAttribute("speech-available","WMOFSpeechAvailability."+predicate);
+            }
+            const loginDigitsCommand = installSpeechCommand("loginDigits", "enterLoginDigits", loginDialog, false);
+            const loginConfirmCommand = installSpeechCommand("confirm", "confirmLoginDigits", loginDialog, false);
+            for(const command of [loginDigitsCommand,loginConfirmCommand])if(command){command.setAttribute("speech-persist", "");command.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");}
+            installSpeechCommand("tripSummary", "readTripSummary", document.body, true);
+            const summaryConfirm = installSpeechCommand("confirm", "confirmTripSummary", tripTransitionOverlay, false);
+            summaryConfirm?.setAttribute("speech-available", "WMOFSpeechAvailability.canConfirmTripSummary");
+            summaryConfirm?.removeAttribute("speech-chain-context");
+            summaryConfirm?.removeAttribute("speech-chain-next");
+            for (const [id, action] of [["tripTransitionSummaryOk", "confirmTripSummary"], ["tripTransitionSummaryCancel", "cancelTripSummary"]]) {
+                globalThis.WMOFInteractionFunctions.bindAction({element: $("#" + id), event: "click", name: id + "Click", action});
+            }
+            tripTransitionOverlay.addEventListener("cancel", event => {
+                if (completedTripSummary) {event.preventDefault(); actions.cancelTripSummary();}
+            });
+            const enableVoicePad = installSpeechCommand("confirm", "confirmVoicePadRecognition", $("#voicePadRecognitionDialog"), false);
+            enableVoicePad?.removeAttribute("speech-chain-context");
+            for (const [id, action] of [["voicePadRecognitionOk", "confirmVoicePadRecognition"], ["voicePadRecognitionCancel", "cancelVoicePadRecognition"]]) {
+                globalThis.WMOFInteractionFunctions.bindAction({element: $("#" + id), event: "click", name: id + "Click", action});
+            }
+            $("#voicePadRecognitionDialog").addEventListener("cancel", event => {event.preventDefault(); actions.cancelVoicePadRecognition();});
+            SpeechMenu.events.addEventListener("muted", () => {void reconcileVoicePadRecognition().catch(console.error);});
+            SpeechMenu.events.addEventListener("listeningSuspended", event => {
+                if (event.detail?.reason === "speech-recognition-disabled") void reconcileVoicePadRecognition().catch(console.error);
+            });
             installNumberPadSpeechCommands();
             installVoiceEntrySpeechCommands();
             speechMicBar
@@ -29549,13 +29482,16 @@
 
     })();
 
-    function captureVoiceCommandFeedback() {
+    function captureVoiceCommandFeedback(element, context) {
+        const rangeCommand = element?.getAttribute("speech-function") === "WMOFActions.changeGoalMode" &&
+            Boolean(globalThis.WMOFLanguagePack.language.speech.ranges?.[context?.arguments?.[0]]);
         const state = numberPadState;
         const interval = clockTimer.getActiveIntervalState?.(new Date());
         const value = !state?.pending ? "" : state.mode === "percent"
             ? formatSpokenPercent(Number(state.pending)) : state.mode === "absolute"
                 ? renderAbsoluteDigits(state.pending) : formatGoalFailureDuration(timeDigitsToMilliseconds(state.pending));
         return {
+            rangeCommand, summaryInvocation: completedTripSummary?.invocation,
             surface: globalThis.SpeechMenu?.activeSurface?.id,
             source: state?.source, startsTrip: state?.startsTripOnConfirm,
             field: state && (voiceEntryDescriptor(state) || state.title || "Value"), value,
@@ -29602,6 +29538,7 @@
             switch (before.surface) {
                 case "voiceEntrySurface": case "numberPadDialog":
                     add(before.source === "new-trip" ? "entryCancelled" : "editCancelled"); break;
+                case "tripTransitionOverlay": add(before.summaryInvocation?.reason === "trip-ended" ? "entryCancelled" : "summaryClosed"); break;
                 case "scheduledStartDialog": add("scheduledCancelled"); break;
                 case "breakDialog": add(before.interval === "down" ? "cancelledDown" : "cancelledRunning"); break;
                 case "speechBreakConfirmDialog":
@@ -29627,7 +29564,7 @@
                 case "chooseBreakType":
                     add("breakSelected", {choice: after.choice === "lunch" ? "Lunch" : after.choice === "short-break" ? "Short break" : "Break"}); break;
                 case "openBreakEndMenu": case "openShortBreakEndMenu": case "openLunchEndMenu": parts.push(after.question); break;
-                case "prepareReadyAction": case "endTrip":
+                case "prepareReadyAction": case "prepareStartMenu": case "endTrip":
                     if (after.surface === "speechBreakConfirmDialog") parts.push(after.question); break;
                 case "confirmBreakPromptNo":
                     if (before.breakPromptMode === "end") add("intervalContinues", {interval: before.intervalLabel}); break;
@@ -29637,13 +29574,13 @@
                 case "openTripLog": add("logOpened"); break;
                 case "closeTripLog": add("logClosed"); returnedPrompt(); break;
                 case "saveTripSettings": if (!before.startsTrip) add("settingsSaved"); break;
-                case "sleep": add("sleeping"); break;
+                case "sleep": if (!before.voice) add("sleeping"); break;
                 case "wake": add("listening"); break;
-                case "disableSpeechRecognition": add("off"); break;
+                case "disableSpeechRecognition": if (!before.voice) add("off"); break;
                 case "toggleSync":
                     if (before.sync === after.sync) add("syncAlready", {state: after.sync ? "on" : "off"}); break;
                 case "changeGoalMode":
-                    if (before.mode === after.mode && before.range === after.range) add("modeAlready", {mode: after.mode}); break;
+                    if (!before.rangeCommand && before.mode === after.mode && before.range === after.range) add("modeAlready", {mode: after.mode}); break;
                 case "changeStandardTime":
                     if (before.standard === after.standard) add("standardAlready", {duration: formatGoalFailureDuration(after.standard)}); break;
                 case "confirmNumberPad":
@@ -29672,14 +29609,14 @@
         status.hidden = true; document.body.append(status);
         const pendingAttempts = new Set();
         stateTransactions.addEventListener("state", ({detail}) => {
-            if (detail.state === "pending") pendingAttempts.add(detail.id); else pendingAttempts.delete(detail.id);
+            if (["pending", "retrying"].includes(detail.state)) pendingAttempts.add(detail.id); else pendingAttempts.delete(detail.id);
             const state = pendingAttempts.size ? "pending" : detail.state;
             app.dataset.persistenceState = state;
             document.documentElement.dataset.persistenceState = state;
             status.hidden = state === "confirmed";
             status.textContent = state === "reverted"
                 ? `Reverted — ${detail.error?.message || "The command could not be completed."}`
-                : "Applying…";
+                : detail.state === "retrying" ? "Retrying…" : "Applying…";
         });
         stateTransactions.register("clock", {
             capture: () => clockTimer.captureState(),
@@ -29694,7 +29631,11 @@
                 numberPad: numberPadState && {...numberPadState, tripDefaults: numberPadState.tripDefaults && {...numberPadState.tripDefaults}},
                 voice: voiceEntryState && {...voiceEntryState}, voiceValue: voiceEntryValue?.textContent || "",
                 workflowLocked: newTripWorkflowLocked, stagedTime: stagedStandardTimeMilliseconds,
-                endingIntoNewTrip, preserveNumberPadStateOnClose, returnStack: [...uiReturnStack],
+                endingIntoNewTrip, completedTripSummary, voicePadEnableRequest,
+                summaryActive: tripTransitionOverlayActive, summaryTitle: tripTransitionOverlayTitle.textContent,
+                summaryRows: tripTransitionOverlayDetails.innerHTML,
+                summaryVisible: tripTransitionOverlay.classList.contains("is-visible"),
+                preserveNumberPadStateOnClose, returnStack: [...uiReturnStack],
                 settingsSession: tripSettingsSession && {...tripSettingsSession, values: {...tripSettingsSession.values}},
                 startsNow: tripStartsNowState && {...tripStartsNowState},
                 controls: [...document.querySelectorAll("dialog, [popover], input, select, textarea, [aria-expanded], [aria-pressed], .speech-focused")]
@@ -29708,6 +29649,14 @@
                 audioSettings = snapshot.audio; tripDraft = snapshot.draft;
                 pendingSpeechReady = snapshot.ready; speechBreakPromptState = snapshot.breakPrompt; numberPadState = snapshot.numberPad; voiceEntryState = snapshot.voice;
                 newTripWorkflowLocked = snapshot.workflowLocked; stagedStandardTimeMilliseconds = snapshot.stagedTime;
+                voicePadEnableRequest = snapshot.voicePadEnableRequest;
+                completedTripSummary = snapshot.completedTripSummary;
+                tripTransitionOverlayActive = snapshot.summaryActive;
+                tripTransitionOverlayTitle.textContent = snapshot.summaryTitle;
+                tripTransitionOverlayDetails.innerHTML = snapshot.summaryRows;
+                tripTransitionOverlay.classList.toggle("is-visible", snapshot.summaryVisible);
+                $("#tripTransitionSummaryActions").hidden = !completedTripSummary;
+                clearTimeout(tripTransitionOverlayTimer); clearTimeout(tripTransitionOverlayHideTimer);
                 endingIntoNewTrip = snapshot.endingIntoNewTrip; preserveNumberPadStateOnClose = snapshot.preserveNumberPadStateOnClose;
                 uiReturnStack.splice(0, uiReturnStack.length, ...snapshot.returnStack);
                 tripSettingsSession = snapshot.settingsSession; tripStartsNowState = snapshot.startsNow;

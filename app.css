@@ -7332,3 +7332,26 @@ html[data-persistence-state="reverted"] .persistence-status {background: #752323
 
 .main-menu .app-version{padding:12px 14px;color:var(--wm-blue-light);font-size:14px;}
 .main-menu .app-version output{margin-left:8px;font-family:monospace;letter-spacing:.08em;}
+
+/* Completed summaries remain interactive until an explicit response. */
+dialog.trip-transition-overlay {
+    width: 100vw; height: 100dvh; max-width: none; max-height: none;
+    margin: 0; border: 0; background: transparent;
+}
+dialog.trip-transition-overlay:not([open]) { display: none; }
+.trip-transition-overlay-panel { pointer-events: auto; }
+dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
+
+.login-digit-sequence { display:flex; gap:12px; justify-content:center; margin:16px 0; }
+.login-dialog .login-digit-sequence input { width:64px; height:76px; padding:8px; text-align:center; font-size:34px; font-weight:600; font-variant-numeric:tabular-nums; border-radius:10px; }
+.login-recognition-status { font-size:14px; opacity:.8; }
+
+.login-dialog #voiceLoginPrompt { text-align:center; }
+.login-dialog #loginIdRow, .login-dialog #loginPinRow { display:flex; flex-direction:column; align-items:center; gap:0; padding:0; }
+.login-dialog .login-digit-sequence { justify-content:center; }
+.login-dialog #loginIdLabel, .login-dialog #loginPinLabel { display:block; text-align:center; }
+.login-dialog .login-recognition-status { text-align:center; }
+
+.login-dialog .login-legacy-switch { justify-self:center; padding:4px 6px; border:0; background:transparent; color:var(--wm-blue-light); font:inherit; font-size:12px; font-weight:400; text-decoration:underline; cursor:pointer; }
+.login-dialog #loginLegacyFields { display:grid; gap:16px; }
+.login-dialog #loginLegacyFields label { display:grid; gap:8px; }
