@@ -28,3 +28,7 @@ assert.equal(DurationParser.describe(28 * 60000), "28 minutes");
 assert.equal(DurationParser.describe((60 + 5) * 60000), "1 hour 5 minutes");
 assert.equal(DurationParser.describe(3661000), "1 hour 1 minute 1 second");
 console.log("PASS context-aware speech value preprocessing");
+
+assert.equal(Preprocessor.parse("tutu percent", "percent"),22);
+assert.equal(Preprocessor.normalize("tutu minutes", "duration"),"0:22:00");
+assert.equal(Preprocessor.normalize("four tutu pm", "clock"),"4:22 pm");

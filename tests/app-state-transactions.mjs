@@ -12,7 +12,7 @@ const animationCalls=[];window.Element.prototype.animate=function(keyframes,opti
 const consoleErrors=[];window.console.error=(...args)=>consoleErrors.push(args.map(a=>a?.stack||String(a)).join(' '));
 const errors=[];window.addEventListener('error',e=>{errors.push(e.message);});
 const rules={weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'};
-let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];
+let rejectTripStop=false;let holdTripCheck=false;let releaseTripCheck;let rejectTripStart=false;let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];
 window.fetch=async(url,options={})=>{
  const path=new URL(url,'https://clock.example/').pathname;requests.push({path,options});
  const input=options.body?JSON.parse(options.body):null;
@@ -21,9 +21,12 @@ window.fetch=async(url,options={})=>{
     if(input.operation==='entry') stored.find(e=>e.event==='interval.started'&&e.value.intervalKey===input.entry.intervalKey).timestamp=input.entry.start;
     if(input.operation==='settings') Object.assign(stored.find(e=>e.event==='trip.started').value,input.settings);
  }
+ if(holdTripCheck&&path.endsWith('/command-check/')&&input.endpoint==='trips')await new Promise(resolve=>releaseTripCheck=resolve);
+ const tripStopRejected=rejectTripStop&&path.endsWith('/command-check/')&&input.endpoint==='trip-events'&&input.command.event==='trip.stopped';
+ const tripStartRejected=rejectTripStart&&path.endsWith('/command-check/')&&input.endpoint==='trips';
  const duplicateBreak=path.endsWith('/command-check/')&&input.endpoint==='trip-events'&&input.command.event==='interval.started'&&stored.some(e=>e.event==='interval.started'&&!stored.some(end=>end.event==='interval.ended'&&end.value.intervalKey===e.value.intervalKey));
  if(duplicateBreak&&holdCheck)await new Promise(resolve=>releaseCheck=resolve);
- const data=path.endsWith('/command-check/')?{accepted:!duplicateBreak,reason:'A break is already active.'}:path.endsWith('/calendar/')?{calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
+ const data=path.endsWith('/command-check/')?{accepted:!duplicateBreak&&!tripStartRejected&&!tripStopRejected,reason:tripStartRejected?'Trip start rejected.':tripStopRejected?'Trip finish rejected.':'A break is already active.'}:path.endsWith('/calendar/')?{calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
  path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',first_name:'Alex',last_name:'Driver',preferred_name:'Al',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
  path.endsWith('/trip-events/')?(options.method==='POST'?{eventId:eventId-1}:{tripId,events:structuredClone(stored)}):
  path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
@@ -66,12 +69,21 @@ assert.notEqual(timer.renderedTimeMode,originalMode);
 assert.equal(window.document.querySelector('.persistence-status').hidden,true);
 assert.equal(requests.filter(r=>r.path.endsWith("/command-check/")).length,checksBefore,"local preference commands do not call server validation");
 await timer.connect('test','test');
+window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
 const readyAttempt=window.SpeechMenu.testBegin();
 await window.SpeechMenu.testTranscript(readyAttempt,'ready',true);await readyAttempt.digestQueue;await settle();
 assert(!readyAttempt.digestExecutionFailed,'ready starts its workflow');
 assert(window.document.querySelector('dialog[open]'),'ready opens the start input');
-await window.WMOFActions.closeActiveSurface();await settle();
+const cancelAttempt=window.SpeechMenu.testBegin();
+await window.SpeechMenu.testTranscript(cancelAttempt,'castle',true);await cancelAttempt.digestQueue;await settle();
+assert(cancelAttempt.hadCommittedCommand,'castle executes cancellation');
+assert.equal(window.document.querySelector('#voiceEntrySurface').open,false,'castle closes the voice editor');
+assert.equal(timer.status,'ready','cancellation does not start a trip');
+const retryReady=window.SpeechMenu.testBegin();
+await window.SpeechMenu.testTranscript(retryReady,'rudd',true);await retryReady.digestQueue;await settle();
+assert(retryReady.hadCommittedCommand,'rudd is a direct Ready variant');
+assert.equal(window.document.querySelector('#voiceEntrySurface').open,true,'Ready works after cancellation');
 const systemMenu=window.document.createElement('speech-menu');systemMenu.setAttribute('speech-modal','system');
 const off=window.document.createElement('speech-command');off.setAttribute('speech-pattern','^off$');off.setAttribute('speech-function','WMOFActions.disableSpeechRecognition');systemMenu.append(off);window.document.body.append(systemMenu);
 await window.WMOFActions.toggleSync(true);await settle();
@@ -100,7 +112,7 @@ if(process.argv.includes('--pointer-confirmation')) {
     const valueAttempt=window.SpeechMenu.testBegin();
     await window.SpeechMenu.testTranscript(valueAttempt,'thirty minutes',true);await valueAttempt.digestQueue;await settle();
     const okAttempt=window.SpeechMenu.testBegin();
-    await window.SpeechMenu.testTranscript(okAttempt,'ok',true);await okAttempt.digestQueue;await settle();
+    await window.SpeechMenu.testTranscript(okAttempt,'okay',true);await okAttempt.digestQueue;await settle();
     assert(!okAttempt.digestExecutionFailed,'voice OK accepts and persists the entered trip time');
 }
 assert.equal(timer.status,'running','confirmation starts the trip');
@@ -108,7 +120,7 @@ assert(stored.some(e=>e.event==='trip.started'),'the confirmed trip reaches pers
 window.__testTime+=120000;
 if(process.argv.includes('--ready-finish')) {
     const finishReady=window.SpeechMenu.testBegin();
-    await window.SpeechMenu.testTranscript(finishReady,'ready',true);await finishReady.digestQueue;await settle();
+    await window.SpeechMenu.testTranscript(finishReady,'ruddy',true);await finishReady.digestQueue;await settle();
     assert(!finishReady.digestExecutionFailed,'Ready finishes the active trip');
     assert(stored.some(e=>e.event==='trip.stopped'),'Ready persists the completed trip');
 } else {
@@ -123,9 +135,74 @@ assert.equal(window.document.querySelector('#voiceEntryValue').hidden,false,'the
 window.document.querySelector('#numberPadDialog')?.dispatchEvent(new window.Event('close'));
 assert.equal(window.document.querySelector('#voiceEntryValue').textContent,'0:20:00','a previous editor close preserves the acknowledged voice input');
 const nextOk=window.SpeechMenu.testBegin();
-await window.SpeechMenu.testTranscript(nextOk,'ok',true);await nextOk.digestQueue;await settle();
+await window.SpeechMenu.testTranscript(nextOk,'o k',true);await nextOk.digestQueue;await settle();
 assert(!nextOk.digestExecutionFailed,'the next trip confirmation succeeds after finishing a trip');
 assert.equal(timer.status,'running','the second trip starts without restarting the app');
+rejectTripStop=true;
+window.__testTime+=60000;
+const tripIdBeforeFailedStop=timer.currentTripId;
+const writesBeforeFailedStop=stored.filter(e=>e.event==='trip.stopped').length;
+assert.equal(await window.WMOFActions.endTrip(),false,'rejected trip finish reports failure');await settle();
+assert.equal(timer.status,'running','failed finish restores the running trip');
+assert.equal(timer.currentTripId,tripIdBeforeFailedStop,'failed finish preserves the same trip');
+assert.equal(stored.filter(e=>e.event==='trip.stopped').length,writesBeforeFailedStop,'rejected finish does not write a stop event');
+assert.equal(window.document.querySelector('#app').dataset.tripState,'running','the UI agrees with the restored trip');
+assert.equal(window.document.querySelector('#voiceEntrySurface').open,false,'failed finish leaves the next editor closed');
+assert.equal(window.document.querySelector('#newTripButton').disabled,true,'failed finish cannot start a second trip');
+assert.equal(window.document.querySelector('#endTripButton').disabled,false,'failed finish can be retried');
+assert.equal(window.WMOFStateTransactions.active,undefined,'failed finish leaves no unfinished transaction');
+rejectTripStop=false;
+const hear=async(text)=>{
+    const utterance=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(utterance,text,true);await utterance.digestQueue;await settle();
+    assert(utterance.hadCommittedCommand,text+' executes in the current UI state');
+    assert(!utterance.digestExecutionFailed,text+' finishes successfully');
+    assert.equal(window.WMOFStateTransactions.active,undefined,text+' leaves no unfinished transaction');
+    return utterance;
+};
+for(const [value,confirmation] of [['tutu minutes','okay'],['ten minutes','o k'],['five minutes','ok']]) {
+    window.__testTime+=60000;
+    await window.WMOFActions.endTrip();await settle();
+    assert.equal(window.document.querySelector('#voiceEntrySurface').open,true,'finishing opens the next input');
+    assert.equal(window.document.querySelector('#voiceEntryValue').hidden,true,'new input cannot reuse the previous value');
+    window.document.querySelector('#voiceEntryTouch').click();await settle();
+    assert.equal(window.document.querySelector('#numberPadDialog').open,true,'next input switches to the number pad');
+    await window.WMOFActions.switchNumberPadToVoice();await settle();
+    assert.equal(window.document.querySelector('#voiceEntrySurface').open,true,'number pad returns to speech entry');
+    window.document.querySelector('#numberPadDialog').dispatchEvent(new window.Event('close'));
+    assert.equal(window.document.querySelector('#voiceEntrySurface').open,true,'delayed close leaves the current editor open');
+    const confirmButton=window.document.querySelector('#numberPadConfirm');
+    if(confirmButton)assert.equal(confirmButton.disabled,true,'new input cannot reuse the previous confirmation');
+    await hear(value);
+    assert.equal(window.document.querySelector('#voiceEntryValue').hidden,false,'the next value is acknowledged');
+    await hear(confirmation);
+    assert.equal(timer.status,'running','repeated confirmation starts the next trip');
+    assert.equal(window.document.querySelector('#voiceEntrySurface').open,false,'confirmed input closes');
+    assert(!window.document.querySelector('#numberPadDialog')?.open,'touch editor stays closed');
+    assert.equal(window.SpeechMenu.started,true,'repeated confirmation keeps recognition active');
+}
+window.__testTime+=60000;
+await window.WMOFActions.endTrip();await settle();
+await hear('twenty minutes');
+rejectTripStart=true;holdTripCheck=true;
+const writesBeforeRejection=requests.filter(r=>r.options.method==='POST'&&r.path.endsWith('/trips/')).length;
+const rejected=window.SpeechMenu.testBegin();
+const rejectionWork=window.SpeechMenu.testTranscript(rejected,'ok',true);await settle();
+assert(releaseTripCheck,'confirmation reaches server validation');
+assert.equal(timer.status,'running','the start appears while validation is pending');
+assert.equal(requests.filter(r=>r.options.method==='POST'&&r.path.endsWith('/trips/')).length,writesBeforeRejection,'pending validation does not write a trip');
+releaseTripCheck();holdTripCheck=false;
+await rejectionWork;await rejected.digestQueue;await settle();
+assert(rejected.digestExecutionFailed,'server rejection fails the confirmation');
+assert.notEqual(timer.status,'running','rejected start rolls back the optimistic trip');
+assert.equal(window.document.querySelector('#voiceEntrySurface').open,true,'rejected confirmation restores the editor');
+assert.equal(window.document.querySelector('#voiceEntryValue').textContent,'0:20:00','rollback keeps the acknowledged value');
+assert.equal(window.document.querySelector('#voiceEntryValue').hidden,false,'rollback shows the acknowledged value');
+assert.equal(window.WMOFStateTransactions.active,undefined,'rejection leaves no unfinished transaction');
+rejectTripStart=false;
+await hear('fifteen minutes');
+await hear('okay');
+assert.equal(timer.status,'running','a new value can be confirmed after rejection');
 await timer.stop();await timer.clear();stored.length=0;
 await timer.start({standardTimeMilliseconds:3600000});
 window.__testTime+=60000;
@@ -153,7 +230,7 @@ assert.equal(timer.currentTripId,originalTrip);
 assert.equal(window.document.querySelector('#breakDialog').open,false);
 assert.equal(states.at(-1),'reverted');
 window.__testTime+=60000;await timer.endInterval(new window.Date());await settle();
-for(const phrase of ['down','downtime','down time']) {
+for(const [phrase,resume] of [['down','resumed'],['downtime','resume'],['down time','resumed']]) {
     window.__testTime+=60000;
     await settle();
     const downEventsBefore=stored.filter(e=>e.event==='interval.started'&&e.value.type?.toLowerCase()==='down').length;
@@ -164,9 +241,14 @@ for(const phrase of ['down','downtime','down time']) {
     assert(downAttempt.digestSteps[0].commandElement.hasAttribute('speech-persist'),phrase+' is marked for persistence');
     assert.equal(stored.filter(e=>e.event==='interval.started'&&e.value.type?.toLowerCase()==='down').length,downEventsBefore+1,phrase+' persists the Down event');
     assert.equal(window.SpeechMenu.started,true,phrase+' keeps recognition active');
-    window.__testTime+=60000;await timer.endInterval(new window.Date());await settle();
+    window.__testTime+=60000;
+    const resumeAttempt=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(resumeAttempt,resume,true);await resumeAttempt.digestQueue;await settle();
+    assert(!timer.getActiveIntervalState(),resume+' ends Down time');
+    assert(resumeAttempt.hadCommittedCommand,resume+' executes its command');
+    assert(!resumeAttempt.digestExecutionFailed,resume+' persists successfully');
 }
 assert.equal(errors.length,0,errors.join('\n'));
 assert.equal(consoleErrors.length,0,consoleErrors.join('\n'));
-console.log('PASS trip confirmation before and after End Trip, Ready, Down aliases, sync-off microphone visibility, optimistic UI and rollback');
+console.log('PASS repeated trip entry, touch/voice switching, delayed closes, Ready/Cancel/Resume variants, validation rejection and retry, Down persistence, sync-off visibility and rollback');
 window.happyDOM.abort();

@@ -45,7 +45,7 @@ class EnglishSpokenTimeParser {
 
     /** Return normalized clock components without choosing a calendar date. */
     static parseParts(value) {
-        let text = String(value ?? "").toLocaleLowerCase("en-US").trim();
+        let text = String(value ?? "").toLocaleLowerCase("en-US").trim().replace(/\btutu\b/g, "twenty two");
         if (!text) return undefined;
         text = text
             .replace(/[.]/g, "")

@@ -17275,7 +17275,7 @@
             text.toLowerCase();
 
         if (
-            /^(?:cancel|close)$/
+            /^(?:cancel|castle|close)$/
                 .test(command)
         ) {
             return closeVoiceEntry({
@@ -17336,7 +17336,7 @@
         }
 
         if (
-            /^(?:ok|okay)$/
+            /^(?:ok(?:ay)?|o\s+k)$/
                 .test(command)
         ) {
             if (!numberPadValueValid()) {
@@ -20825,14 +20825,9 @@
                             .resetCompletedTrip()
                 );
 
-        completedTripResetPromise
-            .catch(
-                error =>
-                    console.error(
-                        "Completed trip reset failed:",
-                        error
-                    )
-            );
+        // Observe immediately; the action below awaits this same promise so a
+        // rejected finish restores the entire optimistic transition.
+        completedTripResetPromise.catch(() => {});
 
         const opened =
             await beginNewTripWorkflow({
@@ -20942,6 +20937,8 @@
                 speech
             );
         }
+        await completedTripResetPromise;
+        return opened;
     }
 
     let speechBreakPromptState;
@@ -23251,6 +23248,12 @@
                     formalParts.length - 1
                 ]
             );
+        }
+
+        if (hours > 0 && minutes === 0 && seconds > 0) {
+            const hourPart = hours === 1 ? "an hour" : goalFailureNumberWords(hours) + " hours";
+            return hourPart + " " + goalFailureNumberWords(seconds) +
+                (seconds === 1 ? " second" : " seconds");
         }
 
         if (seconds > 0) {
@@ -29472,7 +29475,13 @@
         stateTransactions.register("interface", {
             capture: () => ({
                 focus: document.activeElement, audio: structuredClone(audioSettings), draft: tripDraft && {...tripDraft},
-                ready: pendingSpeechReady, numberPad: numberPadState, voice: voiceEntryState,
+                ready: pendingSpeechReady,
+                numberPad: numberPadState && {...numberPadState, tripDefaults: numberPadState.tripDefaults && {...numberPadState.tripDefaults}},
+                voice: voiceEntryState && {...voiceEntryState}, voiceValue: voiceEntryValue?.textContent || "",
+                workflowLocked: newTripWorkflowLocked, stagedTime: stagedStandardTimeMilliseconds,
+                endingIntoNewTrip, preserveNumberPadStateOnClose, returnStack: [...uiReturnStack],
+                settingsSession: tripSettingsSession && {...tripSettingsSession, values: {...tripSettingsSession.values}},
+                startsNow: tripStartsNowState && {...tripStartsNowState},
                 controls: [...document.querySelectorAll("dialog, [popover], input, select, textarea, [aria-expanded], [aria-pressed], .speech-focused")]
                     .map(element => ({element, value: element.value, checked: element.checked,
                         hidden: element.hidden, disabled: element.disabled, open: element.open,
@@ -29483,6 +29492,10 @@
             restore: snapshot => {
                 audioSettings = snapshot.audio; tripDraft = snapshot.draft;
                 pendingSpeechReady = snapshot.ready; numberPadState = snapshot.numberPad; voiceEntryState = snapshot.voice;
+                newTripWorkflowLocked = snapshot.workflowLocked; stagedStandardTimeMilliseconds = snapshot.stagedTime;
+                endingIntoNewTrip = snapshot.endingIntoNewTrip; preserveNumberPadStateOnClose = snapshot.preserveNumberPadStateOnClose;
+                uiReturnStack.splice(0, uiReturnStack.length, ...snapshot.returnStack);
+                tripSettingsSession = snapshot.settingsSession; tripStartsNowState = snapshot.startsNow;
                 const graphics = getGraphicalSettings(), preferences = getTripPreferences();
                 applyGraphicalSettings(graphics); fillGraphicalForm(graphics); fillTripPreferencesForm(preferences);
                 applyAudioOutputSettings();
@@ -29512,6 +29525,8 @@
                 }
                 snapshot.focus?.isConnected && snapshot.focus.focus?.();
                 updateSummaryValues(); renderTripActionState(); renderSyncGoalsState();
+                if (numberPadState) refreshNumberPad();
+                if (voiceEntryState) renderVoiceEntry({value: snapshot.voiceValue});
             }
         });
     }

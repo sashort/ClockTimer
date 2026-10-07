@@ -4,7 +4,7 @@
   "patterns": {
     "978255d5-aa06-506d-a272-a01539ee1587": {
       "id": "978255d5-aa06-506d-a272-a01539ee1587",
-      "pattern": "^ready at (?<spokenTime>.+)$"
+      "pattern": "^(?:ready|ruddy|rudd) at (?<spokenTime>.+)$"
     },
     "69c663ba-52cf-52f2-b173-9c20e3199b32": {
       "id": "69c663ba-52cf-52f2-b173-9c20e3199b32",
@@ -12,7 +12,7 @@
     },
     "6552c89a-5807-5ccf-8755-8e411b5c3de5": {
       "id": "6552c89a-5807-5ccf-8755-8e411b5c3de5",
-      "pattern": "^ready$"
+      "pattern": "^(?:ready|ruddy|rudd)$"
     },
     "f1892f87-4a17-50fc-bfc6-5a26a24c114c": {
       "id": "f1892f87-4a17-50fc-bfc6-5a26a24c114c",
@@ -28,7 +28,7 @@
     },
     "215e7e83-3439-5014-a92e-22463882cd66": {
       "id": "215e7e83-3439-5014-a92e-22463882cd66",
-      "pattern": "^resume$"
+      "pattern": "^resumed?$"
     },
     "74c28b6f-1b4e-542d-888a-fa1a8c861e34": {
       "id": "74c28b6f-1b4e-542d-888a-fa1a8c861e34",
@@ -97,11 +97,11 @@
     },
     "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012": {
       "id": "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012",
-      "pattern": "^ok(?:ay)?$"
+      "pattern": "^(?:ok(?:ay)?|o\\s+k)$"
     },
     "408a0105-d07e-50d7-865a-f91f02112ac6": {
       "id": "408a0105-d07e-50d7-865a-f91f02112ac6",
-      "pattern": "^ok(?:ay)?$"
+      "pattern": "^(?:ok(?:ay)?|o\\s+k)$"
     },
     "92d60ea1-eca5-5dfa-9662-15ebe254e3f1": {
       "id": "92d60ea1-eca5-5dfa-9662-15ebe254e3f1",
@@ -159,7 +159,7 @@
     },
     "7cfc2b56-03bc-56ea-a11c-3cb3679456cc": {
       "id": "7cfc2b56-03bc-56ea-a11c-3cb3679456cc",
-      "pattern": "^ready at (?<spokenTime>.+)$",
+      "pattern": "^(?:ready|ruddy|rudd) at (?<spokenTime>.+)$",
       "command": "readyAt",
       "preprocessorId": "204da7f1-f1f5-5f6b-951a-f9a1cd05155f"
     },
@@ -171,7 +171,7 @@
     },
     "af3af6f3-1e52-544f-bf23-a914078c78b7": {
       "id": "af3af6f3-1e52-544f-bf23-a914078c78b7",
-      "pattern": "^ready$",
+      "pattern": "^(?:ready|ruddy|rudd)$",
       "command": "ready"
     },
     "6de24515-cbba-565f-a856-a588dc240656": {
@@ -186,7 +186,7 @@
     },
     "772e6012-32b8-5baa-bc6a-24e7a15119a2": {
       "id": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
-      "pattern": "^ok(?:ay)?$",
+      "pattern": "^(?:ok(?:ay)?|o\\s+k)$",
       "command": "confirm"
     },
     "1dffbcc6-dfcd-5681-bd6d-e44e0804ecc7": {
@@ -201,7 +201,7 @@
     },
     "1d84b59d-4078-5b53-a748-02489f86c0d1": {
       "id": "1d84b59d-4078-5b53-a748-02489f86c0d1",
-      "pattern": "^cancel$",
+      "pattern": "^(?:cancel|castle)$",
       "command": "cancel"
     },
     "b636c62b-ddd1-5619-93ef-685659516e71": {
@@ -216,12 +216,12 @@
     },
     "315ffc8d-05f8-5beb-a900-33a0be0b2213": {
       "id": "315ffc8d-05f8-5beb-a900-33a0be0b2213",
-      "pattern": "^ok(?:ay)?$",
+      "pattern": "^(?:ok(?:ay)?|o\\s+k)$",
       "command": "voiceEntryConfirm"
     },
     "9e012b55-1e73-51a3-b8c4-e90181485523": {
       "id": "9e012b55-1e73-51a3-b8c4-e90181485523",
-      "pattern": "^(?:cancel|close)$",
+      "pattern": "^(?:cancel|castle|close)$",
       "command": "voiceEntryCancel"
     },
     "956ded15-a3b9-5d29-bf13-50c65e7c8a66": {
@@ -246,7 +246,7 @@
     },
     "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39": {
       "id": "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39",
-      "pattern": "^resume$",
+      "pattern": "^resumed?$",
       "command": "resume"
     },
     "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f": {
@@ -328,7 +328,7 @@
     },
     "d1fc965f-6fdb-551a-a7e0-60079b90fb3e": {
       "id": "d1fc965f-6fdb-551a-a7e0-60079b90fb3e",
-      "pattern": "^(?<spokenValue>(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?)(?:[\\s\\-\\u2013\\u2014]+(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?))*)$",
+      "pattern": "^(?<spokenValue>(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|tutu|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?)(?:[\\s\\-\\u2013\\u2014]+(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|tutu|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?))*)$",
       "command": "keypadValue"
     },
     "8488608f-bc9a-54b4-94a1-1e5fa0801771": {

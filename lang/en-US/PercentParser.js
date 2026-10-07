@@ -61,6 +61,7 @@ class EnglishSpokenPercentParser {
                     "en-US"
                 )
                 .trim()
+                .replace(/\btutu\b/g, "22")
                 .replace(
                     /\s*(?:percent|per cent|%)\s*$/,
                     ""

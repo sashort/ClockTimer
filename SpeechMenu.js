@@ -255,8 +255,7 @@ class SpeechMenu {
         Object.freeze([
             ...[
                 ["red", -101],
-                ["redd", -102],
-                ["rudd", -103]
+                ["redd", -102]
             ]
                 .map(
                     ([observed, id]) =>

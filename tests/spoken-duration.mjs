@@ -193,3 +193,7 @@ assert.equal(
 console.log(
     "PASS English spoken-duration parsing"
 );
+
+assert.equal(parse("tutu"),parse("22"));
+assert.equal(parse("tutu minutes"),parse("22 minutes"));
+assert.equal(parse("tutu nineteen"),parse("twenty two nineteen"));

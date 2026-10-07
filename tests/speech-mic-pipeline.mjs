@@ -3295,7 +3295,7 @@ assert.match(
 );
 assert.match(
     speechMenuSource,
-    /#builtInCorrections[\s\S]*"red"[\s\S]*"redd"[\s\S]*"rudd"[\s\S]*canonical:[\s\S]*"ready"[\s\S]*matchType:[\s\S]*"prefix"/
+    /#builtInCorrections[\s\S]*"red"[\s\S]*"redd"[\s\S]*canonical:[\s\S]*"ready"[\s\S]*matchType:[\s\S]*"prefix"/
 );
 assert.match(
     speechMenuSource,

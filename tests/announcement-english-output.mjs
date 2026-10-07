@@ -19,3 +19,13 @@ summary=false;
 assert.deepEqual(Array.from(ctx.timing({timeDifferenceMilliseconds:1000},'trip-resumed-early')),['','1000 ms saved.']);
 assert.deepEqual(Array.from(ctx.failure({goals:[{type:'standard',percent:1}],fallback:{type:'standard',percent:1,remainingMilliseconds:1000}})),['','1000 ms until Standard Goal.']);
 console.log('PASS English timing, remaining, trip end, goal failures and disabled summaries retain their wording and component identity');
+
+const durationContext=vm.createContext({audioSettings:{formalTime:false}});
+vm.runInContext(app.slice(app.indexOf('    function goalFailureNumberWords('),app.indexOf('    function buildGoalFailureSpeech(')),durationContext);
+assert.equal(durationContext.formatGoalFailureDuration(3606000),'an hour six seconds');
+assert.equal(durationContext.formatGoalFailureDuration(3601000),'an hour one second');
+assert.equal(durationContext.formatGoalFailureDuration(7206000),'two hours six seconds');
+assert.equal(durationContext.formatGoalFailureDuration(3600000),'an hour');
+assert.equal(durationContext.formatGoalFailureDuration(3666000),'one oh one oh six');
+durationContext.audioSettings.formalTime=true;
+assert.equal(durationContext.formatGoalFailureDuration(3606000),'one hour and six seconds');

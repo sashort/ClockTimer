@@ -193,3 +193,18 @@ jobs:
           node speech-training-model.mjs
           node spoken-duration.mjs
           node voice-catalog.mjs
+
+  ui-state-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+      - name: Check optimistic UI transitions and speech recovery
+        working-directory: tests
+        run: npm run test:state-transactions

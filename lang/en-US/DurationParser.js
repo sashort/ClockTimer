@@ -61,6 +61,7 @@ class EnglishDurationParser {
             String(value ?? "")
                 .toLocaleLowerCase("en-US")
                 .trim()
+                .replace(/\btutu\b/g, "22")
                 .replace(/[-–—]/g, " ")
                 .replace(/\s+/g, " ");
 
