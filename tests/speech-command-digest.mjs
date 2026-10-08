@@ -150,6 +150,16 @@ try {
     const latest=speech.testResult(repeated,'show log Beatrice show log Beatrice show log',true);
     await latest.bargeInBarrier;await new Promise(setImmediate);await latest.digestQueue;
     assert.deepEqual(calls,[['log'],['log'],['log']],'multiple boundaries preserve the commands between names');
+    const nameFirst=fresh();
+    const namedStart=speech.testResult(nameFirst,'Beatrice show log',true);
+    await namedStart.bargeInBarrier;await new Promise(setImmediate);await namedStart.digestQueue;
+    assert.deepEqual(calls,[['log']],'streams may begin with the configured name');
+    const nameOnly=fresh();
+    const waiting=speech.testResult(nameOnly,'Beatrice',false);
+    await waiting.bargeInBarrier;
+    assert.equal(calls.length,0,'name alone waits without executing a command');
+    speech.testResult(waiting,'show log',true);await new Promise(setImmediate);await waiting.digestQueue;
+    assert.deepEqual(calls,[['log']],'command after a name-only boundary uses the fresh capture');
     const finalBoundary=fresh();
     await hear(finalBoundary,'ready at four twenty');
     speech.testFinish('candidate-silence',true);
