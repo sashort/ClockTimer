@@ -6129,6 +6129,61 @@
       "id": "14646964-3f0a-5002-b264-23cd3a865312",
       "text": "🎃 Dark 80s",
       "default": "🎃 Dark 80s"
+    },
+    "f5213d8d-d342-5b00-9557-64a3e3537ef1": {
+      "id": "f5213d8d-d342-5b00-9557-64a3e3537ef1",
+      "text": "Select song",
+      "default": "Select song"
+    },
+    "e86c75d7-7ca3-50de-88e0-5e969867ab09": {
+      "id": "e86c75d7-7ca3-50de-88e0-5e969867ab09",
+      "text": "Download WAV",
+      "default": "Download WAV"
+    },
+    "d050a12d-e79b-5dfe-9a5e-ff3ea25b8ef1": {
+      "id": "d050a12d-e79b-5dfe-9a5e-ff3ea25b8ef1",
+      "text": "Back to Order Filler",
+      "default": "Back to Order Filler"
+    },
+    "a9f4aec7-fd1c-5ce0-add9-52faee24badc": {
+      "id": "a9f4aec7-fd1c-5ce0-add9-52faee24badc",
+      "text": "Recognizer name",
+      "default": "Recognizer name"
+    },
+    "aaf29102-ffde-519d-b4de-c44844040d6c": {
+      "id": "aaf29102-ffde-519d-b4de-c44844040d6c",
+      "text": "Off",
+      "default": "Off"
+    },
+    "542b3639-2667-58eb-9544-a3692e3aeaac": {
+      "id": "542b3639-2667-58eb-9544-a3692e3aeaac",
+      "text": "Custom name",
+      "default": "Custom name"
+    },
+    "895ec700-dc9d-574d-b1eb-cef2d0f99adc": {
+      "id": "895ec700-dc9d-574d-b1eb-cef2d0f99adc",
+      "text": "Save name",
+      "default": "Save name"
+    },
+    "93bbc7ae-c8b0-5546-81c3-304a17ba6272": {
+      "id": "93bbc7ae-c8b0-5546-81c3-304a17ba6272",
+      "text": "Say the name to finish valid commands, discard unmatched speech, and start a fresh stream.",
+      "default": "Say the name to finish valid commands, discard unmatched speech, and start a fresh stream."
+    },
+    "35b6f8db-afeb-5290-8f1c-e02ee2688d79": {
+      "id": "35b6f8db-afeb-5290-8f1c-e02ee2688d79",
+      "text": "Custom recognizer name",
+      "default": "Custom recognizer name"
+    },
+    "af3d50cd-7878-5c14-b6ca-fb4f881852de": {
+      "id": "af3d50cd-7878-5c14-b6ca-fb4f881852de",
+      "text": "Recognizer name saved.",
+      "default": "Recognizer name saved."
+    },
+    "cbad6bab-3510-5942-a01e-c5495c77d65e": {
+      "id": "cbad6bab-3510-5942-a01e-c5495c77d65e",
+      "text": "Name was not saved. Use letters and try again.",
+      "default": "Name was not saved. Use letters and try again."
     }
   }
 }

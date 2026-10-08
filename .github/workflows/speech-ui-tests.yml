@@ -243,6 +243,11 @@ jobs:
           node expressive-instruments.mjs
           node easter-egg-arrangement.mjs
           node dark-eighties-song.mjs
+          node easter-egg-media-page.mjs
+          php easter-egg-media-page.php
+          php -l ../api/audio/easter-eggs/index.php
+          node recognizer-names.mjs
+          node --check ../RecognizerNames.js
           node audio-routing-diagnostic.mjs
           node microphone-capture-lifecycle.mjs
           node drop-in-view.mjs

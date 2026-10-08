@@ -2061,6 +2061,7 @@ class SpeechMenu {
             }
         }
 
+        append(globalThis.WMOFRecognizerNames?.name);
         return values;
     }
 
@@ -2097,6 +2098,14 @@ class SpeechMenu {
         reason = "speech-context-change"
     ) {
         SpeechMenu.#contextGeneration++;
+        for (const buffered of SpeechMenu.#finishedUtterances.values()) {
+            if (buffered.bargeInPending) buffered.contextGeneration = SpeechMenu.#contextGeneration;
+        }
+        if (SpeechMenu.#utterance?.bargeInPending && !SpeechMenu.#stopped) {
+            // The buffered stream will be interpreted against the state left by the old queue.
+            SpeechMenu.#utterance.contextGeneration = SpeechMenu.#contextGeneration;
+            return true;
+        }
         const chains = [SpeechMenu.#utterance, ...SpeechMenu.#finishedUtterances.values()]
             .filter(utterance => utterance?.chainActive && !utterance.chainCanceled && !utterance.digestFailed);
         if (chains.length && !SpeechMenu.#stopped) {
@@ -2915,6 +2924,7 @@ class SpeechMenu {
             // Capture has ended, but its requested final decode still owns the
             // accepted command transaction. A new utterance must not discard
             // that result and leave later state changes waiting forever.
+            if (utterance.bargeInPending) continue;
             if (utterance.chainActive && !utterance.chainCanceled &&
                 !utterance.digestFailed && !utterance.digestCommitted) continue;
             SpeechMenu
@@ -3081,14 +3091,15 @@ class SpeechMenu {
             return;
         }
 
-        const transcript =
-            SpeechMenu
-                .#stripSynthesizedSpeech(
-                    SpeechMenu
-                        .#normalizeTranscript(
-                            detail.transcript
-                        )
-                );
+        const rawTranscript = SpeechMenu.#normalizeTranscript(
+            [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" "));
+        const barge = active === utterance && !utterance.bargeInFlushing
+            ? globalThis.WMOFRecognizerNames?.split(rawTranscript) : null;
+        if (barge) {
+            SpeechMenu.#flushNamedStream(utterance, barge, Boolean(detail.isFinal));
+            return;
+        }
+        const transcript = SpeechMenu.#stripSynthesizedSpeech(rawTranscript);
 
         if (!transcript) {
             return;
@@ -3157,6 +3168,59 @@ class SpeechMenu {
                 transcript
             );
     };
+
+    static #flushNamedStream(utterance, barge, isFinal) {
+        utterance.bargeInFlushing = true;
+        SpeechMenu.#clearCandidatePool(utterance);
+        // Capture restarts immediately; command completion remains on its existing queue.
+        const previousBarrier = utterance.bargeInBarrier;
+        SpeechMenu.#finishUtterance("named-barge-in", false);
+        SpeechMenu.#preRollFrames.length = 0;
+        SpeechMenu.#preRollSamples = 0;
+        SpeechMenu.#beginUtterance(performance.now());
+        const next = SpeechMenu.#utterance;
+        next.bargeInSeed = barge.after;
+        next.bargeInPending = true;
+        next.bargeInBarrier = (async () => {
+            await previousBarrier;
+            await utterance.digestQueue;
+            const remainder = SpeechMenu.#digestRemainder(utterance, barge.before);
+            if (!utterance.digestFailed && !utterance.digestCommitted && remainder) {
+                // Retain only validated command segments. Unmatched tail never rejects prior work.
+                utterance.digestIsFinal = true;
+                let candidate;
+                let validPrefix = remainder;
+                // Greedy value parsers may include trailing noise. Search longest valid prefix.
+                let attempts = 0;
+                while (validPrefix) {
+                    if (++attempts % 8 === 0) await new Promise(resolve => setTimeout(resolve, 0));
+                    const pool = await SpeechMenu.#refreshCandidatePool(utterance, validPrefix);
+                    candidate = pool[0];
+                    if (candidate?.chain?.length || candidate?.exact) break;
+                    validPrefix = validPrefix.split(" ").slice(0, -1).join(" ");
+                }
+                if (candidate?.kind === "chain" && candidate.chain?.length) {
+                    const valid = candidate.chain.map(step => step.segmentTranscript).join(" ");
+                    SpeechMenu.#digestCandidate(utterance, {...candidate,invalid:false,remainder:""}, valid, true);
+                } else if (candidate?.exact && !utterance.chainActive) {
+                    await SpeechMenu.#processElement(candidate.commandElement, validPrefix, utterance.id,
+                        candidate.speechMenuElement, SpeechMenu.#shouldExecuteElement(candidate.commandElement));
+                }
+            }
+            utterance.digestCommitted = true;
+            if (utterance.chainActive) await SpeechMenu.#completeDigest(utterance);
+            else await utterance.digestQueue;
+            if (next.sessionGeneration === SpeechMenu.#sessionGeneration) {
+                next.contextGeneration = SpeechMenu.#contextGeneration;
+                next.expectedSurfaces = new Set([...document.querySelectorAll('dialog[open]')].slice(-1));
+            }
+        })().catch(error => {SpeechMenu.#emit("speechMenuCommandError", {utteranceId:utterance.id,error});})
+            .finally(() => {next.bargeInPending = false;});
+        globalThis.WMOFAudio?.stopAll?.();
+        SpeechMenu.#emit("speechBargeIn", {utteranceId:utterance.id,nextUtteranceId:next.id,name:barge.name,
+            preservedTranscript:utterance.digestTranscript, discardedTranscript:barge.before, transcript:barge.after});
+        if (barge.after) SpeechMenu.#onSherpaTranscript({detail:{utteranceId:next.id, transcript:"", isFinal}});
+    }
 
     static #onSherpaError = event => {
         const detail =
@@ -3365,6 +3429,7 @@ class SpeechMenu {
         transcript,
         isFinal
     ) {
+        if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
         if (
             !utterance ||
             utterance.committed ||
@@ -4180,6 +4245,7 @@ class SpeechMenu {
         utterance,
         transcript
     ) {
+        if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
         if (
             !utterance ||
             utterance.contextGeneration !==

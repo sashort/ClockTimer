@@ -22,8 +22,8 @@ for(const page of pages){
  }
  if(page==='order-filler'){
   assert.equal(w.document.getElementById('easterEggMenuButton').dataset.menuIcon,'music');
-  const play=w.document.getElementById('easterEggPlayButton');play.textContent='Resume';assert.equal(play.dataset.menuIcon,'play','icon survives playback label updates');
-  assert(w.document.getElementById('easterEggSongSelect').options.length>=2,'keep all existing songs');
+  assert.equal(w.document.getElementById('easterEggMenuButton').getAttribute('href'),'api/audio/easter-eggs/');
+  assert.equal(w.document.getElementById('easterEggSongSelect'),null,'songs move to the native audio endpoint');
  }
  if(page !== 'index') {
   const body=fs.readFileSync(new URL('../templates/pages/'+page+'/body.html',import.meta.url),'utf8');

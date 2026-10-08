@@ -110,7 +110,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     "One utterance cannot execute both a short command and its preempting continuation.",
     "Returning from Trip Log preserves underlying editor value and surface.",
     "Ready / End Trip uses one immutable timestamp for end/start boundary.",
-    "End <break type> OK skips question and dialog; standalone final End <break type> shows both.",
+    "End \u003cbreak type> OK skips question and dialog; standalone final End \u003cbreak type> shows both.",
     "Scheduled Start accepts a valid duration with or without the Standard Time prefix.",
     "Break Selector is pointer-only; voice start commands use a typed OK/Cancel dialog.",
     "Localized command patterns dispatch neutral interval identifiers; core logic does not parse English break names.",
@@ -141,7 +141,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "trip": "No active trip",
       "facet": "",
       "commands": [
-        "Ready at <clock time> [continuation]",
+        "Ready at \u003cclock time> [continuation]",
         "Ready / New Trip",
         "Log / settings / modes"
       ],
@@ -170,7 +170,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "commands": [
         "Off / Sleep [when listening]",
         "Cancel / Close [top surface]",
-        "At <time> / Defer Trip",
+        "At \u003ctime> / Defer Trip",
         "Say a duration / Touch"
       ],
       "family": "mainline",
@@ -359,7 +359,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "commands": [
         "Off / Sleep [when listening]",
         "Cancel / Close [top surface]",
-        "Standard time <duration>",
+        "Standard time \u003cduration>",
         "Edit standard time"
       ],
       "family": "scheduling",
@@ -449,7 +449,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "title": "Start interval confirmation",
       "focus": "Voice start confirmation dialog",
       "trip": "Running or Down",
-      "facet": "Are you ready to start your <break type>?",
+      "facet": "Are you ready to start your \u003cbreak type>?",
       "commands": [
         "Cancel / Close [keep trip state]",
         "OK / Okay / O K [start selected interval]"
@@ -555,7 +555,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "title": "End break confirmation",
       "focus": "Break End dialog",
       "trip": "Break / Lunch",
-      "facet": "Are you ready to end your <break type>? Choices: OK or Cancel.",
+      "facet": "Are you ready to end your \u003cbreak type>? Choices: OK or Cancel.",
       "commands": [
         "Cancel / Close [keep current interval]",
         "OK / Okay / O K [end break]"
@@ -704,6 +704,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "trip": "T unchanged",
       "facet": "Recognizer active",
       "commands": [
+        "\u003crecognizer name>: finish valid old continuations; restart buffered stream",
         "Off / Sleep",
         "Cancel / Close",
         "Eligible local / persisted commands"
@@ -1004,7 +1005,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Voice: clear both sequences and restart ID",
         "User / Username: clear inputs and switch login method",
         "Cancel: clear and restart ID entry",
-        "<number sequence> (exactly four digits)",
+        "\u003cnumber sequence> (exactly four digits)",
         "OK: next stage / verify PIN"
       ],
       "family": "login",
@@ -1027,7 +1028,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Cancel: clear PIN, stay on PIN entry, announce Password; prime second Cancel",
         "Voice: clear all and return to User ID",
         "User / Username: clear inputs and open username/password modal",
-        "<number sequence> (exactly four digits)",
+        "\u003cnumber sequence> (exactly four digits)",
         "OK: authenticate ID/PIN"
       ],
       "family": "login",
@@ -1091,7 +1092,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Cancel: clear User ID and return to ID entry",
         "Voice: clear all and restart ID",
         "User / Username: open separate username/password modal",
-        "<number sequence>: begin fresh PIN; reset Cancel sequence",
+        "\u003cnumber sequence>: begin fresh PIN; reset Cancel sequence",
         "OK: requires four PIN digits"
       ],
       "family": "login",
@@ -2063,7 +2064,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S01",
       "source": "R0",
       "target": "S0",
-      "label": "Ready at <clock time>",
+      "label": "Ready at \u003cclock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -2076,21 +2077,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Ready at <clock time>",
+        "trigger": "Ready at \u003cclock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
         "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
-        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration."
+        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] \u003cduration>; do not open its editor during an unfinished duration."
       }
     },
     {
       "id": "S02",
       "source": "V0",
       "target": "S0",
-      "label": "At <clock time>",
+      "label": "At \u003cclock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -2103,7 +2104,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "At <clock time>",
+        "trigger": "At \u003cclock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -2116,7 +2117,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S03",
       "source": "V1",
       "target": "S0",
-      "label": "At <clock time>",
+      "label": "At \u003cclock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -2129,7 +2130,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "At <clock time>",
+        "trigger": "At \u003cclock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -2142,7 +2143,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S04",
       "source": "S0",
       "target": "S1",
-      "label": "[Standard Time] <duration>",
+      "label": "[Standard Time] \u003cduration>",
       "mode": "voice",
       "audio": "standard",
       "guard": "",
@@ -2155,7 +2156,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "[Standard Time] <duration>",
+        "trigger": "[Standard Time] \u003cduration>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -2169,7 +2170,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S05",
       "source": "S1",
       "target": "S1",
-      "label": "[Standard Time] <duration> (replace)",
+      "label": "[Standard Time] \u003cduration> (replace)",
       "mode": "voice",
       "audio": "standard",
       "guard": "",
@@ -2182,7 +2183,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "[Standard Time] <duration> (replace)",
+        "trigger": "[Standard Time] \u003cduration> (replace)",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -2193,7 +2194,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           "classification": "attribute-change",
           "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
         },
-        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration."
+        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] \u003cduration>; do not open its editor during an unfinished duration."
       }
     },
     {
@@ -6350,7 +6351,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-ID-VOICE",
       "source": "LOGIN-ID",
       "target": "LOGIN-ID",
-      "label": "<number sequence>: populate ID cells",
+      "label": "\u003cnumber sequence>: populate ID cells",
       "mode": "voice",
       "audio": "silent",
       "guard": "listening; no more than four digits",
@@ -6363,7 +6364,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "<number sequence>: populate ID cells",
+        "trigger": "\u003cnumber sequence>: populate ID cells",
         "guard": "listening; no more than four digits",
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
@@ -6462,7 +6463,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-PIN-VOICE",
       "source": "LOGIN-PIN",
       "target": "LOGIN-PIN",
-      "label": "<number sequence>: populate masked PIN cells",
+      "label": "\u003cnumber sequence>: populate masked PIN cells",
       "mode": "voice",
       "audio": "silent",
       "guard": "",
@@ -6475,7 +6476,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "<number sequence>: populate masked PIN cells",
+        "trigger": "\u003cnumber sequence>: populate masked PIN cells",
         "guard": "",
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
@@ -7642,7 +7643,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-PIN-REPLACE",
       "source": "LOGIN-PIN",
       "target": "LOGIN-PIN",
-      "label": "Fresh <number sequence> replaces PIN",
+      "label": "Fresh \u003cnumber sequence> replaces PIN",
       "mode": "voice",
       "audio": "silent",
       "guard": "not pending; recognition listening",
@@ -7655,7 +7656,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Fresh <number sequence> replaces PIN",
+        "trigger": "Fresh \u003cnumber sequence> replaces PIN",
         "guard": "not pending; recognition listening",
         "state_changes": "Fresh four-digit group replaces the selected credential. Additional complete groups keep the latest group. A digit after a full group begins a new group; any entry resets Cancel sequence.",
         "timing": "Immediate local UI change.",
@@ -7672,7 +7673,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-ID-REPLACE",
       "source": "LOGIN-ID",
       "target": "LOGIN-ID",
-      "label": "Fresh <number sequence> replaces User ID",
+      "label": "Fresh \u003cnumber sequence> replaces User ID",
       "mode": "voice",
       "audio": "silent",
       "guard": "not pending; recognition listening",
@@ -7685,7 +7686,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Fresh <number sequence> replaces User ID",
+        "trigger": "Fresh \u003cnumber sequence> replaces User ID",
         "guard": "not pending; recognition listening",
         "state_changes": "Replace selected ID with fresh four digits; preserve leading zeros; no decimals. Existing sequence entry feedback owns speech.",
         "timing": "Immediate local UI change.",
@@ -9083,6 +9084,36 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "loopback_feedback": {
           "classification": "attribute-change",
           "rule": "System snapshot updates change observer model/time without a voice command; no unchanged chime or spoken announcement. Only changed events replay; freshness is not a publisher lifecycle action."
+        }
+      }
+    },
+    {
+      "id": "MIC-NAMED-BARGE-IN",
+      "source": "MIC",
+      "target": "MIC",
+      "label": "\u003crecognizer name>: flush and restart stream",
+      "mode": "voice",
+      "audio": "silent",
+      "guard": "Configured localized whole name appears in active capture",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "tests/speech-command-digest.mjs: old continuation, trailing junk, queued async action, repeated names; tests/recognizer-names.mjs"
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Configured name, then optional new commands",
+        "guard": "Active capture; does not turn on recognition or implicitly wake",
+        "state_changes": "Capture continues immediately in a fresh stream; decoded text waits on the previous stream settlement barrier. Repeated names chain these buffers in order.",
+        "timing": "Immediate capture reset; asynchronous ordered old/new command settlement",
+        "persistence": "Boundary is client-only; each command retains its own speech-persist policy",
+        "rollback": "Boundary never undoes completed or valid queued commands; actual action failures retain existing transaction rules",
+        "verification": "tests/speech-command-digest.mjs and tests/recognizer-names.mjs",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition stream ID and buffered text change; no unchanged setting chime. Existing completed commands remain; subsequent accepted commands retain their own feedback."
         }
       }
     }
@@ -10888,7 +10919,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "sleeping",
         "suspended"
       ],
-      "meaning": "One recognition attribute. Voicepad is eligible only while listening with a visible mic bar. Temporary playback suspension is not an off action. Capture policy: echo cancellation, noise suppression and automatic gain control are off. Recognition off stops its microphone tracks and capture AudioContext and clears the Drop-In clone; sleeping retains capture for voice wake. Re-enabling starts a fresh capture session.",
+      "meaning": "One recognition attribute. Voicepad is eligible only while listening with a visible mic bar. Temporary playback suspension is not an off action. Capture policy: echo cancellation, noise suppression and automatic gain control are off. Recognition off stops its microphone tracks and capture AudioContext and clears the Drop-In clone; sleeping retains capture for voice wake. Re-enabling starts a fresh capture session. A configured localized recognizer name creates a new buffered stream without changing listening/sleep state; the previous queue settles first.",
       "source": "readInteractionState()",
       "region": "Recognition"
     },
@@ -11099,7 +11130,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       ],
       "fsm_loopback_audit": {
         "source": "Every transition with source === target",
-        "count": 45,
+        "count": 46,
         "edges": [
           {
             "transition": "E03",
@@ -11413,6 +11444,13 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
             "mode": "automatic",
             "classification": "attribute-change",
             "rule": "System snapshot updates change observer model/time without a voice command; no unchanged chime or spoken announcement. Only changed events replay; freshness is not a publisher lifecycle action."
+          },
+          {
+            "transition": "MIC-NAMED-BARGE-IN",
+            "source": "MIC",
+            "mode": "voice",
+            "classification": "attribute-change",
+            "rule": "Recognition stream ID and buffered text change; no unchanged setting chime. Existing completed commands remain; subsequent accepted commands retain their own feedback."
           }
         ],
         "requirement": "A node self-loop is not proof of unchanged semantic state. Compare persistent/UI attributes, excluding elapsed time and bookkeeping.",
@@ -11726,7 +11764,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "tests/speech-command-digest.mjs",
         "tests/app-state-transactions.mjs --scheduled-standard"
       ],
-      "boundary_ownership": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration.",
+      "boundary_ownership": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] \u003cduration>; do not open its editor during an unfinished duration.",
       "regressions": [
         "Ready at four twenty-two, including transient partial number words",
         "Scheduled trip: [Standard Time] eleven twenty-six, with optional prefix and transient partial words",
@@ -11991,6 +12029,24 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "display": "* per occupied cell",
       "storage": "users.pin_hash only"
     }
+  },
+  "namedBargeIn": {
+    "stateAttribute": "recognizerName per language",
+    "englishDefaults": [
+      "Beatrice",
+      "Penelope",
+      "Theodore",
+      "Octavia"
+    ],
+    "trigger": "Complete configured name recognized while capture is active",
+    "transition": "Flush old recognition stream; immediately start a new stream",
+    "oldStream": "Finalize validated continuations, await queued commands, preserve completed commands; discard unmatched trailing junk",
+    "newStream": "Commands after the name are seeded into fresh capture and await the old command queue",
+    "persistence": "Custom names saved asynchronously per locale; failed save restores previous name",
+    "recognitionOff": "No barge-in detection; name does not enable microphone",
+    "sleep": "Preserve sleep state; name does not implicitly wake recognition",
+    "announcement": "Interrupt current output; new commands may announce normally",
+    "buffer": "Capture continues immediately in a fresh stream; decoded text waits on the previous stream settlement barrier. Repeated names chain these buffers in order."
   }
 }
 </script>

@@ -708,5 +708,14 @@
     "system:slower": "56a061ff-38d0-5c65-ad44-8df0067c1dd9",
     "system:louder": "b9871a5a-df97-5d32-ab84-1060682b4514",
     "system:softer": "acde1058-233d-58b3-add4-8acf62004b71"
+  },
+  "recognizerNames": {
+    "presets": [
+      "Beatrice",
+      "Penelope",
+      "Theodore",
+      "Octavia"
+    ],
+    "default": "Beatrice"
   }
 }

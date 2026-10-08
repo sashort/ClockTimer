@@ -658,6 +658,7 @@
       "trip": "T unchanged",
       "facet": "Recognizer active",
       "commands": [
+        "<recognizer name>: finish valid old continuations; restart buffered stream",
         "Off / Sleep",
         "Cancel / Close",
         "Eligible local / persisted commands"
@@ -9039,6 +9040,36 @@
           "rule": "System snapshot updates change observer model/time without a voice command; no unchanged chime or spoken announcement. Only changed events replay; freshness is not a publisher lifecycle action."
         }
       }
+    },
+    {
+      "id": "MIC-NAMED-BARGE-IN",
+      "source": "MIC",
+      "target": "MIC",
+      "label": "<recognizer name>: flush and restart stream",
+      "mode": "voice",
+      "audio": "silent",
+      "guard": "Configured localized whole name appears in active capture",
+      "persist": false,
+      "restore": null,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "tests/speech-command-digest.mjs: old continuation, trailing junk, queued async action, repeated names; tests/recognizer-names.mjs"
+      },
+      "skippable": false,
+      "contract": {
+        "trigger": "Configured name, then optional new commands",
+        "guard": "Active capture; does not turn on recognition or implicitly wake",
+        "state_changes": "Capture continues immediately in a fresh stream; decoded text waits on the previous stream settlement barrier. Repeated names chain these buffers in order.",
+        "timing": "Immediate capture reset; asynchronous ordered old/new command settlement",
+        "persistence": "Boundary is client-only; each command retains its own speech-persist policy",
+        "rollback": "Boundary never undoes completed or valid queued commands; actual action failures retain existing transaction rules",
+        "verification": "tests/speech-command-digest.mjs and tests/recognizer-names.mjs",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "Recognition stream ID and buffered text change; no unchanged setting chime. Existing completed commands remain; subsequent accepted commands retain their own feedback."
+        }
+      }
     }
   ],
   "audio": {
@@ -10842,7 +10873,7 @@
         "sleeping",
         "suspended"
       ],
-      "meaning": "One recognition attribute. Voicepad is eligible only while listening with a visible mic bar. Temporary playback suspension is not an off action. Capture policy: echo cancellation, noise suppression and automatic gain control are off. Recognition off stops its microphone tracks and capture AudioContext and clears the Drop-In clone; sleeping retains capture for voice wake. Re-enabling starts a fresh capture session.",
+      "meaning": "One recognition attribute. Voicepad is eligible only while listening with a visible mic bar. Temporary playback suspension is not an off action. Capture policy: echo cancellation, noise suppression and automatic gain control are off. Recognition off stops its microphone tracks and capture AudioContext and clears the Drop-In clone; sleeping retains capture for voice wake. Re-enabling starts a fresh capture session. A configured localized recognizer name creates a new buffered stream without changing listening/sleep state; the previous queue settles first.",
       "source": "readInteractionState()",
       "region": "Recognition"
     },
@@ -11053,7 +11084,7 @@
       ],
       "fsm_loopback_audit": {
         "source": "Every transition with source === target",
-        "count": 45,
+        "count": 46,
         "edges": [
           {
             "transition": "E03",
@@ -11367,6 +11398,13 @@
             "mode": "automatic",
             "classification": "attribute-change",
             "rule": "System snapshot updates change observer model/time without a voice command; no unchanged chime or spoken announcement. Only changed events replay; freshness is not a publisher lifecycle action."
+          },
+          {
+            "transition": "MIC-NAMED-BARGE-IN",
+            "source": "MIC",
+            "mode": "voice",
+            "classification": "attribute-change",
+            "rule": "Recognition stream ID and buffered text change; no unchanged setting chime. Existing completed commands remain; subsequent accepted commands retain their own feedback."
           }
         ],
         "requirement": "A node self-loop is not proof of unchanged semantic state. Compare persistent/UI attributes, excluding elapsed time and bookkeeping.",
@@ -11945,5 +11983,23 @@
       "display": "* per occupied cell",
       "storage": "users.pin_hash only"
     }
+  },
+  "namedBargeIn": {
+    "stateAttribute": "recognizerName per language",
+    "englishDefaults": [
+      "Beatrice",
+      "Penelope",
+      "Theodore",
+      "Octavia"
+    ],
+    "trigger": "Complete configured name recognized while capture is active",
+    "transition": "Flush old recognition stream; immediately start a new stream",
+    "oldStream": "Finalize validated continuations, await queued commands, preserve completed commands; discard unmatched trailing junk",
+    "newStream": "Commands after the name are seeded into fresh capture and await the old command queue",
+    "persistence": "Custom names saved asynchronously per locale; failed save restores previous name",
+    "recognitionOff": "No barge-in detection; name does not enable microphone",
+    "sleep": "Preserve sleep state; name does not implicitly wake recognition",
+    "announcement": "Interrupt current output; new commands may announce normally",
+    "buffer": "Capture continues immediately in a fresh stream; decoded text waits on the previous stream settlement barrier. Repeated names chain these buffers in order."
   }
 }

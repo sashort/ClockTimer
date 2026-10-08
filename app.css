@@ -7429,3 +7429,6 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
     .live-stream-layout { padding: 8px; gap: 10px; }
     .live-stream-section { padding: 8px; }
 }
+
+.recognizer-name-settings select, .recognizer-name-settings input { width: 100%; max-width: 100%; box-sizing: border-box; }
+.recognizer-name-settings output { display: block; }

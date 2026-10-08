@@ -4483,7 +4483,8 @@
         "rmsDbFS": -23.237560060594276,
         "peakDbFS": -3.320857160896309,
         "instrument": "cinematic-pulse-bass"
-      }
+      },
+      "mediaUrl": "api/audio/samples/neon-afterglow.wav"
     },
     "chrome-velocity": {
       "title": "Chrome Velocity",
@@ -8298,7 +8299,8 @@
           "dynamic": "ff",
           "instrument": "electro-tom"
         }
-      ]
+      ],
+      "mediaUrl": "api/audio/samples/chrome-velocity.wav"
     },
     "setting-on": {
       "bpm": 225,
@@ -16501,7 +16503,8 @@
         "musicDurationSeconds": 61.86666666666667,
         "settings": "api/audio/instruments/approved-easter-egg-final-mix.json",
         "referenceToneVolume": 0.08
-      }
+      },
+      "mediaUrl": "api/audio/samples/easter-egg-approved-v89.wav"
     },
     "dark-eighties": {
       "bpm": 225,
@@ -16522,7 +16525,8 @@
         "musicDurationSeconds": 130,
         "settings": "api/audio/instruments/dark-eighties-final-mix.json",
         "referenceToneVolume": 0.08
-      }
+      },
+      "mediaUrl": "api/audio/samples/dark-eighties-approved-v27.wav"
     }
   }
 }

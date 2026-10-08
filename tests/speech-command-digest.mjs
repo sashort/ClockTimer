@@ -18,6 +18,7 @@ source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
         SpeechMenu.#beginUtterance(performance.now());
         return SpeechMenu.#utterance;
     }
+    static testResult(u,text,final=false){SpeechMenu.#onSherpaTranscript({detail:{utteranceId:u.id,transcript:text,isFinal:final}});return SpeechMenu.#utterance;}
     static testTranscript(u,text,final=false){return SpeechMenu.#handleLiveTranscript(u,text,final);}
     static testFinish(reason="candidate-silence",recognize=true){SpeechMenu.#finishUtterance(reason,recognize);}
     static testFinal(u,text){return SpeechMenu.#handleCompletedTranscript(u,text);}
@@ -118,6 +119,38 @@ try {
     future.open=false;
     editor.remove();
     standard.setAttribute('speech-pattern','^standard(?: time)? (?<timeValue>.+)$');
+    // Named boundaries finalize old continuations while capture continues independently.
+    globalThis.WMOFRecognizerNames={name:'Beatrice',split(text){
+        const m=/\bbeatrice\b/i.exec(text);return m ? {name:'Beatrice',before:text.slice(0,m.index).trim(),after:text.slice(m.index+m[0].length).trim()} : null;
+    }};
+    const continuing=fresh();
+    await hear(continuing,'ready at four twenty');
+    assert.equal(calls.length,0);
+    const restarted=speech.testResult(continuing,'ready at four twenty two trailing rubbish Beatrice show log',true);
+    assert.notEqual(restarted.id,continuing.id,'capture restarts before old command completion');
+    await restarted.bargeInBarrier;await new Promise(setImmediate);await restarted.digestQueue;
+    assert.deepEqual(calls,[['ready','4:22'],['log']],'longest valid old continuation finishes before fresh command');
+    assert.equal(errors.length,0,'unmatched tail does not reject completed commands');
+
+    let releaseBuffered;
+    readyOutcome=()=>new Promise(resolve=>{releaseBuffered=resolve;});
+    const blocked=fresh();
+    await hear(blocked,'ready at four twenty two show log');
+    assert.deepEqual(calls,[['ready','4:22']]);
+    const buffered=speech.testResult(blocked,'ready at four twenty two show log junk Beatrice show log',true);
+    await new Promise(setImmediate);
+    assert.deepEqual(calls,[['ready','4:22']],'new commands wait while old asynchronous action is pending');
+    speech.testInvalidate();
+    assert.equal(speech.testActive(),buffered,'old action state changes preserve newly buffered capture');
+    releaseBuffered(true);await buffered.bargeInBarrier;await new Promise(setImmediate);await buffered.digestQueue;
+    assert.deepEqual(calls,[['ready','4:22'],['log'],['log']],'queued old command completes once, then fresh command runs');
+    readyOutcome=()=>Promise.resolve(true);
+
+    const repeated=fresh();
+    const latest=speech.testResult(repeated,'show log Beatrice show log Beatrice show log',true);
+    await latest.bargeInBarrier;await new Promise(setImmediate);await latest.digestQueue;
+    assert.deepEqual(calls,[['log'],['log'],['log']],'multiple boundaries preserve the commands between names');
+    delete globalThis.WMOFRecognizerNames;
     // Independent command groups compete for the same unconsumed words.
     const syncGroup=document.createElement('section');document.body.append(syncGroup);
     const sleepGroup=document.createElement('section');document.body.append(sleepGroup);

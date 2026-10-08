@@ -176,7 +176,7 @@ header('Referrer-Policy: no-referrer');
                     <div id="leftRuler" class="ruler ruler-left" aria-hidden="true"></div>
 
                     <div id="screenFrame" class="screen-frame">
-                        <iframe id="appFrame" title="WMOF application" src="../../../index.html?speech-editor-preview=1"></iframe>
+                        <iframe id="appFrame" title="WMOF application" src="../../../order-filler.php?speech-editor-preview=1"></iframe>
                         <div id="compareMaskTop" class="compare-mask" aria-hidden="true"></div>
                         <div id="compareMaskRight" class="compare-mask" aria-hidden="true"></div>
                         <div id="compareMaskBottom" class="compare-mask" aria-hidden="true"></div>

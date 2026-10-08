@@ -32,5 +32,5 @@ assert.equal(audio.songTiming(ordinary,{startBeat:3}).durationMs,1000,'Ordinary 
 const associations=read('lang/en-US/associations.json'),texts=read('lang/en-US/ui-text.json').texts;
 const option=associations.selects['af44f0e0-01a0-57a7-9b13-d56b283ac0b8'].find(o=>o.value==='dark-eighties');
 assert(option);assert.equal(texts[option.textId].text,'\u{1f383} Dark 80s');
-assert.match(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8'),/<option value="dark-eighties"/);
+assert.match(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8'),/href="api\/audio\/easter-eggs\/"/);
 console.log('PASS approved 130-second mix, exact checksum, clap/washboard placement, pumpkin selection and seek/resume timing');

@@ -29,6 +29,14 @@
                 <div class="main-menu-row speech-recognition-menu-row">
                     <button id="speechRecognitionButton" type="button" aria-pressed="false" title="{{text:d549a1af-0e08-5ef7-8a33-0106901cb282:title}}" disabled data-language-id="d549a1af-0e08-5ef7-8a33-0106901cb282" data-menu-icon="settings"><span data-language-id="64bf66be-85cc-529b-b86e-95855d455a33">{{text:64bf66be-85cc-529b-b86e-95855d455a33:text0}}</span></button>
                     <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:aria-label}}" data-language-id="6e6ea3a3-2d38-5c75-b5ed-9620454a3520" data-menu-icon="settings">{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:text0}}</button>
+                    <details class="recognizer-name-settings"><summary data-menu-icon="microphone">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</summary>
+                        <p>{{text:93bbc7ae-c8b0-5546-81c3-304a17ba6272:text0}}</p>
+                        <label for="recognizerNamePreset">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</label>
+                        <select id="recognizerNamePreset"><option value="">{{text:aaf29102-ffde-519d-b4de-c44844040d6c:text0}}</option><option value="custom">{{text:542b3639-2667-58eb-9544-a3692e3aeaac:text0}}</option></select>
+                        <input id="recognizerNameCustom" maxlength="40" hidden aria-label="{{text:35b6f8db-afeb-5290-8f1c-e02ee2688d79:text0}}">
+                        <button id="recognizerNameSave" type="button" data-menu-icon="edit">{{text:895ec700-dc9d-574d-b1eb-cef2d0f99adc:text0}}</button>
+                        <output id="recognizerNameStatus" role="status"></output>
+                    </details>
                 </div>
                 <div class="main-menu-row sync-goals-menu-row">
                     <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
@@ -92,14 +100,7 @@
                             </div>
                         </div>
                         <div id="easterEggToolsGroup" class="easter-egg-tools-group" hidden>
-                            <button id="easterEggMenuButton" type="button" aria-expanded="false" aria-controls="easterEggSubmenu" data-language-id="64d936b8-f973-541b-8f75-b7ab6e9f10bf" data-menu-icon="music">{{text:64d936b8-f973-541b-8f75-b7ab6e9f10bf:text0}}</button>
-                            <div id="easterEggSubmenu" class="easter-egg-submenu" hidden>
-                                <label class="easter-egg-song-picker"><span data-language-id="6f46e3e5-c548-5dc7-b36c-d03a486456da">{{text:6f46e3e5-c548-5dc7-b36c-d03a486456da:text0}}</span><select id="easterEggSongSelect" aria-label="{{text:af44f0e0-01a0-57a7-9b13-d56b283ac0b8:aria-label}}" data-language-id="af44f0e0-01a0-57a7-9b13-d56b283ac0b8">{{options:af44f0e0-01a0-57a7-9b13-d56b283ac0b8}}</select></label>
-                                <button id="easterEggPlayButton" type="button" data-language-id="1e50b88b-e98f-5ecb-a041-4884cecf4157" data-menu-icon="play">{{text:1e50b88b-e98f-5ecb-a041-4884cecf4157:text0}}</button>
-                                <button id="easterEggPauseButton" type="button" disabled data-language-id="284f5a38-5002-50f7-81b1-97eb1e5be6e2" data-menu-icon="pause">{{text:284f5a38-5002-50f7-81b1-97eb1e5be6e2:text0}}</button>
-                                <button id="easterEggStopButton" type="button" disabled data-language-id="720df278-a015-52bd-92a1-5e4de5add7ba" data-menu-icon="stop">{{text:720df278-a015-52bd-92a1-5e4de5add7ba:text0}}</button>
-                                <button id="easterEggRewindButton" type="button" data-language-id="e9515134-ed81-5421-acfc-aac61389ea6e" data-menu-icon="rewind">{{text:e9515134-ed81-5421-acfc-aac61389ea6e:text0}}</button>
-                            </div>
+                            <a id="easterEggMenuButton" href="api/audio/easter-eggs/" data-language-id="64d936b8-f973-541b-8f75-b7ab6e9f10bf" data-menu-icon="music">{{text:64d936b8-f973-541b-8f75-b7ab6e9f10bf:text0}}</a>
                         </div>
                         <button id="sqlConsoleButton" type="button" hidden data-language-id="17820853-f6fd-5875-adcf-ba11ab62d909" data-menu-icon="database">{{text:17820853-f6fd-5875-adcf-ba11ab62d909:text0}}</button>
                     </div>
