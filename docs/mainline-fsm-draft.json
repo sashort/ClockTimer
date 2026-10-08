@@ -1030,11 +1030,14 @@
       "title": "Drop-In",
       "focus": "liveStreamDialog",
       "trip": "Current trip/clock unchanged",
-      "facet": "Selected account viewing; account lookup available",
+      "facet": "Selected account; independent viewer mode and Custom range, displayed separately from watched user mode; default User view mirrors publisher components; watcher changes are local",
       "commands": [
         "Close / Cancel",
         "Account Lookup",
-        "View selected account"
+        "View selected account",
+        "Viewing mode: Trip / Day / Week / Money / Month / Year / Custom",
+        "Custom start date / end date",
+        "Watcher goal percentage / Sync / time display / Use user’s settings"
       ],
       "family": "settings",
       "binding": {
@@ -2898,7 +2901,7 @@
       "label": "Resume / Ready",
       "mode": "voice",
       "audio": "resume",
-      "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+      "guard": "Retired: use Break end â†’ confirmation â†’ OK or Cancel.",
       "persist": true,
       "restore": null,
       "test": {
@@ -2910,7 +2913,7 @@
       "retired": true,
       "contract": {
         "trigger": "Resume / Ready",
-        "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+        "guard": "Retired: use Break end â†’ confirmation â†’ OK or Cancel.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
         "persistence": "Validate before write; reject restores checkpoint and dependent actions.",
@@ -3003,7 +3006,7 @@
       "label": "Resume / Ready",
       "mode": "voice",
       "audio": "resume",
-      "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+      "guard": "Retired: use Break end â†’ confirmation â†’ OK or Cancel.",
       "persist": true,
       "restore": null,
       "test": {
@@ -3015,7 +3018,7 @@
       "retired": true,
       "contract": {
         "trigger": "Resume / Ready",
-        "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+        "guard": "Retired: use Break end â†’ confirmation â†’ OK or Cancel.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
         "persistence": "Validate before write; reject restores checkpoint and dependent actions.",
@@ -3108,7 +3111,7 @@
       "label": "Resume / Ready",
       "mode": "voice",
       "audio": "resume",
-      "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+      "guard": "Retired: use Break end â†’ confirmation â†’ OK or Cancel.",
       "persist": true,
       "restore": null,
       "test": {
@@ -3120,7 +3123,7 @@
       "retired": true,
       "contract": {
         "trigger": "Resume / Ready",
-        "guard": "Retired: use Break end → confirmation → OK or Cancel.",
+        "guard": "Retired: use Break end â†’ confirmation â†’ OK or Cancel.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
         "persistence": "Validate before write; reject restores checkpoint and dependent actions.",
@@ -8172,6 +8175,34 @@
         "rollback": "No remote mutation",
         "verification": "No speech before OK; repeated OK speaks once; initialization remains responsive"
       }
+    },
+    {
+      "id": "DROP-IN-VIEW",
+      "source": "DROP-IN",
+      "target": "DROP-IN",
+      "label": "Local view controls / switch watched user",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Current authorized watched peer for historical totals",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated controller checks pass; live viewer verification pending"
+      },
+      "contract": {
+        "trigger": "Pointer: mode, dates, goal, Sync, time display, previous/next/recent user, restore user settings",
+        "state_changes": "Change only dropInView and session preferences; reload one observer model when target changes; invalidate stale requests and disable trainer messages during switching",
+        "timing": "Immediate controls; asynchronous read of aggregates",
+        "persistence": "Read-only; no publisher change",
+        "rollback": "Clear totals and show loading/error for selected range",
+        "loopback_feedback": {
+          "classification": "pointer",
+          "rule": "Pointer-only viewer preference; no announcement/chime."
+        }
+      }
     }
   ],
   "audio": {
@@ -10055,6 +10086,43 @@
       "fields": "Editable non-secret fields; write-only replacement password/PIN",
       "authorization": "Lookup, modify-users, view-live and superuser permission guards remain distinct",
       "staleResponses": "Selection request generation rejects old responses"
+    },
+    "dropInView": {
+      "meaning": "Independent observer view, never a publisher mode change.",
+      "attributes": [
+        "mode: user/auto/trip/day/week/pay-period/month/year/custom",
+        "customStartDate",
+        "customEndDate",
+        "watchedUserId",
+        "loading/ready/error",
+        "request revision",
+        "percentOverride: null or positive integer percent",
+        "syncOverride: user/on/off",
+        "timeDisplay: user/remaining/elapsed/calculated-end",
+        "per-user local preferences (session memory)",
+        "recent watched identities",
+        "switching target",
+        "publisher interval type/phase/boundary and snapshot timestamp"
+      ],
+      "rules": [
+        "Mode and selected dates are displayed together; watched user mode is shown separately.",
+        "Custom dates are inclusive civil dates in the watched calendar timezone.",
+        "Historical totals require a current authorized Drop-In peer, then use existing trip aggregate filters.",
+        "Include the active trip only once, within the chosen range and production filter.",
+        "Changing target, mode or dates invalidates earlier requests; errors never display totals from a different range.",
+        "Default User view mirrors the exact time and percentage components from publisher uiState.",
+        "Watcher percentage, Sync, mode and time-display overrides are client-only; Use user’s settings clears overrides.",
+        "Display user Trip goal, mode goal, selected effective Auto scope, and Sync on/off from the same publisher uiState.",
+        "Never expose Start Break, Down or End Trip actions in the observer.",
+        "Reuse one observer ClockTimer and reload its read-only model on user switch; it cannot tick lifecycle transitions or write persistence.",
+        "Authorized snapshots whitelist active timer events, display attributes and aggregates; exclude credentials, queued trips and pending writes.",
+        "Previous/Next and recent-user selection stop the old connection before opening the new authorized peer. Clear stale readouts and unsent messages; restore that user’s local preferences.",
+        "Trainer messages target the current watched user and are disabled during switching.",
+        "Down Time displays elapsed count-up; Lunch and breaks display remaining count-down then overtime count-up. These follow the publisher interval independently of viewer goals, Sync and mode.",
+        "The compact mirror shows the watched name and omits Trip Log and all lifecycle action buttons.",
+        "Drop-In is a standalone page at drop-in.php, opened in a separate tab; main app keeps publishing. Viewer loads no speech recognizer, app.js or trip lifecycle controls.",
+        "Reuse the existing authenticated session; unauthorized users cannot watch or send messages. Account Lookup retains its separate permission check."
+      ]
     }
   },
   "contracts": {
@@ -10088,7 +10156,7 @@
       ],
       "fsm_loopback_audit": {
         "source": "Every transition with source === target",
-        "count": 43,
+        "count": 44,
         "edges": [
           {
             "transition": "E03",
@@ -10390,6 +10458,11 @@
             "mode": "pointer",
             "classification": "pointer",
             "rule": "Compare field values and focus, not node IDs; pointer entry retains its existing feedback behavior."
+          },
+          {
+            "transition": "DROP-IN-VIEW",
+            "classification": "pointer",
+            "rule": "Pointer-only independent viewer preference"
           }
         ],
         "requirement": "A node self-loop is not proof of unchanged semantic state. Compare persistent/UI attributes, excluding elapsed time and bookkeeping.",
@@ -10406,8 +10479,8 @@
     },
     "announcement-timing": {
       "ownership": "AnnouncementCatalog owns speechStart.anchor and paddingMs; songs only provide notes, tempo, measured loudness and musical timing. No speech policy or spoken text in songs.",
-      "calculation": "AudioEngine.songTiming sums effect/sustain lengths, includes note offsets and rests, and takes maximum end across simultaneous notes. Effective BPM = song BPM × selected chime rate. Playback reports remaining time from the audio clock including scheduling lead.",
-      "normal": "Speech is eligible after all notes and their selected-instrument release envelopes finish, plus announcement padding, then the existing speech-rate-scaled component margin (300 ms at 1×). Between separate announcements, existing doubled margin remains.",
+      "calculation": "AudioEngine.songTiming sums effect/sustain lengths, includes note offsets and rests, and takes maximum end across simultaneous notes. Effective BPM = song BPM Ã— selected chime rate. Playback reports remaining time from the audio clock including scheduling lead.",
+      "normal": "Speech is eligible after all notes and their selected-instrument release envelopes finish, plus announcement padding, then the existing speech-rate-scaled component margin (300 ms at 1Ã—). Between separate announcements, existing doubled margin remains.",
       "error": "Down Time and Goal Failed speech is eligible at the start of the terminal sustain, with no extra end-of-chime margin. Error speech may overlap the sustained chord. Summary/details spacing remains unchanged.",
       "muted": "No chime means no chime timing wait. Speech guards and queued cancellation still apply.",
       "volume": "Measured RMS over musical duration and peak dBFS at reference volume are song metadata. Attenuation balances level and reserves peak headroom; user/master/per-announcement volume remains authoritative. No gain boost. Measurement is not LUFS and is not valid for a substituted instrument; phone/substituted instruments bypass unmatched calibration.",
@@ -10502,7 +10575,7 @@
         },
         "steelpan": {
           "source": "https://bitklavier.com/the-dunleavy-double-seconds/",
-          "recording": "Dunleavy Double Seconds Earthworks C4v4, played Josh Quillen, recorded Andrés Villalta, edited Josh Quillen/Dan Trueman; CC BY 4.0",
+          "recording": "Dunleavy Double Seconds Earthworks C4v4, played Josh Quillen, recorded AndrÃ©s Villalta, edited Josh Quillen/Dan Trueman; CC BY 4.0",
           "use": "Measured dominant modes and ringing decay inform the synthesis preview. Original 24 answering notes retained; louder layer mirrors tuba notes and triplets, with rolls on longer notes.",
           "additional-source": "https://code4fukui.github.io/web-steelpan/",
           "preview-refinement": "Independent mode decay and subtle excitation; original gain 2.4 restored. Separate expressive preview pending listening approval; full song unchanged."
@@ -10510,7 +10583,7 @@
         "flute": {
           "source": "https://theremin.music.uiowa.edu/MISflute.html",
           "recording": "Sonja Feig, April 2000, vibrato mf B3B4, University of Iowa Electronic Music Studios",
-          "processing": "Seven individual notes in C4–Bb4 with crossfaded sustain loops; original breath/attack and vibrato retained."
+          "processing": "Seven individual notes in C4â€“Bb4 with crossfaded sustain loops; original breath/attack and vibrato retained."
         },
         "oboe": {
           "source": "https://theremin.music.uiowa.edu/MISoboe.html",
@@ -10714,6 +10787,43 @@
       "sleep": "Keep capture for wake commands; do not enable echo cancellation.",
       "enable": "Start a fresh capture session; shared recognition state moves through starting to listening. Login announcements continue to wait for model readiness.",
       "evidence": "Pixel 6 Chrome: processing-off capture preserves Bluetooth tone output; echo-cancellation-on switches ordinary audio and Web Audio to phone. Automated microphone-capture-lifecycle.mjs checks capture policy, off/stop/restart, sleep/wake and slow-peer clone release. Physical app routing and recognition quality require device verification."
+    },
+    "drop-in-view-controls": {
+      "meaning": "Independent observer view, never a publisher mode change.",
+      "attributes": [
+        "mode: user/auto/trip/day/week/pay-period/month/year/custom",
+        "customStartDate",
+        "customEndDate",
+        "watchedUserId",
+        "loading/ready/error",
+        "request revision",
+        "percentOverride: null or positive integer percent",
+        "syncOverride: user/on/off",
+        "timeDisplay: user/remaining/elapsed/calculated-end",
+        "per-user local preferences (session memory)",
+        "recent watched identities",
+        "switching target",
+        "publisher interval type/phase/boundary and snapshot timestamp"
+      ],
+      "rules": [
+        "Mode and selected dates are displayed together; watched user mode is shown separately.",
+        "Custom dates are inclusive civil dates in the watched calendar timezone.",
+        "Historical totals require a current authorized Drop-In peer, then use existing trip aggregate filters.",
+        "Include the active trip only once, within the chosen range and production filter.",
+        "Changing target, mode or dates invalidates earlier requests; errors never display totals from a different range.",
+        "Default User view mirrors the exact time and percentage components from publisher uiState.",
+        "Watcher percentage, Sync, mode and time-display overrides are client-only; Use user’s settings clears overrides.",
+        "Display user Trip goal, mode goal, selected effective Auto scope, and Sync on/off from the same publisher uiState.",
+        "Never expose Start Break, Down or End Trip actions in the observer.",
+        "Reuse one observer ClockTimer and reload its read-only model on user switch; it cannot tick lifecycle transitions or write persistence.",
+        "Authorized snapshots whitelist active timer events, display attributes and aggregates; exclude credentials, queued trips and pending writes.",
+        "Previous/Next and recent-user selection stop the old connection before opening the new authorized peer. Clear stale readouts and unsent messages; restore that user’s local preferences.",
+        "Trainer messages target the current watched user and are disabled during switching.",
+        "Down Time displays elapsed count-up; Lunch and breaks display remaining count-down then overtime count-up. These follow the publisher interval independently of viewer goals, Sync and mode.",
+        "The compact mirror shows the watched name and omits Trip Log and all lifecycle action buttons.",
+        "Drop-In is a standalone page at drop-in.php, opened in a separate tab; main app keeps publishing. Viewer loads no speech recognizer, app.js or trip lifecycle controls.",
+        "Reuse the existing authenticated session; unauthorized users cannot watch or send messages. Account Lookup retains its separate permission check."
+      ]
     }
   },
   "unresolved_contracts": [

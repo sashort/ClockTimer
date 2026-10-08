@@ -426,7 +426,7 @@ if ($method === 'GET') {
         ]);
     }
 
-    if ($action === 'viewer') {
+    if ($action === 'viewer' || $action === 'totals') {
         $targetUserId = require_positive_int($_GET, 'targetUserId');
         $peerId = require_positive_int($_GET, 'peerId');
         $peer = live_stream_require_viewer(
@@ -441,6 +441,15 @@ if ($method === 'GET') {
             $peer['session_expires_at'] <= time()
         ) {
             api_error('The live stream has expired.', 410, 'live_stream_expired');
+        }
+
+        if ($action === 'totals') {
+            // Server-only handoff after the same peer, owner and permission checks as viewing.
+            // Reuse the trip aggregate endpoint's filters and calculations; permit totals only.
+            define('CLOCKTIMER_DROP_IN_TRIP_USER_ID', $targetUserId);
+            $_GET['result'] = 'totals';
+            require dirname(__DIR__) . '/trips/index.php';
+            exit;
         }
 
         $afterSignalId = live_stream_after_id('afterSignalId');

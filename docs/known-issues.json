@@ -7,6 +7,22 @@
       "status": "deferred",
       "reported": "2026-10-07",
       "scope": "Graphical settings / range rendering"
+    },
+    {
+      "id": "TODO-AUDIO-001",
+      "kind": "verification",
+      "title": "Test Sherpa noise suppression with a combined Bluetooth microphone/headphone headset",
+      "status": "todo",
+      "reported": "2026-10-07",
+      "scope": "Speech recognition / Bluetooth capture and playback",
+      "baseline": "User confirmed Bluetooth audio working on version YMK3W4 after browser echo cancellation was disabled.",
+      "test_plan": [
+        "Use a Bluetooth headset with both microphone and headphones; confirm which microphone is actually captured.",
+        "Compare Sherpa recognition with browser noiseSuppression off and on while keeping echoCancellation off.",
+        "Verify announcements and chimes remain routed to Bluetooth during recognition, speech playback, Sleep/Wake, and Off/re-enable.",
+        "Record actual capture settings, recognition accuracy in background noise, and latency."
+      ],
+      "note": "Noise suppression and echo cancellation are separate settings. Keep the current working defaults until this test is completed."
     }
   ]
 }

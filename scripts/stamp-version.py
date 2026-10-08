@@ -12,7 +12,7 @@ from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 def stamp(root):
     version = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
     prepared = {}
-    for name in ('index.html', 'templates/index.html'):
+    for name in ('index.html', 'templates/index.html', 'drop-in.html', 'templates/drop-in.html'):
         path = root / name
         text = path.read_text(encoding='utf-8')
         text, count = re.subn(r'(<output id="appVersion"[^>]*>)[^<]*(</output>)',

@@ -198,6 +198,7 @@
         #aggregateReconnectSnapshot;
 
         #tripTotals;
+        #observerOnly = false;
 
         #externalStandardTime;
 
@@ -3155,6 +3156,7 @@
         }
 
         async #apiRequest(endpoint, { method = "GET", body, csrf = false, query, signal } = {}) {
+            if (this.#observerOnly) throw new Error("An observer timer cannot access persistence.");
             const permission = globalThis.SpeechMenu?.executionContext?.persist ?? this.#stateTransaction?.remotePermission;
             if (permission === false) throw new Error("This speech command is client-only; speech-persist is required for server access.");
             signal ??= this.#stateTransactionSignal;
@@ -3294,6 +3296,7 @@
         }
 
         async #ensureConnected() {
+            if (this.#observerOnly) return false;
             if (this.#connectionState === "connected" && this.#csrfToken) {
                 return true;
             }
@@ -3600,6 +3603,7 @@
         }
 
         async #saveCompletedTrips() {
+            if (this.#observerOnly) return true;
             const key = this.getAttribute("offline-trip-storage-key");
             if (!key) return true;
             await this.#completedTripsReady;
@@ -4995,6 +4999,52 @@
                 pending: this.#pendingTripEvents.map(event => ({...event, value: structuredClone(event.value)})),
                 completed: this.#completedTripQueue,
                 totals: this.#cloneAggregateSnapshot(this.#tripTotals), addedToAggregate: this.#tripAddedToAggregate};
+        }
+
+        exportObserverSnapshot() {
+            // Only the active timer's model and aggregate totals. No queued trips,
+            // persistence keys, user credentials, endpoints or pending writes.
+            return {events:this.#stateEvents(), started:this.#started, tripId:this.#tripId,
+                attributes:[...this.attributes].filter(attribute => ClockTimer.observedAttributes.includes(attribute.name))
+                    .map(attribute => [attribute.name,attribute.value]),
+                totals:this.#cloneAggregateSnapshot(this.#tripTotals), addedToAggregate:this.#tripAddedToAggregate,
+                sync:this.#autoSyncTripGoal, timeDisplay:this.#renderedTimeMode,
+                productionFilter:this.#productionFilter};
+        }
+
+        enableObserverMode() {
+            this.#observerOnly = true;
+            this.#stopTickTimer();
+            this.#stopDisplayTimer();
+        }
+
+        applyObserverSnapshot(snapshot, {totals, mode, goal, goalScope, sync, timeDisplay, totalLabel, now = new Date()} = {}) {
+            if (!this.#observerOnly) throw new Error("Enable observer mode before applying a mirrored snapshot.");
+            const attributes = snapshot.attributes.filter(([name]) => ClockTimer.observedAttributes.includes(name));
+            // Preserve the observer host's identity and layout, not the publisher host ID.
+            for (const name of ['id','class','style']) if (this.hasAttribute(name)) attributes.push([name,this.getAttribute(name)]);
+            const aggregate = totals === undefined ? snapshot.totals : totals;
+            this.restoreState({...snapshot,attributes,totals:aggregate,pending:[],completed:[],preparedTrip:null});
+            this.productionFilter = snapshot.productionFilter || 'all';
+            const start = this.getUIState(now).trip_start_component?.value;
+            if (totals && Number.isFinite(start)) {
+                if (!(start >= Date.parse(totals.startTime) && start <= Date.parse(totals.endTime))) {
+                    // A historical-only range is an aggregate clock, not the current trip.
+                    this.#transitionLifecycle("stop"); this.#clearLocal(); this.#tripTotals = aggregate;
+                    this.#tripAddedToAggregate = true;
+                }
+            }
+            const configuration = {goal_type:mode || this.percentMode,
+                auto_goal:sync ?? snapshot.sync, rendered_time_type:'time_remaining'};
+            if (Number.isFinite(goal) && goal > 0) configuration[goalScope === 'total' ? 'total_goal' : 'trip_goal'] = `${goal}%`;
+            if (totalLabel) this.setAttribute('total-label', totalLabel);
+            this.configure(configuration);
+            const remaining = this.getUIState(now).time_component.text;
+            this.renderedTimeMode = timeDisplay || snapshot.timeDisplay || 'remaining';
+            this.#synchronizeHands(now);
+            this.#updateDisplay(now);
+            this.refreshLayout();
+            return {uiState:this.getUIState(now), remaining};
         }
         restoreState(snapshot) {
             const modelChanged = this.#started !== snapshot.started || this.#tripId !== snapshot.tripId ||
@@ -32069,6 +32119,7 @@
         }
 
         #startDisplayTimer() {
+            if (this.#observerOnly) return;
             this.#stopDisplayTimer();
 
             const scheduleNext =
@@ -32150,6 +32201,7 @@
         }
 
         #startTickTimer() {
+            if (this.#observerOnly) return;
             this.#stopTickTimer();
 
             if (

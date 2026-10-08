@@ -7393,3 +7393,39 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 
 .startup-audio-dialog { text-align: center; max-width: min(420px, calc(100vw - 32px)); }
 .startup-audio-dialog form { padding-top: 16px; }
+
+.live-stream-view-controls { display: grid; gap: 8px; min-width: 0; }
+.app-dialog .live-stream-view-controls label { display: grid; grid-template-columns: 1fr; gap: 4px; min-width: 0; }
+.live-stream-view-controls select, .live-stream-view-controls input { width: 100%; min-width: 0; box-sizing: border-box; }
+.live-stream-view-controls p { margin: 0; overflow-wrap: anywhere; }
+.live-stream-custom-range { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.live-stream-custom-range[hidden] { display: none; }
+@media (max-width: 400px) { .live-stream-custom-range { grid-template-columns: 1fr; } }
+
+.live-stream-mirror { display: grid; justify-items: center; gap: 6px; }
+.live-stream-mirror h3 { margin: 0; text-align: center; overflow-wrap: anywhere; }
+.live-stream-mirror > clock-timer { width: min(240px, 60vw); height: min(240px, 60vw); flex: none; }
+.live-stream-view-controls { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.live-stream-view-controls > p, .live-stream-custom-range { grid-column: 1 / -1; }
+@media (max-width: 400px) { .live-stream-view-controls { grid-template-columns: 1fr; } }
+
+.live-stream-user-switcher { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: end; gap: 6px; width: 100%; }
+.app-dialog .live-stream-user-switcher label { display: grid; grid-template-columns: 1fr; gap: 4px; min-width: 0; }
+.live-stream-user-switcher select { width: 100%; min-width: 0; }
+@media (max-width:400px) { .live-stream-user-switcher { grid-template-columns: repeat(2,minmax(0,1fr)); } .live-stream-user-switcher label { grid-column: 1 / -1; grid-row: 1; } }
+
+.live-stream-interval { display: grid; justify-items: center; padding: 8px 16px; border: 1px solid currentColor; border-radius: 8px; }
+.live-stream-interval strong { font-size: 1.5em; font-variant-numeric: tabular-nums; }
+.live-stream-interval[hidden] { display: none; }
+
+.live-stream-user-heading { font-size: 1.1em; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
+.live-stream-dialog .dialog-header { display: grid; grid-template-columns: minmax(0,1fr) 40px; gap: 3px 8px; width: 100%; min-width: 0; box-sizing: border-box; }
+.live-stream-dialog .dialog-header h2 { grid-column: 1; grid-row: 1; margin: 0; }
+.live-stream-dialog .live-stream-user-heading { grid-column: 1; grid-row: 2; }
+.live-stream-dialog .dialog-close { grid-column: 2; grid-row: 1 / 3; }
+@media (max-width: 560px) {
+    .live-stream-readout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .live-stream-transcript { grid-column: 1 / -1; }
+    .live-stream-layout { padding: 8px; gap: 10px; }
+    .live-stream-section { padding: 8px; }
+}

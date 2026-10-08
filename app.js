@@ -763,6 +763,7 @@
         globalThis
             .WMOFIdentityContext;
 
+    $("#liveStreamButton").addEventListener("click", () => window.open(new URL("drop-in.php", API_BASE), "_blank", "noopener"));
     const liveStreamDialog =
         $("#liveStreamDialog");
     const liveStreamViewerSection =
@@ -842,11 +843,40 @@
                                 uiState:
                                     clockTimer
                                         .uiState,
-                                trip
+                                trip,
+                                viewData: buildDropInViewData()
                             };
                         }
                 })
             : undefined;
+
+    function buildDropInViewData() {
+        const summary = clockTimer.getSummarySnapshot();
+        return {
+            summary: {
+                trip: {available:summary.trip.available,
+                    standardTimeMilliseconds:summary.trip.standardTimeMilliseconds,
+                    countedTimeElapsedMilliseconds:summary.trip.countedTimeElapsedMilliseconds,
+                    percentGoal:summary.trip.percentGoal},
+                total: summary.total ? {percentGoal:summary.total.percentGoal,
+                    standardTimeMilliseconds:summary.total?.standardTimeMilliseconds,
+                    countedTimeElapsedMilliseconds:summary.total?.countedTimeElapsedMilliseconds,
+                    allowanceCreditMilliseconds:summary.total?.allowanceCreditMilliseconds} : null
+            },
+            timeDisplay:clockTimer.renderedTimeMode,
+            model:clockTimer.exportObserverSnapshot(),
+            mode:clockTimer.percentMode, range:getTripLogRange(),
+            active:tripIsLive(), tripId:clockTimer.currentTripId,
+            tripStart:clockTimer.uiState?.trip_start_component?.date?.toISOString?.(),
+            nonProduction:clockTimer.nonProduction, productionFilter:clockTimer.productionFilter,
+            calendars:calendarRanges.databaseRecords.map(record => ({
+                profile:record.profile, searchedYear:record.searchedYear, timezone:record.timezone,
+                rules:Object.fromEntries(['weekStartDay','cutoffTime','effectiveFrom','effectiveThrough',
+                    'recurring','payPeriodDays','payPeriodAnchorDate','payPeriodAnchorBasis']
+                    .filter(key => key in record.rules).map(key => [key,record.rules[key]]))
+            }))
+        };
+    }
 
     let liveStreamPresenceQueue =
         Promise.resolve();
@@ -1105,47 +1135,11 @@
                         () =>
                             signedInProfile
                                 ?.id,
-                    onLiveStream:
-                        () => {
-                            void (
-                                async () => {
-                                    const dialog =
-                                        $("#userLookupDialog");
-
-                                    if (
-                                        dialog
-                                            ?.open
-                                    ) {
-                                        const closed =
-                                            await closeDialogWithReturn(
-                                                dialog,
-                                                {
-                                                    reason:
-                                                        "identity-live-stream",
-                                                    immediate:
-                                                        true
-                                                }
-                                            );
-
-                                        if (!closed) {
-                                            return;
-                                        }
-                                    }
-
-                                    openDialog(
-                                        "liveStreamDialog",
-                                        {
-                                            fromPopover:
-                                                popoverIsOpen(
-                                                    mainMenu
-                                                ),
-                                            reason:
-                                                "identity-live-stream"
-                                        }
-                                    );
-                                }
-                            )();
-                        }
+                    onLiveStream: identity => {
+                        const url = new URL("drop-in.php", API_BASE);
+                        url.searchParams.set("userId", identity.userId);
+                        window.open(url, "_blank", "noopener");
+                    }
                 })
             : undefined;
 
@@ -1832,7 +1826,8 @@
                                                         ?.id,
                                                 uiState:
                                                     clockTimer
-                                                        .uiState
+                                                        .uiState,
+                                                viewData: buildDropInViewData()
                                             }
                                             : undefined
                                     );

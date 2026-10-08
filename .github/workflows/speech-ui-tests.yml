@@ -238,6 +238,12 @@ jobs:
           node easter-egg-arrangement.mjs
           node audio-routing-diagnostic.mjs
           node microphone-capture-lifecycle.mjs
+          node drop-in-view.mjs
+          node drop-in-page.mjs
+          php drop-in-totals-permissions.php
+          php -l ../api/live-stream/index.php
+          php -l ../api/trips/index.php
+          php -l ../drop-in.php
           node fsm-loopback-feedback.mjs
           node speech-command-digest.mjs
           node speech-failfast.mjs

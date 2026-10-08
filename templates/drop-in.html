@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="{{locale}}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Drop-In</title><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="drop-in.css"></head><body>
+<header class="drop-in-page-header"><a href="index.php" target="_blank" rel="noopener">ClockTimer</a><output id="appVersion">ZHHTV6</output></header>
+<p id="dropInPageStatus" role="status"></p>
+<main id="liveStreamDialog" class="app-dialog live-stream-dialog standalone-drop-in">
+        <form method="dialog">
+            <header class="dialog-header">
+                <span id="liveStreamWatchedName" class="live-stream-user-heading">—</span>
+                <h2 data-language-id="191e3336-022c-51bf-8608-68717226bbaa">{{text:191e3336-022c-51bf-8608-68717226bbaa:text0}}</h2>
+                
+            </header>
+            <div class="live-stream-layout">
+                <section id="liveStreamViewerSection" class="live-stream-section" aria-labelledby="liveStreamViewerTitle">
+                    <h3 id="liveStreamViewerTitle" data-language-id="a6fb3ceb-2920-5beb-890d-aec973f1d7c1">{{text:a6fb3ceb-2920-5beb-890d-aec973f1d7c1:text0}}</h3>
+                    <div class="live-stream-identity-row">
+                        <div class="identity-object-card" hidden>
+                            <strong id="liveStreamIdentityName" data-language-id="d0938306-5b3e-55a6-bae2-b249960673af">{{text:d0938306-5b3e-55a6-bae2-b249960673af:text0}}</strong>
+                            <span id="liveStreamIdentityMeta" data-language-id="cd1e2c0a-088d-5dfd-8408-956f601737b0">{{text:cd1e2c0a-088d-5dfd-8408-956f601737b0:text0}}</span>
+                        </div>
+                        <button id="liveStreamLookupButton" type="button" data-language-id="b2ab145a-14de-5ea7-ba80-ba3180174076">{{text:b2ab145a-14de-5ea7-ba80-ba3180174076:text0}}</button>
+                    </div>
+                    <div class="live-stream-view-actions">
+                        <button id="liveStreamWatchButton" class="primary-action" type="button" disabled data-language-id="f1827cb0-0aaf-5191-a807-8b1d72247477">{{text:f1827cb0-0aaf-5191-a807-8b1d72247477:text0}}</button>
+                        <span id="liveStreamViewerStatus" class="live-stream-status" data-language-id="d8785d44-2874-5f71-878e-dde06a7b7c53">{{text:d8785d44-2874-5f71-878e-dde06a7b7c53:text0}}</span>
+                    </div>
+                    <p class="dialog-helper" data-language-id="59a0349b-eb99-54dc-a65d-92bb07e4059b">{{text:59a0349b-eb99-54dc-a65d-92bb07e4059b:text0}}</p>
+
+                    <section class="live-stream-mirror" aria-labelledby="liveStreamWatchedName">
+                        <div class="live-stream-user-switcher">
+                            <button id="liveStreamPreviousUser" type="button" disabled data-language-id="61a5823d-8895-5dea-8679-19f54c926a8e">{{text:61a5823d-8895-5dea-8679-19f54c926a8e:text0}}</button>
+                            <label><span data-language-id="abcb5dc8-e264-5c77-af1f-98f1a5c95b8a">{{text:abcb5dc8-e264-5c77-af1f-98f1a5c95b8a:text0}}</span><select id="liveStreamUserSelect" disabled><option value="">—</option></select></label>
+                            <button id="liveStreamNextUser" type="button" disabled data-language-id="d4ec3512-2524-5c15-b043-fa2d423e6e01">{{text:d4ec3512-2524-5c15-b043-fa2d423e6e01:text0}}</button>
+                        </div>
+                        <clock-timer id="liveStreamClockTimer" inert></clock-timer>
+                        <div id="liveStreamInterval" class="live-stream-interval" hidden><span id="liveStreamIntervalLabel"></span><strong id="liveStreamIntervalTime"></strong></div>
+                    </section>
+                    <div class="live-stream-readout" aria-live="polite">
+                        <div><span data-language-id="01be1c81-fcf4-5ae0-9942-52a9d182147f">{{text:01be1c81-fcf4-5ae0-9942-52a9d182147f:text0}}</span><strong id="liveStreamRemoteState" data-language-id="2997a7c9-b0ed-5104-af1f-aacdd4a4f66e">{{text:2997a7c9-b0ed-5104-af1f-aacdd4a4f66e:text0}}</strong></div>
+                        <div><span data-language-id="0adf1049-c1d7-51c1-a235-934af46f337a">{{text:0adf1049-c1d7-51c1-a235-934af46f337a:text0}}</span><strong id="liveStreamRemoteTime" data-language-id="2d62ffc7-c5e7-5e96-a105-07116a168ee8">{{text:2d62ffc7-c5e7-5e96-a105-07116a168ee8:text0}}</strong></div>
+                        <div><span data-language-id="9970c75c-cce5-55c6-b03c-7511f29d419f">{{text:9970c75c-cce5-55c6-b03c-7511f29d419f:text0}}</span><strong id="liveStreamRemoteGoal" data-language-id="5113cad1-42d6-5f79-a9ed-80de9445b435">{{text:5113cad1-42d6-5f79-a9ed-80de9445b435:text0}}</strong></div>
+                        <div><span data-language-id="fcd42cdd-f87a-59f6-b94f-0d371c521867">{{text:fcd42cdd-f87a-59f6-b94f-0d371c521867:text0}}</span><strong id="liveStreamRemainingTime">—</strong></div>
+                        <div><span data-language-id="3eb6514c-554f-592d-aa55-af276e4df093">{{text:3eb6514c-554f-592d-aa55-af276e4df093:text0}}</span><strong id="liveStreamUserTripGoal">—</strong></div>
+                        <div><span data-language-id="4a648fb9-d165-5358-9da4-8badbed72dea">{{text:4a648fb9-d165-5358-9da4-8badbed72dea:text0}}</span><strong id="liveStreamUserModeGoal">—</strong></div>
+                        <div><span data-language-id="e13dfd20-bbbd-5de2-b5bc-e5a0f095fd50">{{text:e13dfd20-bbbd-5de2-b5bc-e5a0f095fd50:text0}}</span><strong id="liveStreamUserActiveGoal">—</strong></div>
+                        <div><span data-language-id="96f1c96c-128a-52fe-a35b-ed2f2a2a0522">{{text:96f1c96c-128a-52fe-a35b-ed2f2a2a0522:text0}}</span><strong id="liveStreamUserSync">—</strong></div>
+                        <div><span data-language-id="fecedef0-fd5b-5178-98be-7cff996a8180">{{text:fecedef0-fd5b-5178-98be-7cff996a8180:text0}}</span><strong id="liveStreamViewerActiveGoal">—</strong></div>
+                        <div class="live-stream-transcript"><span data-language-id="c3b1d0a6-4795-5e97-9186-4fe6418cc388">{{text:c3b1d0a6-4795-5e97-9186-4fe6418cc388:text0}}</span><strong id="liveStreamRemoteSpeech" data-language-id="fcb824ef-3b4d-536d-8880-98c8234d3e1a">{{text:fcb824ef-3b4d-536d-8880-98c8234d3e1a:text0}}</strong></div>
+                    </div>
+                    <fieldset id="liveStreamTrainerMessage" class="live-stream-trainer-message" disabled>
+                        <legend data-language-id="9a8ba22f-9dd0-5b24-8167-ecbe0c7ce508">{{text:9a8ba22f-9dd0-5b24-8167-ecbe0c7ce508:text0}}</legend>
+                        <div class="live-stream-trainer-message-row">
+                            <input id="liveStreamTrainerMessageText" type="text" maxlength="500" autocomplete="off" aria-label="{{text:b0a1b21c-2f33-5a3e-b1fa-381aabe8090b:aria-label}}" placeholder="{{text:b0a1b21c-2f33-5a3e-b1fa-381aabe8090b:placeholder}}" data-language-id="b0a1b21c-2f33-5a3e-b1fa-381aabe8090b">
+                            <button id="liveStreamTrainerMessageSend" class="primary-action" type="button" data-language-id="95a243d5-7ecd-58e0-82b9-580776d4bf23">{{text:95a243d5-7ecd-58e0-82b9-580776d4bf23:text0}}</button>
+                        </div>
+                        <p id="liveStreamTrainerMessageStatus" class="live-stream-status" aria-live="polite"></p>
+                    </fieldset>
+
+                    <fieldset id="liveStreamVolumeControls" class="live-stream-volume-controls" disabled>
+                        <legend data-language-id="0f063567-ca2c-5846-aff5-a7f9db310118">{{text:0f063567-ca2c-5846-aff5-a7f9db310118:text0}}</legend>
+                        <label class="live-stream-mute">
+                            <input id="liveStreamMute" type="checkbox">
+                            <span data-language-id="85531008-f9a6-5ab4-aa7e-89076bd985bf">{{text:85531008-f9a6-5ab4-aa7e-89076bd985bf:text0}}</span>
+                        </label>
+                        <label>
+                            <span data-language-id="df9a1756-e2d7-5033-8312-8d41faffdbb8">{{text:df9a1756-e2d7-5033-8312-8d41faffdbb8:text0}}<output id="liveStreamMasterVolumeValue" data-language-id="6ee6b7df-ad62-591c-8479-28edcc1101d4">{{text:6ee6b7df-ad62-591c-8479-28edcc1101d4:text0}}</output></span>
+                            <input id="liveStreamMasterVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <label>
+                            <span data-language-id="4edf6997-bf95-5b1e-91de-1260cb0ddf89">{{text:4edf6997-bf95-5b1e-91de-1260cb0ddf89:text0}}<output id="liveStreamMicVolumeValue" data-language-id="806e7989-04ee-5d7b-81b4-99aa9fbeb4a1">{{text:806e7989-04ee-5d7b-81b4-99aa9fbeb4a1:text0}}</output></span>
+                            <input id="liveStreamMicVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <label>
+                            <span data-language-id="16ce574f-956c-5e2f-a558-96ad95436660">{{text:16ce574f-956c-5e2f-a558-96ad95436660:text0}}<output id="liveStreamProgramVolumeValue" data-language-id="6282fbd7-2066-5207-82f3-c1507dfd573e">{{text:6282fbd7-2066-5207-82f3-c1507dfd573e:text0}}</output></span>
+                            <input id="liveStreamProgramVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                    </fieldset>
+
+                    <div class="live-stream-view-controls">
+                        <label><span data-language-id="b45a71cd-085a-5cf6-a888-8e542e21430a">{{text:b45a71cd-085a-5cf6-a888-8e542e21430a:text0}}</span><select id="liveStreamViewMode"><option value="user" data-language-id="279e09a9-36c2-5fa9-bed7-730073fd1a7a">{{text:279e09a9-36c2-5fa9-bed7-730073fd1a7a:text0}}</option><option value="auto" data-language-id="4030be28-c088-5b0d-9039-92fb3e84f3d6">{{text:4030be28-c088-5b0d-9039-92fb3e84f3d6:text0}}</option><option value="trip" data-language-id="906193ec-18dd-5208-a4bc-162df6b650c4">{{text:906193ec-18dd-5208-a4bc-162df6b650c4:text0}}</option><option value="day" data-language-id="679e79f2-5cb5-50a2-9625-3f019146213c">{{text:679e79f2-5cb5-50a2-9625-3f019146213c:text0}}</option><option value="week" data-language-id="0cd2eb74-19fc-5121-af25-d600a813907d">{{text:0cd2eb74-19fc-5121-af25-d600a813907d:text0}}</option><option value="pay-period" data-language-id="2d36d8c6-7d35-5b36-8634-12c6e2677fb7">{{text:2d36d8c6-7d35-5b36-8634-12c6e2677fb7:text0}}</option><option value="month" data-language-id="dbcdee29-519f-5a37-bf6c-03adee4241f7">{{text:dbcdee29-519f-5a37-bf6c-03adee4241f7:text0}}</option><option value="year" data-language-id="b8c105f6-d44e-5ec3-b548-45d5a317d3a9">{{text:b8c105f6-d44e-5ec3-b548-45d5a317d3a9:text0}}</option><option value="custom" data-language-id="fcc1b60f-e7a5-5194-b230-07a963542f72">{{text:fcc1b60f-e7a5-5194-b230-07a963542f72:text0}}</option></select></label>
+                        <div id="liveStreamCustomRange" class="live-stream-custom-range" hidden>
+                            <label><span data-language-id="3e20eafe-4133-587f-a31b-2020d5a29f50">{{text:3e20eafe-4133-587f-a31b-2020d5a29f50:text0}}</span><input id="liveStreamViewStart" type="date"></label>
+                            <label><span data-language-id="48654946-3e3a-5e4b-8e24-03e0627bc33c">{{text:48654946-3e3a-5e4b-8e24-03e0627bc33c:text0}}</span><input id="liveStreamViewEnd" type="date"></label>
+                        </div>
+                        <p><span data-language-id="e96a2648-32d1-5514-92e0-1772c342be5b">{{text:e96a2648-32d1-5514-92e0-1772c342be5b:text0}}</span>: <strong id="liveStreamViewingMode"></strong></p>
+                        <p><span data-language-id="77a7646e-6352-5f40-a0de-dfcb5c869d40">{{text:77a7646e-6352-5f40-a0de-dfcb5c869d40:text0}}</span>: <strong id="liveStreamPublisherMode">—</strong></p>
+                        <label><span data-language-id="cbd68851-111e-5536-80f3-85e413201822">{{text:cbd68851-111e-5536-80f3-85e413201822:text0}}</span><input id="liveStreamViewPercent" type="number" min="1" max="1000" step="1" inputmode="numeric"></label>
+                        <label><span data-language-id="f3f39dbb-2770-50ec-b1b5-8812ac87d40a">{{text:f3f39dbb-2770-50ec-b1b5-8812ac87d40a:text0}}</span><select id="liveStreamViewSync"><option value="user" data-language-id="3876f75d-2e05-57d4-8e96-e2c6896d2346">{{text:3876f75d-2e05-57d4-8e96-e2c6896d2346:text0}}</option><option value="on" data-language-id="f006ba7e-fa9e-5481-8b85-fed3016d902f">{{text:f006ba7e-fa9e-5481-8b85-fed3016d902f:text0}}</option><option value="off" data-language-id="997bc486-0376-5f3c-81a0-f771a845dba7">{{text:997bc486-0376-5f3c-81a0-f771a845dba7:text0}}</option></select></label>
+                        <label><span data-language-id="5d99dfac-9cf7-5dda-8b50-c03d646586dc">{{text:5d99dfac-9cf7-5dda-8b50-c03d646586dc:text0}}</span><select id="liveStreamViewTime"><option value="user" data-language-id="3876f75d-2e05-57d4-8e96-e2c6896d2346">{{text:3876f75d-2e05-57d4-8e96-e2c6896d2346:text0}}</option><option value="remaining" data-language-id="4b927b44-6410-53c1-98b2-ad81f47e9e61">{{text:4b927b44-6410-53c1-98b2-ad81f47e9e61:text0}}</option><option value="elapsed" data-language-id="89d7fafa-57e0-5a57-93c8-919c0422b960">{{text:89d7fafa-57e0-5a57-93c8-919c0422b960:text0}}</option><option value="calculated-end" data-language-id="945221ab-82a1-59b2-b957-2ebed11a0a88">{{text:945221ab-82a1-59b2-b957-2ebed11a0a88:text0}}</option></select></label>
+                        <button id="liveStreamResetPercent" type="button" data-language-id="7db0ecdb-6bff-53e9-aa6e-10f2aa1ce7ae">{{text:7db0ecdb-6bff-53e9-aa6e-10f2aa1ce7ae:text0}}</button>
+                        <p id="liveStreamViewStatus" role="status"></p>
+                    </div>
+
+
+                </section>
+            </div>
+        </form>
+    </main>
+<dialog id="userLookupDialog" class="app-dialog user-lookup-dialog">
+        <form id="userLookupForm" autocomplete="off" novalidate>
+            <header class="dialog-header">
+                <h2 data-language-id="18b081f5-c56a-55ee-bf7c-4a0e96d16075">{{text:18b081f5-c56a-55ee-bf7c-4a0e96d16075:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:45a148a4-3f53-58d3-aced-0e41cae3957b:aria-label}}" data-language-id="45a148a4-3f53-58d3-aced-0e41cae3957b">{{text:45a148a4-3f53-58d3-aced-0e41cae3957b:text0}}</button>
+            </header>
+
+            <section class="user-lookup-search" aria-labelledby="userLookupSearchTitle">
+                <h3 id="userLookupSearchTitle" data-language-id="d767affc-7649-51d1-bfaf-4fb1c754f7b2">{{text:d767affc-7649-51d1-bfaf-4fb1c754f7b2:text0}}</h3>
+                <div class="user-lookup-fields">
+                    <label><span data-language-id="d4338930-6069-515d-9742-e5936b37921f">{{text:d4338930-6069-515d-9742-e5936b37921f:text0}}</span><input id="userLookupId" name="id" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></label>
+                    <label><span data-language-id="1079f377-88fb-5e11-b6dd-7fd545680172">{{text:1079f377-88fb-5e11-b6dd-7fd545680172:text0}}</span><input id="userLookupUsername" name="username" maxlength="191" autocomplete="off"></label>
+                    <label><span data-language-id="e153eaf2-7c46-5e7b-a0d4-65ee5a48a605">{{text:e153eaf2-7c46-5e7b-a0d4-65ee5a48a605:text0}}</span><input id="userLookupFirstName" name="firstName" maxlength="100" autocomplete="off"></label>
+                    <label><span data-language-id="d5075781-6aa9-5650-a2dc-8ae0f434e576">{{text:d5075781-6aa9-5650-a2dc-8ae0f434e576:text0}}</span><input id="userLookupLastName" name="lastName" maxlength="100" autocomplete="off"></label>
+                    <label><span data-language-id="d5a987d9-026d-59c8-8d66-c4b8a2bd7422">{{text:d5a987d9-026d-59c8-8d66-c4b8a2bd7422:text0}}</span><input id="userLookupPreferredName" name="preferredName" maxlength="100" autocomplete="off"></label>
+                </div>
+                <div class="user-lookup-search-actions">
+                    <button id="userLookupClearSearch" type="button" data-language-id="99ccf2f5-9b00-5140-8af8-a4d32c8a0123">{{text:99ccf2f5-9b00-5140-8af8-a4d32c8a0123:text0}}</button>
+                    <button id="userLookupSearchButton" class="primary-action" type="submit" data-language-id="9278e15f-5d93-5dde-b55e-7bf894506322">{{text:9278e15f-5d93-5dde-b55e-7bf894506322:text0}}</button>
+                </div>
+                <p id="userLookupStatus" class="user-lookup-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="user-lookup-selected" aria-labelledby="userLookupSelectedTitle">
+                <h3 id="userLookupSelectedTitle" data-language-id="ee9357e4-0c1f-577d-a972-a71ab5f70171">{{text:ee9357e4-0c1f-577d-a972-a71ab5f70171:text0}}</h3>
+                <div class="identity-object-card">
+                    <strong id="userLookupSelectedName" data-language-id="c8c56437-4f81-5987-95f0-ec282e61b0cc">{{text:c8c56437-4f81-5987-95f0-ec282e61b0cc:text0}}</strong>
+                    <span id="userLookupSelectedMeta" data-language-id="ce8f5d05-011f-5a98-949c-71f97fe7d988">{{text:ce8f5d05-011f-5a98-949c-71f97fe7d988:text0}}</span>
+                </div>
+                <div class="user-lookup-selected-actions">
+                    <button id="userLookupCopySelected" type="button" disabled data-language-id="b5090b32-90ad-5855-a9d6-dbe27d980605">{{text:b5090b32-90ad-5855-a9d6-dbe27d980605:text0}}</button>
+                    <button id="userLookupLiveStream" class="primary-action" type="button" hidden disabled data-language-id="24cae803-083d-5e85-9b70-3a05b309a7fc">{{text:24cae803-083d-5e85-9b70-3a05b309a7fc:text0}}</button>
+                    <button id="userLookupClearSelected" type="button" disabled data-language-id="de11d26c-80eb-5f1a-b747-be6d5397af79">{{text:de11d26c-80eb-5f1a-b747-be6d5397af79:text0}}</button>
+                </div>
+            </section>
+
+<section id="profileEditor" hidden><h3><span data-language-id="9935ec1c-71bf-440a-afd4-12e7d1829df4">{{text:9935ec1c-71bf-440a-afd4-12e7d1829df4:text0}}</span></h3><fieldset id="profileEditorFields" disabled class="user-lookup-fields"><label><span data-language-id="44f68153-0471-4d74-81b4-5af0e7c970a1">{{text:44f68153-0471-4d74-81b4-5af0e7c970a1:text0}}</span><input id="editProfileAccountId" type="text" readonly></label><label><span data-language-id="33c25627-3f1d-4533-aaf2-1b05ce00975b">{{text:33c25627-3f1d-4533-aaf2-1b05ce00975b:text0}}</span><input id="editProfileFirstName" type="text" maxlength="100" required></label><label><span data-language-id="51821966-f709-4992-8859-af7ca4eb62c3">{{text:51821966-f709-4992-8859-af7ca4eb62c3:text0}}</span><input id="editProfileLastName" type="text" maxlength="100" required></label><label><span data-language-id="fde14ef7-3520-4fb9-aab0-afdfa169e299">{{text:fde14ef7-3520-4fb9-aab0-afdfa169e299:text0}}</span><input id="editProfilePreferredName" type="text" maxlength="100"></label><label><span data-language-id="bd16b234-fe83-4e52-a699-ea65059cbea4">{{text:bd16b234-fe83-4e52-a699-ea65059cbea4:text0}}</span><input id="editProfileUsername" type="text" maxlength="191" required></label><label><span data-language-id="70455645-f0e3-46dc-a994-6b16cf3e4e97">{{text:70455645-f0e3-46dc-a994-6b16cf3e4e97:text0}}</span><input id="editProfilePassword" type="password" maxlength="72" autocomplete="new-password"></label><label><span data-language-id="76f39160-086a-4c82-84f0-38dcd035c192">{{text:76f39160-086a-4c82-84f0-38dcd035c192:text0}}</span><input id="editProfileLoginId" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4"></label><label><span data-language-id="dd02a7d4-5611-4704-92a4-3e505c2b5bd5">{{text:dd02a7d4-5611-4704-92a4-3e505c2b5bd5:text0}}</span><input id="editProfilePin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password"></label><label><span data-language-id="6d86858c-562b-446c-8fed-9207c0c97c0b">{{text:6d86858c-562b-446c-8fed-9207c0c97c0b:text0}}</span><input id="editProfilePermissions" type="number" min="0" max="255" step="1"></label></fieldset><button id="editProfileSave" type="button" class="primary-action"><span data-language-id="b97d158e-498f-4352-a8da-6a258d96a42e">{{text:b97d158e-498f-4352-a8da-6a258d96a42e:text0}}</span></button><p id="editProfileStatus" role="status" aria-live="polite"></p></section>
+            <section class="user-lookup-results-section" aria-labelledby="userLookupResultsTitle">
+                <div class="user-lookup-results-header">
+                    <h3 id="userLookupResultsTitle" data-language-id="eb3d19df-7a1a-5fd6-81d9-0278ce991a06">{{text:eb3d19df-7a1a-5fd6-81d9-0278ce991a06:text0}}</h3>
+                    <span id="userLookupResultCount"></span>
+                </div>
+                <div id="userLookupResults" class="user-lookup-results" role="list"></div>
+                <button id="userLookupLoadMore" type="button" hidden data-language-id="bf49f397-6a98-5404-a3af-44e320a75d47">{{text:bf49f397-6a98-5404-a3af-44e320a75d47:text0}}</button>
+            </section>
+        </form>
+    </dialog>
+<script id="language-pack" type="application/json">{{language-pack}}</script>
+<script src="LanguagePack.js"></script>
+<script src="TemporalFormat.js"></script>
+<script src="RingContainer.js"></script>
+<script src="TimeRangeModel.js"></script>
+<script src="TimeRangeElement.js"></script>
+<script src="ClockTimer.js"></script>
+<script src="CalendarRange.js"></script>
+<script src="IdentityContext.js"></script>
+<script src="UserLookup.js"></script>
+<script src="LiveTripStream.js"></script>
+<script src="DropInView.js"></script>
+<script src="DropInText.js"></script>
+<script src="drop-in.js"></script>
+</body></html>

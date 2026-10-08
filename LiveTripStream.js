@@ -90,6 +90,23 @@
             return this.#targetUserId;
         }
 
+        async fetchViewerTotals(window, {excludeTripId, productionFilter = "all"} = {}) {
+            if (!this.#viewing || !this.#viewerPeerId) throw new Error("No active Drop-In session.");
+            const target = this.#targetUserId, peer = this.#viewerPeerId;
+            const url = new URL(this.#endpoint);
+            url.search = new URLSearchParams({action:"totals", targetUserId:target, peerId:peer,
+                minDateTime:window.startTime, maxDateTime:window.endTime, productionFilter});
+            if (excludeTripId) url.searchParams.set("excludeTripId", excludeTripId);
+            const response = await fetch(url, {credentials:"same-origin", cache:"no-store",
+                headers:{Accept:"application/json"}, signal:AbortSignal.timeout(10000)});
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Unable to load Drop-In totals.");
+            if (target !== this.#targetUserId || peer !== this.#viewerPeerId || !this.#viewing) {
+                throw new Error("The Drop-In session changed.");
+            }
+            return data;
+        }
+
         get viewerMuted() {
             return this.#viewerMuted;
         }

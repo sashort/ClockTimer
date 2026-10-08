@@ -5779,6 +5779,226 @@
       "id": "cd358b3b-3309-4e87-b944-db1757f3167a",
       "text": "Bluetooth Audio Test",
       "default": "Bluetooth Audio Test"
+    },
+    "b45a71cd-085a-5cf6-a888-8e542e21430a": {
+      "id": "b45a71cd-085a-5cf6-a888-8e542e21430a",
+      "text": "Viewing mode",
+      "default": "Viewing mode"
+    },
+    "77a7646e-6352-5f40-a0de-dfcb5c869d40": {
+      "id": "77a7646e-6352-5f40-a0de-dfcb5c869d40",
+      "text": "Watched user mode",
+      "default": "Watched user mode"
+    },
+    "906193ec-18dd-5208-a4bc-162df6b650c4": {
+      "id": "906193ec-18dd-5208-a4bc-162df6b650c4",
+      "text": "Trip",
+      "default": "Trip"
+    },
+    "679e79f2-5cb5-50a2-9625-3f019146213c": {
+      "id": "679e79f2-5cb5-50a2-9625-3f019146213c",
+      "text": "Day",
+      "default": "Day"
+    },
+    "0cd2eb74-19fc-5121-af25-d600a813907d": {
+      "id": "0cd2eb74-19fc-5121-af25-d600a813907d",
+      "text": "Week",
+      "default": "Week"
+    },
+    "2d36d8c6-7d35-5b36-8634-12c6e2677fb7": {
+      "id": "2d36d8c6-7d35-5b36-8634-12c6e2677fb7",
+      "text": "Money",
+      "default": "Money"
+    },
+    "dbcdee29-519f-5a37-bf6c-03adee4241f7": {
+      "id": "dbcdee29-519f-5a37-bf6c-03adee4241f7",
+      "text": "Month",
+      "default": "Month"
+    },
+    "b8c105f6-d44e-5ec3-b548-45d5a317d3a9": {
+      "id": "b8c105f6-d44e-5ec3-b548-45d5a317d3a9",
+      "text": "Year",
+      "default": "Year"
+    },
+    "fcc1b60f-e7a5-5194-b230-07a963542f72": {
+      "id": "fcc1b60f-e7a5-5194-b230-07a963542f72",
+      "text": "Custom",
+      "default": "Custom"
+    },
+    "3e20eafe-4133-587f-a31b-2020d5a29f50": {
+      "id": "3e20eafe-4133-587f-a31b-2020d5a29f50",
+      "text": "Start date",
+      "default": "Start date"
+    },
+    "48654946-3e3a-5e4b-8e24-03e0627bc33c": {
+      "id": "48654946-3e3a-5e4b-8e24-03e0627bc33c",
+      "text": "End date",
+      "default": "End date"
+    },
+    "e2e25b66-216b-5f34-b5c5-55b3dd14d30c": {
+      "id": "e2e25b66-216b-5f34-b5c5-55b3dd14d30c",
+      "text": "Loading totals…",
+      "default": "Loading totals…"
+    },
+    "6190fd2f-132a-557d-8e25-7099c9e3df07": {
+      "id": "6190fd2f-132a-557d-8e25-7099c9e3df07",
+      "text": "Unable to load totals. Select a mode to try again.",
+      "default": "Unable to load totals. Select a mode to try again."
+    },
+    "afc603de-e203-509c-a8cf-905bccb893ea": {
+      "id": "afc603de-e203-509c-a8cf-905bccb893ea",
+      "text": "Select a valid start and end date. Calendar rules must cover the selected range.",
+      "default": "Select a valid start and end date. Calendar rules must cover the selected range."
+    },
+    "73a4354f-8f0d-5308-99c1-03b787bb7e75": {
+      "id": "73a4354f-8f0d-5308-99c1-03b787bb7e75",
+      "text": "Reload the watched user’s app to enable independent views.",
+      "default": "Reload the watched user’s app to enable independent views."
+    },
+    "279e09a9-36c2-5fa9-bed7-730073fd1a7a": {
+      "id": "279e09a9-36c2-5fa9-bed7-730073fd1a7a",
+      "text": "User view (mirror)",
+      "default": "User view (mirror)"
+    },
+    "cbd68851-111e-5536-80f3-85e413201822": {
+      "id": "cbd68851-111e-5536-80f3-85e413201822",
+      "text": "Watcher goal (%)",
+      "default": "Watcher goal (%)"
+    },
+    "7db0ecdb-6bff-53e9-aa6e-10f2aa1ce7ae": {
+      "id": "7db0ecdb-6bff-53e9-aa6e-10f2aa1ce7ae",
+      "text": "Use user’s settings",
+      "default": "Use user’s settings"
+    },
+    "fcd42cdd-f87a-59f6-b94f-0d371c521867": {
+      "id": "fcd42cdd-f87a-59f6-b94f-0d371c521867",
+      "text": "Time remaining",
+      "default": "Time remaining"
+    },
+    "3eb6514c-554f-592d-aa55-af276e4df093": {
+      "id": "3eb6514c-554f-592d-aa55-af276e4df093",
+      "text": "User’s Trip goal",
+      "default": "User’s Trip goal"
+    },
+    "4a648fb9-d165-5358-9da4-8badbed72dea": {
+      "id": "4a648fb9-d165-5358-9da4-8badbed72dea",
+      "text": "User’s mode goal",
+      "default": "User’s mode goal"
+    },
+    "e13dfd20-bbbd-5de2-b5bc-e5a0f095fd50": {
+      "id": "e13dfd20-bbbd-5de2-b5bc-e5a0f095fd50",
+      "text": "User’s selected goal",
+      "default": "User’s selected goal"
+    },
+    "96f1c96c-128a-52fe-a35b-ed2f2a2a0522": {
+      "id": "96f1c96c-128a-52fe-a35b-ed2f2a2a0522",
+      "text": "User’s Sync",
+      "default": "User’s Sync"
+    },
+    "f006ba7e-fa9e-5481-8b85-fed3016d902f": {
+      "id": "f006ba7e-fa9e-5481-8b85-fed3016d902f",
+      "text": "On",
+      "default": "On"
+    },
+    "997bc486-0376-5f3c-81a0-f771a845dba7": {
+      "id": "997bc486-0376-5f3c-81a0-f771a845dba7",
+      "text": "Off",
+      "default": "Off"
+    },
+    "4030be28-c088-5b0d-9039-92fb3e84f3d6": {
+      "id": "4030be28-c088-5b0d-9039-92fb3e84f3d6",
+      "text": "Auto",
+      "default": "Auto"
+    },
+    "ceecbb6e-d112-5037-a247-772bd6b7e355": {
+      "id": "ceecbb6e-d112-5037-a247-772bd6b7e355",
+      "text": "Standard",
+      "default": "Standard"
+    },
+    "f3f39dbb-2770-50ec-b1b5-8812ac87d40a": {
+      "id": "f3f39dbb-2770-50ec-b1b5-8812ac87d40a",
+      "text": "Watcher Sync",
+      "default": "Watcher Sync"
+    },
+    "3876f75d-2e05-57d4-8e96-e2c6896d2346": {
+      "id": "3876f75d-2e05-57d4-8e96-e2c6896d2346",
+      "text": "Follow user",
+      "default": "Follow user"
+    },
+    "5d99dfac-9cf7-5dda-8b50-c03d646586dc": {
+      "id": "5d99dfac-9cf7-5dda-8b50-c03d646586dc",
+      "text": "Watcher time display",
+      "default": "Watcher time display"
+    },
+    "4b927b44-6410-53c1-98b2-ad81f47e9e61": {
+      "id": "4b927b44-6410-53c1-98b2-ad81f47e9e61",
+      "text": "Remaining",
+      "default": "Remaining"
+    },
+    "89d7fafa-57e0-5a57-93c8-919c0422b960": {
+      "id": "89d7fafa-57e0-5a57-93c8-919c0422b960",
+      "text": "Elapsed",
+      "default": "Elapsed"
+    },
+    "945221ab-82a1-59b2-b957-2ebed11a0a88": {
+      "id": "945221ab-82a1-59b2-b957-2ebed11a0a88",
+      "text": "End time",
+      "default": "End time"
+    },
+    "fecedef0-fd5b-5178-98be-7cff996a8180": {
+      "id": "fecedef0-fd5b-5178-98be-7cff996a8180",
+      "text": "Watcher selected goal",
+      "default": "Watcher selected goal"
+    },
+    "61a5823d-8895-5dea-8679-19f54c926a8e": {
+      "id": "61a5823d-8895-5dea-8679-19f54c926a8e",
+      "text": "Previous user",
+      "default": "Previous user"
+    },
+    "d4ec3512-2524-5c15-b043-fa2d423e6e01": {
+      "id": "d4ec3512-2524-5c15-b043-fa2d423e6e01",
+      "text": "Next user",
+      "default": "Next user"
+    },
+    "abcb5dc8-e264-5c77-af1f-98f1a5c95b8a": {
+      "id": "abcb5dc8-e264-5c77-af1f-98f1a5c95b8a",
+      "text": "Recent users",
+      "default": "Recent users"
+    },
+    "93ecc835-3cbb-5f9e-a7b7-ddde9a1fea00": {
+      "id": "93ecc835-3cbb-5f9e-a7b7-ddde9a1fea00",
+      "text": "Down Time",
+      "default": "Down Time"
+    },
+    "e47f59c1-3a16-5a02-a3aa-3721c28086c3": {
+      "id": "e47f59c1-3a16-5a02-a3aa-3721c28086c3",
+      "text": "Break",
+      "default": "Break"
+    },
+    "7f3ca978-ee2f-5279-92f4-45ac34c01ff7": {
+      "id": "7f3ca978-ee2f-5279-92f4-45ac34c01ff7",
+      "text": "Lunch",
+      "default": "Lunch"
+    },
+    "a3ce8498-0ca0-5573-99a1-f8dbe7b0f023": {
+      "id": "a3ce8498-0ca0-5573-99a1-f8dbe7b0f023",
+      "text": "Short Break",
+      "default": "Short Break"
+    },
+    "71defb79-e3dc-5d2b-a9ad-b45488549382": {
+      "id": "71defb79-e3dc-5d2b-a9ad-b45488549382",
+      "text": "Overtime",
+      "default": "Overtime"
+    },
+    "92ab3f4a-c1c5-5a9e-b75c-02aa38a1551c": {
+      "id": "92ab3f4a-c1c5-5a9e-b75c-02aa38a1551c",
+      "text": "Elapsed",
+      "default": "Elapsed"
+    },
+    "32f72b3f-02ae-51b6-a660-0848987c8f71": {
+      "id": "32f72b3f-02ae-51b6-a660-0848987c8f71",
+      "text": "Remaining",
+      "default": "Remaining"
     }
   }
 }
