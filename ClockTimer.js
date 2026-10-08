@@ -5020,11 +5020,29 @@
 
         applyObserverSnapshot(snapshot, {totals, mode, goal, goalScope, sync, timeDisplay, totalLabel, now = new Date()} = {}) {
             if (!this.#observerOnly) throw new Error("Enable observer mode before applying a mirrored snapshot.");
+            // Event clock strings belong to the publisher's civil day. Replay in
+            // the observer's civil day while preserving the absolute instants.
+            const events = snapshot.events.map(event => {
+                if (event.event !== 'trip.started' || !event.value?.creationAnchor) return event;
+                const anchor = Date.parse(event.value.creationAnchor);
+                const absolute = value => {
+                    const parts = String(value).split(':').map(Number);
+                    return anchor + ((parts[0] * 60 + parts[1]) * 60 + parts[2]) * 1000;
+                };
+                const creation = new Date(absolute(event.value.creationTime));
+                if (Number.isNaN(creation.getTime())) return event;
+                const localAnchor = new Date(creation.getFullYear(), creation.getMonth(), creation.getDate());
+                const clock = instant => this.#formatTimelineTime(instant - localAnchor.getTime());
+                return {...event,value:{...event.value,creationAnchor:localAnchor.toISOString(),
+                    creationTime:clock(creation.getTime()),
+                    startTime:clock(Date.parse(event.timestamp)),
+                    scheduledStart:clock(absolute(event.value.scheduledStart))}};
+            });
             const attributes = snapshot.attributes.filter(([name]) => ClockTimer.observedAttributes.includes(name));
             // Preserve the observer host's identity and layout, not the publisher host ID.
             for (const name of ['id','class','style']) if (this.hasAttribute(name)) attributes.push([name,this.getAttribute(name)]);
             const aggregate = totals === undefined ? snapshot.totals : totals;
-            this.restoreState({...snapshot,attributes,totals:aggregate,pending:[],completed:[],preparedTrip:null});
+            this.restoreState({...snapshot,events,attributes,totals:aggregate,pending:[],completed:[],preparedTrip:null});
             this.productionFilter = snapshot.productionFilter || 'all';
             const start = this.getUIState(now).trip_start_component?.value;
             if (totals && Number.isFinite(start)) {
