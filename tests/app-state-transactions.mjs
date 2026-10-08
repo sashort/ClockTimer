@@ -40,19 +40,20 @@ window.fetch=async(url,options={})=>{
 };
 window.document.write(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
 installEnglishPack(window);
-for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(name==='StateTransactions' && process.env.CLOCKTIMER_STATE_SOURCE || name==='ActionFunctions' && process.env.CLOCKTIMER_ACTION_SOURCE || new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US/SpokenTimeParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/PercentParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',import.meta.url),'utf8'));
-let speechSource=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+let speechSource=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testModelReady(ready){SpeechMenu.#modelReady=ready;}
     static testBegin(){SpeechMenu.#modelReady=true;SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={beginUtterance(){},setHotwords(){},abortUtterance(){},finishUtterance(){}};SpeechMenu.#beginUtterance(window.__testTime-performance.timeOrigin);return SpeechMenu.#utterance;}
     static testTranscript(u,text,final=true){return SpeechMenu.#handleLiveTranscript(u,text,final);}
     static testFinish(){SpeechMenu.#finishUtterance("vad-silence",true);}
+    static testDeliverFinal(u,text){SpeechMenu.#onSherpaTranscript({detail:{utteranceId:u.id,transcript:text,isFinal:true}});}
     static testFinal(u,text){return SpeechMenu.#handleCompletedTranscript(u,text);}
     static testAvailable(){return SpeechMenu.#availableCandidates();}
     static async testSilence(u,text){u.transcript=text;u.candidatePool=await SpeechMenu.#refreshCandidatePool(u,text);return SpeechMenu.#commitUtterance(u);}
@@ -449,7 +450,41 @@ if(process.argv.includes('--pointer-confirmation')) {
     const valueAttempt=window.SpeechMenu.testBegin();
     await window.SpeechMenu.testTranscript(valueAttempt,'thirty minutes',true);await valueAttempt.digestQueue;await settle();
     const okAttempt=window.SpeechMenu.testBegin();
-    await window.SpeechMenu.testTranscript(okAttempt,'okay',true);await okAttempt.digestQueue;await settle();
+    await window.SpeechMenu.testTranscript(okAttempt,'okay',!process.argv.includes('--post-start-interrupted-final'));await okAttempt.digestQueue;await settle();
+    if(process.argv.includes('--post-start-interrupted-final')) {
+        assert.equal(timer.status,'running','interim OK optimistically starts the trip');
+        window.SpeechMenu.testFinish();
+        const sync=window.SpeechMenu.testBegin();
+        await window.SpeechMenu.testTranscript(sync,'sync on',true);
+        window.SpeechMenu.testDeliverFinal(okAttempt,'okay');
+        let timeout;
+        try {await Promise.race([sync.digestQueue,new Promise((_,reject)=>timeout=setTimeout(()=>reject(new Error('Sync stalled behind a discarded final decode')),1500))]);}
+        finally {clearTimeout(timeout);}
+        await settle();
+        assert(sync.hadCommittedCommand&&!sync.digestExecutionFailed,'state-changing speech works after voice trip start');
+        assert.equal(window.WMOFStateTransactions.pending.length,0,'no orphaned command transaction blocks later commands');
+        assert(stored.some(e=>e.event==='trip.started'),'accepted terminal OK is persisted');
+        const say=async phrase=>{
+            const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);
+            let timeout;
+            try {await Promise.race([u.digestQueue,new Promise((_,reject)=>timeout=setTimeout(()=>reject(new Error(phrase+' stalled')),1500))]);}
+            finally {clearTimeout(timeout);}
+            await settle();assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' executes');return u;
+        };
+        await say('down time');assert.equal(window.WMOFInteractionState.state.interval,'down');
+        await say('resume');
+        await say('start break okay');assert.equal(window.WMOFInteractionState.state.tripStatus,'break');
+        await say('end break okay');
+        await say('ready');assert.equal(timer.status,'ready');
+        await say('cancel');
+        await say('ready');
+        assert(window.document.querySelector('#voiceEntrySurface').open,'Ready after trip completion opens voice entry');
+        await say('twenty minutes');
+        assert.equal(window.document.querySelector('#voiceEntryValue').textContent,'0:20:00');
+        assert.equal(window.WMOFStateTransactions.pending.length,0,'Ready after returning to no trip does not leave Applying stuck');
+        console.log('PASS late voice-start/Ready final decodes, Sync, Down/Resume, Break/End Break and trip finish');
+        window.happyDOM.abort();process.exit(0);
+    }
     assert(!okAttempt.digestExecutionFailed,'voice OK accepts and persists the entered trip time');
 }
 assert.equal(timer.status,'running','confirmation starts the trip');

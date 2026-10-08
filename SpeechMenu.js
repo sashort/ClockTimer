@@ -2912,6 +2912,11 @@ class SpeechMenu {
             ] of SpeechMenu
                 .#finishedUtterances
         ) {
+            // Capture has ended, but its requested final decode still owns the
+            // accepted command transaction. A new utterance must not discard
+            // that result and leave later state changes waiting forever.
+            if (utterance.chainActive && !utterance.chainCanceled &&
+                !utterance.digestFailed && !utterance.digestCommitted) continue;
             SpeechMenu
                 .#clearCandidatePool(
                     utterance
@@ -2958,11 +2963,15 @@ class SpeechMenu {
 
         if (!utterance) return;
         utterance.digestClosed = true;
+        if (recognize && utterance.chainActive && !utterance.digestCommitted && !utterance.chainCanceled) {
+            utterance.releaseFinalResult ??= utterance.operation?.expect("recognition-final");
+        }
         utterance.valueCollectors?.clear();
         SpeechMenu.#clearPrimed(utterance);
         if (["stopped", "muted", "speech-context-change", "surface-context-change"].includes(reason)) {
             utterance.chainCanceled = true;
-            void globalThis.WMOFStateTransactions?.rollback(`speech:${utterance.id}`, new Error(reason));
+            void (utterance.operation ? utterance.operation.cancel(new Error(reason)) :
+                globalThis.WMOFStateTransactions?.rollback(`speech:${utterance.id}`, new Error(reason)));
         }
 
         SpeechMenu
@@ -3152,6 +3161,13 @@ class SpeechMenu {
     static #onSherpaError = event => {
         const detail =
             event.detail || {};
+        const affected = [SpeechMenu.#utterance, ...SpeechMenu.#finishedUtterances.values()]
+            .filter(utterance => utterance && (detail.fatal || utterance.id === detail.utteranceId));
+        for (const utterance of affected) {
+            if (utterance.operation && !utterance.operation.settled) {
+                void utterance.operation.cancel(new Error(detail.message || "Speech recognition failed."));
+            }
+        }
 
         SpeechMenu.#emit(
             detail.fatal
@@ -3201,6 +3217,12 @@ class SpeechMenu {
 
         SpeechMenu.#finishedUtterances
             .delete(id);
+        if (utterance.operation && !utterance.operation.settled && !utterance.digestCommitted) {
+            const transcript = SpeechMenu.#stripSynthesizedSpeech(SpeechMenu.#normalizeTranscript(event.detail?.transcript || ""));
+            if (transcript) void SpeechMenu.#handleCompletedTranscript(utterance, transcript);
+            else void utterance.operation.cancel(new Error("Recognition ended without a final result."));
+            return;
+        }
 
         if (
             !utterance.transcript &&
@@ -3671,7 +3693,10 @@ class SpeechMenu {
     }
 
     static #rejectDigest(utterance, reason, remainder) {
-        void globalThis.WMOFStateTransactions?.rollback(`speech:${utterance.id}`, new Error(reason));
+        utterance.digestFailed = true;
+        utterance.releaseFinalResult?.();
+        void (utterance.operation ? utterance.operation.cancel(new Error(reason)) :
+            globalThis.WMOFStateTransactions?.rollback(`speech:${utterance.id}`, new Error(reason)));
         SpeechMenu.#flushCommandFeedback(utterance, false);
         utterance.digestFailed = true;
         utterance.valueCollectors?.clear();
@@ -3723,7 +3748,7 @@ class SpeechMenu {
                 const result = await SpeechMenu.#processElement(step.commandElement, segment,
                     utterance.id, step.speechMenuElement, SpeechMenu.#shouldExecuteElement(step.commandElement),
                     undefined, utterance.wallStartedAt, true, false,
-                    {chain: true, chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext,
+                    {chain: true, operation: utterance.operation, chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext,
                         hasContinuation: () => utterance.digestSteps.indexOf(step) < utterance.digestSteps.length - 1,
                         nextCommand: () => utterance.digestSteps[utterance.digestSteps.indexOf(step) + 1]?.commandElement.getAttribute("speech-function"),
                         isFinal: () => utterance.digestCommitted,
@@ -3762,7 +3787,8 @@ class SpeechMenu {
                 SpeechMenu.#flushCommandFeedback(utterance, false);
                 return false;
             }
-            if (transactions && !(await transactions.complete(group))) {
+            utterance.releaseFinalResult?.();
+            if (transactions && !(await (utterance.operation ? utterance.operation.complete() : transactions.complete(group)))) {
                 utterance.chainCanceled = true;
                 SpeechMenu.#rejectDigest(utterance, "state-change-reverted", utterance.transcript);
                 return false;
@@ -3777,6 +3803,15 @@ class SpeechMenu {
         if (candidate?.kind !== "chain" && !utterance.chainActive) return false;
         if (utterance.digestFailed || utterance.digestCommitted) return true;
         utterance.chainActive = true;
+        if (!utterance.operation && globalThis.WMOFStateTransactions?.createOperation) {
+            utterance.operation = globalThis.WMOFStateTransactions.createOperation({group:`speech:${utterance.id}`, source:"voice"});
+            utterance.operation.signal.addEventListener("abort", () => {
+                if (!utterance.digestFailed) {
+                    utterance.chainCanceled = true;
+                    SpeechMenu.#rejectDigest(utterance, "async-operation-cancelled", utterance.digestPending || "");
+                }
+            }, {once:true});
+        }
         SpeechMenu.#clearCandidatePool(utterance);
         const steps = candidate?.chain || [];
         let count = steps.length;
@@ -4153,6 +4188,7 @@ class SpeechMenu {
             return;
         }
 
+        utterance.releaseFinalResult?.();
         SpeechMenu
             .#clearCandidatePool(
                 utterance
@@ -9253,6 +9289,8 @@ class SpeechMenu {
         SpeechMenu.#preRollSamples =
             0;
 
+        await Promise.all([...SpeechMenu.#finishedUtterances.values()].map(utterance =>
+            utterance.operation?.cancel(new DOMException("Speech recognition stopped.", "AbortError"))));
         SpeechMenu.#finishedUtterances
             .clear();
 

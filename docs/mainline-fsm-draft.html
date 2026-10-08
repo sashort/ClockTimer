@@ -9,7 +9,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
 <section id="gestureMenu" class="gesture-menu" hidden aria-label="Gesture guide"><h2>Pointer and touch gestures</h2><dl><dt>Rotate</dt><dd>Pointer: drag the diagram. Touch: drag with one finger.</dd><dt>Zoom</dt><dd>Pointer: scroll the wheel. Touch: pinch with two fingers.</dd><dt>Pan</dt><dd>Pointer: Shift-drag or right-drag. Touch: move two fingers together.</dd><dt>Inspect</dt><dd>Click or tap a state or edge.</dd><dt>Expand / collapse speech</dt><dd>Click or tap the small + / − box on a voice transition.</dd><dt>Restore the view</dt><dd>Use Reset view. Flat view removes perspective.</dd></dl></section><nav id="groups" aria-label="FSM mode groups"></nav>
 <nav id="transitionFilters" aria-label="Transition filters"><span style="align-self:center">Show transitions:</span><label><input type="checkbox" data-transition-mode="pointer" checked> Pointer</label><label><input type="checkbox" data-transition-mode="voice" checked> Voice</label><label><input type="checkbox" data-transition-mode="failure" checked> Persistence rollback</label><label><input type="checkbox" data-transition-mode="automatic" checked> System automatic</label><button id="allTransitions">Show all</button></nav><div class="layout"><section class="map" aria-label="Interactive 3D state diagram"><div class="toolbar"><button id="reset">Reset view</button><button id="flat">Flat view</button><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button><button id="svgExport">Export SVG</button><button id="jsonExport">Reference data</button><button id="htmlExport">Save HTML</button><label><input type="checkbox" id="showAudio" > Voice tables</label><label><input type="checkbox" id="allLabels"> All labels / tables</label><span id="counts" class="counter"></span></div><svg id="graph" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ClockTimer mainline state machine"></svg><div class="help"><div class="legend" style="margin:0 0 6px"><span><i class="line"></i>Pointer</span><span><i class="line voice"></i>Voice</span><span><i class="line auto"></i>System automatic</span><span><i class="line fail"></i>Persistence rollback</span></div>Pointer: drag rotates · wheel zooms · Shift/right-drag pans · click a state/edge inspects.<br>Touch: one finger rotates · pinch zooms · two fingers pan · tap inspects. Boxes group modes; depth separates branches.</div></section><aside class="sidebar" aria-label="Selected state or transition"><input id="search" class="search" placeholder="Find a state, command or transition ID…" aria-label="Search FSM"><div id="results" class="search-results"></div><div id="inspector"></div></aside></div>
 <section class="guide"><h2>How to read and use this reference</h2><div class="status-legend"><span><i class="test-dot" style="background:#198754"></i>Tested · passed</span><span><i class="test-dot" style="background:#c83545"></i>Tested · failed</span><span><i class="test-dot" style="background:#7b8794"></i>Untested</span></div><div class="legend"><span><i class="line"></i> Pointer interaction</span><span><i class="line voice"></i> Voice interaction</span><span><i class="line fail"></i> Rejection / failure restores checkpoint</span><span><i class="line auto"></i> System automatic transition</span><span>◇ Component may be omitted</span><span>† Runtime suppression / queue rules</span><span>∅ No component</span></div><div class="guide-grid"><div><h3>States and mode boxes</h3><p>Each state names the <b>focused surface</b> and <b>trip phase</b>. Empty/valid input and unselected/selected choice are substates because their available commands differ. Voice is above pointer interaction in the reset view.</p><p>Lifecycle, scheduling, intervals, editors, goal modes, Sync, microphone and persistence have separate boxes. Their depth separates branches; changing the camera does not change the FSM.</p><p><b>T</b> is the captured trip phase; <b>P</b> is the return surface; <b>F</b> is the field being edited. These are explicit state families. Instantiate their captured values in each test; never treat every return as Running.</p></div><div><h3>Commands and speech</h3><p>Commands are underneath each state, highest interruption/continuation priority first. Availability remains conditional on the actual focus, valid input, permissions, connection and recognizer state.</p><p>A fully formed continuation owns its prefix before shorter conflicting commands. The list does not introduce a new global numeric priority scheme. Cancel/Close resolves the actual top surface; Off/Sleep applies only when recognition permits it.</p><p>Skippable feedback is omitted when the same utterance continues into another valid command. B01–B04 are skippable, so “start break lunch ok” announces the final outcome. UI actions still execute immediately. Click the small + box on a double line to expand its chime / summary / details table and suppression footer; − collapses it. Click the line to inspect its full details. Audio rows follow playback order, from top to bottom. Optional components use ◇; queue priority and suppression exceptions are in the footer. Select “All labels / tables” to show every visible voice table. Chime note names are in the inspector.</p></div><div><h3>Testing contract</h3><ol id="invariants"></ol><p class="review-note">Approved mainline reference, based on T83GIF + local changes. Approval of the chart does not establish test coverage for its transitions. Transition colors report individual test results. Every transition starts untested. Record the tested version and evidence in the inspector, then use Save HTML to keep a shareable copy with those results. Reference data exports the structured model. Changes stay in this open page until saved or exported. Approval recorded on 6 October 2026. Stable transition IDs connect this reference to future tests and implementation changes.</p></div></div><details><summary>Complete transition register · stable IDs for test and implementation references</summary><p class="muted">Includes transitions hidden by the current view. Repeated arrows can be different guards for the same action. A ✓ after Server indicates a server-bound state mutation; local async saves can also fail.</p><table><thead><tr><th>ID</th><th>From → To</th><th>Trigger</th><th>Interaction</th><th>Skippable</th><th>Guard / checkpoint</th><th>Server</th></tr></thead><tbody id="register"></tbody></table></details><details style="margin-top:20px"><summary>Implementation notes and source locations</summary><ul id="review"></ul><ul id="sources"></ul><p class="muted">Retain mainline-fsm.html and mainline-fsm.json together as the chart's durable versioned reference; keep their embedded and standalone models consistent. State IDs and transition IDs must stay stable when labels are edited.</p></details></section>
-<section style="margin:24px"><h2>Shared state contract</h2><table><tr><th>Attribute</th><th>Meaning</th></tr><tr><td>focus</td><td>Current focused dialog or main surface</td></tr><tr><td>tripStatus</td><td>Ready, running, break, short-break, lunch, down or stopped; buffer phase keeps interval owner</td></tr><tr><td>clock</td><td>Complete immutable ClockTimer UI snapshot, including dispatch, timelines, ranges and interval state</td></tr><tr><td>clockPhase</td><td>Ready/running/overtime; opening-buffer, interval phase and closing-buffer</td></tr><tr><td>speechRecognition</td><td>One recognition attribute. Voicepad is eligible only while listening with a visible mic bar. Temporary playback suspension is not an off action.</td></tr><tr><td>tripLogRange</td><td>Canonical range identifier. English displays and accepts Money for pay-period; other languages own their vocabulary.</td></tr><tr><td>goalMode</td><td>Only Auto consumes goalSequence; Total uses tripLogRange</td></tr><tr><td>goalSequence</td><td>Always calculated: goal percentages sorted descending, stable ties Trip, Total, Standard. Recomputed when Trip or Total percentage changes.</td></tr><tr><td>sync</td><td>Whether trip/total goal synchronization is enabled</td></tr><tr><td>editor</td><td>Open/source/value/valid/mode/date/meridiem/workflow/confirmation; preserves values when input surface changes</td></tr><tr><td>pending</td><td>Optimistic transaction IDs, actions, attempt and retry state</td></tr><tr><td>actions</td><td>Derived capabilities. Speech command selection and pointer controls read the same state; DOM button flags are outputs.</td></tr><tr><td>session</td><td>User ID, permission bits and connection status affect authorized operations</td></tr><tr><td>tripSummary</td><td>Invocation {reason: trip-ended/requested, method: system/voice/pointer}, request ID, loading/error and selected range. Calculations live in tripAggregates. Automatic OK starts new-trip entry; requested OK/Cancel restores prior focus.</td></tr><tr><td>tripAggregates</td><td>Immutable {tripLog, tripSummary} results, each null until available; includeActiveTrip, tripCount, standard/actual/counted milliseconds, percent, goalPercent, banked milliseconds. Summary always excludes active trip; Log uses existing include-current/goal-missed eligibility.</td></tr></table><h2>Behavior contracts</h2><p><strong>UI</strong>: Apply optimistic outcome immediately. Commands that are client-only do not access remote persistence.</p><p><strong>server</strong>: For commands requiring persistence, validate before any write. Rejection restores the checkpoint and cancels dependent operations.</p><p><strong>retry</strong>: Local transient storage failures retain optimistic UI and retry asynchronously with 150 ms exponential delay capped at 2000 ms. Abort ends retries. Remote-write retry/idempotency contract remains unresolved.</p><p><strong>time</strong>: Durations and boundaries are milliseconds; absolute dates are timezone-aware. Finishing and confirming a new trip are separate user actions, not an automatic continuous boundary.</p><p><strong>summary</strong>: Trip Summary can be requested at any time and speaks totals for every trip in selected range except current active trip. No data renders/speaks No trip data available. Both paths hold until OK/Cancel. trip-ended/system adds Say OK to start a new trip LAST; requested/voice or pointer suppresses that prompt and returns to prior focus on OK/Cancel. Range refresh preserves invocation.</p><p><strong>voicepad</strong>: Voicepad access while disabled requests explicit recognition enable. OK enables recognition before opening; Cancel preserves current surface. Sleep/off while editing automatically preserves value and opens keypad.</p><p><strong>settings</strong>: Settings focus coexists with trip/clock/range regions. Closing settings restores prior focus; persistence rejection restores state and dependent changes.</p><p><strong>locale</strong>: Semantic state/range IDs remain stable. UI text, spoken command vocabulary, recognition patterns and announcement templates belong to the selected language pack.</p><p><strong>aggregation</strong>: TripAggregates shared calculations: latest row wins per String(id); anonymous rows remain distinct. Range bounds inclusive from CalendarRange.tripWindow. Counted time uses persisted counted milliseconds, fallback actual; active trip counted=max(allotted,counted). percent=standard/counted (null at zero); banked=round(standard/goalPercent-counted). Summary includes both production/nonproduction, excludes running/current ID. Log keeps its production filter and existing active-trip inclusion rule. Results are immutable state.tripAggregates children, UI invocation stays state.tripSummary.</p><h2>Suppression rule register</h2><p><strong>AUD-USER</strong>: That audio layer or announcement component is user-disabled; consumeAnnouncementAction / per-layer settings</p><p><strong>AUD-CONT</strong>: Component is skippable and continuation exists; speech-skippable + hasContinuation()</p><p><strong>AUD-RANGE</strong>: changeGoalMode receives a localized range command; setTripLogRange(announce:false), then one range-change announcement; feedback adapter excludes range commands</p><p><strong>AUD-CANCEL</strong>: Command loses permission to commit or its transaction rejects; Command cancellation / transaction rollback / semantic queue guard</p><p><strong>AUD-STALE</strong>: Surface ownership changed before playback; Current-surface speech guard</p><p><strong>AUD-FALLBACK</strong>: Sleep/off causes automatic voicepad-to-keypad transition; reconcileVoicePadRecognition; voiceCommandFeedback skips its duplicate when the source was voicepad</p><p><strong>AUD-SUMMARY-PROMPT</strong>: reason == requested; trip-ended retains prompt last; tripSummary.invocation.reason conditional</p><h2>Unresolved contracts</h2><pre>[
+<section style="margin:24px"><h2>Shared state contract</h2><table><tr><th>Attribute</th><th>Meaning</th></tr><tr><td>focus</td><td>Current focused dialog or main surface</td></tr><tr><td>tripStatus</td><td>Ready, running, break, short-break, lunch, down or stopped; buffer phase keeps interval owner</td></tr><tr><td>clock</td><td>Complete immutable ClockTimer UI snapshot, including dispatch, timelines, ranges and interval state</td></tr><tr><td>clockPhase</td><td>Ready/running/overtime; opening-buffer, interval phase and closing-buffer</td></tr><tr><td>speechRecognition</td><td>One recognition attribute. Voicepad is eligible only while listening with a visible mic bar. Temporary playback suspension is not an off action.</td></tr><tr><td>tripLogRange</td><td>Canonical range identifier. English displays and accepts Money for pay-period; other languages own their vocabulary.</td></tr><tr><td>goalMode</td><td>Only Auto consumes goalSequence; Total uses tripLogRange</td></tr><tr><td>goalSequence</td><td>Always calculated: goal percentages sorted descending, stable ties Trip, Total, Standard. Recomputed when Trip or Total percentage changes.</td></tr><tr><td>sync</td><td>Whether trip/total goal synchronization is enabled</td></tr><tr><td>editor</td><td>Open/source/value/valid/mode/date/meridiem/workflow/confirmation; preserves values when input surface changes</td></tr><tr><td>pending</td><td>Optimistic command IDs, actions, attempt/retry state, owner phase and outstanding result waits</td></tr><tr><td>actions</td><td>Derived capabilities. Speech command selection and pointer controls read the same state; DOM button flags are outputs.</td></tr><tr><td>session</td><td>User ID, permission bits and connection status affect authorized operations</td></tr><tr><td>tripSummary</td><td>Invocation {reason: trip-ended/requested, method: system/voice/pointer}, request ID, loading/error and selected range. Calculations live in tripAggregates. Automatic OK starts new-trip entry; requested OK/Cancel restores prior focus.</td></tr><tr><td>tripAggregates</td><td>Immutable {tripLog, tripSummary} results, each null until available; includeActiveTrip, tripCount, standard/actual/counted milliseconds, percent, goalPercent, banked milliseconds. Summary always excludes active trip; Log uses existing include-current/goal-missed eligibility.</td></tr></table><h2>Behavior contracts</h2><p><strong>UI</strong>: Apply optimistic outcome immediately. Commands that are client-only do not access remote persistence.</p><p><strong>server</strong>: For commands requiring persistence, validate before any write. Rejection restores the checkpoint and cancels dependent operations.</p><p><strong>retry</strong>: Local transient storage failures retain optimistic UI and retry asynchronously with 150 ms exponential delay capped at 2000 ms. Abort ends retries. Remote-write retry/idempotency contract remains unresolved.</p><p><strong>time</strong>: Durations and boundaries are milliseconds; absolute dates are timezone-aware. Finishing and confirming a new trip are separate user actions, not an automatic continuous boundary.</p><p><strong>summary</strong>: Trip Summary can be requested at any time and speaks totals for every trip in selected range except current active trip. No data renders/speaks No trip data available. Both paths hold until OK/Cancel. trip-ended/system adds Say OK to start a new trip LAST; requested/voice or pointer suppresses that prompt and returns to prior focus on OK/Cancel. Range refresh preserves invocation.</p><p><strong>voicepad</strong>: Voicepad access while disabled requests explicit recognition enable. OK enables recognition before opening; Cancel preserves current surface. Sleep/off while editing automatically preserves value and opens keypad.</p><p><strong>settings</strong>: Settings focus coexists with trip/clock/range regions. Closing settings restores prior focus; persistence rejection restores state and dependent changes.</p><p><strong>locale</strong>: Semantic state/range IDs remain stable. UI text, spoken command vocabulary, recognition patterns and announcement templates belong to the selected language pack.</p><p><strong>aggregation</strong>: TripAggregates shared calculations: latest row wins per String(id); anonymous rows remain distinct. Range bounds inclusive from CalendarRange.tripWindow. Counted time uses persisted counted milliseconds, fallback actual; active trip counted=max(allotted,counted). percent=standard/counted (null at zero); banked=round(standard/goalPercent-counted). Summary includes both production/nonproduction, excludes running/current ID. Log keeps its production filter and existing active-trip inclusion rule. Results are immutable state.tripAggregates children, UI invocation stays state.tripSummary.</p><h2>Suppression rule register</h2><p><strong>AUD-USER</strong>: That audio layer or announcement component is user-disabled; consumeAnnouncementAction / per-layer settings</p><p><strong>AUD-CONT</strong>: Component is skippable and continuation exists; speech-skippable + hasContinuation()</p><p><strong>AUD-RANGE</strong>: changeGoalMode receives a localized range command; setTripLogRange(announce:false), then one range-change announcement; feedback adapter excludes range commands</p><p><strong>AUD-CANCEL</strong>: Command loses permission to commit or its transaction rejects; Command cancellation / transaction rollback / semantic queue guard</p><p><strong>AUD-STALE</strong>: Surface ownership changed before playback; Current-surface speech guard</p><p><strong>AUD-FALLBACK</strong>: Sleep/off causes automatic voicepad-to-keypad transition; reconcileVoicePadRecognition; voiceCommandFeedback skips its duplicate when the source was voicepad</p><p><strong>AUD-SUMMARY-PROMPT</strong>: reason == requested; trip-ended retains prompt last; tripSummary.invocation.reason conditional</p><h2>Unresolved contracts</h2><pre>[
   &quot;Audit all legacy transition guards against implementation; a prose guard is not an executable predicate.&quot;,
   &quot;Specify each transition reducer and server payload/schema exactly before treating the chart as a rebuild specification.&quot;,
   &quot;Prove remote-write idempotency and valid-command retry behavior without altering shared audit semantics unsafely.&quot;,
@@ -42,7 +42,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     &quot;display&quot;: &quot;* per occupied cell&quot;,
     &quot;storage&quot;: &quot;users.pin_hash only&quot;
   }
-}</pre></section><script id="fsm-data" type="application/json">
+}</pre></section><section id="state-validity-contract" style="margin:24px"><h2>State validity and async command ownership</h2><p>These initial mainline invariants are specified for testing; exhaustive runtime enforcement is still pending. A pending command must have an owner and explicit outstanding work. Final recognition results remain routable after the next utterance begins; missing final results reject after a bounded deadline. Confirmation and rollback settle once, and settled owners cannot execute late actions. Validation and persistence retain the existing retry policy.</p><table><tr><th>State</th><th>Required</th><th>Forbidden</th></tr><tr><td>Ready</td><td>tripActive = false<br>focus = main<br>editor.open = false<br>tripSummary = null</td><td>Active interval<br>Abandoned pending operation</td></tr><tr><td>Voicepad: empty</td><td>Voicepad is focused and open<br>tripActive = false<br>editor.valid = false<br>Recognition is listening or temporarily suspended</td><td>Recognition off/sleeping<br>Enabled OK confirmation</td></tr><tr><td>Voicepad: valid value</td><td>Voicepad is focused and open<br>tripActive = false<br>editor.valid = true<br>Recognition is listening or temporarily suspended</td><td>Recognition off/sleeping<br>Confirmation of a stale previous value</td></tr><tr><td>Numpad: empty</td><td>Numberpad is focused and open<br>tripActive = false<br>editor.valid = false</td><td>Enabled OK confirmation</td></tr><tr><td>Numpad: valid value</td><td>Numberpad is focused and open<br>tripActive = false<br>editor.valid = true</td><td>Confirmation of a stale previous value</td></tr><tr><td>Trip running</td><td>tripActive = true<br>focus = main<br>No break/lunch/down interval<br>editor.open = false</td><td>No trip with a running clock<br>Hidden editor retaining command ownership</td></tr><tr><td>Trip Summary: trip ended</td><td>Trip summary is focused<br>tripActive = false<br>Summary invocation reason is trip-ended<br>Summary excludes active trip</td><td>Automatic dismissal without OK/Cancel</td></tr><tr><td>Scheduled: needs duration</td><td>Scheduled dialog is focused<br>tripActive = false<br>Draft has a valid scheduled time<br>Draft duration is missing or invalid</td><td>Start enabled before duration validation</td></tr><tr><td>Scheduled: duration valid</td><td>Scheduled dialog is focused<br>tripActive = false<br>Draft duration is valid<br>Draft scheduled start is valid</td><td>Premature application of a duration prefix</td></tr></table><p>Unresolved: exact authorization predicates for every edge, scheduled-draft attributes, clock/Auto/range combinations, and full Drop-In state combinations.</p></section>
+<script id="fsm-data" type="application/json">
 {
   "title": "ClockTimer state and transition specification",
   "status": "DRAFT",
@@ -144,7 +145,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Ready / New Trip",
         "Log / settings / modes"
       ],
-      "family": "mainline"
+      "family": "mainline",
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "tripActive = false",
+          "focus = main",
+          "editor.open = false",
+          "tripSummary = null"
+        ],
+        "forbidden": [
+          "Active interval",
+          "Abandoned pending operation"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
+      }
     },
     "V0": {
       "id": "V0",
@@ -158,7 +173,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "At <time> / Defer Trip",
         "Say a duration / Touch"
       ],
-      "family": "mainline"
+      "family": "mainline",
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "Voicepad is focused and open",
+          "tripActive = false",
+          "editor.valid = false",
+          "Recognition is listening or temporarily suspended"
+        ],
+        "forbidden": [
+          "Recognition off/sleeping",
+          "Enabled OK confirmation"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
+      }
     },
     "V1": {
       "id": "V1",
@@ -172,7 +201,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "OK / Okay / O K",
         "Replace value / Touch / Defer"
       ],
-      "family": "mainline"
+      "family": "mainline",
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "Voicepad is focused and open",
+          "tripActive = false",
+          "editor.valid = true",
+          "Recognition is listening or temporarily suspended"
+        ],
+        "forbidden": [
+          "Recognition off/sleeping",
+          "Confirmation of a stale previous value"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
+      }
     },
     "N0": {
       "id": "N0",
@@ -185,7 +228,19 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Digits / Voice / Defer Trip",
         "OK disabled"
       ],
-      "family": "mainline"
+      "family": "mainline",
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "Numberpad is focused and open",
+          "tripActive = false",
+          "editor.valid = false"
+        ],
+        "forbidden": [
+          "Enabled OK confirmation"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
+      }
     },
     "N1": {
       "id": "N1",
@@ -198,7 +253,19 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "OK",
         "Digits / Clear / Voice"
       ],
-      "family": "mainline"
+      "family": "mainline",
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "Numberpad is focused and open",
+          "tripActive = false",
+          "editor.valid = true"
+        ],
+        "forbidden": [
+          "Confirmation of a stale previous value"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
+      }
     },
     "R1": {
       "id": "R1",
@@ -212,7 +279,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Start [Short] Break / Start Lunch [optional OK]",
         "Down Time / Goals / Sync / Log / Time"
       ],
-      "family": "mainline"
+      "family": "mainline",
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "tripActive = true",
+          "focus = main",
+          "No break/lunch/down interval",
+          "editor.open = false"
+        ],
+        "forbidden": [
+          "No trip with a running clock",
+          "Hidden editor retaining command ownership"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
+      }
     },
     "W": {
       "id": "W",
@@ -230,6 +311,19 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "tripSummary.invocation.reason": "trip-ended",
         "tripSummary.invocation.method": "system",
         "tripAggregates.tripSummary.includeActiveTrip": false
+      },
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "Trip summary is focused",
+          "tripActive = false",
+          "Summary invocation reason is trip-ended",
+          "Summary excludes active trip"
+        ],
+        "forbidden": [
+          "Automatic dismissal without OK/Cancel"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
       }
     },
     "ST": {
@@ -268,7 +362,20 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Standard time <duration>",
         "Edit standard time"
       ],
-      "family": "scheduling"
+      "family": "scheduling",
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "Scheduled dialog is focused",
+          "tripActive = false",
+          "Draft has a valid scheduled time",
+          "Draft duration is missing or invalid"
+        ],
+        "forbidden": [
+          "Start enabled before duration validation"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
+      }
     },
     "S1": {
       "id": "S1",
@@ -282,7 +389,20 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Start [early] / Start Now",
         "Start on time / Auto start"
       ],
-      "family": "scheduling"
+      "family": "scheduling",
+      "validity": {
+        "status": "Specified; executable enforcement pending",
+        "required": [
+          "Scheduled dialog is focused",
+          "tripActive = false",
+          "Draft duration is valid",
+          "Draft scheduled start is valid"
+        ],
+        "forbidden": [
+          "Premature application of a duration prefix"
+        ],
+        "operation_rule": "Any pending command must satisfy the shared async-operation lifecycle contract."
+      }
     },
     "SR": {
       "id": "SR",
@@ -10918,6 +11038,34 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "authority": "Snapshots belong to the selected targetUserId/userId. Replay atomically before ticking; use snapshot time for the observer model, not the viewer wall clock.",
       "resume": "Temporary RTC transport recovery may retain the peer. Full peer/signaling loss ends viewing; Watch must create and authorize a new connection. Publisher presence auto-reconnect does not automatically authorize or reconnect a viewer.",
       "stale": "Interrupted transport retains the last snapshot model; interval readouts may extrapolate time until a fresh snapshot. A disconnected peer clears the model and disables messages. A connected transport alone does not prove a fresh model."
+    },
+    "operationLifecycle": {
+      "status": "Exposed within pending command metadata as phase and waits; not yet a separate global attribute.",
+      "fields": [
+        "operationId",
+        "source",
+        "phase",
+        "dependencies",
+        "outstandingResults",
+        "retryReason",
+        "cancellationSignal",
+        "terminalOutcome"
+      ],
+      "terminal": [
+        "confirmed",
+        "reverted"
+      ]
+    },
+    "draft": {
+      "status": "Proposed; required to resolve scheduling node invariants",
+      "fields": [
+        "kind",
+        "scheduledStartTime",
+        "standardDurationMilliseconds",
+        "durationValid",
+        "canStart",
+        "inputMethod"
+      ]
     }
   },
   "contracts": {
@@ -11690,6 +11838,54 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "tests": [
         "tests/drop-in-observer-replay.mjs",
         "tests/drop-in-page.mjs"
+      ]
+    },
+    "async-operation-lifecycle": {
+      "status": "Approved shared command ownership integrated locally; automated tests pass. Deployment and physical microphone verification pending.",
+      "owner": "Every speech chain and pointer state-changing action owns a command operation. Nested actions share the parent. Every recognition wait, validation check, persistence attempt and cancellation belongs to an owner.",
+      "phases": [
+        "collecting",
+        "awaiting-result",
+        "executing",
+        "committing",
+        "confirmed",
+        "reverted"
+      ],
+      "invariants": [
+        "No persistence writes before command validation and required recognition results resolve.",
+        "Confirmed and reverted are terminal; late callbacks cannot create new writes or actions under settled owners.",
+        "Only explicit tracked waits may keep a command pending. Recognition final-result waits expire and reject after a bounded deadline; valid retryable network failures retain optimistic UI under the existing retry policy.",
+        "New utterances may capture immediately; requested final results for earlier accepted commands remain routable until completion or explicit cancellation.",
+        "Cancellation and rollback settle once, including all dependent actions, after cooperating or late callbacks have finished.",
+        "Applying must describe a tracked executing/validating/committing operation, never a discarded callback. Recognition awaiting-result is a separate lifecycle phase.",
+        "Login remains non-optimistic and outside the state-changing command pipeline."
+      ],
+      "validation": [
+        "tests/async-command-lifecycle.mjs",
+        "tests/app-state-transactions.mjs --post-start-interrupted-final",
+        "tests/app-state-transactions.mjs --pointer-confirmation",
+        "tests/app-state-transactions.mjs --scheduled-cancel",
+        "tests/app-state-transactions.mjs --scheduled-standard"
+      ],
+      "known_test_baseline": "The loopback-only fixture fails on trip mode in both current production source and isolated prototype. This is not evidence that all suites pass.",
+      "validation_and_retry": "Validation work remains tracked in the transaction. Retry status and attempts are exposed separately. Phase-specific UI wording and exhaustive state invariant enforcement are deferred."
+    },
+    "state-validity": {
+      "status": "Initial explicit mainline validity rules; not yet exhaustive or runtime-enforced. Existing unresolved transition guards remain unresolved.",
+      "model": "Visible state = focus plus trip attributes plus orthogonal recognition, configuration and operation lifecycle regions. Node identity alone is not a validity check.",
+      "global": [
+        "An active break/lunch/down interval requires an active trip.",
+        "Voicepad must not remain open when recognition is off or sleeping; transition automatically to numberpad. Temporary suspension for playback is distinct from disabling recognition.",
+        "Confirmation requires a valid current value; an empty editor cannot confirm.",
+        "An optimistic active trip may temporarily lack its permanent ID only while an owned validated start operation is pending.",
+        "A rejected operation restores its prior valid state and cancels dependent operations.",
+        "No pending operation may exist without an owner, outstanding result/work, or an explicit retry condition."
+      ],
+      "unresolved": [
+        "Scheduled draft timing/duration validity needs an explicit draft attribute in the global state.",
+        "Exact availability and authorization for each transition need executable predicates from the shared state, not prose placeholders.",
+        "Clock phase and Auto goal/range combinations require a full cross-region validity audit.",
+        "Drop-In connection validity must be checked independently of watched trip state and local viewer overrides."
       ]
     }
   },

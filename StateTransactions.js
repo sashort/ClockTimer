@@ -1,12 +1,77 @@
 (() => {
     "use strict";
+    class CommandOperation extends EventTarget {
+        #manager; #controller = new AbortController(); #waits = new Map();
+        #phase = "collecting"; #finish; #completion; #closing; #cancelling; #links = [];
+        constructor(manager, {group = Symbol("command"), source = "pointer", signal} = {}) {
+            super(); this.#manager = manager; this.group = group; this.source = source;
+            this.#completion = new Promise(resolve => this.#finish = resolve);
+            if (signal) {
+                const cancel = () => {void this.cancel(new DOMException("The command was cancelled.", "AbortError"));};
+                signal.addEventListener("abort", cancel, {once:true});
+                this.#links.push(() => signal.removeEventListener("abort", cancel));
+                if (signal.aborted) cancel();
+            }
+        }
+        get signal() {return this.#controller.signal;}
+        get phase() {return this.#phase;}
+        get settled() {return ["confirmed", "reverted"].includes(this.#phase);}
+        get completion() {return this.#completion;}
+        get waits() {return Object.freeze([...this.#waits.keys()]);}
+        setPhase(phase) {
+            if (this.settled || this.signal.aborted) return;
+            this.#phase = phase;
+            this.dispatchEvent(new CustomEvent("phase", {detail:{phase, group:this.group, waits:this.waits}}));
+        }
+        expect(name, {timeoutMilliseconds = 10000} = {}) {
+            if (this.settled || this.signal.aborted) return () => {};
+            if (this.#waits.has(name)) return this.#waits.get(name).release;
+            const release = () => {
+                const wait = this.#waits.get(name); if (!wait) return;
+                clearTimeout(wait.timer); this.#waits.delete(name);
+            };
+            const timer = setTimeout(() => {
+                void this.cancel(new Error(`The command did not receive ${name}.`));
+            }, timeoutMilliseconds);
+            this.#waits.set(name, {timer, release}); this.setPhase("awaiting-result");
+            return release;
+        }
+        settleFromTransaction(phase) {
+            if (this.settled) return;
+            for (const wait of this.#waits.values()) clearTimeout(wait.timer);
+            this.#waits.clear(); for (const unlink of this.#links) unlink(); this.#links.length = 0;
+            this.#phase = phase; this.#finish(phase === "confirmed");
+            this.dispatchEvent(new CustomEvent("phase", {detail:{phase, group:this.group, waits:this.waits}}));
+        }
+        complete() {
+            if (this.#closing) return this.#closing;
+            if (this.settled) return this.#completion;
+            if (this.#waits.size) throw new Error("A command cannot complete while owned results are outstanding.");
+            this.setPhase("committing");
+            return this.#closing = this.#manager.complete(this.group).then(accepted => {
+                this.settleFromTransaction(accepted && !this.signal.aborted ? "confirmed" : "reverted");
+                return this.#completion;
+            }, async error => {await this.cancel(error);return false;});
+        }
+        cancel(error = new DOMException("The command was cancelled.", "AbortError")) {
+            if (this.settled) return this.#completion;
+            return this.#cancelling ??= Promise.resolve().then(async () => {
+                if (!this.signal.aborted) this.#controller.abort(error);
+                try {await this.#manager.rollback(this.group, error);}
+                finally {this.settleFromTransaction("reverted");}
+                return false;
+            });
+        }
+    }
+
     class StateTransactions extends EventTarget {
         #adapters = new Map(); #groups = new Map(); #current; #nextId = 0; #last; #active;
+        createOperation(options) {return new CommandOperation(this, options);}
         register(name, adapter) {this.#adapters.set(name, adapter); return () => this.#adapters.delete(name);}
         get current() {return this.#current;}
         get active() {return this.#active;}
         get pending() {return Object.freeze([...this.#groups.values()].filter(t=>t.status === "pending")
-            .map(t=>Object.freeze({id:t.id, action:t.action, retrying:Boolean(t.retrying), attempt:t.retryAttempt || 0})));}
+            .map(t=>Object.freeze({id:t.id, action:t.action, retrying:Boolean(t.retrying), attempt:t.retryAttempt || 0, phase:t.owner?.phase || "executing", waits:t.owner?.waits || []})));}
         async retry(operation, {signal, transaction = this.#current || this.#active, valid = () => true,
             delay = attempt => Math.min(150 * 2 ** Math.min(attempt - 1, 4), 2000)} = {}) {
             signal ??= transaction?.signal;
@@ -55,12 +120,16 @@
             }
             return transaction;
         }
-        run(action, operation, {group, chain = false, persist, signal} = {}) {
+        run(action, operation, {group, chain = false, persist, signal, owner} = {}) {
             // Nested actions are part of the caller's attempt, not a queue behind themselves.
             if (this.#current) return operation(this.#current);
-            group ??= Symbol(action);
+            owner ??= !chain ? this.createOperation({group, signal}) : undefined;
+            group = owner?.group ?? group ?? Symbol(action);
+            if (owner?.settled || owner?.signal.aborted) return Promise.resolve(false);
             const transaction = this.#begin(group, action);
-            if (signal) {
+            transaction.owner ??= owner;
+            const cancellationSignals = new Set([signal, owner?.signal].filter(Boolean));
+            for (const signal of cancellationSignals) {
                 const cancel = () => {void this.rollback(group, new DOMException("The command was cancelled.", "AbortError"));};
                 (transaction.signalLinks ||= []).push(() => signal.removeEventListener("abort", cancel));
                 signal.addEventListener("abort", cancel, {once:true});
@@ -74,10 +143,14 @@
                     if (!transaction.captured) {
                         transaction.captured = true;
                         for (const [name, adapter] of this.#adapters) {
-                            transaction.snapshots.set(name, await adapter.capture());
+                            transaction.active = Promise.resolve(adapter.capture());
+                            transaction.snapshots.set(name, await transaction.active);
+                            transaction.active = undefined;
+                            if (transaction.signal.aborted) return false;
                             adapter.begin?.(transaction);
                         }
                     }
+                    owner?.setPhase("executing");
                     transaction.remotePermission = persist;
                     this.#active = transaction;
                     const previous = this.#current;
@@ -101,8 +174,10 @@
             });
             transaction.queue = work.catch(() => {});
             if (chain) return work;
-            return work.then(async result => result === false ? false :
-                (await this.complete(group)) ? result : false);
+            return work.then(async result => {
+                if (result === false) {await owner?.cancel(new Error("The command failed."));return false;}
+                return (await (owner ? owner.complete() : this.complete(group))) ? result : false;
+            });
         }
         complete(group) {
             const transaction = this.#groups.get(group);
@@ -126,12 +201,17 @@
             for (const adapter of this.#adapters.values()) adapter.end?.(transaction);
             for (const unlink of transaction.signalLinks || []) unlink();
             this.#groups.delete(transaction.group); transaction.settle(transaction.status);
+            transaction.owner?.settleFromTransaction(transaction.status);
             transaction.snapshots.clear(); transaction.writes.clear(); transaction.undo.length = 0;
             if (this.#last === transaction) this.#last = undefined;
         }
-        async rollback(group, error) {
+        rollback(group, error) {
             const transaction = this.#groups.get(group);
-            if (!transaction || transaction.status !== "pending") return;
+            if (!transaction) return Promise.resolve();
+            return transaction.rollback ??= this.#rollback(transaction, error);
+        }
+        async #rollback(transaction, error) {
+            if (transaction.status !== "pending") return;
             transaction.status = "reverted"; transaction.controller.abort();
             const dependents = [...this.#groups.values()].filter(item => item.id > transaction.id && item.status === "pending");
             for (const dependent of dependents) {dependent.status = "reverted"; dependent.controller.abort();}

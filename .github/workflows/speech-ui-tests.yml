@@ -263,6 +263,8 @@ jobs:
           php -l ../order-filler.php
           php -l ../index.php
           node fsm-loopback-feedback.mjs
+          node async-command-lifecycle.mjs
+          node app-state-transactions.mjs --post-start-interrupted-final
           node speech-command-digest.mjs
           node speech-failfast.mjs
           node profile-editor.mjs
