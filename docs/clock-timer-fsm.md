@@ -154,7 +154,9 @@ the saved baseline; Custom restores that observer's retained choices for the
 selected person; User mirrors the publisher display. The Settings view reports
 both default and applied values. Display edits use the shared timer controls.
 Only listening sound controls are editable in this view. Field provenance is
-stored explicitly so a custom value equal to a default remains custom.
+stored explicitly; a user value matching default clears its override and follows
+future baseline changes. Mode, Sync and Goal share an Apply to Default/User
+confirmation, and each supports a per-field Mirror choice.
 
 Regression coverage: `observer-microphone.mjs`, `remote_microphone_permissions.php`,
 `observer-goal-pad.mjs`, `drop-in-preferences.mjs`, `drop-in-page.mjs`, and

@@ -8,4 +8,5 @@ for(const digit of ['1','2','5'])$('numberPadDialog').querySelector('[data-numbe
 await pad.open('total',90,'Week');$('numberPadClear').click();assert.equal($('numberPadConfirm').disabled,true);$('numberPadDialog').querySelector('[data-number="0"]').click();assert.equal($('numberPadConfirm').disabled,true);$('numberPadReset').click();assert.equal($('numberPadConfirm').disabled,false);$('numberPadCancel').click();assert.equal(commits.length,1,'Cancel never saves a goal');
 const delayed=pad.open('trip',110,'Trip');pad.cancel();await delayed;assert.equal($('numberPadDialog').open,false,'switch cancels a late open');
 assert.equal(loads,1,'shared numberpad loaded once');assert.equal($('numberPadVoice').hidden,true);assert.equal($('numberPadSettingsArea').hidden,true);
+await pad.open('total',100,'Week');assert.equal($('observerGoalMirror').dataset.menuIcon,'mirror');$('observerGoalMirror').click();assert.deepEqual(commits.at(-1),['total','mirror']);
 await w.happyDOM.close();console.log('PASS shared observer percentage pad, invalid zero, cancellation, scope, reset and stale opening');

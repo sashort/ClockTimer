@@ -1384,6 +1384,22 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Close"
       ],
       "family": "stream"
+    },
+    "DROP-IN-TARGET": {
+      "id": "DROP-IN-TARGET",
+      "title": "Drop-In: Apply to",
+      "focus": "dropInTargetDialog",
+      "trip": "Observed trip unchanged",
+      "facet": "Pending local Mode/Sync/Goal patch and captured observed user; Default/User checkboxes",
+      "commands": [
+        "Cancel",
+        "Select Default / User / both",
+        "Apply when at least one target is checked"
+      ],
+      "family": "settings",
+      "binding": {
+        "focus": "dropInTargetDialog"
+      }
     }
   },
   "transitions": [
@@ -9557,6 +9573,81 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           "rule": "Confirm authoritative mic state; failure renders status without changing observer audio preferences."
         }
       }
+    },
+    {
+      "id": "DROP-IN-TARGET-OPEN",
+      "source": "DROP-IN",
+      "target": "DROP-IN-TARGET",
+      "label": "Mode / Sync / Goal choice",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Captured selected user; Apply requires at least one checkbox",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "drop-in-page.mjs + drop-in-preferences.mjs"
+      },
+      "contract": {
+        "trigger": "Mode / Sync / Goal choice",
+        "guard": "Captured target is current; pending patch present",
+        "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
+        "timing": "Optimistic display; confirmation chooses save scope",
+        "persistence": "Observer-local preferences only; no publisher mutation",
+        "rollback": "Local storage failure restores baseline and selected-user settings"
+      }
+    },
+    {
+      "id": "DROP-IN-TARGET-APPLY",
+      "source": "DROP-IN-TARGET",
+      "target": "DROP-IN",
+      "label": "Apply to checked Default / User targets",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Captured selected user; Apply requires at least one checkbox",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "drop-in-page.mjs + drop-in-preferences.mjs"
+      },
+      "contract": {
+        "trigger": "Apply to checked Default / User targets",
+        "guard": "Captured target is current; pending patch present",
+        "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
+        "timing": "Optimistic display; confirmation chooses save scope",
+        "persistence": "Observer-local preferences only; no publisher mutation",
+        "rollback": "Local storage failure restores baseline and selected-user settings"
+      }
+    },
+    {
+      "id": "DROP-IN-TARGET-CANCEL",
+      "source": "DROP-IN-TARGET",
+      "target": "DROP-IN",
+      "label": "Cancel: restore previous view",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Captured selected user; Apply requires at least one checkbox",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "drop-in-page.mjs + drop-in-preferences.mjs"
+      },
+      "contract": {
+        "trigger": "Cancel: restore previous view",
+        "guard": "Captured target is current; pending patch present",
+        "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
+        "timing": "Optimistic display; confirmation chooses save scope",
+        "persistence": "Observer-local preferences only; no publisher mutation",
+        "rollback": "Local storage failure restores baseline and selected-user settings"
+      }
     }
   ],
   "audio": {
@@ -12427,8 +12518,16 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "goals": "Same shared Order Filler summary, mode button, percentage numberpad and Auto chooser; independent trip/total overrides; no publisher writes.",
       "multiple": "Setting changes offer selected/all scope; remote mic only targets selected person.",
       "defaults": "Only sound settings are editable in this view, for default and selected user. Saving/using default sound changes audio only and preserves display overrides and Mirror Settings. Serial field patches avoid lost saves; storage failure restores baseline.",
-      "provenance": "Each field stores explicit default/custom provenance. User mode mirrors display fields. Matching values do not imply matching provenance; custom fields stay custom even when equal to defaults. Default fields follow the baseline.",
-      "activation": "Explicit settingsSource enum: default/custom/user. Source selector lives in normal hamburger controls; Settings remains informational for display fields. Default applies saved baseline, Custom restores retained overrides, User mirrors publisher. Observer audio controls remain separate local gains."
+      "provenance": "When a user value matches the default, clear the stored override and mark the field Default. Subsequent baseline edits flow through. Reconcile matching overrides after a default edit too. Mirror Sync uses a standard facing-panels/mirror-axis glyph as a lower-left badge beside existing Sync arrows.",
+      "activation": "Explicit settingsSource enum: default/custom/user. Source selector lives in normal hamburger controls; Settings remains informational for display fields. Default applies saved baseline, Custom restores retained overrides, User mirrors publisher. Observer audio controls remain separate local gains.",
+      "apply": "Mode, Sync and Goal edits all open the same Apply to Default/User confirmation, with independently checked targets. Apply updates chosen baseline/user fields atomically; Cancel restores previous view. Default-only selects baseline without discarding saved Custom values. No publisher settings are written.",
+      "fieldMirror": "Drop-In Mode menu adds Mirror; Sync popover is On/Off/Mirror; goal pad adds Mirror. Mirroring is per field and leaves other overrides in place; defaults may also store Mirror. Order Filler has no extra Mirror option.",
+      "mirrorIcon": {
+        "asset": "icons/mirror.svg",
+        "meaning": "Two facing panels with a vertical mirror axis; follow corresponding observed-user setting",
+        "usage": "data-menu-icon=mirror for every Mirror choice; same glyph as Sync lower-left badge",
+        "placement": "Mirror lower-left; existing status lower-right; retain Sync arrows and current on/off state"
+      }
     }
   },
   "unresolved_contracts": [
@@ -12559,7 +12658,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
 'use strict';
 const M=JSON.parse(document.getElementById('fsm-data').textContent);
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const positions={"DI-APPLY":[-900,-650,-5200],"DI-DATES":[0,-650,-5200],"DI-LOG":[900,-650,-5200],"DI-CONNECTING":[-600,0,-5200],"DI-LIVE":[0,0,-5200],"DI-INTERRUPTED":[600,0,-5200],"DI-DISCONNECTED":[600,650,-5200],"DI-REJECTED":[-600,650,-5200],"HOME-OUT":[-800,0,-4200],"HOME-LOGIN":[-250,-500,-4200],"HOME-ERROR":[400,-500,-4200],"HOME-IN":[650,200,-4200],"ADM-LOOKUP":[-850, 650, -2450],"ADM-LOAD":[-280, 650, -2450],"ADM-EDIT":[290, 650, -2450],"ADM-SAVE":[-850, 1220, -2450],"ADM-ERROR":[-280, 1220, -2450],"DROP-IN":[290, 1220, -2450],"LOGIN-PIN-CANCEL":[800,-650,-3350],"LOGIN-USER":[0,650,-3350],"LOGIN-ID":[-800,0,-3350],"LOGIN-PIN":[0,0,-3350],"LOGIN-WAIT":[800,0,-3350],MS:[800,650,-780],PREV:[1300,650,-780],VRQ:[-1050, -650, 0],"SET-G":[-850, 0, -2450],"SET-A":[-280, 0, -2450],"SET-P":[290, 0, -2450],"SET-R":[860, 0, -2450],"CLK-R":[-850, 0, 3250],"CLK-N":[-280, 0, 3250],"CLK-O":[290, 0, 3250],"CLK-OB":[-850, 550, 3250],"CLK-B":[-280, 550, 3250],"CLK-EB":[290, 550, 3250],"CLK-D":[860, 550, 3250],RETRY:[0, 650, -1550],R0:[-1000,0,0],V0:[-560,-260,0],V1:[-70,-260,0],N0:[-560,260,0],N1:[-70,260,0],R1:[680,0,0],W:[320,0,260],ST:[-600,0,260],D:[-980,0,760],S0:[-530,-260,760],S1:[0,-260,760],SR:[600,-260,760],SE:[0,260,760],B0:[-620,-260,1550],B1:[-100,-260,1550],B10:[450,-440,1550],B15:[960,-440,1550],BL:[1470,-440,1550],BUF:[960,220,1550],OTHER:[1470,220,1550],DOWN:[-620,240,1550],CD:[-100,240,1550],BE:[960,740,1550],BS:[-620,-790,1550],TS:[-500,0,-780],EV:[70,-260,-780],EN:[70,260,-780],LOG:[620,-260,-780],HT:[-1000,0,-780],RP:[620,260,-780],GA:[-580,-520,2380],GT:[0,-520,2380],GL:[580,-520,2380],SO:[-580,0,2380],SI:[0,0,2380],MIC:[750,0,2380],SLEEP:[1250,0,2380],OFF:[1750,0,2380],P:[0,0,-1550],C:[580,0,-1550],F:[-580,0,-1550]};
+const positions={"DROP-IN-TARGET":[950,1220,-2450],"DI-APPLY":[-900,-650,-5200],"DI-DATES":[0,-650,-5200],"DI-LOG":[900,-650,-5200],"DI-CONNECTING":[-600,0,-5200],"DI-LIVE":[0,0,-5200],"DI-INTERRUPTED":[600,0,-5200],"DI-DISCONNECTED":[600,650,-5200],"DI-REJECTED":[-600,650,-5200],"HOME-OUT":[-800,0,-4200],"HOME-LOGIN":[-250,-500,-4200],"HOME-ERROR":[400,-500,-4200],"HOME-IN":[650,200,-4200],"ADM-LOOKUP":[-850, 650, -2450],"ADM-LOAD":[-280, 650, -2450],"ADM-EDIT":[290, 650, -2450],"ADM-SAVE":[-850, 1220, -2450],"ADM-ERROR":[-280, 1220, -2450],"DROP-IN":[290, 1220, -2450],"LOGIN-PIN-CANCEL":[800,-650,-3350],"LOGIN-USER":[0,650,-3350],"LOGIN-ID":[-800,0,-3350],"LOGIN-PIN":[0,0,-3350],"LOGIN-WAIT":[800,0,-3350],MS:[800,650,-780],PREV:[1300,650,-780],VRQ:[-1050, -650, 0],"SET-G":[-850, 0, -2450],"SET-A":[-280, 0, -2450],"SET-P":[290, 0, -2450],"SET-R":[860, 0, -2450],"CLK-R":[-850, 0, 3250],"CLK-N":[-280, 0, 3250],"CLK-O":[290, 0, 3250],"CLK-OB":[-850, 550, 3250],"CLK-B":[-280, 550, 3250],"CLK-EB":[290, 550, 3250],"CLK-D":[860, 550, 3250],RETRY:[0, 650, -1550],R0:[-1000,0,0],V0:[-560,-260,0],V1:[-70,-260,0],N0:[-560,260,0],N1:[-70,260,0],R1:[680,0,0],W:[320,0,260],ST:[-600,0,260],D:[-980,0,760],S0:[-530,-260,760],S1:[0,-260,760],SR:[600,-260,760],SE:[0,260,760],B0:[-620,-260,1550],B1:[-100,-260,1550],B10:[450,-440,1550],B15:[960,-440,1550],BL:[1470,-440,1550],BUF:[960,220,1550],OTHER:[1470,220,1550],DOWN:[-620,240,1550],CD:[-100,240,1550],BE:[960,740,1550],BS:[-620,-790,1550],TS:[-500,0,-780],EV:[70,-260,-780],EN:[70,260,-780],LOG:[620,-260,-780],HT:[-1000,0,-780],RP:[620,260,-780],GA:[-580,-520,2380],GT:[0,-520,2380],GL:[580,-520,2380],SO:[-580,0,2380],SI:[0,0,2380],MIC:[750,0,2380],SLEEP:[1250,0,2380],OFF:[1750,0,2380],P:[0,0,-1550],C:[580,0,-1550],F:[-580,0,-1550]};
 const cfg={stream:{label:"Drop-In stream / Recovery",families:["stream"],context:["DROP-IN"]},landing:{label:"Landing / Pages",families:["landing"],context:["R0","R1","LOGIN-ID","DROP-IN"]},login:{label:"Login",families:["login"],context:["R0"]},settings:{label:"Settings",families:["settings"],context:["R0","R1","V0","N0"]},clock:{label:"Clock phases",families:["clock"],context:[]},mainline:{label:'Mainline',families:['mainline'],context:[]},scheduling:{label:'Scheduled / Deferred',families:['scheduling'],context:['R0','V0','V1','N0','N1','R1']},intervals:{label:'Break / Lunch / Down',families:['intervals'],context:['R1','W']},ancillary:{label:'Editors / Trip Log',families:['ancillary'],context:['R1','S1','D']},modes:{label:'Goal / Sync / Mic modes',families:['modes'],context:['HT']},validation:{label:'Persistence / Rollback',families:['validation'],context:[]},all:{label:'All states in 3D',families:null,context:[]}};
 let viewInitialized=false;let group='mainline', selected={kind:'state',id:'R0'}, camera={yaw:.22,pitch:-.11,zoom:.75,panX:0,panY:0,target:[0,0,0]}, width=1200,height=900,frame,visibleNodes=[],visibleEdges=[],projected=new Map();
 const modeLabel=mode=>({pointer:'Pointer',voice:'Voice',automatic:'System automatic',failure:'Persistence rollback'})[mode]||mode;

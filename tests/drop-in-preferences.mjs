@@ -22,7 +22,15 @@ await restored.apply([42],{view:{mode:'year'},audio:{master:65},mirror:false});c
 await restored.updateDefault({view:{tripGoal:'120'}});await restored.updateDefault({audio:{master:75}});
 assert.equal(restored.defaults.view.tripGoal,'120');assert.equal(restored.defaults.audio.master,75);
 assert.equal(restored.get(42).custom.view.mode,before.custom.view.mode);assert.equal(restored.get(42).custom.audio.master,before.custom.audio.master,'default edits retain custom overrides');assert.equal(restored.get(42).custom.view.tripGoal,'120','unmodified default fields follow baseline');
-await restored.apply([42],{audio:{master:75}});assert.equal(restored.get(42).sources.audio.master,'custom','equal values retain explicit custom provenance');
+await restored.apply([42],{audio:{master:75}});assert.equal(restored.get(42).sources.audio.master,'default','matching override falls back to baseline');assert.equal(Object.hasOwn(restored.state.users['42'].custom.audio,'master'),false,'override is removed from storage');
 await restored.apply([42],{settingsSource:'default'});assert.equal(restored.get(42).settingsSource,'default');assert.equal(restored.get(42).custom.view.mode,'year','default activation retains saved custom');await restored.apply([42],{settingsSource:'user'});assert.equal(restored.get(42).mirror,true);await restored.apply([42],{settingsSource:'custom'});assert.equal(restored.get(42).custom.view.mode,'year');
 reject=true;await assert.rejects(restored.updateDefault({view:{tripGoal:'140'}}));assert.equal(restored.defaults.view.tripGoal,'120','failed baseline save rolls back');reject=false;
+await restored.applyViewTarget(42,{mode:'user',sync:'user',tripGoal:'mirror'},{defaults:false,user:true});
+assert.equal(restored.get(42).custom.view.mode,'user');assert.equal(restored.get(42).sources.view.sync,'default','same Mirror sync as baseline inherits default');
+assert.equal(restored.get(42).custom.audio.master,75,'view choices retain listening settings');
+await restored.applyViewTarget(42,{mode:'week'},{defaults:true,user:false});assert.equal(restored.defaults.view.mode,'week');assert.equal(restored.get(42).settingsSource,'default');assert.equal(restored.get(42).custom.view.mode,'user','Default target retains custom mirror choice');
+await restored.applyViewTarget(42,{sync:'off'},{defaults:true,user:true});assert.equal(restored.defaults.view.sync,'off');assert.equal(restored.get(42).custom.view.sync,'off');
+reject=true;await assert.rejects(restored.applyViewTarget(42,{mode:'year'},{defaults:true,user:true}));assert.equal(restored.defaults.view.mode,'week');assert.equal(restored.get(42).custom.view.mode,'user');reject=false;
+await restored.load(8);assert.equal(restored.get(42).custom.view.tripGoal,'mirror','field mirror survives reload');
+await restored.updateDefault({audio:{master:85}});assert.equal(restored.get(42).custom.audio.master,85,'cleared override follows future default changes');
 await w.happyDOM.close();console.log('PASS per-observer settings, mirror/custom retention, defaults, selected/all field patches, reload, rollback and serial saves');

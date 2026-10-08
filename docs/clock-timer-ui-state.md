@@ -46,3 +46,18 @@ State objects include `state`, `state_class`, `previous_state`, `transition`, `t
 `available_actions` describes the operations allowed by the reconstructed state, including `start_trip`, `end_trip`, `resume_trip`, `end_interval`, `start_break`, `start_down`, and `edit_trip`. `controls` supplies the corresponding visibility, enabled state, action identifier, and button text for the main UI.
 
 After login or session restoration, ClockTimer queries for the user's unfinished trip. If one exists, it replays its persisted events, reconstructs the current running or interval state, and emits `activeTripRestored` followed by `uiStateChanged`. The UI therefore uses the same state path for restored and newly started trips.
+
+## Standard Mirror symbol
+
+`icons/mirror.svg` defines two facing panels separated by a vertical mirror axis.
+Use `data-menu-icon="mirror"` for Mirror choices in Mode, Sync and Goal controls.
+The symbol means follow the corresponding observed-user setting. It is independent
+of the current setting being on or off, and its label comes from the language pack.
+
+For Sync, retain the circular Sync arrows and render the same Mirror glyph as a
+13-pixel badge at the lower-left (`left: -2px; bottom: -2px`). Existing cloud/error
+status badges retain the lower-right corner. Mirror can coexist with an off Sync
+state; it does not imply Sync is on.
+
+Mode, Sync and Goal changes share the Default/User apply confirmation. Matching
+user/default values clear the override and inherit future default updates.

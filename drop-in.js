@@ -7,7 +7,7 @@
     const context = WMOFIdentityContext;
     let user, csrf, exiting=false, busy = false, messageBusy = false, revision = 0, settingsRevision=0;
     const preferences = new WMOFDropInPreferences();
-    let pendingSettings;
+    let pendingSettings,pendingViewChange;
     const permission = mask => Boolean(Number(user?.permissions) & (mask | 4));
     const name = identity => identity?.preferredName || [identity?.firstName,identity?.lastName].filter(Boolean).join(' ') || identity?.username || '—';
     const text = id => WMOFLanguagePack.text(id);
@@ -31,7 +31,8 @@
         for(const input of document.querySelectorAll('[data-default-audio]')){input.value=defaults.audio[input.dataset.defaultAudio];input.setAttribute('aria-label',WMOFLanguagePack.text('def617d2-8298-57e9-a7d3-32251c5b24d2',{value:input.closest('label').querySelector('span').textContent}));}
         for(const badge of document.querySelectorAll('[data-settings-source]')) {
             const [group,field]=badge.dataset.settingsSource.split('.');
-            const mirrored=group==='view' && record.mirror;
+            const config=record.settingsSource==='default'?defaults.view:record.custom.view;
+            const mirrored=group==='view' && (record.mirror || config[field]==='user' || config[field]==='mirror');
             const isDefault=group==='view'&&record.settingsSource==='default'||record.sources?.[group]?.[field]==='default';
             badge.dataset.source=mirrored?'mirror':isDefault?'default':'custom';
             badge.textContent=WMOFLanguagePack.text(mirrored?'8f867772-6f69-59be-a743-6367c524de06':isDefault?'8266febd-cf14-562a-b18d-176c854ffe76':'7425da78-04f5-5e04-aaf1-57bc8a4875a9',{name:owner});
@@ -68,13 +69,18 @@
     function changeSettings(patch) {
         if(!view.userId||exiting)return;
         const current=preferences.get(view.userId),next=structuredClone(current);
-        if(patch.view){Object.assign(next.custom.view,patch.view);for(const key of Object.keys(patch.view))next.sources.view[key]='custom';}
+        if(patch.view){Object.assign(next.custom.view,patch.view);for(const key of Object.keys(patch.view))next.sources.view[key]=patch.view[key]==='user'||patch.view[key]==='mirror'?'mirror':'custom';}
         if(patch.audio){Object.assign(next.custom.audio,patch.audio);for(const key of Object.keys(patch.audio))next.sources.audio[key]='custom';}
         if(patch.defaultAudio){next.custom.audio=preferences.defaults.audio;for(const key of Object.keys(next.sources.audio))next.sources.audio[key]='default';}
         if(patch.custom)next.custom=structuredClone(patch.custom);
         if(patch.mirror!==undefined){next.mirror=patch.mirror;next.settingsSource=patch.mirror?'user':'custom';}
         if(patch.settingsSource){next.settingsSource=patch.settingsSource;next.mirror=patch.settingsSource==='user';}
         renderSettings(next);
+        if(patch.view && Object.keys(patch.view).some(key=>['mode','sync','tripGoal','totalGoal','percent'].includes(key))){
+            pendingViewChange={target:Number(view.userId),view:patch.view};
+            $('dropInTargetDefault').checked=current.settingsSource==='default';$('dropInTargetUser').checked=current.settingsSource!=='default';
+            $('dropInTargetName').textContent=name(context.current);$('dropInTargetApply').disabled=false;$('dropInTargetDialog').showModal();return;
+        }
         if(identities.size>1){pendingSettings={target:Number(view.userId),patch};$('dropInApplyDialog').showModal();}
         else void commitSettings(patch,[view.userId]);
     }
@@ -92,6 +98,17 @@
         const pending=pendingSettings;pendingSettings=undefined;$('dropInApplyDialog').close();
         if(pending)void commitSettings(pending.patch,all?[...identities.keys()]:[pending.target]);
     });
+    function cancelViewChange(){pendingViewChange=undefined;$('dropInTargetDialog').close();renderSettings();}
+    $('dropInTargetCancel').addEventListener('click',cancelViewChange);
+    $('dropInTargetDialog').addEventListener('cancel',()=>{pendingViewChange=undefined;renderSettings();});
+    for(const id of ['dropInTargetDefault','dropInTargetUser'])$(id).addEventListener('change',()=>{$('dropInTargetApply').disabled=!$('dropInTargetDefault').checked&&!$('dropInTargetUser').checked;});
+    $('dropInTargetApply').addEventListener('click',async()=>{
+        const pending=pendingViewChange,defaults=$('dropInTargetDefault').checked,selected=$('dropInTargetUser').checked;
+        if(!pending||(!defaults&&!selected))return;pendingViewChange=undefined;$('dropInTargetDialog').close();
+        const request=++settingsRevision;
+        try {await preferences.applyViewTarget(pending.target,pending.view,{defaults,user:selected});if(request===settingsRevision&&Number(view.userId)===pending.target){renderSettings();$('dropInSettingsStatus').textContent=text('d4917f10-f0e0-5eea-9908-82b0d2acb72c');}}
+        catch {if(request===settingsRevision&&Number(view.userId)===pending.target){renderSettings();$('dropInSettingsStatus').textContent=text('0272ce50-1b2e-5e54-8447-91af78590f38');}}
+    });
     function cancelSettings(){pendingSettings=undefined;renderSettings();}
     $('dropInApplyCancel').addEventListener('click',()=>{$('dropInApplyDialog').close();cancelSettings();});
     $('dropInApplyDialog').addEventListener('cancel',cancelSettings);
@@ -103,17 +120,17 @@
     $('dropInRestoreDefault').addEventListener('click',()=>changeSettings({defaultAudio:true}));
     $('liveStreamResetPercent').addEventListener('click',()=>changeSettings({mirror:true}));
     globalThis.WMOFModeMenu?.bind($('scopeToggle'),{getValue:()=>$('liveStreamViewMode').value,
-        getDates:()=>({start:$('liveStreamViewStart').value,end:$('liveStreamViewEnd').value}),
+        getDates:()=>({start:$('liveStreamViewStart').value,end:$('liveStreamViewEnd').value}),extraOptions:[['user','b11c3a59-8432-515c-b361-acabaf1e7a88']],
         onSelect:(value,dates)=>{changeSettings({view:{mode:value,...dates},mirror:false});}});
     $('liveStreamDialog').addEventListener('drop-in-mode-changed',updateModeButton);
 
     const goalPad=globalThis.WMOFObserverGoalPad?new WMOFObserverGoalPad({onConfirm:(scope,value)=>{
         const patch={percent:'',percentScope:null,[scope==='total'?'totalGoal':'tripGoal']:String(value)};
-        if(scope==='trip')patch.sync='off';changeSettings({view:patch,mirror:false});
+        if(scope==='trip'&&value!=='mirror')patch.sync='off';changeSettings({view:patch,mirror:false});
     }}):null;
     const configuredGoal=scope=>{
         const custom=preferences.get(view.userId),config=custom.settingsSource==='default'?preferences.defaults.view:custom.custom.view,override=!custom.mirror&&config[scope==='total'?'totalGoal':'tripGoal'];
-        if(override)return Number(override);
+        if(override && override!=='mirror')return Number(override);
         const text=view.snapshot?.uiState?.[scope==='total'?'total_goal_component':'trip_goal_component']?.text;
         return Number(String(text||'100').replace(/[^0-9.]/g,''))||100;
     };
@@ -131,9 +148,27 @@
         const current=$('liveStreamViewTime').value==='user'?view.snapshot?.viewData?.timeDisplay:$('liveStreamViewTime').value;
         const modes=['remaining','elapsed','calculated-end'];changeSettings({view:{timeDisplay:modes[(modes.indexOf(current)+1)%modes.length]},mirror:false});
     });
-    $('toggleSyncMenuButton').addEventListener('click',()=>changeSettings({view:{sync:view.displayState?.sync_enabled?'off':'on'},mirror:false}));
+    const syncMenu=document.createElement('div');syncMenu.id='dropInSyncPopover';syncMenu.className='mode-dropdown';syncMenu.hidden=true;syncMenu.setAttribute('popover','auto');syncMenu.setAttribute('role','menu');document.body.append(syncMenu);
+    const closeSync=()=>{if(syncMenu.hidePopover&&!syncMenu.hidden){try{syncMenu.hidePopover();}catch{}}syncMenu.hidden=true;$('toggleSyncMenuButton').setAttribute('aria-expanded','false');};
+    for(const [value,id] of [['on','1c9519e8-3320-5a28-9c4a-18a545b065ca'],['off','22a4fe99-d5e6-5ea4-b2df-32a8be5e9992'],['user','b11c3a59-8432-515c-b361-acabaf1e7a88']]) {
+        const button=document.createElement('button');button.type='button';button.dataset.sync=value;button.dataset.menuIcon=value==='user'?'mirror':'settings';button.setAttribute('role','menuitemradio');button.textContent=WMOFLanguagePack.text(id);button.addEventListener('click',()=>{closeSync();changeSettings({view:{sync:value},mirror:false});});syncMenu.append(button);
+    }
+    $('toggleSyncMenuButton').setAttribute('aria-haspopup','menu');
+    $('toggleSyncMenuButton').addEventListener('click',()=>{
+        if(!syncMenu.hidden){closeSync();return;}const button=$('toggleSyncMenuButton'),r=button.getBoundingClientRect(),value=$('liveStreamViewSync').value;
+        for(const option of syncMenu.querySelectorAll('button'))option.setAttribute('aria-checked',String(option.dataset.sync===value));
+        syncMenu.style.width=Math.min(260,innerWidth-24)+'px';syncMenu.style.left=Math.max(12,Math.min(r.left,innerWidth-272))+'px';syncMenu.style.top=Math.max(12,Math.min(r.bottom+6,innerHeight-160))+'px';syncMenu.hidden=false;syncMenu.showPopover?.();button.setAttribute('aria-expanded','true');syncMenu.querySelector('[aria-checked="true"]')?.focus();
+    });
+    syncMenu.addEventListener('keydown',event=>{const choices=[...syncMenu.querySelectorAll('button')],index=choices.indexOf(document.activeElement);if(event.key==='Escape'){closeSync();$('toggleSyncMenuButton').focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();choices[(index+(event.key==='ArrowDown'?1:choices.length-1))%choices.length].focus();}});
+    syncMenu.addEventListener('toggle',event=>{if(event.newState==='closed'){syncMenu.hidden=true;$('toggleSyncMenuButton').setAttribute('aria-expanded','false');}});
+    document.addEventListener('click',event=>{if(!syncMenu.hidden&&!syncMenu.contains(event.target)&&!$('toggleSyncMenuButton').contains(event.target))closeSync();});
+
     $('liveStreamDialog').addEventListener('observer-summary-changed',event=>{
         $('toggleSyncMenuButton').setAttribute('aria-pressed',String(Boolean(event.detail?.sync_enabled)));
+        const mirrored=$('liveStreamViewSync').value==='user',icon=$('toggleSyncMenuButton').querySelector('.sync-goals-menu-icon');
+        $('toggleSyncMenuButton').dataset.syncMode=mirrored?'user':event.detail?.sync_enabled?'on':'off';
+        icon.dataset.syncState=event.detail?.sync_enabled?'enabled':'disabled';
+        icon.querySelector('.sync-mirror-badge').hidden=!mirrored;
         renderSettingSources();
     });
     const remoteMicrophone=globalThis.WMOFObserverMicrophone ? new WMOFObserverMicrophone({button:$('dropInMicrophoneButton'),stream,onFailure:()=>status(WMOFDropInText('failed'))}):null;
@@ -165,7 +200,7 @@
     }
     async function select(identity, watch = stream.viewing) {
         if (exiting || busy || !identity || Number(identity.userId) === Number(user?.id)) return;
-        remoteMicrophone?.reset(identity.userId);
+        pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();remoteMicrophone?.reset(identity.userId);
         busy = true; const request = ++revision; settingsRevision++;goalPad?.cancel();$('autoGoalDialog').close(); controls();
         try {
             await stream.stopViewing();
@@ -217,7 +252,7 @@
     });
     stream.addEventListener('viewerChanged', event => {
         controls();
-        if (!stream.viewing) {remoteMicrophone?.reset();view.clear();$('liveStreamRemoteSpeech').textContent='—';}
+        if (!stream.viewing) {pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();remoteMicrophone?.reset();view.clear();$('liveStreamRemoteSpeech').textContent='—';}
         if (!busy) status(stream.viewing ? String(event.detail.state || '') : text('bafe351c-ceef-5648-9536-fcf9da113818'));
     });
     stream.addEventListener('message', event => {

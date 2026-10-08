@@ -112,3 +112,10 @@ body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
 #dropInSettingsApplied {text-align:center;font-weight:bold;}
 
 #dropInViewSettings .live-stream-view-controls[hidden] {display:none;}
+
+#toggleSyncMenuButton[data-sync-mode="user"] {text-decoration:none;color:#a9ddf7;}
+
+#dropInTargetDialog>label {display:inline-flex;align-items:center;gap:8px;padding:12px;}
+#observerGoalMirror {display:block;margin:12px auto;min-height:40px;padding:8px 18px;border:1px solid #a9ddf7;border-radius:8px;color:white;background:#12448b;}
+
+#toggleSyncMenuButton[data-sync-mode="user"]>span:last-child {text-decoration:none;}

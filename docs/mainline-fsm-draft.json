@@ -1338,6 +1338,22 @@
         "Close"
       ],
       "family": "stream"
+    },
+    "DROP-IN-TARGET": {
+      "id": "DROP-IN-TARGET",
+      "title": "Drop-In: Apply to",
+      "focus": "dropInTargetDialog",
+      "trip": "Observed trip unchanged",
+      "facet": "Pending local Mode/Sync/Goal patch and captured observed user; Default/User checkboxes",
+      "commands": [
+        "Cancel",
+        "Select Default / User / both",
+        "Apply when at least one target is checked"
+      ],
+      "family": "settings",
+      "binding": {
+        "focus": "dropInTargetDialog"
+      }
     }
   },
   "transitions": [
@@ -9511,6 +9527,81 @@
           "rule": "Confirm authoritative mic state; failure renders status without changing observer audio preferences."
         }
       }
+    },
+    {
+      "id": "DROP-IN-TARGET-OPEN",
+      "source": "DROP-IN",
+      "target": "DROP-IN-TARGET",
+      "label": "Mode / Sync / Goal choice",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Captured selected user; Apply requires at least one checkbox",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "drop-in-page.mjs + drop-in-preferences.mjs"
+      },
+      "contract": {
+        "trigger": "Mode / Sync / Goal choice",
+        "guard": "Captured target is current; pending patch present",
+        "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
+        "timing": "Optimistic display; confirmation chooses save scope",
+        "persistence": "Observer-local preferences only; no publisher mutation",
+        "rollback": "Local storage failure restores baseline and selected-user settings"
+      }
+    },
+    {
+      "id": "DROP-IN-TARGET-APPLY",
+      "source": "DROP-IN-TARGET",
+      "target": "DROP-IN",
+      "label": "Apply to checked Default / User targets",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Captured selected user; Apply requires at least one checkbox",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "drop-in-page.mjs + drop-in-preferences.mjs"
+      },
+      "contract": {
+        "trigger": "Apply to checked Default / User targets",
+        "guard": "Captured target is current; pending patch present",
+        "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
+        "timing": "Optimistic display; confirmation chooses save scope",
+        "persistence": "Observer-local preferences only; no publisher mutation",
+        "rollback": "Local storage failure restores baseline and selected-user settings"
+      }
+    },
+    {
+      "id": "DROP-IN-TARGET-CANCEL",
+      "source": "DROP-IN-TARGET",
+      "target": "DROP-IN",
+      "label": "Cancel: restore previous view",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Captured selected user; Apply requires at least one checkbox",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "drop-in-page.mjs + drop-in-preferences.mjs"
+      },
+      "contract": {
+        "trigger": "Cancel: restore previous view",
+        "guard": "Captured target is current; pending patch present",
+        "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
+        "timing": "Optimistic display; confirmation chooses save scope",
+        "persistence": "Observer-local preferences only; no publisher mutation",
+        "rollback": "Local storage failure restores baseline and selected-user settings"
+      }
     }
   ],
   "audio": {
@@ -12381,8 +12472,16 @@
       "goals": "Same shared Order Filler summary, mode button, percentage numberpad and Auto chooser; independent trip/total overrides; no publisher writes.",
       "multiple": "Setting changes offer selected/all scope; remote mic only targets selected person.",
       "defaults": "Only sound settings are editable in this view, for default and selected user. Saving/using default sound changes audio only and preserves display overrides and Mirror Settings. Serial field patches avoid lost saves; storage failure restores baseline.",
-      "provenance": "Each field stores explicit default/custom provenance. User mode mirrors display fields. Matching values do not imply matching provenance; custom fields stay custom even when equal to defaults. Default fields follow the baseline.",
-      "activation": "Explicit settingsSource enum: default/custom/user. Source selector lives in normal hamburger controls; Settings remains informational for display fields. Default applies saved baseline, Custom restores retained overrides, User mirrors publisher. Observer audio controls remain separate local gains."
+      "provenance": "When a user value matches the default, clear the stored override and mark the field Default. Subsequent baseline edits flow through. Reconcile matching overrides after a default edit too. Mirror Sync uses a standard facing-panels/mirror-axis glyph as a lower-left badge beside existing Sync arrows.",
+      "activation": "Explicit settingsSource enum: default/custom/user. Source selector lives in normal hamburger controls; Settings remains informational for display fields. Default applies saved baseline, Custom restores retained overrides, User mirrors publisher. Observer audio controls remain separate local gains.",
+      "apply": "Mode, Sync and Goal edits all open the same Apply to Default/User confirmation, with independently checked targets. Apply updates chosen baseline/user fields atomically; Cancel restores previous view. Default-only selects baseline without discarding saved Custom values. No publisher settings are written.",
+      "fieldMirror": "Drop-In Mode menu adds Mirror; Sync popover is On/Off/Mirror; goal pad adds Mirror. Mirroring is per field and leaves other overrides in place; defaults may also store Mirror. Order Filler has no extra Mirror option.",
+      "mirrorIcon": {
+        "asset": "icons/mirror.svg",
+        "meaning": "Two facing panels with a vertical mirror axis; follow corresponding observed-user setting",
+        "usage": "data-menu-icon=mirror for every Mirror choice; same glyph as Sync lower-left badge",
+        "placement": "Mirror lower-left; existing status lower-right; retain Sync arrows and current on/off state"
+      }
     }
   },
   "unresolved_contracts": [

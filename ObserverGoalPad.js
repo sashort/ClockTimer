@@ -10,6 +10,7 @@
     this.dialog=document.getElementById('numberPadDialog');const $=id=>this.dialog.querySelector('#'+id);
     for(const id of ['numberPadSettingsArea','numberPadVoice','numberPadAM','numberPadPM','numberPadDateRow'])$(id).hidden=true;
     $('numberPadSettingsArea').parentElement.classList.add('settings-hidden');
+    const mirror=document.createElement('button');mirror.id='observerGoalMirror';mirror.type='button';mirror.dataset.menuIcon='mirror';mirror.textContent=WMOFLanguagePack.text('b11c3a59-8432-515c-b361-acabaf1e7a88');mirror.addEventListener('click',()=>{this.dialog.close();this.onConfirm(this.scope,'mirror');});this.dialog.querySelector('.number-pad-shell').append(mirror);
     const append=digit=>{if(this.replace){this.value='';this.replace=false;}this.value+=digit;this.paint();};
     for(const button of this.dialog.querySelectorAll('[data-number]'))button.addEventListener('click',()=>append(button.dataset.number));
     $('numberPadBackspace').addEventListener('click',()=>{this.replace=false;this.value=this.value.slice(0,-1);this.paint();});

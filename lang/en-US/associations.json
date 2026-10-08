@@ -6091,6 +6091,54 @@
         "text0": "ca8c7f71-896f-5cc9-9831-67903fa6899a"
       },
       "attributes": {}
+    },
+    "b11c3a59-8432-515c-b361-acabaf1e7a88": {
+      "elementId": "b11c3a59-8432-515c-b361-acabaf1e7a88",
+      "source": "observer:mirror",
+      "texts": {
+        "text0": "b11c3a59-8432-515c-b361-acabaf1e7a88"
+      },
+      "attributes": {}
+    },
+    "4ab2828c-28bd-577c-85ef-912867cec704": {
+      "elementId": "4ab2828c-28bd-577c-85ef-912867cec704",
+      "source": "observer:applyTo",
+      "texts": {
+        "text0": "4ab2828c-28bd-577c-85ef-912867cec704"
+      },
+      "attributes": {}
+    },
+    "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff": {
+      "elementId": "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff",
+      "source": "observer:apply",
+      "texts": {
+        "text0": "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff"
+      },
+      "attributes": {}
+    },
+    "e26ae369-fc8a-54b0-a718-1a70dfbfa219": {
+      "elementId": "e26ae369-fc8a-54b0-a718-1a70dfbfa219",
+      "source": "observer:applyDefault",
+      "texts": {
+        "text0": "e26ae369-fc8a-54b0-a718-1a70dfbfa219"
+      },
+      "attributes": {}
+    },
+    "0963cc34-f4c5-5e05-b989-7043266564e1": {
+      "elementId": "0963cc34-f4c5-5e05-b989-7043266564e1",
+      "source": "observer:applyUser",
+      "texts": {
+        "text0": "0963cc34-f4c5-5e05-b989-7043266564e1"
+      },
+      "attributes": {}
+    },
+    "2d102628-ecea-5da7-9630-8f87fe8b2b87": {
+      "elementId": "2d102628-ecea-5da7-9630-8f87fe8b2b87",
+      "source": "observer:chooseTarget",
+      "texts": {
+        "text0": "2d102628-ecea-5da7-9630-8f87fe8b2b87"
+      },
+      "attributes": {}
     }
   },
   "selects": {

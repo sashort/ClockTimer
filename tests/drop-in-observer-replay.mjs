@@ -88,5 +88,6 @@ assert.equal(observer.getSummarySnapshot(new window.Date()).trip.countedTimeElap
 apply(resumed,{mode:'auto',goals:{trip:135,total:115}});
 assert.equal(observer.getAttribute('trip-goal'),'135%');assert.equal(observer.getAttribute('total-goal'),'115%');
 assert.notEqual(timer.getAttribute('trip-goal'),'135%','observer goals never modify publisher');
+apply(resumed,{mode:'auto',goals:{trip:'mirror',total:'mirror'}});assert.equal(observer.getAttribute('trip-goal'),timer.getAttribute('trip-goal'),'Mirror restores publisher goal after local override');
 await window.happyDOM.close();
 console.log('PASS Drop-In completed Down Time preserves the dial across snapshots, time, local controls and later intervals');

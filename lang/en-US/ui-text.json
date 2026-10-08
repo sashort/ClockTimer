@@ -6450,6 +6450,37 @@
     "id": "ca8c7f71-896f-5cc9-9831-67903fa6899a",
     "text": "Shows whether User, Default, or Custom settings are applied. Sound settings can be edited here.",
     "default": "Shows whether User, Default, or Custom settings are applied. Sound settings can be edited here."
+  },
+
+  "b11c3a59-8432-515c-b361-acabaf1e7a88": {
+    "id": "b11c3a59-8432-515c-b361-acabaf1e7a88",
+    "text": "Mirror",
+    "default": "Mirror"
+  },
+  "4ab2828c-28bd-577c-85ef-912867cec704": {
+    "id": "4ab2828c-28bd-577c-85ef-912867cec704",
+    "text": "Apply to",
+    "default": "Apply to"
+  },
+  "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff": {
+    "id": "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff",
+    "text": "Apply",
+    "default": "Apply"
+  },
+  "e26ae369-fc8a-54b0-a718-1a70dfbfa219": {
+    "id": "e26ae369-fc8a-54b0-a718-1a70dfbfa219",
+    "text": "Default",
+    "default": "Default"
+  },
+  "0963cc34-f4c5-5e05-b989-7043266564e1": {
+    "id": "0963cc34-f4c5-5e05-b989-7043266564e1",
+    "text": "User",
+    "default": "User"
+  },
+  "2d102628-ecea-5da7-9630-8f87fe8b2b87": {
+    "id": "2d102628-ecea-5da7-9630-8f87fe8b2b87",
+    "text": "Choose Default, User, or both.",
+    "default": "Choose Default, User, or both."
   }
   }
 }

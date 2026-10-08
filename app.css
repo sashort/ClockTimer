@@ -7453,3 +7453,8 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 .main-menu .recognizer-name-settings > label { display: block; }
 .main-menu .recognizer-name-settings > select, .main-menu .recognizer-name-settings > input { margin-block: 8px; }
 .main-menu .hamburger-menu-popover a[data-menu-icon] { display: flex; }
+
+/* Standard Mirror glyph: lower-left; existing status badges remain lower-right. */
+.sync-mirror-badge {position:absolute;left:-2px;bottom:-2px;z-index:3;width:13px;height:13px;border-radius:3px;background:#001e60;color:#a9ddf7;pointer-events:none;}
+.sync-mirror-badge[hidden] {display:none;}
+.main-menu .hamburger-menu-popover .sync-mirror-badge[data-menu-icon]::before {position:absolute;inset:0;width:13px;height:13px;margin:0;filter:drop-shadow(0 0 1px #000);}
