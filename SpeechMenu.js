@@ -3093,7 +3093,7 @@ class SpeechMenu {
 
         const rawTranscript = SpeechMenu.#normalizeTranscript(
             [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" "));
-        const barge = active === utterance && !utterance.bargeInFlushing
+        const barge = (active === utterance || (!active && detail.isFinal)) && !utterance.bargeInFlushing
             ? globalThis.WMOFRecognizerNames?.split(rawTranscript) : null;
         if (barge) {
             SpeechMenu.#flushNamedStream(utterance, barge, Boolean(detail.isFinal));
@@ -3175,6 +3175,7 @@ class SpeechMenu {
         // Capture restarts immediately; command completion remains on its existing queue.
         const previousBarrier = utterance.bargeInBarrier;
         SpeechMenu.#finishUtterance("named-barge-in", false);
+        SpeechMenu.#finishedUtterances.delete(utterance.id);
         SpeechMenu.#preRollFrames.length = 0;
         SpeechMenu.#preRollSamples = 0;
         SpeechMenu.#beginUtterance(performance.now());

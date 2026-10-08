@@ -150,6 +150,12 @@ try {
     const latest=speech.testResult(repeated,'show log Beatrice show log Beatrice show log',true);
     await latest.bargeInBarrier;await new Promise(setImmediate);await latest.digestQueue;
     assert.deepEqual(calls,[['log'],['log'],['log']],'multiple boundaries preserve the commands between names');
+    const finalBoundary=fresh();
+    await hear(finalBoundary,'ready at four twenty');
+    speech.testFinish('candidate-silence',true);
+    const finalRestart=speech.testResult(finalBoundary,'ready at four twenty two junk Beatrice show log',true);
+    await finalRestart.bargeInBarrier;await new Promise(setImmediate);await finalRestart.digestQueue;
+    assert.deepEqual(calls,[['ready','4:22'],['log']],'a name first resolved by final decode also preserves old continuations');
     delete globalThis.WMOFRecognizerNames;
     // Independent command groups compete for the same unconsumed words.
     const syncGroup=document.createElement('section');document.body.append(syncGroup);
