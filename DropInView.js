@@ -55,6 +55,8 @@
         clear() {
             this.revision++; this.snapshot = null; this.cache = null;
             this.status.textContent = '';
+            const standard = this.root.querySelector('#liveStreamStandardTime');
+            if (standard) standard.textContent = '-';
             this.root.querySelector('#liveStreamInterval').hidden = true;
             this.timer.applyObserverSnapshot?.({events:[],started:false,tripId:null,attributes:[],totals:null,
                 addedToAggregate:false,sync:false,timeDisplay:'remaining'}, {mode:'trip'});
@@ -86,7 +88,16 @@
             return (milliseconds < 0 ? '−' : '') + [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60]
                 .map(value => String(value).padStart(2, '0')).join(':');
         }
+        showComponents(state) {
+            const standard = this.root.querySelector('#liveStreamStandardTime');
+            if (standard) standard.textContent = state?.standard_time_component?.text || '-';
+            for (const [id,key] of [['liveStreamStandardLabel','standard_time_header_text'],['liveStreamTimeLabel','time_header_text']]) {
+                const label = this.root.querySelector('#' + id);
+                if (label && state?.[key]) label.textContent = state[key];
+            }
+        }
         show(summary) {
+            if (!summary) this.showComponents(null);
             this.root.querySelector('#liveStreamRemoteTime').textContent = summary
                 ? this.duration(summary.countedTimeElapsedMilliseconds ?? summary.countedTimeMilliseconds) : '—';
             const counted = summary?.countedTimeElapsedMilliseconds ?? summary?.countedTimeMilliseconds;
@@ -122,6 +133,7 @@
                 totalLabel:selected, now:new Date(this.snapshot.timestamp)
             });
             const state = result.uiState;
+            this.showComponents(state);
             this.localScope = state.effective_goal_type;
             const label = this.localScope === 'total'
                 ? ['user','auto','trip'].includes(mode) ? this.snapshot.viewData.range : mode : this.localScope;
@@ -155,6 +167,7 @@
             if (['user','auto'].includes(this.mode.value)) {
                 this.project(view.summary?.trip?.available ? view.summary.trip : null, view.summary?.total, this.mode.value);
                 if (this.mode.value === 'user' && !this.percent.value && this.sync.value === 'user' && this.timeDisplay.value === 'user') {
+                    this.showComponents(state);
                     this.root.querySelector('#liveStreamRemoteTime').textContent = state.time_component?.text || '—';
                     const current = state.current_percent_component?.text, goal = state.goal_component?.text;
                     this.root.querySelector('#liveStreamRemoteGoal').textContent = [current,goal].filter(Boolean).join(' / ') || '—';

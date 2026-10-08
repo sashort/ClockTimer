@@ -23,7 +23,7 @@ const stream = {fetchViewerTotals(window,options) {
 }};
 const controller = new w.WMOFDropInView({root:$('liveStreamDialog'), stream, text:key=>key});
 const snapshot = {timestamp:'2026-10-07T12:00:00Z',userId:42,uiState:{state:'trip_running',effective_goal_type:'trip',sync_enabled:false,
-    time_component:{text:'USER EXACT TIME'}, current_percent_component:{text:'200%'},goal_component:{text:'100%'},
+    standard_time_component:{text:'USER STANDARD'},standard_time_header_text:'Trip Standard Time',time_header_text:'Remaining',time_component:{text:'USER EXACT TIME'}, current_percent_component:{text:'200%'},goal_component:{text:'100%'},
     trip_goal_component:{text:'100%'},total_goal_component:{text:'110%'}},viewData:{
     mode:'trip',range:'week',active:true,tripId:19,tripStart:'2026-10-07T11:00:00Z',productionFilter:'all',
     summary:{trip:{available:true,standardTimeMilliseconds:600000,countedTimeElapsedMilliseconds:300000,percentGoal:1},
@@ -42,6 +42,9 @@ let apiCalls = 0;
 w.fetch = async () => { apiCalls++; throw new Error('Observer attempted an API request'); };
 controller.update(snapshot);
 assert.equal($('liveStreamRemoteTime').textContent,'USER EXACT TIME','default view mirrors the user component verbatim');
+assert.equal($('liveStreamStandardTime').textContent,'USER STANDARD','shared summary mirrors publisher standard time');
+assert.equal($('liveStreamStandardLabel').textContent,'Trip Standard Time');
+assert.equal($('liveStreamTimeLabel').textContent,'Remaining');
 assert.equal($('liveStreamViewingMode').textContent,'User view (mirror)');
 assert.equal($('liveStreamPublisherMode').textContent,'Trip');
 assert.equal($('liveStreamUserTripGoal').textContent,'100%');

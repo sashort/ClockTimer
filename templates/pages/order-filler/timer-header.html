@@ -1,0 +1,111 @@
+<hamburger-menu id="mainMenu" class="main-menu" safe-boundary="#speechMicBar" aria-label="{{text:dd15ac75-3ccc-5a3a-8ea8-5d586879e73f:aria-label}}" data-language-id="dd15ac75-3ccc-5a3a-8ea8-5d586879e73f">
+                <button id="menuButton" class="header-button hamburger-button" type="button" slot="trigger" aria-label="{{text:1b6fbb32-1fe6-57d1-b707-277cf21579b9:aria-label}}" data-language-id="1b6fbb32-1fe6-57d1-b707-277cf21579b9">
+                    <span></span><span></span><span></span>
+                </button>
+
+                <div id="menuAccountRow" class="main-menu-row menu-account-row">
+                    <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden data-language-id="fea14455-1b3d-5180-b018-5cf1a27d79b8" data-menu-icon="profile">{{text:fea14455-1b3d-5180-b018-5cf1a27d79b8:text0}}</button>
+                    <button id="authButton" type="button" data-language-id="cf8a783f-7b4d-559c-a0d4-2b1f3d83beb2" data-menu-icon="login">{{text:cf8a783f-7b4d-559c-a0d4-2b1f3d83beb2:text0}}</button>
+                </div>
+                <div id="adminMenuGroup" class="admin-menu-group" hidden>
+                    <button id="adminMenuButton" type="button" aria-expanded="false" aria-controls="adminSubmenu" data-language-id="14e52096-04cf-5690-86c5-032788db539c" data-menu-icon="admin">{{text:14e52096-04cf-5690-86c5-032788db539c:text0}}</button>
+                    <div id="adminSubmenu" class="admin-submenu" hidden>
+                        <button id="userLookupButton" type="button" data-dialog="userLookupDialog" hidden><span class="menu-inline-icon profile-edit-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="8" r="4"/><path d="M8 20v-2a8 8 0 0 1 16 0v2"/><circle cx="7" cy="24" r="4"/><path d="m4 27-3 3m20 0 1-5 7-7 4 4-7 7-5 1zm5-10 4 4"/></svg></span><span data-language-id="853a665c-1bf6-5c0c-96c5-d309b93424ec">{{text:853a665c-1bf6-5c0c-96c5-d309b93424ec:text0}}</span></button>
+
+                        <button id="newUserButton" type="button" hidden data-language-id="ec21ac01-df42-53ad-be01-6bbf7e1de066" data-menu-icon="user-plus">{{text:ec21ac01-df42-53ad-be01-6bbf7e1de066:text0}}</button>
+                        <button id="accessTokensButton" type="button" hidden data-language-id="87f0e1dd-a89c-5292-9557-ec75bbd4e459" data-menu-icon="key">{{text:87f0e1dd-a89c-5292-9557-ec75bbd4e459:text0}}</button>
+                    </div>
+                </div>
+                <div id="trainerMenuGroup" hidden><details><summary data-menu-icon="trainer">{{text:d6b4af14-68b7-5145-9bd4-62e380bb1673:text0}}</summary><button id="liveStreamButton" type="button" hidden data-language-id="f203b44b-ef3f-586d-afbd-2869ef82e15f" data-menu-icon="drop-in">{{text:f203b44b-ef3f-586d-afbd-2869ef82e15f:text0}}</button></details></div>
+<div id="menuLogoutSlot"></div>
+                <hr id="accountMenuDivider">
+                <div class="settings-menu-group">
+                    <button id="settingsMenuButton" type="button" aria-expanded="false" aria-controls="settingsSubmenu"><span class="menu-inline-icon settings-gear-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="5.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg></span><span data-language-id="708d54ab-8dc9-5047-b30b-67ee440153da">{{text:708d54ab-8dc9-5047-b30b-67ee440153da:text0}}</span></button>
+                    <div id="settingsSubmenu" class="settings-submenu" hidden>
+                        <button type="button" data-dialog="graphicalSettingsDialog" data-language-id="92a6c5f7-f8b9-51f6-a70b-73669905326c" data-menu-icon="palette">{{text:92a6c5f7-f8b9-51f6-a70b-73669905326c:text0}}</button>
+                        <button id="audioSettingsButton" type="button" data-dialog="audioSettingsDialog"><span class="menu-inline-icon audio-speaker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span data-language-id="7b7d624d-739b-57ae-96f4-f79bad524320">{{text:7b7d624d-739b-57ae-96f4-f79bad524320:text0}}</span></button>
+                    </div>
+                </div>
+                <div class="main-menu-row speech-recognition-menu-row">
+                    <button id="speechRecognitionButton" type="button" aria-pressed="false" title="{{text:d549a1af-0e08-5ef7-8a33-0106901cb282:title}}" disabled data-language-id="d549a1af-0e08-5ef7-8a33-0106901cb282" data-menu-icon="settings"><span data-language-id="64bf66be-85cc-529b-b86e-95855d455a33">{{text:64bf66be-85cc-529b-b86e-95855d455a33:text0}}</span></button>
+                    <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:aria-label}}" data-language-id="6e6ea3a3-2d38-5c75-b5ed-9620454a3520" data-menu-icon="settings">{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:text0}}</button>
+                </div>
+                <div class="main-menu-row sync-goals-menu-row">
+                    <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
+                    <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="{{text:fe244302-ff9a-5be1-949d-444793532606:aria-label}}" data-language-id="fe244302-ff9a-5be1-949d-444793532606" data-menu-icon="settings">{{text:fe244302-ff9a-5be1-949d-444793532606:text0}}</button>
+                </div>
+                <div class="trip-menu-group">
+                <div class="main-menu-row trip-list-menu-row">
+                    <button id="tripListMenuButton" class="trip-list-menu-button" type="button" data-language-id="758b0729-0d3e-5768-acd5-326ec90f35e9" data-menu-icon="list">{{text:758b0729-0d3e-5768-acd5-326ec90f35e9:text0}}</button>
+                    <button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="{{text:9ef29698-122f-59f2-8410-bb636061c726:aria-label}}" aria-pressed="true" title="{{text:9ef29698-122f-59f2-8410-bb636061c726:title}}" data-language-id="9ef29698-122f-59f2-8410-bb636061c726" data-menu-icon="pin"></button>
+                </div>
+                <label class="trip-log-range-menu" for="tripProductionFilter" data-menu-icon="filter"><span data-language-id="8e9add04-86ec-5731-bd69-5183c77ec1c9">{{text:8e9add04-86ec-5731-bd69-5183c77ec1c9:text0}}</span><select id="tripProductionFilter" data-language-id="db59782c-258e-5188-aada-ba1bba08df80">{{options:db59782c-258e-5188-aada-ba1bba08df80}}</select></label>
+                <label class="trip-log-range-menu" for="tripLogRangeSelect" data-menu-icon="calendar">
+                    <span data-language-id="22c42952-5340-5402-a327-89cc14215c69">{{text:22c42952-5340-5402-a327-89cc14215c69:text0}}</span>
+                    <select id="tripLogRangeSelect" aria-label="{{text:0c3e9731-ec7b-5fe5-a481-ead731262b88:aria-label}}" data-language-id="0c3e9731-ec7b-5fe5-a481-ead731262b88">{{options:0c3e9731-ec7b-5fe5-a481-ead731262b88}}</select>
+                </label>
+                <div class="trip-log-date-menu">
+                    <label for="tripLogStartDate" data-language-id="cb47bd54-b509-5823-85ad-d2c8cab78285">{{text:cb47bd54-b509-5823-85ad-d2c8cab78285:text0}}</label><input id="tripLogStartDate" type="date" aria-label="{{text:305d99aa-8c68-5a7e-beea-9056d17cca88:aria-label}}" disabled data-language-id="305d99aa-8c68-5a7e-beea-9056d17cca88">
+                    <label for="tripLogEndDate" data-language-id="92a78904-7c6f-5666-9ad2-48301e067257">{{text:92a78904-7c6f-5666-9ad2-48301e067257:text0}}</label><input id="tripLogEndDate" type="date" aria-label="{{text:5b827a18-10f3-56fa-b022-4ccf3f47a04e:aria-label}}" disabled data-language-id="5b827a18-10f3-56fa-b022-4ccf3f47a04e">
+                </div>
+                <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
+                </div>
+                <hr class="developer-menu-separator">
+                <div id="developerMenuGroup" class="developer-menu-group">
+                    <button id="developerMenuButton" type="button" aria-expanded="false" aria-controls="developerSubmenu" data-language-id="8461371b-dd5d-5da0-b561-4d76102e9820" data-menu-icon="tools">{{text:8461371b-dd5d-5da0-b561-4d76102e9820:text0}}</button>
+                    <div id="developerSubmenu" class="developer-submenu" hidden>
+                        <div class="app-version">Version <output id="appVersion">ZHHTV6</output></div>
+                        <a id="bluetoothAudioTestLink" href="diagnostics/audio-routing/" target="_blank" rel="noopener" data-language-id="6622cb0c-1ee3-4246-afb7-24d8cf0eba41" data-menu-icon="bluetooth">{{text:6622cb0c-1ee3-4246-afb7-24d8cf0eba41:text0}}</a>
+                        <button id="developerDocsButton" type="button" hidden data-language-id="f140723f-4ebe-54fd-b9c6-8d694f574c81" data-menu-icon="book">{{text:f140723f-4ebe-54fd-b9c6-8d694f574c81:text0}}</button>
+                        <div id="speechToolsGroup" class="speech-tools-group">
+                            <button id="speechMenuButton" type="button" aria-expanded="false" aria-controls="speechSubmenu">
+                                <span class="speech-build-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 30 30" focusable="false">
+                                        <path class="speech-build-mic" d="M15 4.5a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0v-6a4 4 0 0 0-4-4Zm-7 9.5a7 7 0 0 0 14 0M15 21v4M11 25h8"/>
+                                        <g class="speech-build-scaffold">
+                                            <path class="scaffold-rail rail-left" pathLength="100" d="M5 25V7"/>
+                                            <path class="scaffold-rail rail-right" pathLength="100" d="M25 25V7"/>
+                                            <path class="scaffold-floor floor-1" pathLength="100" d="M5 23h20"/>
+                                            <path class="scaffold-brace brace-1a" pathLength="100" d="M5 23l20-6"/>
+                                            <path class="scaffold-brace brace-1b" pathLength="100" d="M25 23 5 17"/>
+                                            <path class="scaffold-floor floor-2" pathLength="100" d="M5 17h20"/>
+                                            <path class="scaffold-brace brace-2a" pathLength="100" d="M5 17l20-6"/>
+                                            <path class="scaffold-brace brace-2b" pathLength="100" d="M25 17 5 11"/>
+                                            <path class="scaffold-floor floor-3" pathLength="100" d="M5 11h20"/>
+                                            <path class="scaffold-floor floor-top" pathLength="100" d="M5 7h20"/>
+                                        </g>
+                                        <g class="speech-build-crane">
+                                            <path class="crane-mast" pathLength="100" d="M6 7V2"/>
+                                            <path class="crane-boom" pathLength="100" d="M3 2h24"/>
+                                            <path class="crane-brace" pathLength="100" d="M6 2l7 5M6 7l7-5"/>
+                                            <path class="crane-cable" pathLength="100" d="M24 2v4"/>
+                                            <path class="crane-hook" pathLength="100" d="M22.8 6h2.4c0 1.1-.5 1.7-1.2 1.7s-1.2-.6-1.2-1.7Z"/>
+                                        </g>
+                                    </svg>
+                                </span>
+                                <span data-language-id="60df224f-9ca5-5a1b-9158-ea65cdc63318">{{text:60df224f-9ca5-5a1b-9158-ea65cdc63318:text0}}</span>
+                            </button>
+                            <div id="speechSubmenu" class="speech-submenu" hidden>
+                                <button id="speechTrainingButton" type="button" aria-pressed="false" disabled data-language-id="c80bf239-538a-5bd0-a5d9-fb8cf3c7c706" data-menu-icon="microphone">{{text:c80bf239-538a-5bd0-a5d9-fb8cf3c7c706:text0}}</button>
+                                <button id="speechTimingButton" type="button" hidden data-language-id="023722cb-153c-5395-8469-4cd3a68f8914" data-menu-icon="timer">{{text:023722cb-153c-5395-8469-4cd3a68f8914:text0}}</button>
+                                <button id="speechEditorButton" type="button" hidden data-language-id="e0d509e0-aa06-5a80-ac75-5212207dca36" data-menu-icon="edit">{{text:e0d509e0-aa06-5a80-ac75-5212207dca36:text0}}</button>
+                            </div>
+                        </div>
+                        <div id="easterEggToolsGroup" class="easter-egg-tools-group" hidden>
+                            <button id="easterEggMenuButton" type="button" aria-expanded="false" aria-controls="easterEggSubmenu" data-language-id="64d936b8-f973-541b-8f75-b7ab6e9f10bf" data-menu-icon="music">{{text:64d936b8-f973-541b-8f75-b7ab6e9f10bf:text0}}</button>
+                            <div id="easterEggSubmenu" class="easter-egg-submenu" hidden>
+                                <label class="easter-egg-song-picker"><span data-language-id="6f46e3e5-c548-5dc7-b36c-d03a486456da">{{text:6f46e3e5-c548-5dc7-b36c-d03a486456da:text0}}</span><select id="easterEggSongSelect" aria-label="{{text:af44f0e0-01a0-57a7-9b13-d56b283ac0b8:aria-label}}" data-language-id="af44f0e0-01a0-57a7-9b13-d56b283ac0b8">{{options:af44f0e0-01a0-57a7-9b13-d56b283ac0b8}}</select></label>
+                                <button id="easterEggPlayButton" type="button" data-language-id="1e50b88b-e98f-5ecb-a041-4884cecf4157" data-menu-icon="play">{{text:1e50b88b-e98f-5ecb-a041-4884cecf4157:text0}}</button>
+                                <button id="easterEggPauseButton" type="button" disabled data-language-id="284f5a38-5002-50f7-81b1-97eb1e5be6e2" data-menu-icon="pause">{{text:284f5a38-5002-50f7-81b1-97eb1e5be6e2:text0}}</button>
+                                <button id="easterEggStopButton" type="button" disabled data-language-id="720df278-a015-52bd-92a1-5e4de5add7ba" data-menu-icon="stop">{{text:720df278-a015-52bd-92a1-5e4de5add7ba:text0}}</button>
+                                <button id="easterEggRewindButton" type="button" data-language-id="e9515134-ed81-5421-acfc-aac61389ea6e" data-menu-icon="rewind">{{text:e9515134-ed81-5421-acfc-aac61389ea6e:text0}}</button>
+                            </div>
+                        </div>
+                        <button id="sqlConsoleButton" type="button" hidden data-language-id="17820853-f6fd-5875-adcf-ba11ab62d909" data-menu-icon="database">{{text:17820853-f6fd-5875-adcf-ba11ab62d909:text0}}</button>
+                    </div>
+                </div>
+            </hamburger-menu>
+            <div class="scope-control">
+                <button id="scopeToggle" class="scope-toggle" type="button" data-language-id="3f0a124e-0f14-5d73-ba42-5747a4742234">{{text:3f0a124e-0f14-5d73-ba42-5747a4742234:text0}}</button>
+                <button id="scopeConnectionButton" class="scope-connection-button" type="button" data-cloud-state="offline" aria-label="{{text:45edd7ed-b34e-557c-a8f6-167fd6f3a9b1:aria-label}}" hidden data-language-id="45edd7ed-b34e-557c-a8f6-167fd6f3a9b1"></button>
+            </div>

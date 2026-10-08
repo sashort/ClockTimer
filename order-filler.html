@@ -26,8 +26,8 @@
 <body>
 <div class="portrait-orientation-notice" role="status" data-language-id="d3514694-12c8-52c9-b222-37a71145aea8">Rotate your phone to portrait to use the timer.</div>
     <main id="app" class="app" data-state="offline" data-trip-state="ready" data-trip-log-pinned="true">
-        <header class="app-header">
-            <hamburger-menu id="mainMenu" class="main-menu" safe-boundary="#speechMicBar" aria-label="Application menu" data-language-id="dd15ac75-3ccc-5a3a-8ea8-5d586879e73f">
+<header class="app-header" data-timer-part="header">
+<hamburger-menu id="mainMenu" class="main-menu" safe-boundary="#speechMicBar" aria-label="Application menu" data-language-id="dd15ac75-3ccc-5a3a-8ea8-5d586879e73f">
                 <button id="menuButton" class="header-button hamburger-button" type="button" slot="trigger" aria-label="Open menu" data-language-id="1b6fbb32-1fe6-57d1-b707-277cf21579b9">
                     <span></span><span></span><span></span>
                 </button>
@@ -138,10 +138,10 @@
                 <button id="scopeToggle" class="scope-toggle" type="button" data-language-id="3f0a124e-0f14-5d73-ba42-5747a4742234">Trip</button>
                 <button id="scopeConnectionButton" class="scope-connection-button" type="button" data-cloud-state="offline" aria-label="Offline. Retry connection" hidden data-language-id="45edd7ed-b34e-557c-a8f6-167fd6f3a9b1"></button>
             </div>
-        </header>
 
-        <section class="trip-summary" aria-label="Trip summary" data-language-id="8bc8073c-ec26-5585-9784-eb1a56e10455">
-            <button id="standardTimeButton" class="summary-cell" type="button">
+</header>
+<section class="trip-summary" data-timer-part="summary" aria-label="Trip summary" data-language-id="8bc8073c-ec26-5585-9784-eb1a56e10455">
+<button id="standardTimeButton" class="summary-cell" type="button">
                 <span class="summary-label" id="standardTimeLabel" data-language-id="c507383b-7763-5c85-9296-9ea58142035b">Trip Standard Time</span>
                 <strong id="standardTimeValue" data-language-id="59965b36-ec15-5fc9-9615-a81858569d02">---</strong>
             </button>
@@ -158,9 +158,9 @@
                 <button id="goalPercentValue" class="percent-value-button" type="button" aria-label="Edit percent goal" data-language-id="da1e5b94-5af1-5f80-820e-a5f5af35107d">100%</button>
                 <button id="toggleSyncGoalButton" class="goal-sync-button" type="button" data-editor-action="toggleSync" aria-label="Enable Sync Goals" aria-pressed="false" hidden data-language-id="0a2f22ef-9f3b-5cb4-bced-a73b69c5c911"></button>
             </div>
-        </section>
 
-        <section id="tripActionControls" class="trip-action-controls" aria-label="Trip controls" data-language-id="a9c5f6cf-e68a-50a8-ac2f-2dee478fc9fe">
+</section>
+<section id="tripActionControls" class="trip-action-controls" aria-label="Trip controls" data-language-id="a9c5f6cf-e68a-50a8-ac2f-2dee478fc9fe">
             <button id="newTripButton" class="new-trip-button" type="button" data-language-id="0d12d2f8-ab98-54bd-b7fe-7ed2ca3b861b">New Trip<svg class="deferred-trip-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="9"/><path d="M11 5v6l-4-3"/><circle cx="21" cy="21" r="5"/><path d="M19.5 18.5v5M22.5 18.5v5"/></svg></button>
             <div id="activeTripControls" class="active-trip-controls" hidden>
                 <button id="endTripButton" class="trip-action-button end-trip-button" type="button" data-language-id="28ad9dfe-6471-545c-b92d-c5dc4171f8cb">End Trip</button>
@@ -183,10 +183,9 @@
             </div>
         </section>
 
-        <div class="summary-spacer" aria-hidden="true"></div>
-
-        <section class="clock-region" aria-label="Clock" data-language-id="204a8eaf-4aaa-575c-88df-7a44688ec4f0">
-            <clock-timer
+<div class="summary-spacer" aria-hidden="true"></div>
+<section class="clock-region" data-timer-part="dial" aria-label="Clock" data-language-id="204a8eaf-4aaa-575c-88df-7a44688ec4f0">
+<clock-timer
                 id="clockTimer"
                 offline-trip-storage-key="wmof.clock.completedTrips"
                 percent-mode="trip"
@@ -194,7 +193,8 @@
                 timer-type="radial-overflow"
                 timer-mode="elapsed"
             ></clock-timer>
-        </section>
+
+</section>
 
         <speech-mic-bar id="speechMicBar" popover="manual" aria-label="Speech recognition" data-language-id="da00905b-b83e-51af-8262-db740a72e892"></speech-mic-bar>
         <speech-menu id="speechTopLevelMenu" speech-modal="top-level" data-speech-editor-id="builtin:menu:top-level">

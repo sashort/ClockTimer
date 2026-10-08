@@ -11265,6 +11265,19 @@
         "php-language-template.mjs checks locale and rendered static parity",
         "build-version.py checks shared fragment cache/version stamping"
       ]
+    },
+    "shared-timer-view": {
+      "layout": "Order Filler and standalone Drop-In compose templates/shared/timer-view.html: header, standard/rendered time summary, percentage/goal, page-specific control row, and ClockTimer dial.",
+      "subtemplates": "pages/{page}/timer-header, timer-summary, timer-actions and timer-clock supply publisher or observer elements. The shared app.css owns display geometry and dial styling.",
+      "authority": "Publisher remains authoritative for trip events. Drop-In renders observer snapshots and local goals/mode/Sync/time overrides without trip lifecycle or persistence writes.",
+      "viewer": "Watched user in header; retain local range including Custom, goal percentage and Sync, user switching, trainer messages, audio controls, publisher goals/mode/Sync and interval countdown/countup. Exclude Trip Log and trip lifecycle actions.",
+      "checks": [
+        "tests/shared-page-templates.mjs",
+        "tests/drop-in-view.mjs",
+        "tests/drop-in-page.mjs",
+        "tests/drop-in-observer-replay.mjs",
+        "desktop and 390/320 px browser layout checks"
+      ]
     }
   },
   "unresolved_contracts": [

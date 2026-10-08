@@ -1,26 +1,45 @@
 html { min-height: 100%; overflow: auto; }
 body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
-.drop-in-page-header { display: flex; justify-content: space-between; padding: 12px 20px; }
-.drop-in-page-header a { color: inherit; }
-#dropInPageStatus { max-width: 1100px; margin: 8px auto; padding: 0 16px; }
-#liveStreamDialog.standalone-drop-in {
-    display: block; position: static; inset: auto; transform: none;
-    width: min(1100px, calc(100% - 24px)); max-height: none;
-    margin: 12px auto; overflow: visible; opacity: 1;
+.drop-in-page-header { display:flex; justify-content:space-between; padding:8px 16px; }
+.drop-in-page-header a { color:inherit; }
+#dropInPageStatus { margin:0; padding:0 16px; }
+#dropInPageStatus:empty { display:none; }
+#liveStreamDialog.standalone-drop-in { position:static; inset:auto; transform:none; margin:0; width:100%; max-height:none; overflow:visible; }
+/* Same summary, clock and sizing rules as Order Filler. Only the control row differs. */
+.standalone-drop-in .app.live-stream-mirror {
+ display:grid; justify-items:stretch; gap:0; visibility:visible;
+ height:max(600px, calc(100dvh - 36px));
+ grid-template-rows:52px 142px 62px 0 minmax(280px,1fr);
+ --home-clock-preferred-size:56vw;
 }
-.standalone-drop-in .dialog-header { grid-template-columns: 1fr; }
-.standalone-drop-in .live-stream-layout { grid-template-columns: 1fr; }
-.standalone-drop-in .live-stream-section { min-width: 0; }
-.standalone-drop-in .live-stream-mirror > clock-timer { width: min(340px, 70vw); height: min(340px, 70vw); }
-#userLookupDialog { max-height: calc(100dvh - 24px); }
-@media (min-width: 800px) {
-    .standalone-drop-in .live-stream-section { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: start; }
-    .standalone-drop-in .live-stream-section > h3,
-    .standalone-drop-in .live-stream-identity-row,
-    .standalone-drop-in .live-stream-view-actions { grid-column: 1 / -1; }
-    .standalone-drop-in .live-stream-mirror { grid-column: 1; grid-row: 4 / 8; }
-    .standalone-drop-in .live-stream-readout,
-    .standalone-drop-in .live-stream-trainer-message,
-    .standalone-drop-in .live-stream-volume-controls { grid-column: 2; }
-    .standalone-drop-in .live-stream-view-controls { grid-column: 1 / -1; }
+.standalone-drop-in .app-header { grid-template-columns:minmax(0,1fr) minmax(100px,1fr); }
+.standalone-drop-in .live-stream-user-heading { margin:0; padding:8px 12px; align-self:center; font-size:22px; overflow-wrap:anywhere; }
+.standalone-drop-in .scope-control { display:block; }
+.standalone-drop-in .scope-control label { display:flex; align-items:center; height:100%; }
+.standalone-drop-in .scope-control label>span { display:none; }
+.standalone-drop-in .scope-control select { width:100%; height:100%; border:0; font-size:24px; }
+.standalone-drop-in :is(input,select) { min-width:0; color:inherit; background:var(--wm-blue-dark); border:1px solid var(--wm-blue-light); border-radius:8px; }
+.standalone-drop-in .viewer-timer-controls { display:flex; align-items:center; justify-content:center; gap:16px; padding:4px 12px; }
+.viewer-timer-controls label { display:flex; align-items:center; gap:6px; min-width:0; }
+.viewer-timer-controls input { width:70px; }
+.viewer-timer-controls select { max-width:140px; }
+.standalone-drop-in .live-stream-interval { margin:0; padding:0; }
+.viewer-tools { max-width:1000px; margin:auto; padding:16px; }
+.viewer-tools-heading { text-align:center; }
+.viewer-tools-heading h2 { margin:0 0 12px; }
+.viewer-tools .live-stream-layout { display:block; }
+.viewer-tools .live-stream-section { min-width:0; }
+.viewer-tools .viewer-user-navigation { min-width:0; }
+.viewer-tools .live-stream-user-switcher { display:flex; flex-wrap:wrap; }
+.viewer-tools .live-stream-user-switcher label { flex:1; min-width:100px; }
+.viewer-tools .live-stream-readout { grid-template-columns:repeat(3,minmax(0,1fr)); }
+#userLookupDialog { max-height:calc(100dvh - 24px); }
+@media(max-width:500px) {
+ .standalone-drop-in .app.live-stream-mirror { --home-clock-preferred-size:90vw; }
+ .standalone-drop-in .live-stream-user-heading { font-size:18px; }
+ .standalone-drop-in .viewer-timer-controls { gap:8px; flex-wrap:wrap; }
+ .viewer-timer-controls label>span { font-size:12px; }
+ .standalone-drop-in .percent-summary { font-size:38px; }
+ .viewer-tools { padding:12px; }
+ .viewer-tools .live-stream-readout { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }

@@ -25,6 +25,22 @@ for(const page of pages){
   const play=w.document.getElementById('easterEggPlayButton');play.textContent='Resume';assert.equal(play.dataset.menuIcon,'play','icon survives playback label updates');
   assert(w.document.getElementById('easterEggSongSelect').options.length>=2,'keep all existing songs');
  }
+ if(page !== 'index') {
+  const body=fs.readFileSync(new URL('../templates/pages/'+page+'/body.html',import.meta.url),'utf8');
+  assert(body.includes('{{include:shared/timer-view.html}}'),'timer pages must compose the actual shared display');
+  const timerRoot=w.document.querySelector(page==='order-filler'?'#app':'.app.live-stream-mirror');
+  assert.deepEqual([...timerRoot.children].slice(0,5).map(node=>node.className),
+   ['app-header','trip-summary',page==='order-filler'?'trip-action-controls':'viewer-timer-controls','summary-spacer','clock-region']);
+  assert.equal(timerRoot.querySelectorAll('.clock-region > clock-timer').length,1);
+  assert.equal(timerRoot.querySelectorAll('.trip-summary .summary-cell').length,2);
+  assert.equal(timerRoot.querySelectorAll('.trip-summary .percent-summary').length,1);
+  if(page==='drop-in') {
+   for(const id of ['newTripButton','endTripButton','breakButton','downButton','tripListButton','tripListMenuButton'])
+    assert.equal(w.document.getElementById(id),null,'observer cannot expose publisher actions');
+   for(const id of ['liveStreamViewMode','liveStreamViewPercent','liveStreamViewSync','liveStreamTrainerMessageSend','liveStreamUserSelect'])
+    assert(w.document.getElementById(id),'retain viewer control '+id);
+  }
+ }
  if(page==='index')assert(!w.document.querySelector('script[src^="app.js"]'),'landing page must not start the timer or microphone');
  await w.happyDOM.close();
 }
