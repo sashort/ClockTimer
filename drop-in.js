@@ -54,6 +54,7 @@
         if (!busy && identity && Number(identity.userId) !== view.userId) void select(identity,false);
     });
     $('liveStreamWatchButton').addEventListener('click', async () => {
+        void globalThis.WMOFAudio?.unlock?.();
         if (stream.viewing) {
             busy = true; controls();
             try {await stream.stopViewing();view.clear();status(text('d8785d44-2874-5f71-878e-dde06a7b7c53'));}

@@ -4,6 +4,7 @@ import {Window} from './LanguageWindow.mjs';
 const html=fs.readFileSync(new URL('../drop-in.html',import.meta.url),'utf8');
 assert(!/src="(?:app|SherpaRecognizer|SpeechMicBar)\.js/.test(html),'standalone viewer loads no main app or microphone engine');
 assert(!html.includes('id="tripListButton"'),'viewer omits Trip Log');
+assert(html.includes('src="api/audio/AudioEngine.js"'),'viewer retains remote speech playback');
 const w=new Window({url:'https://clock.example/drop-in.php'});
 w.document.body.innerHTML=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
 w.eval(fs.readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'));
