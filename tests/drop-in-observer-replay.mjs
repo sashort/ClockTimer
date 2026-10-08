@@ -37,18 +37,20 @@ await timer.connect('test','test');
 
 
 await timer.start({standardTimeMilliseconds:3600000});
-window.__testTime+=60000;await timer.startInterval('down');
+window.__testTime+=60731;await timer.startInterval('down');
 const observer=window.document.createElement('clock-timer');window.document.body.append(observer);observer.enableObserverMode();
 let loaded=0;observer.addEventListener('tripLoaded',()=>loaded++);
 const apply=(model,options={})=>observer.applyObserverSnapshot(model,{now:new window.Date(),...options});
 const open=timer.exportObserverSnapshot();apply(open);
 assert.equal(observer.getActiveIntervalState(new window.Date()).intervalType,'down');
 assert.equal(loaded,1);
-window.__testTime+=60000;await timer.endInterval(new window.Date());
-window.__testTime+=1000;
+window.__testTime+=60396;await timer.endInterval(new window.Date());
+const publisherEndTime=window.__testTime;
+// The observer device is slightly behind the phone and receives the close immediately.
+window.__testTime-=50;
 const ended=timer.exportObserverSnapshot();const original=JSON.stringify(ended);
-apply(ended);assert.equal(loaded,2,'ending Down Time applies the changed model once');
-assert.notEqual(observer.getActiveIntervalState(new window.Date())?.intervalType,'down');
+apply(ended,{now:new window.Date(publisherEndTime)});window.__testTime=publisherEndTime;assert.equal(loaded,2,'ending Down Time applies the changed model once');
+assert.notEqual(observer.getActiveIntervalState(new window.Date(publisherEndTime))?.intervalType,'down');
 const elapsed=observer.getSummarySnapshot(new window.Date()).trip.countedTimeElapsedMilliseconds;
 for(let i=0;i<5;i++){
  window.__testTime+=1000;apply(structuredClone(ended));
@@ -73,5 +75,15 @@ const approved=timer.exportObserverSnapshot();apply(approved);apply(approved);
 assert.equal(loaded,6,'approval changes replay once');
 assert.equal(observer.getSummarySnapshot(new window.Date()).trip.countedTimeElapsedMilliseconds,
  timer.getSummarySnapshot(new window.Date()).trip.countedTimeElapsedMilliseconds,'mirror preserves surplus approval credit after a closed open interval');
+// Screen lock / suspended transport: the next authoritative snapshot jumps
+// forward without rebuilding unchanged interval events or writing to the server.
+const beforeResumeLoads=loaded,beforeResumeCalls=serverCalls;
+window.__testTime+=15*60000;
+const resumed=timer.exportObserverSnapshot();
+apply(resumed);apply(structuredClone(resumed));
+assert.equal(loaded,beforeResumeLoads,'resuming an unchanged stream keeps the dial model');
+assert.equal(serverCalls,beforeResumeCalls,'resume snapshots never mutate publisher persistence');
+assert.equal(observer.getSummarySnapshot(new window.Date()).trip.countedTimeElapsedMilliseconds,
+ timer.getSummarySnapshot(new window.Date()).trip.countedTimeElapsedMilliseconds,'fresh resume snapshot catches up to publisher time');
 await window.happyDOM.close();
 console.log('PASS Drop-In completed Down Time preserves the dial across snapshots, time, local controls and later intervals');

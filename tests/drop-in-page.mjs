@@ -8,7 +8,8 @@ assert(html.includes('src="api/audio/AudioEngine.js"'),'viewer retains remote sp
 const w=new Window({url:'https://clock.example/drop-in.php'});
 w.document.body.innerHTML=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
 w.eval(fs.readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'));
-const events=[];let rejectStart=false;
+const events=[],errors=[];let rejectStart=false;
+w.addEventListener("error",event=>errors.push(event.message));
 w.WMOFLiveTripStream=class extends w.EventTarget {
  constructor(){super();w.testStream=this;this.viewing=false;}
  async stopViewing(){events.push('stop');this.viewing=false;this.dispatchEvent(new w.CustomEvent('viewerChanged'));}
@@ -42,6 +43,21 @@ w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:2,
 assert(!events.includes('snapshot:2'),'old target snapshot ignored');
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:{userId:3}}}));
 assert(events.includes('snapshot:3'));
+// A temporary media transport interruption retains the last snapshot. A new
+// target-specific snapshot updates it after reconnection without changing users.
+w.testStream.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'disconnected'}}));
+assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'disconnected');
+w.testStream.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'connected'}}));
+w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:{userId:3}}}));
+assert.equal(events.filter(value=>value==='snapshot:3').length,2);
+// Full peer loss clears the mirror and disables messaging, then Watch reauthorizes.
+await w.testStream.stopViewing();await tick();
+assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'Not viewing.');
+assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,true);
+w.document.getElementById('liveStreamWatchButton').click();await tick();
+assert.equal(w.testStream.targetUserId,3);
+assert.equal(w.testStream.viewing,true);
+assert.deepEqual(errors,[],'disconnection and recovery must resolve real language resources');
 rejectStart=true;w.document.getElementById('liveStreamPreviousUser').click();await tick();
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'permission revoked','failure remains visible after controls refresh');
 assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,true);

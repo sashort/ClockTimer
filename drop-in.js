@@ -38,7 +38,7 @@
             identities.set(Number(identity.userId), identity);
             context.select(identity); view.setUser(Number(identity.userId)); controls();
             if (watch) await stream.startViewing(identity.userId);
-            if (request === revision) status(stream.viewing ? text('5f0f4c0d-61e8-5fae-8051-67b7285bfcaa') : text('d8785d44-2874-5f71-878e-dde06a7b7c53'));
+            if (request === revision) status(stream.viewing ? text('5f0f4c0d-61e8-5fae-8051-67b7285bfcaa') : text('bafe351c-ceef-5648-9536-fcf9da113818'));
         } catch (error) { if (request === revision) status(error.message); }
         finally { if (request === revision) {busy = false; controls();} }
     }
@@ -57,7 +57,7 @@
         void globalThis.WMOFAudio?.unlock?.();
         if (stream.viewing) {
             busy = true; controls();
-            try {await stream.stopViewing();view.clear();status(text('d8785d44-2874-5f71-878e-dde06a7b7c53'));}
+            try {await stream.stopViewing();view.clear();status(text('bafe351c-ceef-5648-9536-fcf9da113818'));}
             catch(error) {status(error.message);}
             finally {busy=false;controls();}
         } else await select(context.current,true);
@@ -74,7 +74,7 @@
     stream.addEventListener('viewerChanged', event => {
         controls();
         if (!stream.viewing) {view.clear();$('liveStreamRemoteSpeech').textContent='—';}
-        if (!busy) status(stream.viewing ? String(event.detail.state || '') : text('d8785d44-2874-5f71-878e-dde06a7b7c53'));
+        if (!busy) status(stream.viewing ? String(event.detail.state || '') : text('bafe351c-ceef-5648-9536-fcf9da113818'));
     });
     stream.addEventListener('message', event => {
         const detail=event.detail;

@@ -5050,7 +5050,7 @@
             // incoming event stream with its previous version, not those derived records.
             const observerModelSignature = JSON.stringify(events);
             this.restoreState({...snapshot,events,attributes,totals:aggregate,pending:[],completed:[],preparedTrip:null},
-                {observerModelSignature});
+                {observerModelSignature, now});
             this.productionFilter = snapshot.productionFilter || 'all';
             const start = this.getUIState(now).trip_start_component?.value;
             if (totals && Number.isFinite(start)) {
@@ -5072,7 +5072,7 @@
             this.refreshLayout();
             return {uiState:this.getUIState(now), remaining};
         }
-        restoreState(snapshot, {observerModelSignature} = {}) {
+        restoreState(snapshot, {observerModelSignature, now} = {}) {
             const incomingObserverModel = this.#observerOnly && observerModelSignature !== undefined;
             const modelChanged = this.#started !== snapshot.started || this.#tripId !== snapshot.tripId ||
                 (incomingObserverModel ? this.#observerModelSignature !== observerModelSignature :
@@ -5080,7 +5080,7 @@
             if (modelChanged) {
                 this.#pendingIntervalRecord = undefined;
                 if (snapshot.events.some(event => event.event === "trip.started")) {
-                    this.#applyTripEvents(snapshot.tripId || 1, {events: snapshot.events});
+                    this.#applyTripEvents(snapshot.tripId || 1, {events: snapshot.events}, {now});
                 } else {
                     this.#transitionLifecycle("stop"); this.#clearLocal();
                 }
@@ -5141,7 +5141,7 @@
             return this.#applyTripEvents(numericTripId, data);
         }
 
-        #applyTripEvents(numericTripId, data) {
+        #applyTripEvents(numericTripId, data, {now = new Date()} = {}) {
             const events =
                 Array.isArray(data.events)
                     ? [...data.events]
@@ -5677,7 +5677,7 @@
                 if (!this.#started) {
                     this.#refreshRingLayout(
                         this.#getSummaryTimelineNow(
-                            new Date()
+                            now
                         ),
                         {
                             refreshTickMarks:
@@ -5703,7 +5703,7 @@
             }
 
             if (this.#started) {
-                this.#tick();
+                this.#tick(now);
             }
 
             if (this.#needsTick()) {
@@ -5712,7 +5712,7 @@
 
             const summary =
                 this.#buildSummarySnapshot(
-                    new Date()
+                    now
                 );
 
             this.#emitClockTimerEvent(
@@ -32344,9 +32344,11 @@
             }
         }
 
-        #tick() {
-            if (!this.#needsTick()) return;
-            const nowDate = this.#normalizeTickDate(new Date());
+        #tick(now = new Date()) {
+            // Replay is an atomic model replacement. Intermediate events may
+            // change cadence; ticking before the final cadence can move time backwards.
+            if (this.#replayingTripEvents || !this.#needsTick()) return;
+            const nowDate = this.#normalizeTickDate(now);
             this.#updateOpenEndedRange(nowDate);
             this.#updateOpenOverwriteRange(nowDate);
             const state = this.#started ? this.#getOperatingState(nowDate) : "inactive";

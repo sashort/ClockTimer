@@ -1109,6 +1109,68 @@
         "Logout"
       ],
       "family": "landing"
+    },
+    "DI-CONNECTING": {
+      "id": "DI-CONNECTING",
+      "title": "Drop-In: connecting",
+      "focus": "Drop-In observer",
+      "trip": "Publisher trip unchanged / unknown until fresh snapshot",
+      "facet": "Permission checked; awaiting selected user snapshot",
+      "commands": [
+        "Stop watching",
+        "Select another user"
+      ],
+      "family": "stream"
+    },
+    "DI-LIVE": {
+      "id": "DI-LIVE",
+      "title": "Drop-In: live snapshot",
+      "focus": "Drop-In observer",
+      "trip": "Publisher trip unchanged / unknown until fresh snapshot",
+      "facet": "Current target snapshot; observer model only",
+      "commands": [
+        "Local mode / goal / Sync / time",
+        "Message watched user",
+        "Stop watching",
+        "Select another user"
+      ],
+      "family": "stream"
+    },
+    "DI-INTERRUPTED": {
+      "id": "DI-INTERRUPTED",
+      "title": "Drop-In: transport interrupted",
+      "focus": "Drop-In observer",
+      "trip": "Publisher trip unchanged / unknown until fresh snapshot",
+      "facet": "Last known snapshot; transport interrupted, freshness unconfirmed",
+      "commands": [
+        "Stop watching",
+        "Select another user"
+      ],
+      "family": "stream"
+    },
+    "DI-DISCONNECTED": {
+      "id": "DI-DISCONNECTED",
+      "title": "Drop-In: disconnected",
+      "focus": "Drop-In observer",
+      "trip": "Publisher trip unchanged / unknown until fresh snapshot",
+      "facet": "Mirror cleared; target and viewer preferences retained; messaging disabled",
+      "commands": [
+        "Watch (reauthorize)",
+        "Select another user"
+      ],
+      "family": "stream"
+    },
+    "DI-REJECTED": {
+      "id": "DI-REJECTED",
+      "title": "Drop-In: connection rejected",
+      "focus": "Drop-In observer",
+      "trip": "Publisher trip unchanged / unknown until fresh snapshot",
+      "facet": "No optimistic connection; visible failure; messaging disabled",
+      "commands": [
+        "Watch (retry)",
+        "Select another user"
+      ],
+      "family": "stream"
     }
   },
   "transitions": [
@@ -8589,6 +8651,274 @@
         "persistence": "Session endpoint only; no trip lifecycle mutation",
         "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
       }
+    },
+    {
+      "id": "DI-WATCH",
+      "source": "DROP-IN",
+      "target": "DI-CONNECTING",
+      "label": "Watch selected user",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Selected user and live-stream permission; startViewing checks authorization",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Watch selected user",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-FRESH",
+      "source": "DI-CONNECTING",
+      "target": "DI-LIVE",
+      "label": "Fresh selected-user snapshot",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "viewing and matching targetUserId + userId",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Fresh selected-user snapshot",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-LOSS",
+      "source": "DI-LIVE",
+      "target": "DI-INTERRUPTED",
+      "label": "Transport disconnected / failed",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "RTC connectionstatechange; stream.viewing remains true",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Transport disconnected / failed",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-RECOVER",
+      "source": "DI-INTERRUPTED",
+      "target": "DI-CONNECTING",
+      "label": "Transport connected again",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "Same peer recovered; await fresh matching snapshot",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Transport connected again",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-PEER-LOST",
+      "source": "DI-LIVE",
+      "target": "DI-DISCONNECTED",
+      "label": "Peer closed / signaling lost",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "stopViewing clears peer and emits viewerChanged(viewing:false)",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Peer closed / signaling lost",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-LOST-AFTER-INTERRUPT",
+      "source": "DI-INTERRUPTED",
+      "target": "DI-DISCONNECTED",
+      "label": "Peer closed / signaling lost",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "viewing:false; clear observer snapshot and disable messages",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Peer closed / signaling lost",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-REWATCH",
+      "source": "DI-DISCONNECTED",
+      "target": "DI-CONNECTING",
+      "label": "Watch to reconnect",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Authorization succeeds for selected user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Watch to reconnect",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-DENIED",
+      "source": "DI-CONNECTING",
+      "target": "DI-REJECTED",
+      "label": "Connection request rejected",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "startViewing throws; no authenticated peer established",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Connection request rejected",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-RETRY",
+      "source": "DI-REJECTED",
+      "target": "DI-CONNECTING",
+      "label": "Watch retry",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Retry requires a new successful permission check",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Watch retry",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-STOP",
+      "source": "DI-LIVE",
+      "target": "DI-DISCONNECTED",
+      "label": "Stop watching",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Stop peer; clear observer display",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "Stop watching",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored"
+      }
+    },
+    {
+      "id": "DI-UPDATE",
+      "source": "DI-LIVE",
+      "target": "DI-LIVE",
+      "label": "New matching snapshot / ended Down Time",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "Replay changed events atomically, then tick once using final cadence; unchanged event stream preserves renderer nodes",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated replay and disconnect/reconnect regressions; live device recovery still needs validation"
+      },
+      "contract": {
+        "trigger": "New matching snapshot / ended Down Time",
+        "state_changes": "Observer connection/display state only; preserve publisher lifecycle and per-user local preferences",
+        "timing": "Only fresh matching snapshots establish current model state; replay never ticks a partially rebuilt trip",
+        "persistence": "No observer trip mutation; connection permission/session checks still run",
+        "rollback": "Rejected connection remains disconnected with a visible error; old-user snapshots are ignored",
+        "loopback_feedback": {
+          "classification": "attribute-change",
+          "rule": "System snapshot updates change observer model/time without a voice command; no unchanged chime or spoken announcement. Only changed events replay; freshness is not a publisher lifecycle action."
+        }
+      }
     }
   ],
   "audio": {
@@ -10528,6 +10858,20 @@
         "Order Filler logout navigates back to index only after the server session is destroyed; failures do not navigate.",
         "No microphone, speech recognizer, or trip lifecycle starts on the landing page."
       ]
+    },
+    "dropInStream": {
+      "region": "Orthogonal observer stream state; never changes the watched user trip lifecycle.",
+      "states": [
+        "idle",
+        "connecting",
+        "live",
+        "interrupted",
+        "disconnected",
+        "rejected"
+      ],
+      "authority": "Snapshots belong to the selected targetUserId/userId. Replay atomically before ticking; use snapshot time for the observer model, not the viewer wall clock.",
+      "resume": "Temporary RTC transport recovery may retain the peer. Full peer/signaling loss ends viewing; Watch must create and authorize a new connection. Publisher presence auto-reconnect does not automatically authorize or reconnect a viewer.",
+      "stale": "Interrupted transport retains the last snapshot model; interval readouts may extrapolate time until a fresh snapshot. A disconnected peer clears the model and disables messages. A connected transport alone does not prove a fresh model."
     }
   },
   "contracts": {
@@ -10561,7 +10905,7 @@
       ],
       "fsm_loopback_audit": {
         "source": "Every transition with source === target",
-        "count": 44,
+        "count": 45,
         "edges": [
           {
             "transition": "E03",
@@ -10868,6 +11212,13 @@
             "transition": "DROP-IN-VIEW",
             "classification": "pointer",
             "rule": "Pointer-only independent viewer preference"
+          },
+          {
+            "transition": "DI-UPDATE",
+            "source": "DI-LIVE",
+            "mode": "automatic",
+            "classification": "attribute-change",
+            "rule": "System snapshot updates change observer model/time without a voice command; no unchanged chime or spoken announcement. Only changed events replay; freshness is not a publisher lifecycle action."
           }
         ],
         "requirement": "A node self-loop is not proof of unchanged semantic state. Compare persistent/UI attributes, excluding elapsed time and bookkeeping.",
@@ -11277,6 +11628,15 @@
         "tests/drop-in-page.mjs",
         "tests/drop-in-observer-replay.mjs",
         "desktop and 390/320 px browser layout checks"
+      ]
+    },
+    "drop-in-replay": {
+      "rule": "No #tick while #replayingTripEvents; applyObserverSnapshot supplies now through restoreState and #applyTripEvents. Final tick uses restored cadence. Keep TimeRangeTick backward-time validation strict.",
+      "regression": "Fractional Down start (.731) and end (.127), immediate snapshot, viewer clock behind publisher; prior code reproduces currentTime must not precede lastTickTime.",
+      "disconnect": "Status uses UI text UUID bafe351c-ceef-5648-9536-fcf9da113818, not element association UUID d8785d44-2874-5f71-878e-dde06a7b7c53.",
+      "tests": [
+        "tests/drop-in-observer-replay.mjs",
+        "tests/drop-in-page.mjs"
       ]
     }
   },
