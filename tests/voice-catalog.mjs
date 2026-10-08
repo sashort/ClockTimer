@@ -187,7 +187,7 @@ assert.equal(
 const html =
     fs.readFileSync(
         new URL(
-            "../index.html",
+            "../order-filler.html",
             import.meta.url
         ),
         "utf8"

@@ -815,7 +815,7 @@ assert.equal(bar.getAttribute("state"), "listening");
 window.SpeechMenu.events.dispatchEvent(new window.CustomEvent("stopped", {detail:{deliberate:true}}));
 assert.equal(bar.getAttribute("state"), "stopped");
 
-const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const html = fs.readFileSync(new URL("../order-filler.html", import.meta.url), "utf8");
 assert.match(
     html,
     /<speech-mic-bar id="speechMicBar" popover="manual"/
@@ -860,7 +860,7 @@ for (const id of primedSpeechIds) {
         new RegExp(
             `data-speech-editor-id=["']builtin:${id}:page["']`
         ),
-        `index.html should prime the ${id} speech command`
+        `order-filler.html should prime the ${id} speech command`
     );
 }
 

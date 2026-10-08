@@ -16,7 +16,7 @@ const numberPadSource = readFileSync(
     "utf8"
 );
 const indexSource = readFileSync(
-    new URL("../index.html", import.meta.url),
+    new URL("../order-filler.html", import.meta.url),
     "utf8"
 );
 const cssSource = readFileSync(
@@ -169,7 +169,7 @@ test("Trip Settings voice aliases cover standard, scheduled, actual, and creatio
 
 test("Early Start standard command keeps spoken duration and makes time optional", () => {
     const indexSource = readFileSync(
-        new URL("../index.html", import.meta.url),
+        new URL("../order-filler.html", import.meta.url),
         "utf8"
     );
     const matches =

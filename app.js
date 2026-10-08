@@ -1059,6 +1059,7 @@
         };
 
     function syncLiveStreamIdentityUI() {
+        $("#trainerMenuGroup").hidden = $("#liveStreamButton").hidden;
         const identity =
             identityContext
                 ?.current;
@@ -3086,6 +3087,7 @@
         "1";
 
     let loginConfirmedThisLoad = false;
+    let landingSessionPending = new URL(window.location.href).searchParams.get("session") === "existing";
     let fullscreenLoginAttempt;
     let deliberatelyLoggedOut = safeStorageGet("wmof.deliberatelyLoggedOut") === "true";
     let numberPadConnectionSequence = 0;
@@ -8740,6 +8742,7 @@
     }
 
     function showInitialLoginDialog() {
+        if (landingSessionPending) return;
         if (speechEditorPreview) return false;
 
         if (loginIsOpen()) return;
@@ -27640,6 +27643,7 @@
                     );
                 }
 
+                if (/\/order-filler\.(?:html|php)$/.test(window.location.pathname)) window.location.assign(new URL("index.php", API_BASE));
                 return true;
             },
 
@@ -29992,7 +29996,28 @@
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();
     syncNetworkStatusUI({ startup: true });
-    showInitialLoginDialog();
+    if (landingSessionPending) {
+        void (async () => {
+            try {
+                if (await clockTimer.resumeConnection()) {
+                    loginConfirmedThisLoad = true;
+                    deliberatelyLoggedOut = false;
+                    safeStorageSet("wmof.deliberatelyLoggedOut", "false");
+                }
+            } catch (error) { console.warn("Existing session could not be resumed:", error); }
+            finally {
+                landingSessionPending = false;
+                if (!loginConfirmedThisLoad) showInitialLoginDialog();
+                else {
+                    syncNetworkStatusUI();
+                    if (new URL(window.location.href).searchParams.get("tool") === "speechTiming") {
+                        await startupAudioEnabled;
+                        void actions.openSpeechTiming().catch(console.error);
+                    }
+                }
+            }
+        })();
+    } else showInitialLoginDialog();
     void (async () => {
         try {
             const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {credentials:"same-origin", headers:{Accept:"application/json"}});

@@ -88,4 +88,4 @@ assert.equal((await import('node:crypto')).createHash('sha256').update(wav).dige
 
 const songOptions=JSON.parse(fs.readFileSync(new URL('../lang/en-US/associations.json',import.meta.url),'utf8')).selects['af44f0e0-01a0-57a7-9b13-d56b283ac0b8'];
 assert(songOptions.some(option=>option.value==='chime-easter-egg'),'The approved song must be selectable in the generated main page');
-assert.match(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'), /<select id="easterEggSongSelect"[^>]*>[\s\S]*?<option value="chime-easter-egg"/,'The static page must offer the approved song too');
+assert.match(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8'), /<select id="easterEggSongSelect"[^>]*>[\s\S]*?<option value="chime-easter-egg"/,'The static page must offer the approved song too');

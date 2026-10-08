@@ -31,7 +31,7 @@ test('docs root resolves', static function () use ($root): void {
 
 foreach ([
     '',
-    '../index.html',
+    '../order-filler.html',
     './hamburger-menu.html',
     '/hamburger-menu.html',
     '.htaccess',

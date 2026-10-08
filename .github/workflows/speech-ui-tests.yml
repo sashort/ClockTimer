@@ -242,10 +242,14 @@ jobs:
           TZ=America/New_York node drop-in-view.mjs
           TZ=America/Los_Angeles node drop-in-view.mjs
           node drop-in-page.mjs
+          node main-page.mjs
+          node app-state-transactions.mjs --landing-session
           php drop-in-totals-permissions.php
           php -l ../api/live-stream/index.php
           php -l ../api/trips/index.php
           php -l ../drop-in.php
+          php -l ../order-filler.php
+          php -l ../index.php
           node fsm-loopback-feedback.mjs
           node speech-command-digest.mjs
           node speech-failfast.mjs

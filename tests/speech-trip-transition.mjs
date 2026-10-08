@@ -23,7 +23,7 @@ const clockTimer =
 const index =
     fs.readFileSync(
         new URL(
-            "../index.html",
+            "../order-filler.html",
             import.meta.url
         ),
         "utf8"

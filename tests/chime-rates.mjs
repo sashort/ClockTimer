@@ -15,7 +15,7 @@ assert.equal(settings.toneVelocity,0.85);
 assert.equal(settings.speechVelocity,2);
 const speechActions = source.slice(source.indexOf('    const changeGlobalAudioRate'),source.indexOf('    const setMasterSpeech'));
 assert.doesNotMatch(speechActions,/toneVelocity/);
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8');
 for(const select of [html.match(/<select id="audioToneVelocity">([\s\S]*?)<\/select>/)?.[1],html.match(/<label data-audio-custom-setting="toneVelocity">[\s\S]*?<select data-audio-custom-value>([\s\S]*?)<\/select>/)?.[1]]) {
  assert.ok(select);
  for(const value of ['0.8','1','1.2']) assert.ok(select.includes(`value="${value}"`));

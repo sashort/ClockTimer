@@ -10,7 +10,7 @@ const root = join(here, "..");
 const identitySource = readFileSync(join(root, "IdentityContext.js"), "utf8");
 const lookupSource = readFileSync(join(root, "UserLookup.js"), "utf8");
 const app = readFileSync(join(root, "app.js"), "utf8");
-const html = readFileSync(join(root, "index.html"), "utf8");
+const html = readFileSync(join(root, "order-filler.html"), "utf8");
 
 const window = new Window();
 window.eval(identitySource);

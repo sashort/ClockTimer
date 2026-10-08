@@ -17,6 +17,6 @@ vm.runInContext(source.slice(start,source.indexOf('    function cloneAudioAnnoun
 assert.equal(ctx.output('test').speechVolume,0.4);assert.equal(ctx.output('test').toneVolume,0.2);
 assert.equal(ctx.output('other').speechVolume,0.6);assert.equal(ctx.output('other').toneVolume,0.3);
 settings.volume=0;assert.equal(ctx.output('other').toneVolume,0);assert.equal(ctx.output('other').speechVolume,0);
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8');
 assert.ok(html.includes('id="audioVolume"'));assert.ok(html.includes('data-audio-custom-setting="volume"'));assert.doesNotMatch(html,/id="audio(?:Speech|Tone)Volume"|data-audio-custom-setting="(?:speech|tone)Volume"/);
 console.log('PASS shared volume, mute, legacy migration, announcement overrides, conservative chime gain and consolidated controls');

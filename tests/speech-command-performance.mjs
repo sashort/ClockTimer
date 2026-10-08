@@ -20,7 +20,7 @@ source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;',`
 Function(source)();
 const result=[];
 const decoder=document.createElement('textarea');
-const appPatterns=[...fs.readFileSync(new URL('../index.html',import.meta.url),'utf8').matchAll(/<[^>]+speech-pattern="([^"]+)"[^>]*>/g)].map(match=>{
+const appPatterns=[...fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').matchAll(/<[^>]+speech-pattern="([^"]+)"[^>]*>/g)].map(match=>{
     decoder.innerHTML=match[1];const pattern=decoder.value;
     const noun=match[0].match(/speech-noun="([^"]+)"/);
     return {pattern,nouns:noun?.[1]};

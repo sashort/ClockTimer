@@ -5999,6 +5999,131 @@
       "id": "32f72b3f-02ae-51b6-a660-0848987c8f71",
       "text": "Remaining",
       "default": "Remaining"
+    },
+    "97387454-e880-5887-9115-2a4ea8cbad2c": {
+      "id": "97387454-e880-5887-9115-2a4ea8cbad2c",
+      "text": "WMOF",
+      "default": "WMOF"
+    },
+    "3999b836-4802-577a-ac9c-fe6b278eccee": {
+      "id": "3999b836-4802-577a-ac9c-fe6b278eccee",
+      "text": "Order Filler",
+      "default": "Order Filler"
+    },
+    "7d1febf5-0cd6-508e-a78b-65406ef84d77": {
+      "id": "7d1febf5-0cd6-508e-a78b-65406ef84d77",
+      "text": "Login for more options",
+      "default": "Login for more options"
+    },
+    "166ce5cf-cd30-564f-83ba-1160fde8e69e": {
+      "id": "166ce5cf-cd30-564f-83ba-1160fde8e69e",
+      "text": "Login",
+      "default": "Login"
+    },
+    "f865b68c-39c8-500d-849b-480e0367ac1b": {
+      "id": "f865b68c-39c8-500d-849b-480e0367ac1b",
+      "text": "Username",
+      "default": "Username"
+    },
+    "2ac460e4-eb87-5fcc-9e79-491aaebd8bde": {
+      "id": "2ac460e4-eb87-5fcc-9e79-491aaebd8bde",
+      "text": "Password",
+      "default": "Password"
+    },
+    "5ef538d5-1a21-5336-85a8-9b990445a83a": {
+      "id": "5ef538d5-1a21-5336-85a8-9b990445a83a",
+      "text": "Cancel",
+      "default": "Cancel"
+    },
+    "c3c782de-7e24-50e6-95d9-21831af52c0e": {
+      "id": "c3c782de-7e24-50e6-95d9-21831af52c0e",
+      "text": "OK",
+      "default": "OK"
+    },
+    "c0b60ae2-4e01-5cdf-b139-0f5ad1fdf377": {
+      "id": "c0b60ae2-4e01-5cdf-b139-0f5ad1fdf377",
+      "text": "Profile",
+      "default": "Profile"
+    },
+    "c0d2df6f-036d-55f4-a3fb-86a51c4b8a1e": {
+      "id": "c0d2df6f-036d-55f4-a3fb-86a51c4b8a1e",
+      "text": "Admin",
+      "default": "Admin"
+    },
+    "4bd8f29c-0f3e-542d-a91c-f01d89978079": {
+      "id": "4bd8f29c-0f3e-542d-a91c-f01d89978079",
+      "text": "Trainer",
+      "default": "Trainer"
+    },
+    "2492dbb0-2eec-5b13-af9e-8b5e8982e688": {
+      "id": "2492dbb0-2eec-5b13-af9e-8b5e8982e688",
+      "text": "Dev Tools",
+      "default": "Dev Tools"
+    },
+    "a62643a8-701e-546d-a226-0e622a075d7e": {
+      "id": "a62643a8-701e-546d-a226-0e622a075d7e",
+      "text": "Drop-In",
+      "default": "Drop-In"
+    },
+    "9f3525ed-bb79-5ab5-b212-1299b8f49f62": {
+      "id": "9f3525ed-bb79-5ab5-b212-1299b8f49f62",
+      "text": "Edit Profile",
+      "default": "Edit Profile"
+    },
+    "ac198b2f-7bd4-500f-94c9-22ce59e47cc8": {
+      "id": "ac198b2f-7bd4-500f-94c9-22ce59e47cc8",
+      "text": "New User",
+      "default": "New User"
+    },
+    "e064f852-2a84-5aad-94a1-b7863047a777": {
+      "id": "e064f852-2a84-5aad-94a1-b7863047a777",
+      "text": "Access Tokens",
+      "default": "Access Tokens"
+    },
+    "bd1efa4d-cb1f-5582-a04d-33316184338f": {
+      "id": "bd1efa4d-cb1f-5582-a04d-33316184338f",
+      "text": "Bluetooth Audio Test",
+      "default": "Bluetooth Audio Test"
+    },
+    "ef3d72dc-c79c-5204-93c8-8e25d9b8395c": {
+      "id": "ef3d72dc-c79c-5204-93c8-8e25d9b8395c",
+      "text": "Documentation",
+      "default": "Documentation"
+    },
+    "b3d48247-6f52-5961-8f18-59a10d3c3ec7": {
+      "id": "b3d48247-6f52-5961-8f18-59a10d3c3ec7",
+      "text": "Speech Editor",
+      "default": "Speech Editor"
+    },
+    "2c64bb6f-feeb-5f72-8d62-4b61a36904ed": {
+      "id": "2c64bb6f-feeb-5f72-8d62-4b61a36904ed",
+      "text": "Speech Timing",
+      "default": "Speech Timing"
+    },
+    "d0f753c0-6c46-5dfc-951b-ab64c9cd3f89": {
+      "id": "d0f753c0-6c46-5dfc-951b-ab64c9cd3f89",
+      "text": "Database Access",
+      "default": "Database Access"
+    },
+    "adf53299-90aa-5f7c-afd2-4a55dc207f49": {
+      "id": "adf53299-90aa-5f7c-afd2-4a55dc207f49",
+      "text": "Logout",
+      "default": "Logout"
+    },
+    "5448bdfe-7ceb-5124-823f-d5e78179ae7a": {
+      "id": "5448bdfe-7ceb-5124-823f-d5e78179ae7a",
+      "text": "Unable to complete the request.",
+      "default": "Unable to complete the request."
+    },
+    "7ebb092d-505b-5573-b9ef-36c72dd673bd": {
+      "id": "7ebb092d-505b-5573-b9ef-36c72dd673bd",
+      "text": "Open menu",
+      "default": "Open menu"
+    },
+    "41cb2bb2-5c75-512b-8062-aa3cdce0a9a5": {
+      "id": "41cb2bb2-5c75-512b-8062-aa3cdce0a9a5",
+      "text": "Loading…",
+      "default": "Loading…"
     }
   }
 }

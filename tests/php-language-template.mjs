@@ -7,9 +7,9 @@ import {execFileSync} from 'node:child_process';
 import {Window} from 'happy-dom';
 const php=process.env.CLOCK_TIMER_PHP || 'php';
 const root=fileURLToPath(new URL('..',import.meta.url));
-const invoke=lang=>execFileSync(php,['-n','-r',`$_GET['lang']=${JSON.stringify(lang)}; include ${JSON.stringify(root+'/index.php')};`],{encoding:'utf8'});
-const original=fs.readFileSync(root+'/index.html','utf8');
-const defaultPage=execFileSync(php,['-n',root+'/index.php'],{encoding:'utf8'});
+const invoke=lang=>execFileSync(php,['-n','-r',`$_GET['lang']=${JSON.stringify(lang)}; include ${JSON.stringify(root+'/order-filler.php')};`],{encoding:'utf8'});
+const original=fs.readFileSync(root+'/order-filler.html','utf8');
+const defaultPage=execFileSync(php,['-n',root+'/order-filler.php'],{encoding:'utf8'});
 for(const lang of ['','absent-language','../en-US','en-US']) assert.equal(invoke(lang),defaultPage);
 assert.ok(!defaultPage.includes('{{text:'));assert.ok(defaultPage.includes('id="language-pack"'));
 const old=new Window(),rendered=new Window();old.document.write(original);rendered.document.write(defaultPage);
@@ -34,7 +34,7 @@ console.log('PASS PHP default/invalid-language fallback, exact English text/opti
 const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'clocktimer-language-'));
 try{
  fs.mkdirSync(fixture+'/templates',{recursive:true});fs.mkdirSync(fixture+'/lang/en-US',{recursive:true});fs.mkdirSync(fixture+'/lang/xx-XX',{recursive:true});
- fs.copyFileSync(root+'/templates/index.html',fixture+'/templates/index.html');
+ fs.copyFileSync(root+'/templates/order-filler.html',fixture+'/templates/order-filler.html');
  const alternate=structuredClone(data);const idMap=new Map();
  for(const name of ['speech-patterns'])for(const collection of ['patterns','preprocessors','customRules']){
   const changed={};for(const [id,record]of Object.entries(alternate[name][collection])){
@@ -62,7 +62,7 @@ try{
   const original=rule.implementation;rule.implementation=original.replace('/en-US/','/xx-XX/');fs.copyFileSync(root+'/'+original,fixture+'/'+rule.implementation);
  }
  for(const [name,resource]of Object.entries(alternate))fs.writeFileSync(`${fixture}/lang/xx-XX/${name}.json`,JSON.stringify(resource));
- const page=execFileSync(php,['-n','-r',`require ${JSON.stringify(root+'/lib/LanguageTemplate.php')}; $language = new LanguageTemplate(${JSON.stringify(fixture)}, 'xx-XX'); echo $language->render(file_get_contents(${JSON.stringify(fixture+'/templates/index.html')}));`],{encoding:'utf8'});
+ const page=execFileSync(php,['-n','-r',`require ${JSON.stringify(root+'/lib/LanguageTemplate.php')}; $language = new LanguageTemplate(${JSON.stringify(fixture)}, 'xx-XX'); echo $language->render(file_get_contents(${JSON.stringify(fixture+'/templates/order-filler.html')}));`],{encoding:'utf8'});
  const window=new Window();window.document.write(page);assert.equal(window.document.documentElement.lang,'xx-XX');
  const select=window.document.querySelector(`[data-language-id="${selectId}"]`);assert.equal(select.options.length,1);assert.equal(select.value,'stable-option-value');
  assert.equal(select.options[0].textContent,'Localized <script>alert(1)</script> & "label"');

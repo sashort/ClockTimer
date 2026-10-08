@@ -8,7 +8,7 @@ const root = join(here, "..");
 
 const live = readFileSync(join(root, "LiveTripStream.js"), "utf8");
 const app = readFileSync(join(root, "app.js"), "utf8");
-const html = readFileSync(join(root, "index.html"), "utf8");
+const html = readFileSync(join(root, "order-filler.html"), "utf8");
 const audio = readFileSync(join(root, "api/audio/AudioEngine.js"), "utf8");
 const speech = readFileSync(join(root, "SpeechMenu.js"), "utf8");
 const endpoint = readFileSync(join(root, "api/live-stream/index.php"), "utf8");

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {Window} from './LanguageWindow.mjs';
 const window=new Window({settings:{disableJavaScriptEvaluation:true,disableJavaScriptFileLoading:true,disableCSSFileLoading:true}});
-const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8');
 window.document.body.innerHTML=html.slice(html.indexOf('<main'),html.indexOf('<script src='));
 const document=window.document;
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');

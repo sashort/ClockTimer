@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {Window} from './LanguageWindow.mjs';
 const w=new Window({url:'https://clock.example/'});
-w.document.body.innerHTML=readFileSync(new URL('../index.html',import.meta.url),'utf8').match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
+w.document.body.innerHTML=readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
 w.eval(readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'));
 w.eval(readFileSync(new URL('../UserLookup.js',import.meta.url),'utf8'));
 const $=id=>w.document.getElementById(id), requests=[];

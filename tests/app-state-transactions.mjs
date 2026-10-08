@@ -1,6 +1,6 @@
 import {installAsyncStorage} from './async-storage-fixture.mjs';
 import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';import {installEnglishPack} from './LanguageWindow.mjs';
-const window=new Window({url:'https://clock.example/',settings:{disableJavaScriptEvaluation:true,disableCSSFileLoading:true}});
+const window=new Window({url:process.argv.includes('--landing-session')?'https://clock.example/order-filler.php?session=existing':'https://clock.example/',settings:{disableJavaScriptEvaluation:true,disableCSSFileLoading:true}});
 const storage=installAsyncStorage(window);
 window.__testTime=Date.parse('2026-10-06T12:00:00Z');
 window.eval(`const OriginalDate=Date;window.Date=class extends OriginalDate {constructor(...args){super(...(args.length?args:[window.__testTime]));}static now(){return window.__testTime;}};`);
@@ -38,7 +38,7 @@ window.fetch=async(url,options={})=>{
  {tripId, trips:summaryTrips,aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
-window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
+window.document.write(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
 installEnglishPack(window);
 for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
@@ -70,6 +70,17 @@ window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--landing-session')) {
+ assert.equal(timer.networkStatus,'online','landing handoff validates and resumes the server session');
+ assert.equal(window.document.querySelector('#loginDialog').open,false,'existing authenticated session bypasses PIN login');
+ assert.equal(window.document.querySelector('#legacyLoginDialog').open,false,'existing authenticated session bypasses username login');
+ assert(!requests.some(request=>request.path.endsWith('/users/') && request.options.method==='POST'),'session handoff sends no credentials');
+ await window.WMOFActions.disconnectUser();
+ assert.equal(window.location.pathname,'/index.php','confirmed Order Filler logout returns to landing page');
+ window.happyDOM.abort();
+ console.log('PASS existing landing session bypasses login and confirmed Order Filler logout returns to index');
+ process.exit(0);
+}
 // Happy DOM can retain parsed attributes without initial upgrade callbacks.
 // Align this fixture's mode attribute with the initialized model before exercising setters.
 if(process.argv.includes('--setting-chimes')) timer.configure({goal_type:timer.percentMode});

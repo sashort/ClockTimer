@@ -1,0 +1,26 @@
+html, body { min-height: 100%; height: auto; overflow: auto; }
+body { margin: 0; background: #061b4f; color: #fff; }
+#mainPage { width: min(480px, calc(100% - 40px)); margin: 12vh auto 24px; text-align: center; }
+#mainPage h1 { font-size: 2.5rem; margin-bottom: 32px; }
+#signedOutActions { display: grid; gap: 16px; }
+#signedOutActions a, #signedOutActions button, .order-filler-link {
+    display: block; box-sizing: border-box; width: 100%; padding: 18px;
+    background: #123b83; border: 1px solid #809dcc; border-radius: 12px;
+    color: #fff; font: inherit; font-weight: bold; text-decoration: none;
+}
+#signedInActions { display: grid; justify-items: center; gap: 12px; }
+#mainUserName { margin: 0; opacity: .85; }
+#homeMenuButton { display: flex; flex-direction: column; justify-content: center; justify-self: center; margin-inline: auto; gap: 6px; width: 56px; height: 52px; padding: 12px; border: 1px solid #809dcc; border-radius: 10px; background: #123b83; color: white; }
+#homeMenuButton span { height: 3px; width: 100%; background: currentColor; }
+#homeMenu { box-sizing: border-box; width: 100%; background: #0b2d6b; border: 1px solid #809dcc; border-radius: 12px; overflow: hidden; text-align: left; }
+#homeMenu > button, #homeMenu summary { width: 100%; padding: 16px 20px; font: inherit; color: white; background: none; border: 0; border-bottom: 1px solid #5276a766; text-align: left; cursor: pointer; }
+#homeMenu details a, #homeMenu details button { display: block; box-sizing: border-box; width: 100%; padding: 12px 32px; font: inherit; text-decoration: none; color: white; background: #061e50; border: 0; text-align: left; }
+#homeMenu button:hover, #homeMenu summary:hover, #homeMenu a:hover { background: #24539c; }
+#mainStatus { min-height: 1em; }
+#appVersion { opacity: .65; font-size: .8em; }
+#mainLoginDialog { box-sizing: border-box; width: min(440px, calc(100% - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
+#mainLoginForm { display: grid; gap: 16px; padding: 20px; }
+#mainLoginForm label { grid-template-columns: 1fr; text-align: left; gap: 8px; }
+#mainLoginForm input { width: 100%; min-width: 0; box-sizing: border-box; }
+[hidden] { display: none !important; }
+@media(max-height: 600px) { #mainPage { margin-top: 24px; } }

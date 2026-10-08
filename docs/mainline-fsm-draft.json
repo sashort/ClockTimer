@@ -1059,6 +1059,56 @@
         "focus": "startupAudioDialog",
         "audioActivated": false
       }
+    },
+    "HOME-OUT": {
+      "id": "HOME-OUT",
+      "title": "Landing: signed out",
+      "focus": "Landing page",
+      "trip": "Independent of active trip on server",
+      "facet": "No speech recognizer or optimistic authentication",
+      "commands": [
+        "Order Filler",
+        "Login for more options"
+      ],
+      "family": "landing"
+    },
+    "HOME-LOGIN": {
+      "id": "HOME-LOGIN",
+      "title": "Landing: login",
+      "focus": "Username/password dialog",
+      "trip": "Independent of active trip on server",
+      "facet": "No speech recognizer or optimistic authentication",
+      "commands": [
+        "OK (server validates)",
+        "Cancel"
+      ],
+      "family": "landing"
+    },
+    "HOME-ERROR": {
+      "id": "HOME-ERROR",
+      "title": "Landing: login rejected",
+      "focus": "Login dialog with error",
+      "trip": "Independent of active trip on server",
+      "facet": "No speech recognizer or optimistic authentication",
+      "commands": [
+        "OK (retry)",
+        "Cancel"
+      ],
+      "family": "landing"
+    },
+    "HOME-IN": {
+      "id": "HOME-IN",
+      "title": "Landing: signed in",
+      "focus": "Expanded centered hamburger menu",
+      "trip": "Independent of active trip on server",
+      "facet": "No speech recognizer or optimistic authentication",
+      "commands": [
+        "Order Filler (reuse verified session)",
+        "Profile",
+        "Admin / Trainer / Dev Tools (permissions)",
+        "Logout"
+      ],
+      "family": "landing"
     }
   },
   "transitions": [
@@ -8203,6 +8253,342 @@
           "rule": "Pointer-only viewer preference; no announcement/chime."
         }
       }
+    },
+    {
+      "id": "HOME-OPEN-LOGIN",
+      "source": "HOME-OUT",
+      "target": "HOME-LOGIN",
+      "label": "Login for more options",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Login for more options",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-CANCEL-LOGIN",
+      "source": "HOME-LOGIN",
+      "target": "HOME-OUT",
+      "label": "Cancel",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Cancel",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-LOGIN-ACCEPT",
+      "source": "HOME-LOGIN",
+      "target": "HOME-IN",
+      "label": "Login accepted; expand hamburger",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "Server validates username/password",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Login accepted; expand hamburger",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-LOGIN-FAIL",
+      "source": "HOME-LOGIN",
+      "target": "HOME-ERROR",
+      "label": "Login rejected; show error",
+      "mode": "failure",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Login rejected; show error",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-LOGIN-RETRY",
+      "source": "HOME-ERROR",
+      "target": "HOME-LOGIN",
+      "label": "OK retries login",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "OK retries login",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-ERROR-CANCEL",
+      "source": "HOME-ERROR",
+      "target": "HOME-OUT",
+      "label": "Cancel",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Cancel",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-SESSION-RESTORE",
+      "source": "HOME-OUT",
+      "target": "HOME-IN",
+      "label": "Existing session verified; expand hamburger",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Existing session verified; expand hamburger",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-OF-LOGIN",
+      "source": "HOME-OUT",
+      "target": "LOGIN-ID",
+      "label": "Order Filler; login required",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Order Filler; login required",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-OF-READY",
+      "source": "HOME-IN",
+      "target": "R0",
+      "label": "Order Filler; session verified, no active trip",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Server session valid; no active trip",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Order Filler; session verified, no active trip",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-OF-RUNNING",
+      "source": "HOME-IN",
+      "target": "R1",
+      "label": "Order Filler; restore active trip",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Server session valid; active trip",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Order Filler; restore active trip",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-DROP-IN",
+      "source": "HOME-IN",
+      "target": "DROP-IN",
+      "label": "Trainer → Drop-In",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "View Live Streams permission",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Trainer → Drop-In",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "HOME-LOGOUT",
+      "source": "HOME-IN",
+      "target": "HOME-OUT",
+      "label": "Logout confirmed",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Server session destroyed",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Logout confirmed",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "OF-LOGOUT-READY",
+      "source": "R0",
+      "target": "HOME-OUT",
+      "label": "Logout returns to landing",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Server session destroyed",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Logout returns to landing",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
+    },
+    {
+      "id": "OF-LOGOUT-RUNNING",
+      "source": "R1",
+      "target": "HOME-OUT",
+      "label": "Logout returns to landing",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Server session destroyed",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated page/session checks pass; live visual verification pending"
+      },
+      "contract": {
+        "trigger": "Logout returns to landing",
+        "state_changes": "Change page/authentication focus; never optimistically accept login or logout",
+        "timing": "Wait for server confirmation for session changes",
+        "persistence": "Session endpoint only; no trip lifecycle mutation",
+        "rollback": "Remain in login on rejection; remain in authenticated page on failed logout"
+      }
     }
   ],
   "audio": {
@@ -10123,6 +10509,23 @@
         "Drop-In is a standalone page at drop-in.php, opened in a separate tab; main app keeps publishing. Viewer loads no speech recognizer, app.js or trip lifecycle controls.",
         "Reuse the existing authenticated session; unauthorized users cannot watch or send messages. Account Lookup retains its separate permission check."
       ]
+    },
+    "page": {
+      "attributes": [
+        "page: landing/order-filler/drop-in",
+        "authentication: checking/signed-out/signing-in/signed-in/signing-out",
+        "menu expanded/collapsed",
+        "active category: profile/admin/trainer/dev-tools"
+      ],
+      "rules": [
+        "index.html/index.php is the landing page; order-filler.html/order-filler.php hosts the timer.",
+        "Signed-out landing page offers Order Filler and Login for more options. Login uses username/password and is server-confirmed; failure stays in the dialog.",
+        "Successful login or restored session displays a centered hamburger menu, initially expanded. Permission-gated categories come from the timer menu. Profile remains available in both places.",
+        "Drop-In belongs to Trainer, independently gated by View Live Streams; it is not an Admin action.",
+        "Authenticated Order Filler entry passes a handoff hint; the server session is verified before bypassing login. A missing/rejected session opens login.",
+        "Order Filler logout navigates back to index only after the server session is destroyed; failures do not navigate.",
+        "No microphone, speech recognizer, or trip lifecycle starts on the landing page."
+      ]
     }
   },
   "contracts": {
@@ -10823,6 +11226,23 @@
         "The compact mirror shows the watched name and omits Trip Log and all lifecycle action buttons.",
         "Drop-In is a standalone page at drop-in.php, opened in a separate tab; main app keeps publishing. Viewer loads no speech recognizer, app.js or trip lifecycle controls.",
         "Reuse the existing authenticated session; unauthorized users cannot watch or send messages. Account Lookup retains its separate permission check."
+      ]
+    },
+    "landing-page": {
+      "attributes": [
+        "page: landing/order-filler/drop-in",
+        "authentication: checking/signed-out/signing-in/signed-in/signing-out",
+        "menu expanded/collapsed",
+        "active category: profile/admin/trainer/dev-tools"
+      ],
+      "rules": [
+        "index.html/index.php is the landing page; order-filler.html/order-filler.php hosts the timer.",
+        "Signed-out landing page offers Order Filler and Login for more options. Login uses username/password and is server-confirmed; failure stays in the dialog.",
+        "Successful login or restored session displays a centered hamburger menu, initially expanded. Permission-gated categories come from the timer menu. Profile remains available in both places.",
+        "Drop-In belongs to Trainer, independently gated by View Live Streams; it is not an Admin action.",
+        "Authenticated Order Filler entry passes a handoff hint; the server session is verified before bypassing login. A missing/rejected session opens login.",
+        "Order Filler logout navigates back to index only after the server session is destroyed; failures do not navigate.",
+        "No microphone, speech recognizer, or trip lifecycle starts on the landing page."
       ]
     }
   },

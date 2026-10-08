@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-for (const page of ['index.html', 'templates/index.html']) {
+for (const page of ['order-filler.html', 'templates/order-filler.html']) {
     const html = readFileSync(new URL('../' + page, import.meta.url), 'utf8');
     const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)]
         .map(match => match[1].split('?')[0]);

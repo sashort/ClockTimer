@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path'),{spawn}=require('child_process'),ass
  const repo=path.resolve(__dirname,'..'),scratch=fs.mkdtempSync('D:/Temp/clocktimer-login-layout-'),profile=path.join(scratch,'edge');
  const source=fs.readFileSync(path.join(repo,'app.js'),'utf8');
  const boundary=source.slice(source.indexOf('    function refreshLoginBoundary()'),source.indexOf('    function voiceLoginText('));
- const index=fs.readFileSync(path.join(repo,'index.html'),'utf8');
+ const index=fs.readFileSync(path.join(repo,'order-filler.html'),'utf8');
  const dialogs=['loginDialog','legacyLoginDialog','liveStreamDialog','userLookupDialog'].map(id=>index.match(new RegExp('<dialog id="'+id+'"[\\s\\S]*?</dialog>'))[0]).join('\n');
  const html=`<!doctype html><meta charset="utf-8"><style>${fs.readFileSync(path.join(repo,'app.css'),'utf8')}</style><style>.app-dialog{transition:none!important;opacity:1!important}#mic{position:fixed;bottom:0;left:0;width:100%;height:74px;background:#303a44}#micOptions{position:absolute;bottom:100%;height:0;width:100%}[hidden]{display:none!important}</style>${dialogs}<div id="mic"><div id="micOptions"></div></div><script>
  const loginDialog=document.getElementById('loginDialog'),legacyLoginDialog=document.getElementById('legacyLoginDialog'),speechMicBar=document.getElementById('mic');
