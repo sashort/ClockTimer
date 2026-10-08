@@ -1,8 +1,11 @@
+import {createRequire} from 'node:module';
+import {fileURLToPath} from 'node:url';
+const {compose}=createRequire(import.meta.url)('../scripts/build-pages.cjs');
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 for (const page of ['order-filler.html', 'templates/order-filler.html']) {
-    const html = readFileSync(new URL('../' + page, import.meta.url), 'utf8');
+    const html = compose(fileURLToPath(new URL('..',import.meta.url)),readFileSync(new URL('../' + page, import.meta.url), 'utf8'));
     const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)]
         .map(match => match[1].split('?')[0]);
     assert.equal(scripts.includes('TimeRange.js'), false, page + ' loads the retired implementation');

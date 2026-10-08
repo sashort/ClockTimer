@@ -34,7 +34,7 @@ console.log('PASS PHP default/invalid-language fallback, exact English text/opti
 const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'clocktimer-language-'));
 try{
  fs.mkdirSync(fixture+'/templates',{recursive:true});fs.mkdirSync(fixture+'/lang/en-US',{recursive:true});fs.mkdirSync(fixture+'/lang/xx-XX',{recursive:true});
- fs.copyFileSync(root+'/templates/order-filler.html',fixture+'/templates/order-filler.html');
+ fs.cpSync(root+'/templates',fixture+'/templates',{recursive:true});
  const alternate=structuredClone(data);const idMap=new Map();
  for(const name of ['speech-patterns'])for(const collection of ['patterns','preprocessors','customRules']){
   const changed={};for(const [id,record]of Object.entries(alternate[name][collection])){

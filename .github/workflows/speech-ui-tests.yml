@@ -35,7 +35,13 @@ on:
       - "HamburgerMenu.js"
       - "index.html"
       - "index.php"
-      - "templates/index.html"
+      - "templates/**"
+      - "lib/PageTemplate.php"
+      - "lib/LanguageTemplate.php"
+      - "MenuIcons.css"
+      - "scripts/build-pages.cjs"
+      - "tests/shared-page-templates.mjs"
+      - "tests/page-template.php"
       - "tests/time-range-bootstrap.mjs"
       - "app.css"
       - "api/admin/speech-editor/**"
@@ -244,6 +250,11 @@ jobs:
           node drop-in-page.mjs
           node drop-in-observer-replay.mjs
           node main-page.mjs
+          node shared-page-templates.mjs
+          php page-template.php
+          node php-language-template.mjs
+          php -l ../lib/PageTemplate.php
+          php -l ../lib/LanguageTemplate.php
           node app-state-transactions.mjs --landing-session
           php drop-in-totals-permissions.php
           php -l ../api/live-stream/index.php

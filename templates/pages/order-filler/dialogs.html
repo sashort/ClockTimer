@@ -1,0 +1,791 @@
+<dialog id="tripLogDialog" class="trip-log-dialog" aria-label="{{text:6d5f2a35-0594-59c1-8e7f-b5660261a8b4:aria-label}}" data-language-id="6d5f2a35-0594-59c1-8e7f-b5660261a8b4">
+            <button id="tripLogCloseButton" class="trip-log-close-button" type="button" aria-label="{{text:ab0f8adf-3571-56fe-bb43-f56162396541:aria-label}}" hidden data-language-id="ab0f8adf-3571-56fe-bb43-f56162396541"></button>
+            <button id="tripLogSettingsButton" class="trip-log-close-button trip-log-settings-button" type="button" aria-label="{{text:0b89d247-281d-59cc-b345-15b21151ed5e:aria-label}}" aria-expanded="false" aria-controls="tripLogSettings" hidden data-language-id="0b89d247-281d-59cc-b345-15b21151ed5e"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M9.528,4.392 L10.436,2.123 L13.564,2.123 L14.472,4.392 L15.632,4.872 L17.878,3.910 L20.090,6.122 L19.128,8.368 L19.608,9.528 L21.877,10.436 L21.877,13.564 L19.608,14.472 L19.128,15.632 L20.090,17.878 L17.878,20.090 L15.632,19.128 L14.472,19.608 L13.564,21.877 L10.436,21.877 L9.528,19.608 L8.368,19.128 L6.122,20.090 L3.910,17.878 L4.872,15.632 L4.392,14.472 L2.123,13.564 L2.123,10.436 L4.392,9.528 L4.872,8.368 L3.910,6.122 L6.122,3.910 L8.368,4.872 Z"/><circle cx="12" cy="12" r="3.3"/></svg></button>
+            <section id="tripLogBody" speech-scope class="trip-log-body" aria-label="{{text:1009f9e0-73b8-54cd-8aa1-83938bee1cfd:aria-label}}" hidden data-language-id="1009f9e0-73b8-54cd-8aa1-83938bee1cfd"></section>
+        </dialog>
+<dialog id="voiceEntrySurface" class="voice-entry-surface" hidden aria-label="{{text:c9cf944e-22b0-5727-a943-c71fd6dd7332:aria-label}}" data-language-id="c9cf944e-22b0-5727-a943-c71fd6dd7332">
+        <header class="voice-entry-header">
+            <strong id="voiceEntryTitle" data-language-id="a7846bfa-b8ee-5350-be3c-c79930374e25">{{text:a7846bfa-b8ee-5350-be3c-c79930374e25:text0}}</strong>
+            <div class="voice-entry-actions">
+                <button id="voiceEntryTouch" class="voice-entry-touch" type="button" aria-label="{{text:27549f0c-1d17-5768-a535-d41704a8dec9:aria-label}}" title="{{text:27549f0c-1d17-5768-a535-d41704a8dec9:title}}" data-language-id="27549f0c-1d17-5768-a535-d41704a8dec9">{{text:27549f0c-1d17-5768-a535-d41704a8dec9:text0}}</button>
+                <button id="voiceEntryCancel" class="voice-entry-close" type="button" aria-label="{{text:37e6ef51-2216-5147-a077-804941e7938a:aria-label}}" data-language-id="37e6ef51-2216-5147-a077-804941e7938a">{{text:37e6ef51-2216-5147-a077-804941e7938a:text0}}</button>
+            </div>
+        </header>
+        <div class="voice-entry-copy">
+            <strong id="voiceEntryPrompt" data-language-id="270bb771-1f97-5c68-865a-954ca5a50454">{{text:270bb771-1f97-5c68-865a-954ca5a50454:text0}}</strong>
+            <span id="voiceEntryExample" data-language-id="b134da08-6329-5397-bf45-01fddcdf1717">{{text:b134da08-6329-5397-bf45-01fddcdf1717:text0}}</span>
+            <output id="voiceEntryValue" class="voice-entry-value" aria-live="polite" hidden></output>
+        </div>
+        <div id="voiceEntryInstructions" class="voice-entry-instructions" aria-live="polite">
+            <span data-language-id="f6ed15f1-0c95-53c5-8e91-fa6122f37f74"><strong data-language-id="54016083-bc81-5200-a378-66e31e7d7878">{{text:54016083-bc81-5200-a378-66e31e7d7878:text0}}</strong>{{text:f6ed15f1-0c95-53c5-8e91-fa6122f37f74:text0}}<span id="voiceEntryOkAction" data-language-id="ca8134f3-0fb1-58ba-8f9f-c67192463ae0">{{text:ca8134f3-0fb1-58ba-8f9f-c67192463ae0:text0}}</span></span>
+            <span data-language-id="8041121c-cf75-5390-a35c-c1dbf47034fe"><strong data-language-id="d86b9d6b-9a92-58ff-b48b-af0ebf99d8bb">{{text:d86b9d6b-9a92-58ff-b48b-af0ebf99d8bb:text0}}</strong>{{text:8041121c-cf75-5390-a35c-c1dbf47034fe:text0}}<span id="voiceEntryCancelAction" data-language-id="9d911077-5c74-5336-acf3-0f30c30401f3">{{text:9d911077-5c74-5336-acf3-0f30c30401f3:text0}}</span></span>
+        </div>
+    </dialog>
+<dialog id="speechTrainingChoiceDialog" class="app-dialog speech-training-choice-dialog">
+        <header class="dialog-header">
+            <h2 data-language-id="d499ac74-a3a0-5afd-87ed-ccff47fd6597">{{text:d499ac74-a3a0-5afd-87ed-ccff47fd6597:text0}}</h2>
+            <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:49262b83-0329-50e8-9be7-0a70e198e49f:aria-label}}" data-language-id="49262b83-0329-50e8-9be7-0a70e198e49f">{{text:49262b83-0329-50e8-9be7-0a70e198e49f:text0}}</button>
+        </header>
+        <div class="speech-training-choice-actions">
+            <button id="speechTrainingInAppChoice" type="button">
+                <strong data-language-id="c8f29b61-9708-5575-84c4-be008a603793">{{text:c8f29b61-9708-5575-84c4-be008a603793:text0}}</strong>
+                <span data-language-id="f19300a9-562f-543b-ad3b-9d05b55464a8">{{text:f19300a9-562f-543b-ad3b-9d05b55464a8:text0}}</span>
+            </button>
+            <button id="speechTrainingEditorChoice" type="button">
+                <strong data-language-id="328683e6-fa2a-5549-aad2-0174892c768e">{{text:328683e6-fa2a-5549-aad2-0174892c768e:text0}}</strong>
+                <span data-language-id="7951d38f-6588-55c9-bcdf-070ae2ef73d6">{{text:7951d38f-6588-55c9-bcdf-070ae2ef73d6:text0}}</span>
+            </button>
+        </div>
+    </dialog>
+<dialog id="speechTrainingPendingDialog" class="app-dialog speech-training-pending-dialog">
+        <header class="dialog-header">
+            <h2 data-language-id="6523caa8-d5c6-5cc7-ae3c-afee7e0af25e">{{text:6523caa8-d5c6-5cc7-ae3c-afee7e0af25e:text0}}</h2>
+        </header>
+        <p id="speechTrainingPendingMessage" class="speech-training-pending-message"></p>
+        <p id="speechTrainingPendingError" class="speech-training-pending-error" role="alert" hidden></p>
+        <div class="speech-training-pending-actions">
+            <button id="speechTrainingPendingCancel" type="button" data-language-id="545432ba-acd4-5c20-88fd-d4a7c0524dc0">{{text:545432ba-acd4-5c20-88fd-d4a7c0524dc0:text0}}</button>
+            <button id="speechTrainingPendingDiscard" type="button" data-language-id="ba88bd98-b77c-5f04-8084-bcf17e2dbbe0">{{text:ba88bd98-b77c-5f04-8084-bcf17e2dbbe0:text0}}</button>
+            <button id="speechTrainingPendingCommit" class="primary-action" type="button" data-language-id="ae52a309-571c-5ac5-bc63-bbcb072b4b3b">{{text:ae52a309-571c-5ac5-bc63-bbcb072b4b3b:text0}}</button>
+        </div>
+    </dialog>
+<dialog id="loginDialog" class="app-dialog login-dialog">
+        <form id="loginForm" method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="0864a74a-e4f6-547b-9fae-a7d605026c84">{{text:0864a74a-e4f6-547b-9fae-a7d605026c84:text0}}</h2>
+            </header>
+            <p id="voiceLoginPrompt" role="status"></p>
+            <label id="loginIdRow"><span id="loginIdLabel"></span><input id="loginUsername" name="loginId" type="hidden"><span class="login-digit-sequence" data-login-sequence="id"><input data-login-digit="id" data-digit-index="0" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="1" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="2" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="id" data-digit-index="3" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"></span></label>
+            <label id="loginPinRow" hidden><span id="loginPinLabel"></span><input id="loginPassword" name="pin" type="hidden"><span class="login-digit-sequence" data-login-sequence="pin"><input data-login-digit="pin" data-digit-index="0" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="1" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="2" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"><input data-login-digit="pin" data-digit-index="3" inputmode="numeric" maxlength="1" autocomplete="off" spellcheck="false"></span></label>
+            <p id="loginRecognitionStatus" class="login-recognition-status" role="status"></p><button id="loginEnableRecognition" type="button"></button>
+            <p id="loginError" class="form-error" role="alert"></p>
+            <div class="dialog-actions">
+                <button id="loginButton" class="primary-action" type="submit" value="login"></button><button id="loginDigitsCancel" type="button"></button>
+            </div>
+            <button id="loginLegacySwitch" class="login-legacy-switch" type="button"></button>
+        </form>
+    </dialog>
+<dialog id="legacyLoginDialog" class="app-dialog login-dialog legacy-login-dialog">
+        <form id="legacyLoginForm" method="dialog">
+            <header class="dialog-header"><h2 id="legacyLoginTitle"></h2></header>
+            <div id="loginLegacyFields">
+                <label><span id="loginLegacyUsernameLabel"></span><input id="loginLegacyUsername" name="username" autocomplete="username" disabled></label>
+                <label><span id="loginLegacyPasswordLabel"></span><input id="loginLegacyPassword" name="password" type="password" autocomplete="current-password" disabled></label>
+            </div>
+            <p id="legacyLoginRecognitionStatus" class="login-recognition-status" role="status"></p>
+            <button id="legacyLoginEnableRecognition" type="button"></button>
+            <p id="legacyLoginError" class="form-error" role="alert"></p>
+            <div class="dialog-actions"><button id="legacyLoginButton" class="primary-action" type="submit"></button><button id="legacyLoginCancel" type="button"></button></div>
+            <button id="loginVoiceSwitch" class="login-legacy-switch" type="button"></button>
+        </form>
+    </dialog>
+<dialog id="autoGoalDialog" class="app-dialog auto-goal-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="7450ee2c-22e8-5924-aa1d-69697283acbd">{{text:7450ee2c-22e8-5924-aa1d-69697283acbd:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:0530288f-e473-5df7-8fbe-fcbf87e4cb9e:aria-label}}" data-language-id="0530288f-e473-5df7-8fbe-fcbf87e4cb9e">{{text:0530288f-e473-5df7-8fbe-fcbf87e4cb9e:text0}}</button>
+            </header>
+            <p class="auto-goal-copy" data-language-id="c81aad13-b06d-5112-af87-633212397e43">{{text:c81aad13-b06d-5112-af87-633212397e43:text0}}</p>
+            <div class="auto-goal-options">
+                <button class="auto-goal-option" type="button" data-auto-goal-scope="trip">
+                    <span data-language-id="45829ae7-5535-5a14-aae4-ada445156410">{{text:45829ae7-5535-5a14-aae4-ada445156410:text0}}</span>
+                    <strong id="autoTripGoalValue" data-language-id="31ab7dce-9791-5384-8762-71ab1baefe4a">{{text:31ab7dce-9791-5384-8762-71ab1baefe4a:text0}}</strong>
+                </button>
+                <button class="auto-goal-option" type="button" data-auto-goal-scope="total">
+                    <span id="autoTotalGoalLabel" data-language-id="abdad0e4-e788-5f14-b1e1-b40924d06985">{{text:abdad0e4-e788-5f14-b1e1-b40924d06985:text0}}</span>
+                    <strong id="autoTotalGoalValue" data-language-id="8cb4333f-a10b-5143-91d4-4ffc2aab62e9">{{text:8cb4333f-a10b-5143-91d4-4ffc2aab62e9:text0}}</strong>
+                </button>
+            </div>
+        </form>
+    </dialog>
+<dialog id="profileDialog" class="app-dialog settings-dialog">
+        <form id="profileForm" method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="f0b28d2c-a000-5979-9f2c-1fab83c6fd3a">{{text:f0b28d2c-a000-5979-9f2c-1fab83c6fd3a:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:f5a2336f-23ea-5266-80fd-21e83775a0ce:aria-label}}" data-language-id="f5a2336f-23ea-5266-80fd-21e83775a0ce">{{text:f5a2336f-23ea-5266-80fd-21e83775a0ce:text0}}</button>
+            </header>
+            <fieldset>
+                <legend data-language-id="eb8d9f87-4228-5d37-9e24-6fc04444a845">{{text:eb8d9f87-4228-5d37-9e24-6fc04444a845:text0}}</legend>
+                <label data-language-id="680400ff-a026-5b68-acba-7e9bd329d3da">{{text:680400ff-a026-5b68-acba-7e9bd329d3da:text0}}<input id="profileUsername" name="username" autocomplete="username"></label>
+                <label data-language-id="2c53e325-0630-57ae-81a2-ccb477518a85">{{text:2c53e325-0630-57ae-81a2-ccb477518a85:text0}}<input id="profilePassword" name="password" type="password" value="••••••••" disabled></label>
+                <button id="resetPasswordButton" class="secondary-action" type="button" data-language-id="7b64ce6f-7e36-505b-a104-f58f2439818e">{{text:7b64ce6f-7e36-505b-a104-f58f2439818e:text0}}</button>
+            </fieldset>
+            <fieldset id="mainLoginAdminFields" hidden><legend id="mainLoginAdminTitle"></legend>
+                <label><span id="mainLoginAccountLabel"></span><input id="mainLoginAccount" inputmode="numeric" type="text"></label>
+                <label><span id="mainLoginIdLabel"></span><input id="mainLoginId" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+                <label><span id="mainLoginPinLabel"></span><input id="mainLoginPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+                <button id="assignMainLogin" type="button"></button><p id="mainLoginAssignmentStatus" role="status"></p>
+            </fieldset>
+            <fieldset>
+                <legend data-language-id="76acff1f-2236-5dce-82be-8f5c93e2a718">{{text:76acff1f-2236-5dce-82be-8f5c93e2a718:text0}}</legend>
+                <label data-language-id="1ccb587f-43ed-5ecc-b5f2-e627b0fcdfe6">{{text:1ccb587f-43ed-5ecc-b5f2-e627b0fcdfe6:text0}}<input id="firstName" name="firstName" autocomplete="given-name"></label>
+                <label data-language-id="820d43b7-7ed6-5fd9-8133-4ec618bfdbd4">{{text:820d43b7-7ed6-5fd9-8133-4ec618bfdbd4:text0}}<input id="lastName" name="lastName" autocomplete="family-name"></label>
+                <label data-language-id="b50ef6ce-d830-54fb-93a8-cd7b86f601b0">{{text:b50ef6ce-d830-54fb-93a8-cd7b86f601b0:text0}}<input id="preferredName" name="preferredName" autocomplete="nickname"></label>
+            </fieldset>
+            <div class="dialog-actions two-actions">
+                <button type="button" data-close-dialog data-language-id="6043a707-fc36-5d49-91c0-5e13c320c5f0">{{text:6043a707-fc36-5d49-91c0-5e13c320c5f0:text0}}</button>
+                <button class="primary-action" type="submit" value="save" data-language-id="779fdecd-5d4a-5c32-8176-bca96a67a459">{{text:779fdecd-5d4a-5c32-8176-bca96a67a459:text0}}</button>
+            </div>
+        </form>
+    </dialog>
+<dialog id="newUserDialog" class="app-dialog new-user-dialog">
+        <header class="dialog-header"><h2 data-language-id="773b72bd-d7f1-5f22-9c8b-d08a45497659">{{text:773b72bd-d7f1-5f22-9c8b-d08a45497659:text0}}</h2><button class="dialog-close" type="button" data-close-dialog aria-label="{{text:9cb9353f-321b-5b81-92c3-3895ef8ce1c2:aria-label}}" data-language-id="9cb9353f-321b-5b81-92c3-3895ef8ce1c2">{{text:9cb9353f-321b-5b81-92c3-3895ef8ce1c2:text0}}</button></header>
+        <iframe id="newUserFrame" title="{{text:db58699b-d6a8-5777-85bb-e2513906e988:title}}" loading="lazy" data-language-id="db58699b-d6a8-5777-85bb-e2513906e988"></iframe>
+    </dialog>
+<dialog id="graphicalSettingsDialog" class="app-dialog settings-dialog graphical-dialog">
+        <form id="graphicalSettingsForm" method="dialog">
+            <header class="dialog-header">
+                <button id="graphicalHelpToggle" class="dialog-header-help" type="button" aria-label="{{text:5056cc98-f100-57d5-82af-02190dab15bd:aria-label}}" aria-pressed="false" data-language-id="5056cc98-f100-57d5-82af-02190dab15bd">{{text:5056cc98-f100-57d5-82af-02190dab15bd:text0}}</button>
+                <h2 data-language-id="e1325c5d-1031-5316-b9d3-3685b366cf29">{{text:e1325c5d-1031-5316-b9d3-3685b366cf29:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:93edeac8-a9ad-5689-8db2-f89d51bf0725:aria-label}}" data-language-id="93edeac8-a9ad-5689-8db2-f89d51bf0725">{{text:93edeac8-a9ad-5689-8db2-f89d51bf0725:text0}}</button>
+            </header>
+
+            <div class="dialog-actions three-actions graphical-settings-actions">
+                <button id="resetGraphicalSettings" type="button" data-language-id="4bf79679-72fd-570b-a3ab-7e53dac33db2">{{text:4bf79679-72fd-570b-a3ab-7e53dac33db2:text0}}</button>
+                <button type="button" data-close-dialog data-language-id="e867b61c-db5b-5ffa-81c2-f6062b878ece">{{text:e867b61c-db5b-5ffa-81c2-f6062b878ece:text0}}</button>
+                <button class="primary-action" type="submit" value="save" data-language-id="408dede0-3407-53c7-9f4c-cea455b0ef37">{{text:408dede0-3407-53c7-9f4c-cea455b0ef37:text0}}</button>
+            </div>
+
+            <div class="settings-grid graphical-settings-grid">
+
+                <div class="settings-groups">
+                    <details class="settings-category timer-settings-fieldset">
+                        <summary data-language-id="e3d5bd7e-0ea9-5d4e-85ab-155d6b62d92a">{{text:e3d5bd7e-0ea9-5d4e-85ab-155d6b62d92a:text0}}</summary>
+                        <div class="settings-category-content">
+                        <label data-language-id="432c4180-3b15-53e6-963f-050b90fc59b1">{{text:432c4180-3b15-53e6-963f-050b90fc59b1:text0}}<select name="timerMode" data-language-id="3a0b82c7-c5d3-5719-bd57-ae3469627cd2">{{options:3a0b82c7-c5d3-5719-bd57-ae3469627cd2}}</select>
+                        </label>
+                        <label data-language-id="2806b22d-d9f6-52ba-8572-fcada9270716">{{text:2806b22d-d9f6-52ba-8572-fcada9270716:text0}}<select name="timerType" data-language-id="8c7f8788-d228-5ac6-ab1e-a0576db068c9">{{options:8c7f8788-d228-5ac6-ab1e-a0576db068c9}}</select>
+                        </label>
+
+                        <hr class="timer-settings-divider">
+
+                        <div class="timer-color-grid">
+                            <section class="timer-color-category" aria-labelledby="normalRangeColors">
+                                <h3 id="normalRangeColors" data-language-id="bc242425-7e85-58a3-af7d-e63769897d63">{{text:bc242425-7e85-58a3-af7d-e63769897d63:text0}}</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="tripColor" aria-label="{{text:4f7b159b-6d7d-5fd9-ba7e-4c9da0f21469:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="4f7b159b-6d7d-5fd9-ba7e-4c9da0f21469">{{text:4f7b159b-6d7d-5fd9-ba7e-4c9da0f21469:text0}}</button>
+                                        <label class="settings-help-label" for="tripColor" data-help-key="tripColor" data-language-id="f4564246-be00-5df0-bac6-f2cb27f6400b">{{text:f4564246-be00-5df0-bac6-f2cb27f6400b:text0}}</label>
+                                        <input id="tripColor" name="tripColor" type="color" value="#0053e2">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="breakColor" aria-label="{{text:92f65050-6189-51ea-8739-394be04a36ee:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="92f65050-6189-51ea-8739-394be04a36ee">{{text:92f65050-6189-51ea-8739-394be04a36ee:text0}}</button>
+                                        <label class="settings-help-label" for="breakColor" data-help-key="breakColor" data-language-id="5459b5ca-40f6-561f-ad66-aec9c6710c00">{{text:5459b5ca-40f6-561f-ad66-aec9c6710c00:text0}}</label>
+                                        <input id="breakColor" name="breakColor" type="color" value="#001e60">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="lunchColor" aria-label="{{text:a72f6131-1bf5-5aee-b029-487f8f90b3ff:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="a72f6131-1bf5-5aee-b029-487f8f90b3ff">{{text:a72f6131-1bf5-5aee-b029-487f8f90b3ff:text0}}</button>
+                                        <label class="settings-help-label" for="lunchColor" data-help-key="lunchColor" data-language-id="9392dfb3-e03a-5acf-9157-91cbd0effa16">{{text:9392dfb3-e03a-5acf-9157-91cbd0effa16:text0}}</label>
+                                        <input id="lunchColor" name="lunchColor" type="color" value="#ffc220">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="breakBufferColor" aria-label="{{text:c76548aa-d777-5ce6-a0b7-d7016dd0a797:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="c76548aa-d777-5ce6-a0b7-d7016dd0a797">{{text:c76548aa-d777-5ce6-a0b7-d7016dd0a797:text0}}</button>
+                                        <label class="settings-help-label" for="breakBufferColor" data-help-key="breakBufferColor" data-language-id="ed088d21-aacd-5d37-8247-beae50633b5f">{{text:ed088d21-aacd-5d37-8247-beae50633b5f:text0}}</label>
+                                        <input name="showBreakBuffer" type="checkbox" checked aria-label="{{text:43f2bc62-2858-5ef7-a8f7-3a53e7cec5ac:aria-label}}" data-language-id="43f2bc62-2858-5ef7-a8f7-3a53e7cec5ac">
+                                        <input id="breakBufferColor" name="breakBufferColor" type="color" value="#6b7f99" aria-label="{{text:939e078a-f4e2-5439-a6c3-24f48e3ec109:aria-label}}" data-language-id="939e078a-f4e2-5439-a6c3-24f48e3ec109">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="performanceRangeColors">
+                                <h3 id="performanceRangeColors" data-language-id="c7b980aa-0520-5e91-8dca-c4959637cd8f">{{text:c7b980aa-0520-5e91-8dca-c4959637cd8f:text0}}</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="overtimeColor" aria-label="{{text:e0e3a611-cec5-58b5-9001-5ac1b646bcda:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="e0e3a611-cec5-58b5-9001-5ac1b646bcda">{{text:e0e3a611-cec5-58b5-9001-5ac1b646bcda:text0}}</button>
+                                        <label class="settings-help-label" for="overtimeColor" data-help-key="overtimeColor" data-language-id="f3446fcf-128b-598d-bf7f-5374316a4a3b">{{text:f3446fcf-128b-598d-bf7f-5374316a4a3b:text0}}</label>
+                                        <input name="showOvertime" type="checkbox" checked aria-label="{{text:6fe5a6c7-c043-5358-bbe9-2f2c2762f754:aria-label}}" data-language-id="6fe5a6c7-c043-5358-bbe9-2f2c2762f754">
+                                        <input id="overtimeColor" name="overtimeColor" type="color" value="#ff5c5c" aria-label="{{text:96193651-217c-5ed6-adda-7ed2f0fbb311:aria-label}}" data-language-id="96193651-217c-5ed6-adda-7ed2f0fbb311">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="toleranceColor" aria-label="{{text:790b0aea-44c5-5e57-bfbb-aa65fe06828b:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="790b0aea-44c5-5e57-bfbb-aa65fe06828b">{{text:790b0aea-44c5-5e57-bfbb-aa65fe06828b:text0}}</button>
+                                        <label class="settings-help-label" for="toleranceColor" data-help-key="toleranceColor" data-language-id="83840ac4-677a-5606-b53b-b611434af29f">{{text:83840ac4-677a-5606-b53b-b611434af29f:text0}}</label>
+                                        <input name="showTolerance" type="checkbox" checked data-tolerance-state="true" aria-label="{{text:a6be98a7-e4d7-5cb0-b407-5e004b8477d2:aria-label}}" data-language-id="a6be98a7-e4d7-5cb0-b407-5e004b8477d2">
+                                        <input id="toleranceColor" name="toleranceColor" type="color" value="#2e7d32" aria-label="{{text:12f70b7a-a486-5245-a903-a3dbc3eaa270:aria-label}}" data-language-id="12f70b7a-a486-5245-a903-a3dbc3eaa270">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="timeBasedRangeColors">
+                                <h3 id="timeBasedRangeColors" data-language-id="6b8a98c8-96f3-52f0-bcee-d9cc0cc17760">{{text:6b8a98c8-96f3-52f0-bcee-d9cc0cc17760:text0}}</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="earlyStartColor" aria-label="{{text:afe6495b-b140-58c2-9d21-074536283e60:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="afe6495b-b140-58c2-9d21-074536283e60">{{text:afe6495b-b140-58c2-9d21-074536283e60:text0}}</button>
+                                        <label class="settings-help-label" for="earlyStartColor" data-help-key="earlyStartColor" data-language-id="9651456a-4a19-5f31-8da6-18b3f76b32ca">{{text:9651456a-4a19-5f31-8da6-18b3f76b32ca:text0}}</label>
+                                        <input name="showEarlyStart" type="checkbox" checked aria-label="{{text:955b7474-379c-5672-b848-57974b2dffbe:aria-label}}" data-language-id="955b7474-379c-5672-b848-57974b2dffbe">
+                                        <input id="earlyStartColor" name="earlyStartColor" type="color" value="#4dbdf5" aria-label="{{text:d2256c71-1789-5cae-8454-4f632269b443:aria-label}}" data-language-id="d2256c71-1789-5cae-8454-4f632269b443">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="latencyColor" aria-label="{{text:2669864d-ad8b-572c-8529-3db44779b7f7:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="2669864d-ad8b-572c-8529-3db44779b7f7">{{text:2669864d-ad8b-572c-8529-3db44779b7f7:text0}}</button>
+                                        <label class="settings-help-label" for="latencyColor" data-help-key="latencyColor" data-language-id="06916a5d-4a9d-5b77-84b9-3eb974687ce0">{{text:06916a5d-4a9d-5b77-84b9-3eb974687ce0:text0}}</label>
+                                        <input name="showLatency" type="checkbox" checked aria-label="{{text:b1922333-f112-522d-89a7-94553c8eb091:aria-label}}" data-language-id="b1922333-f112-522d-89a7-94553c8eb091">
+                                        <input id="latencyColor" name="latencyColor" type="color" value="#e1251b" aria-label="{{text:f7108e65-8deb-531e-9c5f-647c62d15d9f:aria-label}}" data-language-id="f7108e65-8deb-531e-9c5f-647c62d15d9f">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="downTimeRangeColors">
+                                <h3 id="downTimeRangeColors" data-language-id="a8ef07c1-a154-538a-a962-18f6bd703a09">{{text:a8ef07c1-a154-538a-a962-18f6bd703a09:text0}}</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="downColor" aria-label="{{text:ee4ee7c4-1f23-5792-8a1a-7ddc2648f487:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="ee4ee7c4-1f23-5792-8a1a-7ddc2648f487">{{text:ee4ee7c4-1f23-5792-8a1a-7ddc2648f487:text0}}</button>
+                                        <label class="settings-help-label" for="downColor" data-help-key="downColor" data-language-id="7fbb41f3-2b1b-52c3-9431-44a88c687225">{{text:7fbb41f3-2b1b-52c3-9431-44a88c687225:text0}}</label>
+                                        <input id="downColor" name="downColor" type="color" value="#5f6772">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="approvalSurplusColor" aria-label="{{text:5206566b-4c95-5071-be4c-7fd80dd6c2ea:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="5206566b-4c95-5071-be4c-7fd80dd6c2ea">{{text:5206566b-4c95-5071-be4c-7fd80dd6c2ea:text0}}</button>
+                                        <label class="settings-help-label" for="approvalSurplusColor" data-help-key="approvalSurplusColor" data-language-id="0e468cc4-cad7-53f1-9255-87de8e3b3894">{{text:0e468cc4-cad7-53f1-9255-87de8e3b3894:text0}}</label>
+                                        <input id="approvalSurplusColor" name="approvalSurplusColor" type="color" value="#9c6b30">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="approvalDeficitColor" aria-label="{{text:d024c165-6474-5030-9318-b983b1163208:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="d024c165-6474-5030-9318-b983b1163208">{{text:d024c165-6474-5030-9318-b983b1163208:text0}}</button>
+                                        <label class="settings-help-label" for="approvalDeficitColor" data-help-key="approvalDeficitColor" data-language-id="eb5b650a-696d-5ebc-accf-c99b566d5d5c">{{text:eb5b650a-696d-5ebc-accf-c99b566d5d5c:text0}}</label>
+                                        <input id="approvalDeficitColor" name="approvalDeficitColor" type="color" value="#7a1f3d">
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        </div>
+                    </details>
+
+                    <details class="settings-category">
+                        <summary data-language-id="41963fb4-2179-52ad-adb4-1ef48cb6c897">{{text:41963fb4-2179-52ad-adb4-1ef48cb6c897:text0}}</summary>
+                        <div class="settings-category-content">
+                        <label class="toggle-row" data-language-id="d9278d69-e096-513a-b0dd-4cd6fa6d69c7">{{text:d9278d69-e096-513a-b0dd-4cd6fa6d69c7:text0}}<input name="militaryTime" type="checkbox" checked></label>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="timeFormat" data-help-key="timeFormat" data-language-id="8c6010a7-ebb7-53b4-9828-475a7d2fb836">{{text:8c6010a7-ebb7-53b4-9828-475a7d2fb836:text0}}</label>
+                            <button class="settings-help-button" type="button" data-help-key="timeFormat" aria-label="{{text:e4808ff9-ca17-5ce6-8257-ffbf2db57852:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="e4808ff9-ca17-5ce6-8257-ffbf2db57852">{{text:e4808ff9-ca17-5ce6-8257-ffbf2db57852:text0}}</button>
+                            <input id="timeFormat" name="timeFormat" value="HHmm">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="dateFormat" data-help-key="dateFormat" data-language-id="9ef68918-c676-5bf2-8ed6-4d50228dc59e">{{text:9ef68918-c676-5bf2-8ed6-4d50228dc59e:text0}}</label>
+                            <button class="settings-help-button" type="button" data-help-key="dateFormat" aria-label="{{text:51ee48fd-c7fb-5686-9ec9-23bf43461d58:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="51ee48fd-c7fb-5686-9ec9-23bf43461d58">{{text:51ee48fd-c7fb-5686-9ec9-23bf43461d58:text0}}</button>
+                            <input id="dateFormat" name="dateFormat" placeholder="{{text:ba713d75-1b9d-5be9-a437-20cae859ac60:placeholder}}" data-language-id="ba713d75-1b9d-5be9-a437-20cae859ac60">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="visibleHours" data-help-key="visibleHours" data-language-id="ac9cdb82-e182-59cd-b0ef-d97e0312d41d">{{text:ac9cdb82-e182-59cd-b0ef-d97e0312d41d:text0}}</label>
+                            <button class="settings-help-button" type="button" data-help-key="visibleHours" aria-label="{{text:7d09945a-a5b6-5566-ac6c-73a0761edfd4:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="7d09945a-a5b6-5566-ac6c-73a0761edfd4">{{text:7d09945a-a5b6-5566-ac6c-73a0761edfd4:text0}}</button>
+                            <input id="visibleHours" name="visibleHours" value="12,3,6,9">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="tickMarks" data-help-key="tickMarks" data-language-id="93183a8a-65c1-5127-966e-caa4c68f274f">{{text:93183a8a-65c1-5127-966e-caa4c68f274f:text0}}</label>
+                            <button class="settings-help-button" type="button" data-help-key="tickMarks" aria-label="{{text:02eca36c-13c7-58fd-af1b-57a24d188a0a:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="02eca36c-13c7-58fd-af1b-57a24d188a0a">{{text:02eca36c-13c7-58fd-af1b-57a24d188a0a:text0}}</button>
+                            <input id="tickMarks" name="tickMarks" value="[10]">
+                        </div>
+                        <label data-language-id="170c3180-75e1-58d8-a7c0-6ab392107802">{{text:170c3180-75e1-58d8-a7c0-6ab392107802:text0}}<input name="indicatorSymbol" value="▲"></label>
+
+                        </div>
+                    </details>
+
+                    <details class="settings-category">
+                        <summary data-language-id="80b10f89-a7ed-50be-a908-8206ff4956e5">{{text:80b10f89-a7ed-50be-a908-8206ff4956e5:text0}}</summary>
+                        <div class="settings-category-content">
+                            <div class="clock-font-setting">
+                                <span class="clock-font-label" data-language-id="21f1d899-6d13-5a2c-8e78-8581ba6dade0">{{text:21f1d899-6d13-5a2c-8e78-8581ba6dade0:text0}}</span>
+                                <div class="clock-font-picker" data-clock-font-picker>
+                                    <button class="clock-font-trigger" type="button" data-clock-font-trigger aria-haspopup="listbox" aria-expanded="false">
+                                        <span data-clock-font-active data-language-id="81a1b827-4904-5327-8ba1-eb6d165eecfd">{{text:81a1b827-4904-5327-8ba1-eb6d165eecfd:text0}}</span>
+                                        <span class="clock-font-chevron" aria-hidden="true" data-language-id="bc1f8bdf-a3ab-5934-8f52-7f60702bc835">{{text:bc1f8bdf-a3ab-5934-8f52-7f60702bc835:text0}}</span>
+                                    </button>
+                                    <div class="clock-font-menu" data-clock-font-menu hidden>
+                                        <button class="clock-font-add" type="button" data-clock-font-add data-language-id="6eee7ff0-3bed-55b2-8ffd-4569934e146b">{{text:6eee7ff0-3bed-55b2-8ffd-4569934e146b:text0}}</button>
+                                        <div class="clock-font-editor" data-clock-font-editor hidden>
+                                            <input type="text" data-clock-font-input aria-label="{{text:c555d3ef-f33d-580d-9358-da2ce6f578c3:aria-label}}" placeholder="{{text:c555d3ef-f33d-580d-9358-da2ce6f578c3:placeholder}}" data-language-id="c555d3ef-f33d-580d-9358-da2ce6f578c3">
+                                            <button class="clock-font-confirm" type="button" data-clock-font-confirm aria-label="{{text:b21a5465-3481-5e50-bf7e-cdf8189296d3:aria-label}}" data-language-id="b21a5465-3481-5e50-bf7e-cdf8189296d3">{{text:b21a5465-3481-5e50-bf7e-cdf8189296d3:text0}}</button>
+                                            <button class="clock-font-cancel" type="button" data-clock-font-cancel aria-label="{{text:9ebe878a-571f-5e10-840e-90726eedcf0f:aria-label}}" data-language-id="9ebe878a-571f-5e10-840e-90726eedcf0f">{{text:9ebe878a-571f-5e10-840e-90726eedcf0f:text0}}</button>
+                                        </div>
+                                        <div class="clock-font-options" data-clock-font-options role="listbox" aria-label="{{text:07750ffc-8a35-5bc8-bf9d-c1977713651c:aria-label}}" data-language-id="07750ffc-8a35-5bc8-bf9d-c1977713651c"></div>
+                                    </div>
+                                    <input name="clockFont" type="hidden" value="Helvetica, Arial, sans-serif">
+                                </div>
+                            </div>
+
+                            <div class="clock-hand-controls" aria-label="{{text:5d2bef74-064b-5a77-ac01-83208f919b4a:aria-label}}" data-language-id="5d2bef74-064b-5a77-ac01-83208f919b4a">
+                                <div class="clock-hand-row">
+                                    <span data-language-id="9bfbbb73-d1a1-5089-8ef5-ef81edc742b2">{{text:9bfbbb73-d1a1-5089-8ef5-ef81edc742b2:text0}}</span>
+                                    <input name="showHourHand" type="checkbox" checked aria-label="{{text:8a493ca5-1700-5627-8c7d-6fc67b06ac55:aria-label}}" data-language-id="8a493ca5-1700-5627-8c7d-6fc67b06ac55">
+                                    <input name="hourHandColor" type="color" value="#ffffff" aria-label="{{text:7a10d1c0-f326-59f0-9995-bf202740c672:aria-label}}" data-language-id="7a10d1c0-f326-59f0-9995-bf202740c672">
+                                </div>
+                                <div class="clock-hand-row">
+                                    <span data-language-id="ca1047c3-e974-584f-a908-e131690bc0de">{{text:ca1047c3-e974-584f-a908-e131690bc0de:text0}}</span>
+                                    <input name="showMinuteHand" type="checkbox" checked aria-label="{{text:b9483a2c-2b15-5682-9e28-ee45c4995fd9:aria-label}}" data-language-id="b9483a2c-2b15-5682-9e28-ee45c4995fd9">
+                                    <input name="minuteHandColor" type="color" value="#ffffff" aria-label="{{text:36ee3582-b011-5ab2-ab5d-15478887be4c:aria-label}}" data-language-id="36ee3582-b011-5ab2-ab5d-15478887be4c">
+                                </div>
+                                <div class="clock-hand-row">
+                                    <span data-language-id="e044ec83-3a8c-5d83-b144-c0cfed76b925">{{text:e044ec83-3a8c-5d83-b144-c0cfed76b925:text0}}</span>
+                                    <input name="showSecondHand" type="checkbox" checked aria-label="{{text:f79649df-af80-522a-8e18-c3ca1204420a:aria-label}}" data-language-id="f79649df-af80-522a-8e18-c3ca1204420a">
+                                    <input name="secondHandColor" type="color" value="#ffc220" aria-label="{{text:629dc841-f7e3-52e8-b2d5-5321e1c742bb:aria-label}}" data-language-id="629dc841-f7e3-52e8-b2d5-5321e1c742bb">
+                                </div>
+                            </div>
+
+                            <div class="clock-color-grid">
+                                <label data-language-id="5205fd77-1e37-5ce7-b63a-87bfcee8d1fc">{{text:5205fd77-1e37-5ce7-b63a-87bfcee8d1fc:text0}}<input name="hourColor" type="color" value="#ffffff"></label>
+                                <label data-language-id="f924d332-9641-5053-9cb7-03105ae6d229">{{text:f924d332-9641-5053-9cb7-03105ae6d229:text0}}<input name="timeColor" type="color" value="#ffffff"></label>
+                                <label data-language-id="a1e730b2-fdca-5385-953c-113ed9fd033a">{{text:a1e730b2-fdca-5385-953c-113ed9fd033a:text0}}<input name="borderColor" type="color" value="#001e60"></label>
+                            </div>
+                        </div>
+                    </details>
+
+                </div>
+
+            <aside class="clock-preview" aria-label="{{text:8f91b0e8-d060-57f2-a712-eeb0d7a7daf2:aria-label}}" data-language-id="8f91b0e8-d060-57f2-a712-eeb0d7a7daf2">
+                <clock-timer
+                    id="clockPreview"
+                    military-time="true"
+                    time-format="HHmm"
+                    visible-hours="12,3,6,9"
+                    tick-marks="[10]"
+                    indicator-symbol="▲"
+                ></clock-timer>
+            </aside>
+
+            </div>
+
+        </form>
+
+        <div id="graphicalHelpPopover" class="settings-help-popover" popover="manual" role="dialog" aria-labelledby="graphicalHelpTitle">
+            <header class="settings-help-header">
+                <h3 id="graphicalHelpTitle"></h3>
+                <button id="graphicalHelpClose" class="settings-help-close" type="button" aria-label="{{text:96c4e95a-efff-5c4c-bb48-0cc7dc6cb978:aria-label}}" data-language-id="96c4e95a-efff-5c4c-bb48-0cc7dc6cb978">{{text:96c4e95a-efff-5c4c-bb48-0cc7dc6cb978:text0}}</button>
+            </header>
+            <div id="graphicalHelpBody" class="settings-help-body"></div>
+        </div>
+    </dialog>
+<dialog id="audioSettingsDialog" class="app-dialog audio-settings-dialog">
+        <form id="audioSettingsForm" method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="eb8323e2-bb52-5881-8057-6f1c6040778e">{{text:eb8323e2-bb52-5881-8057-6f1c6040778e:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:889bfaf8-0965-5071-9a21-b9838866d7e7:aria-label}}" data-language-id="889bfaf8-0965-5071-9a21-b9838866d7e7">{{text:889bfaf8-0965-5071-9a21-b9838866d7e7:text0}}</button>
+            </header>
+
+            <div class="audio-settings-scroll-panel" role="region" aria-label="{{text:f5ed0a20-2b09-5d8e-be39-0ff71448d0a8:aria-label}}" data-language-id="f5ed0a20-2b09-5d8e-be39-0ff71448d0a8">
+            <section class="audio-settings-levels" aria-label="{{text:20f8d0d5-85cc-5c45-8168-6f905eace3b7:aria-label}}" data-language-id="20f8d0d5-85cc-5c45-8168-6f905eace3b7">
+                <label>
+                    <span data-language-id="e58172e2-52a9-5f6e-be5d-290167ed3b97">{{text:e58172e2-52a9-5f6e-be5d-290167ed3b97:text0}}</span>
+                    <input id="audioVolume" type="range" min="0" max="1" step="0.05" value="1">
+                    <output id="audioVolumeValue" data-language-id="c9ea9c23-75f9-5c91-8227-cc081a4b3b80">{{text:c9ea9c23-75f9-5c91-8227-cc081a4b3b80:text0}}</output>
+                </label>
+                <label class="audio-instrument-setting audio-voice-setting">
+                    <span data-language-id="0f0e1d30-1335-5e7b-b760-f40c2d163f94">{{text:0f0e1d30-1335-5e7b-b760-f40c2d163f94:text0}}</span>
+                    <select id="audioVoice" aria-label="{{text:7ec33c7e-2d78-5c17-99c0-5724b544b730:aria-label}}" data-language-id="7ec33c7e-2d78-5c17-99c0-5724b544b730">{{options:7ec33c7e-2d78-5c17-99c0-5724b544b730}}</select>
+                    <span class="audio-setting-spacer" aria-hidden="true"></span>
+                </label>
+                <label class="audio-instrument-setting">
+                    <span data-language-id="e84772aa-31f4-58b0-8a2f-c0a0c561e553">{{text:e84772aa-31f4-58b0-8a2f-c0a0c561e553:text0}}</span>
+                    <select id="audioInstrument" aria-label="{{text:9c27a006-f1a4-5e75-8748-a8ca52c4b62f:aria-label}}" data-language-id="9c27a006-f1a4-5e75-8748-a8ca52c4b62f">{{options:9c27a006-f1a4-5e75-8748-a8ca52c4b62f}}</select>
+                    <span class="audio-setting-spacer" aria-hidden="true"></span>
+                </label>
+                <label class="audio-master-velocity">
+                    <span data-language-id="36e28bdf-956f-5680-8c98-b41666024f64">{{text:36e28bdf-956f-5680-8c98-b41666024f64:text0}}</span>
+                    <input id="audioMasterVelocity" type="range" min="0.5" max="4" step="0.05" value="1">
+                    <output id="audioMasterVelocityValue" data-language-id="dfdfa801-e853-544e-ab77-2f7abfceff9f">{{text:dfdfa801-e853-544e-ab77-2f7abfceff9f:text0}}</output>
+                </label>
+                <label>
+                    <span data-language-id="05d99bdb-bafd-5946-aa43-b6e90d9427fa">{{text:05d99bdb-bafd-5946-aa43-b6e90d9427fa:text0}}</span>
+                    <input id="audioSpeechVelocity" type="range" min="0.5" max="2.8" step="0.05" value="1">
+                    <output id="audioSpeechVelocityValue" data-language-id="42104109-0bb3-5882-9c17-2ea17608b060">{{text:42104109-0bb3-5882-9c17-2ea17608b060:text0}}</output>
+                </label>
+                <label>
+                    <span data-language-id="6ab55e5d-dc62-5b24-83f2-0e991dbed55f">{{text:6ab55e5d-dc62-5b24-83f2-0e991dbed55f:text0}}</span>
+                    <select id="audioToneVelocity" data-language-id="7944e56e-6e5b-58fc-a84d-7f6e7376adcc">{{options:7944e56e-6e5b-58fc-a84d-7f6e7376adcc}}</select>
+                    <output id="audioToneVelocityValue" data-language-id="7e7fb03c-150a-550c-b014-61b4b3621054">{{text:7e7fb03c-150a-550c-b014-61b4b3621054:text0}}</output>
+                </label>
+                <label class="audio-formal-time">
+                    <span data-language-id="3ef4b8b4-94ad-53ca-8345-839432eb4b76">{{text:3ef4b8b4-94ad-53ca-8345-839432eb4b76:text0}}</span>
+                    <input id="audioFormalTime" type="checkbox">
+                    <span aria-hidden="true"></span>
+                </label>
+            </section>
+
+            <section class="audio-settings-announcements audio-settings-announcements-desktop" aria-labelledby="audioAnnouncementsTitle">
+                <h3 id="audioAnnouncementsTitle" data-language-id="dfde89f6-00be-5e5a-95c8-f4269a889b4a">{{text:dfde89f6-00be-5e5a-95c8-f4269a889b4a:text0}}</h3>
+
+                <div class="audio-settings-table-wrap">
+                    <table class="audio-settings-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-language-id="9e695975-14c8-55ad-a8db-e180def00463">{{text:9e695975-14c8-55ad-a8db-e180def00463:text0}}</th>
+                                <th scope="col"><label data-language-id="829fd758-4064-5b8a-90c6-e757d540438d"><input type="checkbox" data-audio-master="chime" checked>{{text:829fd758-4064-5b8a-90c6-e757d540438d:text0}}</label></th>
+                                <th scope="col"><label data-language-id="e266cdbf-8474-5c32-a587-66320c713df0"><input type="checkbox" data-audio-master="summary" checked>{{text:e266cdbf-8474-5c32-a587-66320c713df0:text0}}</label></th>
+                                <th scope="col"><label data-language-id="cdea5f8d-24ce-57dd-a7ae-78d0df717c4c"><input type="checkbox" data-audio-master="details" checked>{{text:cdea5f8d-24ce-57dd-a7ae-78d0df717c4c:text0}}</label></th>
+                            </tr>
+                        </thead>
+                        <tbody id="audioAnnouncementRows"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <button id="audioAnnouncementsOpen" class="audio-announcements-launcher" type="button">
+                <span data-language-id="b559366d-2af7-5f1a-b5e2-d7f681e88a23">{{text:b559366d-2af7-5f1a-b5e2-d7f681e88a23:text0}}</span>
+                <span aria-hidden="true" data-language-id="845d14a9-3789-5803-affe-430eb2d7351b">{{text:845d14a9-3789-5803-affe-430eb2d7351b:text0}}</span>
+            </button>
+            </div>
+
+            <div class="dialog-actions two-actions">
+                <button type="button" id="audioSettingsReset" data-language-id="46f12887-d0ce-5a5e-b6b2-403de030a13f">{{text:46f12887-d0ce-5a5e-b6b2-403de030a13f:text0}}</button>
+                <button type="submit" class="primary-action" data-language-id="7ed75dbf-245c-5272-b5d8-5cf90f62685f">{{text:7ed75dbf-245c-5272-b5d8-5cf90f62685f:text0}}</button>
+            </div>
+        </form>
+    </dialog>
+<dialog id="audioAnnouncementsDialog" class="app-dialog audio-announcements-dialog">
+        <form id="audioAnnouncementsForm" method="dialog">
+            <header class="dialog-header">
+                <button id="audioAnnouncementsClose" class="audio-announcements-window-back" type="button" data-close-dialog aria-label="{{text:09cec546-3bf9-55aa-9f3d-c736c52ef9d2:aria-label}}" data-language-id="09cec546-3bf9-55aa-9f3d-c736c52ef9d2">{{text:09cec546-3bf9-55aa-9f3d-c736c52ef9d2:text0}}</button>
+                <h2 data-language-id="750640af-a742-598c-970c-5ff92a5e1ce3">{{text:750640af-a742-598c-970c-5ff92a5e1ce3:text0}}</h2>
+                <span class="audio-announcements-header-spacer" aria-hidden="true"></span>
+            </header>
+
+            <pane-page id="audioAnnouncementPage" class="audio-announcement-page" overflow="y">
+                <div class="audio-announcement-list-view" data-pane-view="list">
+                    <div id="audioAnnouncementEventList" class="audio-announcement-event-list"></div>
+                </div>
+
+                <div class="audio-announcement-detail-view" data-pane-view="detail" hidden>
+                    <div class="audio-announcement-detail-heading">
+                        <button id="audioAnnouncementBack" class="audio-announcement-back" type="button" aria-label="{{text:fdbc862d-0187-5054-b1fc-b8d178540ac9:aria-label}}" data-language-id="fdbc862d-0187-5054-b1fc-b8d178540ac9">{{text:fdbc862d-0187-5054-b1fc-b8d178540ac9:text0}}</button>
+                        <strong id="audioAnnouncementSelectedLabel" data-language-id="23bb7568-4d72-5ddb-8d3a-90d1adfc3cd5">{{text:23bb7568-4d72-5ddb-8d3a-90d1adfc3cd5:text0}}</strong>
+                    </div>
+
+                    <div class="audio-announcement-mobile-columns" aria-label="{{text:e1875231-d604-54a8-a8f7-e0db4c70c896:aria-label}}" data-language-id="e1875231-d604-54a8-a8f7-e0db4c70c896">
+                        <label>
+                            <span data-language-id="88b915c1-7113-5183-b5c5-b59b9311fc2b">{{text:88b915c1-7113-5183-b5c5-b59b9311fc2b:text0}}</span>
+                            <input type="checkbox" data-audio-master="chime" checked>
+                        </label>
+                        <label>
+                            <span data-language-id="1cc08f6f-3c82-59b6-bd72-cf1b81f99ab9">{{text:1cc08f6f-3c82-59b6-bd72-cf1b81f99ab9:text0}}</span>
+                            <input type="checkbox" data-audio-master="summary" checked>
+                        </label>
+                        <label>
+                            <span data-language-id="027f3e2a-8fcf-5ba0-945f-f0aa3de1744a">{{text:027f3e2a-8fcf-5ba0-945f-f0aa3de1744a:text0}}</span>
+                            <input type="checkbox" data-audio-master="details" checked>
+                        </label>
+                    </div>
+
+                    <div id="audioAnnouncementMobileAttributeRow" class="audio-announcement-mobile-attribute-row" hidden>
+                        <label>
+                            <span data-language-id="af2e462c-d2a4-54e1-a5b4-965c59f3ddef">{{text:af2e462c-d2a4-54e1-a5b4-965c59f3ddef:text0}}</span>
+                            <input type="checkbox" data-audio-layer="chime">
+                        </label>
+                        <label>
+                            <span data-language-id="c3a3e41e-b07b-5c9c-ade6-ff2b09417fce">{{text:c3a3e41e-b07b-5c9c-ade6-ff2b09417fce:text0}}</span>
+                            <input type="checkbox" data-audio-layer="summary">
+                        </label>
+                        <label>
+                            <span data-language-id="a29c1712-6455-5e3b-9381-dd99a5ff24dc">{{text:a29c1712-6455-5e3b-9381-dd99a5ff24dc:text0}}</span>
+                            <input type="checkbox" data-audio-layer="details">
+                        </label>
+                    </div>
+
+                    <div id="audioAnnouncementMobileOverrides" class="audio-announcement-mobile-overrides" hidden>
+                        <div class="audio-announcement-preview-actions" role="group" aria-label="{{text:7305e653-e8ba-5913-a2a9-595b5a0d538a:aria-label}}" data-language-id="7305e653-e8ba-5913-a2a9-595b5a0d538a">
+                            <button id="audioAnnouncementPreview" type="button" data-language-id="313fafd9-b96a-5ae7-9056-2d3940433254">{{text:313fafd9-b96a-5ae7-9056-2d3940433254:text0}}</button>
+                            <button id="audioAnnouncementApplyCustom" type="button" class="primary-action" data-language-id="54435477-cd52-5c78-836d-5c947358e8ab">{{text:54435477-cd52-5c78-836d-5c947358e8ab:text0}}</button>
+                            <button id="audioAnnouncementResetCustom" type="button" data-language-id="a59bf6b9-6f26-52ae-aed9-6b31da354cd8">{{text:a59bf6b9-6f26-52ae-aed9-6b31da354cd8:text0}}</button>
+                            <button id="audioAnnouncementCancelCustom" type="button" data-language-id="e19b221a-3679-5f9c-aa36-e5a8dad3de8e">{{text:e19b221a-3679-5f9c-aa36-e5a8dad3de8e:text0}}</button>
+                        </div>
+
+                        <label data-audio-custom-setting="volume">
+                            <span data-language-id="4aaaece6-a0d9-5036-8377-2ad5a374de21">{{text:4aaaece6-a0d9-5036-8377-2ad5a374de21:text0}}</span>
+                            <input type="checkbox" data-audio-custom-enabled aria-label="{{text:b92a1fbc-e20e-51d2-ae1c-ef6420cf0372:aria-label}}" data-language-id="b92a1fbc-e20e-51d2-ae1c-ef6420cf0372">
+                            <input type="range" data-audio-custom-value min="0" max="1" step="0.05">
+                            <output data-audio-custom-output></output>
+                        </label>
+                        <label data-audio-custom-setting="speechVelocity">
+                            <span data-language-id="e28e8228-121e-5e26-aa77-68fd112cd77c">{{text:e28e8228-121e-5e26-aa77-68fd112cd77c:text0}}</span>
+                            <input type="checkbox" data-audio-custom-enabled aria-label="{{text:8b99606f-566f-5b0e-87cf-bd70179759fb:aria-label}}" data-language-id="8b99606f-566f-5b0e-87cf-bd70179759fb">
+                            <input type="range" data-audio-custom-value min="0.5" max="2.8" step="0.05">
+                            <output data-audio-custom-output></output>
+                        </label>
+                        <label data-audio-custom-setting="toneVelocity">
+                            <span data-language-id="573d403b-56c0-5047-9d7c-24ae7dab8966">{{text:573d403b-56c0-5047-9d7c-24ae7dab8966:text0}}</span>
+                            <input type="checkbox" data-audio-custom-enabled aria-label="{{text:4937cc30-d1bc-58a9-a3cb-a9cc81b320c4:aria-label}}" data-language-id="4937cc30-d1bc-58a9-a3cb-a9cc81b320c4">
+                            <select data-audio-custom-value data-language-id="c4631976-d50f-58fb-b5b8-1fe2575d6a10">{{options:c4631976-d50f-58fb-b5b8-1fe2575d6a10}}</select>
+                            <output data-audio-custom-output></output>
+                        </label>
+                    </div>
+                </div>
+            </pane-page>
+        </form>
+    </dialog>
+<dialog id="stateSettingsDialog" class="app-dialog settings-dialog state-dialog">
+        <form id="stateSettingsForm" method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="0d49b5da-0259-5ec7-be90-9281a307927f">{{text:0d49b5da-0259-5ec7-be90-9281a307927f:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:08289cb2-db49-5b6e-af90-882e13138f9a:aria-label}}" data-language-id="08289cb2-db49-5b6e-af90-882e13138f9a">{{text:08289cb2-db49-5b6e-af90-882e13138f9a:text0}}</button>
+            </header>
+            <fieldset>
+                <legend data-language-id="45cd6991-9070-539a-bf61-b2717cc73625">{{text:45cd6991-9070-539a-bf61-b2717cc73625:text0}}</legend>
+                <label data-language-id="8f9faaa4-bd4e-5117-914a-8c04d8c14b6d">{{text:8f9faaa4-bd4e-5117-914a-8c04d8c14b6d:text0}}<select name="lateBreakBehavior" data-language-id="8e24479a-f48d-5e25-9e72-e1d3713ba832">{{options:8e24479a-f48d-5e25-9e72-e1d3713ba832}}</select>
+                </label>
+            </fieldset>
+            <div class="dialog-actions two-actions">
+                <button type="button" data-close-dialog data-language-id="8b321168-5399-57b6-af2c-c9fff8db3161">{{text:8b321168-5399-57b6-af2c-c9fff8db3161:text0}}</button>
+                <button class="primary-action" type="submit" value="save" data-language-id="15396eda-5af1-5270-a8a0-59fc0ca22a5f">{{text:15396eda-5af1-5270-a8a0-59fc0ca22a5f:text0}}</button>
+            </div>
+        </form>
+    </dialog>
+<dialog id="tripSettingsDialog" class="app-dialog trip-settings-dialog">
+        <form id="tripSettingsForm" method="dialog">
+            <header class="dialog-header trip-settings-header">
+                <div class="trip-settings-heading">
+                    <button id="tripSettingsCloud" class="trip-settings-cloud" type="button" data-network-status="offline" aria-label="{{text:0ee993e7-7102-5448-8ca7-9d26d26c5b22:aria-label}}" data-language-id="0ee993e7-7102-5448-8ca7-9d26d26c5b22"></button>
+                    <h2 id="tripSettingsTitle" data-language-id="5fbb5fe1-e0d3-5ea0-a843-c05b73d7242c">{{text:5fbb5fe1-e0d3-5ea0-a843-c05b73d7242c:text0}}</h2>
+                </div>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:9e9162d4-5423-56dd-bdbe-188f5a746d55:aria-label}}" data-language-id="9e9162d4-5423-56dd-bdbe-188f5a746d55">{{text:9e9162d4-5423-56dd-bdbe-188f5a746d55:text0}}</button>
+            </header>
+
+            <section class="trip-settings-times" aria-label="{{text:81f24849-4dd3-5a05-851a-43cfa226720b:aria-label}}" data-language-id="81f24849-4dd3-5a05-851a-43cfa226720b">
+                <article class="trip-time-row" data-trip-time-row="standard-time">
+                    <div class="trip-time-copy">
+                        <strong data-language-id="0d774e9c-e504-5f98-bc78-4bbe77109be4">{{text:0d774e9c-e504-5f98-bc78-4bbe77109be4:text0}}</strong>
+                        <span class="trip-time-separator" aria-hidden="true" data-language-id="863e602a-7852-56f3-bf31-b87d23b5f196">{{text:863e602a-7852-56f3-bf31-b87d23b5f196:text0}}</span>
+                        <span class="trip-time-description" data-language-id="1797cf3e-ac2e-5d2f-9f82-32ce36c28e23">{{text:1797cf3e-ac2e-5d2f-9f82-32ce36c28e23:text0}}</span>
+                    </div>
+                    <output id="tripStandardTime" class="trip-time-value" data-language-id="4dc587dd-228b-52d0-8fbc-b283707d884d">{{text:4dc587dd-228b-52d0-8fbc-b283707d884d:text0}}</output>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="standard-time" aria-label="{{text:ee91d711-3baf-5d23-a36e-efd9d844e5b4:aria-label}}" data-speech-editor-id="builtin:standardTime:trip-settings" data-speech-options-category="settings" data-speech-options-category="settings" data-speech-target="#tripSettingsDialog [data-trip-time-field=&quot;standard-time&quot;]" speech-function="WMOFActions.changeStandardTime" speech-persist speech-collect {{speech:ee91d711-3baf-5d23-a36e-efd9d844e5b4}} data-language-id="ee91d711-3baf-5d23-a36e-efd9d844e5b4"><span aria-hidden="true"></span></button>
+                </article>
+                <article class="trip-time-row" data-trip-time-row="scheduled-start">
+                    <div class="trip-time-copy">
+                        <strong data-language-id="a08681d2-2b6b-5bfa-bbf0-d0ea8de90a34">{{text:a08681d2-2b6b-5bfa-bbf0-d0ea8de90a34:text0}}</strong>
+                        <span class="trip-time-separator" aria-hidden="true" data-language-id="6d73aa7f-ce56-548d-81cb-48e3896de5db">{{text:6d73aa7f-ce56-548d-81cb-48e3896de5db:text0}}</span>
+                        <span class="trip-time-description" data-language-id="dd92ccd7-6af9-5052-bdd6-73b3a439ed61">{{text:dd92ccd7-6af9-5052-bdd6-73b3a439ed61:text0}}</span>
+                    </div>
+                    <output id="tripScheduledStart" class="trip-time-value" data-language-id="b154c44d-49c3-59bf-b7fd-910521dde74e">{{text:b154c44d-49c3-59bf-b7fd-910521dde74e:text0}}</output>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="scheduled-start" aria-label="{{text:0419bdd1-9af3-5879-a253-03afdc208a5f:aria-label}}" data-language-id="0419bdd1-9af3-5879-a253-03afdc208a5f"><span aria-hidden="true"></span></button>
+                    <button class="trip-time-now-toggle" type="button" data-trip-start-now-target="scheduled-start" aria-label="{{text:7bf5cd72-b515-5e3b-9388-a77d99a4f36c:aria-label}}" aria-pressed="false" hidden data-language-id="7bf5cd72-b515-5e3b-9388-a77d99a4f36c">{{text:7bf5cd72-b515-5e3b-9388-a77d99a4f36c:text0}}</button>
+                </article>
+                <article class="trip-time-row" data-trip-time-row="actual-start">
+                    <div class="trip-time-copy">
+                        <strong data-language-id="b502baf4-7e41-572c-becd-5feb639feb2a">{{text:b502baf4-7e41-572c-becd-5feb639feb2a:text0}}</strong>
+                        <span class="trip-time-separator" aria-hidden="true" data-language-id="98a74890-e96c-5b9e-95e2-bb405582d389">{{text:98a74890-e96c-5b9e-95e2-bb405582d389:text0}}</span>
+                        <span class="trip-time-description" data-language-id="9019cb08-e75e-50e2-a6a8-c07dd22872e1">{{text:9019cb08-e75e-50e2-a6a8-c07dd22872e1:text0}}</span>
+                    </div>
+                    <output id="tripActualStart" class="trip-time-value" data-language-id="0d3583d0-e835-5f59-b23e-b0bc84fdb90f">{{text:0d3583d0-e835-5f59-b23e-b0bc84fdb90f:text0}}</output>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="actual-start" aria-label="{{text:8267b92d-c542-5b9a-bd53-4386d3612b5b:aria-label}}" data-language-id="8267b92d-c542-5b9a-bd53-4386d3612b5b"><span aria-hidden="true"></span></button>
+                    <button class="trip-time-now-toggle" type="button" data-trip-start-now-target="actual-start" aria-label="{{text:e9473a25-d62b-5ec8-ac48-34614d62664a:aria-label}}" aria-pressed="false" hidden data-language-id="e9473a25-d62b-5ec8-ac48-34614d62664a">{{text:e9473a25-d62b-5ec8-ac48-34614d62664a:text0}}</button>
+                </article>
+                <article class="trip-time-row" data-trip-time-row="creation-time">
+                    <div class="trip-time-copy">
+                        <strong data-language-id="59145f91-a7ec-5743-b004-6a40965049cb">{{text:59145f91-a7ec-5743-b004-6a40965049cb:text0}}</strong>
+                        <span class="trip-time-separator" aria-hidden="true" data-language-id="110a9d1c-e06c-5a9a-b5c9-767b1a5b5d50">{{text:110a9d1c-e06c-5a9a-b5c9-767b1a5b5d50:text0}}</span>
+                        <span class="trip-time-description" data-language-id="a3a07c61-fdb8-58e1-b6b7-9fbc3324728a">{{text:a3a07c61-fdb8-58e1-b6b7-9fbc3324728a:text0}}</span>
+                    </div>
+                    <output id="tripCreationTime" class="trip-time-value" data-language-id="54734488-e5d3-5dd8-8b14-52780596d1a7">{{text:54734488-e5d3-5dd8-8b14-52780596d1a7:text0}}</output>
+                    <button class="trip-time-edit" type="button" data-trip-time-field="creation-time" aria-label="{{text:b7e31880-64cf-50cb-ad1f-3f6b2c39b892:aria-label}}" data-language-id="b7e31880-64cf-50cb-ad1f-3f6b2c39b892"><span aria-hidden="true"></span></button>
+                </article>
+
+            </section>
+
+            <div class="trip-settings-options">
+                <label class="trip-productive-option" data-language-id="91a90429-7690-594e-bf3e-c8c086bd0475"><input id="tripProductive" type="checkbox" checked>{{text:91a90429-7690-594e-bf3e-c8c086bd0475:text0}}</label>
+                <label class="trip-defer-option" data-language-id="5b3a41ff-485d-5975-bfef-2e2ef95d37c8"><input id="tripDefer" type="checkbox">{{text:5b3a41ff-485d-5975-bfef-2e2ef95d37c8:text0}}</label>
+            </div>
+            <div id="tripSetStartsNowActions" class="trip-now-actions" hidden>
+                <button id="tripSetStartsNow" class="trip-now-action" type="button" aria-label="{{text:f3589ef9-063d-5368-99fe-7cbf7057fd9e:aria-label}}" data-language-id="f3589ef9-063d-5368-99fe-7cbf7057fd9e">
+                    <div class="trip-now-set-word" data-language-id="0a437ca6-bdf0-589c-aff7-33a8c0284fb8">{{text:0a437ca6-bdf0-589c-aff7-33a8c0284fb8:text0}}</div>
+                    <div class="trip-now-space">&nbsp;</div>
+                    <div class="trip-now-start-copy" data-language-id="a7e2780e-6d8d-56da-8774-51e47c18c23e">{{text:a7e2780e-6d8d-56da-8774-51e47c18c23e:text0}}</div>
+                    <div class="trip-now-to-word" data-language-id="0083e214-6a40-513c-994f-ac90a8587404">&nbsp;{{text:0083e214-6a40-513c-994f-ac90a8587404:text0}}&nbsp;</div>
+                    <div class="trip-now-value-copy">
+                        <span class="trip-now-now-label" data-language-id="962d4598-5d37-51a5-a913-8aaea373446a">{{text:962d4598-5d37-51a5-a913-8aaea373446a:text0}}</span>
+                        <span class="trip-now-timestamp-label" aria-hidden="true"></span>
+                    </div>
+                </button>
+                <button id="tripSetStartsNowCancel" class="trip-now-cancel" type="button" hidden data-language-id="f01b89a4-b377-58c6-ad27-73ca640c05d2">{{text:f01b89a4-b377-58c6-ad27-73ca640c05d2:text0}}</button>
+            </div>
+
+            <div class="dialog-actions two-actions">
+                <button type="button" data-close-dialog data-language-id="5fce90e8-2312-526b-839d-995f7e28aeb8">{{text:5fce90e8-2312-526b-839d-995f7e28aeb8:text0}}</button>
+                <button id="tripSettingsPrimary" class="primary-action" type="submit" value="save" data-language-id="ece7213b-4892-5530-8d44-50a04c970f39">{{text:ece7213b-4892-5530-8d44-50a04c970f39:text0}}</button>
+            </div>
+        </form>
+    </dialog>
+<dialog id="scheduledStartDialog" class="app-dialog scheduled-start-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="31f8d9ef-5e30-5e5f-9168-4e16420fe0b6">{{text:31f8d9ef-5e30-5e5f-9168-4e16420fe0b6:text0}}</h2>
+                <button id="scheduledStartClose" class="dialog-close" type="button" aria-label="{{text:3f2010ef-0bd6-5b96-a6da-26a6914feebe:aria-label}}" data-language-id="3f2010ef-0bd6-5b96-a6da-26a6914feebe">{{text:3f2010ef-0bd6-5b96-a6da-26a6914feebe:text0}}</button>
+            </header>
+            <section class="scheduled-start-content">
+                <div class="scheduled-start-countdown">
+                    <span id="scheduledStartCountdownLabel" data-language-id="1c0ed395-31ca-5e80-a944-d0c0a1506bd9">{{text:1c0ed395-31ca-5e80-a944-d0c0a1506bd9:text0}}</span>
+                    <strong id="scheduledStartCountdown" data-language-id="141a7295-97b0-5c78-a14b-aa52d9c97f32">{{text:141a7295-97b0-5c78-a14b-aa52d9c97f32:text0}}</strong>
+                </div>
+                <button id="scheduledStartStandard" class="scheduled-start-standard" type="button" data-speech-editor-id="builtin:standardTime:scheduledStartStandard" data-speech-options-category="settings" speech-chain-context="scheduled-start" data-speech-target="#scheduledStartStandard" speech-function="WMOFActions.changeStandardTime" speech-persist speech-collect {{speech:000d3e14-f633-5b5b-be25-fdc1b43de4e9}} data-language-id="000d3e14-f633-5b5b-be25-fdc1b43de4e9">
+                    <span data-language-id="7917cb9f-fd05-586b-93a4-288b7a197147">{{text:7917cb9f-fd05-586b-93a4-288b7a197147:text0}}</span>
+                    <strong id="scheduledStartStandardValue" data-language-id="6dc36e0b-9f45-5693-ba8f-791de2ae5e38">{{text:6dc36e0b-9f45-5693-ba8f-791de2ae5e38:text0}}</strong>
+                </button>
+                <label id="scheduledStartAutoOption" class="scheduled-start-auto" data-language-id="b31d4ac9-ac50-51ad-96d2-2c3f5a29a27f"><input id="scheduledStartAuto" type="checkbox">{{text:b31d4ac9-ac50-51ad-96d2-2c3f5a29a27f:text0}}</label>
+                <p id="scheduledStartMessage" class="scheduled-start-message" role="status" hidden></p>
+            </section>
+            <div class="dialog-actions two-actions scheduled-start-actions">
+                <button id="scheduledStartCancel" type="button" data-language-id="3b19e80d-8f01-5beb-b775-f9761cd3c7bd">{{text:3b19e80d-8f01-5beb-b775-f9761cd3c7bd:text0}}</button>
+                <button id="scheduledStartNow" class="primary-action" type="button" data-language-id="62c4cd0c-e928-5afc-b1f6-59b7216dd721">{{text:62c4cd0c-e928-5afc-b1f6-59b7216dd721:text0}}</button>
+                <button id="scheduledStartOnTime" class="primary-action" type="button" hidden data-language-id="41d0ace6-f943-537f-8c0a-8d74e28fd612">{{text:41d0ace6-f943-537f-8c0a-8d74e28fd612:text0}}</button>
+            </div>
+        </form>
+    </dialog>
+<dialog id="breakDialog" class="app-dialog break-dialog">
+        <section class="break-dialog-content">
+            <header class="dialog-header">
+                <h2 data-language-id="fcda458a-9119-5aed-bc4d-b8f95034466d">{{text:fcda458a-9119-5aed-bc4d-b8f95034466d:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:b23ac38c-08cd-575e-befa-02e477de895a:aria-label}}" data-language-id="b23ac38c-08cd-575e-befa-02e477de895a">{{text:b23ac38c-08cd-575e-befa-02e477de895a:text0}}</button>
+            </header>
+            <div class="break-type-actions" role="group" aria-label="{{text:e81436cc-2e0e-5490-a5cf-a33485cb6c26:aria-label}}" data-language-id="e81436cc-2e0e-5490-a5cf-a33485cb6c26">
+                <button class="break-type-button" type="button" data-break-type="break" data-language-id="2e4a7510-4b4b-5aae-8f43-f2e78f10899e">{{text:2e4a7510-4b4b-5aae-8f43-f2e78f10899e:text0}}</button>
+                <button class="break-type-button lunch" type="button" data-break-type="lunch" data-language-id="793a7c5d-ccd6-5087-96b1-36ebe02ae944">{{text:793a7c5d-ccd6-5087-96b1-36ebe02ae944:text0}}</button>
+                <button class="break-type-button" type="button" data-break-type="short-break" data-language-id="43173dcd-e064-5736-b0a8-28d686feefda">{{text:43173dcd-e064-5736-b0a8-28d686feefda:text0}}</button>
+            </div>
+
+        </section>
+    </dialog>
+<dialog id="cancelDownConfirmDialog" class="app-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="377e8639-7127-5ef5-b203-7660527ef78b">{{text:377e8639-7127-5ef5-b203-7660527ef78b:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:3a8987b9-661a-5e98-96c5-8d3b5e73c77b:aria-label}}" data-language-id="3a8987b9-661a-5e98-96c5-8d3b5e73c77b">{{text:3a8987b9-661a-5e98-96c5-8d3b5e73c77b:text0}}</button>
+            </header>
+            <p id="cancelDownConfirmMessage" data-language-id="14233440-5849-59ae-ae66-8ac28da2eae7">{{text:14233440-5849-59ae-ae66-8ac28da2eae7:text0}}</p>
+            <div class="dialog-actions two-actions">
+                <button id="cancelDownConfirmYes" class="primary-action" type="button" data-language-id="1e99dede-37a9-570c-bffe-7ab5b8ac6dd9">{{text:1e99dede-37a9-570c-bffe-7ab5b8ac6dd9:text0}}</button>
+                <button id="cancelDownConfirmNo" type="button" data-language-id="11e3fc0d-4ec3-517b-ae80-614ce9eb6dd8">{{text:11e3fc0d-4ec3-517b-ae80-614ce9eb6dd8:text0}}</button>
+            </div>
+            <speech-menu data-speech-editor-id="builtin:menu:cancelDownConfirmDialog">
+                <speech-command data-speech-editor-id="builtin:confirm:cancelDownConfirmDialog" data-speech-intent="confirm" data-speech-options-category="trip-actions" data-speech-target="#cancelDownConfirmYes" speech-function="WMOFActions.confirmCancelDownTime" speech-persist {{speech:af749d46-3585-5db7-8609-2f24db19c4d6}} data-language-id="af749d46-3585-5db7-8609-2f24db19c4d6"></speech-command>
+            </speech-menu>
+        </form>
+    </dialog>
+<dialog id="speechTimingDialog" class="app-dialog speech-timing-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="5aa49cb1-7c74-522f-bc89-53c29ab687e9">{{text:5aa49cb1-7c74-522f-bc89-53c29ab687e9:text0}}</h2>
+                <button class="dialog-close" type="submit" aria-label="{{text:ac59404b-ef2a-535f-bff1-cb2e4f3013d2:aria-label}}" data-language-id="ac59404b-ef2a-535f-bff1-cb2e4f3013d2">{{text:ac59404b-ef2a-535f-bff1-cb2e4f3013d2:text0}}</button>
+            </header>
+            <section class="speech-timing-grid" aria-live="polite">
+                <article class="speech-timing-primary">
+                    <span data-language-id="7c814aba-cf18-538d-89d2-189142fde407">{{text:7c814aba-cf18-538d-89d2-189142fde407:text0}}</span>
+                    <strong id="speechTimingRate" data-language-id="6f7d7ec9-f1af-5221-8ed5-4228642f5fed">{{text:6f7d7ec9-f1af-5221-8ed5-4228642f5fed:text0}}</strong>
+                </article>
+                <article class="speech-timing-primary">
+                    <span data-language-id="43c126ed-8982-5399-9c36-416dc67819c2">{{text:43c126ed-8982-5399-9c36-416dc67819c2:text0}}</span>
+                    <strong id="speechTimingGrace" data-language-id="fec84309-d7b8-5dbe-965a-3de89ce80c57">{{text:fec84309-d7b8-5dbe-965a-3de89ce80c57:text0}}</strong>
+                </article>
+                <dl>
+                    <div><dt data-language-id="0a2f6476-846d-5b73-8f07-db0ecbfdb02d">{{text:0a2f6476-846d-5b73-8f07-db0ecbfdb02d:text0}}</dt><dd id="speechTimingDispatchDelay" data-language-id="949431ea-b492-5c1e-9844-e3fc3ba396e3">{{text:949431ea-b492-5c1e-9844-e3fc3ba396e3:text0}}</dd></div>
+                    <div><dt data-language-id="43e499d5-d499-5a15-9fa7-5f9b7a306121">{{text:43e499d5-d499-5a15-9fa7-5f9b7a306121:text0}}</dt><dd id="speechTimingTtsRate" data-language-id="5c6b2d17-e144-5447-b7a2-be70ce1315c0">{{text:5c6b2d17-e144-5447-b7a2-be70ce1315c0:text0}}</dd></div>
+                    <div><dt data-language-id="4837cda7-7047-507d-bee1-5a7fa4cc764b">{{text:4837cda7-7047-507d-bee1-5a7fa4cc764b:text0}}</dt><dd id="speechTimingTtsAdjustment" data-language-id="81f9b34c-a5fa-514c-984c-937f931430b0">{{text:81f9b34c-a5fa-514c-984c-937f931430b0:text0}}</dd></div>
+                    <div><dt data-language-id="0b7c6fc5-dc22-5a13-829d-bbe11d7a23ec">{{text:0b7c6fc5-dc22-5a13-829d-bbe11d7a23ec:text0}}</dt><dd id="speechTimingConfidence" data-language-id="3722c302-6557-5965-97cd-5d2399415e11">{{text:3722c302-6557-5965-97cd-5d2399415e11:text0}}</dd></div>
+                    <div><dt data-language-id="de47f56a-1358-5b4e-919d-9e58570e6211">{{text:de47f56a-1358-5b4e-919d-9e58570e6211:text0}}</dt><dd id="speechTimingTripMean" data-language-id="2e76799c-4c18-5a3f-9044-bcbe0890f359">{{text:2e76799c-4c18-5a3f-9044-bcbe0890f359:text0}}</dd></div>
+                    <div><dt data-language-id="d7dfe1ea-7f64-5287-8642-ba0c338a2f8e">{{text:d7dfe1ea-7f64-5287-8642-ba0c338a2f8e:text0}}</dt><dd id="speechTimingTripDeviation" data-language-id="a56f6be2-749a-5ee6-bed1-0583ee7717bf">{{text:a56f6be2-749a-5ee6-bed1-0583ee7717bf:text0}}</dd></div>
+                    <div><dt data-language-id="90e1ffa0-4f20-51c0-825c-6d1508744133">{{text:90e1ffa0-4f20-51c0-825c-6d1508744133:text0}}</dt><dd id="speechTimingTripSamples" data-language-id="822e99ce-b40d-5f3a-8875-f85126b34c88">{{text:822e99ce-b40d-5f3a-8875-f85126b34c88:text0}}</dd></div>
+                    <div><dt data-language-id="30a2d6fd-4cf1-521b-97a5-885c0f451654">{{text:30a2d6fd-4cf1-521b-97a5-885c0f451654:text0}}</dt><dd id="speechTimingBaselineMean" data-language-id="080b98c8-ec88-53b4-8f20-ccecd865998c">{{text:080b98c8-ec88-53b4-8f20-ccecd865998c:text0}}</dd></div>
+                    <div><dt data-language-id="865d1823-dd71-5ce1-a763-53f777713dfb">{{text:865d1823-dd71-5ce1-a763-53f777713dfb:text0}}</dt><dd id="speechTimingBaselineDeviation" data-language-id="f48ade40-98db-58ce-873d-242d2a93a633">{{text:f48ade40-98db-58ce-873d-242d2a93a633:text0}}</dd></div>
+                    <div><dt data-language-id="b22186f9-ec86-593f-baad-6ef225778d53">{{text:b22186f9-ec86-593f-baad-6ef225778d53:text0}}</dt><dd id="speechTimingBaselineSamples" data-language-id="881cd7c5-50bc-53a8-8cec-7b4fb03fe5e1">{{text:881cd7c5-50bc-53a8-8cec-7b4fb03fe5e1:text0}}</dd></div>
+                </dl>
+                <div class="speech-timing-stream">
+                    <span data-language-id="bf9d136b-ca11-584f-b3a2-2fe00fd7a31c">{{text:bf9d136b-ca11-584f-b3a2-2fe00fd7a31c:text0}}</span>
+                    <output id="speechTimingStream" data-language-id="f9bdd06b-078b-59f3-9660-90e1430aac5b">{{text:f9bdd06b-078b-59f3-9660-90e1430aac5b:text0}}</output>
+                </div>
+                <div class="speech-timing-recent">
+                    <span data-language-id="15238c84-904c-5dcd-b24d-84d5f374cac3">{{text:15238c84-904c-5dcd-b24d-84d5f374cac3:text0}}</span>
+                    <ol id="speechTimingRecent"></ol>
+                </div>
+            </section>
+        </form>
+    </dialog>
+<dialog id="liveStreamDialog" class="app-dialog live-stream-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2 data-language-id="191e3336-022c-51bf-8608-68717226bbaa">{{text:191e3336-022c-51bf-8608-68717226bbaa:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:44bed6c9-e67e-53cb-bb6a-dc90644543b0:aria-label}}" data-language-id="44bed6c9-e67e-53cb-bb6a-dc90644543b0">{{text:44bed6c9-e67e-53cb-bb6a-dc90644543b0:text0}}</button>
+            </header>
+            <div class="live-stream-layout">
+                <section id="liveStreamViewerSection" class="live-stream-section" aria-labelledby="liveStreamViewerTitle" hidden>
+                    <h3 id="liveStreamViewerTitle" data-language-id="a6fb3ceb-2920-5beb-890d-aec973f1d7c1">{{text:a6fb3ceb-2920-5beb-890d-aec973f1d7c1:text0}}</h3>
+                    <div class="live-stream-identity-row">
+                        <div class="identity-object-card">
+                            <strong id="liveStreamIdentityName" data-language-id="d0938306-5b3e-55a6-bae2-b249960673af">{{text:d0938306-5b3e-55a6-bae2-b249960673af:text0}}</strong>
+                            <span id="liveStreamIdentityMeta" data-language-id="cd1e2c0a-088d-5dfd-8408-956f601737b0">{{text:cd1e2c0a-088d-5dfd-8408-956f601737b0:text0}}</span>
+                        </div>
+                        <button id="liveStreamLookupButton" type="button" data-language-id="b2ab145a-14de-5ea7-ba80-ba3180174076">{{text:b2ab145a-14de-5ea7-ba80-ba3180174076:text0}}</button>
+                    </div>
+                    <div class="live-stream-view-actions">
+                        <button id="liveStreamWatchButton" class="primary-action" type="button" disabled data-language-id="f1827cb0-0aaf-5191-a807-8b1d72247477">{{text:f1827cb0-0aaf-5191-a807-8b1d72247477:text0}}</button>
+                        <span id="liveStreamViewerStatus" class="live-stream-status" data-language-id="d8785d44-2874-5f71-878e-dde06a7b7c53">{{text:d8785d44-2874-5f71-878e-dde06a7b7c53:text0}}</span>
+                    </div>
+                    <p class="dialog-helper" data-language-id="59a0349b-eb99-54dc-a65d-92bb07e4059b">{{text:59a0349b-eb99-54dc-a65d-92bb07e4059b:text0}}</p>
+
+                    <fieldset id="liveStreamTrainerMessage" class="live-stream-trainer-message" disabled>
+                        <legend data-language-id="9a8ba22f-9dd0-5b24-8167-ecbe0c7ce508">{{text:9a8ba22f-9dd0-5b24-8167-ecbe0c7ce508:text0}}</legend>
+                        <div class="live-stream-trainer-message-row">
+                            <input id="liveStreamTrainerMessageText" type="text" maxlength="500" autocomplete="off" aria-label="{{text:b0a1b21c-2f33-5a3e-b1fa-381aabe8090b:aria-label}}" placeholder="{{text:b0a1b21c-2f33-5a3e-b1fa-381aabe8090b:placeholder}}" data-language-id="b0a1b21c-2f33-5a3e-b1fa-381aabe8090b">
+                            <button id="liveStreamTrainerMessageSend" class="primary-action" type="button" data-language-id="95a243d5-7ecd-58e0-82b9-580776d4bf23">{{text:95a243d5-7ecd-58e0-82b9-580776d4bf23:text0}}</button>
+                        </div>
+                        <p id="liveStreamTrainerMessageStatus" class="live-stream-status" aria-live="polite"></p>
+                    </fieldset>
+
+                    <fieldset id="liveStreamVolumeControls" class="live-stream-volume-controls" disabled>
+                        <legend data-language-id="0f063567-ca2c-5846-aff5-a7f9db310118">{{text:0f063567-ca2c-5846-aff5-a7f9db310118:text0}}</legend>
+                        <label class="live-stream-mute">
+                            <input id="liveStreamMute" type="checkbox">
+                            <span data-language-id="85531008-f9a6-5ab4-aa7e-89076bd985bf">{{text:85531008-f9a6-5ab4-aa7e-89076bd985bf:text0}}</span>
+                        </label>
+                        <label>
+                            <span data-language-id="df9a1756-e2d7-5033-8312-8d41faffdbb8">{{text:df9a1756-e2d7-5033-8312-8d41faffdbb8:text0}}<output id="liveStreamMasterVolumeValue" data-language-id="6ee6b7df-ad62-591c-8479-28edcc1101d4">{{text:6ee6b7df-ad62-591c-8479-28edcc1101d4:text0}}</output></span>
+                            <input id="liveStreamMasterVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <label>
+                            <span data-language-id="4edf6997-bf95-5b1e-91de-1260cb0ddf89">{{text:4edf6997-bf95-5b1e-91de-1260cb0ddf89:text0}}<output id="liveStreamMicVolumeValue" data-language-id="806e7989-04ee-5d7b-81b4-99aa9fbeb4a1">{{text:806e7989-04ee-5d7b-81b4-99aa9fbeb4a1:text0}}</output></span>
+                            <input id="liveStreamMicVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <label>
+                            <span data-language-id="16ce574f-956c-5e2f-a558-96ad95436660">{{text:16ce574f-956c-5e2f-a558-96ad95436660:text0}}<output id="liveStreamProgramVolumeValue" data-language-id="6282fbd7-2066-5207-82f3-c1507dfd573e">{{text:6282fbd7-2066-5207-82f3-c1507dfd573e:text0}}</output></span>
+                            <input id="liveStreamProgramVolume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                    </fieldset>
+
+                    <div class="live-stream-readout" aria-live="polite">
+                        <div><span data-language-id="01be1c81-fcf4-5ae0-9942-52a9d182147f">{{text:01be1c81-fcf4-5ae0-9942-52a9d182147f:text0}}</span><strong id="liveStreamRemoteState" data-language-id="2997a7c9-b0ed-5104-af1f-aacdd4a4f66e">{{text:2997a7c9-b0ed-5104-af1f-aacdd4a4f66e:text0}}</strong></div>
+                        <div><span data-language-id="0adf1049-c1d7-51c1-a235-934af46f337a">{{text:0adf1049-c1d7-51c1-a235-934af46f337a:text0}}</span><strong id="liveStreamRemoteTime" data-language-id="2d62ffc7-c5e7-5e96-a105-07116a168ee8">{{text:2d62ffc7-c5e7-5e96-a105-07116a168ee8:text0}}</strong></div>
+                        <div><span data-language-id="9970c75c-cce5-55c6-b03c-7511f29d419f">{{text:9970c75c-cce5-55c6-b03c-7511f29d419f:text0}}</span><strong id="liveStreamRemoteGoal" data-language-id="5113cad1-42d6-5f79-a9ed-80de9445b435">{{text:5113cad1-42d6-5f79-a9ed-80de9445b435:text0}}</strong></div>
+                        <div class="live-stream-transcript"><span data-language-id="c3b1d0a6-4795-5e97-9186-4fe6418cc388">{{text:c3b1d0a6-4795-5e97-9186-4fe6418cc388:text0}}</span><strong id="liveStreamRemoteSpeech" data-language-id="fcb824ef-3b4d-536d-8880-98c8234d3e1a">{{text:fcb824ef-3b4d-536d-8880-98c8234d3e1a:text0}}</strong></div>
+                    </div>
+                </section>
+            </div>
+        </form>
+    </dialog>
+<dialog id="tripTransitionOverlay" class="trip-transition-overlay" aria-labelledby="tripTransitionOverlayTitle" hidden>
+        <div class="trip-transition-overlay-panel">
+            <h2 id="tripTransitionOverlayTitle" data-language-id="e2d231dd-d881-5bfa-b9fc-f16ad296a813">{{text:e2d231dd-d881-5bfa-b9fc-f16ad296a813:text0}}</h2>
+            <div id="tripTransitionOverlayDetails" class="trip-transition-overlay-details"></div>
+            <div id="tripTransitionSummaryActions" class="dialog-actions two-actions" hidden>
+                <button id="tripTransitionSummaryOk" class="primary-action" type="button" data-language-id="555c713a-48df-4120-a905-b6e468ffb855">{{text:555c713a-48df-4120-a905-b6e468ffb855:text0}}</button>
+                <button id="tripTransitionSummaryCancel" type="button" data-language-id="81345b5d-1895-4d2f-b30b-552dbc4ac80e">{{text:81345b5d-1895-4d2f-b30b-552dbc4ac80e:text0}}</button>
+            </div>
+        </div>
+    </dialog>
+<dialog id="voicePadRecognitionDialog" class="app-dialog" aria-labelledby="voicePadRecognitionTitle">
+        <section>
+            <header class="dialog-header"><h2 id="voicePadRecognitionTitle" data-language-id="55cc03db-b29d-449a-9b68-e2c3c283c3f4">{{text:55cc03db-b29d-449a-9b68-e2c3c283c3f4:text0}}</h2></header>
+            <p data-language-id="1be05b41-f908-472d-b77c-fbd88a45694b">{{text:1be05b41-f908-472d-b77c-fbd88a45694b:text0}}</p>
+            <div class="dialog-actions two-actions">
+                <button id="voicePadRecognitionOk" class="primary-action" type="button" data-language-id="71c1d83b-4a32-4854-a9eb-af1386848ec1">{{text:71c1d83b-4a32-4854-a9eb-af1386848ec1:text0}}</button>
+                <button id="voicePadRecognitionCancel" type="button" data-language-id="36448f0b-e2b9-4e7e-8f48-a73c6d360407">{{text:36448f0b-e2b9-4e7e-8f48-a73c6d360407:text0}}</button>
+            </div>
+        </section>
+    </dialog>
+<dialog id="speechBreakConfirmDialog" class="app-dialog">
+        <form method="dialog">
+            <header class="dialog-header">
+                <h2 id="speechBreakConfirmTitle" data-language-id="17df6ce8-1c5c-5a51-80ca-3cefea17a8d5">{{text:17df6ce8-1c5c-5a51-80ca-3cefea17a8d5:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:cbd92f49-debb-5149-9392-747578091bbc:aria-label}}" data-language-id="cbd92f49-debb-5149-9392-747578091bbc">{{text:cbd92f49-debb-5149-9392-747578091bbc:text0}}</button>
+            </header>
+            <p id="speechBreakConfirmMessage" data-language-id="25d59d74-5530-555e-be38-812e5462af38">{{text:25d59d74-5530-555e-be38-812e5462af38:text0}}</p>
+            <div class="dialog-actions three-actions">
+                <button id="speechBreakConfirmYes" class="primary-action" type="button" data-language-id="628fe7dd-f224-5631-b327-b2529e72291e">{{text:628fe7dd-f224-5631-b327-b2529e72291e:text0}}</button>
+                <button id="speechBreakConfirmNo" type="button" data-language-id="14371270-e101-5f7b-8388-44b2b0e8fd8f">{{text:14371270-e101-5f7b-8388-44b2b0e8fd8f:text0}}</button>
+                <button id="speechBreakConfirmCancel" type="button" data-language-id="ad5a8774-6788-58ea-95b4-b91cd00c1060">{{text:ad5a8774-6788-58ea-95b4-b91cd00c1060:text0}}</button>
+            </div>
+            <speech-menu data-speech-editor-id="builtin:menu:speechBreakConfirmDialog">
+                <speech-command data-speech-editor-id="builtin:yes:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmYes" speech-function="WMOFActions.confirmBreakPromptYes" speech-persist {{speech:e746da78-898f-5d72-a941-f92314ed50d5}} data-language-id="e746da78-898f-5d72-a941-f92314ed50d5"></speech-command>
+                <speech-command data-speech-editor-id="builtin:no:speechBreakConfirmDialog" data-speech-options-category="trip-actions" data-speech-target="#speechBreakConfirmNo" speech-function="WMOFActions.confirmBreakPromptNo" speech-persist {{speech:7cd77eb9-76f0-5be9-9520-db405aed36be}} data-language-id="7cd77eb9-76f0-5be9-9520-db405aed36be"></speech-command>
+            </speech-menu>
+        </form>
+    </dialog>

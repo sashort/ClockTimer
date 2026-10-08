@@ -1,0 +1,47 @@
+<dialog id="userLookupDialog" class="app-dialog user-lookup-dialog">
+        <form id="userLookupForm" autocomplete="off" novalidate>
+            <header class="dialog-header">
+                <h2 data-language-id="18b081f5-c56a-55ee-bf7c-4a0e96d16075">{{text:18b081f5-c56a-55ee-bf7c-4a0e96d16075:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:45a148a4-3f53-58d3-aced-0e41cae3957b:aria-label}}" data-language-id="45a148a4-3f53-58d3-aced-0e41cae3957b">{{text:45a148a4-3f53-58d3-aced-0e41cae3957b:text0}}</button>
+            </header>
+
+            <section class="user-lookup-search" aria-labelledby="userLookupSearchTitle">
+                <h3 id="userLookupSearchTitle" data-language-id="d767affc-7649-51d1-bfaf-4fb1c754f7b2">{{text:d767affc-7649-51d1-bfaf-4fb1c754f7b2:text0}}</h3>
+                <div class="user-lookup-fields">
+                    <label><span data-language-id="d4338930-6069-515d-9742-e5936b37921f">{{text:d4338930-6069-515d-9742-e5936b37921f:text0}}</span><input id="userLookupId" name="id" inputmode="numeric" pattern="[0-9]*" autocomplete="off"></label>
+                    <label><span data-language-id="1079f377-88fb-5e11-b6dd-7fd545680172">{{text:1079f377-88fb-5e11-b6dd-7fd545680172:text0}}</span><input id="userLookupUsername" name="username" maxlength="191" autocomplete="off"></label>
+                    <label><span data-language-id="e153eaf2-7c46-5e7b-a0d4-65ee5a48a605">{{text:e153eaf2-7c46-5e7b-a0d4-65ee5a48a605:text0}}</span><input id="userLookupFirstName" name="firstName" maxlength="100" autocomplete="off"></label>
+                    <label><span data-language-id="d5075781-6aa9-5650-a2dc-8ae0f434e576">{{text:d5075781-6aa9-5650-a2dc-8ae0f434e576:text0}}</span><input id="userLookupLastName" name="lastName" maxlength="100" autocomplete="off"></label>
+                    <label><span data-language-id="d5a987d9-026d-59c8-8d66-c4b8a2bd7422">{{text:d5a987d9-026d-59c8-8d66-c4b8a2bd7422:text0}}</span><input id="userLookupPreferredName" name="preferredName" maxlength="100" autocomplete="off"></label>
+                </div>
+                <div class="user-lookup-search-actions">
+                    <button id="userLookupClearSearch" type="button" data-language-id="99ccf2f5-9b00-5140-8af8-a4d32c8a0123">{{text:99ccf2f5-9b00-5140-8af8-a4d32c8a0123:text0}}</button>
+                    <button id="userLookupSearchButton" class="primary-action" type="submit" data-language-id="9278e15f-5d93-5dde-b55e-7bf894506322">{{text:9278e15f-5d93-5dde-b55e-7bf894506322:text0}}</button>
+                </div>
+                <p id="userLookupStatus" class="user-lookup-status" role="status" aria-live="polite"></p>
+            </section>
+
+            <section class="user-lookup-selected" aria-labelledby="userLookupSelectedTitle">
+                <h3 id="userLookupSelectedTitle" data-language-id="ee9357e4-0c1f-577d-a972-a71ab5f70171">{{text:ee9357e4-0c1f-577d-a972-a71ab5f70171:text0}}</h3>
+                <div class="identity-object-card">
+                    <strong id="userLookupSelectedName" data-language-id="c8c56437-4f81-5987-95f0-ec282e61b0cc">{{text:c8c56437-4f81-5987-95f0-ec282e61b0cc:text0}}</strong>
+                    <span id="userLookupSelectedMeta" data-language-id="ce8f5d05-011f-5a98-949c-71f97fe7d988">{{text:ce8f5d05-011f-5a98-949c-71f97fe7d988:text0}}</span>
+                </div>
+                <div class="user-lookup-selected-actions">
+                    <button id="userLookupCopySelected" type="button" disabled data-language-id="b5090b32-90ad-5855-a9d6-dbe27d980605">{{text:b5090b32-90ad-5855-a9d6-dbe27d980605:text0}}</button>
+                    <button id="userLookupLiveStream" class="primary-action" type="button" hidden disabled data-language-id="24cae803-083d-5e85-9b70-3a05b309a7fc">{{text:24cae803-083d-5e85-9b70-3a05b309a7fc:text0}}</button>
+                    <button id="userLookupClearSelected" type="button" disabled data-language-id="de11d26c-80eb-5f1a-b747-be6d5397af79">{{text:de11d26c-80eb-5f1a-b747-be6d5397af79:text0}}</button>
+                </div>
+            </section>
+
+<section id="profileEditor" hidden><h3><span data-language-id="9935ec1c-71bf-440a-afd4-12e7d1829df4">{{text:9935ec1c-71bf-440a-afd4-12e7d1829df4:text0}}</span></h3><fieldset id="profileEditorFields" disabled class="user-lookup-fields"><label><span data-language-id="44f68153-0471-4d74-81b4-5af0e7c970a1">{{text:44f68153-0471-4d74-81b4-5af0e7c970a1:text0}}</span><input id="editProfileAccountId" type="text" readonly></label><label><span data-language-id="33c25627-3f1d-4533-aaf2-1b05ce00975b">{{text:33c25627-3f1d-4533-aaf2-1b05ce00975b:text0}}</span><input id="editProfileFirstName" type="text" maxlength="100" required></label><label><span data-language-id="51821966-f709-4992-8859-af7ca4eb62c3">{{text:51821966-f709-4992-8859-af7ca4eb62c3:text0}}</span><input id="editProfileLastName" type="text" maxlength="100" required></label><label><span data-language-id="fde14ef7-3520-4fb9-aab0-afdfa169e299">{{text:fde14ef7-3520-4fb9-aab0-afdfa169e299:text0}}</span><input id="editProfilePreferredName" type="text" maxlength="100"></label><label><span data-language-id="bd16b234-fe83-4e52-a699-ea65059cbea4">{{text:bd16b234-fe83-4e52-a699-ea65059cbea4:text0}}</span><input id="editProfileUsername" type="text" maxlength="191" required></label><label><span data-language-id="70455645-f0e3-46dc-a994-6b16cf3e4e97">{{text:70455645-f0e3-46dc-a994-6b16cf3e4e97:text0}}</span><input id="editProfilePassword" type="password" maxlength="72" autocomplete="new-password"></label><label><span data-language-id="76f39160-086a-4c82-84f0-38dcd035c192">{{text:76f39160-086a-4c82-84f0-38dcd035c192:text0}}</span><input id="editProfileLoginId" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4"></label><label><span data-language-id="dd02a7d4-5611-4704-92a4-3e505c2b5bd5">{{text:dd02a7d4-5611-4704-92a4-3e505c2b5bd5:text0}}</span><input id="editProfilePin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password"></label><label><span data-language-id="6d86858c-562b-446c-8fed-9207c0c97c0b">{{text:6d86858c-562b-446c-8fed-9207c0c97c0b:text0}}</span><input id="editProfilePermissions" type="number" min="0" max="255" step="1"></label></fieldset><button id="editProfileSave" type="button" class="primary-action"><span data-language-id="b97d158e-498f-4352-a8da-6a258d96a42e">{{text:b97d158e-498f-4352-a8da-6a258d96a42e:text0}}</span></button><p id="editProfileStatus" role="status" aria-live="polite"></p></section>
+            <section class="user-lookup-results-section" aria-labelledby="userLookupResultsTitle">
+                <div class="user-lookup-results-header">
+                    <h3 id="userLookupResultsTitle" data-language-id="eb3d19df-7a1a-5fd6-81d9-0278ce991a06">{{text:eb3d19df-7a1a-5fd6-81d9-0278ce991a06:text0}}</h3>
+                    <span id="userLookupResultCount"></span>
+                </div>
+                <div id="userLookupResults" class="user-lookup-results" role="list"></div>
+                <button id="userLookupLoadMore" type="button" hidden data-language-id="bf49f397-6a98-5404-a3af-44e320a75d47">{{text:bf49f397-6a98-5404-a3af-44e320a75d47:text0}}</button>
+            </section>
+        </form>
+    </dialog>

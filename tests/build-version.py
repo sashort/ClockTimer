@@ -13,12 +13,15 @@ with tempfile.TemporaryDirectory() as directory:
     page = '<output id="appVersion">LOCAL</output><script src="app.js?v=old"></script><link href="app.css">'
     for name in ('index.html', 'templates/index.html', 'drop-in.html', 'templates/drop-in.html', 'order-filler.html', 'templates/order-filler.html'):
         (root / name).write_text(page, encoding='utf-8')
+    (root / 'templates/pages').mkdir()
+    (root / 'templates/pages/head.html').write_text('<link href="MenuIcons.css">', encoding='utf-8')
     (root / 'app.js').write_text('const SPEECH_RUNTIME_REVISION = "old";', encoding='utf-8')
     first = module.stamp(root)
     assert re.fullmatch('[A-Z0-9]{6}', first)
     for name in ('index.html', 'templates/index.html', 'drop-in.html', 'templates/drop-in.html', 'order-filler.html', 'templates/order-filler.html'):
         text = (root / name).read_text(encoding='utf-8')
         assert f'>{first}</output>' in text and f'build={first}' in text and 'v=old' in text
+    assert f'build={first}' in (root / 'templates/pages/head.html').read_text(encoding='utf-8')
     assert first in (root / 'app.js').read_text(encoding='utf-8')
     second = module.stamp(root)
     assert first != second

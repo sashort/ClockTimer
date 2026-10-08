@@ -1,0 +1,341 @@
+<div class="portrait-orientation-notice" role="status" data-language-id="d3514694-12c8-52c9-b222-37a71145aea8">{{text:d3514694-12c8-52c9-b222-37a71145aea8:text0}}</div>
+    <main id="app" class="app" data-state="offline" data-trip-state="ready" data-trip-log-pinned="true">
+        <header class="app-header">
+            <hamburger-menu id="mainMenu" class="main-menu" safe-boundary="#speechMicBar" aria-label="{{text:dd15ac75-3ccc-5a3a-8ea8-5d586879e73f:aria-label}}" data-language-id="dd15ac75-3ccc-5a3a-8ea8-5d586879e73f">
+                <button id="menuButton" class="header-button hamburger-button" type="button" slot="trigger" aria-label="{{text:1b6fbb32-1fe6-57d1-b707-277cf21579b9:aria-label}}" data-language-id="1b6fbb32-1fe6-57d1-b707-277cf21579b9">
+                    <span></span><span></span><span></span>
+                </button>
+
+                <div id="menuAccountRow" class="main-menu-row menu-account-row">
+                    <button id="profileMenuButton" type="button" data-dialog="profileDialog" hidden data-language-id="fea14455-1b3d-5180-b018-5cf1a27d79b8" data-menu-icon="profile">{{text:fea14455-1b3d-5180-b018-5cf1a27d79b8:text0}}</button>
+                    <button id="authButton" type="button" data-language-id="cf8a783f-7b4d-559c-a0d4-2b1f3d83beb2" data-menu-icon="login">{{text:cf8a783f-7b4d-559c-a0d4-2b1f3d83beb2:text0}}</button>
+                </div>
+                <div id="adminMenuGroup" class="admin-menu-group" hidden>
+                    <button id="adminMenuButton" type="button" aria-expanded="false" aria-controls="adminSubmenu" data-language-id="14e52096-04cf-5690-86c5-032788db539c" data-menu-icon="admin">{{text:14e52096-04cf-5690-86c5-032788db539c:text0}}</button>
+                    <div id="adminSubmenu" class="admin-submenu" hidden>
+                        <button id="userLookupButton" type="button" data-dialog="userLookupDialog" hidden><span class="menu-inline-icon profile-edit-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="8" r="4"/><path d="M8 20v-2a8 8 0 0 1 16 0v2"/><circle cx="7" cy="24" r="4"/><path d="m4 27-3 3m20 0 1-5 7-7 4 4-7 7-5 1zm5-10 4 4"/></svg></span><span data-language-id="853a665c-1bf6-5c0c-96c5-d309b93424ec">{{text:853a665c-1bf6-5c0c-96c5-d309b93424ec:text0}}</span></button>
+
+                        <button id="newUserButton" type="button" hidden data-language-id="ec21ac01-df42-53ad-be01-6bbf7e1de066" data-menu-icon="user-plus">{{text:ec21ac01-df42-53ad-be01-6bbf7e1de066:text0}}</button>
+                        <button id="accessTokensButton" type="button" hidden data-language-id="87f0e1dd-a89c-5292-9557-ec75bbd4e459" data-menu-icon="key">{{text:87f0e1dd-a89c-5292-9557-ec75bbd4e459:text0}}</button>
+                    </div>
+                </div>
+                <div id="trainerMenuGroup" hidden><details><summary data-menu-icon="trainer">{{text:d6b4af14-68b7-5145-9bd4-62e380bb1673:text0}}</summary><button id="liveStreamButton" type="button" hidden data-language-id="f203b44b-ef3f-586d-afbd-2869ef82e15f" data-menu-icon="drop-in">{{text:f203b44b-ef3f-586d-afbd-2869ef82e15f:text0}}</button></details></div>
+<div id="menuLogoutSlot"></div>
+                <hr id="accountMenuDivider">
+                <div class="settings-menu-group">
+                    <button id="settingsMenuButton" type="button" aria-expanded="false" aria-controls="settingsSubmenu"><span class="menu-inline-icon settings-gear-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="5.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg></span><span data-language-id="708d54ab-8dc9-5047-b30b-67ee440153da">{{text:708d54ab-8dc9-5047-b30b-67ee440153da:text0}}</span></button>
+                    <div id="settingsSubmenu" class="settings-submenu" hidden>
+                        <button type="button" data-dialog="graphicalSettingsDialog" data-language-id="92a6c5f7-f8b9-51f6-a70b-73669905326c" data-menu-icon="palette">{{text:92a6c5f7-f8b9-51f6-a70b-73669905326c:text0}}</button>
+                        <button id="audioSettingsButton" type="button" data-dialog="audioSettingsDialog"><span class="menu-inline-icon audio-speaker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span data-language-id="7b7d624d-739b-57ae-96f4-f79bad524320">{{text:7b7d624d-739b-57ae-96f4-f79bad524320:text0}}</span></button>
+                    </div>
+                </div>
+                <div class="main-menu-row speech-recognition-menu-row">
+                    <button id="speechRecognitionButton" type="button" aria-pressed="false" title="{{text:d549a1af-0e08-5ef7-8a33-0106901cb282:title}}" disabled data-language-id="d549a1af-0e08-5ef7-8a33-0106901cb282" data-menu-icon="settings"><span data-language-id="64bf66be-85cc-529b-b86e-95855d455a33">{{text:64bf66be-85cc-529b-b86e-95855d455a33:text0}}</span></button>
+                    <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:aria-label}}" data-language-id="6e6ea3a3-2d38-5c75-b5ed-9620454a3520" data-menu-icon="settings">{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:text0}}</button>
+                </div>
+                <div class="main-menu-row sync-goals-menu-row">
+                    <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
+                    <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="{{text:fe244302-ff9a-5be1-949d-444793532606:aria-label}}" data-language-id="fe244302-ff9a-5be1-949d-444793532606" data-menu-icon="settings">{{text:fe244302-ff9a-5be1-949d-444793532606:text0}}</button>
+                </div>
+                <div class="trip-menu-group">
+                <div class="main-menu-row trip-list-menu-row">
+                    <button id="tripListMenuButton" class="trip-list-menu-button" type="button" data-language-id="758b0729-0d3e-5768-acd5-326ec90f35e9" data-menu-icon="list">{{text:758b0729-0d3e-5768-acd5-326ec90f35e9:text0}}</button>
+                    <button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="{{text:9ef29698-122f-59f2-8410-bb636061c726:aria-label}}" aria-pressed="true" title="{{text:9ef29698-122f-59f2-8410-bb636061c726:title}}" data-language-id="9ef29698-122f-59f2-8410-bb636061c726" data-menu-icon="pin"></button>
+                </div>
+                <label class="trip-log-range-menu" for="tripProductionFilter" data-menu-icon="filter"><span data-language-id="8e9add04-86ec-5731-bd69-5183c77ec1c9">{{text:8e9add04-86ec-5731-bd69-5183c77ec1c9:text0}}</span><select id="tripProductionFilter" data-language-id="db59782c-258e-5188-aada-ba1bba08df80">{{options:db59782c-258e-5188-aada-ba1bba08df80}}</select></label>
+                <label class="trip-log-range-menu" for="tripLogRangeSelect" data-menu-icon="calendar">
+                    <span data-language-id="22c42952-5340-5402-a327-89cc14215c69">{{text:22c42952-5340-5402-a327-89cc14215c69:text0}}</span>
+                    <select id="tripLogRangeSelect" aria-label="{{text:0c3e9731-ec7b-5fe5-a481-ead731262b88:aria-label}}" data-language-id="0c3e9731-ec7b-5fe5-a481-ead731262b88">{{options:0c3e9731-ec7b-5fe5-a481-ead731262b88}}</select>
+                </label>
+                <div class="trip-log-date-menu">
+                    <label for="tripLogStartDate" data-language-id="cb47bd54-b509-5823-85ad-d2c8cab78285">{{text:cb47bd54-b509-5823-85ad-d2c8cab78285:text0}}</label><input id="tripLogStartDate" type="date" aria-label="{{text:305d99aa-8c68-5a7e-beea-9056d17cca88:aria-label}}" disabled data-language-id="305d99aa-8c68-5a7e-beea-9056d17cca88">
+                    <label for="tripLogEndDate" data-language-id="92a78904-7c6f-5666-9ad2-48301e067257">{{text:92a78904-7c6f-5666-9ad2-48301e067257:text0}}</label><input id="tripLogEndDate" type="date" aria-label="{{text:5b827a18-10f3-56fa-b022-4ccf3f47a04e:aria-label}}" disabled data-language-id="5b827a18-10f3-56fa-b022-4ccf3f47a04e">
+                </div>
+                <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
+                </div>
+                <hr class="developer-menu-separator">
+                <div id="developerMenuGroup" class="developer-menu-group">
+                    <button id="developerMenuButton" type="button" aria-expanded="false" aria-controls="developerSubmenu" data-language-id="8461371b-dd5d-5da0-b561-4d76102e9820" data-menu-icon="tools">{{text:8461371b-dd5d-5da0-b561-4d76102e9820:text0}}</button>
+                    <div id="developerSubmenu" class="developer-submenu" hidden>
+                        <div class="app-version">Version <output id="appVersion">ZHHTV6</output></div>
+                        <a id="bluetoothAudioTestLink" href="diagnostics/audio-routing/" target="_blank" rel="noopener" data-language-id="6622cb0c-1ee3-4246-afb7-24d8cf0eba41" data-menu-icon="bluetooth">{{text:6622cb0c-1ee3-4246-afb7-24d8cf0eba41:text0}}</a>
+                        <button id="developerDocsButton" type="button" hidden data-language-id="f140723f-4ebe-54fd-b9c6-8d694f574c81" data-menu-icon="book">{{text:f140723f-4ebe-54fd-b9c6-8d694f574c81:text0}}</button>
+                        <div id="speechToolsGroup" class="speech-tools-group">
+                            <button id="speechMenuButton" type="button" aria-expanded="false" aria-controls="speechSubmenu">
+                                <span class="speech-build-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 30 30" focusable="false">
+                                        <path class="speech-build-mic" d="M15 4.5a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0v-6a4 4 0 0 0-4-4Zm-7 9.5a7 7 0 0 0 14 0M15 21v4M11 25h8"/>
+                                        <g class="speech-build-scaffold">
+                                            <path class="scaffold-rail rail-left" pathLength="100" d="M5 25V7"/>
+                                            <path class="scaffold-rail rail-right" pathLength="100" d="M25 25V7"/>
+                                            <path class="scaffold-floor floor-1" pathLength="100" d="M5 23h20"/>
+                                            <path class="scaffold-brace brace-1a" pathLength="100" d="M5 23l20-6"/>
+                                            <path class="scaffold-brace brace-1b" pathLength="100" d="M25 23 5 17"/>
+                                            <path class="scaffold-floor floor-2" pathLength="100" d="M5 17h20"/>
+                                            <path class="scaffold-brace brace-2a" pathLength="100" d="M5 17l20-6"/>
+                                            <path class="scaffold-brace brace-2b" pathLength="100" d="M25 17 5 11"/>
+                                            <path class="scaffold-floor floor-3" pathLength="100" d="M5 11h20"/>
+                                            <path class="scaffold-floor floor-top" pathLength="100" d="M5 7h20"/>
+                                        </g>
+                                        <g class="speech-build-crane">
+                                            <path class="crane-mast" pathLength="100" d="M6 7V2"/>
+                                            <path class="crane-boom" pathLength="100" d="M3 2h24"/>
+                                            <path class="crane-brace" pathLength="100" d="M6 2l7 5M6 7l7-5"/>
+                                            <path class="crane-cable" pathLength="100" d="M24 2v4"/>
+                                            <path class="crane-hook" pathLength="100" d="M22.8 6h2.4c0 1.1-.5 1.7-1.2 1.7s-1.2-.6-1.2-1.7Z"/>
+                                        </g>
+                                    </svg>
+                                </span>
+                                <span data-language-id="60df224f-9ca5-5a1b-9158-ea65cdc63318">{{text:60df224f-9ca5-5a1b-9158-ea65cdc63318:text0}}</span>
+                            </button>
+                            <div id="speechSubmenu" class="speech-submenu" hidden>
+                                <button id="speechTrainingButton" type="button" aria-pressed="false" disabled data-language-id="c80bf239-538a-5bd0-a5d9-fb8cf3c7c706" data-menu-icon="microphone">{{text:c80bf239-538a-5bd0-a5d9-fb8cf3c7c706:text0}}</button>
+                                <button id="speechTimingButton" type="button" hidden data-language-id="023722cb-153c-5395-8469-4cd3a68f8914" data-menu-icon="timer">{{text:023722cb-153c-5395-8469-4cd3a68f8914:text0}}</button>
+                                <button id="speechEditorButton" type="button" hidden data-language-id="e0d509e0-aa06-5a80-ac75-5212207dca36" data-menu-icon="edit">{{text:e0d509e0-aa06-5a80-ac75-5212207dca36:text0}}</button>
+                            </div>
+                        </div>
+                        <div id="easterEggToolsGroup" class="easter-egg-tools-group" hidden>
+                            <button id="easterEggMenuButton" type="button" aria-expanded="false" aria-controls="easterEggSubmenu" data-language-id="64d936b8-f973-541b-8f75-b7ab6e9f10bf" data-menu-icon="music">{{text:64d936b8-f973-541b-8f75-b7ab6e9f10bf:text0}}</button>
+                            <div id="easterEggSubmenu" class="easter-egg-submenu" hidden>
+                                <label class="easter-egg-song-picker"><span data-language-id="6f46e3e5-c548-5dc7-b36c-d03a486456da">{{text:6f46e3e5-c548-5dc7-b36c-d03a486456da:text0}}</span><select id="easterEggSongSelect" aria-label="{{text:af44f0e0-01a0-57a7-9b13-d56b283ac0b8:aria-label}}" data-language-id="af44f0e0-01a0-57a7-9b13-d56b283ac0b8">{{options:af44f0e0-01a0-57a7-9b13-d56b283ac0b8}}</select></label>
+                                <button id="easterEggPlayButton" type="button" data-language-id="1e50b88b-e98f-5ecb-a041-4884cecf4157" data-menu-icon="play">{{text:1e50b88b-e98f-5ecb-a041-4884cecf4157:text0}}</button>
+                                <button id="easterEggPauseButton" type="button" disabled data-language-id="284f5a38-5002-50f7-81b1-97eb1e5be6e2" data-menu-icon="pause">{{text:284f5a38-5002-50f7-81b1-97eb1e5be6e2:text0}}</button>
+                                <button id="easterEggStopButton" type="button" disabled data-language-id="720df278-a015-52bd-92a1-5e4de5add7ba" data-menu-icon="stop">{{text:720df278-a015-52bd-92a1-5e4de5add7ba:text0}}</button>
+                                <button id="easterEggRewindButton" type="button" data-language-id="e9515134-ed81-5421-acfc-aac61389ea6e" data-menu-icon="rewind">{{text:e9515134-ed81-5421-acfc-aac61389ea6e:text0}}</button>
+                            </div>
+                        </div>
+                        <button id="sqlConsoleButton" type="button" hidden data-language-id="17820853-f6fd-5875-adcf-ba11ab62d909" data-menu-icon="database">{{text:17820853-f6fd-5875-adcf-ba11ab62d909:text0}}</button>
+                    </div>
+                </div>
+            </hamburger-menu>
+            <div class="scope-control">
+                <button id="scopeToggle" class="scope-toggle" type="button" data-language-id="3f0a124e-0f14-5d73-ba42-5747a4742234">{{text:3f0a124e-0f14-5d73-ba42-5747a4742234:text0}}</button>
+                <button id="scopeConnectionButton" class="scope-connection-button" type="button" data-cloud-state="offline" aria-label="{{text:45edd7ed-b34e-557c-a8f6-167fd6f3a9b1:aria-label}}" hidden data-language-id="45edd7ed-b34e-557c-a8f6-167fd6f3a9b1"></button>
+            </div>
+        </header>
+
+        <section class="trip-summary" aria-label="{{text:8bc8073c-ec26-5585-9784-eb1a56e10455:aria-label}}" data-language-id="8bc8073c-ec26-5585-9784-eb1a56e10455">
+            <button id="standardTimeButton" class="summary-cell" type="button">
+                <span class="summary-label" id="standardTimeLabel" data-language-id="c507383b-7763-5c85-9296-9ea58142035b">{{text:c507383b-7763-5c85-9296-9ea58142035b:text0}}</span>
+                <strong id="standardTimeValue" data-language-id="59965b36-ec15-5fc9-9615-a81858569d02">{{text:59965b36-ec15-5fc9-9615-a81858569d02:text0}}</strong>
+            </button>
+            <div class="rendered-time-cell">
+                <button id="toggleRenderedTimeButton" class="summary-cell" type="button" data-editor-action="toggleRenderedTime">
+                    <span class="summary-label" id="renderedTimeLabel" data-language-id="4df3f8b3-7d4e-5e45-a81b-56d2b02b7b18">{{text:4df3f8b3-7d4e-5e45-a81b-56d2b02b7b18:text0}}</span>
+                    <strong id="renderedTimeValue" data-language-id="92add448-870b-5960-a108-719328f2025f">{{text:92add448-870b-5960-a108-719328f2025f:text0}}</strong>
+                </button>
+                <button id="endTimeGoalLock" class="end-time-goal-lock" type="button" aria-label="{{text:1c20f4b3-97f4-505c-94d8-dc9d4696e9a9:aria-label}}" title="{{text:1c20f4b3-97f4-505c-94d8-dc9d4696e9a9:title}}" hidden data-language-id="1c20f4b3-97f4-505c-94d8-dc9d4696e9a9"></button>
+            </div>
+            <div class="percent-summary" aria-live="polite">
+                <strong id="currentPercentValue" data-language-id="e76eab51-5ddb-5ff4-99e3-9da9cab29908">{{text:e76eab51-5ddb-5ff4-99e3-9da9cab29908:text0}}</strong>
+                <span data-language-id="2f72226d-f12c-587e-a1dc-9341551f1ddb">{{text:2f72226d-f12c-587e-a1dc-9341551f1ddb:text0}}</span>
+                <button id="goalPercentValue" class="percent-value-button" type="button" aria-label="{{text:da1e5b94-5af1-5f80-820e-a5f5af35107d:aria-label}}" data-language-id="da1e5b94-5af1-5f80-820e-a5f5af35107d">{{text:da1e5b94-5af1-5f80-820e-a5f5af35107d:text0}}</button>
+                <button id="toggleSyncGoalButton" class="goal-sync-button" type="button" data-editor-action="toggleSync" aria-label="{{text:0a2f22ef-9f3b-5cb4-bced-a73b69c5c911:aria-label}}" aria-pressed="false" hidden data-language-id="0a2f22ef-9f3b-5cb4-bced-a73b69c5c911"></button>
+            </div>
+        </section>
+
+        <section id="tripActionControls" class="trip-action-controls" aria-label="{{text:a9c5f6cf-e68a-50a8-ac2f-2dee478fc9fe:aria-label}}" data-language-id="a9c5f6cf-e68a-50a8-ac2f-2dee478fc9fe">
+            <button id="newTripButton" class="new-trip-button" type="button" data-language-id="0d12d2f8-ab98-54bd-b7fe-7ed2ca3b861b">{{text:0d12d2f8-ab98-54bd-b7fe-7ed2ca3b861b:text0}}<svg class="deferred-trip-icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="9"/><path d="M11 5v6l-4-3"/><circle cx="21" cy="21" r="5"/><path d="M19.5 18.5v5M22.5 18.5v5"/></svg></button>
+            <div id="activeTripControls" class="active-trip-controls" hidden>
+                <button id="endTripButton" class="trip-action-button end-trip-button" type="button" data-language-id="28ad9dfe-6471-545c-b92d-c5dc4171f8cb">{{text:28ad9dfe-6471-545c-b92d-c5dc4171f8cb:text0}}</button>
+                <div class="trip-action-row">
+                    <button id="breakButton" class="trip-action-button break-button" type="button" data-language-id="1abdbaa0-7ccf-5a27-83ff-23ad6c2616bd">{{text:1abdbaa0-7ccf-5a27-83ff-23ad6c2616bd:text0}}</button>
+                    <button id="downButton" class="trip-action-button down-button" type="button" data-language-id="0e0ce8ff-8b34-5e0a-a42f-4c6ec6a2082d">{{text:0e0ce8ff-8b34-5e0a-a42f-4c6ec6a2082d:text0}}</button>
+                </div>
+                <div id="downTripControls" class="down-trip-controls" hidden>
+                    <div class="down-elapsed-panel">
+                        <span data-language-id="453be888-da5f-5774-8f6a-ad595f170fb2">{{text:453be888-da5f-5774-8f6a-ad595f170fb2:text0}}</span>
+                        <output id="downElapsedValue" class="down-elapsed-value" data-language-id="8e0a72c5-5091-55d4-bed7-ec3efe5f1d66">{{text:8e0a72c5-5091-55d4-bed7-ec3efe5f1d66:text0}}</output>
+                    </div>
+                    <div class="down-action-row">
+                        <button id="downDetailsButton" class="trip-action-button down-details-button" type="button" aria-label="{{text:c5bfe648-28f8-5c7b-8d28-dce974335cad:aria-label}}" data-language-id="c5bfe648-28f8-5c7b-8d28-dce974335cad"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9.5h5l2-3h8l2 3h5v16H5z"/><circle cx="16" cy="17.5" r="5"/><path d="M23.5 23.5l5-5 2 2-5 5-3 .8z"/></svg></button>
+                        <button id="downBreakButton" class="trip-action-button break-button" type="button" data-language-id="8215b207-cae8-5daa-8473-ddc11eb4d4eb">{{text:8215b207-cae8-5daa-8473-ddc11eb4d4eb:text0}}</button>
+                        <button id="downResumeButton" class="trip-action-button down-resume-button" type="button" data-language-id="e7505852-e3d9-5dd5-ae3b-adf14d6d7a29">{{text:e7505852-e3d9-5dd5-ae3b-adf14d6d7a29:text0}}</button>
+                    </div>
+                    <button id="downCancelButton" class="trip-action-button down-cancel-button" type="button" data-language-id="e4d04339-1799-5384-8d8d-1dabfad05b34">{{text:e4d04339-1799-5384-8d8d-1dabfad05b34:text0}}</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="summary-spacer" aria-hidden="true"></div>
+
+        <section class="clock-region" aria-label="{{text:204a8eaf-4aaa-575c-88df-7a44688ec4f0:aria-label}}" data-language-id="204a8eaf-4aaa-575c-88df-7a44688ec4f0">
+            <clock-timer
+                id="clockTimer"
+                offline-trip-storage-key="wmof.clock.completedTrips"
+                percent-mode="trip"
+                military-time="true"
+                timer-type="radial-overflow"
+                timer-mode="elapsed"
+            ></clock-timer>
+        </section>
+
+        <speech-mic-bar id="speechMicBar" popover="manual" aria-label="{{text:da00905b-b83e-51af-8262-db740a72e892:aria-label}}" data-language-id="da00905b-b83e-51af-8262-db740a72e892"></speech-mic-bar>
+        <speech-menu id="speechTopLevelMenu" speech-modal="top-level" data-speech-editor-id="builtin:menu:top-level">
+            <speech-command data-speech-editor-id="builtin:readyAt:page" data-speech-options-category="trip-actions" speech-chain-next="scheduled-start" speech-available="WMOFSpeechAvailability.canStartTrip" data-speech-target="#newTripButton" speech-function="WMOFActions.scheduleStartAt" speech-persist speech-collect {{speech:2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2}} data-language-id="2c9b3fae-3dbc-5ff1-8a06-deac7e342ca2"></speech-command>
+            <speech-command data-speech-editor-id="builtin:readyAtContinuation:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canContinueStartAt" data-speech-target="#newTripButton" speech-function="WMOFActions.continueStartAt" speech-persist speech-collect {{speech:5898b6ac-6a4c-5288-8473-15e094bb2f2d}} data-language-id="5898b6ac-6a4c-5288-8473-15e094bb2f2d"></speech-command>
+            <speech-command data-speech-editor-id="builtin:ready:page" speech-available="WMOFSpeechAvailability.canUseReady" data-speech-options-category="trip-actions" data-speech-target="#newTripButton:enabled, #endTripButton:enabled" speech-function="WMOFActions.prepareReadyAction" speech-persist {{speech:60783e3e-5bf2-506e-a445-c173e73ce003}} data-language-id="60783e3e-5bf2-506e-a445-c173e73ce003"></speech-command>
+            <speech-command data-speech-editor-id="builtin:down:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canStartDownTime" data-speech-target="#downButton" speech-function="WMOFActions.startDownTime" speech-persist {{speech:6230b72b-f6ef-52e1-8a5b-4ed8c14c1260}} data-language-id="6230b72b-f6ef-52e1-8a5b-4ed8c14c1260"></speech-command>
+            <speech-command data-speech-editor-id="builtin:resume:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canResumeTrip" data-speech-target="#downResumeButton" speech-function="WMOFActions.resumeTrip" speech-persist {{speech:62b7f20d-b850-5190-a538-0ae797e0881e}} data-language-id="62b7f20d-b850-5190-a538-0ae797e0881e"></speech-command>
+            <speech-command data-speech-editor-id="builtin:tripGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTripGoal" speech-persist {{speech:fb4bf723-f232-5baf-8af9-6f95d5b4aac0}} data-language-id="fb4bf723-f232-5baf-8af9-6f95d5b4aac0"></speech-command>
+            <speech-command data-speech-editor-id="builtin:totalGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" speech-function="WMOFActions.readTotalGoal" speech-persist {{speech:b83de74a-5c68-510a-9f82-6a563ceb8313}} data-language-id="b83de74a-5c68-510a-9f82-6a563ceb8313"></speech-command>
+            <speech-command data-speech-editor-id="builtin:changeGoal:page" data-speech-options-category="goals" data-speech-options-group="goals" data-speech-target="#goalPercentValue" speech-function="WMOFActions.changeGoal" speech-collect {{speech:999a8ba4-49df-5b4a-8b70-b82bf72fab95}} data-language-id="999a8ba4-49df-5b4a-8b70-b82bf72fab95"></speech-command>
+            <speech-command data-speech-editor-id="builtin:readGoalMode:page" data-speech-options-category="informational" data-speech-options-group="mode" speech-available="WMOFSpeechAvailability.canUseInformational" speech-function="WMOFActions.readGoalMode" {{speech:d5d4dd7f-cdae-5d04-90f8-863d95b8db28}} data-language-id="d5d4dd7f-cdae-5d04-90f8-863d95b8db28"></speech-command>
+            <speech-command data-speech-editor-id="builtin:goalMode:page" data-speech-options-category="settings" data-speech-options-group="mode" speech-function="WMOFActions.changeGoalMode" {{speech:8d356eeb-5f5b-53d9-88c3-db25977e34de}} data-language-id="8d356eeb-5f5b-53d9-88c3-db25977e34de"></speech-command>
+            <speech-command data-speech-editor-id="builtin:sync:page" data-speech-options-category="settings" data-speech-target="#toggleSyncMenuButton,#toggleSyncGoalButton" speech-function="WMOFActions.toggleSync" speech-persist {{speech:7e31faf4-6311-5ea5-89f1-82e4b7ad7031}} data-language-id="7e31faf4-6311-5ea5-89f1-82e4b7ad7031"></speech-command>
+            <speech-command data-speech-editor-id="builtin:lockEndTime:page" data-speech-options-category="settings" speech-available="WMOFSpeechAvailability.canLockEndTime" data-speech-target="#toggleRenderedTimeButton" speech-function="WMOFActions.lockEndTime" speech-persist speech-collect {{speech:b217ace5-07f5-538b-9c59-1454b2840ee4}} data-language-id="b217ace5-07f5-538b-9c59-1454b2840ee4"></speech-command>
+            <speech-command data-speech-editor-id="builtin:showTripLog:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canOpenTripLog" data-speech-target="#tripListMenuButton" speech-chain-surface="#tripLogDialog" speech-function="WMOFActions.openTripLog" speech-persist {{speech:9cde5424-3c8a-5753-98a2-fa4fb27a6f12}} data-language-id="9cde5424-3c8a-5753-98a2-fa4fb27a6f12"></speech-command>
+            <speech-command data-speech-editor-id="builtin:hideTripLog:page" speech-available="WMOFSpeechAvailability.canCloseTripLog" data-speech-options-category="trip-actions" data-speech-target="#tripListMenuButton" speech-chain-surface="pop" speech-function="WMOFActions.closeTripLog" {{speech:85f37860-52a4-5ffc-ade9-7d925b98156f}} data-language-id="85f37860-52a4-5ffc-ade9-7d925b98156f"></speech-command>
+            <speech-command data-speech-editor-id="builtin:deferTrip:page" data-speech-options-category="trip-actions" speech-available="WMOFSpeechAvailability.canDeferTrip" data-speech-target="#tripDefer" speech-function="WMOFActions.deferTrip" speech-persist {{speech:30464050-ddc4-57a0-ad5c-caffb7954c52}} data-language-id="30464050-ddc4-57a0-ad5c-caffb7954c52"></speech-command>
+            <speech-command data-speech-editor-id="builtin:readRenderedTime:page" data-speech-options-category="informational" data-speech-options-group="time" speech-available="WMOFSpeechAvailability.canUseInformational" speech-function="WMOFActions.readRenderedTime" {{speech:ad30c460-2152-5b33-94a3-eae9427c92c2}} data-language-id="ad30c460-2152-5b33-94a3-eae9427c92c2"></speech-command>
+            <speech-command data-speech-editor-id="builtin:renderedTimeMode:page" data-speech-options-category="settings" data-speech-options-group="time" speech-available="WMOFSpeechAvailability.canToggleRenderedTime" data-speech-target="#toggleRenderedTimeButton" speech-function="WMOFActions.toggleRenderedTime" {{speech:fc38aaf4-5ad4-5044-b382-74c8739bb024}} data-language-id="fc38aaf4-5ad4-5044-b382-74c8739bb024"></speech-command>
+        </speech-menu>
+        <speech-menu id="speechDefaultMenu" speech-modal="default" data-speech-editor-id="builtin:menu:default">
+            <speech-command data-speech-editor-id="builtin:close:page" speech-available="WMOFSpeechAvailability.canCloseSurface" data-speech-options-category="settings" speech-modal="system" data-speech-system-command="close" speech-chain-surface="pop" speech-function="SpeechMenu.close" speech-persist {{speech:6922ca11-6086-5bbe-a9bf-e8b674c3a105}} data-language-id="6922ca11-6086-5bbe-a9bf-e8b674c3a105"></speech-command>
+        </speech-menu>
+        <button id="tripLogButton" class="trip-log-button" type="button" aria-expanded="false" aria-controls="tripLogBody" data-language-id="93935264-6aa0-5850-80f1-aa77194349ad">{{text:93935264-6aa0-5850-80f1-aa77194349ad:text0}}</button>
+        <span id="tripLogPlaceholder" aria-hidden="true" hidden></span>
+
+    </main>
+
+    <section id="speechTrainingWidget" class="speech-training-widget" aria-label="{{text:f661acfe-4924-5bd4-9fa2-9659cd7204f6:aria-label}}" popover="manual" hidden data-language-id="f661acfe-4924-5bd4-9fa2-9659cd7204f6">
+        <button id="speechTrainingDragHandle" class="speech-training-drag-handle" type="button" aria-label="{{text:ffb1735e-f364-58c3-87bc-7ac5d3fd063e:aria-label}}" title="{{text:ffb1735e-f364-58c3-87bc-7ac5d3fd063e:title}}" data-language-id="ffb1735e-f364-58c3-87bc-7ac5d3fd063e">{{text:ffb1735e-f364-58c3-87bc-7ac5d3fd063e:text0}}</button>
+        <div class="speech-training-copy">
+            <strong id="speechTrainingPhrase" data-language-id="7039babc-a66d-5fd7-86da-29773f301186">{{text:7039babc-a66d-5fd7-86da-29773f301186:text0}}</strong>
+            <span class="speech-training-heard-line">
+                <span id="speechTrainingHeard" data-language-id="51ffaeab-c179-585e-84f3-d0ec77563285">{{text:51ffaeab-c179-585e-84f3-d0ec77563285:text0}}</span>
+                <span id="speechTrainingHeardStatus" class="speech-training-result-icon" aria-live="polite" hidden></span>
+            </span>
+        </div>
+        <div class="speech-training-state">
+            <strong id="speechTrainingPrompt" data-language-id="9074ddde-c19b-5e0c-9a74-409d29e90180">{{text:9074ddde-c19b-5e0c-9a74-409d29e90180:text0}}</strong>
+            <span id="speechTrainingCount" data-language-id="9590ecbc-1a8f-5771-be97-f3eb68b4894e">{{text:9590ecbc-1a8f-5771-be97-f3eb68b4894e:text0}}</span>
+        </div>
+        <button id="speechTrainingStartStop" class="speech-training-start-stop" type="button" disabled data-language-id="adccfb3d-ed2e-5127-ab90-a905b5feffb3">{{text:adccfb3d-ed2e-5127-ab90-a905b5feffb3:text0}}</button>
+        <details id="speechTrainingResults" class="speech-training-results">
+            <summary data-menu-icon="tools">
+                <span data-language-id="f03edd8f-7162-5fe1-bfad-54d75e7c41fc">{{text:f03edd8f-7162-5fe1-bfad-54d75e7c41fc:text0}}</span>
+                <span id="speechTrainingResultsCount" data-language-id="23779f3f-eb28-530d-a610-ca6f1ff6305c">{{text:23779f3f-eb28-530d-a610-ca6f1ff6305c:text0}}</span>
+            </summary>
+            <div id="speechTrainingResultsList" class="speech-training-results-list"></div>
+        </details>
+    </section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <template id="settingsHelpSpeechRecognition" data-help-title="Speech Recognition — Beta">
+        <p data-language-id="cfd6b108-68a8-58f4-bce2-ba5fdeb12c28"><strong data-language-id="43fdee73-2f8b-580f-b01c-ba859646c7af">{{text:43fdee73-2f8b-580f-b01c-ba859646c7af:text0}}</strong>{{text:cfd6b108-68a8-58f4-bce2-ba5fdeb12c28:text0}}</p>
+        <p data-language-id="ae6f16b2-a609-5a13-a67d-dcb1de484973"><strong data-language-id="a85f45b7-79f5-51db-9ab5-f1075d61e39f">{{text:a85f45b7-79f5-51db-9ab5-f1075d61e39f:text0}}</strong>{{text:ae6f16b2-a609-5a13-a67d-dcb1de484973:text0}}<strong data-language-id="fea1dcfd-aff1-5c92-a32b-67ca5c7d0fe1">{{text:fea1dcfd-aff1-5c92-a32b-67ca5c7d0fe1:text0}}</strong>{{text:ae6f16b2-a609-5a13-a67d-dcb1de484973:text1}}</p>
+        <p data-language-id="fa2c7d40-5104-5124-bf7e-9501b8de93e4">{{text:fa2c7d40-5104-5124-bf7e-9501b8de93e4:text0}}</p>
+    </template>
+    <template id="settingsHelpSyncGoals" data-help-title="Sync Goals">
+        <p><strong data-language-id="be587b19-0528-5647-a7b2-dddc40e8274e">{{text:be587b19-0528-5647-a7b2-dddc40e8274e:text0}}</strong></p>
+        <p data-language-id="d17e91c7-5ba4-5448-85fc-963f0951719d">{{text:d17e91c7-5ba4-5448-85fc-963f0951719d:text0}}<strong data-language-id="1178bd3b-9075-5b13-b960-cef5727a945b"><span class="settings-help-time-difference" data-language-id="b171c181-0eeb-53b1-9449-cbbce2121730">{{text:b171c181-0eeb-53b1-9449-cbbce2121730:text0}}</span>{{text:1178bd3b-9075-5b13-b960-cef5727a945b:text0}}</strong>{{text:d17e91c7-5ba4-5448-85fc-963f0951719d:text1}}<strong class="settings-help-goal-value" data-language-id="2c2ed959-da32-5ec8-a756-bfb08bb229d7">{{text:2c2ed959-da32-5ec8-a756-bfb08bb229d7:text0}}</strong>{{text:d17e91c7-5ba4-5448-85fc-963f0951719d:text2}}<strong data-language-id="fc1795d7-84f2-5908-8928-9383f74bd83f"><span class="settings-help-time-difference" data-language-id="4e504624-1c82-5c0a-921a-693565ac1ea4">{{text:4e504624-1c82-5c0a-921a-693565ac1ea4:text0}}</span>{{text:fc1795d7-84f2-5908-8928-9383f74bd83f:text0}}</strong>{{text:d17e91c7-5ba4-5448-85fc-963f0951719d:text3}}</p>
+        <p><strong data-language-id="4468dacd-8c28-54e4-8482-12e2a85d26ac">{{text:4468dacd-8c28-54e4-8482-12e2a85d26ac:text0}}<span class="settings-help-goal-value" data-language-id="db9c0fa7-ed9e-5901-8228-78d65b3240db">{{text:db9c0fa7-ed9e-5901-8228-78d65b3240db:text0}}</span></strong></p>
+        <table class="settings-help-table">
+            <thead><tr><th scope="col" data-language-id="57f43b79-f73d-5cf0-9b87-97da3a6da55f">{{text:57f43b79-f73d-5cf0-9b87-97da3a6da55f:text0}}</th><th scope="col" data-language-id="7a95c223-a458-5a9e-92e9-927c93a60426">{{text:7a95c223-a458-5a9e-92e9-927c93a60426:text0}}</th><th scope="col" data-language-id="a06078ef-2967-58bd-8655-37a236f37050">{{text:a06078ef-2967-58bd-8655-37a236f37050:text0}}</th><th scope="col" data-language-id="6f9c5c5b-130f-51af-86ac-df8b7b12b050">{{text:6f9c5c5b-130f-51af-86ac-df8b7b12b050:text0}}</th></tr></thead>
+            <tbody>
+                <tr><th scope="row" data-language-id="544d3160-d7cc-5613-bd03-a73b8836d9ca">{{text:544d3160-d7cc-5613-bd03-a73b8836d9ca:text0}}</th><td data-language-id="24159689-b5ed-5dde-b7e9-5f7ed44f8cfc">{{text:24159689-b5ed-5dde-b7e9-5f7ed44f8cfc:text0}}</td><td data-language-id="602a5ec1-a77e-560f-816a-b8e2782a738e">{{text:602a5ec1-a77e-560f-816a-b8e2782a738e:text0}}<span class="settings-help-time-difference" data-language-id="9f875b5b-f746-5e78-b177-a33688902618">{{text:9f875b5b-f746-5e78-b177-a33688902618:text0}}</span>{{text:602a5ec1-a77e-560f-816a-b8e2782a738e:text1}}</td><td data-language-id="60460238-55b1-5e5f-bc71-70fa77c17b79">{{text:60460238-55b1-5e5f-bc71-70fa77c17b79:text0}}</td></tr>
+                <tr><th scope="row" data-language-id="4951c747-150f-5475-b5ec-59adb0f6488a">{{text:4951c747-150f-5475-b5ec-59adb0f6488a:text0}}</th><td data-language-id="27898571-6f2d-5483-8579-aa2d5426995f">{{text:27898571-6f2d-5483-8579-aa2d5426995f:text0}}</td><td><svg class="settings-help-table-icon" viewBox="0 0 24 24" role="img" aria-label="{{text:1bf35413-683c-5261-b8ce-f04d69700423:aria-label}}" data-language-id="1bf35413-683c-5261-b8ce-f04d69700423"><title data-language-id="d354fdb6-4f89-51ce-99b0-b0d211f0e3bb">{{text:d354fdb6-4f89-51ce-99b0-b0d211f0e3bb:text0}}</title><circle cx="15" cy="4" r="2" fill="currentColor" stroke="none"/><path d="m5 10 4-3 4 1 3 5 4-2M13 8l-4 7-6 1m6-1 5 3-1 4" stroke-width="2.5"/></svg></td><td class="settings-help-active-percent"><svg class="settings-help-table-icon settings-help-sync-icon" viewBox="0 0 24 24" role="img" aria-label="{{text:bc188d16-8a94-5ed2-8132-15fe0da37af2:aria-label}}" data-language-id="bc188d16-8a94-5ed2-8132-15fe0da37af2"><title data-language-id="0e5ca11f-5948-549b-a00c-c25b0dca3229">{{text:0e5ca11f-5948-549b-a00c-c25b0dca3229:text0}}</title><path d="M4 10a8 8 0 0 1 14-4l2 2M20 3v5h-5M20 14a8 8 0 0 1-14 4l-2-2M4 21v-5h5" stroke-width="2.5"/></svg></td></tr>
+                <tr class="settings-help-total-row"><th scope="row" data-language-id="3adbc11e-65b1-5cc1-90ac-fbe8f567c778">{{text:3adbc11e-65b1-5cc1-90ac-fbe8f567c778:text0}}</th><td data-language-id="1d42be50-469a-5b26-81cc-36911b5f2a7a">{{text:1d42be50-469a-5b26-81cc-36911b5f2a7a:text0}}</td><td><svg class="settings-help-table-icon settings-help-increasing-icon" viewBox="0 0 24 24" role="img" aria-label="{{text:30e18db5-45d4-5e03-8e9e-21c75ba3ca57:aria-label}}" data-language-id="30e18db5-45d4-5e03-8e9e-21c75ba3ca57"><title data-language-id="c5a17d6c-1d0d-5059-8dda-95c8b177bcc9">{{text:c5a17d6c-1d0d-5059-8dda-95c8b177bcc9:text0}}</title><path d="m4 10 8-8 8 8Zm0 6 8-8 8 8Zm0 6 8-8 8 8Z"/></svg></td><td class="settings-help-total-percent"><strong data-language-id="540645b4-19a7-57e9-a698-7f18c8a73b48">{{text:540645b4-19a7-57e9-a698-7f18c8a73b48:text0}}</strong><span data-language-id="51cfc419-db5a-5104-ab54-70ec3cd1a613">{{text:51cfc419-db5a-5104-ab54-70ec3cd1a613:text0}}</span></td></tr>
+            </tbody>
+        </table>
+        <p data-language-id="47ca6e09-7899-5a38-a5b2-741b70e90aab">{{text:47ca6e09-7899-5a38-a5b2-741b70e90aab:text0}}<span class="settings-help-goal-value" data-language-id="81a8494d-c8fb-50e3-b491-88ff34d3c5c9">{{text:81a8494d-c8fb-50e3-b491-88ff34d3c5c9:text0}}</span>{{text:47ca6e09-7899-5a38-a5b2-741b70e90aab:text1}}</p>
+    </template>
+    <template id="settingsHelpTolerance" data-help-title="B-Game">
+        <p data-language-id="0aad63c4-ba06-5751-bbdf-8df6d63c2ba1">{{text:0aad63c4-ba06-5751-bbdf-8df6d63c2ba1:text0}}</p>
+    </template>
+
+    <template id="settingsHelpOvertime" data-help-title="Overtime">
+        <p data-language-id="3b30fc3f-8ead-5dc7-9f18-636814bfab27"><strong data-language-id="26230dda-3a60-5c6d-a415-a9634d339978">{{text:26230dda-3a60-5c6d-a415-a9634d339978:text0}}</strong>{{text:3b30fc3f-8ead-5dc7-9f18-636814bfab27:text0}}</p>
+        <p data-language-id="cfb726fa-78b8-5151-96d9-a07d54b0acd8">{{text:cfb726fa-78b8-5151-96d9-a07d54b0acd8:text0}}</p>
+    </template>
+
+    <template id="settingsHelpLatency" data-help-title="Late Start">
+        <p class="settings-help-latency-lead" data-language-id="0832689f-5034-5952-85e5-61ab7d7dbc59"><strong data-language-id="214d7eed-571b-50c5-a8fa-033b3053372b">{{text:214d7eed-571b-50c5-a8fa-033b3053372b:text0}}</strong>{{text:0832689f-5034-5952-85e5-61ab7d7dbc59:text0}}<strong class="settings-help-late" data-language-id="15cc6e74-69ba-5b5b-9e89-22473f695891">{{text:15cc6e74-69ba-5b5b-9e89-22473f695891:text0}}</strong></p>
+        <div class="settings-help-example-grid">
+            <span aria-hidden="true" data-language-id="44242c71-fd7d-55cd-8cbc-85e6cd7bb5dd">{{text:44242c71-fd7d-55cd-8cbc-85e6cd7bb5dd:text0}}</span><div data-language-id="2ecb7642-1cb5-53e5-8379-19d1518dac0e"><strong data-language-id="5109b6a2-fced-5216-bc62-678760ecffe2">{{text:5109b6a2-fced-5216-bc62-678760ecffe2:text0}}</strong>{{text:2ecb7642-1cb5-53e5-8379-19d1518dac0e:text0}}</div>
+            <span aria-hidden="true" data-language-id="795dc189-867f-57f9-a7d0-7ff8697df8eb">{{text:795dc189-867f-57f9-a7d0-7ff8697df8eb:text0}}</span><div data-language-id="9f30c8cc-5560-512e-81d8-e96a7cd1596f"><strong data-language-id="bc15f95d-874d-5e92-a885-b0d2b550333d">{{text:bc15f95d-874d-5e92-a885-b0d2b550333d:text0}}</strong>{{text:9f30c8cc-5560-512e-81d8-e96a7cd1596f:text0}}</div>
+            <span aria-hidden="true" data-language-id="d2d70a28-2528-5307-81ab-ae364762983e">{{text:d2d70a28-2528-5307-81ab-ae364762983e:text0}}</span><div data-language-id="cd8e4598-0610-51fa-9f30-edc90a86ab35"><strong data-language-id="a97236f0-964d-5e02-94b9-8aab26027579">{{text:a97236f0-964d-5e02-94b9-8aab26027579:text0}}</strong>{{text:cd8e4598-0610-51fa-9f30-edc90a86ab35:text0}}</div>
+        </div>
+        <p data-language-id="2759d6ea-cfa9-55e3-8654-c6e81d394a8b">{{text:2759d6ea-cfa9-55e3-8654-c6e81d394a8b:text0}}</p>
+    </template>
+
+    <template id="settingsHelpTimeFormat" data-help-title="Time Format">
+        <p data-language-id="a2022b22-ceb9-512d-88f9-23542c058007"><strong data-language-id="e711fba5-5d3e-58a2-b474-fab922f7415c">{{text:e711fba5-5d3e-58a2-b474-fab922f7415c:text0}}</strong>{{text:a2022b22-ceb9-512d-88f9-23542c058007:text0}}</p>
+        <p data-language-id="c1284517-7c17-5d85-a7da-b1b0080a0c72">{{text:c1284517-7c17-5d85-a7da-b1b0080a0c72:text0}}<code data-language-id="67e0553e-8f97-5fe8-9692-96db8dfdd365">{{text:67e0553e-8f97-5fe8-9692-96db8dfdd365:text0}}</code>{{text:c1284517-7c17-5d85-a7da-b1b0080a0c72:text1}}<code data-language-id="7c5d11b0-760c-551e-b41e-b637a6f8e5c4">{{text:7c5d11b0-760c-551e-b41e-b637a6f8e5c4:text0}}</code>{{text:c1284517-7c17-5d85-a7da-b1b0080a0c72:text2}}</p>
+        <div class="settings-help-token-grid">
+            <code data-language-id="f8bf4ee6-246d-5e8c-80b8-57c16dc77602">{{text:f8bf4ee6-246d-5e8c-80b8-57c16dc77602:text0}}</code><span data-language-id="a5d032b2-8963-5971-850d-d19bd934cea6">{{text:a5d032b2-8963-5971-850d-d19bd934cea6:text0}}</span>
+            <code data-language-id="8d8cc701-c70c-5526-a776-70270f25e42a">{{text:8d8cc701-c70c-5526-a776-70270f25e42a:text0}}</code><span data-language-id="ef9f8b0d-586b-5cec-8b30-97966f0f57e9">{{text:ef9f8b0d-586b-5cec-8b30-97966f0f57e9:text0}}</span>
+            <code data-language-id="57ff1916-74ea-585d-8270-abab7de7c15b">{{text:57ff1916-74ea-585d-8270-abab7de7c15b:text0}}</code><span data-language-id="235005d0-15a8-57b3-b42d-4284806dc6ab">{{text:235005d0-15a8-57b3-b42d-4284806dc6ab:text0}}</span>
+            <code data-language-id="038822bc-bb38-5ec5-86cd-8d56585ef851">{{text:038822bc-bb38-5ec5-86cd-8d56585ef851:text0}}</code><span data-language-id="cd8f9790-164e-5547-bf7e-305b4e6d8091">{{text:cd8f9790-164e-5547-bf7e-305b4e6d8091:text0}}</span>
+            <code data-language-id="ffdb2f4f-0fa9-5294-b753-38c8c23e39ef">{{text:ffdb2f4f-0fa9-5294-b753-38c8c23e39ef:text0}}</code><span data-language-id="c8d2daf8-b3f6-58e6-b6e8-d5bd5d73267e">{{text:c8d2daf8-b3f6-58e6-b6e8-d5bd5d73267e:text0}}</span>
+            <code data-language-id="7dd25145-b266-5fea-bbfb-541050e327a2">{{text:7dd25145-b266-5fea-bbfb-541050e327a2:text0}}</code><span data-language-id="7ba32f42-90d9-5770-a50e-ddafd7fabd7a">{{text:7ba32f42-90d9-5770-a50e-ddafd7fabd7a:text0}}</span>
+            <code data-language-id="bebd3fe0-709b-598e-894c-bdf7270a105e">{{text:bebd3fe0-709b-598e-894c-bdf7270a105e:text0}}</code><span data-language-id="4f23ffa7-c07a-5ca7-a344-f31c14e594c4">{{text:4f23ffa7-c07a-5ca7-a344-f31c14e594c4:text0}}</span>
+        </div>
+        <p data-language-id="b9236faf-3c24-5655-b938-1d113ba65e0b">{{text:b9236faf-3c24-5655-b938-1d113ba65e0b:text0}}<strong data-language-id="99c26e1d-ad7c-5db6-bde2-cbb8e6b5975f">{{text:99c26e1d-ad7c-5db6-bde2-cbb8e6b5975f:text0}}</strong>{{text:b9236faf-3c24-5655-b938-1d113ba65e0b:text1}}</p>
+        <div class="settings-help-token-grid settings-help-examples">
+            <code data-language-id="c17930eb-d6a8-59ac-b9d1-b26122c3079e">{{text:c17930eb-d6a8-59ac-b9d1-b26122c3079e:text0}}</code><span data-language-id="dea471c3-5352-5b9d-9551-75f003d706fe">{{text:dea471c3-5352-5b9d-9551-75f003d706fe:text0}}</span>
+            <code data-language-id="bbf159f8-526e-5b84-a179-c36719387ae5">{{text:bbf159f8-526e-5b84-a179-c36719387ae5:text0}}</code><span data-language-id="4b14c173-e6ac-5954-8014-f0a8acb6c743">{{text:4b14c173-e6ac-5954-8014-f0a8acb6c743:text0}}</span>
+            <code data-language-id="749ccf0e-c88f-560b-9a7e-3ad90e960de8">{{text:749ccf0e-c88f-560b-9a7e-3ad90e960de8:text0}}</code><span data-language-id="d4d0f98e-810f-57e1-80fb-6fa39efefd87">{{text:d4d0f98e-810f-57e1-80fb-6fa39efefd87:text0}}</span>
+            <code data-language-id="d4f2f048-5ebc-58db-bb23-a27252a587bf">{{text:d4f2f048-5ebc-58db-bb23-a27252a587bf:text0}}</code><span data-language-id="60ad9ea0-10b9-5bb5-91ed-7276edcc85e6">{{text:60ad9ea0-10b9-5bb5-91ed-7276edcc85e6:text0}}</span>
+        </div>
+    </template>
+
+    <template id="settingsHelpDateFormat" data-help-title="Date Format">
+        <p data-language-id="3b7c9231-3550-5526-b585-00a9e5863241"><strong data-language-id="0c002ffc-5eda-50f1-82ab-fc1b76898d55">{{text:0c002ffc-5eda-50f1-82ab-fc1b76898d55:text0}}</strong>{{text:3b7c9231-3550-5526-b585-00a9e5863241:text0}}</p>
+        <p data-language-id="339195a1-cf66-5fd9-b63e-9e039ab044c1"><strong data-language-id="f0de4d97-0df1-5b1f-8d50-869a401c780e">{{text:f0de4d97-0df1-5b1f-8d50-869a401c780e:text0}}</strong>{{text:339195a1-cf66-5fd9-b63e-9e039ab044c1:text0}}</p>
+        <div class="settings-help-token-grid">
+            <code data-language-id="47b756ab-724b-5b57-9fe1-c135c34d5a9b">{{text:47b756ab-724b-5b57-9fe1-c135c34d5a9b:text0}}</code><span data-language-id="cb8de2f2-de74-504a-8acd-b4910e3fa616">{{text:cb8de2f2-de74-504a-8acd-b4910e3fa616:text0}}</span>
+            <code data-language-id="ef89fdda-8fa5-5fb3-9425-f99639adf159">{{text:ef89fdda-8fa5-5fb3-9425-f99639adf159:text0}}</code><span data-language-id="4dce334b-be2f-5012-a224-c983ee5939e6">{{text:4dce334b-be2f-5012-a224-c983ee5939e6:text0}}</span>
+            <code data-language-id="b580316a-a8de-5b70-bfce-c94f960ea8c3">{{text:b580316a-a8de-5b70-bfce-c94f960ea8c3:text0}}</code><span data-language-id="78dde887-8425-598a-ac81-7a16ba1c16d4">{{text:78dde887-8425-598a-ac81-7a16ba1c16d4:text0}}</span>
+            <code data-language-id="4f25f137-e274-564d-98ec-384e06fb6172">{{text:4f25f137-e274-564d-98ec-384e06fb6172:text0}}</code><span data-language-id="3aaf3612-b801-5855-97c8-451a4654150e">{{text:3aaf3612-b801-5855-97c8-451a4654150e:text0}}</span>
+            <code data-language-id="05a2637c-5ba9-5bce-8ba6-2182b88a5b95">{{text:05a2637c-5ba9-5bce-8ba6-2182b88a5b95:text0}}</code><span data-language-id="41acf333-1642-5cbc-b7a9-1344d7d463be">{{text:41acf333-1642-5cbc-b7a9-1344d7d463be:text0}}</span>
+            <code data-language-id="42f3e09c-9f5f-597e-8276-e9a3c6bfb661">{{text:42f3e09c-9f5f-597e-8276-e9a3c6bfb661:text0}}</code><span data-language-id="e8b4b1ef-72e1-5bbf-865d-cd2fac188d5b">{{text:e8b4b1ef-72e1-5bbf-865d-cd2fac188d5b:text0}}</span>
+            <code data-language-id="303b28eb-c67e-5378-ae0c-9356611cb573">{{text:303b28eb-c67e-5378-ae0c-9356611cb573:text0}}</code><span data-language-id="ebcf8f2d-b1c4-591d-991e-3724df1dbef1">{{text:ebcf8f2d-b1c4-591d-991e-3724df1dbef1:text0}}</span>
+            <code data-language-id="1c3e4e7a-58c8-5061-a7db-f36a645ddc8c">{{text:1c3e4e7a-58c8-5061-a7db-f36a645ddc8c:text0}}</code><span data-language-id="a796dbe9-310b-5b6b-8bf8-50485f1aff15">{{text:a796dbe9-310b-5b6b-8bf8-50485f1aff15:text0}}</span>
+            <code data-language-id="080977bd-8aa1-5180-9b6a-e1a28851f342">{{text:080977bd-8aa1-5180-9b6a-e1a28851f342:text0}}</code><span data-language-id="a905c2c5-95b9-577e-b752-41ce3dd01fc9">{{text:a905c2c5-95b9-577e-b752-41ce3dd01fc9:text0}}</span>
+            <code data-language-id="850afcac-eabe-52e7-bebd-12f641234ca3">{{text:850afcac-eabe-52e7-bebd-12f641234ca3:text0}}</code><span data-language-id="689126e2-9876-55df-b4a4-0116e6b21b56">{{text:689126e2-9876-55df-b4a4-0116e6b21b56:text0}}</span>
+        </div>
+        <p data-language-id="0e85c3d1-edc2-58b2-ac7d-233ce2ae8d35">{{text:0e85c3d1-edc2-58b2-ac7d-233ce2ae8d35:text0}}</p>
+        <div class="settings-help-token-grid settings-help-examples">
+            <code data-language-id="16710459-eb1f-5ec1-a3b0-a7af6586d7f4">{{text:16710459-eb1f-5ec1-a3b0-a7af6586d7f4:text0}}</code><span data-language-id="8ac056df-494c-549c-9bdb-73a1bf11b5b0">{{text:8ac056df-494c-549c-9bdb-73a1bf11b5b0:text0}}</span>
+            <code data-language-id="9db65f55-e248-5b27-b126-f55f56265f3c">{{text:9db65f55-e248-5b27-b126-f55f56265f3c:text0}}</code><span data-language-id="aa089950-2db1-5337-8c97-4cfbbab185e3">{{text:aa089950-2db1-5337-8c97-4cfbbab185e3:text0}}</span>
+            <code data-language-id="10256573-80c5-55a0-9d20-a77ce1f26652">{{text:10256573-80c5-55a0-9d20-a77ce1f26652:text0}}</code><span data-language-id="6b67ad75-03c3-5f2d-8d69-d15c07c86225">{{text:6b67ad75-03c3-5f2d-8d69-d15c07c86225:text0}}</span>
+            <code data-language-id="be350560-d4f7-59c7-aa22-b373d5a05da1">{{text:be350560-d4f7-59c7-aa22-b373d5a05da1:text0}}</code><span data-language-id="25d8e2af-966c-5b6c-a0a3-fb7fd7d28f2a">{{text:25d8e2af-966c-5b6c-a0a3-fb7fd7d28f2a:text0}}</span>
+        </div>
+    </template>
+
+    <template id="settingsHelpVisibleHours" data-help-title="Visible Hours">
+        <p data-language-id="445c3ff0-9e7a-5cca-ac03-cd554cb215c4"><strong data-language-id="d869a292-dcc0-57c8-ba42-c8d10cc90936">{{text:d869a292-dcc0-57c8-ba42-c8d10cc90936:text0}}</strong>{{text:445c3ff0-9e7a-5cca-ac03-cd554cb215c4:text0}}</p>
+        <p data-language-id="7e72a704-2c85-5f95-af2a-3abf49e423ad">{{text:7e72a704-2c85-5f95-af2a-3abf49e423ad:text0}}<code data-language-id="a74578c4-f61b-5970-a65f-2d07afca57e9">{{text:a74578c4-f61b-5970-a65f-2d07afca57e9:text0}}</code>{{text:7e72a704-2c85-5f95-af2a-3abf49e423ad:text1}}</p>
+        <p><strong data-language-id="9aa57500-889a-5aaf-9a48-f695810c5216">{{text:9aa57500-889a-5aaf-9a48-f695810c5216:text0}}</strong></p>
+        <p data-language-id="b8a92c24-9ab6-56c1-9e2d-ee4300762702">{{text:b8a92c24-9ab6-56c1-9e2d-ee4300762702:text0}}<code data-language-id="d1990870-9fa0-5ab8-9782-645e8a5e2dda">{{text:d1990870-9fa0-5ab8-9782-645e8a5e2dda:text0}}</code>{{text:b8a92c24-9ab6-56c1-9e2d-ee4300762702:text1}}<strong data-language-id="be295bc0-9133-5b8a-a678-30e0bf26d0ac">{{text:be295bc0-9133-5b8a-a678-30e0bf26d0ac:text0}}</strong>{{text:b8a92c24-9ab6-56c1-9e2d-ee4300762702:text2}}</p>
+    </template>
+
+    <template id="settingsHelpTickMarks" data-help-title="Tick Marks">
+        <p data-language-id="1d793f89-9b68-5713-b375-01ca220e77d0"><strong data-language-id="14f763fb-8964-5218-9266-93e289abab55">{{text:14f763fb-8964-5218-9266-93e289abab55:text0}}</strong>{{text:1d793f89-9b68-5713-b375-01ca220e77d0:text0}}</p>
+        <div class="settings-help-token-grid">
+            <code data-language-id="715ba2a6-8a39-5c5c-97cb-ecec8c70c1a2">{{text:715ba2a6-8a39-5c5c-97cb-ecec8c70c1a2:text0}}</code><span data-language-id="a242f3a7-4d2b-53e5-a918-b7e0583e8564">{{text:a242f3a7-4d2b-53e5-a918-b7e0583e8564:text0}}</span>
+            <code data-language-id="6e377cf4-57cf-5151-adb1-885112b0ab69">{{text:6e377cf4-57cf-5151-adb1-885112b0ab69:text0}}</code><span data-language-id="77511787-d65a-51e8-80e4-02883a1acdf8">{{text:77511787-d65a-51e8-80e4-02883a1acdf8:text0}}</span>
+            <code data-language-id="28205dc2-275a-58ba-80ad-14ef4c380854">{{text:28205dc2-275a-58ba-80ad-14ef4c380854:text0}}</code><span data-language-id="09cca561-bbad-5ac1-a6e5-a5cfefd96382">{{text:09cca561-bbad-5ac1-a6e5-a5cfefd96382:text0}}</span>
+            <code data-language-id="65cd7b32-0796-5690-ae5a-2030fd6af794">{{text:65cd7b32-0796-5690-ae5a-2030fd6af794:text0}}</code><span data-language-id="e4a4b3bb-bcb8-58ce-a834-b2868925e371">{{text:e4a4b3bb-bcb8-58ce-a834-b2868925e371:text0}}</span>
+        </div>
+        <p data-language-id="66494485-7713-5475-b8ca-e0446c936c80"><strong data-language-id="08eb5fcd-56c2-5efd-9544-d483e88af359">{{text:08eb5fcd-56c2-5efd-9544-d483e88af359:text0}}</strong>{{text:66494485-7713-5475-b8ca-e0446c936c80:text0}}<code data-language-id="cea5acd6-ee6e-5004-bc99-8ba2be3f7f72">{{text:cea5acd6-ee6e-5004-bc99-8ba2be3f7f72:text0}}</code>{{text:66494485-7713-5475-b8ca-e0446c936c80:text1}}<code data-language-id="c869216e-02dc-5460-8b28-5dad828c6426">{{text:c869216e-02dc-5460-8b28-5dad828c6426:text0}}</code>{{text:66494485-7713-5475-b8ca-e0446c936c80:text2}}</p>
+    </template>

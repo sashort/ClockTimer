@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/PageTemplate.php';
 
 final class LanguageTemplate
 {
@@ -98,6 +99,7 @@ final class LanguageTemplate
     }
     public function render(string $template): string
     {
+        $template = PageTemplate::expand($this->root, $template);
         return preg_replace_callback('/\{\{(locale|language-pack|language-rules|text|speech|options)(?::([a-f0-9-]+))?(?::([A-Za-z0-9_-]+))?\}\}/', function(array $match): string {
             $kind = $match[1];
             if ($kind === 'locale') return self::escape($this->locale);

@@ -11248,6 +11248,23 @@
         "Order Filler logout navigates back to index only after the server session is destroyed; failures do not navigate.",
         "No microphone, speech recognizer, or trip lifecycle starts on the landing page."
       ]
+    },
+    "shared-page-templates": {
+      "pages": [
+        "index (landing)",
+        "order-filler",
+        "drop-in"
+      ],
+      "template": "templates/page.html calls per-page head, body, dialogs and scripts sub-templates, plus the shared user/profile lookup dialog.",
+      "preview": "scripts/build-pages.cjs regenerates static pages from the same fragments; PHP composes the fragments before language substitutions.",
+      "menu_icon_requirement": "Every menu option and category requires an icon. Retain existing bespoke SVGs; other items use a named decorative icon from MenuIcons.css. Icons must survive changes to labels and must not affect speech text or language associations.",
+      "audio": "Keep the existing Easter Egg songs and playback logic in Order Filler. Easter Egg uses the music icon; playback controls have Play/Pause/Stop/Rewind icons.",
+      "verification": [
+        "shared-page-templates.mjs checks static parity and all menu icons",
+        "page-template.php rejects traversal, unknown pages and cycles",
+        "php-language-template.mjs checks locale and rendered static parity",
+        "build-version.py checks shared fragment cache/version stamping"
+      ]
     }
   },
   "unresolved_contracts": [
