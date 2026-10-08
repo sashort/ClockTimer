@@ -199,6 +199,7 @@
 
         #tripTotals;
         #observerOnly = false;
+        #observerModelSignature;
 
         #externalStandardTime;
 
@@ -4976,12 +4977,15 @@
                 const endBuffer = this.#getIntervalBufferRecord(record, "end");
                 const timestamp = this.#timelineToISO(record.clockTimerBufferedStartTimeline) || record.startDate.toISOString();
                 events.push({id: record.intervalId, event: "interval.started", timestamp, value: {
-                    type: record.type, intervalKey, length: record.openEnded ? null : record.rangeLength,
+                    type: record.type, intervalKey, length: record.openEnded ||
+                        Number.isFinite(record.clockTimerClosedOpenIntervalEndTimeline) ? null : record.rangeLength,
                     attributes: {...record.otherAttributes}, startBuffer: startBuffer?.rangeLength ?? null,
                     endBuffer: endBuffer?.rangeLength ?? null
                 }});
-                if (record.clockTimerExplicitlyEnded && Number.isFinite(record.clockTimerExplicitEndTimeline)) {
-                    events.push({event: "interval.ended", timestamp: this.#timelineToISO(record.clockTimerExplicitEndTimeline),
+                const closedOpenEnd = record.clockTimerClosedOpenIntervalEndTimeline;
+                const endedAt = record.clockTimerExplicitlyEnded ? record.clockTimerExplicitEndTimeline : closedOpenEnd;
+                if (Number.isFinite(endedAt)) {
+                    events.push({event: "interval.ended", timestamp: this.#timelineToISO(endedAt),
                         value: {intervalKey, reason: "manual"}});
                 }
                 const approval = this.#getIntervalApprovalState(record);
@@ -5042,7 +5046,11 @@
             // Preserve the observer host's identity and layout, not the publisher host ID.
             for (const name of ['id','class','style']) if (this.hasAttribute(name)) attributes.push([name,this.getAttribute(name)]);
             const aggregate = totals === undefined ? snapshot.totals : totals;
-            this.restoreState({...snapshot,events,attributes,totals:aggregate,pending:[],completed:[],preparedTrip:null});
+            // Replay adds local rendering attributes to interval records. Compare the
+            // incoming event stream with its previous version, not those derived records.
+            const observerModelSignature = JSON.stringify(events);
+            this.restoreState({...snapshot,events,attributes,totals:aggregate,pending:[],completed:[],preparedTrip:null},
+                {observerModelSignature});
             this.productionFilter = snapshot.productionFilter || 'all';
             const start = this.getUIState(now).trip_start_component?.value;
             if (totals && Number.isFinite(start)) {
@@ -5064,9 +5072,11 @@
             this.refreshLayout();
             return {uiState:this.getUIState(now), remaining};
         }
-        restoreState(snapshot) {
+        restoreState(snapshot, {observerModelSignature} = {}) {
+            const incomingObserverModel = this.#observerOnly && observerModelSignature !== undefined;
             const modelChanged = this.#started !== snapshot.started || this.#tripId !== snapshot.tripId ||
-                JSON.stringify(this.#stateEvents()) !== JSON.stringify(snapshot.events);
+                (incomingObserverModel ? this.#observerModelSignature !== observerModelSignature :
+                    JSON.stringify(this.#stateEvents()) !== JSON.stringify(snapshot.events));
             if (modelChanged) {
                 this.#pendingIntervalRecord = undefined;
                 if (snapshot.events.some(event => event.event === "trip.started")) {
@@ -5086,6 +5096,7 @@
             const attributes = new Map(snapshot.attributes);
             for (const attribute of [...this.attributes]) if (!attributes.has(attribute.name)) this.removeAttribute(attribute.name);
             for (const [name, value] of attributes) if (this.getAttribute(name) !== value) this.setAttribute(name, value);
+            this.#observerModelSignature = incomingObserverModel ? observerModelSignature : undefined;
             this.#emitUIState("stateReverted");
         }
 
@@ -12348,6 +12359,8 @@
                         )
                     );
 
+                // Replay this as an open interval followed by its actual closing event.
+                record.clockTimerClosedOpenIntervalEndTimeline = endTimeline;
                 this.#initializeClosedIntervalApproval(
                     record
                 );

@@ -242,6 +242,7 @@ jobs:
           TZ=America/New_York node drop-in-view.mjs
           TZ=America/Los_Angeles node drop-in-view.mjs
           node drop-in-page.mjs
+          node drop-in-observer-replay.mjs
           node main-page.mjs
           node app-state-transactions.mjs --landing-session
           php drop-in-totals-permissions.php
