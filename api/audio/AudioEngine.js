@@ -2470,14 +2470,14 @@
                 const sampleGain = (sample.gain ?? 1) * instrument.__gainVariation;
                 if (sample.naturalDecay) {
                     gain.gain.setValueAtTime(sampleGain, startAt);
-                    endAt = startAt + sample.buffer.duration / playbackRate;
+                    endAt = startAt + (sample.buffer.duration - (event.sampleStartSeconds || 0)) / playbackRate;
                     // Natural recorded decay owns the end; ignore the written note's gate.
                     envelopeGain.gain.cancelScheduledValues(startAt);
                     envelopeGain.gain.setValueAtTime(1, startAt);
                 } else ExpressiveInstrument.envelope(gain.gain, instrument.envelope, startAt, noteEnd, sampleGain);
                 source.connect(gain); gain.connect(sourceDestination);
                 entry.nodes.add(source); entry.nodes.add(gain);
-                source.start(startAt); source.stop(endAt);
+                source.start(startAt, event.sampleStartSeconds || 0); source.stop(endAt);
             }
             for (
                 const partial of
@@ -3178,12 +3178,23 @@
             return Math.max(0, Math.min(1, balance, headroom));
         }
 
+        playbackEvents(song, startBeat = 0) {
+            if (!song?.approvedMix || song.events?.length !== 1) return song?.events || [];
+            const event = song.events[0];
+            const offset = this.#beats(event.offset);
+            const length = this.#beats(event.length);
+            if (startBeat <= offset) return song.events;
+            if (startBeat >= offset + length) return [];
+            return [{ ...event, offset: String(startBeat), length: String(offset + length - startBeat),
+                sampleStartSeconds: (startBeat - offset) * 60 / song.bpm }];
+        }
+
         // Musical metadata only; announcements decide when speech is permitted.
         songTiming(song, { bpm = song?.bpm ?? 120, toneVelocity = 1, startBeat = 0 } = {}) {
             const tempo = Number(bpm) * Number(toneVelocity);
             if (!Number.isFinite(tempo) || tempo <= 0) throw new RangeError("Song BPM must be greater than zero.");
             const beatMs = 60000 / tempo;
-            const notes = (song?.events || []).flatMap(event => this.rollStrikes(event) ?? [event]).filter(event => event?.tone && this.#beats(event.offset) >= startBeat)
+            const notes = this.playbackEvents(song, startBeat).flatMap(event => this.rollStrikes(event) ?? [event]).filter(event => event?.tone && this.#beats(event.offset) >= startBeat)
                 .map(event => {
                     const lengths = String(event.length ?? "1").split(",");
                     const offset = this.#beats(event.offset) - startBeat;
@@ -3441,7 +3452,7 @@
             };
 
             const preparedEvents =
-                (song.events || [])
+                this.playbackEvents(song, playbackStartBeat)
                     .map(
                         event => ({
                             event,
@@ -3496,7 +3507,7 @@
                     const sample = model.sampleFor(frequency, shaped.__strikeStrength, record.event);
                     if (sample.naturalDecay) {
                         const rate = frequency / sample.rootFrequency * 2 ** (shaped.__detuneVariation / 1200);
-                        return Math.max(longest, (record.offset-playbackStartBeat)*beatSeconds*1000 + this.#noteDelayMs(record.event) + sample.buffer.duration/rate*1000);
+                        return Math.max(longest, (record.offset-playbackStartBeat)*beatSeconds*1000 + this.#noteDelayMs(record.event) + (sample.buffer.duration - (record.event.sampleStartSeconds || 0))/rate*1000);
                     }
                 }
                 return Math.max(longest, beats * beatSeconds * 1000 + this.#noteDelayMs(record.event) + release * 1000);

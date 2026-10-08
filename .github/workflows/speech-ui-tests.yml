@@ -242,6 +242,7 @@ jobs:
           node chime-song-tempo.mjs
           node expressive-instruments.mjs
           node easter-egg-arrangement.mjs
+          node dark-eighties-song.mjs
           node audio-routing-diagnostic.mjs
           node microphone-capture-lifecycle.mjs
           node drop-in-view.mjs

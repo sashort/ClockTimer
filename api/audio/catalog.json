@@ -2405,6 +2405,26 @@
           "naturalDecay": true
         }
       ]
+    },
+    "dark-eighties-approved-render": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s approved mix",
+      "volume": 12.5,
+      "velocitySensitivity": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-approved-v27.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
     }
   },
   "songs": {
@@ -16480,6 +16500,27 @@
         "durationSeconds": 66,
         "musicDurationSeconds": 61.86666666666667,
         "settings": "api/audio/instruments/approved-easter-egg-final-mix.json",
+        "referenceToneVolume": 0.08
+      }
+    },
+    "dark-eighties": {
+      "bpm": 225,
+      "instrument": "dark-eighties-approved-render",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "975/2",
+          "dynamic": "ff",
+          "instrument": "dark-eighties-approved-render"
+        }
+      ],
+      "approvedMix": {
+        "version": "v27",
+        "sha256": "d8fe6abc399d87a5d08e58a374ca1396e3185dcb4733ec04f00f2868dff75d20",
+        "durationSeconds": 130,
+        "musicDurationSeconds": 130,
+        "settings": "api/audio/instruments/dark-eighties-final-mix.json",
         "referenceToneVolume": 0.08
       }
     }
