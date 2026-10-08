@@ -73,6 +73,51 @@ const log=make(document.body,'log','^show log$','showLog',{'speech-modal':'top-l
 const hear=async(...args)=>{await speech.testTranscript(...args);await new Promise(setImmediate);};
 const fresh=()=>{speech.testReset();calls.length=0;errors.length=0;return speech.testBegin();};
 try {
+    // The scheduled dialog accepts a bare duration as well as "standard time".
+    standard.setAttribute('speech-pattern', '^(?:standard(?: time)? )?(?<timeValue>.+)$');
+    const editor=make(future,'scheduled-editor','^standard(?: time)?$','showLog',{
+        'speech-chain-context':'scheduled-start'});
+    for (const words of [['ready at four','ready at four tw','ready at four twenty','ready at four twenty t','ready at four twenty two'],
+        ['ready at four twenty two standard','ready at four twenty two standard time',
+         'ready at four twenty two standard time eleven','ready at four twenty two standard time eleven twenty',
+         'ready at four twenty two standard time eleven twenty six'],
+        ['ready at four twenty two eleven','ready at four twenty two eleven twenty',
+         'ready at four twenty two eleven twenty six']]) {
+        const collecting=fresh();
+        for (const text of words) {
+            await hear(collecting,text);await collecting.digestQueue;
+            assert(!calls.some(call=>call[0]==='standard' || call[0]==='log'),
+                `An unfinished scheduled parameter must not execute or open its editor: ${text}`);
+        }
+        await hear(collecting,words.at(-1),true);await collecting.digestQueue;
+        assert.equal(errors.length,0,JSON.stringify(errors));
+        assert.deepEqual(calls, words.at(-1).includes('eleven')
+            ? [['ready','4:22'],['standard','0:11:26']] : [['ready','4:22']]);
+    }
+    future.open=true;
+    for (const words of [['standard','standard time','standard time elev','standard time eleven','standard time eleven tw','standard time eleven twenty','standard time eleven twenty s','standard time eleven twenty six'],
+        ['eleven','eleven tw','eleven twenty','eleven twenty s','eleven twenty six']]) {
+        const collecting=fresh();collecting.digestContext='scheduled-start';
+        for (const text of words) {
+            await hear(collecting,text);await collecting.digestQueue;
+            assert.equal(calls.length,0,`Scheduled-dialog interim must stay pending: ${text}`);
+        }
+        await hear(collecting,words.at(-1),true);await collecting.digestQueue;
+        assert.deepEqual(calls,[['standard','0:11:26']]);
+    }
+    const units=fresh();units.digestContext='scheduled-start';
+    for (const text of ['eleven minutes','eleven minutes twenty','eleven minutes twenty s','eleven minutes twenty six seconds']) {
+        await hear(units,text);await units.digestQueue;
+        assert.equal(calls.length,0,`Unit continuation must stay in one value: ${text}`);
+    }
+    await hear(units,'eleven minutes twenty six seconds',true);await units.digestQueue;
+    assert.deepEqual(calls,[['standard','0:11:26']]);
+    const editorOnly=fresh();editorOnly.digestContext='scheduled-start';
+    await hear(editorOnly,'standard time',true);await editorOnly.digestQueue;
+    assert.deepEqual(calls,[['log']],'a final editor-only command still opens duration entry');
+    future.open=false;
+    editor.remove();
+    standard.setAttribute('speech-pattern','^standard(?: time)? (?<timeValue>.+)$');
     // Independent command groups compete for the same unconsumed words.
     const syncGroup=document.createElement('section');document.body.append(syncGroup);
     const sleepGroup=document.createElement('section');document.body.append(sleepGroup);

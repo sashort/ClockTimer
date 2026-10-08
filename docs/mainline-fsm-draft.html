@@ -1950,9 +1950,9 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "persist": false,
       "restore": null,
       "test": {
-        "status": "untested",
-        "version": "",
-        "evidence": ""
+        "status": "passed",
+        "version": "LOCAL working tree",
+        "evidence": "2026-10-08: tests/speech-command-digest.mjs exercises interim number-word revisions, optional scheduled duration prefix, complete values and editor-only final commands. Automated parser evidence; physical microphone timing remains to be verified on Lightsail."
       },
       "skippable": false,
       "contract": {
@@ -1962,7 +1962,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
-        "verification": "Existing recorded evidence applies only to that recorded implementation/version."
+        "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
+        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration."
       }
     },
     {
@@ -2056,8 +2057,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "restore": null,
       "test": {
         "status": "passed",
-        "version": "LOCAL 2b137e1 + working-tree changes",
-        "evidence": "2026-10-06: node tests/app-state-transactions.mjs --scheduled-standard; local automated fixture, not Lightsail verification."
+        "version": "LOCAL working tree",
+        "evidence": "2026-10-08: tests/speech-command-digest.mjs exercises interim number-word revisions, optional scheduled duration prefix, complete values and editor-only final commands. Automated parser evidence; physical microphone timing remains to be verified on Lightsail."
       },
       "skippable": false,
       "contract": {
@@ -2072,7 +2073,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           "classification": "attribute-change",
           "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
         },
-        "parameter_collection": "Keep an accepted prefix provisional until the parameter boundary; consume the longest valid complete value."
+        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration."
       }
     },
     {
@@ -11576,6 +11577,13 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "tests": [
         "tests/speech-command-digest.mjs",
         "tests/app-state-transactions.mjs --scheduled-standard"
+      ],
+      "boundary_ownership": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration.",
+      "regressions": [
+        "Ready at four twenty-two, including transient partial number words",
+        "Scheduled trip: [Standard Time] eleven twenty-six, with optional prefix and transient partial words",
+        "Scheduled trip: eleven minutes twenty-six seconds",
+        "Standalone Standard Time still opens its editor at final decode; explicit command chains retain early prerequisite execution"
       ]
     },
     "microphone-capture": {

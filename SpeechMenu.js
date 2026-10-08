@@ -3782,10 +3782,11 @@ class SpeechMenu {
         let count = steps.length;
         const last = steps[count - 1];
         // A parameter can still grow: "four" -> "four fifteen". A next
-        // command establishes its boundary; otherwise wait for final decode.
+        // command with a complete leading literal word establishes its boundary;
+        // a bare/partially decoded value fragment does not.
         if (!isFinal && last && (last.canContinue ||
             last.commandElement.hasAttribute("speech-open-ended") ||
-            last.commandElement.hasAttribute("speech-collect")) && !candidate.pending) count--;
+            last.commandElement.hasAttribute("speech-collect")) && (!candidate.pending || !candidate.pending.hasCommandPrefix)) count--;
         for (const step of steps.slice(0, count)) SpeechMenu.#queueDigestStep(utterance, step);
         const consumedWords = steps.slice(0, count).reduce((n, step) =>
             n + step.segmentTranscript.split(" ").length, 0);
@@ -6466,6 +6467,20 @@ class SpeechMenu {
         })])];
     }
 
+    // A bare parameter fragment is not a boundary for the preceding value.
+    // Only a matching literal command prefix can release it before final decode.
+    static #hasExplicitCommandPrefix(element, transcript) {
+        const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
+        return SpeechMenu.#expandRegexSource(element.getAttribute("speech-pattern") || "").some(phrase => {
+            if (!SpeechMenu.#phraseCanContinue(transcript, phrase)) return false;
+            const prefix = SpeechMenu.#normalizeTranscript(phrase).split(/\s+/).filter(Boolean);
+            const parameter = prefix.findIndex(token => /^<[^>]+>$/.test(token));
+            const literal = parameter < 0 ? prefix : prefix.slice(0, parameter);
+            return literal.length > 0 && words[0] === literal[0] && words.slice(0, literal.length).every((word, index) =>
+                literal[index] === word || (index === words.length - 1 && literal[index]?.startsWith(word)));
+        });
+    }
+
     static #digestCanContinue(element, segment, candidates) {
         return SpeechMenu.#elementDirectContinuationDepth(element, segment) !== undefined ||
             candidates.some(other => other !== element &&
@@ -6502,7 +6517,8 @@ class SpeechMenu {
             const full = words.join(" ");
             const partialDepth = SpeechMenu.#elementDirectContinuationDepth(element, full);
             if (partialDepth !== undefined) select({steps: [], exact: false, continuation: true,
-                terminal: false, pending: {element, transcript: full}, consumedWords: 0,
+                terminal: false, pending: {element, transcript: full,
+                    hasCommandPrefix: SpeechMenu.#hasExplicitCommandPrefix(element, full)}, consumedWords: 0,
                 remainder: full, depth: partialDepth});
             if (!memo.probes.has(element)) memo.probes.set(element, new Map());
             const probes = memo.probes.get(element);
