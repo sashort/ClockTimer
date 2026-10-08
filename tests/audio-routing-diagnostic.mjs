@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
-const html=fs.readFileSync(new URL('../diagnostics/audio-routing/order-filler.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../diagnostics/audio-routing/index.html',import.meta.url),'utf8');
 const code=html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const elements=new Map();const makeElement=()=>({textContent:'',value:'',onclick:null,disabled:false,children:[],replaceChildren(){this.children=[];this.value='';},append(child){this.children.push(child);}});const element=id=>{if(!elements.has(id))elements.set(id,makeElement());return elements.get(id)};
 const calls=[],routes=[];let stops=0,speechCalls=0,permission='prompt',denyCapture=false,denyRoute=false;
