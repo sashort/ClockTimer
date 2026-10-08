@@ -29,7 +29,7 @@
     }
     function render() {
         const preset=document.getElementById('recognizerNamePreset'),custom=document.getElementById('recognizerNameCustom');if(!preset||!custom)return;
-        const off=preset.options[0],customOption=preset.options[1];preset.replaceChildren(off);
+        const off=preset.querySelector('option[value=""]'),customOption=preset.querySelector('option[value="custom"]');preset.replaceChildren(off);
         for(const value of defaults().presets){const o=document.createElement('option');o.value=value;o.textContent=value;preset.append(o);}
         preset.append(customOption);
         preset.value=defaults().presets.includes(name())?name():name()?'custom':'';
