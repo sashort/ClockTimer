@@ -1,95 +1,14 @@
-<header class="drop-in-page-header"><a data-menu-icon="clock" href="order-filler.php?session=existing" target="_blank" rel="noopener">ClockTimer</a><output id="appVersion">ZHHTV6</output></header>
 <p id="dropInPageStatus" role="status"></p>
 <main id="liveStreamDialog" class="standalone-drop-in">
 <div class="app live-stream-mirror" data-timer-view="observer">{{include:shared/timer-view.html}}</div>
-        <div class="viewer-tools">
-            <header class="viewer-tools-heading">
-
-                <h2 data-language-id="191e3336-022c-51bf-8608-68717226bbaa">{{text:191e3336-022c-51bf-8608-68717226bbaa:text0}}</h2>
-
-            </header>
-            <div class="live-stream-layout">
-                <section id="liveStreamViewerSection" class="live-stream-section" aria-labelledby="liveStreamViewerTitle">
-                    <h3 id="liveStreamViewerTitle" data-language-id="a6fb3ceb-2920-5beb-890d-aec973f1d7c1">{{text:a6fb3ceb-2920-5beb-890d-aec973f1d7c1:text0}}</h3>
-                    <div class="live-stream-identity-row">
-                        <div class="identity-object-card" hidden>
-                            <strong id="liveStreamIdentityName" data-language-id="d0938306-5b3e-55a6-bae2-b249960673af">{{text:d0938306-5b3e-55a6-bae2-b249960673af:text0}}</strong>
-                            <span id="liveStreamIdentityMeta" data-language-id="cd1e2c0a-088d-5dfd-8408-956f601737b0">{{text:cd1e2c0a-088d-5dfd-8408-956f601737b0:text0}}</span>
-                        </div>
-                        <button id="liveStreamLookupButton" data-menu-icon="profile-edit" type="button" data-language-id="b2ab145a-14de-5ea7-ba80-ba3180174076">{{text:b2ab145a-14de-5ea7-ba80-ba3180174076:text0}}</button>
-                    </div>
-                    <div class="live-stream-view-actions">
-                        <button id="liveStreamWatchButton" data-menu-icon="drop-in" class="primary-action" type="button" disabled data-language-id="f1827cb0-0aaf-5191-a807-8b1d72247477">{{text:f1827cb0-0aaf-5191-a807-8b1d72247477:text0}}</button>
-                        <span id="liveStreamViewerStatus" class="live-stream-status" data-language-id="d8785d44-2874-5f71-878e-dde06a7b7c53">{{text:d8785d44-2874-5f71-878e-dde06a7b7c53:text0}}</span>
-                    </div>
-                    <p class="dialog-helper" data-language-id="59a0349b-eb99-54dc-a65d-92bb07e4059b">{{text:59a0349b-eb99-54dc-a65d-92bb07e4059b:text0}}</p>
-
-                    <section class="viewer-user-navigation">
-                        <div class="live-stream-user-switcher">
-                            <button id="liveStreamPreviousUser" data-menu-icon="rewind" type="button" disabled data-language-id="61a5823d-8895-5dea-8679-19f54c926a8e">{{text:61a5823d-8895-5dea-8679-19f54c926a8e:text0}}</button>
-                            <label><span data-language-id="abcb5dc8-e264-5c77-af1f-98f1a5c95b8a">{{text:abcb5dc8-e264-5c77-af1f-98f1a5c95b8a:text0}}</span><select id="liveStreamUserSelect" disabled><option value="">—</option></select></label>
-                            <button id="liveStreamNextUser" data-menu-icon="play" type="button" disabled data-language-id="d4ec3512-2524-5c15-b043-fa2d423e6e01">{{text:d4ec3512-2524-5c15-b043-fa2d423e6e01:text0}}</button>
-                        </div>
-
-                    </section>
-                    <div class="live-stream-readout" aria-live="polite">
-                        <div><span data-language-id="01be1c81-fcf4-5ae0-9942-52a9d182147f">{{text:01be1c81-fcf4-5ae0-9942-52a9d182147f:text0}}</span><strong id="liveStreamRemoteState" data-language-id="2997a7c9-b0ed-5104-af1f-aacdd4a4f66e">{{text:2997a7c9-b0ed-5104-af1f-aacdd4a4f66e:text0}}</strong></div>
-
-
-                        <div><span data-language-id="fcd42cdd-f87a-59f6-b94f-0d371c521867">{{text:fcd42cdd-f87a-59f6-b94f-0d371c521867:text0}}</span><strong id="liveStreamRemainingTime">—</strong></div>
-                        <div><span data-language-id="3eb6514c-554f-592d-aa55-af276e4df093">{{text:3eb6514c-554f-592d-aa55-af276e4df093:text0}}</span><strong id="liveStreamUserTripGoal">—</strong></div>
-                        <div><span data-language-id="4a648fb9-d165-5358-9da4-8badbed72dea">{{text:4a648fb9-d165-5358-9da4-8badbed72dea:text0}}</span><strong id="liveStreamUserModeGoal">—</strong></div>
-                        <div><span data-language-id="e13dfd20-bbbd-5de2-b5bc-e5a0f095fd50">{{text:e13dfd20-bbbd-5de2-b5bc-e5a0f095fd50:text0}}</span><strong id="liveStreamUserActiveGoal">—</strong></div>
-                        <div><span data-language-id="96f1c96c-128a-52fe-a35b-ed2f2a2a0522">{{text:96f1c96c-128a-52fe-a35b-ed2f2a2a0522:text0}}</span><strong id="liveStreamUserSync">—</strong></div>
-                        <div><span data-language-id="fecedef0-fd5b-5178-98be-7cff996a8180">{{text:fecedef0-fd5b-5178-98be-7cff996a8180:text0}}</span><strong id="liveStreamViewerActiveGoal">—</strong></div>
-                        <div class="live-stream-transcript"><span data-language-id="c3b1d0a6-4795-5e97-9186-4fe6418cc388">{{text:c3b1d0a6-4795-5e97-9186-4fe6418cc388:text0}}</span><strong id="liveStreamRemoteSpeech" data-language-id="fcb824ef-3b4d-536d-8880-98c8234d3e1a">{{text:fcb824ef-3b4d-536d-8880-98c8234d3e1a:text0}}</strong></div>
-                    </div>
-                    <fieldset id="liveStreamTrainerMessage" class="live-stream-trainer-message" disabled>
+<section id="liveStreamViewerSection" class="drop-in-chat">                    <fieldset id="liveStreamTrainerMessage" class="live-stream-trainer-message" disabled>
                         <legend data-language-id="9a8ba22f-9dd0-5b24-8167-ecbe0c7ce508">{{text:9a8ba22f-9dd0-5b24-8167-ecbe0c7ce508:text0}}</legend>
                         <div class="live-stream-trainer-message-row">
                             <input id="liveStreamTrainerMessageText" type="text" maxlength="500" autocomplete="off" aria-label="{{text:b0a1b21c-2f33-5a3e-b1fa-381aabe8090b:aria-label}}" placeholder="{{text:b0a1b21c-2f33-5a3e-b1fa-381aabe8090b:placeholder}}" data-language-id="b0a1b21c-2f33-5a3e-b1fa-381aabe8090b">
                             <button id="liveStreamTrainerMessageSend" data-menu-icon="microphone" class="primary-action" type="button" data-language-id="95a243d5-7ecd-58e0-82b9-580776d4bf23">{{text:95a243d5-7ecd-58e0-82b9-580776d4bf23:text0}}</button>
                         </div>
                         <p id="liveStreamTrainerMessageStatus" class="live-stream-status" aria-live="polite"></p>
-                    </fieldset>
-
-                    <fieldset id="liveStreamVolumeControls" class="live-stream-volume-controls" disabled>
-                        <legend data-language-id="0f063567-ca2c-5846-aff5-a7f9db310118">{{text:0f063567-ca2c-5846-aff5-a7f9db310118:text0}}</legend>
-                        <label class="live-stream-mute">
-                            <input id="liveStreamMute" type="checkbox">
-                            <span data-language-id="85531008-f9a6-5ab4-aa7e-89076bd985bf">{{text:85531008-f9a6-5ab4-aa7e-89076bd985bf:text0}}</span>
-                        </label>
-                        <label>
-                            <span data-language-id="df9a1756-e2d7-5033-8312-8d41faffdbb8">{{text:df9a1756-e2d7-5033-8312-8d41faffdbb8:text0}}<output id="liveStreamMasterVolumeValue" data-language-id="6ee6b7df-ad62-591c-8479-28edcc1101d4">{{text:6ee6b7df-ad62-591c-8479-28edcc1101d4:text0}}</output></span>
-                            <input id="liveStreamMasterVolume" type="range" min="0" max="100" step="1" value="100">
-                        </label>
-                        <label>
-                            <span data-language-id="4edf6997-bf95-5b1e-91de-1260cb0ddf89">{{text:4edf6997-bf95-5b1e-91de-1260cb0ddf89:text0}}<output id="liveStreamMicVolumeValue" data-language-id="806e7989-04ee-5d7b-81b4-99aa9fbeb4a1">{{text:806e7989-04ee-5d7b-81b4-99aa9fbeb4a1:text0}}</output></span>
-                            <input id="liveStreamMicVolume" type="range" min="0" max="100" step="1" value="100">
-                        </label>
-                        <label>
-                            <span data-language-id="16ce574f-956c-5e2f-a558-96ad95436660">{{text:16ce574f-956c-5e2f-a558-96ad95436660:text0}}<output id="liveStreamProgramVolumeValue" data-language-id="6282fbd7-2066-5207-82f3-c1507dfd573e">{{text:6282fbd7-2066-5207-82f3-c1507dfd573e:text0}}</output></span>
-                            <input id="liveStreamProgramVolume" type="range" min="0" max="100" step="1" value="100">
-                        </label>
-                    </fieldset>
-
-                    <div class="live-stream-view-controls"><label><span data-language-id="5d99dfac-9cf7-5dda-8b50-c03d646586dc">{{text:5d99dfac-9cf7-5dda-8b50-c03d646586dc:text0}}</span><select id="liveStreamViewTime"><option value="user" data-language-id="3876f75d-2e05-57d4-8e96-e2c6896d2346">{{text:3876f75d-2e05-57d4-8e96-e2c6896d2346:text0}}</option><option value="remaining" data-language-id="4b927b44-6410-53c1-98b2-ad81f47e9e61">{{text:4b927b44-6410-53c1-98b2-ad81f47e9e61:text0}}</option><option value="elapsed" data-language-id="89d7fafa-57e0-5a57-93c8-919c0422b960">{{text:89d7fafa-57e0-5a57-93c8-919c0422b960:text0}}</option><option value="calculated-end" data-language-id="945221ab-82a1-59b2-b957-2ebed11a0a88">{{text:945221ab-82a1-59b2-b957-2ebed11a0a88:text0}}</option></select></label>
-
-                        <div id="liveStreamCustomRange" class="live-stream-custom-range" hidden>
-                            <label><span data-language-id="3e20eafe-4133-587f-a31b-2020d5a29f50">{{text:3e20eafe-4133-587f-a31b-2020d5a29f50:text0}}</span><input id="liveStreamViewStart" type="date"></label>
-                            <label><span data-language-id="48654946-3e3a-5e4b-8e24-03e0627bc33c">{{text:48654946-3e3a-5e4b-8e24-03e0627bc33c:text0}}</span><input id="liveStreamViewEnd" type="date"></label>
-                        </div>
-                        <p><span data-language-id="e96a2648-32d1-5514-92e0-1772c342be5b">{{text:e96a2648-32d1-5514-92e0-1772c342be5b:text0}}</span>: <strong id="liveStreamViewingMode"></strong></p>
-                        <p><span data-language-id="77a7646e-6352-5f40-a0de-dfcb5c869d40">{{text:77a7646e-6352-5f40-a0de-dfcb5c869d40:text0}}</span>: <strong id="liveStreamPublisherMode">—</strong></p>
-
-
-
-                        <button id="liveStreamResetPercent" data-menu-icon="settings" type="button" data-language-id="7db0ecdb-6bff-53e9-aa6e-10f2aa1ce7ae">{{text:7db0ecdb-6bff-53e9-aa6e-10f2aa1ce7ae:text0}}</button>
-                        <p id="liveStreamViewStatus" role="status"></p>
-                    </div>
-
-
-                </section>
-            </div>
-        </div>
-    </main>
+                    </fieldset></section>
+</main>
+<dialog id="dropInApplyDialog" class="drop-in-apply-dialog"><h2>{{text:98a8f77d-c98e-50f6-a3ee-cc7f1aacb3dd:text0}}</h2><p>{{text:82bf4f46-ecfa-59a1-be5a-a36fd4a4d2f7:text0}}</p><div class="dialog-actions"><button id="dropInApplySelected" type="button" data-menu-icon="profile" >{{text:e9ef6417-8288-520f-adca-7f4201214702:text0}}</button><button id="dropInApplyAll" type="button" data-menu-icon="trainer" >{{text:94a2b767-5d48-52dc-9801-1fed395c06b3:text0}}</button><button id="dropInApplyCancel" type="button" data-menu-icon="logout" >{{text:5eabb983-6b64-5fe0-8e62-a8c1dd00b356:text0}}</button></div></dialog>
+<dialog id="dropInTripLogDialog" class="drop-in-trip-log"><h2>{{text:15f840c1-78dc-53db-8fe8-af2f1158fa5a:text0}} <span id="dropInTripLogName"></span></h2><p id="dropInTripLogStatus" role="status"></p><div class="drop-in-log-scroll"><table><thead><tr><th>{{text:2f563b97-6c1f-59d1-a3b6-f42071878657:text0}}</th><th>{{text:86592c6b-226a-5979-87ad-be33884929b5:text0}}</th><th>{{text:7d3c3d7f-ad35-5717-a2c3-e663010b5c9c:text0}}</th><th>{{text:3acbdf9f-4025-51f3-9388-579b8061e76a:text0}}</th></tr></thead><tbody id="dropInTripLogRows"></tbody></table></div><div class="dialog-actions"><button id="dropInTripLogPrevious" type="button" data-menu-icon="rewind">{{text:c630ef6e-0529-5a4d-9567-a08458259cc6:text0}}</button><button id="dropInTripLogNext" type="button" data-menu-icon="play">{{text:ffb0c1a1-8932-5ebc-92b8-b590ebcf4b97:text0}}</button><button id="dropInTripLogCancel" type="button" data-menu-icon="logout">{{text:5eabb983-6b64-5fe0-8e62-a8c1dd00b356:text0}}</button></div></dialog>

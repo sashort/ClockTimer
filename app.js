@@ -763,7 +763,7 @@
         globalThis
             .WMOFIdentityContext;
 
-    $("#liveStreamButton").addEventListener("click", () => window.open(new URL("drop-in.php", API_BASE), "_blank", "noopener"));
+    $("#liveStreamButton")?.addEventListener("click", () => window.open(new URL("drop-in.php", API_BASE), "_blank", "noopener"));
     const liveStreamDialog =
         $("#liveStreamDialog");
     const liveStreamViewerSection =
@@ -866,6 +866,7 @@
             timeDisplay:clockTimer.renderedTimeMode,
             model:clockTimer.exportObserverSnapshot(),
             mode:clockTimer.percentMode, range:getTripLogRange(),
+            customDates:getTripLogRange()==="custom"?{start:tripLogStartDate.value,end:tripLogEndDate.value}:null,
             active:tripIsLive(), tripId:clockTimer.currentTripId,
             tripStart:clockTimer.uiState?.trip_start_component?.date?.toISOString?.(),
             nonProduction:clockTimer.nonProduction, productionFilter:clockTimer.productionFilter,
@@ -1059,7 +1060,7 @@
         };
 
     function syncLiveStreamIdentityUI() {
-        $("#trainerMenuGroup").hidden = $("#liveStreamButton").hidden;
+        if ($("#trainerMenuGroup")) $("#trainerMenuGroup").hidden = $("#liveStreamButton")?.hidden;
         const identity =
             identityContext
                 ?.current;
@@ -2056,16 +2057,16 @@
                 )
             );
 
-        $("#userLookupButton").hidden =
+        if ($("#userLookupButton")) $("#userLookupButton").hidden =
             !canLookupUsers;
 
-        $("#newUserButton").hidden =
+        if ($("#newUserButton")) $("#newUserButton").hidden =
             !canCreateUsers;
 
-        $("#accessTokensButton").hidden =
+        if ($("#accessTokensButton")) $("#accessTokensButton").hidden =
             !canManageTokens;
 
-        $("#liveStreamButton").hidden =
+        if ($("#liveStreamButton")) $("#liveStreamButton").hidden =
             !(
                 canViewLiveStreams &&
                 canLookupUsers
@@ -2119,7 +2120,7 @@
         $("#sqlConsoleButton").hidden =
             !canUseDeveloperTools;
 
-        $("#adminMenuGroup").hidden =
+        if ($("#adminMenuGroup")) $("#adminMenuGroup").hidden =
             !(
                 canCreateUsers ||
                 canManageTokens ||
@@ -7726,16 +7727,16 @@
             canManageTokens ||
             canLookupUsers;
 
-        $("#adminMenuGroup").hidden =
+        if ($("#adminMenuGroup")) $("#adminMenuGroup").hidden =
             !showAdmin;
 
-        $("#newUserButton").hidden =
+        if ($("#newUserButton")) $("#newUserButton").hidden =
             !canCreateUsers;
 
-        $("#accessTokensButton").hidden =
+        if ($("#accessTokensButton")) $("#accessTokensButton").hidden =
             !canManageTokens;
 
-        $("#liveStreamButton").hidden =
+        if ($("#liveStreamButton")) $("#liveStreamButton").hidden =
             !(
                 canViewLiveStreams &&
                 canLookupUsers
@@ -7763,11 +7764,11 @@
             !canUseDeveloperTools;
 
         if (!showAdmin) {
-            $("#adminSubmenu").hidden =
+            if ($("#adminSubmenu")) $("#adminSubmenu").hidden =
                 true;
 
             $("#adminMenuButton")
-                .setAttribute(
+                ?.setAttribute(
                     "aria-expanded",
                     "false"
                 );
@@ -13997,18 +13998,15 @@
         return true;
     }
 
-    globalThis
-        .WMOFInteractionFunctions
-        .bindAction({
-            element:
-                scopeToggle,
-            event:
-                "pointerup",
-            name:
-                "cycleGoalModePointerUp",
-            action:
-                "cycleGoalMode"
-        });
+    globalThis.WMOFModeMenu?.bind(scopeToggle, {
+        getValue: () => clockTimer.percentMode === 'total' ? getTripLogRange() : clockTimer.percentMode,
+        getDates: () => ({start:tripLogStartDate.value,end:tripLogEndDate.value}),
+        onSelect: (value,dates) => {
+            if(dates){tripLogStartDate.value=dates.start;tripLogEndDate.value=dates.end;safeStorageSet(STORAGE.customTripLogDates,JSON.stringify(dates));}
+            if (['trip','auto'].includes(value)) applyScope(value);
+            else {setTripLogRange(value);applyScope('total');}
+        }
+    });
 
     scopeConnectionButton?.addEventListener(
         "click",
@@ -14711,7 +14709,7 @@
             }
         );
 
-    $("#newUserButton").addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
+    $("#newUserButton")?.addEventListener("click", () => {mainMenu?.hidePopover?.();$("#newUserFrame").src=`${API_BASE}api/admin/new-user/`;openDialog("newUserDialog",{fromPopover:true,reason:"admin-new-user"});});
 
     globalThis
         .WMOFInteractionFunctions

@@ -68,7 +68,10 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     "AnnouncementCatalog.js",
     "lang/en-US/announcements.json",
     "api/audio/catalog.json",
-    "TripAggregates.js: shared counted/percent/banked rules; TripLog.js: aggregation"
+    "TripAggregates.js: shared counted/percent/banked rules; TripLog.js: aggregation",
+    "ModeMenu.js: shared pointer mode selection and Custom date dialog",
+    "DropInPreferences.js: observer-scoped defaults and per-target settings",
+    "drop-in.js: watch list, Apply To All, selected-user Trip Log and Exit"
   ],
   "parameters": {
     "T": [
@@ -110,7 +113,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     "One utterance cannot execute both a short command and its preempting continuation.",
     "Returning from Trip Log preserves underlying editor value and surface.",
     "Ready / End Trip uses one immutable timestamp for end/start boundary.",
-    "End \u003cbreak type> OK skips question and dialog; standalone final End \u003cbreak type> shows both.",
+    "End <break type> OK skips question and dialog; standalone final End <break type> shows both.",
     "Scheduled Start accepts a valid duration with or without the Standard Time prefix.",
     "Break Selector is pointer-only; voice start commands use a typed OK/Cancel dialog.",
     "Localized command patterns dispatch neutral interval identifiers; core logic does not parse English break names.",
@@ -141,7 +144,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "trip": "No active trip",
       "facet": "",
       "commands": [
-        "Ready at \u003cclock time> [continuation]",
+        "Ready at <clock time> [continuation]",
         "Ready / New Trip",
         "Log / settings / modes"
       ],
@@ -170,7 +173,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "commands": [
         "Off / Sleep [when listening]",
         "Cancel / Close [top surface]",
-        "At \u003ctime> / Defer Trip",
+        "At <time> / Defer Trip",
         "Say a duration / Touch"
       ],
       "family": "mainline",
@@ -359,7 +362,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "commands": [
         "Off / Sleep [when listening]",
         "Cancel / Close [top surface]",
-        "Standard time \u003cduration>",
+        "Standard time <duration>",
         "Edit standard time"
       ],
       "family": "scheduling",
@@ -449,7 +452,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "title": "Start interval confirmation",
       "focus": "Voice start confirmation dialog",
       "trip": "Running or Down",
-      "facet": "Are you ready to start your \u003cbreak type>?",
+      "facet": "Are you ready to start your <break type>?",
       "commands": [
         "Cancel / Close [keep trip state]",
         "OK / Okay / O K [start selected interval]"
@@ -555,7 +558,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "title": "End break confirmation",
       "focus": "Break End dialog",
       "trip": "Break / Lunch",
-      "facet": "Are you ready to end your \u003cbreak type>? Choices: OK or Cancel.",
+      "facet": "Are you ready to end your <break type>? Choices: OK or Cancel.",
       "commands": [
         "Cancel / Close [keep current interval]",
         "OK / Okay / O K [end break]"
@@ -704,7 +707,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "trip": "T unchanged",
       "facet": "Recognizer active",
       "commands": [
-        "\u003crecognizer name>: finish valid old continuations; restart buffered stream",
+        "<recognizer name>: finish valid old continuations; restart buffered stream",
         "Off / Sleep",
         "Cancel / Close",
         "Eligible local / persisted commands"
@@ -1005,7 +1008,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Voice: clear both sequences and restart ID",
         "User / Username: clear inputs and switch login method",
         "Cancel: clear and restart ID entry",
-        "\u003cnumber sequence> (exactly four digits)",
+        "<number sequence> (exactly four digits)",
         "OK: next stage / verify PIN"
       ],
       "family": "login",
@@ -1028,7 +1031,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Cancel: clear PIN, stay on PIN entry, announce Password; prime second Cancel",
         "Voice: clear all and return to User ID",
         "User / Username: clear inputs and open username/password modal",
-        "\u003cnumber sequence> (exactly four digits)",
+        "<number sequence> (exactly four digits)",
         "OK: authenticate ID/PIN"
       ],
       "family": "login",
@@ -1092,7 +1095,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Cancel: clear User ID and return to ID entry",
         "Voice: clear all and restart ID",
         "User / Username: open separate username/password modal",
-        "\u003cnumber sequence>: begin fresh PIN; reset Cancel sequence",
+        "<number sequence>: begin fresh PIN; reset Cancel sequence",
         "OK: requires four PIN digits"
       ],
       "family": "login",
@@ -1295,10 +1298,14 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "trip": "Publisher trip unchanged / unknown until fresh snapshot",
       "facet": "Current target snapshot; observer model only",
       "commands": [
-        "Local mode / goal / Sync / time",
+        "Exit / Logout",
+        "Add / Remove / Select watched user",
+        "Mode / Custom range / goal / Sync / time",
+        "Mirror Settings / custom settings",
+        "Selected User Audio / Default Settings",
+        "Trip Log (selected observed user)",
         "Message watched user",
-        "Stop watching",
-        "Select another user"
+        "Stop watching"
       ],
       "family": "stream"
     },
@@ -1335,6 +1342,44 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "commands": [
         "Watch (retry)",
         "Select another user"
+      ],
+      "family": "stream"
+    },
+    "DI-APPLY": {
+      "id": "DI-APPLY",
+      "title": "Drop-In: Apply settings scope",
+      "focus": "Apply settings scope",
+      "trip": "Publisher lifecycle unchanged",
+      "facet": "Optimistic observer preview awaiting scope choice",
+      "commands": [
+        "Selected user",
+        "Apply to all",
+        "Cancel"
+      ],
+      "family": "stream"
+    },
+    "DI-DATES": {
+      "id": "DI-DATES",
+      "title": "Drop-In: Custom range dates",
+      "focus": "Custom range dates",
+      "trip": "Publisher lifecycle unchanged",
+      "facet": "Mode unchanged until valid dates confirmed",
+      "commands": [
+        "OK",
+        "Cancel"
+      ],
+      "family": "stream"
+    },
+    "DI-LOG": {
+      "id": "DI-LOG",
+      "title": "Drop-In: Selected user Trip Log",
+      "focus": "Selected user Trip Log",
+      "trip": "Publisher lifecycle unchanged",
+      "facet": "Read-only historical trips; permission checked at every request",
+      "commands": [
+        "Previous",
+        "Next",
+        "Close"
       ],
       "family": "stream"
     }
@@ -2064,7 +2109,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S01",
       "source": "R0",
       "target": "S0",
-      "label": "Ready at \u003cclock time>",
+      "label": "Ready at <clock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -2077,21 +2122,21 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Ready at \u003cclock time>",
+        "trigger": "Ready at <clock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
         "persistence": "Client-only unless a listed system effect explicitly requires persistence.",
         "rollback": "No remote mutation",
         "verification": "Existing recorded evidence applies only to that recorded implementation/version.",
-        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] \u003cduration>; do not open its editor during an unfinished duration."
+        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration."
       }
     },
     {
       "id": "S02",
       "source": "V0",
       "target": "S0",
-      "label": "At \u003cclock time>",
+      "label": "At <clock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -2104,7 +2149,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "At \u003cclock time>",
+        "trigger": "At <clock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -2117,7 +2162,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S03",
       "source": "V1",
       "target": "S0",
-      "label": "At \u003cclock time>",
+      "label": "At <clock time>",
       "mode": "voice",
       "audio": "schedule",
       "guard": "",
@@ -2130,7 +2175,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "At \u003cclock time>",
+        "trigger": "At <clock time>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -2143,7 +2188,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S04",
       "source": "S0",
       "target": "S1",
-      "label": "[Standard Time] \u003cduration>",
+      "label": "[Standard Time] <duration>",
       "mode": "voice",
       "audio": "standard",
       "guard": "",
@@ -2156,7 +2201,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "[Standard Time] \u003cduration>",
+        "trigger": "[Standard Time] <duration>",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -2170,7 +2215,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "S05",
       "source": "S1",
       "target": "S1",
-      "label": "[Standard Time] \u003cduration> (replace)",
+      "label": "[Standard Time] <duration> (replace)",
       "mode": "voice",
       "audio": "standard",
       "guard": "",
@@ -2183,7 +2228,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "[Standard Time] \u003cduration> (replace)",
+        "trigger": "[Standard Time] <duration> (replace)",
         "guard": "UNRESOLVED: derive exact availability from shared actions and authorization.",
         "state_changes": "UNRESOLVED: specify changed attributes and unchanged coordinated regions.",
         "timing": "User-triggered",
@@ -2194,7 +2239,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           "classification": "attribute-change",
           "rule": "Input values change within this node; collecting digits or replacing duration is not an unchanged state. Preserve value feedback and wait for the sequence boundary."
         },
-        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] \u003cduration>; do not open its editor during an unfinished duration."
+        "parameter_collection": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration."
       }
     },
     {
@@ -6351,7 +6396,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-ID-VOICE",
       "source": "LOGIN-ID",
       "target": "LOGIN-ID",
-      "label": "\u003cnumber sequence>: populate ID cells",
+      "label": "<number sequence>: populate ID cells",
       "mode": "voice",
       "audio": "silent",
       "guard": "listening; no more than four digits",
@@ -6364,7 +6409,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "\u003cnumber sequence>: populate ID cells",
+        "trigger": "<number sequence>: populate ID cells",
         "guard": "listening; no more than four digits",
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
@@ -6463,7 +6508,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-PIN-VOICE",
       "source": "LOGIN-PIN",
       "target": "LOGIN-PIN",
-      "label": "\u003cnumber sequence>: populate masked PIN cells",
+      "label": "<number sequence>: populate masked PIN cells",
       "mode": "voice",
       "audio": "silent",
       "guard": "",
@@ -6476,7 +6521,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "\u003cnumber sequence>: populate masked PIN cells",
+        "trigger": "<number sequence>: populate masked PIN cells",
         "guard": "",
         "state_changes": "Login region only; recognition state remains independent.",
         "timing": "Immediate input and stage change; asynchronous authentication.",
@@ -7643,7 +7688,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-PIN-REPLACE",
       "source": "LOGIN-PIN",
       "target": "LOGIN-PIN",
-      "label": "Fresh \u003cnumber sequence> replaces PIN",
+      "label": "Fresh <number sequence> replaces PIN",
       "mode": "voice",
       "audio": "silent",
       "guard": "not pending; recognition listening",
@@ -7656,7 +7701,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Fresh \u003cnumber sequence> replaces PIN",
+        "trigger": "Fresh <number sequence> replaces PIN",
         "guard": "not pending; recognition listening",
         "state_changes": "Fresh four-digit group replaces the selected credential. Additional complete groups keep the latest group. A digit after a full group begins a new group; any entry resets Cancel sequence.",
         "timing": "Immediate local UI change.",
@@ -7673,7 +7718,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "LOGIN-ID-REPLACE",
       "source": "LOGIN-ID",
       "target": "LOGIN-ID",
-      "label": "Fresh \u003cnumber sequence> replaces User ID",
+      "label": "Fresh <number sequence> replaces User ID",
       "mode": "voice",
       "audio": "silent",
       "guard": "not pending; recognition listening",
@@ -7686,7 +7731,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "skippable": false,
       "contract": {
-        "trigger": "Fresh \u003cnumber sequence> replaces User ID",
+        "trigger": "Fresh <number sequence> replaces User ID",
         "guard": "not pending; recognition listening",
         "state_changes": "Replace selected ID with fresh four digits; preserve leading zeros; no decimals. Existing sequence entry feedback owns speech.",
         "timing": "Immediate local UI change.",
@@ -9091,7 +9136,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "id": "MIC-NAMED-BARGE-IN",
       "source": "MIC",
       "target": "MIC",
-      "label": "\u003crecognizer name>: flush and restart stream",
+      "label": "<recognizer name>: flush and restart stream",
       "mode": "voice",
       "audio": "silent",
       "guard": "Configured localized whole name appears in active capture",
@@ -9115,6 +9160,342 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           "classification": "attribute-change",
           "rule": "Recognition stream ID and buffered text change; no unchanged setting chime. Existing completed commands remain; subsequent accepted commands retain their own feedback."
         }
+      }
+    },
+    {
+      "id": "DI-SETTINGS-SCOPE",
+      "source": "DI-LIVE",
+      "target": "DI-APPLY",
+      "label": "Change settings with multiple watched users",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Watch list contains more than one user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Change settings with multiple watched users",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-SAVE-SELECTED",
+      "source": "DI-APPLY",
+      "target": "DI-LIVE",
+      "label": "Apply to selected user",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Settings save succeeds",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Apply to selected user",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-SAVE-ALL",
+      "source": "DI-APPLY",
+      "target": "DI-LIVE",
+      "label": "Apply changed settings to all watched users",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Settings save succeeds",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Apply changed settings to all watched users",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-CANCEL-SETTINGS",
+      "source": "DI-APPLY",
+      "target": "DI-LIVE",
+      "label": "Cancel settings preview",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Restore saved observer preferences",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Cancel settings preview",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-SETTINGS-FAIL",
+      "source": "DI-APPLY",
+      "target": "DI-LIVE",
+      "label": "Settings save failed: restore checkpoint",
+      "mode": "failure",
+      "audio": null,
+      "guard": "Local persistence rejects write",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Settings save failed: restore checkpoint",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-OPEN-DATES",
+      "source": "DI-LIVE",
+      "target": "DI-DATES",
+      "label": "Choose Custom mode",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Selected observed user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Choose Custom mode",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-DATES-OK",
+      "source": "DI-DATES",
+      "target": "DI-APPLY",
+      "label": "OK: valid Custom dates with multiple watched users",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Both dates valid and ordered; more than one watched user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "OK: valid Custom dates with multiple watched users",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-DATES-SINGLE",
+      "source": "DI-DATES",
+      "target": "DI-LIVE",
+      "label": "OK: valid Custom dates for one watched user",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Both dates valid and ordered; one watched user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "OK: valid Custom dates for one watched user",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-DATES-CANCEL",
+      "source": "DI-DATES",
+      "target": "DI-LIVE",
+      "label": "Cancel date range",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Preserve mode and dates",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Cancel date range",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-OPEN-LOG",
+      "source": "DI-LIVE",
+      "target": "DI-LOG",
+      "label": "Open selected observed user Trip Log",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Active authorized matching peer; unexpired session",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Open selected observed user Trip Log",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-CLOSE-LOG",
+      "source": "DI-LOG",
+      "target": "DI-LIVE",
+      "label": "Close Trip Log",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Publisher unchanged",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Close Trip Log",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-LOG-LOSS",
+      "source": "DI-LOG",
+      "target": "DI-DISCONNECTED",
+      "label": "Peer lost while viewing Trip Log",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "Clear rows and invalidate request",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Peer lost while viewing Trip Log",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-EXIT",
+      "source": "DI-LIVE",
+      "target": "HOME-IN",
+      "label": "Exit: stop streams and return to landing",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Authenticated session retained",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Exit: stop streams and return to landing",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-LOGOUT",
+      "source": "DI-LIVE",
+      "target": "HOME-OUT",
+      "label": "Logout: stop streams and end session",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Server logout succeeds",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Logout: stop streams and end session",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
       }
     }
   ],
@@ -11764,7 +12145,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "tests/speech-command-digest.mjs",
         "tests/app-state-transactions.mjs --scheduled-standard"
       ],
-      "boundary_ownership": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] \u003cduration>; do not open its editor during an unfinished duration.",
+      "boundary_ownership": "An incomplete bare parameter or partially decoded first command word does not establish a next-command boundary. Hold the preceding collecting/continuable step until final decode or a distinct matching command with a complete leading literal word. This includes a Standard Time editor prefix competing with [Standard Time] <duration>; do not open its editor during an unfinished duration.",
       "regressions": [
         "Ready at four twenty-two, including transient partial number words",
         "Scheduled trip: [Standard Time] eleven twenty-six, with optional prefix and transient partial words",
@@ -11925,6 +12306,31 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Clock phase and Auto goal/range combinations require a full cross-region validity audit.",
         "Drop-In connection validity must be checked independently of watched trip state and local viewer overrides."
       ]
+    },
+    "drop-in-settings": {
+      "authority": "Observer-only view and audio settings; publisher remains authoritative for trip lifecycle. No Break, Down or End mutations are exposed.",
+      "storage": "Client persistence keyed by observer account and watched user; removal retains saved custom settings. Defaults seed new users.",
+      "mirror": "Checked follows publisher mode/goals/sync/time. Unchecked restores saved custom settings. Audio stays observer-local.",
+      "apply_to_all": "If watch list has more than one user, preview immediately and await Selected user / Apply to all / Cancel. Only changed fields are copied. Cancel restores saved settings; failed save restores its checkpoint.",
+      "trip_log": "Read-only trips of selected observed user, filtered to selected range. Requires active authorized peer and unexpired publisher session. User switching/disconnect invalidates outstanding requests.",
+      "exit": "Close all streams, stop observer timer and audio, return to landing with session retained. Logout also ends authenticated session."
+    },
+    "pointer-mode-menu": {
+      "options": [
+        "Day",
+        "Week",
+        "Money",
+        "Month",
+        "Year",
+        "Custom",
+        "separator",
+        "Trip",
+        "separator",
+        "Auto"
+      ],
+      "custom": "Open date-range dialog before changing mode. Require both dates and end on or after start. Cancel preserves original mode and dates.",
+      "shared": "Order Filler and Drop-In use ModeMenu. Order Filler changes its own state; Drop-In changes only observer state.",
+      "landing_navigation": "Admin and Trainer categories belong to landing; Order Filler hamburger excludes both."
     }
   },
   "unresolved_contracts": [
@@ -12055,7 +12461,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
 'use strict';
 const M=JSON.parse(document.getElementById('fsm-data').textContent);
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const positions={"DI-CONNECTING":[-600,0,-5200],"DI-LIVE":[0,0,-5200],"DI-INTERRUPTED":[600,0,-5200],"DI-DISCONNECTED":[600,650,-5200],"DI-REJECTED":[-600,650,-5200],"HOME-OUT":[-800,0,-4200],"HOME-LOGIN":[-250,-500,-4200],"HOME-ERROR":[400,-500,-4200],"HOME-IN":[650,200,-4200],"ADM-LOOKUP":[-850, 650, -2450],"ADM-LOAD":[-280, 650, -2450],"ADM-EDIT":[290, 650, -2450],"ADM-SAVE":[-850, 1220, -2450],"ADM-ERROR":[-280, 1220, -2450],"DROP-IN":[290, 1220, -2450],"LOGIN-PIN-CANCEL":[800,-650,-3350],"LOGIN-USER":[0,650,-3350],"LOGIN-ID":[-800,0,-3350],"LOGIN-PIN":[0,0,-3350],"LOGIN-WAIT":[800,0,-3350],MS:[800,650,-780],PREV:[1300,650,-780],VRQ:[-1050, -650, 0],"SET-G":[-850, 0, -2450],"SET-A":[-280, 0, -2450],"SET-P":[290, 0, -2450],"SET-R":[860, 0, -2450],"CLK-R":[-850, 0, 3250],"CLK-N":[-280, 0, 3250],"CLK-O":[290, 0, 3250],"CLK-OB":[-850, 550, 3250],"CLK-B":[-280, 550, 3250],"CLK-EB":[290, 550, 3250],"CLK-D":[860, 550, 3250],RETRY:[0, 650, -1550],R0:[-1000,0,0],V0:[-560,-260,0],V1:[-70,-260,0],N0:[-560,260,0],N1:[-70,260,0],R1:[680,0,0],W:[320,0,260],ST:[-600,0,260],D:[-980,0,760],S0:[-530,-260,760],S1:[0,-260,760],SR:[600,-260,760],SE:[0,260,760],B0:[-620,-260,1550],B1:[-100,-260,1550],B10:[450,-440,1550],B15:[960,-440,1550],BL:[1470,-440,1550],BUF:[960,220,1550],OTHER:[1470,220,1550],DOWN:[-620,240,1550],CD:[-100,240,1550],BE:[960,740,1550],BS:[-620,-790,1550],TS:[-500,0,-780],EV:[70,-260,-780],EN:[70,260,-780],LOG:[620,-260,-780],HT:[-1000,0,-780],RP:[620,260,-780],GA:[-580,-520,2380],GT:[0,-520,2380],GL:[580,-520,2380],SO:[-580,0,2380],SI:[0,0,2380],MIC:[750,0,2380],SLEEP:[1250,0,2380],OFF:[1750,0,2380],P:[0,0,-1550],C:[580,0,-1550],F:[-580,0,-1550]};
+const positions={"DI-APPLY":[-900,-650,-5200],"DI-DATES":[0,-650,-5200],"DI-LOG":[900,-650,-5200],"DI-CONNECTING":[-600,0,-5200],"DI-LIVE":[0,0,-5200],"DI-INTERRUPTED":[600,0,-5200],"DI-DISCONNECTED":[600,650,-5200],"DI-REJECTED":[-600,650,-5200],"HOME-OUT":[-800,0,-4200],"HOME-LOGIN":[-250,-500,-4200],"HOME-ERROR":[400,-500,-4200],"HOME-IN":[650,200,-4200],"ADM-LOOKUP":[-850, 650, -2450],"ADM-LOAD":[-280, 650, -2450],"ADM-EDIT":[290, 650, -2450],"ADM-SAVE":[-850, 1220, -2450],"ADM-ERROR":[-280, 1220, -2450],"DROP-IN":[290, 1220, -2450],"LOGIN-PIN-CANCEL":[800,-650,-3350],"LOGIN-USER":[0,650,-3350],"LOGIN-ID":[-800,0,-3350],"LOGIN-PIN":[0,0,-3350],"LOGIN-WAIT":[800,0,-3350],MS:[800,650,-780],PREV:[1300,650,-780],VRQ:[-1050, -650, 0],"SET-G":[-850, 0, -2450],"SET-A":[-280, 0, -2450],"SET-P":[290, 0, -2450],"SET-R":[860, 0, -2450],"CLK-R":[-850, 0, 3250],"CLK-N":[-280, 0, 3250],"CLK-O":[290, 0, 3250],"CLK-OB":[-850, 550, 3250],"CLK-B":[-280, 550, 3250],"CLK-EB":[290, 550, 3250],"CLK-D":[860, 550, 3250],RETRY:[0, 650, -1550],R0:[-1000,0,0],V0:[-560,-260,0],V1:[-70,-260,0],N0:[-560,260,0],N1:[-70,260,0],R1:[680,0,0],W:[320,0,260],ST:[-600,0,260],D:[-980,0,760],S0:[-530,-260,760],S1:[0,-260,760],SR:[600,-260,760],SE:[0,260,760],B0:[-620,-260,1550],B1:[-100,-260,1550],B10:[450,-440,1550],B15:[960,-440,1550],BL:[1470,-440,1550],BUF:[960,220,1550],OTHER:[1470,220,1550],DOWN:[-620,240,1550],CD:[-100,240,1550],BE:[960,740,1550],BS:[-620,-790,1550],TS:[-500,0,-780],EV:[70,-260,-780],EN:[70,260,-780],LOG:[620,-260,-780],HT:[-1000,0,-780],RP:[620,260,-780],GA:[-580,-520,2380],GT:[0,-520,2380],GL:[580,-520,2380],SO:[-580,0,2380],SI:[0,0,2380],MIC:[750,0,2380],SLEEP:[1250,0,2380],OFF:[1750,0,2380],P:[0,0,-1550],C:[580,0,-1550],F:[-580,0,-1550]};
 const cfg={stream:{label:"Drop-In stream / Recovery",families:["stream"],context:["DROP-IN"]},landing:{label:"Landing / Pages",families:["landing"],context:["R0","R1","LOGIN-ID","DROP-IN"]},login:{label:"Login",families:["login"],context:["R0"]},settings:{label:"Settings",families:["settings"],context:["R0","R1","V0","N0"]},clock:{label:"Clock phases",families:["clock"],context:[]},mainline:{label:'Mainline',families:['mainline'],context:[]},scheduling:{label:'Scheduled / Deferred',families:['scheduling'],context:['R0','V0','V1','N0','N1','R1']},intervals:{label:'Break / Lunch / Down',families:['intervals'],context:['R1','W']},ancillary:{label:'Editors / Trip Log',families:['ancillary'],context:['R1','S1','D']},modes:{label:'Goal / Sync / Mic modes',families:['modes'],context:['HT']},validation:{label:'Persistence / Rollback',families:['validation'],context:[]},all:{label:'All states in 3D',families:null,context:[]}};
 let viewInitialized=false;let group='mainline', selected={kind:'state',id:'R0'}, camera={yaw:.22,pitch:-.11,zoom:.75,panX:0,panY:0,target:[0,0,0]}, width=1200,height=900,frame,visibleNodes=[],visibleEdges=[],projected=new Map();
 const modeLabel=mode=>({pointer:'Pointer',voice:'Voice',automatic:'System automatic',failure:'Persistence rollback'})[mode]||mode;

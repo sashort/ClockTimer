@@ -22,7 +22,10 @@
     "AnnouncementCatalog.js",
     "lang/en-US/announcements.json",
     "api/audio/catalog.json",
-    "TripAggregates.js: shared counted/percent/banked rules; TripLog.js: aggregation"
+    "TripAggregates.js: shared counted/percent/banked rules; TripLog.js: aggregation",
+    "ModeMenu.js: shared pointer mode selection and Custom date dialog",
+    "DropInPreferences.js: observer-scoped defaults and per-target settings",
+    "drop-in.js: watch list, Apply To All, selected-user Trip Log and Exit"
   ],
   "parameters": {
     "T": [
@@ -1249,10 +1252,14 @@
       "trip": "Publisher trip unchanged / unknown until fresh snapshot",
       "facet": "Current target snapshot; observer model only",
       "commands": [
-        "Local mode / goal / Sync / time",
+        "Exit / Logout",
+        "Add / Remove / Select watched user",
+        "Mode / Custom range / goal / Sync / time",
+        "Mirror Settings / custom settings",
+        "Selected User Audio / Default Settings",
+        "Trip Log (selected observed user)",
         "Message watched user",
-        "Stop watching",
-        "Select another user"
+        "Stop watching"
       ],
       "family": "stream"
     },
@@ -1289,6 +1296,44 @@
       "commands": [
         "Watch (retry)",
         "Select another user"
+      ],
+      "family": "stream"
+    },
+    "DI-APPLY": {
+      "id": "DI-APPLY",
+      "title": "Drop-In: Apply settings scope",
+      "focus": "Apply settings scope",
+      "trip": "Publisher lifecycle unchanged",
+      "facet": "Optimistic observer preview awaiting scope choice",
+      "commands": [
+        "Selected user",
+        "Apply to all",
+        "Cancel"
+      ],
+      "family": "stream"
+    },
+    "DI-DATES": {
+      "id": "DI-DATES",
+      "title": "Drop-In: Custom range dates",
+      "focus": "Custom range dates",
+      "trip": "Publisher lifecycle unchanged",
+      "facet": "Mode unchanged until valid dates confirmed",
+      "commands": [
+        "OK",
+        "Cancel"
+      ],
+      "family": "stream"
+    },
+    "DI-LOG": {
+      "id": "DI-LOG",
+      "title": "Drop-In: Selected user Trip Log",
+      "focus": "Selected user Trip Log",
+      "trip": "Publisher lifecycle unchanged",
+      "facet": "Read-only historical trips; permission checked at every request",
+      "commands": [
+        "Previous",
+        "Next",
+        "Close"
       ],
       "family": "stream"
     }
@@ -9070,6 +9115,342 @@
           "rule": "Recognition stream ID and buffered text change; no unchanged setting chime. Existing completed commands remain; subsequent accepted commands retain their own feedback."
         }
       }
+    },
+    {
+      "id": "DI-SETTINGS-SCOPE",
+      "source": "DI-LIVE",
+      "target": "DI-APPLY",
+      "label": "Change settings with multiple watched users",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Watch list contains more than one user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Change settings with multiple watched users",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-SAVE-SELECTED",
+      "source": "DI-APPLY",
+      "target": "DI-LIVE",
+      "label": "Apply to selected user",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Settings save succeeds",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Apply to selected user",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-SAVE-ALL",
+      "source": "DI-APPLY",
+      "target": "DI-LIVE",
+      "label": "Apply changed settings to all watched users",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Settings save succeeds",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Apply changed settings to all watched users",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-CANCEL-SETTINGS",
+      "source": "DI-APPLY",
+      "target": "DI-LIVE",
+      "label": "Cancel settings preview",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Restore saved observer preferences",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Cancel settings preview",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-SETTINGS-FAIL",
+      "source": "DI-APPLY",
+      "target": "DI-LIVE",
+      "label": "Settings save failed: restore checkpoint",
+      "mode": "failure",
+      "audio": null,
+      "guard": "Local persistence rejects write",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Settings save failed: restore checkpoint",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-OPEN-DATES",
+      "source": "DI-LIVE",
+      "target": "DI-DATES",
+      "label": "Choose Custom mode",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Selected observed user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Choose Custom mode",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-DATES-OK",
+      "source": "DI-DATES",
+      "target": "DI-APPLY",
+      "label": "OK: valid Custom dates with multiple watched users",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Both dates valid and ordered; more than one watched user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "OK: valid Custom dates with multiple watched users",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-DATES-SINGLE",
+      "source": "DI-DATES",
+      "target": "DI-LIVE",
+      "label": "OK: valid Custom dates for one watched user",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Both dates valid and ordered; one watched user",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "OK: valid Custom dates for one watched user",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-DATES-CANCEL",
+      "source": "DI-DATES",
+      "target": "DI-LIVE",
+      "label": "Cancel date range",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Preserve mode and dates",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Cancel date range",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-OPEN-LOG",
+      "source": "DI-LIVE",
+      "target": "DI-LOG",
+      "label": "Open selected observed user Trip Log",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Active authorized matching peer; unexpired session",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Open selected observed user Trip Log",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-CLOSE-LOG",
+      "source": "DI-LOG",
+      "target": "DI-LIVE",
+      "label": "Close Trip Log",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Publisher unchanged",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Close Trip Log",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-LOG-LOSS",
+      "source": "DI-LOG",
+      "target": "DI-DISCONNECTED",
+      "label": "Peer lost while viewing Trip Log",
+      "mode": "automatic",
+      "audio": null,
+      "guard": "Clear rows and invalidate request",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Peer lost while viewing Trip Log",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-EXIT",
+      "source": "DI-LIVE",
+      "target": "HOME-IN",
+      "label": "Exit: stop streams and return to landing",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Authenticated session retained",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Exit: stop streams and return to landing",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
+    },
+    {
+      "id": "DI-LOGOUT",
+      "source": "DI-LIVE",
+      "target": "HOME-OUT",
+      "label": "Logout: stop streams and end session",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Server logout succeeds",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "untested",
+        "version": "",
+        "evidence": "Automated coverage; live feedback pending"
+      },
+      "contract": {
+        "trigger": "Logout: stop streams and end session",
+        "state_changes": "Observer state only; selected publisher trip unchanged",
+        "timing": "Ignore stale target/session completions",
+        "persistence": "Local settings are saved per observer; publisher trip is never written",
+        "rollback": "Cancel/rejected write restores saved preferences"
+      }
     }
   ],
   "audio": {
@@ -11879,6 +12260,31 @@
         "Clock phase and Auto goal/range combinations require a full cross-region validity audit.",
         "Drop-In connection validity must be checked independently of watched trip state and local viewer overrides."
       ]
+    },
+    "drop-in-settings": {
+      "authority": "Observer-only view and audio settings; publisher remains authoritative for trip lifecycle. No Break, Down or End mutations are exposed.",
+      "storage": "Client persistence keyed by observer account and watched user; removal retains saved custom settings. Defaults seed new users.",
+      "mirror": "Checked follows publisher mode/goals/sync/time. Unchecked restores saved custom settings. Audio stays observer-local.",
+      "apply_to_all": "If watch list has more than one user, preview immediately and await Selected user / Apply to all / Cancel. Only changed fields are copied. Cancel restores saved settings; failed save restores its checkpoint.",
+      "trip_log": "Read-only trips of selected observed user, filtered to selected range. Requires active authorized peer and unexpired publisher session. User switching/disconnect invalidates outstanding requests.",
+      "exit": "Close all streams, stop observer timer and audio, return to landing with session retained. Logout also ends authenticated session."
+    },
+    "pointer-mode-menu": {
+      "options": [
+        "Day",
+        "Week",
+        "Money",
+        "Month",
+        "Year",
+        "Custom",
+        "separator",
+        "Trip",
+        "separator",
+        "Auto"
+      ],
+      "custom": "Open date-range dialog before changing mode. Require both dates and end on or after start. Cancel preserves original mode and dates.",
+      "shared": "Order Filler and Drop-In use ModeMenu. Order Filler changes its own state; Drop-In changes only observer state.",
+      "landing_navigation": "Admin and Trainer categories belong to landing; Order Filler hamburger excludes both."
     }
   },
   "unresolved_contracts": [

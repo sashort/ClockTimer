@@ -38,6 +38,16 @@
             this.custom.hidden = this.mode.value !== 'custom';
             this.render();
         }
+        capturePreference() {
+            return {mode:this.mode.value,start:this.start.value,end:this.end.value,percent:this.percent.value,
+                percentScope:this.percentScope || null,sync:this.sync.value,timeDisplay:this.timeDisplay.value};
+        }
+        applyPreference(preference) {
+            this.mode.value=preference.mode || 'user';this.start.value=preference.start || '';this.end.value=preference.end || '';
+            this.percent.value=preference.percent || '';this.percentScope=preference.percentScope;
+            this.sync.value=preference.sync || 'user';this.timeDisplay.value=preference.timeDisplay || 'user';this.select();
+            this.root.dispatchEvent(new CustomEvent('drop-in-mode-changed'));
+        }
         setUser(userId) {
             if (userId === this.userId) return;
             if (this.userId) this.preferences.set(this.userId, {
@@ -83,6 +93,7 @@
                 this.text(type !== 'down' && remaining < 0 ? 'overtime' : countUp ? 'elapsed' : 'remainingInterval');
             this.root.querySelector('#liveStreamIntervalTime').textContent = this.duration(milliseconds);
         }
+        destroy() {clearInterval(this.intervalTicker);this.clear();}
         duration(milliseconds) {
             const seconds = Math.floor(Math.abs(milliseconds || 0) / 1000);
             return (milliseconds < 0 ? '−' : '') + [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60]

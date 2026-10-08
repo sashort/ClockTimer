@@ -15,12 +15,13 @@ for(const page of pages){
  const w=new Window();w.document.write(html);
  for(const id of ['userLookupDialog','appVersion','language-pack'])assert.equal(w.document.querySelectorAll('#'+id).length,1,page+' includes '+id+' once');
  assert.equal(w.document.querySelectorAll('link[href^="MenuIcons.css"]').length,1);
- const menu=page==='index'?'#homeMenu button,#homeMenu a,#homeMenu summary,#signedOutActions button,#signedOutActions a':page==='order-filler'?'#mainMenu button:not(#menuButton),#mainMenu a,#mainMenu summary':'.drop-in-page-header a';
+ const menu=page==='index'?'#homeMenu button,#homeMenu a,#homeMenu summary,#signedOutActions button,#signedOutActions a':page==='order-filler'?'#mainMenu button:not(#menuButton),#mainMenu a,#mainMenu summary':'#dropInMenu button:not(#dropInMenuButton),#dropInMenu a';
  for(const option of w.document.querySelectorAll(menu)){
   assert(option.dataset.menuIcon || option.querySelector('svg'),page+': missing icon for '+(option.id||option.textContent.trim()));
   if(option.dataset.menuIcon)assert(icons.includes('[data-menu-icon="'+option.dataset.menuIcon+'"]'),option.dataset.menuIcon+' must exist in the shared icon library');
  }
  if(page==='order-filler'){
+  for(const id of ['adminMenuGroup','trainerMenuGroup'])assert.equal(w.document.getElementById(id),null,'landing page owns admin and trainer categories');
   assert.equal(w.document.getElementById('easterEggMenuButton').dataset.menuIcon,'music');
   assert.equal(w.document.getElementById('easterEggMenuButton').getAttribute('href'),'api/audio/easter-eggs/');
   assert.equal(w.document.getElementById('easterEggSongSelect'),null,'songs move to the native audio endpoint');
@@ -35,6 +36,7 @@ for(const page of pages){
   assert.equal(timerRoot.querySelectorAll('.trip-summary .summary-cell').length,2);
   assert.equal(timerRoot.querySelectorAll('.trip-summary .percent-summary').length,1);
   if(page==='drop-in') {
+   assert(w.document.querySelector('script[src^="PanePage.js"]'),'viewer menu requires shared pane runtime');
    for(const id of ['newTripButton','endTripButton','breakButton','downButton','tripListButton','tripListMenuButton'])
     assert.equal(w.document.getElementById(id),null,'observer cannot expose publisher actions');
    for(const id of ['liveStreamViewMode','liveStreamViewPercent','liveStreamViewSync','liveStreamTrainerMessageSend','liveStreamUserSelect'])

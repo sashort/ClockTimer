@@ -426,7 +426,7 @@ if ($method === 'GET') {
         ]);
     }
 
-    if ($action === 'viewer' || $action === 'totals') {
+    if ($action === 'viewer' || $action === 'totals' || $action === 'trip-log') {
         $targetUserId = require_positive_int($_GET, 'targetUserId');
         $peerId = require_positive_int($_GET, 'peerId');
         $peer = live_stream_require_viewer(
@@ -448,6 +448,15 @@ if ($method === 'GET') {
             // Reuse the trip aggregate endpoint's filters and calculations; permit totals only.
             define('CLOCKTIMER_DROP_IN_TRIP_USER_ID', $targetUserId);
             $_GET['result'] = 'totals';
+            require dirname(__DIR__) . '/trips/index.php';
+            exit;
+        }
+
+        if ($action === 'trip-log') {
+            // Read-only list for the selected user, behind the same live peer authorization.
+            define('CLOCKTIMER_DROP_IN_TRIP_USER_ID', $targetUserId);
+            $_GET['result'] = 'list';
+        $_GET['verbose'] = '0';
             require dirname(__DIR__) . '/trips/index.php';
             exit;
         }

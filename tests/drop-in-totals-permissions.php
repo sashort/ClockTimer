@@ -25,10 +25,10 @@ foreach ([
     catch (RuntimeException $error) { if ($error->getCode() === 403) continue; throw $error; }
     throw new RuntimeException('Unauthorized historical totals allowed');
 }
-$branch = substr($source, strpos($source, "if (\$action === 'viewer' || \$action === 'totals')"));
+$branch = substr($source, strpos($source, "if (\$action === 'viewer' || \$action === 'totals' || \$action === 'trip-log')"));
 if (!(strpos($branch, 'live_stream_require_viewer(') < strpos($branch, "if (\$action === 'totals')") &&
       strpos($branch, "api_error('The live stream has expired.'") < strpos($branch, 'CLOCKTIMER_DROP_IN_TRIP_USER_ID'))) {
     throw new RuntimeException('Totals must check authorization and expiry before handoff');
 }
-if (!str_contains($branch, "\$_GET['result'] = 'totals';")) throw new RuntimeException('Drop-In must only expose aggregates');
-echo "PASS Drop-In totals require viewer permission, matching peer owner/viewer and unexpired session; handoff exposes totals only\n";
+if (!str_contains($branch, "\$_GET['result'] = 'totals';") || !str_contains($branch, "\$_GET['result'] = 'list';")) throw new RuntimeException('Drop-In must force totals/list results after peer authorization');
+echo "PASS Drop-In totals require viewer permission, matching peer owner/viewer and unexpired session; handoff exposes authorized totals and read-only trip lists\n";

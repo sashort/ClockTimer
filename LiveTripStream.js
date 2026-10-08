@@ -107,6 +107,18 @@
             return data;
         }
 
+        async fetchViewerTrips(window, {offset=0,limit=25}={}) {
+            if (!this.#viewing || !this.#viewerPeerId) throw new Error("No active Drop-In session.");
+            const target=this.#targetUserId,peer=this.#viewerPeerId;
+            const url=new URL(this.#endpoint);
+            url.search=new URLSearchParams({action:'trip-log',targetUserId:target,peerId:peer,
+                minDateTime:window.startTime,maxDateTime:window.endTime,offset,limit});
+            const response=await fetch(url,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});
+            const data=await response.json();if(!response.ok)throw new Error(data.message || "Unable to load Trip Log.");
+            if(target!==this.#targetUserId || peer!==this.#viewerPeerId || !this.#viewing)throw new Error("The Drop-In session changed.");
+            return data;
+        }
+
         get viewerMuted() {
             return this.#viewerMuted;
         }

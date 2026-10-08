@@ -1,0 +1,13 @@
+.mode-dropdown { position:fixed; inset:auto; margin:0; padding:6px; box-sizing:border-box; overflow:auto; color:white; background:#001e60; border:1px solid #a9ddf7; border-radius:12px; box-shadow:0 8px 24px #0006; z-index:100000; }
+.mode-dropdown[hidden] { display:none; }
+.mode-dropdown button { display:flex; align-items:center; gap:12px; width:100%; min-height:44px; padding:10px 14px; border:0; border-radius:6px; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.mode-dropdown button::before { margin-inline-end:0; }
+.mode-dropdown button:hover,.mode-dropdown button:focus-visible,.mode-dropdown button[aria-checked="true"] { background:#174b91; }
+.mode-dropdown hr { border:0; border-top:1px solid #a9ddf780; margin:6px 8px; }
+
+.mode-date-dialog {width:min(420px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box;border:1px solid #a9ddf7;border-radius:12px;background:#001e60;color:white;padding:24px;}
+.mode-date-dialog form {display:grid;gap:16px;}
+.mode-date-dialog h2 {margin:0;}
+.mode-date-dialog label {display:grid;gap:8px;}
+.mode-date-dialog input {min-width:0;min-height:44px;padding:8px;color:inherit;background:#082e76;border:1px solid #a9ddf7;border-radius:8px;}
+.mode-date-dialog button {min-height:44px;}

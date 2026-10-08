@@ -30,6 +30,13 @@ on:
       - "tests/counted-time-accounting.mjs"
       - "tests/active-trip-restore.mjs"
       - "LiveTripStream.js"
+      - "DropInPreferences.js"
+      - "ModeMenu.js"
+      - "ModeMenu.css"
+      - "drop-in.js"
+      - "drop-in.css"
+      - "tests/drop-in-*.mjs"
+      - "tests/mode-menu.mjs"
       - "IdentityContext.js"
       - "UserLookup.js"
       - "HamburgerMenu.js"
@@ -254,6 +261,8 @@ jobs:
           TZ=America/New_York node drop-in-view.mjs
           TZ=America/Los_Angeles node drop-in-view.mjs
           node drop-in-page.mjs
+          node drop-in-preferences.mjs
+          node mode-menu.mjs
           node drop-in-observer-replay.mjs
           node main-page.mjs
           node shared-page-templates.mjs

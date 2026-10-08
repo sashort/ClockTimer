@@ -5,23 +5,28 @@ const html=fs.readFileSync(new URL('../drop-in.html',import.meta.url),'utf8');
 assert(!/src="(?:app|SherpaRecognizer|SpeechMicBar)\.js/.test(html),'standalone viewer loads no main app or microphone engine');
 assert(!html.includes('id="tripListButton"'),'viewer omits Trip Log');
 assert(html.includes('src="api/audio/AudioEngine.js"'),'viewer retains remote speech playback');
-const w=new Window({url:'https://clock.example/drop-in.php'});
+const w=new Window({url:'https://clock.example/drop-in.php'});w.structuredClone=structuredClone;
 w.document.body.innerHTML=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
+w.eval(fs.readFileSync(new URL('../DropInPreferences.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'));
-const events=[],errors=[];let rejectStart=false;
+const events=[],errors=[],stored=new Map();let rejectStart=false;
+w.WMOFPersistence={async getItem(key){return stored.get(key);},async setItem(key,value){stored.set(key,value);}};
 w.addEventListener("error",event=>errors.push(event.message));
 w.WMOFLiveTripStream=class extends w.EventTarget {
  constructor(){super();w.testStream=this;this.viewing=false;}
  async stopViewing(){events.push('stop');this.viewing=false;this.dispatchEvent(new w.CustomEvent('viewerChanged'));}
  async startViewing(id){events.push('start:'+id);if(rejectStart)throw new Error('permission revoked');this.viewing=true;this.targetUserId=id;this.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'connected'}}));}
  async sendToPublisher(type,payload){events.push({target:this.targetUserId,type,payload});}
- async close(){}
+ async close(){events.push('close');this.viewing=false;}
+ async fetchViewerTrips(window,options){events.push({logTarget:this.targetUserId,window,options});return {trips:[{startTime:'2026-10-08 12:00:00',endTime:'2026-10-08 12:10:00',standardTimeMilliseconds:600000,actualTimeMilliseconds:600000}]};}
 };
 w.WMOFDropInView=class {
  constructor(){w.testView=this;}
  clear(){events.push('clear');}
  setUser(id){this.userId=id;events.push('user:'+id);}
- update(snapshot){events.push('snapshot:'+snapshot.userId);}
+ update(snapshot){this.snapshot=snapshot;events.push('snapshot:'+snapshot.userId);}
+ duration(ms){return String(ms);}
+ destroy(){events.push('destroy');}
 };
 w.WMOFUserLookup=class {constructor(options){w.testLookup=options;}setMode(){}sync(){}};
 w.WMOFDropInText=key=>key;
@@ -39,6 +44,15 @@ w.document.getElementById('liveStreamTrainerMessageText').value='unsent';
 w.testLookup.onLiveStream(identity(3));await tick();
 assert.equal(w.document.getElementById('liveStreamTrainerMessageText').value,'');
 assert(events.indexOf('stop',events.indexOf('start:2'))<events.indexOf('start:3'),'stop old peer before starting new target');
+const $=id=>w.document.getElementById(id),change=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new w.Event('change'));};
+change('liveStreamViewMode','year');assert.equal($('dropInApplyDialog').open,true);$('dropInApplyCancel').click();assert.equal($('liveStreamViewMode').value,'user');
+change('liveStreamViewMode','day');$('dropInApplySelected').click();await tick();assert.equal($('dropInMirrorSettings').checked,false);
+$('dropInMirrorSettings').checked=true;$('dropInMirrorSettings').dispatchEvent(new w.Event('change'));$('dropInApplySelected').click();await tick();assert.equal($('liveStreamViewMode').value,'user');
+$('dropInMirrorSettings').checked=false;$('dropInMirrorSettings').dispatchEvent(new w.Event('change'));$('dropInApplySelected').click();await tick();assert.equal($('liveStreamViewMode').value,'day','Mirror off restores custom mode');
+change('liveStreamViewSync','off');$('dropInApplyAll').click();await tick();
+const state=JSON.parse([...stored.values()][0]);assert.equal(state.users['2'].custom.view.sync,'off');assert.equal(state.users['3'].custom.view.sync,'off');assert.equal(state.users['2'].custom.view.mode,'trip','apply all copies only changed fields');
+w.eval(fs.readFileSync(new URL('../CalendarRange.js',import.meta.url),'utf8'));w.testView.snapshot={timestamp:'2026-10-08T12:00:00Z',viewData:{range:'week',calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',rules:{weekStartDay:0,cutoffTime:'00:00:00',effectiveFrom:'2026-01-01',recurring:true}}]}};
+$('dropInTripLogButton').click();await tick();assert.equal(events.find(e=>e?.logTarget).logTarget,3,'log targets observed user rather than observer');assert.equal($('dropInTripLogRows').children.length,1);$('dropInTripLogCancel').click();
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:2,snapshot:{userId:2}}}));
 assert(!events.includes('snapshot:2'),'old target snapshot ignored');
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:{userId:3}}}));
@@ -62,5 +76,7 @@ rejectStart=true;w.document.getElementById('liveStreamPreviousUser').click();awa
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'permission revoked','failure remains visible after controls refresh');
 assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,true);
 assert.equal(w.testStream.viewing,false,'failed authorization does not optimistically connect');
+rejectStart=false;$('dropInRemoveUser').click();await tick();assert.equal(w.testView.userId,3);assert.equal($('liveStreamViewMode').value,'day','switch after removal restores remaining user custom preferences');$('dropInRemoveUser').click();await tick();assert.match($('liveStreamWatchedName').textContent,/^[—-]$/);assert.equal($('liveStreamTrainerMessage').disabled,true);
+const destinations=[];w.location.assign=value=>destinations.push(String(value));$('dropInExitButton').click();await tick();assert(events.includes('close'));assert(events.includes('destroy'));assert.deepEqual(destinations,['https://clock.example/index.php']);
 await w.happyDOM.close();
 console.log('PASS standalone Drop-In session, serialized switching, message targeting, stale snapshots and failed authorization');

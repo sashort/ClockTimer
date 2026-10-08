@@ -6184,6 +6184,156 @@
       "id": "cbad6bab-3510-5942-a01e-c5495c77d65e",
       "text": "Name was not saved. Use letters and try again.",
       "default": "Name was not saved. Use letters and try again."
+    },
+    "a7b71dec-15ae-5b59-957e-d36b95cde6df": {
+      "text": "Add",
+      "id": "a7b71dec-15ae-5b59-957e-d36b95cde6df",
+      "default": "Add"
+    },
+    "b01d8be3-a836-5a2a-8df4-ac9e7afae6b9": {
+      "text": "Remove",
+      "id": "b01d8be3-a836-5a2a-8df4-ac9e7afae6b9",
+      "default": "Remove"
+    },
+    "67caf5f4-6750-5f23-9c6f-19b7bfbb7d92": {
+      "text": "Select",
+      "id": "67caf5f4-6750-5f23-9c6f-19b7bfbb7d92",
+      "default": "Select"
+    },
+    "a4984291-11d9-5d25-9863-2eee69e36d87": {
+      "text": "Mirror Settings",
+      "id": "a4984291-11d9-5d25-9863-2eee69e36d87",
+      "default": "Mirror Settings"
+    },
+    "a9fc3917-48c1-5935-9fc6-7b9742584f36": {
+      "text": "View Settings",
+      "id": "a9fc3917-48c1-5935-9fc6-7b9742584f36",
+      "default": "View Settings"
+    },
+    "069df48f-2e75-5ee5-b195-f1d2f1079eff": {
+      "text": "Selected User Audio",
+      "id": "069df48f-2e75-5ee5-b195-f1d2f1079eff",
+      "default": "Selected User Audio"
+    },
+    "04d031c4-bb6e-5540-bd12-f7bfc869b0d7": {
+      "text": "Default Settings",
+      "id": "04d031c4-bb6e-5540-bd12-f7bfc869b0d7",
+      "default": "Default Settings"
+    },
+    "c70139a9-e34e-5eb6-bc2e-bebf2d0e0d70": {
+      "text": "Save current settings as default",
+      "id": "c70139a9-e34e-5eb6-bc2e-bebf2d0e0d70",
+      "default": "Save current settings as default"
+    },
+    "dd2abb70-e1fc-55ec-bdca-e6ae1e790582": {
+      "text": "Use default settings",
+      "id": "dd2abb70-e1fc-55ec-bdca-e6ae1e790582",
+      "default": "Use default settings"
+    },
+    "98a8f77d-c98e-50f6-a3ee-cc7f1aacb3dd": {
+      "text": "Apply To All",
+      "id": "98a8f77d-c98e-50f6-a3ee-cc7f1aacb3dd",
+      "default": "Apply To All"
+    },
+    "82bf4f46-ecfa-59a1-be5a-a36fd4a4d2f7": {
+      "text": "Apply this settings change to the selected user or all observed users?",
+      "id": "82bf4f46-ecfa-59a1-be5a-a36fd4a4d2f7",
+      "default": "Apply this settings change to the selected user or all observed users?"
+    },
+    "e9ef6417-8288-520f-adca-7f4201214702": {
+      "text": "Selected user",
+      "id": "e9ef6417-8288-520f-adca-7f4201214702",
+      "default": "Selected user"
+    },
+    "94a2b767-5d48-52dc-9801-1fed395c06b3": {
+      "text": "Apply to all",
+      "id": "94a2b767-5d48-52dc-9801-1fed395c06b3",
+      "default": "Apply to all"
+    },
+    "5eabb983-6b64-5fe0-8e62-a8c1dd00b356": {
+      "text": "Cancel",
+      "id": "5eabb983-6b64-5fe0-8e62-a8c1dd00b356",
+      "default": "Cancel"
+    },
+    "a4d329ad-9ee9-5af7-9163-6402ae0b62de": {
+      "text": "Observed Users",
+      "id": "a4d329ad-9ee9-5af7-9163-6402ae0b62de",
+      "default": "Observed Users"
+    },
+    "085c48ab-65c0-5f5c-83e5-a8877c831f9c": {
+      "text": "User Details",
+      "id": "085c48ab-65c0-5f5c-83e5-a8877c831f9c",
+      "default": "User Details"
+    },
+    "d4917f10-f0e0-5eea-9908-82b0d2acb72c": {
+      "text": "Settings saved",
+      "id": "d4917f10-f0e0-5eea-9908-82b0d2acb72c",
+      "default": "Settings saved"
+    },
+    "0272ce50-1b2e-5e54-8447-91af78590f38": {
+      "text": "Settings could not be saved. Previous settings restored.",
+      "id": "0272ce50-1b2e-5e54-8447-91af78590f38",
+      "default": "Settings could not be saved. Previous settings restored."
+    },
+    "15f840c1-78dc-53db-8fe8-af2f1158fa5a": {
+      "text": "Trip Log",
+      "id": "15f840c1-78dc-53db-8fe8-af2f1158fa5a",
+      "default": "Trip Log"
+    },
+    "bb11e797-9677-543f-a66c-802d25291202": {
+      "text": "Logout",
+      "id": "bb11e797-9677-543f-a66c-802d25291202",
+      "default": "Logout"
+    },
+    "8736d538-842c-54ea-9ad7-dad7d6d9dfc6": {
+      "text": "Exit",
+      "id": "8736d538-842c-54ea-9ad7-dad7d6d9dfc6",
+      "default": "Exit"
+    },
+    "2f563b97-6c1f-59d1-a3b6-f42071878657": {
+      "text": "Start",
+      "id": "2f563b97-6c1f-59d1-a3b6-f42071878657",
+      "default": "Start"
+    },
+    "86592c6b-226a-5979-87ad-be33884929b5": {
+      "text": "End",
+      "id": "86592c6b-226a-5979-87ad-be33884929b5",
+      "default": "End"
+    },
+    "7d3c3d7f-ad35-5717-a2c3-e663010b5c9c": {
+      "text": "Standard Time",
+      "id": "7d3c3d7f-ad35-5717-a2c3-e663010b5c9c",
+      "default": "Standard Time"
+    },
+    "3acbdf9f-4025-51f3-9388-579b8061e76a": {
+      "text": "Elapsed Time",
+      "id": "3acbdf9f-4025-51f3-9388-579b8061e76a",
+      "default": "Elapsed Time"
+    },
+    "c630ef6e-0529-5a4d-9567-a08458259cc6": {
+      "text": "Previous",
+      "id": "c630ef6e-0529-5a4d-9567-a08458259cc6",
+      "default": "Previous"
+    },
+    "ffb0c1a1-8932-5ebc-92b8-b590ebcf4b97": {
+      "text": "Next",
+      "id": "ffb0c1a1-8932-5ebc-92b8-b590ebcf4b97",
+      "default": "Next"
+    },
+    "5e494ddd-bd9b-531b-b534-29e5b16a7afb": {
+      "text": "No trip data available.",
+      "id": "5e494ddd-bd9b-531b-b534-29e5b16a7afb",
+      "default": "No trip data available."
+    },
+    "4878397e-9212-5297-a99a-02a8dee2097a": {
+      "text": "OK",
+      "id": "4878397e-9212-5297-a99a-02a8dee2097a",
+      "default": "OK"
+    },
+    "e86d0474-482b-5969-b67e-52605bae5c98": {
+      "text": "Date Range",
+      "id": "e86d0474-482b-5969-b67e-52605bae5c98",
+      "default": "Date Range"
     }
   }
 }
