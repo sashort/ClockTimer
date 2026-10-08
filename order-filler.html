@@ -45,7 +45,12 @@
                         <button id="accessTokensButton" type="button" hidden data-language-id="87f0e1dd-a89c-5292-9557-ec75bbd4e459" data-menu-icon="key">Access Tokens</button>
                     </div>
                 </div>
-                <div id="trainerMenuGroup" hidden><details><summary data-menu-icon="trainer">Trainer</summary><button id="liveStreamButton" type="button" hidden data-language-id="f203b44b-ef3f-586d-afbd-2869ef82e15f" data-menu-icon="drop-in">Drop-In</button></details></div>
+                <div id="trainerMenuGroup" class="trainer-menu-group" hidden>
+                    <button id="trainerMenuButton" type="button" aria-expanded="false" aria-controls="trainerSubmenu" data-language-id="d6b4af14-68b7-5145-9bd4-62e380bb1673" data-menu-icon="trainer">Trainer</button>
+                    <div id="trainerSubmenu" class="trainer-submenu" hidden>
+                        <button id="liveStreamButton" type="button" hidden data-language-id="f203b44b-ef3f-586d-afbd-2869ef82e15f" data-menu-icon="drop-in">Drop-In</button>
+                    </div>
+                </div>
 <div id="menuLogoutSlot"></div>
                 <hr id="accountMenuDivider">
                 <div class="settings-menu-group">
@@ -58,6 +63,8 @@
                 <div class="main-menu-row speech-recognition-menu-row">
                     <button id="speechRecognitionButton" type="button" aria-pressed="false" title="Enable Speech Recognition" disabled data-language-id="d549a1af-0e08-5ef7-8a33-0106901cb282" data-menu-icon="settings"><span data-language-id="64bf66be-85cc-529b-b86e-95855d455a33">Speech Recognition</span></button>
                     <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="About Speech Recognition" data-language-id="6e6ea3a3-2d38-5c75-b5ed-9620454a3520" data-menu-icon="settings">i</button>
+
+                </div>
                     <details class="recognizer-name-settings"><summary data-menu-icon="microphone">Recognizer name</summary>
                         <p>Say the name to finish valid commands, discard unmatched speech, and start a fresh stream.</p>
                         <label for="recognizerNamePreset">Recognizer name</label>
@@ -66,7 +73,6 @@
                         <button id="recognizerNameSave" type="button" data-menu-icon="edit">Save name</button>
                         <output id="recognizerNameStatus" role="status"></output>
                     </details>
-                </div>
                 <div class="main-menu-row sync-goals-menu-row">
                     <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">Sync Goals</span></button>
                     <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="About Sync Goals" data-language-id="fe244302-ff9a-5be1-949d-444793532606" data-menu-icon="settings">i</button>

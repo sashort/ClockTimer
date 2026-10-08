@@ -741,7 +741,8 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
 }
 
 .main-menu .hamburger-menu-popover button,
-.main-menu #bluetoothAudioTestLink {
+.main-menu .hamburger-menu-popover a,
+.main-menu .hamburger-menu-popover summary {
     width: 100%;
     border: 0;
     padding: 16px 20px;
@@ -752,6 +753,9 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
     background: transparent;
     text-align: left;
     font-size: 18px;
+    box-sizing: border-box;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 .main-menu .hamburger-menu-popover button[hidden] {
@@ -4674,8 +4678,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .main-menu .developer-submenu>button,
 .main-menu .developer-submenu>#speechToolsGroup>#speechMenuButton,
 .main-menu .developer-submenu>#easterEggToolsGroup>#easterEggMenuButton{padding:12px 14px;font-size:16px;color:var(--wm-blue-light);}
-.main-menu .developer-submenu>#speechToolsGroup>#speechMenuButton::before,
-.main-menu .developer-submenu>#easterEggToolsGroup>#easterEggMenuButton::before{display:none;}
+
 .main-menu .developer-submenu .speech-submenu,
 .main-menu .developer-submenu .easter-egg-submenu{margin-left:28px;}
 .developer-menu-separator{margin-top:10px!important;}
@@ -7432,3 +7435,21 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 
 .recognizer-name-settings select, .recognizer-name-settings input { width: 100%; max-width: 100%; box-sizing: border-box; }
 .recognizer-name-settings output { display: block; }
+
+/* Trainer uses the same expandable category and indented submenu as Admin. */
+.trainer-menu-group[hidden], .trainer-submenu[hidden] { display: none; }
+.main-menu #trainerMenuButton::after { content: "\203a"; margin-left: auto; font-size: 28px; line-height: 1; transition: transform 180ms ease-in-out; }
+.main-menu #trainerMenuButton[aria-expanded="true"]::after { transform: rotate(90deg); }
+.main-menu .trainer-submenu { margin: 0 16px 4px 56px; border-left: 1px solid rgb(255 255 255 / 75%); }
+.main-menu .trainer-submenu > button { padding: 12px 14px; font-size: 16px; color: var(--wm-blue-light); }
+.main-menu .hamburger-menu-popover [data-menu-icon]::before { margin-inline-end: 0; flex: 0 0 30px; width: 30px; height: 30px; }
+.main-menu .hamburger-menu-popover a:hover, .main-menu .hamburger-menu-popover a:focus-visible,
+.main-menu .hamburger-menu-popover summary:hover, .main-menu .hamburger-menu-popover summary:focus-visible { background: rgb(255 255 255 / 10%); }
+.main-menu .hamburger-menu-popover summary { list-style: none; }
+.main-menu .hamburger-menu-popover summary::-webkit-details-marker { display: none; }
+.main-menu .hamburger-menu-popover summary::after { content: "\203a"; margin-left: auto; font-size: 28px; line-height: 1; }
+.main-menu .hamburger-menu-popover details[open] > summary::after { transform: rotate(90deg); }
+.main-menu .recognizer-name-settings > :not(summary) { margin-inline: 20px; max-width: calc(100% - 40px); }
+.main-menu .recognizer-name-settings > label { display: block; }
+.main-menu .recognizer-name-settings > select, .main-menu .recognizer-name-settings > input { margin-block: 8px; }
+.main-menu .hamburger-menu-popover a[data-menu-icon] { display: flex; }

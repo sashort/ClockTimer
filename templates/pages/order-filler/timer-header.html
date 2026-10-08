@@ -16,7 +16,12 @@
                         <button id="accessTokensButton" type="button" hidden data-language-id="87f0e1dd-a89c-5292-9557-ec75bbd4e459" data-menu-icon="key">{{text:87f0e1dd-a89c-5292-9557-ec75bbd4e459:text0}}</button>
                     </div>
                 </div>
-                <div id="trainerMenuGroup" hidden><details><summary data-menu-icon="trainer">{{text:d6b4af14-68b7-5145-9bd4-62e380bb1673:text0}}</summary><button id="liveStreamButton" type="button" hidden data-language-id="f203b44b-ef3f-586d-afbd-2869ef82e15f" data-menu-icon="drop-in">{{text:f203b44b-ef3f-586d-afbd-2869ef82e15f:text0}}</button></details></div>
+                <div id="trainerMenuGroup" class="trainer-menu-group" hidden>
+                    <button id="trainerMenuButton" type="button" aria-expanded="false" aria-controls="trainerSubmenu" data-language-id="d6b4af14-68b7-5145-9bd4-62e380bb1673" data-menu-icon="trainer">{{text:d6b4af14-68b7-5145-9bd4-62e380bb1673:text0}}</button>
+                    <div id="trainerSubmenu" class="trainer-submenu" hidden>
+                        <button id="liveStreamButton" type="button" hidden data-language-id="f203b44b-ef3f-586d-afbd-2869ef82e15f" data-menu-icon="drop-in">{{text:f203b44b-ef3f-586d-afbd-2869ef82e15f:text0}}</button>
+                    </div>
+                </div>
 <div id="menuLogoutSlot"></div>
                 <hr id="accountMenuDivider">
                 <div class="settings-menu-group">
@@ -29,6 +34,8 @@
                 <div class="main-menu-row speech-recognition-menu-row">
                     <button id="speechRecognitionButton" type="button" aria-pressed="false" title="{{text:d549a1af-0e08-5ef7-8a33-0106901cb282:title}}" disabled data-language-id="d549a1af-0e08-5ef7-8a33-0106901cb282" data-menu-icon="settings"><span data-language-id="64bf66be-85cc-529b-b86e-95855d455a33">{{text:64bf66be-85cc-529b-b86e-95855d455a33:text0}}</span></button>
                     <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:aria-label}}" data-language-id="6e6ea3a3-2d38-5c75-b5ed-9620454a3520" data-menu-icon="settings">{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:text0}}</button>
+
+                </div>
                     <details class="recognizer-name-settings"><summary data-menu-icon="microphone">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</summary>
                         <p>{{text:93bbc7ae-c8b0-5546-81c3-304a17ba6272:text0}}</p>
                         <label for="recognizerNamePreset">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</label>
@@ -37,7 +44,6 @@
                         <button id="recognizerNameSave" type="button" data-menu-icon="edit">{{text:895ec700-dc9d-574d-b1eb-cef2d0f99adc:text0}}</button>
                         <output id="recognizerNameStatus" role="status"></output>
                     </details>
-                </div>
                 <div class="main-menu-row sync-goals-menu-row">
                     <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
                     <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="{{text:fe244302-ff9a-5be1-949d-444793532606:aria-label}}" data-language-id="fe244302-ff9a-5be1-949d-444793532606" data-menu-icon="settings">{{text:fe244302-ff9a-5be1-949d-444793532606:text0}}</button>
