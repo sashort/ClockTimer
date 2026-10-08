@@ -85,5 +85,8 @@ assert.equal(loaded,beforeResumeLoads,'resuming an unchanged stream keeps the di
 assert.equal(serverCalls,beforeResumeCalls,'resume snapshots never mutate publisher persistence');
 assert.equal(observer.getSummarySnapshot(new window.Date()).trip.countedTimeElapsedMilliseconds,
  timer.getSummarySnapshot(new window.Date()).trip.countedTimeElapsedMilliseconds,'fresh resume snapshot catches up to publisher time');
+apply(resumed,{mode:'auto',goals:{trip:135,total:115}});
+assert.equal(observer.getAttribute('trip-goal'),'135%');assert.equal(observer.getAttribute('total-goal'),'115%');
+assert.notEqual(timer.getAttribute('trip-goal'),'135%','observer goals never modify publisher');
 await window.happyDOM.close();
 console.log('PASS Drop-In completed Down Time preserves the dial across snapshots, time, local controls and later intervals');

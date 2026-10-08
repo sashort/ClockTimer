@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import {Window} from './LanguageWindow.mjs';
+const w=new Window({url:'https://clock.example/drop-in.php'}),commits=[];let loads=0;
+w.WMOFDropInText=key=>key;w.fetch=async()=>{loads++;return {ok:true,text:async()=>fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8')};};
+w.eval(fs.readFileSync(new URL('../ObserverGoalPad.js',import.meta.url),'utf8'));
+const pad=new w.WMOFObserverGoalPad({onConfirm:(scope,value)=>commits.push([scope,value])});
+await pad.open('trip',100,'Trip');const $=id=>w.document.getElementById(id);
+for(const digit of ['1','2','5'])$('numberPadDialog').querySelector('[data-number="'+digit+'"]').click();$('numberPadConfirm').click();assert.deepEqual(commits,[['trip',125]]);
+await pad.open('total',90,'Week');$('numberPadClear').click();assert.equal($('numberPadConfirm').disabled,true);$('numberPadDialog').querySelector('[data-number="0"]').click();assert.equal($('numberPadConfirm').disabled,true);$('numberPadReset').click();assert.equal($('numberPadConfirm').disabled,false);$('numberPadCancel').click();assert.equal(commits.length,1,'Cancel never saves a goal');
+const delayed=pad.open('trip',110,'Trip');pad.cancel();await delayed;assert.equal($('numberPadDialog').open,false,'switch cancels a late open');
+assert.equal(loads,1,'shared numberpad loaded once');assert.equal($('numberPadVoice').hidden,true);assert.equal($('numberPadSettingsArea').hidden,true);
+await w.happyDOM.close();console.log('PASS shared observer percentage pad, invalid zero, cancellation, scope, reset and stale opening');

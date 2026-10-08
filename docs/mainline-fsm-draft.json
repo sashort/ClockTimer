@@ -1160,7 +1160,9 @@
         "View selected account",
         "Viewing mode: Trip / Day / Week / Money / Month / Year / Custom",
         "Custom start date / end date",
-        "Watcher goal percentage / Sync / time display / Use user’s settings"
+        "Watcher goal percentage / Sync / time display / Use user’s settings",
+        "Selected user remote microphone sleep / wake",
+        "Settings: saved default and selected-user values; retain per-user custom preferences"
       ],
       "family": "settings",
       "binding": {
@@ -9451,6 +9453,64 @@
         "persistence": "Local settings are saved per observer; publisher trip is never written",
         "rollback": "Cancel/rejected write restores saved preferences"
       }
+    },
+    {
+      "id": "DROP-IN-MIC-REQUEST",
+      "source": "DROP-IN",
+      "target": "DROP-IN",
+      "label": "Mic: sleep / wake",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Authorized connected selected peer; publisher recognition started for request; matching commandId and target for result",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "observer-microphone.mjs + remote_microphone_permissions.php"
+      },
+      "contract": {
+        "trigger": "Mic: sleep / wake",
+        "guard": "Authorized connected selected peer; publisher recognition started for request; matching commandId and target for result",
+        "state_changes": "Request stores pending optimistic mic state. Result confirms publisher state or restores last known state; target change/close clears pending operation.",
+        "timing": "Immediate optimistic icon; single flight, ten-second timeout",
+        "persistence": "Transient peer command, no persistence write",
+        "rollback": "Rejection/timeout restores authoritative mic state",
+        "loopback_feedback": {
+          "classification": "pointer",
+          "rule": "Pointer mic-bar control uses its existing sleep/wake behavior."
+        }
+      }
+    },
+    {
+      "id": "DROP-IN-MIC-RESULT",
+      "source": "DROP-IN",
+      "target": "DROP-IN",
+      "label": "Mic acknowledged / rejected / timed out",
+      "mode": "system",
+      "audio": null,
+      "guard": "Authorized connected selected peer; publisher recognition started for request; matching commandId and target for result",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "test": {
+        "status": "passed",
+        "version": "local",
+        "evidence": "observer-microphone.mjs + remote_microphone_permissions.php"
+      },
+      "contract": {
+        "trigger": "Mic acknowledged / rejected / timed out",
+        "guard": "Authorized connected selected peer; publisher recognition started for request; matching commandId and target for result",
+        "state_changes": "Request stores pending optimistic mic state. Result confirms publisher state or restores last known state; target change/close clears pending operation.",
+        "timing": "Immediate optimistic icon; single flight, ten-second timeout",
+        "persistence": "Transient peer command, no persistence write",
+        "rollback": "Rejection/timeout restores authoritative mic state",
+        "loopback_feedback": {
+          "classification": "conditional",
+          "rule": "Confirm authoritative mic state; failure renders status without changing observer audio preferences."
+        }
+      }
     }
   ],
   "audio": {
@@ -11350,7 +11410,9 @@
         "per-user local preferences (session memory)",
         "recent watched identities",
         "switching target",
-        "publisher interval type/phase/boundary and snapshot timestamp"
+        "publisher interval type/phase/boundary and snapshot timestamp",
+        "tripGoalOverride / totalGoalOverride: independent positive integer percentages",
+        "microphone: unavailable/on/off/pending-on/pending-off; selected target + commandId + deadline"
       ],
       "rules": [
         "Mode and selected dates are displayed together; watched user mode is shown separately.",
@@ -11465,7 +11527,7 @@
       ],
       "fsm_loopback_audit": {
         "source": "Every transition with source === target",
-        "count": 46,
+        "count": 48,
         "edges": [
           {
             "transition": "E03",
@@ -11786,6 +11848,20 @@
             "mode": "voice",
             "classification": "attribute-change",
             "rule": "Recognition stream ID and buffered text change; no unchanged setting chime. Existing completed commands remain; subsequent accepted commands retain their own feedback."
+          },
+          {
+            "transition": "DROP-IN-MIC-REQUEST",
+            "source": "DROP-IN",
+            "mode": "pointer",
+            "classification": "pointer",
+            "rule": "Pointer mic-bar control uses its existing sleep/wake behavior."
+          },
+          {
+            "transition": "DROP-IN-MIC-RESULT",
+            "source": "DROP-IN",
+            "mode": "system",
+            "classification": "conditional",
+            "rule": "Confirm authoritative mic state; failure renders status without changing observer audio preferences."
           }
         ],
         "requirement": "A node self-loop is not proof of unchanged semantic state. Compare persistent/UI attributes, excluding elapsed time and bookkeeping.",
@@ -12285,6 +12361,28 @@
       "custom": "Open date-range dialog before changing mode. Require both dates and end on or after start. Cancel preserves original mode and dates.",
       "shared": "Order Filler and Drop-In use ModeMenu. Order Filler changes its own state; Drop-In changes only observer state.",
       "landing_navigation": "Admin and Trainer categories belong to landing; Order Filler hamburger excludes both."
+    },
+    "observer-microphone": {
+      "authority": "Authorized selected peer may sleep/wake publisher SpeechMenu via the same MicrophoneControl as mic-bar; no goal/trip/configuration writes. Local listening mute remains separate.",
+      "states": [
+        "unavailable",
+        "on",
+        "off",
+        "pending-on",
+        "pending-off"
+      ],
+      "request": "Optimistic icon; disable repeated clicks; commandId and selected target; ten-second timeout.",
+      "result": "Publisher acknowledgement confirms actual started/muted; rejection or timeout restores last known state. Switching/disconnect/exit cancels pending request; stale acknowledgements ignored.",
+      "validation": "Refresh viewer permission; require viewer-owned peer and matching target; strict boolean enabled and bounded commandId. Recognition off cannot remotely enable capture."
+    },
+    "observer-settings": {
+      "surface": "One informational Settings view shows saved defaults alongside applied Mode/Trip Goal/Mode Goal/Sync and sound settings, with Default/Custom/User source indicators. Display edits use shared timer controls.",
+      "mirror": "Mirrors display settings while retaining saved per-user custom values; audio remains observer-local.",
+      "goals": "Same shared Order Filler summary, mode button, percentage numberpad and Auto chooser; independent trip/total overrides; no publisher writes.",
+      "multiple": "Setting changes offer selected/all scope; remote mic only targets selected person.",
+      "defaults": "Only sound settings are editable in this view, for default and selected user. Saving/using default sound changes audio only and preserves display overrides and Mirror Settings. Serial field patches avoid lost saves; storage failure restores baseline.",
+      "provenance": "Each field stores explicit default/custom provenance. User mode mirrors display fields. Matching values do not imply matching provenance; custom fields stay custom even when equal to defaults. Default fields follow the baseline.",
+      "activation": "Explicit settingsSource enum: default/custom/user. Source selector lives in normal hamburger controls; Settings remains informational for display fields. Default applies saved baseline, Custom restores retained overrides, User mirrors publisher. Observer audio controls remain separate local gains."
     }
   },
   "unresolved_contracts": [

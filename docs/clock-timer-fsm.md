@@ -140,3 +140,22 @@ The regression fixture also exercises translated start/confirmation phrases.
 In Scheduled Start, `[Standard Time] <duration>` has an optional prefix:
 `standard time thirty minutes` and `thirty minutes` set the same field.
 The optional prefix applies only to the scheduled-start surface.
+
+## Drop-In controls and settings sources
+
+The evolving interactive draft and its JSON define remote microphone request and
+result transitions (`DROP-IN-MIC-REQUEST`, `DROP-IN-MIC-RESULT`). The mic uses the
+publisher mic-bar sleep/wake control. It requires an authorized selected peer,
+accepts explicit on/off commands, and confirms the publisher state. A ten-second
+timeout, disconnection, or target change ends the pending operation.
+
+Observer settings use `settingsSource: default | custom | user`. Default applies
+the saved baseline; Custom restores that observer's retained choices for the
+selected person; User mirrors the publisher display. The Settings view reports
+both default and applied values. Display edits use the shared timer controls.
+Only listening sound controls are editable in this view. Field provenance is
+stored explicitly so a custom value equal to a default remains custom.
+
+Regression coverage: `observer-microphone.mjs`, `remote_microphone_permissions.php`,
+`observer-goal-pad.mjs`, `drop-in-preferences.mjs`, `drop-in-page.mjs`, and
+`drop-in-observer-replay.mjs`.

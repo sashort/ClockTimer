@@ -36,6 +36,13 @@ for(const page of pages){
   assert.equal(timerRoot.querySelectorAll('.trip-summary .summary-cell').length,2);
   assert.equal(timerRoot.querySelectorAll('.trip-summary .percent-summary').length,1);
   if(page==='drop-in') {
+   assert.equal(w.document.getElementById('scopeConnectionButton'),null,'no cloud control for observer');
+   assert(w.document.getElementById('scopeToggle'));assert(w.document.getElementById('dropInMicrophoneButton'));
+   assert.equal(w.document.getElementById('dropInDefaultsButton'),null,'one unified Settings group');
+   assert.equal(w.document.getElementById('dropInAudioSettingsButton'),null,'audio belongs inside Settings');
+   assert(w.document.querySelector('#dropInViewSettings #liveStreamVolumeControls'));
+   assert(w.document.querySelector('#dropInViewSettings #dropInSaveDefault'));
+   assert.equal(w.document.querySelectorAll('[data-settings-default]').length,7);
    assert(w.document.querySelector('script[src^="PanePage.js"]'),'viewer menu requires shared pane runtime');
    for(const id of ['newTripButton','endTripButton','breakButton','downButton','tripListButton','tripListMenuButton'])
     assert.equal(w.document.getElementById(id),null,'observer cannot expose publisher actions');

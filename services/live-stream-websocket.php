@@ -693,6 +693,7 @@ function live_ws_handle_message(
                 'targets.request',
                 'peer.join',
                 'trainer.tts',
+                'trainer.microphone',
             ],
             true
         )
@@ -909,6 +910,31 @@ function live_ws_handle_message(
         ) {
             live_ws_close_peer($peerId, $peers, $clients, 'left');
         }
+        return;
+    }
+
+    if ($type === 'trainer.microphone') {
+        if (!live_ws_can_view($user)) {
+            live_ws_send_error($client,$requestId,'permission_required','Live stream permission is required.');
+            return;
+        }
+        $peerId = (int) ($message['peerId'] ?? 0);
+        $peer = $peers[$peerId] ?? null;
+        if (!$peer || (int) $peer['viewerClientId'] !== $clientId || (int) $peer['targetUserId'] !== (int) ($message['targetUserId'] ?? 0)) {
+            live_ws_send_error($client,$requestId,'permission_required','Live stream peer access is denied.');
+            return;
+        }
+        if (!is_bool($message['enabled'] ?? null) || !is_string($message['commandId'] ?? null) || !preg_match('/^[a-zA-Z0-9-]{1,64}$/D',$message['commandId'])) {
+            live_ws_send_error($client,$requestId,'invalid_argument','Invalid microphone command.');
+            return;
+        }
+        $publisherClientId = (int) $peer['publisherClientId'];
+        if (!isset($clients[$publisherClientId])) {
+            live_ws_send_error($client,$requestId,'live_stream_not_found','The target user is not connected.');
+            return;
+        }
+        live_ws_send($clients[$publisherClientId],['type'=>$type,'peerId'=>$peerId,'enabled'=>$message['enabled'],'commandId'=>$message['commandId']]);
+        live_ws_send_response($client,$requestId,['sent'=>true]);
         return;
     }
 

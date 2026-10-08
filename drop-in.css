@@ -76,3 +76,39 @@ body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
 
 #dropInMenu .drop-in-menu-fields label.live-stream-mute {display:flex;justify-content:flex-start;gap:10px;}
 #dropInMenu .live-stream-mute input {width:20px;height:20px;flex:none;}
+
+/* Same controls and dimensions as Order Filler, with no publisher action row. */
+.standalone-drop-in .scope-control {display:grid;grid-template-columns:minmax(0,1fr);}
+.standalone-drop-in .viewer-timer-controls {min-height:0;}
+.standalone-drop-in .viewer-timer-controls label[hidden] {display:none;}
+.standalone-drop-in .app.live-stream-mirror {grid-template-rows:52px 142px auto 0 minmax(280px,1fr);}
+#dropInMicrophoneButton {border:0;padding:0;margin:0;position:relative;z-index:1;}
+#dropInMicrophoneButton:disabled {cursor:default;}
+
+.settings-help {font-size:13px;line-height:1.4;opacity:.8;}
+.settings-value-row {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #a9ddf730;}
+.settings-value-row .settings-source {grid-column:1/-1;justify-self:start;}
+.settings-source {display:inline-block;font-size:12px;padding:3px 8px;border:1px solid #a9ddf780;border-radius:999px;line-height:1.4;}
+.settings-source[data-source=default] {background:#164b69;}
+.settings-source[data-source=custom] {background:#654118;border-color:#ffd78b;}
+.settings-source[data-source=mirror] {background:#233e8a;}
+#dropInViewSettings #toggleSyncMenuButton {padding:0;border:0;background:transparent;color:inherit;text-align:left;}
+#dropInViewSettings .live-stream-volume-controls label {flex-wrap:wrap;}
+#dropInViewSettings .live-stream-volume-controls .settings-source {margin-left:auto;}
+
+.settings-value-row {grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;}
+.settings-value-row .settings-source {grid-column:2/-1;justify-self:end;}
+.settings-default-value {font-size:12px;opacity:.8;line-height:1.4;}
+.settings-value-row button {min-height:36px;}
+
+#dropInMenu .drop-in-mirror-option {display:flex;align-items:center;gap:10px;}
+#dropInMenu .drop-in-mirror-option::before {flex:none;}
+#dropInMenu .settings-value-row button {min-width:0;white-space:normal;}
+#dropInMenu .default-editor {background:#164b69;color:white;border:1px solid #a9ddf780;border-radius:6px;padding:8px;}
+.default-audio-range {accent-color:#7fb9c8;}
+
+#dropInMenu .drop-in-mirror-option[hidden] {display:none;}
+#dropInMenu .drop-in-source-choice {display:flex;align-items:center;gap:12px;padding:14px 20px;}
+#dropInSettingsApplied {text-align:center;font-weight:bold;}
+
+#dropInViewSettings .live-stream-view-controls[hidden] {display:none;}

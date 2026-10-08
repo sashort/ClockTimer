@@ -5916,6 +5916,181 @@
       "texts": {
         "text0": "e86d0474-482b-5969-b67e-52605bae5c98"
       }
+    },
+    "31fe9052-2c7d-55ef-85fe-2b5d207f0336": {
+      "texts": {
+        "text0": "31fe9052-2c7d-55ef-85fe-2b5d207f0336"
+      },
+      "attributes": {
+        "aria-label": "31fe9052-2c7d-55ef-85fe-2b5d207f0336"
+      }
+    },
+    "36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6": {
+      "texts": {
+        "text0": "36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6"
+      }
+    },
+    "634f965d-1ea9-5ac4-807b-fb3caeef2046": {
+      "texts": {
+        "text0": "634f965d-1ea9-5ac4-807b-fb3caeef2046"
+      }
+    },
+    "a3a8c454-03e4-5197-84f5-de0a68cff168": {
+      "texts": {
+        "text0": "a3a8c454-03e4-5197-84f5-de0a68cff168"
+      }
+    },
+    "95ec8d5a-8ca1-5d0b-9df3-3f9584609195": {
+      "elementId": "95ec8d5a-8ca1-5d0b-9df3-3f9584609195",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "95ec8d5a-8ca1-5d0b-9df3-3f9584609195"
+      },
+      "attributes": {}
+    },
+    "8266febd-cf14-562a-b18d-176c854ffe76": {
+      "elementId": "8266febd-cf14-562a-b18d-176c854ffe76",
+      "source": "observer:defaultSource",
+      "texts": {
+        "text0": "8266febd-cf14-562a-b18d-176c854ffe76"
+      },
+      "attributes": {}
+    },
+    "7425da78-04f5-5e04-aaf1-57bc8a4875a9": {
+      "elementId": "7425da78-04f5-5e04-aaf1-57bc8a4875a9",
+      "source": "observer:customSource",
+      "texts": {
+        "text0": "7425da78-04f5-5e04-aaf1-57bc8a4875a9"
+      },
+      "attributes": {}
+    },
+    "8f867772-6f69-59be-a743-6367c524de06": {
+      "elementId": "8f867772-6f69-59be-a743-6367c524de06",
+      "source": "observer:mirrorSource",
+      "texts": {
+        "text0": "8f867772-6f69-59be-a743-6367c524de06"
+      },
+      "attributes": {}
+    },
+    "2e3c70a8-3be2-5ceb-b96f-a4e220368697": {
+      "elementId": "2e3c70a8-3be2-5ceb-b96f-a4e220368697",
+      "source": "observer:settingsFor",
+      "texts": {
+        "text0": "2e3c70a8-3be2-5ceb-b96f-a4e220368697"
+      },
+      "attributes": {}
+    },
+    "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5": {
+      "elementId": "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5",
+      "source": "observer:mode",
+      "texts": {
+        "text0": "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5"
+      },
+      "attributes": {}
+    },
+    "582590c0-9208-57e6-aef8-306d45cd3b27": {
+      "elementId": "582590c0-9208-57e6-aef8-306d45cd3b27",
+      "source": "observer:tripGoal",
+      "texts": {
+        "text0": "582590c0-9208-57e6-aef8-306d45cd3b27"
+      },
+      "attributes": {}
+    },
+    "1479977b-4c33-57c1-a599-a8078dbb0a31": {
+      "elementId": "1479977b-4c33-57c1-a599-a8078dbb0a31",
+      "source": "observer:modeGoal",
+      "texts": {
+        "text0": "1479977b-4c33-57c1-a599-a8078dbb0a31"
+      },
+      "attributes": {}
+    },
+    "16369f48-b198-5dd0-abc3-4db631b31e5a": {
+      "elementId": "16369f48-b198-5dd0-abc3-4db631b31e5a",
+      "source": "observer:defaultHint",
+      "texts": {
+        "text0": "16369f48-b198-5dd0-abc3-4db631b31e5a"
+      },
+      "attributes": {}
+    },
+    "1c9519e8-3320-5a28-9c4a-18a545b065ca": {
+      "elementId": "1c9519e8-3320-5a28-9c4a-18a545b065ca",
+      "source": "observer:on",
+      "texts": {
+        "text0": "1c9519e8-3320-5a28-9c4a-18a545b065ca"
+      },
+      "attributes": {}
+    },
+    "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992": {
+      "elementId": "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992",
+      "source": "observer:off",
+      "texts": {
+        "text0": "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992"
+      },
+      "attributes": {}
+    },
+    "def617d2-8298-57e9-a7d3-32251c5b24d2": {
+      "elementId": "def617d2-8298-57e9-a7d3-32251c5b24d2",
+      "source": "observer:defaultValue",
+      "texts": {
+        "text0": "def617d2-8298-57e9-a7d3-32251c5b24d2"
+      },
+      "attributes": {}
+    },
+    "306eeb36-21ae-5576-ad2c-293af5b8620b": {
+      "elementId": "306eeb36-21ae-5576-ad2c-293af5b8620b",
+      "source": "observer:saveSoundDefault",
+      "texts": {
+        "text0": "306eeb36-21ae-5576-ad2c-293af5b8620b"
+      },
+      "attributes": {}
+    },
+    "365cc4c0-4688-518f-93d9-fff003c3ea7a": {
+      "elementId": "365cc4c0-4688-518f-93d9-fff003c3ea7a",
+      "source": "observer:useSoundDefault",
+      "texts": {
+        "text0": "365cc4c0-4688-518f-93d9-fff003c3ea7a"
+      },
+      "attributes": {}
+    },
+    "43612666-0e7a-5976-9fc7-1ace27dbac32": {
+      "elementId": "43612666-0e7a-5976-9fc7-1ace27dbac32",
+      "source": "observer:applied",
+      "texts": {
+        "text0": "43612666-0e7a-5976-9fc7-1ace27dbac32"
+      },
+      "attributes": {}
+    },
+    "b65c84d6-1d0d-596b-8962-fdf409f04073": {
+      "elementId": "b65c84d6-1d0d-596b-8962-fdf409f04073",
+      "source": "observer:userSource",
+      "texts": {
+        "text0": "b65c84d6-1d0d-596b-8962-fdf409f04073"
+      },
+      "attributes": {}
+    },
+    "ce252857-8d0d-5d30-8bcf-0c072901bd18": {
+      "elementId": "ce252857-8d0d-5d30-8bcf-0c072901bd18",
+      "source": "observer:custom",
+      "texts": {
+        "text0": "ce252857-8d0d-5d30-8bcf-0c072901bd18"
+      },
+      "attributes": {}
+    },
+    "fc47056b-19eb-5cf0-ac45-9d865e75b708": {
+      "elementId": "fc47056b-19eb-5cf0-ac45-9d865e75b708",
+      "source": "observer:default",
+      "texts": {
+        "text0": "fc47056b-19eb-5cf0-ac45-9d865e75b708"
+      },
+      "attributes": {}
+    },
+    "ca8c7f71-896f-5cc9-9831-67903fa6899a": {
+      "elementId": "ca8c7f71-896f-5cc9-9831-67903fa6899a",
+      "source": "observer:infoHelp",
+      "texts": {
+        "text0": "ca8c7f71-896f-5cc9-9831-67903fa6899a"
+      },
+      "attributes": {}
     }
   },
   "selects": {

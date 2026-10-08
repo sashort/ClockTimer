@@ -44,7 +44,7 @@
         }
         applyPreference(preference) {
             this.mode.value=preference.mode || 'user';this.start.value=preference.start || '';this.end.value=preference.end || '';
-            this.percent.value=preference.percent || '';this.percentScope=preference.percentScope;
+            this.percent.value=preference.percent || '';this.percentScope=preference.percentScope;this.goals={trip:preference.tripGoal,total:preference.totalGoal};
             this.sync.value=preference.sync || 'user';this.timeDisplay.value=preference.timeDisplay || 'user';this.select();
             this.root.dispatchEvent(new CustomEvent('drop-in-mode-changed'));
         }
@@ -63,7 +63,7 @@
             this.select();
         }
         clear() {
-            this.revision++; this.snapshot = null; this.cache = null;
+            this.revision++; this.snapshot = null; this.cache = null;this.showComponents(null);
             this.status.textContent = '';
             const standard = this.root.querySelector('#liveStreamStandardTime');
             if (standard) standard.textContent = '-';
@@ -100,6 +100,8 @@
                 .map(value => String(value).padStart(2, '0')).join(':');
         }
         showComponents(state) {
+            this.displayState=state;globalThis.WMOFTimerSummaryView?.render(this.root,state);
+            this.root.dispatchEvent(new CustomEvent("observer-summary-changed",{detail:state}));
             const standard = this.root.querySelector('#liveStreamStandardTime');
             if (standard) standard.textContent = state?.standard_time_component?.text || '-';
             for (const [id,key] of [['liveStreamStandardLabel','standard_time_header_text'],['liveStreamTimeLabel','time_header_text']]) {
@@ -138,7 +140,7 @@
                 ? this.snapshot.uiState?.effective_goal_type : mode === 'trip' ? 'trip' : 'total');
             const result = this.timer.applyObserverSnapshot(model, {
                 totals:aggregate, mode:mode === 'user' ? this.snapshot.viewData.mode : ['trip','auto'].includes(mode) ? mode : 'total',
-                goal, goalScope,
+                goal, goalScope, goals:this.goals,
                 sync:this.sync.value === 'user' ? undefined : this.sync.value === 'on',
                 timeDisplay:this.timeDisplay.value === 'user' ? undefined : this.timeDisplay.value,
                 totalLabel:selected, now:new Date(this.snapshot.timestamp)
@@ -177,7 +179,7 @@
             if (!view) { this.show(null); this.status.textContent = this.text('unavailable'); return; }
             if (['user','auto'].includes(this.mode.value)) {
                 this.project(view.summary?.trip?.available ? view.summary.trip : null, view.summary?.total, this.mode.value);
-                if (this.mode.value === 'user' && !this.percent.value && this.sync.value === 'user' && this.timeDisplay.value === 'user') {
+                if (this.mode.value === 'user' && !this.percent.value && !this.goals?.trip && !this.goals?.total && this.sync.value === 'user' && this.timeDisplay.value === 'user') {
                     this.showComponents(state);
                     this.root.querySelector('#liveStreamRemoteTime').textContent = state.time_component?.text || '—';
                     const current = state.current_percent_component?.text, goal = state.goal_component?.text;

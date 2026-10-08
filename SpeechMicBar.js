@@ -796,81 +796,7 @@ class SpeechMicBar extends HTMLElement {
                         0 0 8px rgb(0 30 96 / 52%);
                 }
 
-                #mic {
-                    position: relative;
-                    z-index: 2147483647;
-                    pointer-events: auto !important;
-                    touch-action: manipulation;
-                    user-select: none;
-                    width: 48px;
-                    height: 48px;
-                    flex: 0 0 48px;
-                    display: grid;
-                    place-items: center;
-                    overflow: hidden;
-                    border-radius: 50%;
-                    color: rgb(255 255 255 / 70%);
-                    background: rgb(0 30 96 / 76%);
-                    transition: color 180ms linear, background 180ms linear;
-                }
-
-                #mic {
-                    cursor: pointer;
-                }
-
-                #mic::before {
-                    content: "";
-                    width: 27px;
-                    height: 27px;
-                    background: currentColor;
-                    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
-                    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
-                }
-
-                #mic::after {
-                    content: "";
-                    position: absolute;
-                    inset: 0;
-                    z-index: 2;
-                    border-radius: inherit;
-                    background:
-                        linear-gradient(
-                            to bottom left,
-                            transparent
-                                calc(50% - 3px),
-                            #e32636
-                                calc(50% - 3px),
-                            #e32636
-                                calc(50% + 3px),
-                            transparent
-                                calc(50% + 3px)
-                        );
-                    filter:
-                        drop-shadow(
-                            0 1px 1px
-                            rgb(0 0 0 / 48%)
-                        );
-                    opacity: 0;
-                    pointer-events: none;
-                    transition:
-                        opacity 120ms linear;
-                }
-
-                :host([state="muted"])
-                #mic::after {
-                    opacity: 1;
-                }
-
-                :host([state="listening"]) #mic,
-                :host([state="utterance"]) #mic {
-                    color: #a9ddf7;
-                    background: rgb(0 83 226 / 78%);
-                }
-
-                :host([state="muted"]) #mic {
-                    color: rgb(255 255 255 / 48%);
-                    background: rgb(70 76 83 / 82%);
-                }
+                ${globalThis.WMOFMicrophoneControl?.css || "                #mic {\n                    position: relative;\n                    z-index: 2147483647;\n                    pointer-events: auto !important;\n                    touch-action: manipulation;\n                    user-select: none;\n                    width: 48px;\n                    height: 48px;\n                    flex: 0 0 48px;\n                    display: grid;\n                    place-items: center;\n                    overflow: hidden;\n                    border-radius: 50%;\n                    color: rgb(255 255 255 / 70%);\n                    background: rgb(0 30 96 / 76%);\n                    transition: color 180ms linear, background 180ms linear;\n                }\n\n                #mic {\n                    cursor: pointer;\n                }\n\n                #mic::before {\n                    content: \"\";\n                    width: 27px;\n                    height: 27px;\n                    background: currentColor;\n                    -webkit-mask: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E\") center / contain no-repeat;\n                    mask: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='8' y='2' width='8' height='13' rx='4' fill='black'/%3E%3Cpath d='M5 11v1a7 7 0 0 0 14 0v-1M12 19v3M8 22h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E\") center / contain no-repeat;\n                }\n\n                #mic::after {\n                    content: \"\";\n                    position: absolute;\n                    inset: 0;\n                    z-index: 2;\n                    border-radius: inherit;\n                    background:\n                        linear-gradient(\n                            to bottom left,\n                            transparent\n                                calc(50% - 3px),\n                            #e32636\n                                calc(50% - 3px),\n                            #e32636\n                                calc(50% + 3px),\n                            transparent\n                                calc(50% + 3px)\n                        );\n                    filter:\n                        drop-shadow(\n                            0 1px 1px\n                            rgb(0 0 0 / 48%)\n                        );\n                    opacity: 0;\n                    pointer-events: none;\n                    transition:\n                        opacity 120ms linear;\n                }\n\n                :host([state=\"muted\"])\n                #mic::after {\n                    opacity: 1;\n                }\n\n                :host([state=\"listening\"]) #mic,\n                :host([state=\"utterance\"]) #mic {\n                    color: #a9ddf7;\n                    background: rgb(0 83 226 / 78%);\n                }\n\n                :host([state=\"muted\"]) #mic {\n                    color: rgb(255 255 255 / 48%);\n                    background: rgb(70 76 83 / 82%);\n                }\n\n"}
 
                 :host([training-active]) #mic {
                     opacity: .08;
@@ -1284,6 +1210,10 @@ class SpeechMicBar extends HTMLElement {
                     return;
                 }
 
+                if (globalThis.WMOFMicrophoneControl) {
+                    void WMOFMicrophoneControl.setEnabled(speechMenu, Boolean(speechMenu.muted));
+                    return;
+                }
                 if (speechMenu.muted) {
                     void speechMenu.wake?.();
                 }

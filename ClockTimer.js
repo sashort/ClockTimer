@@ -5022,7 +5022,7 @@
             this.#stopDisplayTimer();
         }
 
-        applyObserverSnapshot(snapshot, {totals, mode, goal, goalScope, sync, timeDisplay, totalLabel, now = new Date()} = {}) {
+        applyObserverSnapshot(snapshot, {totals, mode, goal, goalScope, goals, sync, timeDisplay, totalLabel, now = new Date()} = {}) {
             if (!this.#observerOnly) throw new Error("Enable observer mode before applying a mirrored snapshot.");
             // Event clock strings belong to the publisher's civil day. Replay in
             // the observer's civil day while preserving the absolute instants.
@@ -5062,6 +5062,7 @@
             }
             const configuration = {goal_type:mode || this.percentMode,
                 auto_goal:sync ?? snapshot.sync, rendered_time_type:'time_remaining'};
+            for (const scope of ['trip','total']) if (Number.isFinite(Number(goals?.[scope])) && Number(goals[scope]) > 0) configuration[scope+'_goal'] = `${goals[scope]}%`;
             if (Number.isFinite(goal) && goal > 0) configuration[goalScope === 'total' ? 'total_goal' : 'trip_goal'] = `${goal}%`;
             if (totalLabel) this.setAttribute('total-label', totalLabel);
             this.configure(configuration);

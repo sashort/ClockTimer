@@ -807,6 +807,11 @@
                 return;
             }
 
+            if (message.type === "trainer.microphone") {
+                this.#emit("publisherMessage",{peerId:Number(message.peerId),type:message.type,payload:{enabled:message.enabled,commandId:message.commandId}});
+                return;
+            }
+
             if (
                 message.type ===
                     "trainer.tts"
@@ -2181,6 +2186,11 @@
                 throw new Error(
                     "The live stream is not connected."
                 );
+            }
+
+            if (type === "trainer.microphone") {
+                if(typeof payload?.enabled !== "boolean" || !/^[a-zA-Z0-9-]{1,64}$/.test(payload?.commandId || "")) throw new TypeError("Invalid microphone command.");
+                return this.#socketRequest(type,{peerId:this.#viewerPeerId,targetUserId:this.#targetUserId,enabled:payload.enabled,commandId:payload.commandId});
             }
 
             if (

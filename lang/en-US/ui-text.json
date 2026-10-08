@@ -6334,6 +6334,122 @@
       "text": "Date Range",
       "id": "e86d0474-482b-5969-b67e-52605bae5c98",
       "default": "Date Range"
-    }
+    },
+
+  "31fe9052-2c7d-55ef-85fe-2b5d207f0336": {
+    "id": "31fe9052-2c7d-55ef-85fe-2b5d207f0336",
+    "text": "Observed user microphone",
+    "default": "Observed user microphone"
+  },
+  "36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6": {
+    "id": "36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6",
+    "text": "{scope} Percent",
+    "default": "{scope} Percent"
+  },
+  "634f965d-1ea9-5ac4-807b-fb3caeef2046": {
+    "id": "634f965d-1ea9-5ac4-807b-fb3caeef2046",
+    "text": "Turn microphone on",
+    "default": "Turn microphone on"
+  },
+  "a3a8c454-03e4-5197-84f5-de0a68cff168": {
+    "id": "a3a8c454-03e4-5197-84f5-de0a68cff168",
+    "text": "Turn microphone off",
+    "default": "Turn microphone off"
+  },
+  "95ec8d5a-8ca1-5d0b-9df3-3f9584609195": {
+    "id": "95ec8d5a-8ca1-5d0b-9df3-3f9584609195",
+    "text": "Settings",
+    "default": "Settings"
+  },
+  "8266febd-cf14-562a-b18d-176c854ffe76": {
+    "id": "8266febd-cf14-562a-b18d-176c854ffe76",
+    "text": "Default",
+    "default": "Default"
+  },
+  "7425da78-04f5-5e04-aaf1-57bc8a4875a9": {
+    "id": "7425da78-04f5-5e04-aaf1-57bc8a4875a9",
+    "text": "Custom · {name}",
+    "default": "Custom · {name}"
+  },
+  "8f867772-6f69-59be-a743-6367c524de06": {
+    "id": "8f867772-6f69-59be-a743-6367c524de06",
+    "text": "Mirroring · {name}",
+    "default": "Mirroring · {name}"
+  },
+  "2e3c70a8-3be2-5ceb-b96f-a4e220368697": {
+    "id": "2e3c70a8-3be2-5ceb-b96f-a4e220368697",
+    "text": "Settings for {name}",
+    "default": "Settings for {name}"
+  },
+  "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5": {
+    "id": "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5",
+    "text": "Mode",
+    "default": "Mode"
+  },
+  "582590c0-9208-57e6-aef8-306d45cd3b27": {
+    "id": "582590c0-9208-57e6-aef8-306d45cd3b27",
+    "text": "Trip Goal",
+    "default": "Trip Goal"
+  },
+  "1479977b-4c33-57c1-a599-a8078dbb0a31": {
+    "id": "1479977b-4c33-57c1-a599-a8078dbb0a31",
+    "text": "Mode Goal",
+    "default": "Mode Goal"
+  },
+  "16369f48-b198-5dd0-abc3-4db631b31e5a": {
+    "id": "16369f48-b198-5dd0-abc3-4db631b31e5a",
+    "text": "Default badges mark values matching your saved defaults. Custom values apply to this user.",
+    "default": "Default badges mark values matching your saved defaults. Custom values apply to this user."
+  },
+  "1c9519e8-3320-5a28-9c4a-18a545b065ca": {
+    "id": "1c9519e8-3320-5a28-9c4a-18a545b065ca",
+    "text": "On",
+    "default": "On"
+  },
+  "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992": {
+    "id": "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992",
+    "text": "Off",
+    "default": "Off"
+  },
+  "def617d2-8298-57e9-a7d3-32251c5b24d2": {
+    "id": "def617d2-8298-57e9-a7d3-32251c5b24d2",
+    "text": "Default: {value}",
+    "default": "Default: {value}"
+  },
+  "306eeb36-21ae-5576-ad2c-293af5b8620b": {
+    "id": "306eeb36-21ae-5576-ad2c-293af5b8620b",
+    "text": "Save sound as default",
+    "default": "Save sound as default"
+  },
+  "365cc4c0-4688-518f-93d9-fff003c3ea7a": {
+    "id": "365cc4c0-4688-518f-93d9-fff003c3ea7a",
+    "text": "Use default sound",
+    "default": "Use default sound"
+  },
+  "43612666-0e7a-5976-9fc7-1ace27dbac32": {
+    "id": "43612666-0e7a-5976-9fc7-1ace27dbac32",
+    "text": "Applied to {name}: {source}",
+    "default": "Applied to {name}: {source}"
+  },
+  "b65c84d6-1d0d-596b-8962-fdf409f04073": {
+    "id": "b65c84d6-1d0d-596b-8962-fdf409f04073",
+    "text": "User",
+    "default": "User"
+  },
+  "ce252857-8d0d-5d30-8bcf-0c072901bd18": {
+    "id": "ce252857-8d0d-5d30-8bcf-0c072901bd18",
+    "text": "Custom",
+    "default": "Custom"
+  },
+  "fc47056b-19eb-5cf0-ac45-9d865e75b708": {
+    "id": "fc47056b-19eb-5cf0-ac45-9d865e75b708",
+    "text": "Default",
+    "default": "Default"
+  },
+  "ca8c7f71-896f-5cc9-9831-67903fa6899a": {
+    "id": "ca8c7f71-896f-5cc9-9831-67903fa6899a",
+    "text": "Shows whether User, Default, or Custom settings are applied. Sound settings can be edited here.",
+    "default": "Shows whether User, Default, or Custom settings are applied. Sound settings can be edited here."
+  }
   }
 }

@@ -863,6 +863,7 @@
                     countedTimeElapsedMilliseconds:summary.total?.countedTimeElapsedMilliseconds,
                     allowanceCreditMilliseconds:summary.total?.allowanceCreditMilliseconds} : null
             },
+            microphone:globalThis.WMOFMicrophoneControl?.read(globalThis.SpeechMenu),
             timeDisplay:clockTimer.renderedTimeMode,
             model:clockTimer.exportObserverSnapshot(),
             mode:clockTimer.percentMode, range:getTripLogRange(),
@@ -1391,6 +1392,13 @@
                     const detail =
                         event.detail ||
                         {};
+
+                    if (detail.type === "trainer.microphone") {
+                        void WMOFMicrophoneControl.setEnabled(globalThis.SpeechMenu,detail.payload?.enabled).then(result=>{
+                            liveTripStream.broadcast("microphone.result",{commandId:detail.payload.commandId,...result});
+                        });
+                        return;
+                    }
 
                     if (
                         detail.type !==
@@ -9184,10 +9192,11 @@
                     state.time_header_text
                 );
         }
-        $("#standardTimeValue").textContent = state.standard_time_component.text;
+        if (globalThis.WMOFTimerSummaryView) WMOFTimerSummaryView.render(document,state);
+        else { $("#standardTimeValue").textContent = state.standard_time_component.text;
         $("#renderedTimeValue").textContent = state.time_component.text;
         $("#currentPercentValue").textContent = state.current_percent_component.text;
-        $("#goalPercentValue").textContent = state.goal_component.text;
+        $("#goalPercentValue").textContent = state.goal_component.text; }
         $("#goalPercentValue").setAttribute(
             "aria-label",
             state.goal_type === globalThis.WMOFLanguagePack.text("137eb683-b835-5fb1-a76a-a840dcd2a563")
