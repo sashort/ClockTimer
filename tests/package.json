@@ -36,6 +36,7 @@
     "test:speech-runtime-loader": "node speech-runtime-loader.mjs",
     "test:dispatcher-context": "node dispatcher-context.mjs",
     "test:startup-announcement": "node startup-announcement.mjs",
+    "test:persistence-startup": "node persistence-startup.mjs",
     "test:audio-unlock": "node audio-unlock.mjs"
   },
   "dependencies": {
