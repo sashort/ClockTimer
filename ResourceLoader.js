@@ -72,17 +72,6 @@
         const markup = await response.text();
         const template = document.createElement("template");
         template.innerHTML = markup;
-        template.content.querySelectorAll("[data-clocktimer-context]").forEach(node => {
-            const childContext = root.ClockTimerContext.child(context, parseContext(node.dataset.clocktimerContext));
-            node.dataset.clocktimerResolvedContext = JSON.stringify({
-                host: childContext.host,
-                surface: childContext.surface,
-                presentation: childContext.presentation,
-                features: childContext.features,
-                capabilities: childContext.capabilities,
-                options: childContext.options
-            });
-        });
         await hydrate(template.content, context);
         if (target) {
             target.replaceChildren(template.content);
@@ -97,13 +86,42 @@
     }
 
     async function hydrate(container, context) {
-        const resources = [...container.querySelectorAll("[data-clocktimer-resource-url]")];
-        for (const node of resources) {
-            const childContext = root.ClockTimerContext.child(context, parseContext(node.dataset.clocktimerContext));
-            const url = node.dataset.clocktimerResourceUrl;
-            if (node.dataset.clocktimerResource === "script") await loadScript(url, childContext);
-            else if (node.dataset.clocktimerResource === "style") await loadStyle(url, childContext);
-            else if (node.dataset.clocktimerResource === "template") await loadTemplate(url, childContext, node);
+        async function visit(node, inheritedContext) {
+            let nodeContext = inheritedContext;
+            if (node.nodeType === 1 && node.dataset?.clocktimerContext) {
+                nodeContext = root.ClockTimerContext.child(
+                    inheritedContext,
+                    parseContext(node.dataset.clocktimerContext)
+                );
+                node.dataset.clocktimerResolvedContext = JSON.stringify({
+                    host: nodeContext.host,
+                    surface: nodeContext.surface,
+                    presentation: nodeContext.presentation,
+                    features: nodeContext.features,
+                    capabilities: nodeContext.capabilities,
+                    options: nodeContext.options
+                });
+            }
+
+            if (node.nodeType === 1 && node.dataset?.clocktimerResourceUrl) {
+                const url = node.dataset.clocktimerResourceUrl;
+                if (node.dataset.clocktimerResource === "script") {
+                    await loadScript(url, nodeContext);
+                } else if (node.dataset.clocktimerResource === "style") {
+                    await loadStyle(url, nodeContext);
+                } else if (node.dataset.clocktimerResource === "template") {
+                    await loadTemplate(url, nodeContext, node);
+                    return;
+                }
+            }
+
+            for (const child of Array.from(node.childNodes || [])) {
+                await visit(child, nodeContext);
+            }
+        }
+
+        for (const child of Array.from(container.childNodes || [])) {
+            await visit(child, context);
         }
     }
 
