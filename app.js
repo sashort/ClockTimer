@@ -409,81 +409,12 @@
             ? "silero"
             : "raw";
 
-    const speechAssetCacheReady =
-        (async () => {
-            if (
-                !("serviceWorker" in navigator) ||
-                !globalThis.isSecureContext
-            ) {
-                return false;
-            }
-
-            try {
-                const registration =
-                    await navigator
-                        .serviceWorker
-                        .register(
-                            "SpeechAssetCacheWorker.js" +
-                                speechRuntimeVersion,
-                            {
-                                scope: "./",
-                                updateViaCache:
-                                    "all"
-                            }
-                        );
-
-                await navigator
-                    .serviceWorker
-                    .ready;
-
-                if (
-                    navigator
-                        .serviceWorker
-                        .controller
-                ) {
-                    return true;
-                }
-
-                await new Promise(
-                    resolve => {
-                        const timeout =
-                            setTimeout(
-                                resolve,
-                                1500
-                            );
-
-                        navigator
-                            .serviceWorker
-                            .addEventListener(
-                                "controllerchange",
-                                () => {
-                                    clearTimeout(
-                                        timeout
-                                    );
-                                    resolve();
-                                },
-                                {
-                                    once: true
-                                }
-                            );
-                    }
-                );
-
-                return Boolean(
-                    navigator
-                        .serviceWorker
-                        .controller
-                );
-            }
-            catch (error) {
-                console.warn(
-                    "Sherpa asset cache unavailable:",
-                    error
-                );
-
-                return false;
-            }
-        })();
+    const speechAssetCacheReady = globalThis.ClockTimerSpeechAssetCache?.register({
+        scriptUrl: "SpeechAssetCacheWorker.js" + speechRuntimeVersion,
+        navigatorRef: navigator,
+        secureContext: globalThis.isSecureContext,
+        enabled: !settingsOnlyPage && capabilityEnabled("speechRecognition")
+    }) || Promise.resolve(false);
 
     const classicScriptLoader = globalThis.ClockTimerClassicScriptLoader?.create({
         documentRef: document,
