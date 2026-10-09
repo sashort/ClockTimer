@@ -170,6 +170,11 @@
             type: "script",
             url: "SessionStartup.js?build=session-startup-1",
             hosts: ["order-filler"]
+        }],
+        ["announcement-catalog-model", {
+            type: "script",
+            url: "AnnouncementCatalogModel.js?build=announcement-catalog-model-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
