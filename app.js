@@ -8161,17 +8161,11 @@
     }
 
     function formatSummaryPercent(value, fallback = "---") {
-        const numeric = Number(value);
-        return Number.isFinite(numeric)
-            ? `${Math.round(numeric * 100)}%`
-            : fallback;
+        return globalThis.ClockTimerTripGoalModel.formatSummaryPercent(value, fallback);
     }
 
     function formatActualPercent(value, fallback = "---") {
-        const numeric = Number(value);
-        return Number.isFinite(numeric)
-            ? `${(numeric * 100).toFixed(2)}%`
-            : fallback;
+        return globalThis.ClockTimerTripGoalModel.formatActualPercent(value, fallback);
     }
 
     function renderClockTimerUIState(state) {
