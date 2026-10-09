@@ -43,6 +43,14 @@
             link.onload = () => resolve(link);
             link.onerror = () => { pending.delete(key); reject(new Error("Unable to load stylesheet: " + url)); };
             link.dataset.clocktimerContext = context?.host || "default";
+            link.dataset.clocktimerContextData = JSON.stringify({
+                host: context?.host || "default",
+                surface: context?.surface || "application",
+                presentation: context?.presentation || "application",
+                features: context?.features || [],
+                capabilities: context?.capabilities || {},
+                options: context?.options || {}
+            });
             document.head.append(link);
         });
         pending.set(key, promise);
@@ -57,11 +65,18 @@
         template.innerHTML = markup;
         template.content.querySelectorAll("[data-clocktimer-context]").forEach(node => {
             const childContext = root.ClockTimerContext.child(context, parseContext(node.dataset.clocktimerContext));
-            node.__clockTimerContext = childContext;
+            node.dataset.clocktimerResolvedContext = JSON.stringify({
+                host: childContext.host,
+                surface: childContext.surface,
+                presentation: childContext.presentation,
+                features: childContext.features,
+                capabilities: childContext.capabilities,
+                options: childContext.options
+            });
         });
+        await hydrate(template.content, context);
         if (target) {
             target.replaceChildren(template.content);
-            await hydrate(target, context);
             return target;
         }
         return { template, context };
