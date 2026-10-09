@@ -41,6 +41,8 @@ on:
       - "LiveStreamViewModel.js"
       - "LiveStreamPublisher.js"
       - "SessionStartup.js"
+      - "AnnouncementCatalogModel.js"
+      - "tests/announcement-catalog-model.mjs"
       - "tests/session-startup.mjs"
       - "tests/live-stream-publisher.mjs"
       - "tests/live-stream-view-model.mjs"
@@ -197,6 +199,8 @@ jobs:
           node tests/live-stream-publisher.mjs
           node --check SessionStartup.js
           node tests/session-startup.mjs
+          node --check AnnouncementCatalogModel.js
+          node tests/announcement-catalog-model.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
