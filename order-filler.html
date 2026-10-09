@@ -1312,13 +1312,9 @@ dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="tripSetti
   const frame = document.getElementById("clockTimerSettingsFrame");
   if (!dialog || !frame || dialog.dataset.controllerReady) return;
   dialog.dataset.controllerReady = "true";
-  const surfaces = new Set([
-    "graphicalSettingsDialog",
-    "audioSettingsDialog",
-    "audioAnnouncementsDialog",
-    "stateSettingsDialog",
-    "tripSettingsDialog"
-  ]);
+  const surfaces = globalThis.ClockTimerSettingsSurfaces
+    ? { has: value => globalThis.ClockTimerSettingsSurfaces.isValid(value) }
+    : new Set(["graphicalSettingsDialog", "audioSettingsDialog", "audioAnnouncementsDialog", "stateSettingsDialog", "tripSettingsDialog"]);
   document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
     button.addEventListener("click", () => {
       const requested = button.dataset.settingsSurface;
