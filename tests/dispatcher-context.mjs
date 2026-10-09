@@ -40,7 +40,7 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     };
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
-    for (const file of ["Context.js", "Lifecycle.js", "dispatcher.js"]) {
+    for (const file of ["Context.js", "SettingsSurfaces.js", "Lifecycle.js", "dispatcher.js"]) {
         vm.runInContext(readFileSync(new URL("../" + file, import.meta.url), "utf8"), sandbox, { filename: file });
     }
     return { sandbox, document, events };
@@ -53,6 +53,19 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     assert.equal(ctx.surface, "audioSettingsDialog");
     assert.equal(ctx.capabilities.speechMenu, false);
     assert.equal(ctx.capabilities.calendarStartup, false);
+
+    const hostContext = sandbox.ClockTimerContext.normalize({
+        host: "order-filler",
+        surface: "application",
+        presentation: "application",
+        features: ["application", "settings"],
+        capabilities: {}
+    });
+    const settingsSurface = sandbox.ClockTimerSettingsSurfaces.contextFor(hostContext, "tripSettingsDialog");
+    assert.equal(settingsSurface.surface, "tripSettingsDialog");
+    assert.equal(settingsSurface.presentation, "graphical-settings");
+    assert.deepEqual(Array.from(settingsSurface.features), ["settings"]);
+    assert.equal(settingsSurface.capabilities.speechMenu, false);
 
     const child = sandbox.ClockTimerContext.child(ctx, {
         features: ["settings", "application"],
