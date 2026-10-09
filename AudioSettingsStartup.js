@@ -6,7 +6,7 @@
         context = root.ClockTimerPageContext,
         documentRef = root.document,
         resources = root.ClockTimerResources,
-        modelUrl = "AudioSettingsModel.js?build=audio-settings-model-2"
+        modelUrl = "AudioSettingsModel.js?build=audio-settings-model-3"
     } = {}) {
         if (root.WMOFAudioSettingsModel) return root.WMOFAudioSettingsModel;
         if (resources?.loadScript) {
