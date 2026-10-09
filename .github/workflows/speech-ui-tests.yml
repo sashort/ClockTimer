@@ -47,6 +47,8 @@ on:
       - "ActionSignalContext.js"
       - "ConnectionStatusModel.js"
       - "ButtonPressFeedback.js"
+      - "TripRuntimeModel.js"
+      - "tests/trip-runtime-model.mjs"
       - "tests/button-press-feedback.mjs"
       - "tests/connection-status-model.mjs"
       - "tests/action-signal-context.mjs"
@@ -221,6 +223,8 @@ jobs:
           node tests/connection-status-model.mjs
           node --check ButtonPressFeedback.js
           node tests/button-press-feedback.mjs
+          node --check TripRuntimeModel.js
+          node tests/trip-runtime-model.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
