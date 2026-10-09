@@ -5982,37 +5982,10 @@
     }
 
     function currentCalculatedSyncGoal() {
-        const requirements =
-            syncGoalRequirements();
-
-        const requiredGoal =
-            Number(
-                requirements?.tripGoal
-            );
-
-        if (
-            Number.isFinite(
-                requiredGoal
-            ) &&
-            requiredGoal > 0
-        ) {
-            return requiredGoal;
-        }
-
-        const calculatedGoal =
-            Number(
-                clockTimer
-                    .calculatedTripGoal
-            );
-
-        return (
-            Number.isFinite(
-                calculatedGoal
-            ) &&
-            calculatedGoal > 0
-        )
-            ? calculatedGoal
-            : undefined;
+        return globalThis.ClockTimerTripGoalModel.currentCalculatedSyncGoal(
+            syncGoalRequirements(),
+            clockTimer.calculatedTripGoal
+        );
     }
 
     function syncGoalMatches(
