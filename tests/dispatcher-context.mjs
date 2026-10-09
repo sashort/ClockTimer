@@ -4,6 +4,7 @@ import vm from "node:vm";
 
 function makeRuntime({ classes = [], search = "" } = {}) {
     const events = [];
+    const appendedResources = [];
     const body = {
         classList: { contains: name => classes.includes(name) },
         querySelector: () => null
@@ -13,8 +14,14 @@ function makeRuntime({ classes = [], search = "" } = {}) {
         currentScript: null,
         baseURI: "https://example.test/app/",
         documentElement: { lang: "en-US" },
-        head: { append() {} },
-        createElement: () => ({ dataset: {}, addEventListener() {}, setAttribute() {} }),
+        head: { append(resource) { appendedResources.push(resource); } },
+        createElement: () => ({
+            dataset: {},
+            handlers: {},
+            addEventListener(name, callback) { this.handlers[name] = callback; },
+            dispatchEvent(event) { events.push(event); return true; },
+            setAttribute() {}
+        }),
         addEventListener() {},
         removeEventListener() {},
         dispatchEvent: event => { events.push(event); return true; }
@@ -40,10 +47,10 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     };
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
-    for (const file of ["Context.js", "SettingsSurfaces.js", "Lifecycle.js", "StartupTasks.js", "dispatcher.js"]) {
+    for (const file of ["Context.js", "SettingsSurfaces.js", "ResourceLoader.js", "Lifecycle.js", "StartupTasks.js", "dispatcher.js"]) {
         vm.runInContext(readFileSync(new URL("../" + file, import.meta.url), "utf8"), sandbox, { filename: file });
     }
-    return { sandbox, document, events };
+    return { sandbox, document, events, appendedResources };
 }
 
 {
@@ -117,6 +124,37 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     assert.equal(disposed, 1);
 }
 {
+    const { sandbox, appendedResources } = makeRuntime();
+    const context = sandbox.ClockTimerContext.normalize({
+        host: "order-filler",
+        surface: "tripSettingsDialog",
+        presentation: "graphical-settings",
+        features: ["application", "settings"],
+        capabilities: { speechMenu: false }
+    });
+    const first = sandbox.ClockTimerResources.loadScript("/feature.js", context);
+    const duplicate = sandbox.ClockTimerResources.loadScript("/feature.js", context);
+    assert.equal(first, duplicate, "same URL and context share a single in-flight script load");
+    assert.equal(appendedResources.length, 1);
+    const script = appendedResources[0];
+    const embeddedContext = JSON.parse(script.dataset.clocktimerContextData);
+    assert.equal(embeddedContext.host, "order-filler");
+    assert.equal(embeddedContext.surface, "tripSettingsDialog");
+    assert.equal(embeddedContext.capabilities.speechMenu, false);
+    script.handlers.load();
+    script.onload();
+    await first;
+
+    const differentContext = sandbox.ClockTimerContext.child(context, {
+        surface: "audioSettingsDialog"
+    });
+    const second = sandbox.ClockTimerResources.loadScript("/feature.js", differentContext);
+    assert.equal(appendedResources.length, 2, "different contexts must not reuse a script tagged for another context");
+    appendedResources[1].handlers.load();
+    appendedResources[1].onload();
+    await second;
+}
+{
     const { sandbox } = makeRuntime();
     let calls = 0;
     const appContext = sandbox.ClockTimerContext.normalize({
@@ -145,4 +183,4 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     assert.equal(skipped.skipped, true);
     sandbox.ClockTimerStartup.reset();
 }
-console.log("PASS context restrictions, nested script context, dispatcher selection, startup gating, and lifecycle cleanup");
+console.log("PASS context restrictions, resource propagation, dispatcher selection, startup gating, and lifecycle cleanup");
