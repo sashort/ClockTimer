@@ -45,6 +45,15 @@ globalThis.TestChain=window.TestChain={
     sleep(){calls.push(['sleep']);return true;}
 
 };
+const preprocessorCalls=[];
+globalThis.TestPreprocessors=window.TestPreprocessors={
+    async first(text){preprocessorCalls.push('first');return text+' first';},
+    second(text){preprocessorCalls.push('second:'+text);return text+' second';},
+    reject(){preprocessorCalls.push('reject');return false;},
+    shouldNotRun(){preprocessorCalls.push('should-not-run');return 'unexpected';},
+    invalid(){return 42;},
+    abort(text,context){context.signal?.throwIfAborted();return text+' aborted';}
+};
 globalThis.TestValues=window.TestValues={normalize(text,{pattern,kind,field,provisional}){
     const match=new RegExp(pattern,'i').exec(text);
     if(!match?.groups?.[field]) return text;
@@ -74,6 +83,402 @@ const log=make(document.body,'log','^show log$','showLog',{'speech-modal':'top-l
 const hear=async(...args)=>{await speech.testTranscript(...args);await new Promise(setImmediate);};
 const fresh=()=>{speech.testReset();calls.length=0;errors.length=0;return speech.testBegin();};
 try {
+    const chain=make(document.body,'preprocessor-chain','^chain test
+    standard.setAttribute('speech-pattern', '^(?:standard(?: time)? )?(?<timeValue>.+)$');
+    const editor=make(future,'scheduled-editor','^standard(?: time)?$','showLog',{
+        'speech-chain-context':'scheduled-start'});
+    for (const words of [['ready at four','ready at four tw','ready at four twenty','ready at four twenty t','ready at four twenty two'],
+        ['ready at four twenty two standard','ready at four twenty two standard time',
+         'ready at four twenty two standard time eleven','ready at four twenty two standard time eleven twenty',
+         'ready at four twenty two standard time eleven twenty six'],
+        ['ready at four twenty two eleven','ready at four twenty two eleven twenty',
+         'ready at four twenty two eleven twenty six']]) {
+        const collecting=fresh();
+        for (const text of words) {
+            await hear(collecting,text);await collecting.digestQueue;
+            assert(!calls.some(call=>call[0]==='standard' || call[0]==='log'),
+                `An unfinished scheduled parameter must not execute or open its editor: ${text}`);
+        }
+        await hear(collecting,words.at(-1),true);await collecting.digestQueue;
+        assert.equal(errors.length,0,JSON.stringify(errors));
+        assert.deepEqual(calls, words.at(-1).includes('eleven')
+            ? [['ready','4:22'],['standard','0:11:26']] : [['ready','4:22']]);
+    }
+    future.open=true;
+    for (const words of [['standard','standard time','standard time elev','standard time eleven','standard time eleven tw','standard time eleven twenty','standard time eleven twenty s','standard time eleven twenty six'],
+        ['eleven','eleven tw','eleven twenty','eleven twenty s','eleven twenty six']]) {
+        const collecting=fresh();collecting.digestContext='scheduled-start';
+        for (const text of words) {
+            await hear(collecting,text);await collecting.digestQueue;
+            assert.equal(calls.length,0,`Scheduled-dialog interim must stay pending: ${text}`);
+        }
+        await hear(collecting,words.at(-1),true);await collecting.digestQueue;
+        assert.deepEqual(calls,[['standard','0:11:26']]);
+    }
+    const units=fresh();units.digestContext='scheduled-start';
+    for (const text of ['eleven minutes','eleven minutes twenty','eleven minutes twenty s','eleven minutes twenty six seconds']) {
+        await hear(units,text);await units.digestQueue;
+        assert.equal(calls.length,0,`Unit continuation must stay in one value: ${text}`);
+    }
+    await hear(units,'eleven minutes twenty six seconds',true);await units.digestQueue;
+    assert.deepEqual(calls,[['standard','0:11:26']]);
+    const editorOnly=fresh();editorOnly.digestContext='scheduled-start';
+    await hear(editorOnly,'standard time',true);await editorOnly.digestQueue;
+    assert.deepEqual(calls,[['log']],'a final editor-only command still opens duration entry');
+    future.open=false;
+    editor.remove();
+    standard.setAttribute('speech-pattern','^standard(?: time)? (?<timeValue>.+)$');
+    // Named boundaries finalize old continuations while capture continues independently.
+    globalThis.WMOFRecognizerNames={name:'Beatrice',split(text){
+        const m=/\bbeatrice\b/i.exec(text);return m ? {name:'Beatrice',before:text.slice(0,m.index).trim(),after:text.slice(m.index+m[0].length).trim()} : null;
+    }};
+    const continuing=fresh();
+    await hear(continuing,'ready at four twenty');
+    assert.equal(calls.length,0);
+    const restarted=speech.testResult(continuing,'ready at four twenty two trailing rubbish Beatrice show log',true);
+    assert.notEqual(restarted.id,continuing.id,'capture restarts before old command completion');
+    await restarted.bargeInBarrier;await new Promise(setImmediate);await restarted.digestQueue;
+    assert.deepEqual(calls,[['ready','4:22'],['log']],'longest valid old continuation finishes before fresh command');
+    assert.equal(errors.length,0,'unmatched tail does not reject completed commands');
+
+    let releaseBuffered;
+    readyOutcome=()=>new Promise(resolve=>{releaseBuffered=resolve;});
+    const blocked=fresh();
+    await hear(blocked,'ready at four twenty two show log');
+    assert.deepEqual(calls,[['ready','4:22']]);
+    const buffered=speech.testResult(blocked,'ready at four twenty two show log junk Beatrice show log',true);
+    await new Promise(setImmediate);
+    assert.deepEqual(calls,[['ready','4:22']],'new commands wait while old asynchronous action is pending');
+    speech.testInvalidate();
+    assert.equal(speech.testActive(),buffered,'old action state changes preserve newly buffered capture');
+    releaseBuffered(true);await buffered.bargeInBarrier;await new Promise(setImmediate);await buffered.digestQueue;
+    assert.deepEqual(calls,[['ready','4:22'],['log'],['log']],'queued old command completes once, then fresh command runs');
+    readyOutcome=()=>Promise.resolve(true);
+
+    const repeated=fresh();
+    const latest=speech.testResult(repeated,'show log Beatrice show log Beatrice show log',true);
+    await latest.bargeInBarrier;await new Promise(setImmediate);await latest.digestQueue;
+    assert.deepEqual(calls,[['log'],['log'],['log']],'multiple boundaries preserve the commands between names');
+    const nameFirst=fresh();
+    const namedStart=speech.testResult(nameFirst,'Beatrice show log',true);
+    await namedStart.bargeInBarrier;await new Promise(setImmediate);await namedStart.digestQueue;
+    assert.deepEqual(calls,[['log']],'streams may begin with the configured name');
+    const nameOnly=fresh();
+    const waiting=speech.testResult(nameOnly,'Beatrice',false);
+    await waiting.bargeInBarrier;
+    assert.equal(calls.length,0,'name alone waits without executing a command');
+    speech.testResult(waiting,'show log',true);await new Promise(setImmediate);await waiting.digestQueue;
+    assert.deepEqual(calls,[['log']],'command after a name-only boundary uses the fresh capture');
+    const finalBoundary=fresh();
+    await hear(finalBoundary,'ready at four twenty');
+    speech.testFinish('candidate-silence',true);
+    const finalRestart=speech.testResult(finalBoundary,'ready at four twenty two junk Beatrice show log',true);
+    await finalRestart.bargeInBarrier;await new Promise(setImmediate);await finalRestart.digestQueue;
+    assert.deepEqual(calls,[['ready','4:22'],['log']],'a name first resolved by final decode also preserves old continuations');
+    delete globalThis.WMOFRecognizerNames;
+    // Independent command groups compete for the same unconsumed words.
+    const syncGroup=document.createElement('section');document.body.append(syncGroup);
+    const sleepGroup=document.createElement('section');document.body.append(sleepGroup);
+    const sync=make(syncGroup,'sync','^sync(?: (?<syncAction>on|off))?$','sync');
+    const sleep=make(sleepGroup,'sleep','^off$','sleep');
+    const competing=fresh();
+    await hear(competing,'sync');
+    assert.equal(calls.length,0,'sync yields while a valid continuation can form');
+    await hear(competing,'sync off');await competing.digestQueue;
+    assert.deepEqual(calls,[['sync','off']],'completed continuation wins across groups immediately');
+    await hear(competing,'sync off',true);await competing.digestQueue;
+    assert.deepEqual(calls,[['sync','off']],'final decode does not replay a winning attempt');
+    const chained=fresh();
+    await hear(chained,'sync off show log',true);await chained.digestQueue;
+    assert.deepEqual(calls,[['sync','off'],['log']],'losing group cannot consume the winning continuation');
+    const intentional=fresh();
+    await hear(intentional,'show log off',true);await intentional.digestQueue;
+    assert.deepEqual(calls,[['log'],['sleep']],'independent nonoverlapping commands still chain');
+    sync.remove();
+    const short=make(sleepGroup,'short','^sync$','sleep');
+    const longer=make(syncGroup,'longer','^sync off$','showLog');
+    const sibling=fresh();await hear(sibling,'sync');
+    assert.equal(calls.length,0,'short match yields to another group');
+    await hear(sibling,'sync off');await sibling.digestQueue;
+    assert.deepEqual(calls,[['log']],'other group replaces the yielded match');
+    longer.setAttribute('disabled','');
+    const unavailable=fresh();await hear(unavailable,'sync');await unavailable.digestQueue;
+    assert.deepEqual(calls,[['sleep']],'unavailable continuations do not delay execution');
+    longer.removeAttribute('disabled');
+    const enabled=fresh();await hear(enabled,'sync');
+    assert.equal(calls.length,0,'availability is reevaluated for every attempt');
+    await hear(enabled,'sync',true);await enabled.digestQueue;
+    assert.deepEqual(calls,[['sleep']],'final boundary releases the yielded short command');
+    short.remove();longer.remove();sleep.remove();syncGroup.remove();sleepGroup.remove();
+
+    let releasePreparation;
+    let preparationCount=0;
+    window.TestPreparation=globalThis.TestPreparation={async prepare(text){
+        if(++preparationCount===2) await new Promise(resolve=>releasePreparation=resolve);
+        return text;
+    }};
+    const deferred=make(document.body,'deferred','^deferred$','sleep',{'speech-preproc':'TestPreparation.prepare'});
+    deferred.removeAttribute('speech-collect');
+    const aborted=fresh();await hear(aborted,'deferred');
+    assert.equal(typeof releasePreparation,'function','action preparation is waiting');
+    speech.testFinish('muted',false);
+    releasePreparation();await aborted.digestQueue;
+    assert.equal(calls.length,0,'cancelled asynchronous preparation cannot commit an action');
+    deferred.remove();
+    const value=make(document.body,'value','^(?<timeValue>.+)$','showLog',{
+        'speech-open-ended':'','speech-preproc':'TestValues.normalize',
+        'speech-preproc-context':'duration','speech-preproc-field':'timeValue'});
+    const duration=fresh();
+    await hear(duration,'twenty two');
+    await hear(duration,'twenty two fifty');
+    assert.equal(calls.length,0,'interim number groups remain one growing value');
+    assert.equal(duration.valueCollectors.get(value).value,'0:22:50');
+    await hear(duration,'twenty three fifty six');
+    assert.equal(duration.valueCollectors.get(value).value,'0:23:56','unconsumed recognition revisions replace collected values');
+    await hear(duration,'twenty two fifty six',true);
+    await duration.digestQueue;
+    assert.equal(duration.digestSteps.length,1,'a free-form value is one command, not a chain of number fragments');
+    assert.equal(duration.digestSteps[0].transcript,'0:22:56');
+    assert.equal(duration.valueCollectors.size,0,'final completion clears collectors');
+    const interruptedValue=fresh();
+    await hear(interruptedValue,'twenty two');
+    assert(interruptedValue.valueCollectors.size > 0);
+    speech.testFinish('muted',false);
+    assert.equal(interruptedValue.valueCollectors.size,0,'invalidation clears collectors');
+    const followedValue=fresh();
+    await hear(followedValue,'twenty two fifty six show log',true);
+    await followedValue.digestQueue;
+    assert.equal(followedValue.digestSteps[0].transcript,'0:22:56','a following command releases the collected duration');
+    assert.deepEqual(calls,[['log'],['log']]);
+    value.remove();
+    const sequence=make(document.body,'sequence','^(?<label>rouge(?: pomme)?)$','showLog',{'speech-collect':''});
+    const sequencePlan=await speech.planCommandChain('rouge');
+    assert(sequencePlan.continuation && !sequencePlan.terminal,'Every collecting parameter stays open in stream classification');
+    const opaque=fresh();
+    await hear(opaque,'rouge');
+    await hear(opaque,'rouge pomme');
+    assert.equal(calls.length,0,'opaque sequences remain pending without a boundary');
+    assert.equal(opaque.valueCollectors.get(sequence).value,'rouge pomme');
+    await hear(opaque,'rouge pomme show log',true);
+    await opaque.digestQueue;
+    assert.equal(opaque.digestSteps[0].segmentTranscript,'rouge pomme');
+    assert.deepEqual(calls,[['log'],['log']],'language-independent collector releases at the next command');
+    assert.equal(opaque.valueCollectors.size,0);
+    sequence.remove();
+    const tripLogSurface=document.createElement('section');tripLogSurface.id='test-trip-log';tripLogSurface.setAttribute('speech-scope','');document.body.append(tripLogSurface);
+    future.id='test-scheduled-trip';
+    const logNoun=make(document.body,'logNoun','^(?:trip )?log$','showLog',{'speech-modal':'top-level','speech-noun':'log|trip log','speech-chain-surface':'#test-trip-log'});
+    const rootClose=make(document.body,'rootClose','^close$','showLog',{'speech-modal':'system','speech-chain-surface':'pop'});
+    rootClose.setAttribute('speech-function','SpeechMenu.close');
+    const rootCancel=make(document.body,'rootCancel','^cancel$','showLog',{'speech-modal':'system','speech-chain-surface':'pop'});
+    rootCancel.setAttribute('speech-function','SpeechMenu.cancel');
+    let closeSucceeds=true;
+    const unregister=speech.registerSurface(tripLogSurface,{isOpen:()=>true,
+        close(){calls.push(['close']);return closeSucceeds;},cancel(){calls.push(['cancel']);return closeSucceeds;}});
+    readyOutcome=()=>Promise.resolve(true);
+    const returned=fresh();
+    await hear(returned,'ready at 4:15 log close',true);await returned.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['log'],['close']]);
+    assert.equal(returned.digestSurfaceStack.at(-1).surface,future,'close restores the scheduled-trip surface');
+    assert.equal(returned.digestContext,'scheduled-start');
+    const resumed=fresh();
+    await hear(resumed,'ready at 4:15 trip log close standard time one hour',true);await resumed.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['log'],['close'],['standard','1:00:00']],
+        'follow-up consumes the restored tree even while the log DOM remains open');
+    closeSucceeds=false;
+    const refused=fresh();
+    await hear(refused,'ready at 4:15 log cancel standard time one hour',true);await refused.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['log'],['cancel']],'failed cancellation prevents restored-scope actions');
+    assert.equal(document.querySelectorAll('[primed]').length,0);
+    assert.equal(refused.valueCollectors.size,0);
+    assert.equal(refused.digestSurfaceStack.at(-1).surface,tripLogSurface,'failed cancellation keeps the current surface');
+    unregister();tripLogSurface.remove();logNoun.remove();rootClose.remove();rootCancel.remove();
+    let release;
+    readyOutcome=()=>new Promise(resolve=>release=resolve);
+    const u=fresh();
+    await hear(u,'ready at four');
+    assert.equal(calls.length,0,'a clock parameter must be allowed to grow');
+    await hear(u,'ready at four fifteen standard');
+    assert.deepEqual(calls,[['ready','4:15']]);
+    assert.equal(u.digestTranscript,'ready at four fifteen');
+    assert(standard.hasAttribute('primed'),'follow-up is primed while its prerequisite is pending');
+    assert(speech.testAvailable().includes(standard),'closed-dialog follow-up is available when primed');
+    assert.equal(future.open,false,'test deliberately never opens the future dialog');
+    speech.testInvalidate();
+    assert.equal(speech.testActive(),u,'surface lag does not restart the utterance');
+    await hear(u,'ready at four fifteen standard time one hour');
+    assert.equal(calls.length,1,'dependent action waits for successful prerequisite');
+    await hear(u,'ready at four fifteen standard time one hour',true);
+    assert.equal(standard.hasAttribute('primed'),false,'utterance completion removes priming even while queue waits');
+    release(true);await u.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']]);
+    assert.equal(future.open,false,'actions complete independently of dialog availability');
+    await speech.testFinal(u,'ready at four fifteen standard time one hour');
+    await u.digestQueue;
+    assert.equal(calls.length,2,'identical/stale final decode never executes consumed commands twice');
+
+    readyOutcome=()=>Promise.resolve(true);
+    let unrelatedRelease;
+    readyOutcome=()=>new Promise(resolve=>unrelatedRelease=resolve);
+    const modalInterrupted=fresh();
+    await hear(modalInterrupted,'ready at four fifteen standard');
+    const unrelated=document.createElement('dialog');unrelated.setAttribute('open','');document.body.append(unrelated);
+    speech.testInvalidate();
+    assert(modalInterrupted.chainCanceled,'an unrelated modal cancels pending commands');
+    assert.equal(modalInterrupted.valueCollectors.size,0);
+    assert.equal(document.querySelectorAll('[primed]').length,0);
+    unrelatedRelease(true);await modalInterrupted.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15']]);
+    unrelated.remove();
+    readyOutcome=()=>Promise.resolve(true);
+    const paused=fresh();
+    await hear(paused,'ready at four fifteen standard');
+    speech.testFinish();
+    assert.equal(document.querySelectorAll('[primed]').length,0,'VAD closure clears temporary markers');
+    speech.testInvalidate();
+    await speech.testFinal(paused,'ready at four fifteen standard time one hour');
+    await paused.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']],'final tail still uses projected context after VAD cleanup');
+
+    const three=fresh();
+    const paintFrames=[];
+    const normalRAF=globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame=callback=>paintFrames.push(callback);
+    await hear(three,'ready at four fifteen standard time one hour show log',true);
+    await three.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00'],['log']],
+        'the next action does not wait for a previous response to paint');
+    assert(paintFrames.length>0,'the test leaves presentation paint deliberately pending');
+    globalThis.requestAnimationFrame=normalRAF;
+    for(const callback of paintFrames) callback(performance.now());
+
+    const bad=fresh();
+    await hear(bad,'ready at four fifteen standard time one hour nonsense again',true);
+    await bad.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']],'valid prefix still executes before an invalid remainder');
+    assert.equal(errors.at(-1)?.transcript,'nonsense again');
+    assert.equal(standard.hasAttribute('primed'),false);
+
+    readyOutcome=()=>Promise.resolve(false);
+    const rejected=fresh();
+    await hear(rejected,'ready at four fifteen standard time one hour',true);
+    await rejected.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15']],'failed prerequisite blocks dependent actions');
+    assert.equal(standard.hasAttribute('primed'),false);
+    readyOutcome=()=>Promise.resolve(true);
+
+    standard.setAttribute('disabled','');
+    const disabled=fresh();
+    await hear(disabled,'ready at four fifteen standard time one hour',true);
+    await disabled.digestQueue;
+    assert.equal(calls.some(call=>call[0]==='standard'),false,'priming cannot bypass a disabled item');
+    assert.equal(standard.hasAttribute('primed'),false);
+    standard.removeAttribute('disabled');
+
+    standard.setAttribute('speech-authorized','TestChain.permitted');
+    const denied=fresh();
+    await hear(denied,'ready at four fifteen standard time one hour',true);
+    await denied.digestQueue;
+    assert.equal(calls.some(call=>call[0]==='standard'),false,'priming cannot bypass authorization');
+    standard.removeAttribute('speech-authorized');
+
+    readyOutcome=()=>new Promise(resolve=>release=resolve);
+    const canceled=fresh();
+    await hear(canceled,'ready at four fifteen standard');
+    speech.testFinish('muted',false);
+    assert.equal(standard.hasAttribute('primed'),false);
+    release(true);await canceled.digestQueue;
+    assert.equal(calls.some(call=>call[0]==='standard'),false);
+
+    readyOutcome=()=>Promise.resolve(true);
+    const revised=fresh();
+    await hear(revised,'ready at four fifteen standard');
+    await hear(revised,'ready at five thirty standard time one hour',true);
+    await revised.digestQueue;
+    assert.equal(calls.length,1,'revising an already consumed prefix stops rather than replaying it');
+    assert.equal(errors.at(-1)?.reason,'consumed-prefix-revised');
+    assert.equal(document.querySelectorAll('[primed]').length,0);
+
+    const longChain=fresh();
+    await hear(longChain,Array(12).fill('show log').join(' '),true);
+    await longChain.digestQueue;
+    assert.equal(calls.length,12,'chains are not limited by the former eight-step depth');
+
+    const breakRoot=make(document.body,'break','^break start$','breakStart',{'speech-chain-next':'break-choice'});
+    const choice=make(future,'choice','^(?<breakChoice>long|short|lunch)$','choice',{
+        'speech-chain-context':'break-choice','speech-chain-next':'break-confirm'});
+    const okay=make(future,'okay','^ok(?:ay)?$','okay',{'speech-chain-context':'break-confirm'});
+    const b=fresh();
+    await hear(b,'break start lunch ok',true);await b.digestQueue;
+    assert.deepEqual(calls,[['break'],['choice','lunch'],['okay']]);
+    assert.equal(document.querySelectorAll('[primed]').length,0);
+    breakRoot.remove();choice.remove();okay.remove();
+    let persistenceIntent;
+    globalThis.TestChain.capturePersist=()=>{persistenceIntent=speech.executionContext.persist;return true;};
+    const intent=make(document.body,'persist-intent','^save example$','capturePersist');
+    let intentAttempt=fresh();await hear(intentAttempt,'save example',true);await intentAttempt.digestQueue;
+    assert.equal(persistenceIntent,false,'unmarked commands stay client-only');
+    intent.setAttribute('speech-persist','');
+    intentAttempt=fresh();await hear(intentAttempt,'save example',true);await intentAttempt.digestQueue;
+    assert.equal(persistenceIntent,true,'speech-persist explicitly allows server work');
+    intent.setAttribute('speech-persist','false');
+    intentAttempt=fresh();await hear(intentAttempt,'save example',true);await intentAttempt.digestQueue;
+    assert.equal(persistenceIntent,false,'false explicitly disables server work');
+    intent.remove();
+
+    Function(fs.readFileSync(new URL('../StateTransactions.js',import.meta.url),'utf8'))();
+    Function(fs.readFileSync(new URL('../ActionFunctions.js',import.meta.url),'utf8'))();
+    window.WMOFActions=globalThis.WMOFActions;
+    const transactionStates=[];
+    const appState={breakType:'lunch',selection:undefined};
+    const transactions=globalThis.WMOFStateTransactions;
+    transactions.register('app',{capture:()=>({...appState}),restore:snapshot=>Object.assign(appState,snapshot)});
+    transactions.addEventListener('state',event=>transactionStates.push(event.detail.state));
+    globalThis.WMOFActionFunctions.define('openBreak',()=>false);
+    globalThis.WMOFActionFunctions.define('chooseLunch',()=>{calls.push(['choose-lunch']);appState.selection='lunch';return true;});
+    globalThis.WMOFActionFunctions.define('confirmLunch',()=>{calls.push(['confirm-lunch']);return true;});
+    const attemptRoot=make(document.body,'attempt-break','^break start$','showLog',{
+        'speech-chain-next':'attempt-choice','speech-available':'TestChain.permitted','data-speech-state-command':''});
+    attemptRoot.setAttribute('speech-function','WMOFActions.openBreak');
+    const attemptChoice=make(future,'attempt-choice','^lunch$','showLog',{
+        'speech-chain-context':'attempt-choice','speech-chain-next':'attempt-confirm','data-speech-state-command':''});
+    attemptChoice.setAttribute('speech-function','WMOFActions.chooseLunch');
+    const attemptConfirm=make(future,'attempt-confirm','^ok$','showLog',{
+        'speech-chain-context':'attempt-confirm','data-speech-state-command':''});
+    attemptConfirm.setAttribute('speech-function','WMOFActions.confirmLunch');
+    const invalidState=fresh();
+    await hear(invalidState,'break start lunch ok',true);await invalidState.digestQueue;
+    assert.deepEqual(transactionStates,['pending','reverted'],'invalid-state utterance is accepted, then reverted');
+    assert.deepEqual(calls,[],'Lunch and OK never execute after the root validation fails');
+    assert.equal(appState.breakType,'lunch','an existing break is preserved');
+    assert(invalidState.digestExecutionFailed);
+    attemptRoot.setAttribute('speech-authorized','TestChain.permitted');
+    const forbidden=fresh();await hear(forbidden,'break start lunch ok',true);await forbidden.digestQueue;
+    assert.equal(transactionStates.length,2,'optimistic attempts do not bypass authorization');
+    attemptRoot.remove();attemptChoice.remove();attemptConfirm.remove();
+    delete globalThis.WMOFStateTransactions;
+    console.log('PASS incremental command digestion, priming, UI lag, parameter boundaries, ordered actions, invalid tails, failure, cancellation and hard gates');
+} finally {speech.testReset();await window.happyDOM.close();}
+,'okay',{
+        'speech-preproc':'TestPreprocessors.first,TestPreprocessors.second'
+    });
+    await new Promise(setImmediate);
+    assert.equal(await chain.speechPreprocFunc('input',{}),'input first second');
+    assert.deepEqual(preprocessorCalls,['first','second:input first'],'preprocessors run sequentially with each output passed onward');
+    preprocessorCalls.length=0;
+    chain.setAttribute('speech-preproc','TestPreprocessors.first,TestPreprocessors.reject,TestPreprocessors.shouldNotRun');
+    await new Promise(setImmediate);
+    assert.equal(await chain.speechPreprocFunc('input',{}),false,'false explicitly rejects the candidate');
+    assert.deepEqual(preprocessorCalls,['first','reject'],'rejection stops subsequent stages');
+    chain.setAttribute('speech-preproc','TestPreprocessors.invalid');
+    await new Promise(setImmediate);
+    await assert.rejects(chain.speechPreprocFunc('input',{}),TypeError,'invalid non-string results are rejected');
+    chain.setAttribute('speech-preproc','TestPreprocessors.first,TestPreprocessors.second');
+    await new Promise(setImmediate);
+    const controller=new AbortController();controller.abort();
+    assert.equal(await chain.speechPreprocFunc('input',{signal:controller.signal}),'input','aborted chains do not start a stage');
+    chain.remove();
+    preprocessorCalls.length=0;
     // The scheduled dialog accepts a bare duration as well as "standard time".
     standard.setAttribute('speech-pattern', '^(?:standard(?: time)? )?(?<timeValue>.+)$');
     const editor=make(future,'scheduled-editor','^standard(?: time)?$','showLog',{
