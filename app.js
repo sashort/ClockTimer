@@ -21390,20 +21390,8 @@
     function renderedGoalLabel(
         detail
     ) {
-        const summary =
-            detail?.summary;
-        const scope =
-            String(
-                summary?.scope ||
-                ""
-            ).toLowerCase();
-        const selected =
-            summary?.selected ||
-            (
-                scope === "total"
-                    ? summary?.total
-                    : summary?.trip
-            );
+        const { scope, selected } =
+            globalThis.ClockTimerTripGoalModel.selectGoal(detail);
         const percentGoal =
             Number(
                 selected?.percentGoal
