@@ -4635,17 +4635,10 @@
     }
 
     function userFacingTotalText(value) {
-        const text =
-            String(value ?? "");
-        const label =
-            totalScopeLabel();
-
-        return label === "Total"
-            ? text
-            : text.replace(
-                /\bTotal\b/g,
-                label
-            );
+        return globalThis.ClockTimerTripLogModel.userFacingTotalText(
+            value,
+            totalScopeLabel()
+        );
     }
 
     function setTripLogRange(
