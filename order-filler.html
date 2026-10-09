@@ -1299,6 +1299,7 @@ dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="tripSetti
     <script src="HamburgerMenu.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
     <script src="Context.js?build=dispatcher-6"></script>
 <script src="SettingsSurfaces.js?build=dispatcher-6"></script>
+<script src="SettingsFrameController.js?build=dispatcher-1"></script>
 <script src="ResourceLoader.js?build=dispatcher-6"></script>
 <script src="Lifecycle.js?build=dispatcher-6"></script>
 <script src="StartupTasks.js?build=dispatcher-6"></script>
@@ -1309,36 +1310,6 @@ dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="tripSetti
     <script src="SpeechEditorRuntime.js?build=E4GUFA"></script>
 
 
-<script id="clockTimerSettingsFrameController">
-(() => {
-  const dialog = document.getElementById("clockTimerSettingsFrameDialog");
-  const frame = document.getElementById("clockTimerSettingsFrame");
-  if (!dialog || !frame || dialog.dataset.controllerReady) return;
-  dialog.dataset.controllerReady = "true";
-  const surfaces = globalThis.ClockTimerSettingsSurfaces
-    ? { has: value => globalThis.ClockTimerSettingsSurfaces.isValid(value) }
-    : new Set(["graphicalSettingsDialog", "audioSettingsDialog", "audioAnnouncementsDialog", "stateSettingsDialog", "tripSettingsDialog"]);
-  document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
-    button.addEventListener("click", () => {
-      const requested = button.dataset.settingsSurface;
-      const surface = surfaces.has(requested) ? requested : "graphicalSettingsDialog";
-      frame.dataset.settingsSurface = surface;
-      frame.src = "settings.html?surface=" + encodeURIComponent(surface);
-      const menu = button.closest("hamburger-menu");
-      if (menu && typeof menu.hidePopover === "function") {
-        try { menu.hidePopover(); } catch {}
-      }
-      if (!dialog.open) dialog.showModal();
-    });
-  });
-  window.addEventListener("message", event => {
-    if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
-    if (event.data?.type === "clocktimer-settings-closed" && dialog.open) dialog.close();
-  });
-  dialog.addEventListener("click", event => {
-    if (event.target === dialog) dialog.close();
-  });
-})();
-</script>
+
 </body>
 </html>
