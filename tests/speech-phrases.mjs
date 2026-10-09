@@ -418,15 +418,15 @@ const announcementCatalogSource =
 
 assert.match(
     repeatableSystemCommandSource,
-    /"speech"[\s\S]*?"\^speech \(\?:on\|off\)\$"[\s\S]*?WMOFActions\.setSpeechMaster[\s\S]*?speech-repeatable/
+    /ensureCommand\([\s\S]*?"speech",[\s\S]*?patternFor\("system:speech"\)[\s\S]*?WMOFActions\.setSpeechMaster[\s\S]*?speech-repeatable/
 );
 assert.match(
     repeatableSystemCommandSource,
-    /"speech-rate-percent"[\s\S]*?\^speech \(\?!on\$\|off\$\)[\s\S]*?percent[\s\S]*?WMOFActions\.setAudioRatePercent[\s\S]*?speech-preproc-context[\s\S]*?percent[\s\S]*?speech-open-ended/
+    /ensureCommand\([\s\S]*?"speech-rate-percent",[\s\S]*?patternFor\("system:speech-rate-percent"\)[\s\S]*?WMOFActions\.setAudioRatePercent[\s\S]*?speech-preproc-context[\s\S]*?percent[\s\S]*?speech-open-ended/
 );
 assert.match(
     repeatableSystemCommandSource,
-    /"volume-percent"[\s\S]*?\^volume [\s\S]*?percent[\s\S]*?WMOFActions\.setAudioVolumePercent[\s\S]*?speech-preproc-context[\s\S]*?percent[\s\S]*?speech-open-ended/
+    /ensureCommand\([\s\S]*?"volume-percent",[\s\S]*?patternFor\("system:volume-percent"\)[\s\S]*?WMOFActions\.setAudioVolumePercent[\s\S]*?speech-preproc-context[\s\S]*?percent[\s\S]*?speech-open-ended/
 );
 assert.match(
     speechMasterAppSource,
@@ -667,7 +667,7 @@ assert.match(
 
     assert.match(
         micSource,
-        /"commands"[\s\S]*?"\^\(\?:\(\?:speech \)\?commands\|choices\|options\|what\)\$"[\s\S]*?"WMOFActions\.openSpeechOptions"/
+        /ensureCommand\([\s\S]*?"commands",[\s\S]*?patternFor\("system:commands"\)[\s\S]*?"WMOFActions\.openSpeechOptions"/
     );
 
     assert.doesNotMatch(
@@ -677,7 +677,7 @@ assert.match(
 
     assert.match(
         micSource,
-        /"chime"[\s\S]*?"\^chime \(\?:on\|off\)\$"[\s\S]*?"WMOFActions\.setChimeMaster"/
+        /ensureCommand\([\s\S]*?"chime",[\s\S]*?patternFor\("system:chime"\)[\s\S]*?"WMOFActions\.setChimeMaster"/
     );
     assert.match(
         appSource,
@@ -685,19 +685,19 @@ assert.match(
     );
     assert.match(
         micSource,
-        /"faster"[\s\S]*?"\^faster\$"[\s\S]*?"WMOFActions\.changeAudioRateFaster"/
+        /ensureCommand\([\s\S]*?"faster",[\s\S]*?patternFor\("system:faster"\)[\s\S]*?"WMOFActions\.changeAudioRateFaster"/
     );
     assert.match(
         micSource,
-        /"slower"[\s\S]*?"\^slower\$"[\s\S]*?"WMOFActions\.changeAudioRateSlower"/
+        /ensureCommand\([\s\S]*?"slower",[\s\S]*?patternFor\("system:slower"\)[\s\S]*?"WMOFActions\.changeAudioRateSlower"/
     );
     assert.match(
         micSource,
-        /"louder"[\s\S]*?"\^louder\$"[\s\S]*?"WMOFActions\.changeAudioVolumeLouder"/
+        /ensureCommand\([\s\S]*?"louder",[\s\S]*?patternFor\("system:louder"\)[\s\S]*?"WMOFActions\.changeAudioVolumeLouder"/
     );
     assert.match(
         micSource,
-        /"softer"[\s\S]*?"\^softer\$"[\s\S]*?"WMOFActions\.changeAudioVolumeSofter"/
+        /ensureCommand\([\s\S]*?"softer",[\s\S]*?patternFor\("system:softer"\)[\s\S]*?"WMOFActions\.changeAudioVolumeSofter"/
     );
 
     assert.match(
