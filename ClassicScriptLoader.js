@@ -47,6 +47,7 @@
                 };
                 const onError = () => {
                     pending.delete(source);
+                    script.remove?.();
                     reject(new Error("Unable to load " + source + "."));
                 };
                 script.addEventListener("load", onLoad, { once: true });
