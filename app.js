@@ -65,10 +65,6 @@
 
     const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
     const PERCENT_MODES = ["trip", "total", "auto"];
-    const TRIP_PREFERENCE_DEFAULTS = {
-        lateBreakBehavior: "showLateWindow",
-        syncGoals: false
-    };
     const ANNOUNCEMENT_CATALOG =
         globalThis
             .WMOFAnnouncementCatalog;
