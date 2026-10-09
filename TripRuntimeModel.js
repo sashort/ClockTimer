@@ -2,7 +2,8 @@
 (function (root) {
     "use strict";
 
-    function isLive({timerState, status, appTripState} = {}) {
+    function isLive(input = {}) {
+        const {timerState, status, appTripState} = input || {};
         if (typeof timerState?.trip_active === "boolean") return timerState.trip_active;
         return status === "running" || appTripState === "running";
     }
