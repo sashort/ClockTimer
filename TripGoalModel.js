@@ -63,12 +63,24 @@
         return Number(detail?.summary?.total?.countedPercent);
     }
 
+    function formatSummaryPercent(value, fallback = "---") {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? `${Math.round(numeric * 100)}%` : fallback;
+    }
+
+    function formatActualPercent(value, fallback = "---") {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? `${(numeric * 100).toFixed(2)}%` : fallback;
+    }
+
     root.ClockTimerTripGoalModel = Object.freeze({
         selectGoal,
         labelDescriptor,
         remainingMilliseconds,
         remainingOutcome,
         remainingDescriptor,
-        countedPercent
+        countedPercent,
+        formatSummaryPercent,
+        formatActualPercent
     });
 })(globalThis);
