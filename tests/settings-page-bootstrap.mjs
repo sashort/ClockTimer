@@ -18,10 +18,10 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
         dispatchEvent(event) { events.push({ target: "surface", event }); return true; },
         showModal() { this.shown = true; }
     };
-    const rootElement = { dataset: appReady ? { clocktimerAppReady: "true" } : {}, classList: { add: value => classes.push(value) } };
+    const rootElement = { dataset: appReady ? { clocktimerAppReady: "true" } : {}, classList: { add: value => classes.push(value), contains: name => name === "settings-page" } };
     const document = {
         readyState,
-        body: { classList: { add: value => classes.push(value) } },
+        body: { classList: { add: value => classes.push(value), contains: name => name === "settings-page" }, querySelector: () => null },
         documentElement: rootElement,
         getElementById(id) {
             if (id === "settingsPageHeader") return { hidden: false };
@@ -61,7 +61,7 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
     sandbox.ClockTimerSettingsSurfaces = { normalize: value => value || "graphicalSettingsDialog" };
-    vm.runInContext(readFileSync(new URL("../SettingsPageBootstrap.js", import.meta.url), "utf8"), sandbox);
+    for (const file of ["Context.js", "Lifecycle.js", "dispatcher.js", "SettingsPageBootstrap.js"]) {\n        vm.runInContext(readFileSync(new URL("../" + file, import.meta.url), "utf8"), sandbox, { filename: file });\n    }
     return { sandbox, document, classes, events, surface, trigger, get postedMessage() { return postedMessage; } };
 }
 
@@ -80,7 +80,7 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
 
 {
     const r = runtime({ readyState: "complete", appReady: true, embedded: false });
-    assert.equal(r.events.length, 1, "already-ready app starts the requested surface immediately");
+    await new Promise(resolve => setImmediate(resolve));\n    assert.equal(r.events.length, 1, "already-ready app starts the requested surface immediately");
     assert.equal(r.events[0].target, "trigger");
     assert.equal(r.classes.length, 0, "standalone settings page does not get embedded styling");
 }
