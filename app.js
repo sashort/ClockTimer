@@ -1,9 +1,14 @@
 (async () => {
     "use strict";
 
-    // settings.html embeds this application only to reuse its existing settings
-    // handlers. It must not run the normal app-entry voice/login sequence.
-    const settingsOnlyPage = document.body?.classList.contains("settings-page") === true;
+    // Resolve startup behavior from the page's context contract. Keep the DOM
+    // check as a compatibility fallback for older hosts that do not load Context.js.
+    const pageContext = globalThis.ClockTimerContext?.forCurrentScript?.()
+        || globalThis.ClockTimerPageContext
+        || null;
+    const settingsOnlyPage = pageContext?.host === "settings-frame"
+        || document.body?.classList.contains("settings-page") === true;
+    const capabilityEnabled = name => pageContext?.capabilities?.[name] !== false;
 
     let audioActivated = false;
     const activateStartupAudio = () => {
@@ -28886,7 +28891,7 @@
     }
 
     // Settings surfaces reuse the existing handlers but must not initialize speech UI/runtime.
-    if (!settingsOnlyPage && globalThis.ClockTimerContext?.normalize().capabilities.speechMenu !== false) {
+    if (!settingsOnlyPage && capabilityEnabled("speechMenu")) {
         void (async () => {
         try {
             await ensureSpeechRuntime();
@@ -29878,7 +29883,7 @@
             }
         })();
     } else showInitialLoginDialog();
-    if (!settingsOnlyPage && globalThis.ClockTimerContext?.normalize().capabilities.calendarStartup !== false) {
+    if (!settingsOnlyPage && capabilityEnabled("calendarStartup")) {
     void (async () => {
         try {
             const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {credentials:"same-origin", headers:{Accept:"application/json"}});
