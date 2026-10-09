@@ -40,6 +40,18 @@
         return label === "Total" ? text : text.replace(/\bTotal\b/g, label);
     }
 
+    function includeCurrent(value) {
+        return value === "true";
+    }
+
+    function pinned(value) {
+        return value !== "false";
+    }
+
+    function pinnedInput(value) {
+        return value !== false;
+    }
+
     function offlineTrips({ cachedTrips = [], localTrips = [], loginRequired = false, window, productionFilter = "all" } = {}) {
         const allTrips = new Map();
         if (!loginRequired) {
@@ -68,6 +80,9 @@
         normalizeRange,
         liveEffectiveMilliseconds,
         userFacingTotalText,
+        includeCurrent,
+        pinned,
+        pinnedInput,
         offlineTrips
     });
 })(globalThis);
