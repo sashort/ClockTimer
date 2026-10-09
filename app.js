@@ -13,21 +13,10 @@
     const capabilityEnabled = startupPolicy?.capabilityEnabled
         || (name => pageContext?.capabilities?.[name] !== false);
 
-    if (!globalThis.WMOFAudioSettingsModel) {
-        const modelUrl = "AudioSettingsModel.js?build=audio-settings-model-1";
-        if (globalThis.ClockTimerResources) {
-            await globalThis.ClockTimerResources.loadScript(modelUrl, pageContext, { async: true });
-        } else {
-            await new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.src = modelUrl;
-                script.onload = resolve;
-                script.onerror = () => reject(new Error("Unable to load AudioSettingsModel.js."));
-                document.head.append(script);
-            });
-        }
+    if (!globalThis.ClockTimerAudioSettingsStartup) {
+        throw new Error("AudioSettingsStartup.js did not register its initializer.");
     }
-
+    await globalThis.ClockTimerAudioSettingsStartup.ensureModel({ context: pageContext });
 
     if (!globalThis.ClockTimerAudioUnlock) {
         throw new Error("AudioUnlock.js did not register its installer.");
