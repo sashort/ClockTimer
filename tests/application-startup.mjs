@@ -60,4 +60,33 @@ await sandbox.ClockTimerApplicationStartup.initialize({
 });
 assert.equal(events[0][1], true, "settings host suppresses the application announcement even without an explicit flag");
 assert.equal(events[0][2], "settings-frame", "resolved context reaches the announcement module");
-console.log("PASS application startup ordering, context policy, and persistence handoff");
+
+events.length = 0;
+sandbox.document.documentElement = {lang: "fr-FR"};
+sandbox.ClockTimerAudioSettingsStartup = {
+    async ensureModel(options) { events.push(["audio-model", options.context.host]); }
+};
+sandbox.ClockTimerAudioUnlock = {
+    install(documentRef, audio) { events.push(["audio-unlock", documentRef.documentElement.lang, Boolean(audio)]); }
+};
+sandbox.WMOFAnnouncementLanguage = {
+    async load(locale) { events.push(["language-load", locale]); },
+    text(key) { return key; }
+};
+const pageStartup = await sandbox.ClockTimerApplicationStartup.initializePage({
+    context: {host: "order-filler", capabilities: {}},
+    settingsOnlyPage: false,
+    audio: {speak() {}},
+    documentRef: sandbox.document
+});
+assert.deepEqual(events, [
+    ["audio-model", "order-filler"],
+    ["audio-unlock", "fr-FR", true],
+    ["language-load", "fr-FR"],
+    ["create", false, "order-filler"],
+    ["announce"],
+    ["persistence", undefined]
+], "page initializer owns ordered audio, language, announcement, and persistence setup");
+assert.equal(typeof pageStartup.text, "function");
+assert.equal(typeof pageStartup.startupAnnouncement.finish, "function");
+console.log("PASS application startup ordering, context policy, page orchestration, and persistence handoff");
