@@ -8,6 +8,12 @@ vm.createContext(sandbox);
 vm.runInContext(readFileSync(new URL("../DropInViewModel.js", import.meta.url), "utf8"), sandbox);
 const model = sandbox.ClockTimerDropInViewModel;
 assert.ok(model, "Drop-In view model registers its public API");
+assert.equal(model.volumePercent(0), 0);
+assert.equal(model.volumePercent(0.456), 46, "volume values are rounded to whole percentages");
+assert.equal(model.volumePercent(1), 100);
+assert.equal(model.volumePercent(-0.5), 0, "volume values clamp at zero");
+assert.equal(model.volumePercent(1.5), 100, "volume values clamp at one");
+assert.equal(model.volumePercent("invalid"), 0, "invalid volume values normalize to zero");
 
 const rules = {weekStartDay: 6, cutoffTime: "00:00:00", irrelevant: "omit"};
 const result = model.create({
