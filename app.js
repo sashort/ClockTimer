@@ -5970,46 +5970,12 @@
     }
 
     function getSyncRuntimeState() {
-        if (
-            normalizedConnectionStatus() ===
-                "offline"
-        ) {
-            return "offline";
-        }
-
-        if (!getSyncGoalsState()) {
-            return "off";
-        }
-
-        if (!tripIsLive()) {
-            return "ready";
-        }
-
-        const requirements =
-            syncGoalRequirements();
-
-        return (
-            Number.isFinite(
-                Number(
-                    requirements?.tripGoal
-                )
-            ) &&
-            Number(
-                requirements?.tripGoal
-            ) > 0 &&
-            Number.isFinite(
-                Number(
-                    requirements
-                        ?.adjustedTimeElapsed
-                )
-            ) &&
-            Number(
-                requirements
-                    ?.adjustedTimeElapsed
-            ) > 0
-        )
-            ? "active"
-            : "time-blocked";
+        return globalThis.ClockTimerTripGoalModel.syncRuntimeState({
+            connectionStatus: normalizedConnectionStatus(),
+            syncGoalsEnabled: getSyncGoalsState(),
+            tripLive: tripIsLive(),
+            requirements: syncGoalRequirements()
+        });
     }
 
     function currentCalculatedSyncGoal() {
