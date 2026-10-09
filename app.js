@@ -20,28 +20,18 @@
         await globalThis.ClockTimerDispatcher.bootstrap(pageContext);
     }
 
-    if (!globalThis.ClockTimerAudioSettingsStartup) {
-        throw new Error("AudioSettingsStartup.js did not register its initializer.");
+    if (!globalThis.ClockTimerApplicationStartup?.initializePage) {
+        throw new Error("ApplicationStartup.js did not register its page initializer.");
     }
-    await globalThis.ClockTimerAudioSettingsStartup.ensureModel({ context: pageContext });
-
-    if (!globalThis.ClockTimerAudioUnlock) {
-        throw new Error("AudioUnlock.js did not register its installer.");
-    }
-    globalThis.ClockTimerAudioUnlock.install(document, globalThis.WMOFAudio);
-
-    const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
-    await announcementLanguage.load(document.documentElement.lang || "en-US");
-    const announcementText = (key, values) => announcementLanguage.text(key, values);
-    if (!globalThis.ClockTimerApplicationStartup) {
-        throw new Error("ApplicationStartup.js did not register its initializer.");
-    }
-    const startupAnnouncement = await globalThis.ClockTimerApplicationStartup.initialize({
+    const pageStartup = await globalThis.ClockTimerApplicationStartup.initializePage({
         context: pageContext,
         settingsOnlyPage,
         audio: globalThis.WMOFAudio,
-        text: announcementText
+        documentRef: document
     });
+    const announcementLanguage = pageStartup.announcementLanguage;
+    const announcementText = pageStartup.text;
+    const startupAnnouncement = pageStartup.startupAnnouncement;
     const startupAnnouncementPending = () => startupAnnouncement.pending;
     const finishStartupAnnouncement = startupAnnouncement.finish;
     const startupAnnouncementFinished = startupAnnouncement.finished;
