@@ -31,15 +31,15 @@ assert.deepEqual(JSON.parse(JSON.stringify(model.normalize({
 assert.deepEqual(JSON.parse(JSON.stringify(model.read(JSON.stringify({
     lateBreakBehavior: "autoRestartTrip",
     syncGoals: true
-}))), {
+})))), {
     lateBreakBehavior: "autoRestartTrip",
     syncGoals: true
 });
-assert.deepEqual(JSON.parse(JSON.stringify(model.read("{broken")), {
+assert.deepEqual(JSON.parse(JSON.stringify(model.read("{broken"))), {
     lateBreakBehavior: "showLateWindow",
     syncGoals: false
 });
-assert.deepEqual(JSON.parse(JSON.stringify(model.read(null)), {
+assert.deepEqual(JSON.parse(JSON.stringify(model.read(null))), {
     lateBreakBehavior: "showLateWindow",
     syncGoals: false
 });
