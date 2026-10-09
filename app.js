@@ -32,28 +32,36 @@
     const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
     await announcementLanguage.load(document.documentElement.lang || "en-US");
     const announcementText = (key, values) => announcementLanguage.text(key, values);
-    let startupAnnouncementPending = true;
-    let startupAnnouncementStarted = false;
-    let finishStartupAnnouncement;
-    const startupAnnouncementFinished = new Promise(resolve => { finishStartupAnnouncement = () => { startupAnnouncementPending = false; resolve(); }; });
-    const startStartupAnnouncement = () => {
-        if (startupAnnouncementStarted) return;
-        startupAnnouncementStarted = true;
-        if (settingsOnlyPage) {
-            finishStartupAnnouncement();
-            return;
-        }
-        try {
-            const startupSpoken = globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceLogin.applicationStarting"), {
-                onEnd: finishStartupAnnouncement, onError: finishStartupAnnouncement
-            });
-            if (!startupSpoken) finishStartupAnnouncement();
-        } catch (error) {
-            finishStartupAnnouncement();
-        }
-    };
-    startStartupAnnouncement();
-    if (!globalThis.WMOFAudio?.speak) finishStartupAnnouncement();
+    const startupAnnouncement = globalThis.ClockTimerStartupAnnouncement
+        ? globalThis.ClockTimerStartupAnnouncement.create({
+            settingsOnlyPage,
+            audio: globalThis.WMOFAudio,
+            text: announcementText
+        })
+        : (() => {
+            // Compatibility for cached HTML that predates StartupAnnouncement.js.
+            let pending = true;
+            let started = false;
+            let finish;
+            const finished = new Promise(resolve => { finish = () => { pending = false; resolve(); }; });
+            const start = () => {
+                if (started) return;
+                started = true;
+                if (settingsOnlyPage) { finish(); return; }
+                try {
+                    const spoken = globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceLogin.applicationStarting"), {
+                        onEnd: finish, onError: finish
+                    });
+                    if (!spoken || !globalThis.WMOFAudio?.speak) finish();
+                } catch { finish(); }
+            };
+            start();
+            return { start, finish, finished, get pending() { return pending; } };
+        })();
+    const startupAnnouncementPending = () => startupAnnouncement.pending;
+    const finishStartupAnnouncement = startupAnnouncement.finish;
+    const startupAnnouncementFinished = startupAnnouncement.finished;
+    startupAnnouncement.start();
 
     try {
         await globalThis.WMOFPersistence.ready;
@@ -3019,9 +3027,9 @@
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
     function announceVoiceLogin(text) {
         if(!loginIsOpen())return;
-        if(startupAnnouncementPending || (loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady)){
+        if(startupAnnouncementPending() || (loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady)){
             pendingLoginAnnouncement=text;
-            if(startupAnnouncementPending) void startupAnnouncementFinished.then(announceLoginAfterModelReady);
+            if(startupAnnouncementPending()) void startupAnnouncementFinished.then(announceLoginAfterModelReady);
             return;
         }
         pendingLoginAnnouncement=undefined;
