@@ -21416,17 +21416,16 @@
     function tripStartGoalDetailSpeech(
         detail
     ) {
-        const remaining =
-            renderedGoalRemainingMilliseconds(
-                detail
-            );
+        const remainingDescriptor =
+            globalThis.ClockTimerTripGoalModel.remainingDescriptor(detail);
+        const remaining = remainingDescriptor.remaining;
         const label =
             renderedGoalLabel(
                 detail
             );
 
         if (
-            globalThis.ClockTimerTripGoalModel.remainingOutcome(remaining) !== "banked" ||
+            remainingDescriptor.outcome !== "banked" ||
             !label
         ) {
             return "";
@@ -21473,10 +21472,9 @@
         const summaryCount = parts.length;
 
         if (details.perform) {
-            const remaining =
-                renderedGoalRemainingMilliseconds(
-                    detail
-                );
+            const remainingDescriptor =
+                globalThis.ClockTimerTripGoalModel.remainingDescriptor(detail);
+            const remaining = remainingDescriptor.remaining;
             const label =
                 renderedGoalLabel(
                     detail
@@ -21486,18 +21484,14 @@
                 Number.isFinite(remaining) &&
                 label
             ) {
-                const outcome =
-                    globalThis.ClockTimerTripGoalModel.remainingOutcome(remaining);
-                if (outcome === "banked") {
+                if (remainingDescriptor.outcome === "banked") {
                     parts.push(
                         announcementText("announcements.trip-ended.banked", { duration: formatGoalFailureDuration(remaining), goal: label })
                     );
                 }
-                else if (outcome === "over") {
+                else if (remainingDescriptor.outcome === "over") {
                     parts.push(
-                        announcementText("announcements.trip-ended.over", { duration: formatGoalFailureDuration(Math.abs(
-                                remaining
-                            )), goal: label })
+                        announcementText("announcements.trip-ended.over", { duration: formatGoalFailureDuration(remainingDescriptor.magnitude), goal: label })
                     );
                 }
             }
