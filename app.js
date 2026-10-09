@@ -13623,6 +13623,9 @@
             loginDigitSlots.pin=["","","",""];$("#loginError").textContent="";
             syncLoginDigits();renderInteractionControls();
             loginDialog.querySelector('[data-login-digit="pin"]')?.focus({preventScroll:true});
+            // An explicit Cancel asks for the current PIN prompt again; it is
+            // not a duplicate lifecycle announcement.
+            lastAnnouncedLoginPrompt=undefined;
             announceVoiceLogin(voiceLoginText("pinPrompt"));return true;
         }
         return resetVoiceLogin();
