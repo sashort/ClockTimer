@@ -25,6 +25,20 @@ assert.equal(selection.scope, "");
 assert.equal(selection.selected, undefined, "missing summary has a stable empty selection");
 
 const detail = (scope, selected, extra = {}) => ({summary:{scope, selected, ...extra}});
+assert.deepEqual(
+    Object.assign({}, model.labelDescriptor(detail("standard", {percentGoal: 0.5}))),
+    {kind:"standard",scope:"standard",percent:50},
+    "standard scope uses the standard label");
+assert.deepEqual(
+    Object.assign({}, model.labelDescriptor(detail("trip", {percentGoal: 1}))),
+    {kind:"standard",scope:"trip",percent:100},
+    "100 percent uses the standard label");
+assert.deepEqual(
+    Object.assign({}, model.labelDescriptor(detail("total", {percentGoal: 0.75}))),
+    {kind:"percent",scope:"total",percent:75},
+    "non-standard total goal retains scope and rounded percentage");
+assert.equal(model.labelDescriptor(detail("trip", {})).kind, "empty",
+    "missing percentage produces no label");
 assert.equal(model.remainingMilliseconds(detail("trip", {
     standardTimeMilliseconds: 60_000,
     countedTimeElapsedMilliseconds: 20_000,
