@@ -5660,19 +5660,14 @@
     }
 
     function getRenderedGoalScope() {
+        let snapshot;
         try {
-            const snapshot =
-                clockTimer.getSummarySnapshot?.(
-                    new Date()
-                );
-
-            if (snapshot?.scope) {
-                return snapshot.scope;
-            }
-        }
-        catch {}
-
-        return globalThis.ClockTimerTripGoalModel.fallbackScope(clockTimer.percentMode);
+            snapshot = clockTimer.getSummarySnapshot?.(new Date());
+        } catch {}
+        return globalThis.ClockTimerTripGoalModel.renderedGoalScope(
+            snapshot,
+            clockTimer.percentMode
+        );
     }
 
 
