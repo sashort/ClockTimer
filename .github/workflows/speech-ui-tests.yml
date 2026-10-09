@@ -19,6 +19,8 @@ on:
       - "TripLogCustomDates.js"
       - "TripLogRangeControls.js"
       - "ConnectionNumberPadState.js"
+      - "ConnectionNumberPadSettlement.js"
+      - "tests/connection-number-pad-settlement.mjs"
       - "tests/connection-number-pad-state.mjs"
       - "tests/trip-log-range-controls.mjs"
       - "tests/trip-log-custom-dates.mjs"
@@ -207,6 +209,7 @@ jobs:
           node tests/trip-log-custom-dates.mjs
           node tests/trip-log-range-controls.mjs
           node tests/connection-number-pad-state.mjs
+          node tests/connection-number-pad-settlement.mjs
           node tests/audio-voice-options.mjs
           node tests/audio-instrument-options.mjs
           node tests/audio-velocity-controller.mjs
