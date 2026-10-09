@@ -64,7 +64,7 @@
     };
 
     const RENDERED_TIME_MODES = globalThis.ClockTimerTimerDisplayModel.modes;
-    const PERCENT_MODES = ["trip", "total", "auto"];
+    const PERCENT_MODES = globalThis.ClockTimerTripGoalModel.percentModes;
     const ANNOUNCEMENT_CATALOG =
         globalThis
             .WMOFAnnouncementCatalog;
