@@ -415,6 +415,10 @@ const announcementCatalogSource =
         ),
         "utf8"
     );
+const announcementCatalogModelSource =
+    fs.readFileSync(new URL("../AnnouncementCatalogModel.js", import.meta.url), "utf8");
+const actionSignalContextSource =
+    fs.readFileSync(new URL("../ActionSignalContext.js", import.meta.url), "utf8");
 
 assert.match(
     repeatableSystemCommandSource,
@@ -449,8 +453,12 @@ assert.match(
     /trip-ended"[\s\S]*?masterOverrides:[\s\S]*?"summary"[\s\S]*?"details"/
 );
 assert.match(
+    announcementCatalogModelSource,
+    /overridesMaster[\s\S]*?masterOverrides/
+);
+assert.match(
     speechMasterAppSource,
-    /announcementOverridesMaster[\s\S]*?masterOverrides[\s\S]*?audioCellUserEnabled/
+    /overridesMaster: announcementOverridesMaster[\s\S]*?audioCellUserEnabled/
 );
 assert.match(
     speechMasterAppSource,
@@ -463,8 +471,12 @@ assert.doesNotMatch(
 
 
 assert.match(
+    actionSignalContextSource,
+    /currentSignal[\s\S]*?invocationContext[\s\S]*?signal[\s\S]*?stateTransactions[\s\S]*?current/
+);
+assert.match(
     speechMasterAppSource,
-    /currentActionSignal[\s\S]*?invocationContext[\s\S]*?signal/
+    /currentActionSignal[\s\S]*?ClockTimerActionSignalContext\.currentSignal/
 );
 assert.match(
     speechMasterAppSource,
