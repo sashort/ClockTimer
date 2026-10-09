@@ -56,6 +56,14 @@ assert.equal(model.userFacingTotalText("Totality is unrelated to Total", "Month"
     "scope replacement does not alter words containing Total");
 assert.equal(model.userFacingTotalText(null, "Year"), "",
     "missing display text normalizes to an empty string");
+assert.equal(model.includeCurrent("true"), true);
+assert.equal(model.includeCurrent(true), false, "storage values are compared as the literal string true");
+assert.equal(model.includeCurrent("false"), false);
+assert.equal(model.pinned("false"), false);
+assert.equal(model.pinned(undefined), true, "pinning defaults on when no stored value exists");
+assert.equal(model.pinnedInput(false), false);
+assert.equal(model.pinnedInput("false"), true, "setter preserves strict boolean-false semantics");
+
 
 const offlineWindow = {startTime: "2026-10-01T00:00:00Z", endTime: "2026-11-01T00:00:00Z"};
 const offlineResult = model.offlineTrips({
