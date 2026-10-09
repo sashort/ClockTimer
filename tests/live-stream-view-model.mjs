@@ -16,7 +16,7 @@ assert.deepEqual(JSON.parse(JSON.stringify(model.project({
         current_percent_component: {text: "82%"},
         goal_component: {text: "90%"}
     }
-})), {state: "trip in progress", time: "12:34", goal: "82% / 90%"});
+}))), {state: "trip in progress", time: "12:34", goal: "82% / 90%"});
 assert.deepEqual(JSON.parse(JSON.stringify(model.project({
     state: "break_active",
     timeComponent: {text: "04:00"},
