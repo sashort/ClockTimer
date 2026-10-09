@@ -71,7 +71,7 @@ const offlineResult = model.offlineTrips({
     window: offlineWindow,
     productionFilter: "productive"
 });
-assert.deepEqual(JSON.parse(JSON.stringify(offlineResult.allTrips.map(trip => trip.id))), ["1", "2", "3", "4"]);
+assert.deepEqual(JSON.parse(JSON.stringify(offlineResult.allTrips.map(trip => trip.id))), [1, 2, 3, 4]);
 assert.equal(offlineResult.allTrips.find(trip => String(trip.id) === "1").source, "local",
     "local trip data overrides the cached record with the same ID");
 assert.deepEqual(JSON.parse(JSON.stringify(offlineResult.trips.map(trip => String(trip.id)))), ["1", "4"],
