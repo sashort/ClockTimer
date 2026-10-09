@@ -83,6 +83,22 @@
             : "time-blocked";
     }
 
+    function resolveSyncGoalsEnabled({
+        isTripLive = () => false,
+        getLiveValue = () => false,
+        getSettingsSession = () => undefined,
+        getDraft = () => undefined,
+        getFallbackValue = () => false
+    } = {}) {
+        // Read sources lazily to preserve app-state short-circuit precedence.
+        if (isTripLive()) return Boolean(getLiveValue());
+        const session = getSettingsSession();
+        if (session?.values && !session.live) return Boolean(session.values.syncGoals);
+        const draft = getDraft();
+        if (draft) return Boolean(draft.syncGoals);
+        return Boolean(getFallbackValue());
+    }
+
     function currentCalculatedSyncGoal(requirements, calculatedTripGoal) {
         const requiredGoal = Number(requirements?.tripGoal);
         if (Number.isFinite(requiredGoal) && requiredGoal > 0) return requiredGoal;
@@ -122,6 +138,7 @@
         normalizePercentMode,
         fallbackScope,
         syncRuntimeState,
+        resolveSyncGoalsEnabled,
         currentCalculatedSyncGoal,
         syncGoalMatches,
         formatSummaryPercent,
