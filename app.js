@@ -21426,8 +21426,7 @@
             );
 
         if (
-            !Number.isFinite(remaining) ||
-            remaining <= 0 ||
+            globalThis.ClockTimerTripGoalModel.remainingOutcome(remaining) !== "banked" ||
             !label
         ) {
             return "";
@@ -21491,12 +21490,14 @@
                 Number.isFinite(remaining) &&
                 label
             ) {
-                if (remaining > 0) {
+                const outcome =
+                    globalThis.ClockTimerTripGoalModel.remainingOutcome(remaining);
+                if (outcome === "banked") {
                     parts.push(
                         announcementText("announcements.trip-ended.banked", { duration: formatGoalFailureDuration(remaining), goal: label })
                     );
                 }
-                else if (remaining < 0) {
+                else if (outcome === "over") {
                     parts.push(
                         announcementText("announcements.trip-ended.over", { duration: formatGoalFailureDuration(Math.abs(
                                 remaining
