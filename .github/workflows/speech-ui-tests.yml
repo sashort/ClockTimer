@@ -103,6 +103,7 @@ on:
       - "tests/counted-time-accounting.mjs"
       - "tests/active-trip-restore.mjs"
       - "LiveTripStream.js"
+      - "tests/live-trip-stream.mjs"
       - "DropInPreferences.js"
       - "AccountSettings.js"
       - "ObserverSettingBadge.js"
