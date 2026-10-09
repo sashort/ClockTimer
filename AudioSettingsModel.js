@@ -327,7 +327,19 @@
             return settings;
         }
 
-        return Object.freeze({ defaultAudioSettings, normalizeAudioSettings });
+        function read(raw) {
+            try {
+                return normalizeAudioSettings(raw ? JSON.parse(raw) : undefined);
+            } catch {
+                return defaultAudioSettings();
+            }
+        }
+
+        function serialize(settings) {
+            return JSON.stringify(settings);
+        }
+
+        return Object.freeze({ defaultAudioSettings, normalizeAudioSettings, read, serialize });
     }
 
     root.WMOFAudioSettingsModel = Object.freeze({
