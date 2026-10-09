@@ -12,7 +12,7 @@
         const params = new URLSearchParams(root.location?.search || "");
         const settingsPage = body?.classList.contains("settings-page") === true;
         const dropInPage = body?.classList.contains("drop-in-page") === true ||
-            body?.querySelector("#liveStreamDialog") !== null;
+            Boolean(body?.querySelector("#liveStreamDialog"));
         const surface = params.get("surface");
         return {
             host: dropInPage ? "drop-in" : (settingsPage ? "settings-frame" : "order-filler"),
