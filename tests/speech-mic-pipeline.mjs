@@ -27,7 +27,9 @@ Object.defineProperty(globalThis, "navigator", {
 // loading the real pack also changes command-chain behavior under test.
 const testLanguagePack = Object.freeze({
     text: key => String(key),
-    markup: value => String(value)
+    markup: value => String(value),
+    patternFor: key => String(key),
+    observe: () => {}
 });
 globalThis.WMOFLanguagePack = window.WMOFLanguagePack = testLanguagePack;
 
