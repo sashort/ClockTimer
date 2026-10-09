@@ -161,6 +161,11 @@
             url: "TimerDisplayModel.js?build=timer-display-model-1",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["trip-log-range-controls", {
+            type: "script",
+            url: "TripLogRangeControls.js?build=trip-log-range-controls-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["trip-log-custom-dates", {
             type: "script",
             url: "TripLogCustomDates.js?build=trip-log-custom-dates-1",
