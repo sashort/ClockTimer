@@ -27,6 +27,8 @@ on:
       - "ApplicationStartup.js"
       - "TripLogModel.js"
       - "tests/trip-log-model.mjs"
+      - "TripGoalModel.js"
+      - "tests/trip-goal-model.mjs"
       - "TripPreferencesModel.js"
       - "TripPreferencesStore.js"
       - "tests/trip-preferences-model.mjs"
@@ -160,6 +162,8 @@ jobs:
           node --check ApplicationStartup.js
           node --check TripLogModel.js
           node tests/trip-log-model.mjs
+          node --check TripGoalModel.js
+          node tests/trip-goal-model.mjs
           node --check TripPreferencesModel.js
           node tests/trip-preferences-model.mjs
           node --check TripPreferencesStore.js
