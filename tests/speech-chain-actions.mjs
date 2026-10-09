@@ -3,6 +3,12 @@ import assert from 'node:assert/strict';
 import {Window} from 'happy-dom';
 const window=new Window();
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const speechMenuSource=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8');
+assert.match(
+    speechMenuSource,
+    /if \(result === false\)\s*\{\s*return false;\s*\}/,
+    'speech preprocessor chains must preserve explicit candidate rejection'
+);
 const valuesSource=['DurationParser','SpokenTimeParser','PercentParser','SpeechValuePreprocessor'].map(name=>
     fs.readFileSync(new URL(`../lang/en-US/${name}.js`,import.meta.url),'utf8')).join('\n');
 const Values=Function(valuesSource+'\nreturn EnglishSpeechValuePreprocessor;')();
