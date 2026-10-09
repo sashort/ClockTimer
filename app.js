@@ -6280,71 +6280,23 @@
         );
     }
 
-    function settleConnectionCloudPresentation(
-        status,
-        token,
-        sequence = connectionCloudSequence
-    ) {
-        clearTimeout(connectionCloudSettleTimer);
-        connectionCloudSettleTimer = undefined;
-
-        if (sequence !== connectionCloudSequence) {
-            return;
-        }
-
-        const normalized =
-            normalizedConnectionStatus(status);
-
-        connectionCloudPhase =
-            "settling";
-
-        if (token) {
-            updateNumberPadConnectionStatus(
-                token,
-                normalized,
-                { presentation: "cloud-fade" }
-            );
-        }
-
-        syncTripSettingsCloud(normalized);
-        syncScopeConnectionCloud(normalized);
-        syncNetworkStatusUI();
-
-        connectionCloudSettleTimer =
-            setTimeout(
-                () => {
-                    if (
-                        sequence !== connectionCloudSequence
-                    ) {
-                        return;
-                    }
-
-                    connectionCloudSettleTimer =
-                        undefined;
-
-                    connectionCloudPhase =
-                        "settled";
-
-                    const state =
-                        getConnectionNumberPadState();
-
-                    if (
-                        state &&
-                        state.connectionStatusToken === token &&
-                        state.connectionPresentation === "cloud-fade"
-                    ) {
-                        updateNumberPadConnectionStatus(
-                            token,
-                            normalized,
-                            { presentation: "settled" }
-                        );
-                    }
-
-                    syncTripSettingsCloud(normalized);
-                    syncScopeConnectionCloud(normalized);
-                },
-                CONNECTION_UI_TRANSITION_DURATION
-            );
+    function settleConnectionCloudPresentation(status, token, sequence = connectionCloudSequence) {
+        connectionCloudSettleTimer = globalThis.ClockTimerConnectionCloudSettlement.settle({
+            status,
+            token,
+            sequence,
+            currentSequence: () => connectionCloudSequence,
+            previousTimer: connectionCloudSettleTimer,
+            duration: CONNECTION_UI_TRANSITION_DURATION,
+            normalize: normalizedConnectionStatus,
+            setPhase: phase => { connectionCloudPhase = phase; },
+            updateNumberPad: updateNumberPadConnectionStatus,
+            getNumberPadState: getConnectionNumberPadState,
+            syncTripSettings: syncTripSettingsCloud,
+            syncScope: syncScopeConnectionCloud,
+            syncNetwork: syncNetworkStatusUI,
+            setTimer: timer => { connectionCloudSettleTimer = timer; }
+        });
     }
 
     async function resumeConnectionFromCloud({ source = "trip-settings" } = {}) {
