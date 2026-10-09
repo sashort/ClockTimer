@@ -437,13 +437,10 @@
                     .then(
                         async () => {
                             const shouldPublish =
-                                Boolean(
-                                    signedInProfile
-                                        ?.id
-                                ) &&
-                                clockTimer
-                                    .networkStatus ===
-                                    "online";
+                                globalThis.ClockTimerLiveStreamViewModel.shouldPublish(
+                                    signedInProfile,
+                                    clockTimer.networkStatus
+                                );
 
                             if (
                                 shouldPublish &&
