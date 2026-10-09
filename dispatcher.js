@@ -155,6 +155,11 @@
             type: "script",
             url: "AccessPolicyModel.js?build=access-policy-model-1",
             hosts: ["order-filler", "settings-frame"]
+        }],
+        ["live-stream-view-model", {
+            type: "script",
+            url: "LiveStreamViewModel.js?build=live-stream-view-model-1",
+            hosts: ["order-filler"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
