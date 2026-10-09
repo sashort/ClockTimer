@@ -94,4 +94,21 @@ assert.equal(Number.isNaN(model.countedPercent({summary:{total:{}}})), true,
     "missing counted percentage remains non-finite");
 assert.equal(Number.isNaN(model.countedPercent(null)), true,
     "missing total summary remains non-finite");
-console.log("PASS trip goal calculations, outcome classification, and total percentage extraction");
+
+assert.equal(model.formatSummaryPercent(0.823), "82%",
+    "summary percentages round to whole percent");
+assert.equal(model.formatSummaryPercent(1), "100%",
+    "summary percentages preserve exact whole values");
+assert.equal(model.formatSummaryPercent("not-a-number"), "---",
+    "invalid summary percentages use the fallback");
+assert.equal(model.formatSummaryPercent(undefined, "n/a"), "n/a",
+    "summary percentage fallback is configurable");
+assert.equal(model.formatActualPercent(0.82345), "82.35%",
+    "actual percentages display two decimal places");
+assert.equal(model.formatActualPercent(1), "100.00%",
+    "actual percentages retain two decimal places for whole values");
+assert.equal(model.formatActualPercent("invalid"), "---",
+    "invalid actual percentages use the fallback");
+assert.equal(model.formatActualPercent(undefined, "n/a"), "n/a",
+    "actual percentage fallback is configurable");
+console.log("PASS trip goal calculations, outcome classification, total percentage extraction, and percentage formatting");
