@@ -520,3 +520,76 @@ console.log("PASS context restrictions, dispatcher resource manifests, nested re
             required + " must be available to the Order-Filler app");
     }
 }
+
+
+// Public dispatcher API contract: registration order, unregister callbacks,
+// result/event shapes, context-scoped lifecycle deduplication, and rollback.
+{
+    const { sandbox, events, appendedResources } = makeRuntime();
+    const order = [];
+    let cleanupCount = 0;
+    const unregisterResource = sandbox.ClockTimerDispatcher.registerResource("contract-resource", {
+        type: "script",
+        url: "ContractResource.js?build=api-contract-1",
+        hosts: ["order-filler"]
+    });
+    const unregisterFirst = sandbox.ClockTimerDispatcher.register("contract-first", async context => {
+        order.push("feature:first:" + context.host);
+        return () => { cleanupCount++; };
+    });
+    sandbox.ClockTimerDispatcher.register("contract-second", async () => {
+        order.push("feature:second");
+        return { dispose() { cleanupCount++; } };
+    });
+    const context = sandbox.ClockTimerContext.normalize({
+        host: "order-filler",
+        surface: "api-contract-test",
+        features: ["contract-first", "contract-second"],
+        capabilities: {}
+    });
+    const result = await sandbox.ClockTimerDispatcher.bootstrap(context);
+    assert.ok(appendedResources.some(resource => resource.src === "ContractResource.js?build=api-contract-1"),
+        "registered resource is loaded");
+    assert.deepEqual(order, ["feature:first:order-filler", "feature:second"],
+        "resources load before feature initializers and feature order follows registration order");
+    assert.deepEqual(Array.from(result.resources), ["contract-resource"]);
+    assert.deepEqual(Array.from(result.features, feature => feature.name), ["contract-first", "contract-second"]);
+    assert.equal(result.context.host, "order-filler");
+    const ready = events.findLast(event => event.type === "clocktimer-dispatcher-ready");
+    assert.ok(ready, "successful bootstrap emits the ready event");
+    assert.equal(ready.detail.context, context);
+    assert.deepEqual(Array.from(ready.detail.resources), ["contract-resource"]);
+    assert.deepEqual(Array.from(ready.detail.features), ["contract-first", "contract-second"]);
+
+    await sandbox.ClockTimerLifecycle.stopAll();
+    assert.equal(cleanupCount, 2, "function and dispose cleanups are both supported");
+    unregisterResource();
+    unregisterFirst();
+    assert.equal(sandbox.ClockTimerDispatcher.registerResource("invalid", { type: "font", url: "x" }), undefined,
+        "invalid descriptors throw before a registration handle can be returned");
+}
+{
+    const { sandbox, events } = makeRuntime();
+    const started = [];
+    let cleanupCount = 0;
+    sandbox.ClockTimerDispatcher.register("contract-rollback-first", async () => {
+        started.push("first");
+        return () => { cleanupCount++; };
+    });
+    sandbox.ClockTimerDispatcher.register("contract-rollback-fails", async () => {
+        throw new Error("contract failure");
+    });
+    await assert.rejects(
+        sandbox.ClockTimerDispatcher.bootstrap({
+            host: "order-filler",
+            features: ["contract-rollback-first", "contract-rollback-fails"]
+        }),
+        /contract failure/
+    );
+    assert.deepEqual(started, ["first"]);
+    assert.equal(cleanupCount, 1, "a failed bootstrap disposes earlier feature starts");
+    const failure = events.findLast(event => event.type === "clocktimer-dispatcher-error");
+    assert.ok(failure, "failed bootstrap emits the error event");
+    assert.match(failure.detail.error.message, /contract failure/);
+}
+console.log("PASS dispatcher public API contract");
