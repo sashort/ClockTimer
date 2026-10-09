@@ -1318,48 +1318,9 @@ html.settings-embedded-document { overflow:auto !important; background:transpare
 <script src="AudioUnlock.js?build=audio-unlock-1"></script>
 <script src="app.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
     <script src="SpeechEditorRuntime.js?build=E4GUFA"></script>
+    <script src="SettingsPageBootstrap.js?build=dispatcher-1"></script>
 
 
-<script id="standaloneSettingsPageBootstrap">
-(() => {
-  const pageHeader = document.getElementById("settingsPageHeader");
-  const embedded = window.self !== window.top;
-  if (embedded) {
-    document.body.classList.add("settings-embedded");
-    document.documentElement.classList.add("settings-embedded-document");
-    if (pageHeader) pageHeader.hidden = true;
-  }
-  const requestedSurface = new URLSearchParams(window.location.search).get("surface");
-  const surfaceId = globalThis.ClockTimerSettingsSurfaces
-    ? globalThis.ClockTimerSettingsSurfaces.normalize(requestedSurface)
-    : (["graphicalSettingsDialog","audioSettingsDialog","audioAnnouncementsDialog","stateSettingsDialog","tripSettingsDialog"].includes(requestedSurface) ? requestedSurface : "graphicalSettingsDialog");
-  const surface = document.getElementById(surfaceId);
-  if (!surface) return;
-  surface.setAttribute("data-primary-settings-surface", "");
-  if (embedded) {
-    surface.addEventListener("close", () => {
-      try {
-        window.parent.postMessage({ type: "clocktimer-settings-closed" }, window.location.origin);
-      } catch {}
-    });
-  }
 
-  // Route through the original app trigger so its existing form-population,
-  // validation, focus, and settings handlers run exactly as in Order-Filler.
-  const originalTrigger = document.querySelector('[data-dialog="' + surfaceId + '"]');
-  if (originalTrigger) {
-    originalTrigger.dispatchEvent(new Event("pointerup", { bubbles: true, cancelable: true }));
-    return;
-  }
-  const opening = new CustomEvent("opening", {
-    bubbles: true,
-    cancelable: true,
-    detail: { reason: "user", duration: 0 }
-  });
-  if (surface.dispatchEvent(opening)) {
-    try { surface.showModal(); } catch { surface.setAttribute("open", ""); }
-  }
-})();
-</script>
 </body>
 </html>
