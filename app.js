@@ -6643,7 +6643,7 @@
 
         updateNumberPadConnectionStatus(
             state.connectionStatusToken,
-            clockTimer.networkStatus === "online" ? "online" : "offline",
+            normalizedConnectionStatus(),
             { presentation: "initial-cloud" }
         );
     }
@@ -12666,7 +12666,7 @@
 
     document.querySelectorAll("[data-dialog]").forEach(button => {
         button.addEventListener("pointerup", () => {
-            if (button.dataset.dialog === "profileDialog" && clockTimer.networkStatus !== "online") {
+            if (button.dataset.dialog === "profileDialog" && normalizedConnectionStatus() !== "online") {
                 openDialog("loginDialog", { fromPopover: true, reason: "popover-handoff" });
                 return;
             }
