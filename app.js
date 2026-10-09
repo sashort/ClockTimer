@@ -3833,30 +3833,21 @@
         // Display and calculations use the current selection while its save is pending.
         selectedTripLogRange = range;
 
-        if (tripLogRangeSelect) {
-            tripLogRangeSelect.value =
-                range;
-        }
-
-        if (persist) {
-            safeStorageSet(
-                STORAGE.tripLogRange,
-                range
-            );
-        }
-
-        const custom = range === "custom";
-        if (tripLogStartDate) tripLogStartDate.disabled = !custom;
-        if (tripLogEndDate) tripLogEndDate.disabled = !custom;
-        if (custom) {
-            globalThis.ClockTimerTripLogCustomDates.initialize({
+        globalThis.ClockTimerTripLogRangeControls.apply(range, {
+            select: tripLogRangeSelect,
+            startInput: tripLogStartDate,
+            endInput: tripLogEndDate,
+            persist,
+            writeStorage: safeStorageSet,
+            storageKey: STORAGE.tripLogRange,
+            initializeCustomDates: () => globalThis.ClockTimerTripLogCustomDates.initialize({
                 startInput: tripLogStartDate,
                 endInput: tripLogEndDate,
                 readStorage: safeStorageGet,
                 storageKey: STORAGE.customTripLogDates,
                 timezone: calendarRanges.getTimezone()
-            });
-        }
+            })
+        });
         if (notify) refreshTripLogSelection();
         else void resolveTripLogCalendar(range).catch(() => {});
 
