@@ -9,6 +9,18 @@ vm.runInContext(readFileSync(new URL("../TripGoalModel.js", import.meta.url), "u
 const model = sandbox.ClockTimerTripGoalModel;
 assert.ok(model, "trip goal model registers its public API");
 
+const tripGoal = {percentGoal: 0.8};
+const totalGoal = {percentGoal: 0.6};
+assert.deepEqual(model.selectGoal({summary:{scope:"trip",trip:tripGoal,total:totalGoal}}),
+    {scope:"trip",selected:tripGoal}, "trip scope selects trip goal");
+assert.deepEqual(model.selectGoal({summary:{scope:"total",trip:tripGoal,total:totalGoal}}),
+    {scope:"total",selected:totalGoal}, "total scope selects total goal");
+const explicitGoal = {percentGoal: 0.9};
+assert.deepEqual(model.selectGoal({summary:{scope:"trip",selected:explicitGoal,trip:tripGoal}}),
+    {scope:"trip",selected:explicitGoal}, "explicit selected goal takes precedence");
+assert.deepEqual(model.selectGoal(null), {scope:"",selected:undefined},
+    "missing summary has a stable empty selection");
+
 const detail = (scope, selected, extra = {}) => ({summary:{scope, selected, ...extra}});
 assert.equal(model.remainingMilliseconds(detail("trip", {
     standardTimeMilliseconds: 60_000,
