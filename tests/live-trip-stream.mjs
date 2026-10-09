@@ -8,6 +8,7 @@ const root = join(here, "..");
 
 const live = readFileSync(join(root, "LiveTripStream.js"), "utf8");
 const app = readFileSync(join(root, "app.js"), "utf8");
+const accessPolicy = readFileSync(join(root, "AccessPolicyModel.js"), "utf8");
 const html = readFileSync(join(root, "order-filler.html"), "utf8");
 const audio = readFileSync(join(root, "api/audio/AudioEngine.js"), "utf8");
 const speech = readFileSync(join(root, "SpeechMenu.js"), "utf8");
@@ -30,7 +31,8 @@ assert.match(live, /setViewerMasterVolume\(/);
 assert.match(live, /setViewerMicrophoneVolume\(/);
 assert.match(live, /setViewerProgramVolume\(/);
 
-assert.match(app, /const PERMISSION_VIEW_LIVE_STREAMS\s*=\s*64/);
+assert.match(accessPolicy, /const PERMISSION_VIEW_LIVE_STREAMS\s*=\s*64/);
+assert.match(app, /ClockTimerAccessPolicyModel\.constants/);
 assert.match(
     app,
     /syncAutomaticLivePublisher[\s\S]*startPublishing\(\{[\s\S]*requestMicrophone:\s*false/
