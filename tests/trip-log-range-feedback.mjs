@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+
+const sandbox = { Object, String, Boolean };
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+vm.runInContext(readFileSync(new URL("../TripLogRangeFeedback.js", import.meta.url), "utf8"), sandbox);
+const feedback = sandbox.ClockTimerTripLogRangeFeedback;
+const error = { textContent: "", hidden: true };
+const attributes = [];
+const inputs = [{ setAttribute: (...args) => attributes.push(args) }, null];
+feedback.showError("Invalid date range", { errorElement: error, dateInputs: inputs });
+assert.equal(error.textContent, "Invalid date range");
+assert.equal(error.hidden, false);
+assert.deepEqual(attributes, [["aria-invalid", "true"]]);
+feedback.showError("", { errorElement: error, dateInputs: inputs });
+assert.equal(error.textContent, "");
+assert.equal(error.hidden, true);
+assert.deepEqual(attributes[1], ["aria-invalid", "false"]);
+console.log("PASS trip log range validation feedback presentation");
