@@ -565,8 +565,9 @@ console.log("PASS context restrictions, dispatcher resource manifests, nested re
     assert.equal(cleanupCount, 2, "function and dispose cleanups are both supported");
     unregisterResource();
     unregisterFirst();
-    assert.equal(sandbox.ClockTimerDispatcher.registerResource("invalid", { type: "font", url: "x" }), undefined,
-        "invalid descriptors throw before a registration handle can be returned");
+    assert.throws(() => sandbox.ClockTimerDispatcher.registerResource("invalid", { type: "font", url: "x" }),
+        /resource needs a name, type, and URL/,
+        "invalid descriptors are rejected at registration time");
 }
 {
     const { sandbox, events } = makeRuntime();
