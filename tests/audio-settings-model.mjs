@@ -36,6 +36,10 @@ const audioSettings = model.create({
     language: "fr-FR"
 });
 const defaults = audioSettings.defaultAudioSettings();
+assert.deepEqual(plain(audioSettings.read(null)), plain(defaults));
+assert.deepEqual(plain(audioSettings.read("{broken")), plain(defaults));
+assert.deepEqual(plain(audioSettings.read(JSON.stringify({ volume: 0.4 }))).volume, 0.4);
+assert.equal(audioSettings.serialize({ volume: 0.4 }), '{"volume":0.4}');
 assert.deepEqual(Object.keys(defaults.rows), ["trip.start", "break.start"]);
 assert.deepEqual(plain(defaults.voices["fr-FR"]), { provider: "system", voice: "" });
 assert.equal(defaults.rows["trip.start"].enabled, true);
