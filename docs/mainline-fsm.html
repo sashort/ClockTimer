@@ -9,7 +9,8 @@
 <section id="gestureMenu" class="gesture-menu" hidden aria-label="Gesture guide"><h2>Pointer and touch gestures</h2><dl><dt>Rotate</dt><dd>Pointer: drag the diagram. Touch: drag with one finger.</dd><dt>Zoom</dt><dd>Pointer: scroll the wheel. Touch: pinch with two fingers.</dd><dt>Pan</dt><dd>Pointer: Shift-drag or right-drag. Touch: move two fingers together.</dd><dt>Inspect</dt><dd>Click or tap a state or transition.</dd><dt>Expand / collapse speech</dt><dd>Click or tap the small + / − box on a voice transition.</dd><dt>Restore the view</dt><dd>Use Reset view. Flat view removes perspective.</dd></dl></section><nav id="groups" aria-label="FSM mode groups"></nav>
 <div class="layout"><section class="map" aria-label="Interactive 3D state diagram"><div class="toolbar"><button id="reset">Reset view</button><button id="flat">Flat view</button><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button><button id="svgExport">Export SVG</button><button id="jsonExport">Reference data</button><button id="htmlExport">Save HTML</button><label><input type="checkbox" id="showAudio" > Voice tables</label><label><input type="checkbox" id="allLabels"> All labels / tables</label><span id="counts" class="counter"></span></div><svg id="graph" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ClockTimer mainline state machine"></svg><div class="help"><div class="legend" style="margin:0 0 6px"><span><i class="line"></i>Pointer</span><span><i class="line voice"></i>Voice</span><span><i class="line auto"></i>System automatic</span><span><i class="line fail"></i>Persistence rollback</span></div>Pointer: drag rotates · wheel zooms · Shift/right-drag pans · click a state/line inspects.<br>Touch: one finger rotates · pinch zooms · two fingers pan · tap inspects. Boxes group modes; depth separates branches.</div></section><aside class="sidebar" aria-label="Selected state or transition"><input id="search" class="search" placeholder="Find a state, command or transition ID…" aria-label="Search FSM"><div id="results" class="search-results"></div><div id="inspector"></div></aside></div>
 <section class="guide"><h2>How to read and use this reference</h2><div class="status-legend"><span><i class="test-dot" style="background:#198754"></i>Tested · passed</span><span><i class="test-dot" style="background:#c83545"></i>Tested · failed</span><span><i class="test-dot" style="background:#7b8794"></i>Untested</span></div><div class="legend"><span><i class="line"></i> Pointer interaction</span><span><i class="line voice"></i> Voice interaction</span><span><i class="line fail"></i> Rejection / failure restores checkpoint</span><span><i class="line auto"></i> System automatic transition</span><span>◇ Component may be omitted</span><span>† Runtime suppression / queue rules</span><span>∅ No component</span></div><div class="guide-grid"><div><h3>States and mode boxes</h3><p>Each state names the <b>focused surface</b> and <b>trip phase</b>. Empty/valid input and unselected/selected choice are substates because their available commands differ. Voice is above pointer interaction in the reset view.</p><p>Lifecycle, scheduling, intervals, editors, goal modes, Sync, microphone and persistence have separate boxes. Their depth separates branches; changing the camera does not change the FSM.</p><p><b>T</b> is the captured trip phase; <b>P</b> is the return surface; <b>F</b> is the field being edited. These are explicit state families. Instantiate their captured values in each test; never treat every return as Running.</p></div><div><h3>Commands and speech</h3><p>Commands are underneath each state, highest interruption/continuation priority first. Availability remains conditional on the actual focus, valid input, permissions, connection and recognizer state.</p><p>A fully formed continuation owns its prefix before shorter conflicting commands. The list does not introduce a new global numeric priority scheme. Cancel/Close resolves the actual top surface; Off/Sleep applies only when recognition permits it.</p><p>Skippable feedback is omitted when the same utterance continues into another valid command. B01–B04 are skippable, so “start break lunch ok” announces the final outcome. UI actions still execute immediately. Click the small + box on a double line to expand its chime / summary / details table and suppression footer; − collapses it. Click the line to inspect its full details. Audio rows follow playback order, from top to bottom. Optional components use ◇; queue priority and suppression exceptions are in the footer. Select “All labels / tables” to show every visible voice table. Chime note names are in the inspector.</p></div><div><h3>Testing contract</h3><ol id="invariants"></ol><p class="review-note">Approved mainline reference, based on J8KMSL. Approval of the chart does not establish test coverage for its transitions. Transition colors report individual test results. Every transition starts untested. Record the tested version and evidence in the inspector, then use Save HTML to keep a shareable copy with those results. Reference data exports the structured model. Changes stay in this open page until saved or exported. Approval recorded on 6 October 2026. Stable transition IDs connect this reference to future tests and implementation changes.</p></div></div><details><summary>Complete transition register · stable IDs for test and implementation references</summary><p class="muted">Includes transitions hidden by the current view. Repeated arrows can be different guards for the same action. A ✓ after Server indicates a server-bound state mutation; local async saves can also fail.</p><table><thead><tr><th>ID</th><th>From → To</th><th>Trigger</th><th>Interaction</th><th>Skippable</th><th>Guard / checkpoint</th><th>Server</th></tr></thead><tbody id="register"></tbody></table></details><details style="margin-top:20px"><summary>Implementation notes and source locations</summary><ul id="review"></ul><ul id="sources"></ul><p class="muted">Retain mainline-fsm.html and mainline-fsm.json together as the chart's durable versioned reference; keep their embedded and standalone models consistent. State IDs and transition IDs must stay stable when labels are edited.</p></details></section>
-<script id="fsm-data" type="application/json">{
+<script id="fsm-data" type="application/json">
+{
   "title": "ClockTimer mainline FSM",
   "status": "APPROVED",
   "reference_version": "J8KMSL",
@@ -4225,7 +4226,7 @@
   "external_surfaces": {
     "settings_page": {
       "path": "settings.html",
-      "purpose": "Shared settings document embedded in an iframe inside a modal dialog.",
+      "purpose": "Standalone settings page shown directly in an iframe-only modal dialog; no extra frame header or buttons.",
       "surfaces": [
         "graphicalSettingsDialog",
         "audioSettingsDialog",
@@ -4236,18 +4237,24 @@
       "drop_in_access": {
         "action": "open_modal_dialog",
         "container": "iframe",
+        "entry": "Open ClockTimer Settings",
         "preserves_current_page": true
       },
       "lifecycle_effect": "none",
-      "invariant": "Opening or closing the settings dialog does not dispatch start, stop, or reset and does not alter trip lifecycle state.",
+      "invariant": "Opening or closing settings does not dispatch start, stop, or reset, does not alter trip lifecycle state, and preserves existing settings handlers and persistence.",
       "order_filler_access": {
         "action": "open_modal_dialog",
         "container": "iframe",
-        "entry": "Settings menu"
+        "entries": {
+          "graphical": "Clock/Timer Settings",
+          "audio": "Audio Settings"
+        },
+        "surface_specific": true
       }
     }
   }
-}</script>
+}
+</script>
 <script>
 'use strict';
 const M=JSON.parse(document.getElementById('fsm-data').textContent);
