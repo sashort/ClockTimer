@@ -79,8 +79,8 @@ function runtime() {
     scripts[0].handlers.error();
     await assert.rejects(failed, /Unable to load missing-runtime.js/);
     const retry = loader.load("missing-runtime.js");
-    assert.equal(scripts.length, 2, "failed loads can be retried");
-    scripts[1].handlers.load();
+    assert.equal(scripts.length, 1, "the failed node is removed before retry");
+    scripts[0].handlers.load();
     await retry;
 }
 console.log("PASS classic script loading, context propagation, deduplication, and retry after failure");
