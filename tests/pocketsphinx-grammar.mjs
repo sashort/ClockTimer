@@ -31,7 +31,7 @@ assert.equal(empty.phrases.length, 0);
 assert.equal(empty.complete, true);
 assert.doesNotMatch(empty.grammar, /public <command>/);
 
-assert.throws(() => compile([], { grammarName: "bad grammar" }), TypeError);
+assert.throws(() => compile([], { grammarName: "bad grammar" }), /Invalid JSGF grammar name/);
 
 const unsafe = compile([{ phrases: ["hello; exit", "hello, world", "hello there"] }]);
 assert.deepEqual(Array.from(unsafe.phrases), ["hello there"]);
