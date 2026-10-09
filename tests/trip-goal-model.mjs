@@ -65,4 +65,13 @@ assert.equal(model.remainingOutcome(-1), "over", "negative remaining time is ove
 assert.equal(model.remainingOutcome(0), "on-target", "zero remaining time is exactly on target");
 assert.equal(model.remainingOutcome(undefined), "unknown", "missing remaining time is unknown");
 assert.equal(model.remainingOutcome(NaN), "unknown", "non-finite remaining time is unknown");
-console.log("PASS trip goal calculations, outcome classification, and invalid-state handling");
+
+assert.equal(model.countedPercent({summary:{total:{countedPercent:82.5}}}), 82.5,
+    "total counted percentage is preserved");
+assert.equal(model.countedPercent({summary:{total:{countedPercent:"42"}}}), 42,
+    "numeric percentage strings retain Number conversion semantics");
+assert.equal(Number.isNaN(model.countedPercent({summary:{total:{}}})), true,
+    "missing counted percentage remains non-finite");
+assert.equal(Number.isNaN(model.countedPercent(null)), true,
+    "missing total summary remains non-finite");
+console.log("PASS trip goal calculations, outcome classification, and total percentage extraction");
