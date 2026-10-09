@@ -6255,7 +6255,7 @@
     function getConnectionNumberPadState() {
         return globalThis.ClockTimerConnectionNumberPadState.state(
             numberPadState,
-            uiReturnFrames
+            findUIReturnFrame("number-pad")
         );
     }
 
