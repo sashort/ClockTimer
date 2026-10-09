@@ -63,12 +63,17 @@
     const startupAnnouncementFinished = startupAnnouncement.finished;
     startupAnnouncement.start();
 
-    try {
-        await globalThis.WMOFPersistence.ready;
-        await globalThis.WMOFPersistence.initializeLegacy(localStorage);
-    } catch (error) {
-        document.documentElement.dataset.persistenceState = "reverted";
-        globalThis.dispatchEvent(new CustomEvent("wmof:persistence-error", {detail: {error}}));
+    if (globalThis.ClockTimerPersistenceStartup) {
+        await globalThis.ClockTimerPersistenceStartup.initialize();
+    } else {
+        // Compatibility for cached HTML that predates PersistenceStartup.js.
+        try {
+            await globalThis.WMOFPersistence.ready;
+            await globalThis.WMOFPersistence.initializeLegacy(localStorage);
+        } catch (error) {
+            document.documentElement.dataset.persistenceState = "reverted";
+            globalThis.dispatchEvent(new CustomEvent("wmof:persistence-error", { detail: { error } }));
+        }
     }
 
     const API_BASE = "https://wmof.sashort-apps.com/";
