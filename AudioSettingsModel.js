@@ -72,7 +72,245 @@
         return Number((next / 100).toFixed(6));
     }
 
+    function create({ announcements = [], language = "en-US" } = {}) {
+        function defaultAudioSettings() {
+            const rows = {};
+    
+            for (const [key] of announcements) {
+                rows[key] = {
+                    enabled: true,
+                    chime: 0,
+                    summary: 0,
+                    details: 0
+                };
+            }
+    
+            return {
+                volume: 1,
+                chimeRateVersion: 2,
+                masterVelocity: 1,
+                speechVelocity: 1,
+                toneVelocity: 1,
+                instrument: "",
+                voices: {
+                    [language]: {
+                        provider:
+                            "system",
+                        voice:
+                            ""
+                    }
+                },
+                formalTime: false,
+                masters: {
+                    chime: true,
+                    summary: true,
+                    details: true
+                },
+                rows
+            };
+        }
+    
+        function normalizeAudioSettings(source) {
+            const settings = defaultAudioSettings();
+            const value =
+                source && typeof source === "object"
+                    ? source
+                    : {};
+            const clamp =
+                (candidate, minimum, maximum, fallback) => {
+                    const numeric = Number(candidate);
+                    return Number.isFinite(numeric)
+                        ? Math.max(minimum, Math.min(maximum, numeric))
+                        : fallback;
+                };
+    
+            settings.volume = clamp(value.volume ?? value.speechVolume ?? value.toneVolume, 0, 1, 1);
+            settings.masterVelocity =
+                clamp(value.masterVelocity, 0.5, 4, 1);
+            settings.speechVelocity =
+                clamp(
+                    value.speechVelocity,
+                    AUDIO_SPEECH_VELOCITY_MIN,
+                    AUDIO_SPEECH_VELOCITY_MAX,
+                    1
+                );
+            settings.toneVelocity =
+                savedChimeRate(value.toneVelocity, value.chimeRateVersion);
+            settings.instrument =
+                typeof value.instrument ===
+                    "string"
+                    ? value.instrument.trim()
+                    : "";
+    
+            settings.voices = {};
+            const storedVoices =
+                value.voices &&
+                typeof value.voices ===
+                    "object"
+                    ? value.voices
+                    : {};
+    
+            for (
+                const [
+                    language,
+                    selection
+                ] of Object.entries(
+                    storedVoices
+                )
+            ) {
+                if (
+                    !language ||
+                    !selection ||
+                    typeof selection !==
+                        "object"
+                ) {
+                    continue;
+                }
+    
+                settings.voices[
+                    language
+                ] = {
+                    provider:
+                        typeof selection
+                            .provider ===
+                            "string" &&
+                        selection.provider
+                            .trim()
+                            ? selection
+                                .provider
+                                .trim()
+                            : "system",
+                    voice:
+                        typeof selection
+                            .voice ===
+                            "string"
+                            ? selection.voice
+                                .trim()
+                            : ""
+                };
+            }
+    
+            settings.voices[
+                language
+            ] ||= {
+                provider:
+                    "system",
+                voice:
+                    ""
+            };
+    
+            settings.formalTime =
+                value.formalTime === true;
+    
+            for (const layer of ["chime", "summary", "details"]) {
+                if (typeof value.masters?.[layer] === "boolean") {
+                    settings.masters[layer] =
+                        value.masters[layer];
+                }
+            }
+    
+            for (const [key] of announcements) {
+                const row = value.rows?.[key];
+                if (!row || typeof row !== "object") continue;
+    
+                if (typeof row.enabled === "boolean") {
+                    settings.rows[key].enabled =
+                        row.enabled;
+                }
+    
+                for (const layer of ["chime", "summary", "details"]) {
+                    if (row[layer] === -1 || row[layer] === 0) {
+                        settings.rows[key][layer] =
+                            row[layer];
+                    }
+                }
+    
+                if (
+                    row.custom &&
+                    typeof row.custom === "object"
+                ) {
+                    const custom = {};
+    
+                    const copyCustom =
+                        (
+                            property,
+                            minimum,
+                            maximum
+                        ) => {
+                            if (
+                                !Object.prototype
+                                    .hasOwnProperty
+                                    .call(
+                                        row.custom,
+                                        property
+                                    )
+                            ) {
+                                return;
+                            }
+    
+                            const numeric =
+                                Number(
+                                    row.custom[
+                                        property
+                                    ]
+                                );
+    
+                            if (
+                                !Number.isFinite(
+                                    numeric
+                                )
+                            ) {
+                                return;
+                            }
+    
+                            custom[property] =
+                                Math.max(
+                                    minimum,
+                                    Math.min(
+                                        maximum,
+                                        numeric
+                                    )
+                                );
+                        };
+    
+                    const legacyVolume = row.custom.volume ?? row.custom.speechVolume ?? row.custom.toneVolume;
+                    if (Number.isFinite(Number(legacyVolume))) {
+                        custom.volume = clamp(legacyVolume, 0, 1, 1);
+                    }
+                    copyCustom(
+                        "speechVelocity",
+                        AUDIO_SPEECH_VELOCITY_MIN,
+                        AUDIO_SPEECH_VELOCITY_MAX
+                    );
+                    copyCustom(
+                        "toneVelocity",
+                        0.5,
+                        1.5
+                    );
+                    if (Object.prototype.hasOwnProperty.call(custom, "toneVelocity")) {
+                        custom.toneVelocity = savedChimeRate(custom.toneVelocity, value.chimeRateVersion);
+                    }
+    
+                    if (
+                        Object.keys(
+                            custom
+                        ).length
+                    ) {
+                        settings.rows[key]
+                            .custom =
+                            custom;
+                    }
+                }
+            }
+    
+            return settings;
+        }
+
+        return Object.freeze({ defaultAudioSettings, normalizeAudioSettings });
+    }
+
     root.WMOFAudioSettingsModel = Object.freeze({
+        create,
         CHIME_VOLUME_RATIO,
         AUDIO_PERCENT_STEP,
         AUDIO_SPEECH_VELOCITY_MIN,
