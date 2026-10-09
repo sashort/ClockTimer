@@ -5692,15 +5692,12 @@
     }
 
     function getSyncRuntimeState() {
-        const state = {connectionStatus: normalizedConnectionStatus()};
-        if (state.connectionStatus !== "offline") {
-            state.syncGoalsEnabled = getSyncGoalsState();
-            if (state.syncGoalsEnabled) {
-                state.tripLive = tripIsLive();
-                if (state.tripLive) state.requirements = syncGoalRequirements();
-            }
-        }
-        return globalThis.ClockTimerTripGoalModel.syncRuntimeState(state);
+        return globalThis.ClockTimerTripGoalModel.resolveSyncRuntimeState({
+            getConnectionStatus: normalizedConnectionStatus,
+            getSyncGoalsEnabled: getSyncGoalsState,
+            isTripLive: tripIsLive,
+            getRequirements: syncGoalRequirements
+        });
     }
 
     function currentCalculatedSyncGoal() {
