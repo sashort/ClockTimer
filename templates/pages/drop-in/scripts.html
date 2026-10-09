@@ -24,6 +24,12 @@
 <script src="LiveTripStream.js?build=E4GUFA"></script>
 <script src="DropInView.js?build=E4GUFA"></script>
 <script src="DropInText.js?build=E4GUFA"></script>
+<script src="Context.js?build=dispatcher-2"></script>
+<script src="SettingsSurfaces.js?build=dispatcher-2"></script>
+<script src="ResourceLoader.js?build=dispatcher-2"></script>
+<script src="Lifecycle.js?build=dispatcher-2"></script>
+<script src="StartupTasks.js?build=dispatcher-2"></script>
+<script src="dispatcher.js?build=dispatcher-2"></script>
 <script src="drop-in.js?build=E4GUFA"></script>
 <script id="clockTimerSettingsFrameController">
 (() => {
@@ -31,13 +37,9 @@
   const frame = document.getElementById("clockTimerSettingsFrame");
   if (!dialog || !frame || dialog.dataset.controllerReady) return;
   dialog.dataset.controllerReady = "true";
-  const surfaces = new Set([
-    "graphicalSettingsDialog",
-    "audioSettingsDialog",
-    "audioAnnouncementsDialog",
-    "stateSettingsDialog",
-    "tripSettingsDialog"
-  ]);
+  const surfaces = globalThis.ClockTimerSettingsSurfaces
+    ? { has: value => globalThis.ClockTimerSettingsSurfaces.isValid(value) }
+    : new Set(["graphicalSettingsDialog", "audioSettingsDialog", "audioAnnouncementsDialog", "stateSettingsDialog", "tripSettingsDialog"]);
   document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
     button.addEventListener("click", () => {
       const requested = button.dataset.settingsSurface;
