@@ -54,6 +54,7 @@ assertIframeOnlyDialog(dropInTemplate, 'Drop-In template');
 assertIframeOnlyDialog(dropInBuilt, 'built Drop-In');
 assert.match(orderTemplate, /data-settings-surface="graphicalSettingsDialog"/, 'Order-Filler keeps a distinct graphical-settings entry');
 assert.match(orderTemplate, /data-settings-surface="audioSettingsDialog"/, 'Order-Filler keeps a distinct audio-settings entry');
+assert.match(orderTemplate, /id="audioSettingsButton"/, 'Audio Settings keeps its existing element ID');
 assert.match(orderTemplate, />Clock\/Timer Settings<\/button>/, 'graphical entry keeps its existing label');
 assert.match(orderTemplate, />Audio Settings<\/span>/, 'audio entry keeps its existing label');
 assert.match(orderBuilt, /data-settings-surface="graphicalSettingsDialog"/, 'built Order-Filler has a distinct graphical-settings entry');
