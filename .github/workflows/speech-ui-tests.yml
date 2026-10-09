@@ -15,6 +15,8 @@ on:
       - "AudioOutputSettings.js"
       - "AudioSettingsPersistence.js"
       - "TripLogRangeFeedback.js"
+      - "TripLogPinController.js"
+      - "tests/trip-log-pin-controller.mjs"
       - "tests/trip-log-range-feedback.mjs"
       - "tests/audio-settings-persistence.mjs"
       - "tests/audio-output-settings.mjs"
@@ -187,6 +189,7 @@ jobs:
           node tests/audio-output-settings.mjs
           node tests/audio-settings-persistence.mjs
           node tests/trip-log-range-feedback.mjs
+          node tests/trip-log-pin-controller.mjs
           node --check SpeechAssetCache.js
           node tests/speech-asset-cache.mjs
           node --check ClassicScriptLoader.js
