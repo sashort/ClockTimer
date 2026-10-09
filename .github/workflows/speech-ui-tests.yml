@@ -42,6 +42,8 @@ on:
       - "LiveStreamPublisher.js"
       - "SessionStartup.js"
       - "AnnouncementCatalogModel.js"
+      - "SpeechRuntimeOptions.js"
+      - "tests/speech-runtime-options.mjs"
       - "tests/announcement-catalog-model.mjs"
       - "tests/session-startup.mjs"
       - "tests/live-stream-publisher.mjs"
@@ -201,6 +203,8 @@ jobs:
           node tests/session-startup.mjs
           node --check AnnouncementCatalogModel.js
           node tests/announcement-catalog-model.mjs
+          node --check SpeechRuntimeOptions.js
+          node tests/speech-runtime-options.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
