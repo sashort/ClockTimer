@@ -119,7 +119,7 @@
         ["trip-log-model", {
             type: "script",
             url: "TripLogModel.js?build=trip-log-model-1",
-            hosts: ["order-filler"]
+            hosts: ["order-filler", "settings-frame"]
         }],
         ["trip-preferences-model", {
             type: "script",
