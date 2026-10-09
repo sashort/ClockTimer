@@ -27,6 +27,43 @@ assert.equal(model.audioVolumeAtPercent(45), 0.45);
 assert.equal(model.stepAudioVolume(0.5, 5), 0.55);
 assert.equal(model.stepAudioVolume(0.02, -10), 0);
 assert.equal(model.CHIME_VOLUME_RATIO, 0.5);
+
+const policySettings = {
+    volume: 0.8,
+    speechVelocity: 1.5,
+    toneVelocity: 1.2,
+    masters: { summary: false },
+    rows: {
+        "trip.start": { enabled: true, summary: 0, custom: { volume: 0.4 } },
+        "trip.end": { enabled: false, summary: 0 }
+    }
+};
+assert.equal(model.audioCellUserEnabled(policySettings, "trip.start", "summary"), false);
+assert.equal(model.audioCellUserEnabled(policySettings, "trip.start", "summary", {
+    overridesMaster: () => true
+}), true);
+assert.equal(model.audioCellUserEnabled(policySettings, "trip.start", "summary", {
+    ignoreMaster: true
+}), true);
+assert.equal(model.audioCellUserEnabled(policySettings, "trip.end", "summary", {
+    ignoreMaster: true
+}), false);
+assert.deepEqual(plain(model.audioAnnouncementOutput({
+    settings: policySettings,
+    announcement: "trip.start",
+    language: "fr-FR",
+    speechStart: "Bonjour",
+    speechPauseAt1x: 300
+})), {
+    lang: "fr-FR",
+    speechStart: "Bonjour",
+    speechVolume: 0.4,
+    toneVolume: 0.2,
+    speechVelocity: 1.5,
+    toneVelocity: 1.2,
+    speechDelayMs: 200
+});
+
 assert.equal(model.AUDIO_PERCENT_STEP, 5);
 assert.equal(model.AUDIO_SPEECH_VELOCITY_MIN, 0.5);
 assert.equal(model.AUDIO_SPEECH_VELOCITY_MAX, 2.8);
