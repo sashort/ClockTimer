@@ -79,6 +79,16 @@
             : "time-blocked";
     }
 
+    function currentCalculatedSyncGoal(requirements, calculatedTripGoal) {
+        const requiredGoal = Number(requirements?.tripGoal);
+        if (Number.isFinite(requiredGoal) && requiredGoal > 0) return requiredGoal;
+
+        const calculatedGoal = Number(calculatedTripGoal);
+        return Number.isFinite(calculatedGoal) && calculatedGoal > 0
+            ? calculatedGoal
+            : undefined;
+    }
+
     function countedPercent(detail) {
         return Number(detail?.summary?.total?.countedPercent);
     }
@@ -103,6 +113,7 @@
         countedPercent,
         normalizePercentMode,
         syncRuntimeState,
+        currentCalculatedSyncGoal,
         formatSummaryPercent,
         formatActualPercent
     });
