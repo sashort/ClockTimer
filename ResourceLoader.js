@@ -12,11 +12,18 @@
             script.src = url;
             script.async = options.async === true;
             script.dataset.clocktimerResource = "script";
+            script.dataset.clocktimerContext = context?.host || "default";
+            script.dataset.clocktimerContextData = JSON.stringify({
+                host: context?.host || "default",
+                surface: context?.surface || "application",
+                presentation: context?.presentation || "application",
+                features: context?.features || [],
+                capabilities: context?.capabilities || {},
+                options: context?.options || {}
+            });
             script.onload = () => resolve(script);
             script.onerror = () => { pending.delete(key); reject(new Error("Unable to load script: " + url)); };
             script.addEventListener("load", () => {
-                if (script.dataset.clocktimerContext) return;
-                script.dataset.clocktimerContext = context?.host || "default";
                 script.dispatchEvent(new CustomEvent("clocktimer-resource-loaded", { detail: { context } }));
             }, { once: true });
             document.head.append(script);
