@@ -33,6 +33,39 @@ assert.equal(model.syncGoalMatches(120, 120 + 5e-10), true, "small floating-poin
 assert.equal(model.syncGoalMatches(120, 120 + 2e-9), false, "differences outside tolerance do not match");
 assert.equal(model.syncGoalMatches(undefined, 120), false, "missing goals do not match");
 assert.equal(model.syncGoalMatches(NaN, NaN), false, "non-finite goals do not match");
+
+const sourceOrder = [];
+assert.equal(model.resolveSyncGoalsEnabled({
+    isTripLive: () => { sourceOrder.push("live?"); return true; },
+    getLiveValue: () => { sourceOrder.push("live-value"); return "yes"; },
+    getSettingsSession: () => { sourceOrder.push("settings"); return {values:{syncGoals:false}, live:false}; },
+    getDraft: () => { sourceOrder.push("draft"); return {syncGoals:false}; },
+    getFallbackValue: () => { sourceOrder.push("fallback"); return false; }
+}), true, "live trip source has highest precedence");
+assert.deepEqual(sourceOrder, ["live?", "live-value"], "lower-priority sources are not evaluated");
+sourceOrder.length = 0;
+assert.equal(model.resolveSyncGoalsEnabled({
+    isTripLive: () => false,
+    getSettingsSession: () => { sourceOrder.push("settings"); return {values:{syncGoals:1}, live:false}; },
+    getDraft: () => { sourceOrder.push("draft"); return {syncGoals:false}; },
+    getFallbackValue: () => { sourceOrder.push("fallback"); return false; }
+}), true, "non-live settings session takes precedence over draft");
+assert.deepEqual(sourceOrder, ["settings"]);
+sourceOrder.length = 0;
+assert.equal(model.resolveSyncGoalsEnabled({
+    isTripLive: () => false,
+    getSettingsSession: () => ({values:{syncGoals:true}, live:true}),
+    getDraft: () => { sourceOrder.push("draft"); return {syncGoals:0}; },
+    getFallbackValue: () => { sourceOrder.push("fallback"); return "yes"; }
+}), false, "draft value takes precedence over fallback");
+assert.deepEqual(sourceOrder, ["draft"]);
+assert.equal(model.resolveSyncGoalsEnabled({
+    isTripLive: () => false,
+    getSettingsSession: () => undefined,
+    getDraft: () => undefined,
+    getFallbackValue: () => "yes"
+}), true, "clock value is the final fallback");
+
 for (const requirements of [undefined, {}, {tripGoal: 0, adjustedTimeElapsed: 30},
     {tripGoal: 120, adjustedTimeElapsed: 0}, {tripGoal: "invalid", adjustedTimeElapsed: 30}]) {
     assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: true,
