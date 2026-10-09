@@ -87,6 +87,26 @@
             : "time-blocked";
     }
 
+    function resolveSyncRuntimeState({
+        getConnectionStatus = () => "offline",
+        getSyncGoalsEnabled = () => false,
+        isTripLive = () => false,
+        getRequirements = () => undefined
+    } = {}) {
+        // Preserve the same short-circuit ordering as the app's former inline state builder.
+        const connectionStatus = getConnectionStatus();
+        if (connectionStatus === "offline") return "offline";
+        if (!getSyncGoalsEnabled()) return "off";
+        if (!isTripLive()) return "ready";
+        const requirements = getRequirements();
+        const tripGoal = Number(requirements?.tripGoal);
+        const adjustedTimeElapsed = Number(requirements?.adjustedTimeElapsed);
+        return Number.isFinite(tripGoal) && tripGoal > 0
+            && Number.isFinite(adjustedTimeElapsed) && adjustedTimeElapsed > 0
+            ? "active"
+            : "time-blocked";
+    }
+
     function resolveSyncGoalsEnabled({
         isTripLive = () => false,
         getLiveValue = () => false,
@@ -143,6 +163,7 @@
         fallbackScope,
         renderedGoalScope,
         syncRuntimeState,
+        resolveSyncRuntimeState,
         resolveSyncGoalsEnabled,
         currentCalculatedSyncGoal,
         syncGoalMatches,
