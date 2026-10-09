@@ -22,6 +22,10 @@
         return allowed.has(normalized) ? normalized : "day";
     }
 
+    function resolveRange(selected, readStored) {
+        return normalizeRange(selected ?? readStored?.());
+    }
+
     function liveEffectiveMilliseconds(summary, isLive) {
         const trip = summary?.trip;
         if (!isLive || !trip?.available) return undefined;
@@ -78,6 +82,7 @@
         productionFilters,
         normalizeProductionFilter,
         normalizeRange,
+        resolveRange,
         liveEffectiveMilliseconds,
         userFacingTotalText,
         includeCurrent,
