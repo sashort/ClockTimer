@@ -14,7 +14,11 @@ function runtime() {
             return {
                 dataset: {},
                 handlers: {},
-                addEventListener(type, callback) { this.handlers[type] = callback; }
+                addEventListener(type, callback) { this.handlers[type] = callback; },
+                remove() {
+                    const index = scripts.indexOf(this);
+                    if (index >= 0) scripts.splice(index, 1);
+                }
             };
         },
         head: { append(script) { scripts.push(script); } }
