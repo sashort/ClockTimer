@@ -25,7 +25,7 @@
             document.dispatchEvent(new CustomEvent("clocktimer-dispatcher-ready", { detail }));
             return { context, features: started };
         } catch (error) {
-            for (const item of started.reverse()) await root.ClockTimerLifecycle.stop(item.name);
+            for (const item of started.reverse()) await root.ClockTimerLifecycle.stop(item.name, context);
             document.dispatchEvent(new CustomEvent("clocktimer-dispatcher-error", { detail: { context, error } }));
             throw error;
         }
