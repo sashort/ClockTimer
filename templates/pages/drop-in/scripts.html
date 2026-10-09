@@ -48,12 +48,12 @@
       if (menu && typeof menu.hidePopover === "function") {
         try { menu.hidePopover(); } catch {}
       }
-      const settingsSubmenu = document.getElementById("settingsSubmenu");
-      if (settingsSubmenu) settingsSubmenu.hidden = true;
-      const settingsButton = document.getElementById("settingsMenuButton");
-      if (settingsButton) settingsButton.setAttribute("aria-expanded", "false");
       if (!dialog.open) dialog.showModal();
     });
+  });
+  window.addEventListener("message", event => {
+    if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
+    if (event.data?.type === "clocktimer-settings-closed" && dialog.open) dialog.close();
   });
   dialog.addEventListener("click", event => {
     if (event.target === dialog) dialog.close();
