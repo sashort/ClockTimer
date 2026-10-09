@@ -4214,7 +4214,7 @@
   "external_surfaces": {
     "settings_page": {
       "path": "settings.html",
-      "purpose": "Shared settings document embedded in an iframe inside a modal dialog.",
+      "purpose": "Standalone settings page shown directly in an iframe-only modal dialog; no extra frame header or buttons.",
       "surfaces": [
         "graphicalSettingsDialog",
         "audioSettingsDialog",
@@ -4225,14 +4225,19 @@
       "drop_in_access": {
         "action": "open_modal_dialog",
         "container": "iframe",
+        "entry": "Open ClockTimer Settings",
         "preserves_current_page": true
       },
       "lifecycle_effect": "none",
-      "invariant": "Opening or closing the settings dialog does not dispatch start, stop, or reset and does not alter trip lifecycle state.",
+      "invariant": "Opening or closing settings does not dispatch start, stop, or reset, does not alter trip lifecycle state, and preserves existing settings handlers and persistence.",
       "order_filler_access": {
         "action": "open_modal_dialog",
         "container": "iframe",
-        "entry": "Settings menu"
+        "entries": {
+          "graphical": "Clock/Timer Settings",
+          "audio": "Audio Settings"
+        },
+        "surface_specific": true
       }
     }
   }
