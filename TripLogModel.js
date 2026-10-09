@@ -40,12 +40,34 @@
         return label === "Total" ? text : text.replace(/\bTotal\b/g, label);
     }
 
+    function offlineTrips({ cachedTrips = [], localTrips = [], loginRequired = false, window, productionFilter = "all" } = {}) {
+        const allTrips = new Map();
+        if (!loginRequired) {
+            for (const trip of cachedTrips) allTrips.set(String(trip.id), trip);
+            for (const trip of localTrips) allTrips.set(String(trip.id), trip);
+        }
+        const start = Date.parse(window?.startTime);
+        const end = Date.parse(window?.endTime);
+        const trips = [...allTrips.values()].filter(trip => {
+            const rawStart = trip.startTime;
+            const time = Date.parse(/Z$|[+-]\d\d:\d\d$/.test(rawStart)
+                ? rawStart
+                : rawStart.replace(" ", "T") + "Z");
+            return time >= start && time < end
+                && (productionFilter === "all"
+                    || (productionFilter === "productive" && !trip.nonProduction)
+                    || (productionFilter === "non-productive" && trip.nonProduction));
+        });
+        return { trips, allTrips: [...allTrips.values()], loginRequired, offline: true, incomplete: true };
+    }
+
     root.ClockTimerTripLogModel = Object.freeze({
         ranges,
         productionFilters,
         normalizeProductionFilter,
         normalizeRange,
         liveEffectiveMilliseconds,
-        userFacingTotalText
+        userFacingTotalText,
+        offlineTrips
     });
 })(globalThis);
