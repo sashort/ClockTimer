@@ -25,6 +25,8 @@ on:
       - "tests/startup-announcement.mjs"
       - "StartupTasks.js"
       - "ApplicationStartup.js"
+      - "TripPreferencesModel.js"
+      - "tests/trip-preferences-model.mjs"
       - "tests/application-startup.mjs"
       - "PageManifest.js"
       - "Context.js"
@@ -151,6 +153,8 @@ jobs:
           node tests/startup-announcement.mjs
           node --check StartupTasks.js
           node --check ApplicationStartup.js
+          node --check TripPreferencesModel.js
+          node tests/trip-preferences-model.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
