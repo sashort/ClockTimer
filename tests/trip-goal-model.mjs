@@ -75,6 +75,9 @@ for (const requirements of [undefined, {}, {tripGoal: 0, adjustedTimeElapsed: 30
 
 assert.equal(model.fallbackScope("total"), "total");
 assert.equal(model.fallbackScope("auto"), "standard");
+assert.equal(model.renderedGoalScope({scope: "total"}, "trip"), "total", "summary scope takes precedence over preference fallback");
+assert.equal(model.renderedGoalScope({}, "auto"), "standard", "missing summary scope uses preference fallback");
+assert.equal(model.renderedGoalScope(null, "trip"), "trip");
 assert.equal(model.fallbackScope("trip"), "trip");
 assert.equal(model.fallbackScope("unknown"), "trip", "unknown scope mode falls back to trip");
 
