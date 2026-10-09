@@ -14,7 +14,14 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
         currentScript: null,
         baseURI: "https://example.test/app/",
         documentElement: { lang: "en-US" },
-        head: { append(resource) { appendedResources.push(resource); } },
+        head: { append(resource) {
+            appendedResources.push(resource);
+            // Resolve dispatcher-manifest resources automatically; focused resource
+            // loader assertions below still control their own load/error events.
+            if (String(resource.src || resource.href || "").includes("?build=")) {
+                queueMicrotask(() => resource.onload?.());
+            }
+        } },
         createElement: () => ({
             dataset: {},
             handlers: {},
