@@ -100,7 +100,7 @@
         }],
         ["audio-settings-startup", {
             type: "script",
-            url: "AudioSettingsStartup.js?build=audio-settings-startup-2",
+            url: "AudioSettingsStartup.js?build=audio-settings-startup-3",
             hosts: ["order-filler", "settings-frame"]
         }],
         ["speech-startup", {
