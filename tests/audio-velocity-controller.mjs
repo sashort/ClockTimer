@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+const sandbox={Object,Number,Math};sandbox.globalThis=sandbox;vm.createContext(sandbox);
+vm.runInContext(readFileSync(new URL("../AudioVelocityController.js",import.meta.url),"utf8"),sandbox);
+const settings={masterVelocity:2,speechVelocity:1.5};
+assert.equal(sandbox.WMOFAudioVelocityController.shift(settings,3,{masterMinimum:.5,masterMaximum:4,speechMinimum:.5,speechMaximum:2.8}),true);
+assert.deepEqual(settings,{masterVelocity:3,speechVelocity:2.5});
+assert.equal(sandbox.WMOFAudioVelocityController.shift(settings,99,{masterMinimum:.5,masterMaximum:4,speechMinimum:.5,speechMaximum:2.8}),true);
+assert.deepEqual(settings,{masterVelocity:4,speechVelocity:2.8});
+assert.equal(sandbox.WMOFAudioVelocityController.shift(settings,"not-number"),false);
+console.log("PASS master audio velocity adjustment and speech velocity bounds");
