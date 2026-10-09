@@ -158,7 +158,12 @@
         }],
         ["live-stream-view-model", {
             type: "script",
-            url: "LiveStreamViewModel.js?build=live-stream-view-model-1",
+            url: "LiveStreamViewModel.js?build=live-stream-view-model-2",
+            hosts: ["order-filler"]
+        }],
+        ["live-stream-publisher", {
+            type: "script",
+            url: "LiveStreamPublisher.js?build=live-stream-publisher-1",
             hosts: ["order-filler"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
