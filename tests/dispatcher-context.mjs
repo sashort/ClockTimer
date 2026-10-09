@@ -60,10 +60,11 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
 }
 
 {
-    const { sandbox } = makeRuntime({ classes: ["settings-page"], search: "?surface=audioSettingsDialog" });
+    const { sandbox } = makeRuntime({ classes: ["settings-page"], search: "?surface=audioSettingsDialog&parentHost=drop-in" });
     const ctx = sandbox.ClockTimerContext.forCurrentScript();
     assert.equal(ctx.host, "settings-frame");
     assert.equal(ctx.surface, "audioSettingsDialog");
+    assert.equal(ctx.options.parentHost, "drop-in");
     assert.equal(ctx.capabilities.speechMenu, false);
     assert.equal(ctx.capabilities.calendarStartup, false);
     const settingsPolicy = sandbox.ClockTimerContext.startupPolicy();
