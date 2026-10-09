@@ -1327,9 +1327,10 @@ html.settings-embedded-document { overflow:auto !important; background:transpare
     document.documentElement.classList.add("settings-embedded-document");
     if (pageHeader) pageHeader.hidden = true;
   }
-  const ids = ["graphicalSettingsDialog","audioSettingsDialog","audioAnnouncementsDialog","stateSettingsDialog","tripSettingsDialog"];
   const requestedSurface = new URLSearchParams(window.location.search).get("surface");
-  const surfaceId = ids.includes(requestedSurface) ? requestedSurface : "graphicalSettingsDialog";
+  const surfaceId = globalThis.ClockTimerSettingsSurfaces
+    ? globalThis.ClockTimerSettingsSurfaces.normalize(requestedSurface)
+    : (["graphicalSettingsDialog","audioSettingsDialog","audioAnnouncementsDialog","stateSettingsDialog","tripSettingsDialog"].includes(requestedSurface) ? requestedSurface : "graphicalSettingsDialog");
   const surface = document.getElementById(surfaceId);
   if (!surface) return;
   surface.setAttribute("data-primary-settings-surface", "");
