@@ -133,7 +133,7 @@
         }],
         ["trip-goal-model", {
             type: "script",
-            url: "TripGoalModel.js?build=trip-goal-model-11",
+            url: "TripGoalModel.js?build=trip-goal-model-12",
             hosts: ["order-filler", "settings-frame"]
         }],
         ["trip-draft-model", {
