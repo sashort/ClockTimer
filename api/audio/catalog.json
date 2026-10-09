@@ -2425,6 +2425,73 @@
           "naturalDecay": true
         }
       ]
+    },
+    "microphone-bell": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Microphone Bell",
+      "volume": 1,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/microphone-bell-E5.wav",
+          "rootFrequency": 659.255,
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/microphone-bell-B5.wav",
+          "rootFrequency": 987.767,
+          "naturalDecay": true
+        }
+      ],
+      "reference": {
+        "source": "Original synthesized bell preview 2, approved by user",
+        "basis": "Fundamental with short-lived partials at 2.01 and 3.98 ratios, 4 ms attack, exponential natural decay; no loop or echo."
+      }
+    },
+    "drop-in-message-knock": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Drop-In Eighties Attention Alert",
+      "waveform": "square",
+      "volume": 1.8,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.035,
+        "sustain": 0.72,
+        "release": 0.035
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.72,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.16,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 3,
+          "gain": 0.08,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 4800,
+        "Q": 0.65
+      },
+      "noise": {
+        "amount": 0.025,
+        "decay": 0.012
+      }
     }
   },
   "songs": {
@@ -16527,6 +16594,60 @@
         "referenceToneVolume": 0.08
       },
       "mediaUrl": "api/audio/samples/dark-eighties-approved-v27.wav"
+    },
+    "microphone-activated": {
+      "bpm": 500,
+      "instrument": "microphone-bell",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf"
+        }
+      ]
+    },
+    "microphone-deactivated": {
+      "bpm": 500,
+      "instrument": "microphone-bell",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf"
+        }
+      ]
+    },
+    "observer-message": {
+      "bpm": 300,
+      "instrument": "drop-in-message-knock",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E6",
+          "length": "2/3",
+          "dynamic": "f"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "3/2",
+          "dynamic": "f"
+        }
+      ]
     }
   }
 }

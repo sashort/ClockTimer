@@ -29,6 +29,7 @@ USE `trip_management`;
 CREATE TABLE IF NOT EXISTS `users` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `first_name` VARCHAR(100) NOT NULL,
+    `middle_name` VARCHAR(100) NULL,
     `last_name` VARCHAR(100) NOT NULL,
     `preferred_name` VARCHAR(100) NULL,
     `username` VARCHAR(191) NOT NULL,

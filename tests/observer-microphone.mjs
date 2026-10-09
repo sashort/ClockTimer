@@ -31,20 +31,25 @@ assert(!w.document.head.textContent.includes(':host('),'observer CSS cannot reta
 observer.reset();
 // Exercise the publisher's actual remote-mic handler: feedback plays for the
 // observed user after acceptance, never for a repeated or rejected transition.
-const app=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const app=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8').replaceAll('\r\n','\n');
 const start=app.indexOf('                    if (detail.type === "trainer.microphone") {');
 const end=app.indexOf('                    if (',start+24);
 const feedback=[],ack=[];menu.started=true;menu.muted=false;w.SpeechMenu=menu;
 w.liveTripStream={broadcast(type,result){ack.push({type,...result});}};
-w.playSemanticSongThenSpeak=async(song,text)=>feedback.push({song,text});
+w.playSemanticSongThenSpeak=async(song,text,options)=>feedback.push({song,text,options});
 const english=JSON.parse(fs.readFileSync(new URL('../lang/en-US/announcements.json',import.meta.url),'utf8'));
 w.announcementText=path=>path.split('.').reduce((value,key)=>value[key],english);
 w.eval('globalThis.testRemoteMic=function(detail){'+app.slice(start,end)+'};');
 const send=async enabled=>{w.testRemoteMic({type:'trainer.microphone',payload:{enabled,commandId:'confirmed'}});for(let i=0;i<8;i++)await Promise.resolve();};
-await send(false);assert.equal(feedback[0].song,'setting-off');assert.equal(feedback[0].text,'Microphone deactivated.');assert.equal(ack[0].accepted,true);
+await send(false);assert.equal(feedback[0].song,'setting-off');assert.equal(feedback[0].options.song,'microphone-deactivated');assert.equal(feedback[0].options.useSelectedInstrument,false);assert.equal(feedback[0].text,'Microphone deactivated.');assert.equal(ack[0].accepted,true);
 await send(false);assert.equal(feedback.length,1,'duplicate remote mute has no change announcement');
-await send(true);assert.equal(feedback[1].song,'setting-on');assert.equal(feedback[1].text,'Microphone activated.');
+await send(true);assert.equal(feedback[1].song,'setting-on');assert.equal(feedback[1].options.song,'microphone-activated');assert.equal(feedback[1].text,'Microphone activated.');
 menu.started=false;await send(true);assert.equal(feedback.length,2,'rejection cannot announce success');
+const messageStart=app.indexOf('                    if (\n                        detail.type !==\n                            "trainer.tts"',start);
+const messageEnd=app.indexOf('.catch(console.error);',messageStart)+'.catch(console.error);'.length;
+w.eval('globalThis.testObserverMessage=function(detail){'+app.slice(messageStart,messageEnd)+'};');
+w.testObserverMessage({type:'trainer.tts',payload:{text:'  Hello from trainer  '}});assert.equal(feedback[2].song,'observer-message');assert.equal(feedback[2].text,'Hello from trainer');assert.equal(feedback[2].options.broadcast,false,'private message is not rebroadcast');assert.equal(feedback[2].options.useSelectedInstrument,false);
+w.testObserverMessage({type:'other',payload:{text:'ignore'}});w.testObserverMessage({type:'trainer.tts',payload:{text:' '}});assert.equal(feedback.length,3,'empty or unrelated messages have no alert');
 // Reminder cadence begins at deactivation and duplicates cannot postpone it.
 let now=0,nextTimer=0;const timers=new Map(),reminders=[];
 w.setInterval=(callback,delay)=>{const id=++nextTimer;timers.set(id,{callback,delay,next:now+delay});return id;};

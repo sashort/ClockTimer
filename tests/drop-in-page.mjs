@@ -13,7 +13,7 @@ w.eval(fs.readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'))
 w.eval(fs.readFileSync(new URL('../ObserverSettingBadge.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../TimerAppearance.js',import.meta.url),'utf8'));
-const events=[],errors=[],stored=new Map();let rejectStart=false,rejectSave=false;
+const events=[],errors=[],stored=new Map();let rejectStart=false,rejectSave=false,deliveryFailures=[];
 w.WMOFPersistence={async getItem(key){return stored.get(key);},async setItem(key,value){stored.set(key,value);}};
 w.WMOFAccountSettings={async load(){},peek:()=>stored.get('settings'),async write(namespace,changes){if(rejectSave)throw new Error('save failed');stored.set('settings',changes.preferences);}};
 w.WMOFObserverGoalPad=class {constructor(options){w.testGoalPad=options;}async open(scope,value){w.goalOpened={scope,value};}refresh(){}cancel(){}};
@@ -22,6 +22,7 @@ w.WMOFLiveTripStream=class extends w.EventTarget {
  constructor(){super();w.testStream=this;this.viewing=false;}
  async stopViewing(){events.push('stop');this.viewing=false;this.dispatchEvent(new w.CustomEvent('viewerChanged'));}
  async startViewing(id){events.push('start:'+id);if(rejectStart)throw new Error('permission revoked');this.viewing=true;this.targetUserId=id;this.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'connected'}}));}
+ async sendToPublishers(ids,text){events.push({batch:ids,text});for(const target of ids)if(!deliveryFailures.includes(target))events.push({target,type:'trainer.tts',payload:{text}});return {sentUserIds:ids.filter(id=>!deliveryFailures.includes(id)),failures:ids.filter(id=>deliveryFailures.includes(id)).map(userId=>({userId,code:'live_stream_not_found'}))};}
  async sendToPublisher(type,payload){events.push({target:this.targetUserId,type,payload});}
  async close(){events.push('close');this.viewing=false;}
  async fetchViewerTrips(window,options){events.push({logTarget:this.targetUserId,window,options});return {trips:[{startTime:'2026-10-08 12:00:00',endTime:'2026-10-08 12:10:00',standardTimeMilliseconds:600000,actualTimeMilliseconds:600000}]};}
@@ -53,13 +54,23 @@ assert.equal(w.document.getElementById('dropInMicrophoneButton').hidden,false,'s
 assert.equal(w.document.getElementById('dropInMicrophoneButton').parentElement.className,'scope-control','mic occupies the former cloud position in the Mode bar');
 assert.equal(w.document.getElementById('liveStreamUserSelect').selectedOptions[0].textContent,'Test 2');
 w.document.getElementById('liveStreamTrainerMessageText').value='hello';
-w.document.getElementById('liveStreamTrainerMessageSend').click();await tick();
+w.document.getElementById('liveStreamTrainerMessageSend').click();assert.equal(w.document.querySelectorAll('#dropInRecipients input:checked').length,1);w.document.getElementById('dropInMessageConfirm').click();await tick();
 assert.deepEqual(JSON.parse(JSON.stringify(events.find(e=>e?.type==='trainer.tts'))),{target:2,type:'trainer.tts',payload:{text:'hello'}});
 w.document.getElementById('liveStreamTrainerMessageText').value='unsent';
 await watch(3);
 assert.equal(w.document.getElementById('liveStreamTrainerMessageText').value,'');
 assert(events.indexOf('stop',events.indexOf('start:2'))<events.indexOf('start:3'),'stop old peer before starting new target');
 const $=id=>w.document.getElementById(id),change=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new w.Event('change'));};
+$('liveStreamTrainerMessageText').value='Hello ';$('liveStreamTrainerMessageText').setSelectionRange(6,6);$('liveStreamTrainerMessageText').dispatchEvent(new w.InputEvent('beforeinput',{data:'[',bubbles:true,cancelable:true}));assert.equal($('dropInNamePicker').open,true);
+assert.equal($('liveStreamTrainerMessageText').value,'Hello [');$('dropInNameCancel').click();assert.equal($('liveStreamTrainerMessageText').value,'Hello ');
+$('liveStreamTrainerMessageText').value='Hello \\';$('liveStreamTrainerMessageText').setSelectionRange(7,7);const escaped=new w.InputEvent('beforeinput',{data:'[',bubbles:true,cancelable:true});$('liveStreamTrainerMessageText').dispatchEvent(escaped);assert.equal(escaped.defaultPrevented,false);assert.equal($('dropInNamePicker').open,false);
+$('dropInNameHelp').click();assert.equal($('dropInNameHelpDialog').open,true);$('dropInNameHelpClose').click();
+$('liveStreamTrainerMessageText').value='Hello ';$('liveStreamTrainerMessageText').setSelectionRange(6,6);$('liveStreamTrainerMessageText').dispatchEvent(new w.InputEvent('beforeinput',{data:'[',bubbles:true,cancelable:true}));
+const selectName=field=>{const check=$('dropInNamePicker').querySelector('[data-name-field='+field+']');check.checked=true;check.dispatchEvent(new w.Event('change',{bubbles:true}));};
+selectName('last');selectName('first');assert.equal($('dropInNamePreview').textContent,'[last first]');assert.equal($('dropInNamePicker').querySelector('[data-name-order=last]').textContent,'1');assert.equal($('dropInNamePicker').querySelector('[data-name-order=middle]').textContent,'');
+$('dropInNameClear').click();assert.equal($('dropInNamePreview').textContent,'[]');assert.equal($('dropInNameInsert').disabled,true);selectName('preferred');selectName('last');$('dropInNameInsert').click();assert.equal($('liveStreamTrainerMessageText').value,'Hello [preferred last]');
+$('liveStreamTrainerMessageSend').click();assert.equal($('dropInRecipients').querySelectorAll('input:checked').length,2,'all observed users checked by default');deliveryFailures=[3];$('dropInMessageConfirm').click();await tick();assert.equal($('dropInRecipientsDialog').open,true);assert.equal($('dropInRecipients').querySelector('input[data-recipient-id="2"]').checked,false,'successful recipient is not selected for retry');assert.equal($('liveStreamTrainerMessageText').value,'Hello [preferred last]');deliveryFailures=[];$('dropInMessageConfirm').click();await tick();assert.deepEqual(Array.from(events.filter(e=>e?.batch).at(-1).batch),[3]);assert.equal($('dropInRecipientsDialog').open,false);assert.equal($('liveStreamTrainerMessageText').value,'');
+
 change('liveStreamViewMode','user');assert.equal($('dropInTargetChoice').textContent,'Mirror — -');assert.equal($('dropInTargetChoice').dataset.menuIcon,'mirror');assert($('dropInTargetChoice').classList.contains('mirror-option'));$('dropInTargetCancel').click();
 change('liveStreamViewMode','year');assert.equal($('dropInTargetDialog').open,true);$('dropInTargetCancel').click();assert.equal($('liveStreamViewMode').value,'user');
 change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();assert.equal($('dropInMirrorSettings').checked,false);
@@ -100,14 +111,14 @@ assert.equal(events.filter(value=>value==='snapshot:3').length,5);
 // Full peer loss clears the mirror and disables messaging, then Watch reauthorizes.
 await w.testStream.stopViewing();await tick();
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'Not viewing.');
-assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,true);
+assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,false,'watch-list messaging does not depend on selected media peer');
 w.document.getElementById('liveStreamWatchButton').click();await tick();
 assert.equal(w.testStream.targetUserId,3);
 assert.equal(w.testStream.viewing,true);
 assert.deepEqual(errors,[],'disconnection and recovery must resolve real language resources');
 rejectStart=true;w.document.getElementById('liveStreamPreviousUser').click();await tick();
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'permission revoked','failure remains visible after controls refresh');
-assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,true);
+assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,false,'watch-list messaging does not depend on selected media peer');
 assert.equal(w.testStream.viewing,false,'failed authorization does not optimistically connect');
 rejectStart=false;$('dropInRemoveUser').click();await tick();assert.equal(w.testView.userId,3);assert.equal($('liveStreamViewMode').value,'day','switch after removal restores remaining user custom preferences');$('dropInRemoveUser').click();await tick();assert.equal($('liveStreamWatchedName'),null);assert.equal($('liveStreamTrainerMessage').disabled,true);
 assert.equal($('liveStreamViewTime').closest('.live-stream-view-controls').hidden,true,'Settings cannot edit time display');

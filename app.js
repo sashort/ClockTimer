@@ -384,7 +384,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "ZHHTV6";
+        "JAV5MH";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -1358,7 +1358,8 @@
                             liveTripStream.broadcast("microphone.result",{commandId:detail.payload.commandId,...result});
                             if(result.accepted&&result.changed){
                                 void playSemanticSongThenSpeak(result.muted?"setting-off":"setting-on",
-                                    announcementText(`messages.voiceFeedback.${result.muted?"microphoneDeactivated":"microphoneActivated"}`));
+                                    announcementText(`messages.voiceFeedback.${result.muted?"microphoneDeactivated":"microphoneActivated"}`),
+                                    {song:result.muted?"microphone-deactivated":"microphone-activated",useSelectedInstrument:false});
                             }
                         });
                         return;
@@ -1387,15 +1388,8 @@
                         return;
                     }
 
-                    globalThis
-                        .WMOFAudio
-                        ?.speak?.(
-                            text,
-                            {
-                                broadcast:
-                                    false
-                            }
-                        );
+                    void playSemanticSongThenSpeak("observer-message",text,
+                        {broadcast:false,useSelectedInstrument:false}).catch(console.error);
                 }
             );
 
@@ -22303,7 +22297,7 @@
 
         return runSemanticAnnouncement(
             name,
-            announcementComponents(audio, announcementSongName(name), chime.perform, speech, output, speechGuard, options),
+            announcementComponents(audio, options.song || announcementSongName(name), chime.perform, speech, output, speechGuard, options),
             {
                 ...options, exclusive
             }

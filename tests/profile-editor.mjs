@@ -15,7 +15,7 @@ w.fetch=async(url,options={})=>{
  else if(options.method==='PATCH'){
   if(holdSave)await new Promise(r=>resolveSave=r);
   const input=JSON.parse(options.body);if(rejectSave){ok=false;data={message:'Rejected profile update'};}
-  else {const p=profiles[input.userId];for(const [k,c]of Object.entries({firstName:'first_name',lastName:'last_name',preferredName:'preferred_name',username:'username',loginId:'login_id',permissions:'permissions'}))if(k in input)p[c]=input[k];data={user:{...p}};}
+  else {const p=profiles[input.userId];for(const [k,c]of Object.entries({firstName:'first_name',middleName:'middle_name',lastName:'last_name',preferredName:'preferred_name',username:'username',loginId:'login_id',permissions:'permissions'}))if(k in input)p[c]=input[k];data={user:{...p}};}
  } else if(parsed.searchParams.has('userId')){
   const user={...profiles[Number(parsed.searchParams.get('userId'))]};
   if(holdLoad)await new Promise(r=>resolveLoad=r);
@@ -30,10 +30,10 @@ assert.equal(lookup.state.phase,'editing');assert.equal(lookup.state.selectedAcc
 assert.equal($('editProfileLoginId').value,'0042');assert.equal($('editProfileFirstName').value,'Jane');assert.equal($('editProfilePin').value,'');
 assert.equal($('editProfilePermissions').querySelector('input[value="4"]').disabled,true,'ungrantable permission is disabled');
 assert.equal($('editProfilePermissions').querySelector('input[value="128"]').disabled,false,'held grantable permission stays enabled');
-$('editProfileFirstName').value='Janet';$('editProfilePassword').value='replacement password';$('editProfilePin').value='0073';$('editProfileLoginId').value='0001';$('editProfilePermissions').querySelector('input[value="128"]').checked=true;
+$('editProfileMiddleName').value='Anne';$('editProfileFirstName').value='Janet';$('editProfilePassword').value='replacement password';$('editProfilePin').value='0073';$('editProfileLoginId').value='0001';$('editProfilePermissions').querySelector('input[value="128"]').checked=true;
 $('editProfileAccountId').value='999'; // Script tampering must never change the selected immutable target.
 holdSave=true;const saving=lookup.saveProfile();await settle();assert.equal(lookup.state.phase,'saving');assert(!lookup.state.canSave);assert($('profileEditorFields').disabled);assert.equal(profiles[42].first_name,'Jane');resolveSave();await saving;holdSave=false;
-const patch=JSON.parse(requests.find(r=>r.method==='PATCH').body);assert.equal(patch.userId,42);assert.equal(patch.loginId,'0001');assert.equal(patch.pin,'0073');assert.equal(patch.permissions,128);assert.equal(patch.password,'replacement password');assert(!('id'in patch));assert.equal(saved.first_name,'Janet');assert.equal($('editProfilePin').value,'');assert.equal($('editProfilePassword').value,'');
+const patch=JSON.parse(requests.find(r=>r.method==='PATCH').body);assert.equal(patch.userId,42);assert.equal(patch.middleName,'Anne');assert.equal(saved.middle_name,'Anne');assert.equal(patch.loginId,'0001');assert.equal(patch.pin,'0073');assert.equal(patch.permissions,128);assert.equal(patch.password,'replacement password');assert(!('id'in patch));assert.equal(saved.first_name,'Janet');assert.equal($('editProfilePin').value,'');assert.equal($('editProfilePassword').value,'');
 requests.length=0;await lookup.saveProfile();const unchanged=JSON.parse(requests.find(r=>r.method==='PATCH').body);assert(!('pin'in unchanged));assert(!('password'in unchanged));assert(!('loginId'in unchanged));
 rejectSave=true;$('editProfileLastName').value='Rejected';await lookup.saveProfile();assert.equal($('editProfileStatus').textContent,'Rejected profile update');assert.equal(profiles[42].last_name,'Doe');assert.equal($('editProfileLastName').value,'Rejected');rejectSave=false;
 results=[];await lookup.search();await settle();assert($('profileEditor').hidden);assert.equal(lookup.state.phase,'error');assert(!lookup.state.canSave);assert($('userLookupStatus').textContent);

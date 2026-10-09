@@ -27,8 +27,8 @@ class FixturePDO extends PDO {
 $pdo = new FixturePDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-$pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT NOT NULL, preferred_name TEXT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, permissions INTEGER NOT NULL DEFAULT 0)');
-$seed = $pdo->prepare('INSERT INTO users VALUES (?, ?, ?, NULL, ?, ?, ?)');
+$pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, middle_name TEXT, last_name TEXT NOT NULL, preferred_name TEXT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, permissions INTEGER NOT NULL DEFAULT 0)');
+$seed = $pdo->prepare('INSERT INTO users (id, first_name, last_name, preferred_name, username, password_hash, permissions) VALUES (?, ?, ?, NULL, ?, ?, ?)');
 foreach ([1=>0, 2=>1, 3=>2, 4=>4] as $id=>$mask) $seed->execute([$id,'First','Last','user'.$id,password_hash('test', PASSWORD_BCRYPT),$mask]);
 $passed = 0;
 function test(string $name, callable $callback): void {

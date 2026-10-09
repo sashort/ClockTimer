@@ -2174,6 +2174,12 @@
             );
         }
 
+        async sendToPublishers(targetUserIds, text) {
+            const ids=[...new Set(targetUserIds)];
+            if(!ids.length||ids.length>50||ids.some(id=>!Number.isSafeInteger(id)||id<1)||typeof text!=='string'||!text.trim()||[...text.trim()].length>500)throw new TypeError('Invalid recipients or message.');
+            return this.#socketRequest('trainer.tts.batch',{targetUserIds:ids,text:text.trim()});
+        }
+
         async sendToPublisher(
             type,
             payload

@@ -4,7 +4,7 @@ declare(strict_types=1);
 function find_user_account(PDO $pdo, int $userId, bool $lock = false): array
 {
     $statement = $pdo->prepare(
-        'SELECT id, first_name, last_name, preferred_name, username, permissions FROM users WHERE id = :id'
+        'SELECT id, first_name, middle_name, last_name, preferred_name, username, permissions FROM users WHERE id = :id'
         . ($lock ? ' FOR UPDATE' : '')
     );
     $statement->execute([':id' => $userId]);
@@ -17,23 +17,23 @@ function find_user_account(PDO $pdo, int $userId, bool $lock = false): array
 
 function account_fields(array $input, bool $creating): array
 {
-    $allowed = ['action', 'userId', 'firstName', 'lastName', 'preferredName', 'username', 'password', 'permissions', 'loginId', 'pin'];
+    $allowed = ['action', 'userId', 'firstName', 'middleName', 'lastName', 'preferredName', 'username', 'password', 'permissions', 'loginId', 'pin'];
     foreach ($input as $key => $value) {
         if (!in_array($key, $allowed, true)) {
             api_error('Unknown account field.', 422, 'invalid_argument');
         }
     }
     $fields = [];
-    foreach (['firstName' => 'first_name', 'lastName' => 'last_name', 'preferredName' => 'preferred_name', 'username' => 'username'] as $key => $column) {
+    foreach (['firstName' => 'first_name', 'middleName' => 'middle_name', 'lastName' => 'last_name', 'preferredName' => 'preferred_name', 'username' => 'username'] as $key => $column) {
         if (!array_key_exists($key, $input)) {
-            if ($creating && $key !== 'preferredName') require_string($input, $key);
+            if ($creating && !in_array($key, ['preferredName','middleName'], true)) require_string($input, $key);
             continue;
         }
-        if ($key === 'preferredName' && $input[$key] === null) {
+        if (in_array($key, ['preferredName','middleName'], true) && $input[$key] === null) {
             $fields[$column] = null;
             continue;
         }
-        $text = require_string($input, $key, $key === 'preferredName');
+        $text = require_string($input, $key, in_array($key, ['preferredName','middleName'], true));
         $length = preg_match_all('/./us', $text);
         if ($length === false || $length > ($key === 'username' ? 191 : 100)) {
             api_error($key . ' is too long or is invalid UTF-8.', 422, 'invalid_argument');

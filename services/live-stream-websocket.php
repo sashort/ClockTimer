@@ -12,6 +12,7 @@ function api_error(string $message, int $status = 400, string $code = 'bad_reque
 
 require_once dirname(__DIR__) . '/api/_core/database.php';
 require_once dirname(__DIR__) . '/api/_core/permissions.php';
+require_once dirname(__DIR__) . '/api/_core/observer_messages.php';
 
 const LIVE_WS_TOKEN_TTL_SECONDS = 60;
 const LIVE_WS_MAX_FRAME_BYTES = 1048576;
@@ -39,7 +40,7 @@ function live_ws_bind(): string
 function live_ws_user(PDO $pdo, int $userId): ?array
 {
     $statement = $pdo->prepare(
-        'SELECT id, username, first_name, last_name, preferred_name, permissions '
+        'SELECT id, username, first_name, middle_name, last_name, preferred_name, permissions '
         . 'FROM users WHERE id = :id LIMIT 1'
     );
     $statement->execute([':id' => $userId]);
@@ -693,6 +694,7 @@ function live_ws_handle_message(
                 'targets.request',
                 'peer.join',
                 'trainer.tts',
+                'trainer.tts.batch',
                 'trainer.microphone',
             ],
             true
@@ -936,6 +938,28 @@ function live_ws_handle_message(
         live_ws_send($clients[$publisherClientId],['type'=>$type,'peerId'=>$peerId,'enabled'=>$message['enabled'],'commandId'=>$message['commandId']]);
         live_ws_send_response($client,$requestId,['sent'=>true]);
         return;
+    }
+
+    if ($type === 'trainer.tts.batch') {
+        if (!live_ws_can_view($user)) {
+            live_ws_send_error($client,$requestId,'permission_required','Drop-In permission is required.');return;
+        }
+        $ids=$message['targetUserIds'] ?? null;$template=$message['text'] ?? null;
+        if(!is_array($ids)||!array_is_list($ids)||count($ids)<1||count($ids)>50||!is_string($template)||trim($template)===''||preg_match('//u',$template)!==1||preg_match_all('/./us',$template)>500){
+            live_ws_send_error($client,$requestId,'invalid_argument','Select 1-50 users and enter a message of 1-500 characters.');return;
+        }
+        foreach($ids as $id)if(!(is_int($id)||is_string($id)&&preg_match('/^[1-9]\d*$/D',$id))||(int)$id<1){live_ws_send_error($client,$requestId,'invalid_argument','Invalid recipient.');return;}
+        $sent=[];$failures=[];
+        foreach(array_unique(array_map('intval',$ids)) as $targetId){
+            if($targetId===(int)$user['id']){$failures[]=['userId'=>$targetId,'code'=>'permission_required'];continue;}
+            $publisherId=live_ws_target_client($clients,$targetId);
+            $target=$publisherId===null?null:live_ws_current_user($pdo,$clients[$publisherId]);
+            if(!$target){$failures[]=['userId'=>$targetId,'code'=>'live_stream_not_found'];continue;}
+            $rendered=observer_message_text(trim($template),$target);
+            if($rendered===''||preg_match_all('/./us',$rendered)>500){$failures[]=['userId'=>$targetId,'code'=>'invalid_argument'];continue;}
+            live_ws_send($clients[$publisherId],['type'=>'trainer.tts','peerId'=>0,'text'=>$rendered]);$sent[]=$targetId;
+        }
+        live_ws_send_response($client,$requestId,['sentUserIds'=>$sent,'failures'=>$failures]);return;
     }
 
     if ($type === 'trainer.tts') {

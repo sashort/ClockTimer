@@ -134,7 +134,7 @@
                 if(!response.ok || !data.user) throw new Error(data.message || this.#text("loadFailed"));
                 this.#profile = data.user;
                 this.#profilePhase = "editing";
-                const mapping = {AccountId:"id",FirstName:"first_name",LastName:"last_name",PreferredName:"preferred_name",Username:"username",LoginId:"login_id"};
+                const mapping = {AccountId:"id",FirstName:"first_name",MiddleName:"middle_name",LastName:"last_name",PreferredName:"preferred_name",Username:"username",LoginId:"login_id"};
                 for(const [key,column] of Object.entries(mapping)) $("#editProfile"+key).value = String(data.user[column] ?? "");
                 for(const option of $("#editProfilePermissions").querySelectorAll("input")){option.checked=Boolean(Number(data.user.permissions)&Number(option.value));option.disabled=!this.#canAssignPermissions()||!this.#canGrantPermission(Number(option.value));}
                 fields.disabled = false; $("#editProfileSave").disabled = false; status.textContent = "";
@@ -150,7 +150,7 @@
             if([...fields.querySelectorAll("input")].some(input => !input.reportValidity())) return false;
             const target = this.#profile.id, request = this.#profileRequest;
             const input = {action:"update",userId:target};
-            for(const [key,field] of Object.entries({firstName:"FirstName",lastName:"LastName",preferredName:"PreferredName",username:"Username"})) input[key] = $("#editProfile"+field).value;
+            for(const [key,field] of Object.entries({firstName:"FirstName",middleName:"MiddleName",lastName:"LastName",preferredName:"PreferredName",username:"Username"})) input[key] = $("#editProfile"+field).value;
             const password = $("#editProfilePassword").value, pin = $("#editProfilePin").value, loginId = $("#editProfileLoginId").value;
             if(password) input.password = password;
             if(pin) input.pin = pin;

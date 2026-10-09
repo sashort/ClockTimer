@@ -230,8 +230,8 @@
         $('dropInTripLogButton').disabled = busy || !stream.viewing;
         $('dropInSelectUser').disabled = busy || !identities.size;
         $('dropInSaveDefault').disabled = $('dropInRestoreDefault').disabled = busy || !identity;
-        $('liveStreamTrainerMessage').disabled = busy || !stream.viewing;
-        $('liveStreamTrainerMessageSend').disabled = busy || messageBusy || !stream.viewing;
+        $('liveStreamTrainerMessage').disabled = busy || messageBusy || !permission(64) || !identities.size;
+        $('liveStreamTrainerMessageSend').disabled = busy || messageBusy || !permission(64) || !identities.size;
         $('liveStreamUserSelect').replaceChildren();
         for (const identity of identities.values()) {
             const option = document.createElement('option'); option.value = String(identity.userId); option.textContent = name(identity);
@@ -355,18 +355,62 @@
     }
     $('dropInExitButton').addEventListener('click',()=>void leave(false));
     $('dropInLogoutButton').addEventListener('click',()=>void leave(true));
-    async function sendMessage() {
-        const value = $('liveStreamTrainerMessageText').value.trim().slice(0,500);
-        if(busy || messageBusy || !stream.viewing || !value) return;
-        const target=Number(view.userId);messageBusy=true;controls();
-        try {
-            await stream.sendToPublisher('trainer.tts',{text:value});
-            if(target === Number(view.userId)) {$('liveStreamTrainerMessageText').value='';$('liveStreamTrainerMessageStatus').textContent=text('ffdd5c41-57e5-59b3-ae39-4004ccc270a0');}
-        } catch(error) {if(target === Number(view.userId)) $('liveStreamTrainerMessageStatus').textContent=error.message;}
-        finally {messageBusy=false;controls();}
+    let pendingMessage,nameSelection,nameOrder=[];
+    function openMessageRecipients(){
+        const value=[...$('liveStreamTrainerMessageText').value.trim()].slice(0,500).join('');
+        if(busy||messageBusy||!permission(64)||!identities.size||!value)return;
+        pendingMessage=value;const list=$('dropInRecipients');list.replaceChildren();
+        for(const identity of identities.values()){
+            const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=true;check.dataset.recipientId=String(identity.userId);
+            label.append(check,document.createTextNode(name(identity)));list.append(label);
+        }
+        $('dropInDeliveryStatus').textContent='';$('dropInMessageConfirm').disabled=false;$('dropInRecipientsDialog').showModal();
     }
-    $('liveStreamTrainerMessageSend').addEventListener('click',()=>void sendMessage());
-    $('liveStreamTrainerMessageText').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();void sendMessage();}});
+    $('dropInRecipients').addEventListener('change',()=>{$('dropInMessageConfirm').disabled=!$('dropInRecipients').querySelector('input:checked');});
+    $('dropInMessageCancel').addEventListener('click',()=>{$('dropInRecipientsDialog').close();pendingMessage=undefined;});
+    $('dropInRecipientsDialog').addEventListener('cancel',event=>{if(messageBusy)event.preventDefault();else pendingMessage=undefined;});
+    async function sendMessage(){
+        const selected=[...$('dropInRecipients').querySelectorAll('input:checked')].map(input=>Number(input.dataset.recipientId)).filter(id=>identities.has(id));
+        if(messageBusy||exiting||!pendingMessage||!selected.length)return;
+        messageBusy=true;$('dropInRecipientFields').disabled=true;$('dropInMessageConfirm').disabled=$('dropInMessageCancel').disabled=true;controls();
+        try{
+            const result=await stream.sendToPublishers(selected,pendingMessage);
+            const sent=result.sentUserIds||[],failed=(result.failures||[]).map(item=>Number(item.userId));
+            const names=ids=>ids.map(id=>name(identities.get(Number(id)))).join(', ');
+            $('liveStreamTrainerMessageStatus').textContent=[sent.length?WMOFLanguagePack.text('f8afb56f-21c2-54ed-80f5-35a99c97ecd4',{names:names(sent)}):'',failed.length?WMOFLanguagePack.text('4095ea2e-9d80-51fa-b3b5-472b08286b12',{names:names(failed)}):''].filter(Boolean).join('. ');
+            for(const input of $('dropInRecipients').querySelectorAll('input'))input.checked=failed.includes(Number(input.dataset.recipientId));
+            if(!failed.length){$('liveStreamTrainerMessageText').value='';pendingMessage=undefined;$('dropInRecipientsDialog').close();}
+        }catch(error){$('liveStreamTrainerMessageStatus').textContent=error.message;}
+        finally{$('dropInDeliveryStatus').textContent=$('liveStreamTrainerMessageStatus').textContent;messageBusy=false;$('dropInRecipientFields').disabled=false;$('dropInMessageCancel').disabled=false;$('dropInMessageConfirm').disabled=!$('dropInRecipients').querySelector('input:checked');controls();}
+    }
+    $('dropInMessageConfirm').addEventListener('click',()=>void sendMessage());
+    $('liveStreamTrainerMessageSend').addEventListener('click',openMessageRecipients);
+    $('liveStreamTrainerMessageText').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();openMessageRecipients();}});
+    $('liveStreamTrainerMessageText').addEventListener('beforeinput',event=>{
+        if(event.data!=='['||messageBusy)return;
+        const input=event.target,start=input.selectionStart,end=input.selectionEnd;
+        if(input.value[start-1]==='\\')return;
+        event.preventDefault();input.setRangeText('[',start,end,'end');nameSelection={start,end:start+1};
+        for(const check of $('dropInNamePicker').querySelectorAll('[data-name-field]'))check.checked=false;
+        nameOrder=[];refreshNamePicker();$('dropInNamePicker').showModal();
+    });
+    function refreshNamePicker(){
+        for(const output of $('dropInNamePicker').querySelectorAll('[data-name-order]')){const index=nameOrder.indexOf(output.dataset.nameOrder);output.textContent=index<0?'':String(index+1);}
+        $('dropInNamePreview').textContent='['+nameOrder.join(' ')+']';$('dropInNameInsert').disabled=!nameOrder.length;
+    }
+    $('dropInNamePicker').addEventListener('change',event=>{const field=event.target.dataset.nameField;if(!field)return;nameOrder=nameOrder.filter(value=>value!==field);if(event.target.checked)nameOrder.push(field);refreshNamePicker();});
+    $('dropInNameClear').addEventListener('click',()=>{nameOrder=[];for(const check of $('dropInNamePicker').querySelectorAll('[data-name-field]'))check.checked=false;refreshNamePicker();});
+    $('dropInNameInsert').addEventListener('click',()=>{
+        const fields=nameOrder;
+        if(!fields.length||!nameSelection)return;const input=$('liveStreamTrainerMessageText'),value='['+fields.join(' ')+']';
+        if(input.value.length-(nameSelection.end-nameSelection.start)+value.length>500)return;
+        input.setRangeText(value,nameSelection.start,nameSelection.end,'end');$('dropInNamePicker').close();input.focus();nameSelection=undefined;
+    });
+    function cancelNamePicker(){const input=$('liveStreamTrainerMessageText');if(nameSelection)input.setRangeText('',nameSelection.start,nameSelection.end,'end');$('dropInNamePicker').close();nameSelection=undefined;input.focus();}
+    $('dropInNameCancel').addEventListener('click',cancelNamePicker);
+    $('dropInNamePicker').addEventListener('cancel',event=>{event.preventDefault();cancelNamePicker();});
+    $('dropInNameHelp').addEventListener('click',()=>{$('dropInNameHelpDialog').showModal();});
+    $('dropInNameHelpClose').addEventListener('click',()=>{$('dropInNameHelpDialog').close();});
     window.addEventListener('pagehide',()=>{remoteMicrophone?.reset();exiting=true;revision++;view.destroy?.();void stream.close();});
     controls();
     fetch(new URL('api/users/',document.baseURI),{credentials:'same-origin',cache:'no-store'}).then(async response=>{
