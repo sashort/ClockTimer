@@ -72,6 +72,17 @@
         return root.ClockTimerPageContext || normalize(infer());
     }
 
-    root.ClockTimerContext = Object.freeze({ infer, normalize, child, forCurrentScript });
+    function startupPolicy() {
+        const context = forCurrentScript() || root.ClockTimerPageContext || null;
+        const settingsOnlyPage = context?.host === "settings-frame"
+            || document.body?.classList.contains("settings-page") === true;
+        return Object.freeze({
+            context,
+            settingsOnlyPage,
+            capabilityEnabled: name => context?.capabilities?.[name] !== false
+        });
+    }
+
+    root.ClockTimerContext = Object.freeze({ infer, normalize, child, forCurrentScript, startupPolicy });
     root.ClockTimerPageContext = normalize(infer());
 })(globalThis);
