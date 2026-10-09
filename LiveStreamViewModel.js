@@ -21,5 +21,9 @@
         });
     }
 
-    root.ClockTimerLiveStreamViewModel = Object.freeze({ project });
+    function shouldPublish(profile, networkStatus) {
+        return Boolean(profile?.id) && networkStatus === "online";
+    }
+
+    root.ClockTimerLiveStreamViewModel = Object.freeze({ project, shouldPublish });
 })(globalThis);
