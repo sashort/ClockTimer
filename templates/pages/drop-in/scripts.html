@@ -25,3 +25,38 @@
 <script src="DropInView.js?build=E4GUFA"></script>
 <script src="DropInText.js?build=E4GUFA"></script>
 <script src="drop-in.js?build=E4GUFA"></script>
+<script id="clockTimerSettingsFrameController">
+(() => {
+  const dialog = document.getElementById("clockTimerSettingsFrameDialog");
+  const frame = document.getElementById("clockTimerSettingsFrame");
+  if (!dialog || !frame || dialog.dataset.controllerReady) return;
+  dialog.dataset.controllerReady = "true";
+  const surfaces = new Set([
+    "graphicalSettingsDialog",
+    "audioSettingsDialog",
+    "audioAnnouncementsDialog",
+    "stateSettingsDialog",
+    "tripSettingsDialog"
+  ]);
+  document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
+    button.addEventListener("click", () => {
+      const requested = button.dataset.settingsSurface;
+      const surface = surfaces.has(requested) ? requested : "graphicalSettingsDialog";
+      frame.dataset.settingsSurface = surface;
+      frame.src = "settings.html?surface=" + encodeURIComponent(surface);
+      const menu = button.closest("hamburger-menu");
+      if (menu && typeof menu.hidePopover === "function") {
+        try { menu.hidePopover(); } catch {}
+      }
+      const settingsSubmenu = document.getElementById("settingsSubmenu");
+      if (settingsSubmenu) settingsSubmenu.hidden = true;
+      const settingsButton = document.getElementById("settingsMenuButton");
+      if (settingsButton) settingsButton.setAttribute("aria-expanded", "false");
+      if (!dialog.open) dialog.showModal();
+    });
+  });
+  dialog.addEventListener("click", event => {
+    if (event.target === dialog) dialog.close();
+  });
+})();
+</script>
