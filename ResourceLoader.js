@@ -11,7 +11,7 @@
         options: context?.options || {}
     });
     const keyFor = (kind, url, context) => kind + ":" + new URL(url, document.baseURI).href
-        + (kind === "script" ? ":" + contextKey(context) : "");
+        + (kind === "script" || kind === "style" ? ":" + contextKey(context) : "");
 
     function loadScript(url, context, options = {}) {
         const key = keyFor("script", url, context);
@@ -42,7 +42,7 @@
     }
 
     function loadStyle(url, context) {
-        const key = keyFor("style", url);
+        const key = keyFor("style", url, context);
         if (pending.has(key)) return pending.get(key);
         const promise = new Promise((resolve, reject) => {
             const link = document.createElement("link");
