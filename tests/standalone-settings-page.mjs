@@ -30,13 +30,16 @@ assert.match(standalone, /window\.self !== window\.top/, 'embedded settings hide
 assert.match(standalone, /standaloneSettingsPageStyles/, 'standalone page has dedicated layout styles');
 assert.match(standalone, /standaloneSettingsPageBootstrap/, 'standalone page initializes settings surfaces');
 assert.match(standalone, /new URLSearchParams\(window\.location\.search\)/, 'surface-specific launches are selected from the query string');
-assert.match(standalone, /if \(focusedSurface && id !== focusedSurface\) continue;/, 'only the selected surface opens for a specific launcher');
-assert.match(standalone, /settings-surface-focused > dialog#graphicalSettingsDialog:not\(\[data-requested-settings-surface\]\)/, 'focused CSS overrides the normal visible settings-surface layout');
+assert.match(standalone, /const surfaceId = ids\.includes\(requestedSurface\) \? requestedSurface : "graphicalSettingsDialog"/, 'Graphical Settings is the default surface');
+assert.match(standalone, /surface\.setAttribute\("data-primary-settings-surface"/, 'only the selected settings surface is shown');
+assert.match(standalone, /originalTrigger\.dispatchEvent\(new Event\("pointerup"/, 'bootstrap uses the original app settings event handler');
+assert.match(standalone, /clocktimer-settings-closed/, 'closing the original settings dialog closes the containing iframe modal');
+assert.match(standalone, /surface\.showModal\(\)/, 'fallback launch preserves modal form behavior');
 for (const id of settingsSurfaces) {
     assert.match(standalone, new RegExp(`<dialog id="${id}"(?:\\s|>)`), `${id} is included in the standalone page`);
     assert.match(standalone, new RegExp(`"${id}"`), `${id} is listed for page initialization`);
 }
-assert.match(standalone, /dialog\.show\(\)/, 'settings surfaces are shown as page sections');
+assert.match(standalone, /data-primary-settings-surface/, 'selected settings surface is marked for iframe layout');
 assert.match(standalone, /position:static !important/, 'settings surfaces flow in the page instead of overlaying it');
 
 function assertIframeOnlyDialog(markup, label, checkController = true) {
@@ -47,7 +50,8 @@ function assertIframeOnlyDialog(markup, label, checkController = true) {
     assert.match(dialog, /^<dialog[^>]*>\s*<iframe id="clockTimerSettingsFrame"[^>]*><\/iframe>\s*<\/dialog>$/, `${label} modal contains only the iframe`);
     assert.doesNotMatch(dialog, /<button|<h[1-6]|<label|<p[ >]/, `${label} modal adds no extra controls or labels around the iframe`);
     if (checkController) {
-        assert.match(markup, /frame\.src = surface[\s\S]*?settings\.html\?surface=/, `${label} chooses requested surfaces in the iframe`);
+        assert.match(markup, /frame\.src = "settings\.html\?surface=" \+ encodeURIComponent\(surface\)/, `${label} chooses requested surfaces in the iframe`);
+        assert.match(markup, /event\.source !== frame\.contentWindow/, `${label} listens for close events only from its iframe`);
         assert.match(markup, /event\.target === dialog\) dialog\.close\(\)/, `${label} supports backdrop dismissal without an extra close button`);
     }
 }
