@@ -492,39 +492,9 @@
             return liveStreamPresenceQueue;
         };
 
-    const canViewLiveStreams =
-        () => {
-            const permissions =
-                Number(
-                    signedInProfile
-                        ?.permissions
-                ) || 0;
-
-            return Boolean(
-                permissions &
-                (
-                    PERMISSION_VIEW_LIVE_STREAMS |
-                    PERMISSION_SUPERUSER
-                )
-            );
-        };
-
-    const canLookupUsers =
-        () => {
-            const permissions =
-                Number(
-                    signedInProfile
-                        ?.permissions
-                ) || 0;
-
-            return Boolean(
-                permissions &
-                (
-                    PERMISSION_LOOKUP_USERS |
-                    PERMISSION_SUPERUSER
-                )
-            );
-        };
+    const accessPolicy = globalThis.ClockTimerAccessPolicyModel;
+    const canViewLiveStreams = () => accessPolicy.canViewLiveStreams(signedInProfile?.permissions);
+    const canLookupUsers = () => accessPolicy.canLookupUsers(signedInProfile?.permissions);
 
     const identityDisplayName = identity =>
         identityContext.displayName(identity);
@@ -602,9 +572,9 @@
                     canLookup:
                         canLookupUsers,
                     onProfileSaved: user => {if(Number(user.id) === Number(signedInProfile?.id)) populateProfile(user);},
-                    canEdit: () => Boolean(Number(signedInProfile?.permissions) & (2 | PERMISSION_SUPERUSER)),
-                    canAssignPermissions: () => Boolean(Number(signedInProfile?.permissions) & PERMISSION_SUPERUSER),
-                    canGrantPermission: bit => Boolean(Number(signedInProfile?.permissions) & PERMISSION_SUPERUSER) || (Number(signedInProfile?.permissions) & bit) === bit
+                    canEdit: () => accessPolicy.canEditUsers(signedInProfile?.permissions),
+                    canAssignPermissions: () => accessPolicy.canAssignPermissions(signedInProfile?.permissions),
+                    canGrantPermission: bit => accessPolicy.canGrantPermission(signedInProfile?.permissions, bit)
                 })
             : undefined;
 
