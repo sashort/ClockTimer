@@ -61,6 +61,16 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     assert.deepEqual(Array.from(sandbox.ClockTimerPageManifest.resolve("drop-in").features), ["drop-in", "settings"]);
     assert.equal(sandbox.ClockTimerPageManifest.permitsFeature(sandbox.ClockTimerPageManifest.resolve("settings-frame"), "calendarStartup"), false);
     assert.equal(sandbox.ClockTimerPageManifest.permitsCapability(sandbox.ClockTimerPageManifest.resolve("settings-frame"), "speechMenu"), false);
+
+    const requestedSettings = sandbox.ClockTimerContext.normalize({
+        host: "settings-frame",
+        features: ["application", "settings", "calendarStartup"],
+        capabilities: { speechMenu: true, calendarStartup: true }
+    });
+    assert.equal(requestedSettings.presentation, "graphical-settings");
+    assert.deepEqual(Array.from(requestedSettings.features), ["settings"]);
+    assert.equal(requestedSettings.capabilities.speechMenu, false);
+    assert.equal(requestedSettings.capabilities.calendarStartup, false);
 }
 
 {
@@ -94,6 +104,15 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
         features: ["application", "settings"],
         capabilities: {}
     });
+    const nestedHostContext = sandbox.ClockTimerContext.child(hostContext, {
+        host: "settings-frame",
+        features: ["settings", "application"],
+        capabilities: { speechMenu: true }
+    });
+    assert.equal(nestedHostContext.presentation, "graphical-settings");
+    assert.deepEqual(Array.from(nestedHostContext.features), ["settings"]);
+    assert.equal(nestedHostContext.capabilities.speechMenu, false);
+
     const settingsSurface = sandbox.ClockTimerSettingsSurfaces.contextFor(hostContext, "tripSettingsDialog");
     assert.equal(settingsSurface.surface, "tripSettingsDialog");
     assert.equal(settingsSurface.presentation, "graphical-settings");
