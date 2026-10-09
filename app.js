@@ -28545,27 +28545,22 @@
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();
     syncNetworkStatusUI({ startup: true });
-    if (landingSessionPending) {
-        void (async () => {
-            try {
-                if (await clockTimer.resumeConnection()) {
-                    loginConfirmedThisLoad = true;
-                    deliberatelyLoggedOut = false;
-                    safeStorageSet("wmof.deliberatelyLoggedOut", "false");
-                }
-            } catch (error) { console.warn("Existing session could not be resumed:", error); }
-            finally {
-                landingSessionPending = false;
-                if (!loginConfirmedThisLoad) showInitialLoginDialog();
-                else {
-                    syncNetworkStatusUI();
-                    if (new URL(window.location.href).searchParams.get("tool") === "speechTiming") {
-                        void actions.openSpeechTiming().catch(console.error);
-                    }
-                }
-            }
-        })();
-    } else showInitialLoginDialog();
+    void globalThis.ClockTimerSessionStartup.start({
+        pending: landingSessionPending,
+        clockTimer,
+        isLoginConfirmed: () => loginConfirmedThisLoad,
+        onLoginConfirmed: () => { loginConfirmedThisLoad = true; },
+        onDeliberatelyLoggedOut: () => { deliberatelyLoggedOut = false; },
+        onPendingComplete: () => { landingSessionPending = false; },
+        persistDeliberatelyLoggedOut: () =>
+            safeStorageSet("wmof.deliberatelyLoggedOut", "false"),
+        showInitialLoginDialog,
+        syncNetworkStatusUI,
+        isSpeechTimingRequested: () =>
+            new URL(window.location.href).searchParams.get("tool") === "speechTiming",
+        openSpeechTiming: () => actions.openSpeechTiming(),
+        logger: console
+    });
     if (globalThis.ClockTimerCalendarStartup?.register && globalThis.ClockTimerDispatcher) {
         globalThis.ClockTimerCalendarStartup.register({
             dispatcher: globalThis.ClockTimerDispatcher,
