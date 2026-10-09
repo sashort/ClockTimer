@@ -36,6 +36,7 @@
     "test:speech-runtime-loader": "node speech-runtime-loader.mjs",
     "test:speech-startup": "node speech-startup.mjs",
     "test:dispatcher-context": "node dispatcher-context.mjs",
+    "test:application-startup": "node application-startup.mjs",
     "test:startup-announcement": "node startup-announcement.mjs",
     "test:persistence-startup": "node persistence-startup.mjs",
     "test:speech-menu-mount": "node speech-menu-mount.mjs",
