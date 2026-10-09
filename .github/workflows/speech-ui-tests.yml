@@ -83,6 +83,26 @@ on:
       - "tests/developer_docs.php"
 
 jobs:
+  speech-preprocessor-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install focused test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+      - name: Verify speech preprocessing contracts
+        run: |
+          node --check app.js
+          node --check SpeechMenu.js
+          node tests/speech-value-preprocessor.mjs
+          node tests/speech-chain-actions.mjs
+          node tests/speech-command-digest.mjs
+          node tests/speech-failfast.mjs
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
