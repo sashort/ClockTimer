@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-function makeRuntime({ classes = [], search = "" } = {}) {
+function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
     const events = [];
     const appendedResources = [];
     const body = {
@@ -10,7 +10,7 @@ function makeRuntime({ classes = [], search = "" } = {}) {
         querySelector: () => null
     };
     const document = {
-        body,
+        body: bodyPresent ? body : null,
         currentScript: null,
         baseURI: "https://example.test/app/",
         documentElement: { lang: "en-US" },
@@ -51,6 +51,12 @@ function makeRuntime({ classes = [], search = "" } = {}) {
         vm.runInContext(readFileSync(new URL("../" + file, import.meta.url), "utf8"), sandbox, { filename: file });
     }
     return { sandbox, document, events, appendedResources };
+}
+
+{
+    const { sandbox } = makeRuntime({ bodyPresent: false });
+    assert.equal(sandbox.ClockTimerPageContext.host, "order-filler");
+    assert.equal(sandbox.ClockTimerPageContext.features.includes("drop-in"), false);
 }
 
 {
