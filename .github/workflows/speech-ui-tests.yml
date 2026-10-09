@@ -21,6 +21,8 @@ on:
       - "AudioVoiceOptions.js"
       - "AudioInstrumentOptions.js"
       - "AudioVelocityController.js"
+      - "AudioSettingsBoundary.js"
+      - "tests/audio-settings-boundary.mjs"
       - "tests/audio-velocity-controller.mjs"
       - "tests/audio-instrument-options.mjs"
       - "tests/audio-voice-options.mjs"
@@ -202,6 +204,7 @@ jobs:
           node tests/audio-voice-options.mjs
           node tests/audio-instrument-options.mjs
           node tests/audio-velocity-controller.mjs
+          node tests/audio-settings-boundary.mjs
           node --check SpeechAssetCache.js
           node tests/speech-asset-cache.mjs
           node --check ClassicScriptLoader.js
