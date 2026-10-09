@@ -18,7 +18,7 @@
                     </div><hr>
 <label class="drop-in-mirror-option" hidden data-menu-icon="settings"><input id="dropInMirrorSettings" type="checkbox" checked><span>{{text:a4984291-11d9-5d25-9863-2eee69e36d87:text0}}</span></label>
 <label class="drop-in-source-choice" data-menu-icon="settings"><select id="dropInSettingsSource" aria-label="{{text:95ec8d5a-8ca1-5d0b-9df3-3f9584609195:text0}}"><option value="default">{{text:fc47056b-19eb-5cf0-ac45-9d865e75b708:text0}}</option><option value="custom">{{text:ce252857-8d0d-5d30-8bcf-0c072901bd18:text0}}</option><option value="user">{{text:b65c84d6-1d0d-596b-8962-fdf409f04073:text0}}</option></select></label>
-<button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-menu-icon="settings" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"><span class="sync-mirror-badge" data-menu-icon="mirror" hidden></span></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
+
 <div class="drop-in-menu-group"><button id="dropInViewSettingsButton" type="button" data-menu-icon="settings" aria-expanded="false" aria-controls="dropInViewSettings">{{text:95ec8d5a-8ca1-5d0b-9df3-3f9584609195:text0}}</button>
 <div id="dropInViewSettings" class="drop-in-menu-fields" hidden><strong id="dropInSettingsOwner"></strong><p id="dropInSettingsApplied" class="settings-applied"></p>
 
@@ -57,7 +57,12 @@
                             <small class="settings-default-value" data-settings-default="audio.program"></small><input class="default-audio-range" data-default-audio="program" type="range" min="0" max="100" step="1" aria-label="{{text:def617d2-8298-57e9-a7d3-32251c5b24d2:text0}}"><small class="settings-source" data-settings-source="audio.program"></small><input id="liveStreamProgramVolume" type="range" min="0" max="100" step="1" value="100">
                         </label>
                     </fieldset><hr><button id="dropInSaveDefault" type="button" data-menu-icon="settings" >{{text:306eeb36-21ae-5576-ad2c-293af5b8620b:text0}}</button><button id="dropInRestoreDefault" type="button" data-menu-icon="settings" >{{text:365cc4c0-4688-518f-93d9-fff003c3ea7a:text0}}</button><p id="dropInDefaultStatus" role="status"></p></div></div>
-<div class="drop-in-menu-group"><button id="dropInDetailsButton" type="button" data-menu-icon="profile" aria-expanded="false" aria-controls="dropInDetails">{{text:085c48ab-65c0-5f5c-83e5-a8877c831f9c:text0}}</button><div id="dropInDetails" class="drop-in-menu-fields" hidden>                    <div class="live-stream-readout" aria-live="polite">
+<button id="dropInTripLogButton" type="button" data-menu-icon="book">{{text:15f840c1-78dc-53db-8fe8-af2f1158fa5a:text0}}</button>
+<button id="dropInLogoutButton" type="button" data-menu-icon="logout">{{text:bb11e797-9677-543f-a66c-802d25291202:text0}}</button>
+<button id="dropInExitButton" type="button" data-menu-icon="logout">{{text:8736d538-842c-54ea-9ad7-dad7d6d9dfc6:text0}}</button>
+<p id="dropInSettingsStatus" role="status"></p><a href="index.php" data-menu-icon="clock">WMOF</a><output id="appVersion">LOCAL</output>
+</hamburger-menu>
+<div hidden aria-hidden="true"><div class="live-stream-readout" aria-live="polite">
                         <div><span data-language-id="01be1c81-fcf4-5ae0-9942-52a9d182147f">{{text:01be1c81-fcf4-5ae0-9942-52a9d182147f:text0}}</span><strong id="liveStreamRemoteState" data-language-id="2997a7c9-b0ed-5104-af1f-aacdd4a4f66e">{{text:2997a7c9-b0ed-5104-af1f-aacdd4a4f66e:text0}}</strong></div>
 
 
@@ -68,9 +73,4 @@
                         <div><span data-language-id="96f1c96c-128a-52fe-a35b-ed2f2a2a0522">{{text:96f1c96c-128a-52fe-a35b-ed2f2a2a0522:text0}}</span><strong id="liveStreamUserSync">—</strong></div>
                         <div><span data-language-id="fecedef0-fd5b-5178-98be-7cff996a8180">{{text:fecedef0-fd5b-5178-98be-7cff996a8180:text0}}</span><strong id="liveStreamViewerActiveGoal">—</strong></div>
                         <div class="live-stream-transcript"><span data-language-id="c3b1d0a6-4795-5e97-9186-4fe6418cc388">{{text:c3b1d0a6-4795-5e97-9186-4fe6418cc388:text0}}</span><strong id="liveStreamRemoteSpeech" data-language-id="fcb824ef-3b4d-536d-8880-98c8234d3e1a">{{text:fcb824ef-3b4d-536d-8880-98c8234d3e1a:text0}}</strong></div>
-                    </div></div></div>
-<button id="dropInTripLogButton" type="button" data-menu-icon="book">{{text:15f840c1-78dc-53db-8fe8-af2f1158fa5a:text0}}</button>
-<button id="dropInLogoutButton" type="button" data-menu-icon="logout">{{text:bb11e797-9677-543f-a66c-802d25291202:text0}}</button>
-<button id="dropInExitButton" type="button" data-menu-icon="logout">{{text:8736d538-842c-54ea-9ad7-dad7d6d9dfc6:text0}}</button>
-<p id="dropInSettingsStatus" role="status"></p><a href="index.php" data-menu-icon="clock">WMOF</a><output id="appVersion">LOCAL</output>
-</hamburger-menu>
+                    </div></div>

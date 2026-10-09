@@ -7,6 +7,7 @@
     const context = WMOFIdentityContext;
     let user, csrf, exiting=false, busy = false, messageBusy = false, revision = 0, settingsRevision=0;
     const preferences = new WMOFDropInPreferences();
+    function currentSettings(){const record=preferences.get(view.userId);if(!view.userId){record.settingsSource='default';record.mirror=false;}return record;}
     let pendingSettings,pendingViewChange,modeMenu,goalPad;
     const permission = mask => Boolean(Number(user?.permissions) & (mask | 4));
     const name = identity => identity?.preferredName || [identity?.firstName,identity?.lastName].filter(Boolean).join(' ') || identity?.username || '—';
@@ -18,7 +19,7 @@
     function publisherValues(){const data=view.snapshot?.viewData,state=view.snapshot?.uiState;return {mode:data?.mode==='total'?data.range:data?.mode,sync:typeof state?.sync_enabled==='boolean'?(state.sync_enabled?'on':'off'):undefined,tripGoal:goalNumber(state?.trip_goal_component),totalGoal:goalNumber(state?.total_goal_component)};}
     function goalNumber(component){if(typeof component?.value==='number'&&Number.isFinite(component.value)&&component.value>0)return String(Math.round(component.value*100));const match=String(component?.text||component||'').match(/^(\d+)\s*%$/);return match?.[1];}
     function valueLabel(field,value){if(value===undefined)return '-';if(field==='mode')return $('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent||'-';if(field==='sync')return $('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent||'-';return WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:value});}
-    function optionDetails(field,value){const publisher=publisherValues(),record=preferences.get(view.userId),defaults=preferences.defaults.view;return {source:globalThis.WMOFObserverSettingBadge?.match(field,value,record,defaults,publisher),label:value==='user'||value==='mirror'?WMOFLanguagePack.text('c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a',{value:valueLabel(field,publisher[field])}):undefined};}
+    function optionDetails(field,value){const publisher=publisherValues(),record=currentSettings(),defaults=preferences.defaults.view;return {source:globalThis.WMOFObserverSettingBadge?.match(field,value,record,defaults,publisher),label:value==='user'||value==='mirror'?WMOFLanguagePack.text('c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a',{value:valueLabel(field,publisher[field])}):undefined};}
     function refreshOptionDetails(){
         modeMenu?.refresh();goalPad?.refresh();const menu=$('dropInSyncPopover');
         if(menu)for(const option of menu.querySelectorAll('[data-sync]')){const details=optionDetails('sync',option.dataset.sync);option.querySelector('.mode-option-label').textContent=details.label||WMOFLanguagePack.text(option.dataset.labelId);globalThis.WMOFObserverSettingBadge?.render(option,details.source);}
@@ -43,7 +44,7 @@
             row.append(label,output);host.append(row);
         }
     }
-    function renderSettingSources(record=preferences.get(view.userId)) {
+    function renderSettingSources(record=currentSettings()) {
         const owner=name(context.current),defaults=preferences.defaults;
         $('dropInSettingsOwner').textContent=WMOFLanguagePack.text('2e3c70a8-3be2-5ceb-b96f-a4e220368697',{name:owner});
         const applied=record.settingsSource==='user'?'userSource':record.settingsSource||'custom';
@@ -67,7 +68,7 @@
         }
         renderClockSettings();refreshOptionDetails();
     }
-    function renderSettings(record=preferences.get(view.userId)) {
+    function renderSettings(record=currentSettings()) {
         $('dropInSettingsSource').value=record.settingsSource;
         $('dropInMirrorSettings').checked=record.mirror;
         const values=record.settingsSource==='user' ? mirrorView() : record.settingsSource==='default' ? preferences.defaults.view : record.custom.view;
@@ -75,6 +76,13 @@
         else {for(const [id,key] of Object.entries(viewFields))$(id).value=values[key] || '';view.percentScope=values.percentScope;view.select?.();}
         $('liveStreamMute').checked=record.custom.audio.muted;stream.setViewerMuted?.(record.custom.audio.muted);
         for(const [id,[key,setter,output]] of Object.entries(audioFields)){$(id).value=record.custom.audio[key];$(output).value=record.custom.audio[key]+'%';stream[setter]?.(record.custom.audio[key]/100);}
+        if(!view.userId){
+            const scope=['trip','user','auto'].includes(values.mode)?'trip':'total';view.localScope=scope;
+            $('goalPercentValue').textContent=(values[scope==='total'?'totalGoal':'tripGoal']||100)+'%';
+            const icon=$('toggleSyncMenuButton').querySelector('.sync-goals-menu-icon');
+            icon.dataset.syncState=values.sync==='on'?'enabled':'disabled';icon.querySelector('.sync-mirror-badge').hidden=values.sync!=='user';
+            $('toggleSyncMenuButton').dataset.syncMode=values.sync;$('toggleSyncMenuButton').setAttribute('aria-pressed',String(values.sync==='on'));
+        }
         updateModeButton();renderSettingSources(record);
     }
     function updateModeButton() {
@@ -93,8 +101,8 @@
     }
     for(const input of document.querySelectorAll('[data-default-audio]'))input.addEventListener('change',()=>void changeDefault({audio:{[input.dataset.defaultAudio]:Number(input.value)}}));
     function changeSettings(patch) {
-        if(!view.userId||exiting)return;
-        const current=preferences.get(view.userId),next=structuredClone(current);
+        if(exiting||busy||!permission(64))return;
+        const current=currentSettings(),next=structuredClone(current);
         if(patch.view){Object.assign(next.custom.view,patch.view);for(const key of Object.keys(patch.view))next.sources.view[key]=patch.view[key]==='user'||patch.view[key]==='mirror'?'mirror':'custom';}
         if(patch.audio){Object.assign(next.custom.audio,patch.audio);for(const key of Object.keys(patch.audio))next.sources.audio[key]='custom';}
         if(patch.defaultAudio){next.custom.audio=preferences.defaults.audio;for(const key of Object.keys(next.sources.audio))next.sources.audio[key]='default';}
@@ -103,14 +111,15 @@
         if(patch.settingsSource){next.settingsSource=patch.settingsSource;next.mirror=patch.settingsSource==='user';}
         renderSettings(next);
         if(patch.view && Object.keys(patch.view).some(key=>['mode','sync','tripGoal','totalGoal','percent'].includes(key))){
-            pendingViewChange={target:Number(view.userId),view:patch.view};
+            pendingViewChange={target:view.userId?Number(view.userId):null,view:patch.view};
             const key=['mode','tripGoal','totalGoal','sync','percent'].find(key=>key in patch.view),value=patch.view[key],mirrored=value==='user'||value==='mirror',choice=$('dropInTargetChoice');
             choice.classList.toggle('mirror-option',mirrored);
             if(mirrored){choice.dataset.menuIcon='mirror';choice.textContent=optionDetails(key,value).label;}
             else {delete choice.dataset.menuIcon;choice.textContent=key==='mode'?$('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent:key==='sync'?$('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent:value+'%';}
-            $('dropInTargetDefault').checked=current.settingsSource==='default';$('dropInTargetUser').checked=current.settingsSource!=='default';
-            $('dropInTargetName').textContent=name(context.current);$('dropInTargetApply').disabled=false;$('dropInTargetDialog').showModal();return;
+            $('dropInTargetDefault').checked=current.settingsSource==='default';$('dropInTargetUser').disabled=!view.userId;$('dropInTargetUser').checked=Boolean(view.userId)&&current.settingsSource!=='default';
+            $('dropInTargetName').textContent=view.userId?name(context.current):'';$('dropInTargetApply').disabled=false;$('dropInTargetDialog').showModal();return;
         }
+        if(!view.userId){if(patch.audio)void changeDefault({audio:patch.audio});return;}
         if(identities.size>1){pendingSettings={target:Number(view.userId),patch};$('dropInApplyDialog').showModal();}
         else void commitSettings(patch,[view.userId]);
     }
@@ -133,11 +142,12 @@
     $('dropInTargetDialog').addEventListener('cancel',()=>{pendingViewChange=undefined;renderSettings();});
     for(const id of ['dropInTargetDefault','dropInTargetUser'])$(id).addEventListener('change',()=>{$('dropInTargetApply').disabled=!$('dropInTargetDefault').checked&&!$('dropInTargetUser').checked;});
     $('dropInTargetApply').addEventListener('click',async()=>{
-        const pending=pendingViewChange,defaults=$('dropInTargetDefault').checked,selected=$('dropInTargetUser').checked;
+        const pending=pendingViewChange,defaults=$('dropInTargetDefault').checked,selected=!$('dropInTargetUser').disabled&&$('dropInTargetUser').checked;
         if(!pending||(!defaults&&!selected))return;pendingViewChange=undefined;$('dropInTargetDialog').close();
         const request=++settingsRevision;
-        try {await preferences.applyViewTarget(pending.target,pending.view,{defaults,user:selected});if(request===settingsRevision&&Number(view.userId)===pending.target){renderSettings();$('dropInSettingsStatus').textContent=text('d4917f10-f0e0-5eea-9908-82b0d2acb72c');}}
-        catch {if(request===settingsRevision&&Number(view.userId)===pending.target){renderSettings();$('dropInSettingsStatus').textContent=text('0272ce50-1b2e-5e54-8447-91af78590f38');}}
+        const stillCurrent=()=>request===settingsRevision&&(view.userId?Number(view.userId):null)===pending.target;
+        try {if(pending.target===null)await preferences.updateDefault({view:pending.view});else await preferences.applyViewTarget(pending.target,pending.view,{defaults,user:selected});if(stillCurrent()){renderSettings();$('dropInSettingsStatus').textContent=text('d4917f10-f0e0-5eea-9908-82b0d2acb72c');}}
+        catch {if(stillCurrent()){renderSettings();$('dropInSettingsStatus').textContent=text('0272ce50-1b2e-5e54-8447-91af78590f38');}}
     });
     function cancelSettings(){pendingSettings=undefined;renderSettings();}
     $('dropInApplyCancel').addEventListener('click',()=>{$('dropInApplyDialog').close();cancelSettings();});
@@ -155,21 +165,21 @@
     $('liveStreamDialog').addEventListener('drop-in-mode-changed',()=>{updateModeButton();refreshOptionDetails();});
 
     goalPad=globalThis.WMOFObserverGoalPad?new WMOFObserverGoalPad({getChoices:scope=>{
-        const field=scope==='total'?'totalGoal':'tripGoal',record=preferences.get(view.userId);
+        const field=scope==='total'?'totalGoal':'tripGoal',record=currentSettings();
         return [...new Set([preferences.defaults.view[field],record.custom.view[field],publisherValues()[field]])].filter(value=>/^\d+$/.test(String(value))).map(value=>({value,source:optionDetails(field,value).source}));
     },getDetails:(scope,value)=>optionDetails(scope==='total'?'totalGoal':'tripGoal',String(value)),onConfirm:(scope,value)=>{
         const patch={percent:'',percentScope:null,[scope==='total'?'totalGoal':'tripGoal']:String(value)};
         if(scope==='trip'&&value!=='mirror')patch.sync='off';changeSettings({view:patch,mirror:false});
     }}):null;
     const configuredGoal=scope=>{
-        const custom=preferences.get(view.userId),config=custom.settingsSource==='default'?preferences.defaults.view:custom.custom.view,override=!custom.mirror&&config[scope==='total'?'totalGoal':'tripGoal'];
+        const custom=currentSettings(),config=custom.settingsSource==='default'?preferences.defaults.view:custom.custom.view,override=!custom.mirror&&config[scope==='total'?'totalGoal':'tripGoal'];
         if(override && override!=='mirror')return Number(override);
         return Number(goalNumber(view.snapshot?.uiState?.[scope==='total'?'total_goal_component':'trip_goal_component']))||100;
     };
     const goalLabel=scope=>{const selected=$('liveStreamViewMode').value;const range=['user','auto','trip'].includes(selected)?view.snapshot?.viewData?.range||'week':selected;return $('liveStreamViewMode').querySelector('option[value="'+(scope==='trip'?'trip':range)+'"]')?.textContent||'-';};
-    const openGoal=scope=>{if(!view.userId||!goalPad)return;void goalPad.open(scope,configuredGoal(scope),goalLabel(scope)).catch(error=>status(error.message));};
+    const openGoal=scope=>{if(!permission(64)||!goalPad)return;void goalPad.open(scope,configuredGoal(scope),goalLabel(scope)).catch(error=>status(error.message));};
     $('goalPercentValue').addEventListener('click',()=>{
-        if(!view.userId)return;
+        if(!permission(64))return;
         const mode=$('liveStreamViewMode').value==='user'?view.snapshot?.viewData?.mode:$('liveStreamViewMode').value;
         if(mode==='auto'){$('autoTripGoalValue').textContent=configuredGoal('trip')+'%';$('autoTotalGoalValue').textContent=configuredGoal('total')+'%';$('autoGoalDialog').showModal();}
         else openGoal(['trip','user'].includes(mode)?'trip':'total');
@@ -206,13 +216,13 @@
     const remoteMicrophone=globalThis.WMOFObserverMicrophone ? new WMOFObserverMicrophone({button:$('dropInMicrophoneButton'),stream,onFailure:()=>status(WMOFDropInText('failed'))}):null;
     function controls() {
         const identity = context.current;
-        $('liveStreamWatchedName').textContent = name(identity);
         $('liveStreamWatchButton').disabled = busy || !permission(64) || !identity || Number(identity.userId) === Number(user?.id);
         $('liveStreamWatchButton').textContent = text(stream.viewing ? 'd82579ae-0ee3-593a-9a3d-6208756e8ae3' : '07ebf99a-22d4-507f-a4b0-7f01bb41ec96');
         $('liveStreamLookupButton').disabled = busy || !permission(128);
         $('liveStreamVolumeControls').disabled = busy || !identity;
         $('dropInMirrorSettings').disabled=$('dropInSettingsSource').disabled = busy || !identity;
-        $('goalPercentValue').disabled=$('toggleRenderedTimeButton').disabled=$('toggleSyncMenuButton').disabled=busy||!identity;
+        $('goalPercentValue').disabled=$('toggleSyncMenuButton').disabled=$('scopeToggle').disabled=busy||!permission(64);
+        $('toggleRenderedTimeButton').disabled=busy||!identity;
         $('standardTimeButton').disabled=true;
         $('endTimeGoalLock').hidden=true;
         $('dropInRemoveUser').disabled = busy || !identity;
@@ -223,10 +233,10 @@
         $('liveStreamTrainerMessageSend').disabled = busy || messageBusy || !stream.viewing;
         $('liveStreamUserSelect').replaceChildren();
         for (const identity of identities.values()) {
-            const option = document.createElement('option'); option.value = identity.userId; option.textContent = name(identity);
+            const option = document.createElement('option'); option.value = String(identity.userId); option.textContent = name(identity);
             $('liveStreamUserSelect').append(option);
         }
-        $('liveStreamUserSelect').value = identity?.userId || '';
+        $('liveStreamUserSelect').value = identity ? String(identity.userId) : '';
         $('liveStreamUserSelect').disabled = busy || !identities.size;
         $('liveStreamPreviousUser').disabled = $('liveStreamNextUser').disabled = busy || identities.size < 2;
     }
@@ -272,7 +282,7 @@
         try {await stream.stopViewing();view.clear();identities.delete(removed);context.clear();view.userId=null;}
         catch(error){status(error.message);}
         finally{busy=false;controls();}
-        const next=identities.values().next().value;if(next)await select(next,wasViewing);
+        const next=identities.values().next().value;if(next)await select(next,wasViewing);else renderSettings();
     });
     $('liveStreamWatchButton').addEventListener('click', async () => {
         void globalThis.WMOFAudio?.unlock?.();
@@ -364,7 +374,7 @@
         await globalThis.WMOFAccountSettings.load(user.id,csrf);
         await preferences.load(user.id);
         $('dropInPageStatus').textContent=permission(64) ? '' : text('07dba185-8a12-583b-bc6c-c900ac30541d');
-        lookup.sync();controls();
+        lookup.sync();renderSettings();controls();
         const target = new URL(document.URL).searchParams.get('userId');
         if (permission(64) && permission(128) && /^[1-9]\d*$/.test(target || '')) {
             const url = new URL('api/admin/user-lookup/',document.baseURI); url.searchParams.set('id',target);

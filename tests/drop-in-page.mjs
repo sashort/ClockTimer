@@ -5,6 +5,7 @@ const html=fs.readFileSync(new URL('../drop-in.html',import.meta.url),'utf8');
 assert(!/src="(?:app|SherpaRecognizer|SpeechMicBar)\.js/.test(html),'standalone viewer loads no main app or microphone engine');
 assert(!html.includes('id="tripListButton"'),'viewer omits Trip Log');
 assert(html.includes('src="api/audio/AudioEngine.js"'),'viewer retains remote speech playback');
+assert(!html.includes('id="dropInDetailsButton"'),'User Details is removed from the menu');
 const w=new Window({url:'https://clock.example/drop-in.php'});w.structuredClone=structuredClone;
 w.document.body.innerHTML=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
 w.eval(fs.readFileSync(new URL('../DropInPreferences.js',import.meta.url),'utf8'));
@@ -12,9 +13,10 @@ w.eval(fs.readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'))
 w.eval(fs.readFileSync(new URL('../ObserverSettingBadge.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../TimerAppearance.js',import.meta.url),'utf8'));
-const events=[],errors=[],stored=new Map();let rejectStart=false;
+const events=[],errors=[],stored=new Map();let rejectStart=false,rejectSave=false;
 w.WMOFPersistence={async getItem(key){return stored.get(key);},async setItem(key,value){stored.set(key,value);}};
-w.WMOFAccountSettings={async load(){},peek:()=>stored.get('settings'),async write(namespace,changes){stored.set('settings',changes.preferences);}};
+w.WMOFAccountSettings={async load(){},peek:()=>stored.get('settings'),async write(namespace,changes){if(rejectSave)throw new Error('save failed');stored.set('settings',changes.preferences);}};
+w.WMOFObserverGoalPad=class {constructor(options){w.testGoalPad=options;}async open(scope,value){w.goalOpened={scope,value};}refresh(){}cancel(){}};
 w.addEventListener("error",event=>errors.push(event.message));
 w.WMOFLiveTripStream=class extends w.EventTarget {
  constructor(){super();w.testStream=this;this.viewing=false;}
@@ -47,7 +49,7 @@ const watch=async id=>{
 };
 await watch(2);
 assert.equal(w.testStream.targetUserId,2);
-assert.equal(w.document.getElementById('liveStreamWatchedName').textContent,'Test 2');
+assert.equal(w.document.getElementById('liveStreamUserSelect').selectedOptions[0].textContent,'Test 2');
 w.document.getElementById('liveStreamTrainerMessageText').value='hello';
 w.document.getElementById('liveStreamTrainerMessageSend').click();await tick();
 assert.deepEqual(JSON.parse(JSON.stringify(events.find(e=>e?.type==='trainer.tts'))),{target:2,type:'trainer.tts',payload:{text:'hello'}});
@@ -105,13 +107,22 @@ rejectStart=true;w.document.getElementById('liveStreamPreviousUser').click();awa
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'permission revoked','failure remains visible after controls refresh');
 assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,true);
 assert.equal(w.testStream.viewing,false,'failed authorization does not optimistically connect');
-rejectStart=false;$('dropInRemoveUser').click();await tick();assert.equal(w.testView.userId,3);assert.equal($('liveStreamViewMode').value,'day','switch after removal restores remaining user custom preferences');$('dropInRemoveUser').click();await tick();assert.match($('liveStreamWatchedName').textContent,/^[—-]$/);assert.equal($('liveStreamTrainerMessage').disabled,true);
+rejectStart=false;$('dropInRemoveUser').click();await tick();assert.equal(w.testView.userId,3);assert.equal($('liveStreamViewMode').value,'day','switch after removal restores remaining user custom preferences');$('dropInRemoveUser').click();await tick();assert.equal($('liveStreamWatchedName'),null);assert.equal($('liveStreamTrainerMessage').disabled,true);
 assert.equal($('liveStreamViewTime').closest('.live-stream-view-controls').hidden,true,'Settings cannot edit time display');
 assert.equal($('dropInSettingsMode'),null,'Mode comparison belongs in its popover');
 assert($('dropInClockSettings'),'Settings retains live read-only ClockTimer settings');
 assert.equal($('dropInDefaultMode'),null,'default display information is read-only');
 // Defaults remain editable without a selected user and do not rewrite saved user profiles.
+assert.equal($('dropInMenu').contains($('toggleSyncMenuButton')),false,'Sync control is outside the hamburger menu');
 const previousUsers=JSON.stringify(JSON.parse([...stored.values()][0]).users);
+for(const id of ['scopeToggle','toggleSyncMenuButton','goalPercentValue'])assert.equal($(id).disabled,false,'default controls stay enabled without observed users');
+change('liveStreamViewMode','year');assert.equal($('dropInTargetDefault').checked,true);assert.equal($('dropInTargetUser').disabled,true);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetCancel').click();assert.equal($('liveStreamViewMode').value,'trip','cancel restores defaults');
+change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.mode,'day');
+$('toggleSyncMenuButton').click();$('dropInSyncPopover').querySelector('[data-sync=on]').click();assert.equal($('dropInTargetUser').disabled,true);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.sync,'on');
+$('goalPercentValue').click();await tick();assert.equal(w.goalOpened.scope,'total');w.testGoalPad.onConfirm('total',125);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.totalGoal,'125');assert.equal($('goalPercentValue').textContent,'125%');
+rejectSave=true;change('liveStreamViewMode','year');$('dropInTargetApply').click();await tick();assert.equal($('liveStreamViewMode').value,'day','failed default save restores accepted mode');rejectSave=false;
+assert.deepEqual(Object.keys(JSON.parse(stored.get('settings')).users),Object.keys(JSON.parse(previousUsers)),'default-only edits do not create a phantom user');
+assert.equal(JSON.parse(stored.get('settings')).users['3'].sources.view.mode,'default','matching saved user override follows the new default');
 const defaultAudio=w.document.querySelector('[data-default-audio="master"]');defaultAudio.value='75';defaultAudio.dispatchEvent(new w.Event('change'));await tick();
 assert.equal(JSON.parse([...stored.values()][0]).defaults.audio.master,75);
 assert.equal(w.document.querySelector('[data-settings-default="audio.master"]').textContent,'Default: 75%');

@@ -1,20 +1,20 @@
-html { min-height: 100%; overflow: auto; }
-body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
+html { height: 100%; overflow: hidden; }
+body { margin: 0; height: 100dvh; min-height: 0; overflow: hidden; display:flex; flex-direction:column; }
 .drop-in-page-header { display:flex; justify-content:space-between; padding:8px 16px; }
 .drop-in-page-header a { color:inherit; }
 #dropInPageStatus { margin:0; padding:0 16px; }
 #dropInPageStatus:empty { display:none; }
-#liveStreamDialog.standalone-drop-in { position:static; inset:auto; transform:none; margin:0; width:100%; max-height:none; overflow:visible; }
+#liveStreamDialog.standalone-drop-in { position:static; inset:auto; transform:none; margin:0; width:100%; max-height:none; overflow:hidden; flex:1; min-height:0; display:grid; grid-template-rows:minmax(0,1fr) auto; }
 /* Same summary, clock and sizing rules as Order Filler. Only the control row differs. */
 .standalone-drop-in .app.live-stream-mirror {
  display:grid; justify-items:stretch; gap:0; visibility:visible;
- height:max(600px, calc(100dvh - 36px));
- grid-template-rows:52px 142px 62px 0 minmax(280px,1fr);
+ height:100%; min-height:0;
+ grid-template-rows:52px 142px 62px 0 minmax(0,1fr);
  --home-clock-preferred-size:56vw;
 }
-.standalone-drop-in .app-header { grid-template-columns:minmax(0,1fr) minmax(100px,1fr); }
-.standalone-drop-in .live-stream-user-heading { margin:0; padding:8px 12px; align-self:center; font-size:22px; overflow-wrap:anywhere; }
-.standalone-drop-in .scope-control { display:block; }
+.standalone-drop-in .app-header { grid-template-columns:52px minmax(0,1fr); grid-template-rows:52px; }
+.standalone-drop-in .scope-control { display:block; grid-column:2; grid-row:1; }
+.standalone-drop-in .scope-toggle { width:100%; height:100%; }
 .standalone-drop-in .scope-control label { display:flex; align-items:center; height:100%; }
 .standalone-drop-in .scope-control label>span { display:none; }
 .standalone-drop-in .scope-control select { width:100%; height:100%; border:0; font-size:24px; }
@@ -36,7 +36,6 @@ body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
 #userLookupDialog { max-height:calc(100dvh - 24px); }
 @media(max-width:500px) {
  .standalone-drop-in .app.live-stream-mirror { --home-clock-preferred-size:90vw; }
- .standalone-drop-in .live-stream-user-heading { font-size:18px; }
  .standalone-drop-in .viewer-timer-controls { gap:8px; flex-wrap:wrap; }
  .viewer-timer-controls label>span { font-size:12px; }
  .standalone-drop-in .percent-summary { font-size:38px; }
@@ -44,7 +43,6 @@ body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
  .viewer-tools .live-stream-readout { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 
-.standalone-drop-in .app-header {grid-template-columns:52px minmax(0,1fr) minmax(110px,auto);}
 .standalone-drop-in .scope-control label[hidden] {display:none;}
 #dropInMenu {align-self:center;}
 #dropInMenu .hamburger-menu-popover {width:min(380px,calc(100vw - 24px));}
@@ -61,7 +59,10 @@ body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
 #dropInMenu select {width:100%;min-height:40px;}
 #dropInMenu .live-stream-status,#dropInSettingsStatus,#dropInDefaultStatus {padding:8px 12px;}
 #dropInMenu .live-stream-readout {grid-template-columns:1fr;}
-.drop-in-chat {max-width:1000px;margin:0 auto;padding:16px;}
+.drop-in-chat {width:100%;max-width:1000px;box-sizing:border-box;margin:0 auto;padding:4px 12px 8px;}
+.drop-in-chat .live-stream-status:empty {display:none;}
+.drop-in-chat .live-stream-trainer-message-row {display:flex;}
+.drop-in-chat .live-stream-trainer-message-row input {width:0;}
 .drop-in-chat fieldset {min-width:0;}
 :is(.drop-in-apply-dialog,.drop-in-trip-log,.mode-date-dialog) {color:white;background:#001e60;border:1px solid #a9ddf7;border-radius:12px;box-sizing:border-box;width:min(680px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;}
 .dialog-actions {display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:16px;}
@@ -81,7 +82,7 @@ body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
 .standalone-drop-in .scope-control {display:grid;grid-template-columns:minmax(0,1fr);}
 .standalone-drop-in .viewer-timer-controls {min-height:0;}
 .standalone-drop-in .viewer-timer-controls label[hidden] {display:none;}
-.standalone-drop-in .app.live-stream-mirror {grid-template-rows:52px 142px auto 0 minmax(280px,1fr);}
+.standalone-drop-in .app.live-stream-mirror {grid-template-rows:52px 142px auto 0 minmax(0,1fr);}
 #dropInMicrophoneButton {border:0;padding:0;margin:0;position:relative;z-index:1;}
 #dropInMicrophoneButton:disabled {cursor:default;}
 
@@ -92,7 +93,6 @@ body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
 .settings-source[data-source=default] {background:#164b69;}
 .settings-source[data-source=custom] {background:#654118;border-color:#ffd78b;}
 .settings-source[data-source=mirror] {background:#233e8a;}
-#dropInViewSettings #toggleSyncMenuButton {padding:0;border:0;background:transparent;color:inherit;text-align:left;}
 #dropInViewSettings .live-stream-volume-controls label {flex-wrap:wrap;}
 #dropInViewSettings .live-stream-volume-controls .settings-source {margin-left:auto;}
 
@@ -119,3 +119,5 @@ body { margin: 0; min-height: 100dvh; height: auto; overflow: auto; }
 #observerGoalMirror {display:block;margin:12px auto;min-height:40px;padding:8px 18px;border:1px solid #a9ddf7;border-radius:8px;color:white;background:#12448b;}
 
 #toggleSyncMenuButton[data-sync-mode="user"]>span:last-child {text-decoration:none;}
+
+#dropInTargetDialog label:has(input:disabled) {opacity:.45;cursor:not-allowed;}

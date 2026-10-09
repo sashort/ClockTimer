@@ -33,7 +33,7 @@
                     </div><hr>
 <label class="drop-in-mirror-option" hidden data-menu-icon="settings"><input id="dropInMirrorSettings" type="checkbox" checked><span>Mirror Settings</span></label>
 <label class="drop-in-source-choice" data-menu-icon="settings"><select id="dropInSettingsSource" aria-label="Settings"><option value="default">Default</option><option value="custom">Custom</option><option value="user">User</option></select></label>
-<button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-menu-icon="settings" aria-pressed="false"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"><span class="sync-mirror-badge" data-menu-icon="mirror" hidden></span></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">Sync Goals</span></button>
+
 <div class="drop-in-menu-group"><button id="dropInViewSettingsButton" type="button" data-menu-icon="settings" aria-expanded="false" aria-controls="dropInViewSettings">Settings</button>
 <div id="dropInViewSettings" class="drop-in-menu-fields" hidden><strong id="dropInSettingsOwner"></strong><p id="dropInSettingsApplied" class="settings-applied"></p>
 
@@ -72,7 +72,12 @@
                             <small class="settings-default-value" data-settings-default="audio.program"></small><input class="default-audio-range" data-default-audio="program" type="range" min="0" max="100" step="1" aria-label="Default: {value}"><small class="settings-source" data-settings-source="audio.program"></small><input id="liveStreamProgramVolume" type="range" min="0" max="100" step="1" value="100">
                         </label>
                     </fieldset><hr><button id="dropInSaveDefault" type="button" data-menu-icon="settings" >Save sound as default</button><button id="dropInRestoreDefault" type="button" data-menu-icon="settings" >Use default sound</button><p id="dropInDefaultStatus" role="status"></p></div></div>
-<div class="drop-in-menu-group"><button id="dropInDetailsButton" type="button" data-menu-icon="profile" aria-expanded="false" aria-controls="dropInDetails">User Details</button><div id="dropInDetails" class="drop-in-menu-fields" hidden>                    <div class="live-stream-readout" aria-live="polite">
+<button id="dropInTripLogButton" type="button" data-menu-icon="book">Trip Log</button>
+<button id="dropInLogoutButton" type="button" data-menu-icon="logout">Logout</button>
+<button id="dropInExitButton" type="button" data-menu-icon="logout">Exit</button>
+<p id="dropInSettingsStatus" role="status"></p><a href="index.php" data-menu-icon="clock">WMOF</a><output id="appVersion">LOCAL</output>
+</hamburger-menu>
+<div hidden aria-hidden="true"><div class="live-stream-readout" aria-live="polite">
                         <div><span data-language-id="01be1c81-fcf4-5ae0-9942-52a9d182147f">State</span><strong id="liveStreamRemoteState" data-language-id="2997a7c9-b0ed-5104-af1f-aacdd4a4f66e">—</strong></div>
 
 
@@ -83,13 +88,8 @@
                         <div><span data-language-id="96f1c96c-128a-52fe-a35b-ed2f2a2a0522">User’s Sync</span><strong id="liveStreamUserSync">—</strong></div>
                         <div><span data-language-id="fecedef0-fd5b-5178-98be-7cff996a8180">Watcher selected goal</span><strong id="liveStreamViewerActiveGoal">—</strong></div>
                         <div class="live-stream-transcript"><span data-language-id="c3b1d0a6-4795-5e97-9186-4fe6418cc388">Speech</span><strong id="liveStreamRemoteSpeech" data-language-id="fcb824ef-3b4d-536d-8880-98c8234d3e1a">—</strong></div>
-                    </div></div></div>
-<button id="dropInTripLogButton" type="button" data-menu-icon="book">Trip Log</button>
-<button id="dropInLogoutButton" type="button" data-menu-icon="logout">Logout</button>
-<button id="dropInExitButton" type="button" data-menu-icon="logout">Exit</button>
-<p id="dropInSettingsStatus" role="status"></p><a href="index.php" data-menu-icon="clock">WMOF</a><output id="appVersion">LOCAL</output>
-</hamburger-menu>
-<span id="liveStreamWatchedName" class="live-stream-user-heading">—</span>
+                    </div></div>
+
 <div class="scope-control"><button id="scopeToggle" class="scope-toggle" type="button" data-language-id="3f0a124e-0f14-5d73-ba42-5747a4742234">Trip</button>
 </div><label hidden><span data-language-id="b45a71cd-085a-5cf6-a888-8e542e21430a">Viewing mode</span><select id="liveStreamViewMode"><option value="user" data-language-id="279e09a9-36c2-5fa9-bed7-730073fd1a7a">User view (mirror)</option><option value="auto" data-language-id="4030be28-c088-5b0d-9039-92fb3e84f3d6">Auto</option><option value="trip" data-language-id="906193ec-18dd-5208-a4bc-162df6b650c4">Trip</option><option value="day" data-language-id="679e79f2-5cb5-50a2-9625-3f019146213c">Day</option><option value="week" data-language-id="0cd2eb74-19fc-5121-af25-d600a813907d">Week</option><option value="pay-period" data-language-id="2d36d8c6-7d35-5b36-8634-12c6e2677fb7">Money</option><option value="month" data-language-id="dbcdee29-519f-5a37-bf6c-03adee4241f7">Month</option><option value="year" data-language-id="b8c105f6-d44e-5ec3-b548-45d5a317d3a9">Year</option><option value="custom" data-language-id="fcc1b60f-e7a5-5194-b230-07a963542f72">Custom</option></select></label>
 
@@ -111,6 +111,8 @@
                 <span data-language-id="2f72226d-f12c-587e-a1dc-9341551f1ddb">/</span>
                 <button id="goalPercentValue" class="percent-value-button" type="button" aria-label="Edit percent goal" data-language-id="da1e5b94-5af1-5f80-820e-a5f5af35107d">100%</button>
                 <button id="dropInMicrophoneButton" class="goal-sync-button observer-mic-button" type="button" aria-label="Observed user microphone" aria-pressed="false"></button>
+
+<button id="toggleSyncMenuButton" class="goal-sync-button sync-goals-menu-button" type="button" data-menu-icon="settings" aria-pressed="false" aria-label="Sync Goals"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"><span class="sync-mirror-badge" data-menu-icon="mirror" hidden></span></span></button>
 
             </div>
 
