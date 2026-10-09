@@ -4277,15 +4277,15 @@
     }
 
     function tripLogIsPinned() {
-        return app.dataset.tripLogPinned !== "false";
+        return globalThis.ClockTimerTripLogModel.pinned(app.dataset.tripLogPinned);
     }
 
     function getStoredTripLogPinned() {
-        return safeStorageGet(STORAGE.tripLogPinned) !== "false";
+        return globalThis.ClockTimerTripLogModel.pinned(safeStorageGet(STORAGE.tripLogPinned));
     }
 
     function setTripLogPinned(value, { persist = true } = {}) {
-        const pinned = value !== false;
+        const pinned = globalThis.ClockTimerTripLogModel.pinnedInput(value);
 
         app.dataset.tripLogPinned = String(pinned);
 
@@ -4827,7 +4827,7 @@
     }
 
     function getTripLogIncludeCurrent() {
-        return safeStorageGet(STORAGE.tripLogIncludeCurrent) === "true";
+        return globalThis.ClockTimerTripLogModel.includeCurrent(safeStorageGet(STORAGE.tripLogIncludeCurrent));
     }
 
     function setTripLogIncludeCurrent(value) {
