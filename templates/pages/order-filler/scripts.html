@@ -40,18 +40,24 @@
 <script id="clockTimerSettingsFrameController">
 (() => {
   const dialog = document.getElementById("clockTimerSettingsFrameDialog");
-  const close = document.getElementById("clockTimerSettingsFrameClose");
-  if (!dialog || !close || dialog.dataset.controllerReady) return;
+  const frame = document.getElementById("clockTimerSettingsFrame");
+  if (!dialog || !frame || dialog.dataset.controllerReady) return;
   dialog.dataset.controllerReady = "true";
-  close.addEventListener("click", () => dialog.close());
-  document.querySelectorAll('[data-open-clock-timer-settings]').forEach(button => {
+  document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
     button.addEventListener("click", () => {
+      const surface = button.dataset.settingsSurface;
+      frame.src = surface
+        ? "settings.html?surface=" + encodeURIComponent(surface)
+        : "settings.html";
       const menu = document.getElementById("settingsSubmenu");
       if (menu) menu.hidden = true;
       const menuButton = document.getElementById("settingsMenuButton");
       if (menuButton) menuButton.setAttribute("aria-expanded", "false");
       if (!dialog.open) dialog.showModal();
     });
+  });
+  dialog.addEventListener("click", event => {
+    if (event.target === dialog) dialog.close();
   });
 })();
 </script>
