@@ -9,6 +9,8 @@ on:
       - "AudioUnlock.js"
       - "tests/audio-unlock.mjs"
       - "CalendarStartup.js"
+      - "StartupAnnouncement.js"
+      - "tests/startup-announcement.mjs"
       - "StartupTasks.js"
       - "Context.js"
       - "ResourceLoader.js"
@@ -116,6 +118,8 @@ jobs:
           node --check AudioUnlock.js
           node tests/audio-unlock.mjs
           node --check CalendarStartup.js
+          node --check StartupAnnouncement.js
+          node tests/startup-announcement.mjs
           node --check StartupTasks.js
           node --check Context.js
           node --check ResourceLoader.js
