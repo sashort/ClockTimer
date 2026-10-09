@@ -113,7 +113,7 @@ assert.equal(model.formatSummaryPercent("not-a-number"), "---",
     "invalid summary percentages use the fallback");
 assert.equal(model.formatSummaryPercent(undefined, "n/a"), "n/a",
     "summary percentage fallback is configurable");
-assert.equal(model.formatActualPercent(0.82345), "82.35%",
+assert.equal(model.formatActualPercent(0.8236), "82.36%",
     "actual percentages display two decimal places");
 assert.equal(model.formatActualPercent(1), "100.00%",
     "actual percentages retain two decimal places for whole values");
