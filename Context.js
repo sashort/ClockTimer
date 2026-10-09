@@ -41,30 +41,54 @@
     }
 
     function normalize(input, parent) {
-        const base = parent ? parent : infer();
         const requested = input && typeof input === "object" ? input : {};
-        const capabilities = { ...(base.capabilities || {}), ...(requested.capabilities || {}) };
-        // A child may disable a capability, but cannot re-enable one disabled by its parent.
-        if (parent) {
-            for (const key of RESTRICTIVE_CAPABILITIES) {
-                if (parent.capabilities?.[key] === false) capabilities[key] = false;
+        const parentContext = parent ? normalize(parent) : null;
+        const inferred = parentContext || infer();
+        const host = requested.host || inferred.host;
+        const hostPolicy = root.ClockTimerPageManifest?.resolve(host) || {
+            host,
+            presentation: inferred.presentation || "application",
+            features: inferred.features || [],
+            capabilities: inferred.capabilities || {},
+            options: inferred.options || {}
+        };
+        const base = parentContext || (requested.host ? hostPolicy : inferred);
+        const capabilities = {
+            ...(hostPolicy.capabilities || {}),
+            ...(base.capabilities || {}),
+            ...(requested.capabilities || {})
+        };
+        // Neither an explicit top-level override nor a nested resource may
+        // enable capabilities forbidden by its resolved host or its parent.
+        for (const key of RESTRICTIVE_CAPABILITIES) {
+            if (hostPolicy.capabilities?.[key] === false
+                || base.capabilities?.[key] === false
+                || parentContext?.capabilities?.[key] === false) {
+                capabilities[key] = false;
             }
         }
+
+        const requestedFeatures = requested.features
+            ? [...new Set(requested.features)]
+            : [...(base.features || hostPolicy.features || [])];
+        const parentFeatures = parentContext?.features || null;
+        const allowedHostFeatures = hostPolicy.features || [];
+        const features = requestedFeatures.filter(feature =>
+            (allowedHostFeatures.includes("*") || allowedHostFeatures.includes(feature))
+            && (!parentFeatures || parentFeatures.includes("*") || parentFeatures.includes(feature))
+        );
+
         return Object.freeze({
+            ...hostPolicy,
             ...base,
             ...requested,
-            host: requested.host || base.host,
-            surface: requested.surface || base.surface,
-            presentation: requested.presentation || base.presentation,
-            features: Object.freeze(
-                requested.features
-                    ? [...new Set(requested.features)].filter(feature =>
-                        !parent || (base.features || []).includes("*") || (base.features || []).includes(feature))
-                    : [...(base.features || [])]
-            ),
+            host,
+            surface: requested.surface || base.surface || (host === "settings-frame" ? "settings" : "application"),
+            presentation: requested.presentation || base.presentation || hostPolicy.presentation || "application",
+            features: Object.freeze(features),
             capabilities: Object.freeze(capabilities),
-            options: Object.freeze({ ...(base.options || {}), ...(requested.options || {}) }),
-            parent: parent || null
+            options: Object.freeze({ ...(hostPolicy.options || {}), ...(base.options || {}), ...(requested.options || {}) }),
+            parent: parentContext
         });
     }
 
