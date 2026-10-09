@@ -12,6 +12,8 @@ on:
       - "tests/audio-settings-model.mjs"
       - "tests/audio-announcement-draft.mjs"
       - "AudioAnnouncementDraft.js"
+      - "AudioAnnouncementPolicy.js"
+      - "tests/audio-announcement-policy.mjs"
       - "AudioOutputSettings.js"
       - "AudioSettingsPersistence.js"
       - "TripLogRangeFeedback.js"
@@ -204,6 +206,7 @@ jobs:
           node tests/audio-settings-startup.mjs
           node tests/audio-settings-model.mjs
           node tests/audio-announcement-draft.mjs
+          node tests/audio-announcement-policy.mjs
           node tests/audio-output-settings.mjs
           node tests/audio-settings-persistence.mjs
           node tests/trip-log-range-feedback.mjs
