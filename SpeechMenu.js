@@ -8249,9 +8249,17 @@ class SpeechMenu {
                     return text;
                 }
 
+                // A preprocessor may explicitly reject a provisional
+                // candidate with false. Stop the chain; #processElement treats
+                // that sentinel as a rejected candidate. Successful transforms
+                // must always remain strings.
+                if (result === false) {
+                    return false;
+                }
+
                 if (typeof result !== "string") {
                     throw new TypeError(
-                        "Each speech preprocessor must return a string."
+                        "Each speech preprocessor must return a string or false to reject a candidate."
                     );
                 }
 
