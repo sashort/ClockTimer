@@ -29,6 +29,8 @@ on:
       - "tests/trip-log-model.mjs"
       - "TripGoalModel.js"
       - "tests/trip-goal-model.mjs"
+      - "TimerDisplayModel.js"
+      - "tests/timer-display-model.mjs"
       - "TripDraftModel.js"
       - "tests/trip-draft-model.mjs"
       - "TripPreferencesModel.js"
@@ -166,6 +168,8 @@ jobs:
           node tests/trip-log-model.mjs
           node --check TripGoalModel.js
           node tests/trip-goal-model.mjs
+          node --check TimerDisplayModel.js
+          node tests/timer-display-model.mjs
           node --check TripDraftModel.js
           node tests/trip-draft-model.mjs
           node --check TripPreferencesModel.js
