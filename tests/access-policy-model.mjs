@@ -9,6 +9,17 @@ vm.runInContext(readFileSync(new URL("../AccessPolicyModel.js", import.meta.url)
 const policy = sandbox.ClockTimerAccessPolicyModel;
 
 assert.ok(policy, "access policy model registers its API");
+assert.deepEqual(JSON.parse(JSON.stringify(policy.constants)), {
+    PERMISSION_SUPERUSER: 4,
+    PERMISSION_DEVELOPER_PREVIEW: 8,
+    PERMISSION_DEVELOPER: 16,
+    PERMISSION_GRANT_TOKEN_ACCESS: 32,
+    PERMISSION_VIEW_LIVE_STREAMS: 64,
+    PERMISSION_LOOKUP_USERS: 128,
+    ACCESS_TOKEN_PERMISSION_MASK: 36,
+    SPEECH_EDITOR_PERMISSION_MASK: 28,
+    DEVELOPER_MENU_PERMISSION_MASK: 24
+});
 for (const bit of [undefined, null, "", "not-a-number", NaN]) {
     assert.equal(policy.canViewLiveStreams(bit), false);
     assert.equal(policy.canLookupUsers(bit), false);
