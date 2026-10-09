@@ -48,32 +48,14 @@
     const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
     await announcementLanguage.load(document.documentElement.lang || "en-US");
     const announcementText = (key, values) => announcementLanguage.text(key, values);
-    const startupAnnouncement = globalThis.ClockTimerStartupAnnouncement
-        ? globalThis.ClockTimerStartupAnnouncement.create({
-            settingsOnlyPage,
-            audio: globalThis.WMOFAudio,
-            text: announcementText
-        })
-        : (() => {
-            // Compatibility for cached HTML that predates StartupAnnouncement.js.
-            let pending = true;
-            let started = false;
-            let finish;
-            const finished = new Promise(resolve => { finish = () => { pending = false; resolve(); }; });
-            const start = () => {
-                if (started) return;
-                started = true;
-                if (settingsOnlyPage) { finish(); return; }
-                try {
-                    const spoken = globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceLogin.applicationStarting"), {
-                        onEnd: finish, onError: finish
-                    });
-                    if (!spoken || !globalThis.WMOFAudio?.speak) finish();
-                } catch { finish(); }
-            };
-            start();
-            return { start, finish, finished, get pending() { return pending; } };
-        })();
+    if (!globalThis.ClockTimerStartupAnnouncement) {
+        throw new Error("StartupAnnouncement.js did not register its factory.");
+    }
+    const startupAnnouncement = globalThis.ClockTimerStartupAnnouncement.create({
+        settingsOnlyPage,
+        audio: globalThis.WMOFAudio,
+        text: announcementText
+    });
     const startupAnnouncementPending = () => startupAnnouncement.pending;
     const finishStartupAnnouncement = startupAnnouncement.finish;
     const startupAnnouncementFinished = startupAnnouncement.finished;
