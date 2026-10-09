@@ -8,6 +8,10 @@ vm.createContext(sandbox);
 vm.runInContext(readFileSync(new URL("../LiveStreamViewModel.js", import.meta.url), "utf8"), sandbox);
 const model = sandbox.ClockTimerLiveStreamViewModel;
 assert.ok(model, "live-stream view model registers its API");
+assert.equal(model.shouldPublish({id: 7}, "online"), true);
+assert.equal(model.shouldPublish({id: 7}, "offline"), false);
+assert.equal(model.shouldPublish({id: 0}, "online"), false);
+assert.equal(model.shouldPublish(null, "online"), false);
 
 assert.deepEqual(JSON.parse(JSON.stringify(model.project({
     uiState: {
