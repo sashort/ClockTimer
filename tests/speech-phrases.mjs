@@ -454,7 +454,7 @@ assert.match(
 );
 assert.match(
     speechMasterAppSource,
-    /changeGoalMode[\s\S]*?rangeByMode[\s\S]*?day:[\s\S]*?"day"[\s\S]*?week:[\s\S]*?"week"[\s\S]*?check:[\s\S]*?"pay-period"[\s\S]*?month:[\s\S]*?"month"[\s\S]*?year:[\s\S]*?"year"[\s\S]*?requestedMode[\s\S]*?"total"/
+    /changeGoalMode[\s\S]*?rangeByMode = globalThis\.WMOFLanguagePack\.language\.speech\.ranges[\s\S]*?requestedRange[\s\S]*?requestedMode = [\s\S]*?requestedRange[\s\S]*?"total"/
 );
 assert.doesNotMatch(
     speechMasterAppSource,
