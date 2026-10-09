@@ -30,7 +30,8 @@
     "test:state-transactions": "node async-command-lifecycle.mjs && node trip-summary.mjs && node clock-state-contract.mjs && node async-persistence.mjs && node clock-state-transactions.mjs && node app-state-transactions.mjs && node app-state-transactions.mjs --pointer-confirmation && node app-state-transactions.mjs --ready-finish && node app-state-transactions.mjs --ready-finish --saved-ready --voice-feedback --range-voice --summary-state --voicepad-gate --trip-summary && node app-state-transactions.mjs --voice-feedback && node app-state-transactions.mjs --scheduled-standard && node app-state-transactions.mjs --scheduled-cancel && node speech-command-digest.mjs && node app-state-transactions.mjs --post-start-interrupted-final",
     "test:voice-login": "node app-state-transactions.mjs --voice-login --voice-feedback",
     "test:login-layout:windows": "node login-modal-layout-browser.cjs",
-    "test:standalone-settings": "node standalone-settings-page.mjs"
+    "test:standalone-settings": "node standalone-settings-page.mjs",
+    "test:dispatcher-context": "node dispatcher-context.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
