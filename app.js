@@ -2469,18 +2469,23 @@
     const { defaultAudioSettings } = audioSettingsData;
 
     function loadAudioSettings() {
-        const raw = safeStorageGet(STORAGE.audioSettings);
-        return audioSettingsData.read(raw);
+        return globalThis.WMOFAudioSettingsPersistence.load({
+            readStorage: safeStorageGet,
+            storageKey: STORAGE.audioSettings,
+            settingsModel: audioSettingsData
+        });
     }
 
     let audioSettings =
         loadAudioSettings();
 
     function saveAudioSettings() {
-        safeStorageSet(
-            STORAGE.audioSettings,
-            audioSettingsData.serialize(audioSettings)
-        );
+        globalThis.WMOFAudioSettingsPersistence.save({
+            writeStorage: safeStorageSet,
+            storageKey: STORAGE.audioSettings,
+            settingsModel: audioSettingsData,
+            settings: audioSettings
+        });
     }
 
     function getAudioVoiceSelection(language = AUDIO_LANGUAGE) {
