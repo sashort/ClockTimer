@@ -66,6 +66,19 @@
         return percentModes.includes(normalized) ? normalized : "trip";
     }
 
+    function syncRuntimeState({ connectionStatus, syncGoalsEnabled, tripLive, requirements } = {}) {
+        if (connectionStatus === "offline") return "offline";
+        if (!syncGoalsEnabled) return "off";
+        if (!tripLive) return "ready";
+
+        const tripGoal = Number(requirements?.tripGoal);
+        const adjustedTimeElapsed = Number(requirements?.adjustedTimeElapsed);
+        return Number.isFinite(tripGoal) && tripGoal > 0
+            && Number.isFinite(adjustedTimeElapsed) && adjustedTimeElapsed > 0
+            ? "active"
+            : "time-blocked";
+    }
+
     function countedPercent(detail) {
         return Number(detail?.summary?.total?.countedPercent);
     }
@@ -89,6 +102,7 @@
         remainingDescriptor,
         countedPercent,
         normalizePercentMode,
+        syncRuntimeState,
         formatSummaryPercent,
         formatActualPercent
     });
