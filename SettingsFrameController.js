@@ -24,7 +24,12 @@
                 const requested = button.dataset.settingsSurface;
                 const surface = surfaces.has(requested) ? requested : "graphicalSettingsDialog";
                 frame.dataset.settingsSurface = surface;
-                frame.src = "settings.html?surface=" + encodeURIComponent(surface);
+                const parentHost = documentRef.body?.classList?.contains("drop-in-page")
+                    || documentRef.body?.querySelector?.("#liveStreamDialog")
+                    ? "drop-in"
+                    : "order-filler";
+                const query = new URLSearchParams({ surface, parentHost });
+                frame.src = "settings.html?" + query.toString();
                 const menu = button.closest("hamburger-menu");
                 if (menu && typeof menu.hidePopover === "function") {
                     try { menu.hidePopover(); } catch {}
