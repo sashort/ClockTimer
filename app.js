@@ -6071,11 +6071,12 @@
     }
 
     function saveTripPreferences(preferences) {
+        const model = globalThis.ClockTimerTripPreferencesModel;
         safeStorageSet(
             STORAGE.tripPreferences,
-            JSON.stringify(
-                preferences
-            )
+            model?.serialize
+                ? model.serialize(preferences)
+                : JSON.stringify(preferences)
         );
     }
 
