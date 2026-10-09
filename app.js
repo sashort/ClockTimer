@@ -5302,7 +5302,7 @@
     }
 
     function setTripProductionFilter(value, {notify=true}={}) {
-        if (!["all","productive","non-productive"].includes(value)) value="all";
+        value = globalThis.ClockTimerTripLogModel.normalizeProductionFilter(value);
         clockTimer.productionFilter=value;
         $("#tripProductionFilter").value=value;
         safeStorageSet("wmof.tripProductionFilter",value);
