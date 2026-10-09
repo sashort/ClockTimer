@@ -6,6 +6,9 @@ assert(!/src="(?:app|SherpaRecognizer|SpeechMicBar)\.js/.test(html),'standalone 
 assert(!html.includes('id="tripListButton"'),'viewer omits Trip Log');
 assert(/src="api\/audio\/AudioEngine\.js(?:\?[^"]*)?"/.test(html),'viewer retains remote speech playback');
 assert(!html.includes('id="dropInDetailsButton"'),'User Details is removed from the menu');
+assert.match(html, /id="dropInClockSettingsButton"[^>]*data-open-clock-timer-settings[^>]*data-settings-surface="graphicalSettingsDialog"/, 'existing ClockTimer menu item opens graphical settings');
+assert.doesNotMatch(html, /drop-in-settings-link|openClockTimerSettingsFrame/, 'Drop-In has no added settings button at the top');
+assert.doesNotMatch(html, /id="dropInClockSettingsPanel"|id="dropInClockSettings"/, 'duplicate read-only ClockTimer settings panel is removed');
 const w=new Window({url:'https://clock.example/drop-in.php'});w.structuredClone=structuredClone;
 w.document.body.innerHTML=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
 w.eval(fs.readFileSync(new URL('../DropInPreferences.js',import.meta.url),'utf8'));
@@ -107,7 +110,7 @@ const syncPopover=$('dropInSyncPopover');let nativeSyncOpen=true;const originalM
 // Native dismissal happens before its queued toggle event synchronizes hidden.
 syncPopover.hidePopover();assert.equal(syncPopover.hidden,false);$('toggleSyncMenuButton').click();assert.equal(nativeSyncOpen,true,'first click after native dismissal must reopen Sync');
 const staleToggle=new w.Event('toggle');Object.defineProperty(staleToggle,'newState',{value:'closed'});syncPopover.dispatchEvent(staleToggle);assert.equal(syncPopover.hidden,false,'late close event must not hide the reopened popover');assert.equal($('toggleSyncMenuButton').getAttribute('aria-expanded'),'true');
-assert.match($('dropInClockSettings').textContent,/Timer layout/);assert.match($('dropInClockSettings').textContent,/#abcdef/);assert(!$('dropInClockSettings').textContent.includes('#123456'),'observer uses own Order Filler appearance');$('toggleSyncMenuButton').click();
+assert.equal($('dropInClockSettings'),null,'ClockTimer settings are opened in the graphical settings iframe rather than rendered a second time inline');$('toggleSyncMenuButton').click();
 $('dropInTripLogButton').click();await tick();assert.equal(events.find(e=>e?.logTarget).logTarget,3,'log targets observed user rather than observer');assert.equal($('dropInTripLogRows').children.length,1);$('dropInTripLogCancel').click();
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:2,snapshot:{userId:2}}}));
 assert(!events.includes('snapshot:2'),'old target snapshot ignored');
@@ -135,9 +138,11 @@ assert.equal(w.testStream.viewing,false,'failed authorization does not optimisti
 rejectStart=false;$('dropInRemoveUser').click();await tick();assert.equal(w.testView.userId,3);assert.equal($('liveStreamViewMode').value,'day','switch after removal restores remaining user custom preferences');$('dropInRemoveUser').click();await tick();assert.equal($('liveStreamWatchedName'),null);assert.equal($('liveStreamTrainerMessage').disabled,true);
 assert.equal($('liveStreamViewTime').closest('.live-stream-view-controls').hidden,true,'Settings cannot edit time display');
 assert.equal($('dropInSettingsMode'),null,'Mode comparison belongs in its popover');
-assert($('dropInClockSettings'),'Settings retains live read-only ClockTimer settings');
-assert.equal($('dropInViewSettings').querySelectorAll(':scope > .drop-in-menu-group').length,2,'Settings has exactly ClockTimer and Inbound Sound sub-items');
-for(const id of ['dropInClockSettingsButton','dropInInboundSoundButton'])assert.equal($( $(id).getAttribute('aria-controls')).hidden,true,'each Settings sub-item starts collapsed');
+assert.equal($('dropInClockSettings'),null,'Drop-In does not render a duplicate inline ClockTimer settings panel');
+assert.equal($('dropInClockSettingsButton').dataset.settingsSurface,'graphicalSettingsDialog','ClockTimer menu item targets graphical settings');
+assert.equal($('dropInClockSettingsButton').hasAttribute('aria-controls'),false,'ClockTimer is a navigation item rather than a disclosure');
+assert.equal($('dropInViewSettings').querySelectorAll(':scope > .drop-in-menu-group').length,2,'Settings retains the ClockTimer and Inbound Sound menu items');
+assert.equal($($('dropInInboundSoundButton').getAttribute('aria-controls')).hidden,true,'Inbound Sound submenu starts collapsed');
 assert.equal($('dropInDefaultMode'),null,'default display information is read-only');
 // Defaults remain editable without a selected user and do not rewrite saved user profiles.
 assert.equal($('dropInMenu').contains($('toggleSyncMenuButton')),false,'Sync control is outside the hamburger menu');
