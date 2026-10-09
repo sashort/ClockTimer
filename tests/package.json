@@ -35,6 +35,7 @@
     "test:settings-frame-controller": "node settings-frame-controller.mjs",
     "test:speech-runtime-loader": "node speech-runtime-loader.mjs",
     "test:dispatcher-context": "node dispatcher-context.mjs",
+    "test:startup-announcement": "node startup-announcement.mjs",
     "test:audio-unlock": "node audio-unlock.mjs"
   },
   "dependencies": {
