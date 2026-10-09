@@ -45,7 +45,11 @@ body.settings-page > dialog#tripSettingsDialog {
 body.settings-page > dialog::backdrop { display:none; }
 body.settings-page #graphicalSettingsDialog #graphicalSettingsForm { max-height:none !important; }
 @media (max-width:700px) { body.settings-page { padding:.5rem; } #settingsPageHeader h1 {font-size:1.2rem;} }
-body.settings-page.settings-surface-focused > dialog:not([data-requested-settings-surface]) { display:none !important; }
+body.settings-page.settings-surface-focused > dialog#graphicalSettingsDialog:not([data-requested-settings-surface]),
+body.settings-page.settings-surface-focused > dialog#audioSettingsDialog:not([data-requested-settings-surface]),
+body.settings-page.settings-surface-focused > dialog#audioAnnouncementsDialog:not([data-requested-settings-surface]),
+body.settings-page.settings-surface-focused > dialog#stateSettingsDialog:not([data-requested-settings-surface]),
+body.settings-page.settings-surface-focused > dialog#tripSettingsDialog:not([data-requested-settings-surface]) { display:none !important; }
 </style>
 </head>
 <body class="settings-page">
