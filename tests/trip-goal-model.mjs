@@ -20,6 +20,14 @@ assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnable
 assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: true, tripLive: true,
     requirements: {tripGoal: 120, adjustedTimeElapsed: 30}}), "active",
     "positive finite goal requirements activate sync goals");
+assert.equal(model.currentCalculatedSyncGoal({tripGoal: 180}, 90), 180,
+    "explicit required goal takes precedence over the calculated fallback");
+assert.equal(model.currentCalculatedSyncGoal({tripGoal: 0}, 90), 90,
+    "non-positive required goal falls back to the calculated goal");
+assert.equal(model.currentCalculatedSyncGoal({}, -1), undefined,
+    "invalid required and calculated goals produce no goal");
+assert.equal(model.currentCalculatedSyncGoal({tripGoal: "invalid"}, "120"), 120,
+    "numeric calculated fallback retains Number conversion semantics");
 for (const requirements of [undefined, {}, {tripGoal: 0, adjustedTimeElapsed: 30},
     {tripGoal: 120, adjustedTimeElapsed: 0}, {tripGoal: "invalid", adjustedTimeElapsed: 30}]) {
     assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: true,
