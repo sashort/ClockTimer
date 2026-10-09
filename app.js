@@ -29817,48 +29817,33 @@
             }
         })();
     } else showInitialLoginDialog();
-    const initializeCalendar = () => globalThis.ClockTimerStartup.runWhenEnabled(
-        "calendarStartup",
-        pageContext,
-        () => {
-            if (globalThis.ClockTimerCalendarStartup) {
-                return globalThis.ClockTimerCalendarStartup.start({
-                    apiBase: API_BASE,
-                    calendarRanges,
-                    refreshTripLogSelection,
-                    showTripRangeError
-                });
-            }
-
-            // Compatibility for an older HTML page whose cache predates CalendarStartup.js.
-            return (async () => {
-                try {
-                    const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {
-                        credentials: "same-origin",
-                        headers: { Accept: "application/json" }
-                    });
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.message || "Calendar lookup failed.");
-                    calendarRanges.setDatabaseRecords(data.calendars);
-                    refreshTripLogSelection();
-                } catch (error) {
-                    showTripRangeError(error.message || "Calendar lookup failed.");
-                }
-            })();
-        }
-    );
-
-    if (!settingsOnlyPage && globalThis.ClockTimerDispatcher) {
-        globalThis.ClockTimerDispatcher.register(
-            "calendarStartup",
-            initializeCalendar,
-            context => context.capabilities?.calendarStartup !== false
-        );
-        void globalThis.ClockTimerDispatcher.bootstrap(pageContext).catch(error => {
-            console.error("ClockTimer startup dispatcher failed.", error);
+    if (globalThis.ClockTimerCalendarStartup?.register && globalThis.ClockTimerDispatcher) {
+        globalThis.ClockTimerCalendarStartup.register({
+            dispatcher: globalThis.ClockTimerDispatcher,
+            startup: globalThis.ClockTimerStartup,
+            context: pageContext,
+            settingsOnlyPage,
+            apiBase: API_BASE,
+            calendarRanges,
+            refreshTripLogSelection,
+            showTripRangeError
         });
     } else if (!settingsOnlyPage) {
-        void initializeCalendar();
+        // Compatibility for cached HTML that predates CalendarStartup.js.
+        void (async () => {
+            try {
+                const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {
+                    credentials: "same-origin",
+                    headers: { Accept: "application/json" }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Calendar lookup failed.");
+                calendarRanges.setDatabaseRecords(data.calendars);
+                refreshTripLogSelection();
+            } catch (error) {
+                showTripRangeError(error.message || "Calendar lookup failed.");
+            }
+        })();
     }
 
     // Settings iframe bootstrap waits for this event before invoking the same
