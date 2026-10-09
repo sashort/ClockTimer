@@ -120,6 +120,20 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     assert.deepEqual(Array.from(nestedHostContext.features), ["settings"]);
     assert.equal(nestedHostContext.capabilities.speechMenu, false);
 
+    const restrictedParent = sandbox.ClockTimerContext.normalize({
+        host: "order-filler",
+        features: ["application", "settings"],
+        capabilities: { speechRecognition: false, audioAnnouncements: false }
+    });
+    const nestedOverrideAttempt = sandbox.ClockTimerContext.child(restrictedParent, {
+        surface: "nestedSettingsTemplate",
+        capabilities: { speechRecognition: true, audioAnnouncements: true }
+    });
+    assert.equal(nestedOverrideAttempt.capabilities.speechRecognition, false,
+        "nested resources cannot re-enable a capability disabled by their parent");
+    assert.equal(nestedOverrideAttempt.capabilities.audioAnnouncements, false,
+        "all restrictive capabilities inherit through nested resources");
+
     const settingsSurface = sandbox.ClockTimerSettingsSurfaces.contextFor(hostContext, "tripSettingsDialog");
     assert.equal(settingsSurface.surface, "tripSettingsDialog");
     assert.equal(settingsSurface.presentation, "graphical-settings");
