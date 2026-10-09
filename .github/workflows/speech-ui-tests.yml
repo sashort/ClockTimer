@@ -6,6 +6,8 @@ on:
       - sherpa-client-asr
   pull_request:
     paths:
+      - "ClassicScriptLoader.js"
+      - "tests/classic-script-loader.mjs"
       - "AudioUnlock.js"
       - "tests/audio-unlock.mjs"
       - "CalendarStartup.js"
@@ -120,6 +122,8 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          node --check ClassicScriptLoader.js
+          node tests/classic-script-loader.mjs
           node --check AudioUnlock.js
           node tests/audio-unlock.mjs
           node --check CalendarStartup.js
