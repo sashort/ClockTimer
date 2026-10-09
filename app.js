@@ -536,77 +536,11 @@
             );
         };
 
-    const identityDisplayName =
-        identity => {
-            if (!identity) {
-                return "No user selected";
-            }
+    const identityDisplayName = identity =>
+        identityContext.displayName(identity);
 
-            const formal =
-                [
-                    identity.firstName,
-                    identity.lastName
-                ]
-                    .filter(
-                        Boolean
-                    )
-                    .join(
-                        " "
-                    )
-                    .trim();
-
-            return (
-                identity.preferredName ||
-                formal ||
-                identity.username ||
-                "User"
-            );
-        };
-
-    const identityMeta =
-        identity => {
-            if (!identity) {
-                return "Use Account Lookup to select an identity.";
-            }
-
-            const formal =
-                [
-                    identity.firstName,
-                    identity.lastName
-                ]
-                    .filter(
-                        Boolean
-                    )
-                    .join(
-                        " "
-                    )
-                    .trim();
-            const parts = [];
-
-            if (
-                identity.preferredName &&
-                formal &&
-                identity.preferredName !==
-                    formal
-            ) {
-                parts.push(
-                    formal
-                );
-            }
-
-            parts.push(
-                "@" +
-                    identity.username
-            );
-            parts.push(
-                "ID " +
-                    identity.userId
-            );
-
-            return parts.join(
-                " · "
-            );
-        };
+    const identityMeta = identity =>
+        identityContext.displayMeta(identity);
 
     function syncLiveStreamIdentityUI() {
         if ($("#trainerMenuGroup")) $("#trainerMenuGroup").hidden = $("#liveStreamButton")?.hidden;
