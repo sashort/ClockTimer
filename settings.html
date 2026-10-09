@@ -39,6 +39,7 @@ body.settings-page > dialog#audioSettingsDialog:not([open]),
 body.settings-page > dialog#audioAnnouncementsDialog:not([open]),
 body.settings-page > dialog#stateSettingsDialog:not([open]),
 body.settings-page > dialog#tripSettingsDialog:not([open]) { display:none !important; }
+body.settings-page > dialog::backdrop { display:none !important; }
 
 body.settings-page > dialog#graphicalSettingsDialog[data-primary-settings-surface],
 body.settings-page > dialog#audioSettingsDialog[data-primary-settings-surface],
@@ -52,8 +53,11 @@ body.settings-page > dialog#tripSettingsDialog[data-primary-settings-surface] {
  box-sizing:border-box;
  width:100% !important;
  max-width:100% !important;
- /* The dialog's margin is now the iframe's margin. Keep its original
-    padding, height/max-height, background and overflow behavior unchanged. */
+ /* The old dialog's size and centering move to the iframe. Keep this surface's
+    original padding, border, background, and overflow rules. */
+ height:100% !important;
+ min-height:0 !important;
+ max-height:100% !important;
  margin:0 !important;
 }
 
@@ -1324,9 +1328,28 @@ html.settings-embedded-document { overflow:auto !important; background:transpare
   const surface = document.getElementById(surfaceId);
   if (!surface) return;
   surface.setAttribute("data-primary-settings-surface", "");
-  try { surface.dispatchEvent(new Event("opening")); } catch {}
-  if (!surface.open) {
-    try { surface.show(); } catch { surface.setAttribute("open", ""); }
+  if (embedded) {
+    surface.addEventListener("close", () => {
+      try {
+        window.parent.postMessage({ type: "clocktimer-settings-closed" }, window.location.origin);
+      } catch {}
+    });
+  }
+
+  // Route through the original app trigger so its existing form-population,
+  // validation, focus, and settings handlers run exactly as in Order-Filler.
+  const originalTrigger = document.querySelector('[data-dialog="' + surfaceId + '"]');
+  if (originalTrigger) {
+    originalTrigger.dispatchEvent(new Event("pointerup", { bubbles: true, cancelable: true }));
+    return;
+  }
+  const opening = new CustomEvent("opening", {
+    bubbles: true,
+    cancelable: true,
+    detail: { reason: "user", duration: 0 }
+  });
+  if (surface.dispatchEvent(opening)) {
+    try { surface.showModal(); } catch { surface.setAttribute("open", ""); }
   }
 })();
 </script>
