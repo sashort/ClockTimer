@@ -56,4 +56,31 @@ assert.equal(model.userFacingTotalText("Totality is unrelated to Total", "Month"
     "scope replacement does not alter words containing Total");
 assert.equal(model.userFacingTotalText(null, "Year"), "",
     "missing display text normalizes to an empty string");
+
+const offlineWindow = {startTime: "2026-10-01T00:00:00Z", endTime: "2026-11-01T00:00:00Z"};
+const offlineResult = model.offlineTrips({
+    cachedTrips: [
+        {id: 1, startTime: "2026-10-02T08:00:00Z", nonProduction: false, source: "cache"},
+        {id: 2, startTime: "2026-10-03T08:00:00Z", nonProduction: true},
+        {id: 3, startTime: "2026-11-01T00:00:00Z", nonProduction: false}
+    ],
+    localTrips: [
+        {id: 1, startTime: "2026-10-02T09:00:00Z", nonProduction: false, source: "local"},
+        {id: 4, startTime: "2026-10-04T08:00:00Z", nonProduction: false}
+    ],
+    window: offlineWindow,
+    productionFilter: "productive"
+});
+assert.deepEqual(JSON.parse(JSON.stringify(offlineResult.allTrips.map(trip => trip.id))), ["1", "2", "3", "4"]);
+assert.equal(offlineResult.allTrips.find(trip => String(trip.id) === "1").source, "local",
+    "local trip data overrides the cached record with the same ID");
+assert.deepEqual(JSON.parse(JSON.stringify(offlineResult.trips.map(trip => String(trip.id)))), ["1", "4"],
+    "offline trip projection filters by date window and production status");
+assert.equal(offlineResult.offline, true);
+assert.equal(offlineResult.incomplete, true);
+assert.equal(offlineResult.loginRequired, false);
+const noLogin = model.offlineTrips({localTrips: [], window: offlineWindow, loginRequired: true});
+assert.deepEqual(JSON.parse(JSON.stringify(noLogin.allTrips)), [],
+    "login-required projection suppresses cached and local records");
+
 console.log("PASS trip log range, live projection, and scope text model");
