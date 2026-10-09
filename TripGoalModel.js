@@ -59,6 +59,11 @@
         };
     }
 
+    function normalizePercentMode(value) {
+        const normalized = String(value || "trip").trim().toLowerCase();
+        return ["trip", "total", "auto"].includes(normalized) ? normalized : "trip";
+    }
+
     function countedPercent(detail) {
         return Number(detail?.summary?.total?.countedPercent);
     }
@@ -80,6 +85,7 @@
         remainingOutcome,
         remainingDescriptor,
         countedPercent,
+        normalizePercentMode,
         formatSummaryPercent,
         formatActualPercent
     });
