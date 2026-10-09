@@ -4837,24 +4837,23 @@
 
     function offlineTripLogData(calendar) {
         let cached;
-        try {const raw = safeStorageGet("wmof.tripLogCache"); cached = typeof raw === "string" ? JSON.parse(raw) : raw;} catch {}
+        try {
+            const raw = safeStorageGet("wmof.tripLogCache");
+            cached = typeof raw === "string" ? JSON.parse(raw) : raw;
+        } catch {}
         const local = clockTimer.getLocalTripLog();
         const loginRequired = deliberatelyLoggedOut || (!signedInProfile && !cached && !local.length);
-        const allTrips = new Map();
-        if (!loginRequired) {
-            if (cached && (!signedInProfile || cached.userId === signedInProfile.id)) {
-                for (const trip of cached.trips || []) allTrips.set(String(trip.id), trip);
-            }
-            for (const trip of local) allTrips.set(String(trip.id), trip);
-        }
-        const tripWindow = CalendarRange.tripWindow(calendar);
-        const trips = [...allTrips.values()].filter(trip => {
-            const time = Date.parse(/Z$|[+-]\d\d:\d\d$/.test(trip.startTime) ? trip.startTime : trip.startTime.replace(" ", "T") + "Z");
-            const filter = clockTimer.productionFilter || "all";
-            return time >= Date.parse(tripWindow.startTime) && time < Date.parse(tripWindow.endTime) &&
-                (filter === "all" || (filter === "productive" && !trip.nonProduction) || (filter === "non-productive" && trip.nonProduction));
+        const cachedTrips = !loginRequired && cached
+            && (!signedInProfile || cached.userId === signedInProfile.id)
+            ? cached.trips || []
+            : [];
+        return globalThis.ClockTimerTripLogModel.offlineTrips({
+            cachedTrips,
+            localTrips: local,
+            loginRequired,
+            window: CalendarRange.tripWindow(calendar),
+            productionFilter: clockTimer.productionFilter || "all"
         });
-        return {trips, allTrips: [...allTrips.values()], loginRequired, offline: true, incomplete: true};
     }
 
     function renderTripLog(data, calendar) {
