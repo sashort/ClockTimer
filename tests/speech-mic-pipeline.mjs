@@ -22,6 +22,15 @@ Object.defineProperty(globalThis, "navigator", {
     value: window.navigator
 });
 
+// Keep this test isolated from the production English language-pack bootstrap.
+// SpeechMicBar needs only these two language-pack methods during construction;
+// loading the real pack also changes command-chain behavior under test.
+const testLanguagePack = Object.freeze({
+    text: key => String(key),
+    markup: value => String(value)
+});
+globalThis.WMOFLanguagePack = window.WMOFLanguagePack = testLanguagePack;
+
 let rafId = 0;
 window.requestAnimationFrame = globalThis.requestAnimationFrame = callback => ++rafId;
 window.cancelAnimationFrame = globalThis.cancelAnimationFrame = () => {};
