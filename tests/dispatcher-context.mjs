@@ -299,6 +299,8 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     assert.ok(Array.from(result.resources).includes("settings-style"));
     assert.ok(Array.from(result.resources).includes("trip-preferences-model"),
         "settings-frame shares the app preference model");
+    assert.ok(Array.from(result.resources).includes("trip-preferences-store"),
+        "settings-frame loads the app preference storage adapter");
     assert.equal(appendedResources.some(resource => resource.src === "/speech-runtime.js"), false,
         "settings context must not load application speech resources");
     assert.deepEqual(Array.from(result.features), []);
@@ -309,6 +311,8 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     assert.equal(result.context.host, "drop-in");
     assert.equal(Array.from(result.resources).includes("trip-preferences-model"), false,
         "Drop-In uses its own preferences module rather than the Order-Filler trip-preferences model");
+    assert.equal(Array.from(result.resources).includes("trip-preferences-store"), false,
+        "Drop-In must not load the Order-Filler preference storage adapter");
     assert.equal(appendedResources.some(resource =>
         String(resource.src || "").startsWith("TripPreferencesModel.js?build=")), false);
     assert.equal(result.resources.includes("speech-startup"), false,
