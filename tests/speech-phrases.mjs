@@ -438,7 +438,7 @@ assert.match(
 );
 assert.match(
     speechMasterAppSource,
-    /setMasterSpeech[\s\S]*?masters\.summary[\s\S]*?masters\.details[\s\S]*?Speech On[\s\S]*?Speech Off[\s\S]*?ignoreSummaryMaster/
+    /setMasterSpeech[\s\S]*?audioSettings\.masters\.summary[\s\S]*?audioSettings\.masters\.details[\s\S]*?messages\.settings\.speechOn[\s\S]*?messages\.settings\.speechOff[\s\S]*?ignoreSummaryMaster/
 );
 assert.match(
     announcementCatalogSource,
