@@ -4214,7 +4214,7 @@
   "external_surfaces": {
     "settings_page": {
       "path": "settings.html",
-      "purpose": "Standalone settings document aggregating existing ClockTimer settings surfaces.",
+      "purpose": "Shared settings document embedded in an iframe inside a modal dialog.",
       "surfaces": [
         "graphicalSettingsDialog",
         "audioSettingsDialog",
@@ -4223,12 +4223,17 @@
         "tripSettingsDialog"
       ],
       "drop_in_access": {
-        "action": "open",
-        "target": "_blank",
+        "action": "open_modal_dialog",
+        "container": "iframe",
         "preserves_current_page": true
       },
       "lifecycle_effect": "none",
-      "invariant": "Settings navigation does not dispatch start, stop, or reset and does not alter trip lifecycle state."
+      "invariant": "Opening or closing the settings dialog does not dispatch start, stop, or reset and does not alter trip lifecycle state.",
+      "order_filler_access": {
+        "action": "open_modal_dialog",
+        "container": "iframe",
+        "entry": "Settings menu"
+      }
     }
   }
 }
