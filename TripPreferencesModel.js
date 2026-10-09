@@ -25,5 +25,9 @@
         }
     }
 
-    root.ClockTimerTripPreferencesModel = Object.freeze({ defaults, normalize, read });
+    function serialize(value) {
+        return JSON.stringify(normalize(value));
+    }
+
+    root.ClockTimerTripPreferencesModel = Object.freeze({ defaults, normalize, read, serialize });
 })(globalThis);
