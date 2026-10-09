@@ -59,67 +59,15 @@
         globalThis
             .WMOFAnnouncementCatalog;
 
-    const AUDIO_ANNOUNCEMENTS =
-        Object.freeze(
-            (
-                ANNOUNCEMENT_CATALOG
-                    ?.list?.() ||
-                []
-            )
-                .map(
-                    entry => [
-                        entry.key,
-                        entry.label
-                    ]
-                )
-        );
-
-    const announcementDefinition =
-        key =>
-            ANNOUNCEMENT_CATALOG
-                ?.get?.(
-                    key
-                );
-
-    const announcementSongName =
-        key =>
-            announcementDefinition(
-                key
-            )?.song ||
-            key;
-
-    const announcementOverridesMaster =
-        (
-            key,
-            layer
-        ) =>
-            announcementDefinition(
-                key
-            )
-                ?.masterOverrides
-                ?.includes?.(
-                    layer
-                ) === true;
-
-    const announcementSpeechIgnoresMaster =
-        (
-            key,
-            {
-                ignoreSummaryMaster =
-                    false
-            } = {}
-        ) =>
-            Boolean(
-                ignoreSummaryMaster ||
-                announcementOverridesMaster(
-                    key,
-                    "summary"
-                ) ||
-                announcementOverridesMaster(
-                    key,
-                    "details"
-                )
-            );
+    const announcementPolicy =
+        globalThis.ClockTimerAnnouncementCatalogModel.create(ANNOUNCEMENT_CATALOG);
+    const {
+        audioAnnouncements: AUDIO_ANNOUNCEMENTS,
+        definition: announcementDefinition,
+        songName: announcementSongName,
+        overridesMaster: announcementOverridesMaster,
+        speechIgnoresMaster: announcementSpeechIgnoresMaster
+    } = announcementPolicy;
 
     const AUDIO_LANGUAGE = globalThis.WMOFLanguagePack?.locale || "en-US";
     const {
