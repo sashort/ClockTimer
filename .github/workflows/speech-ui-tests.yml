@@ -16,6 +16,8 @@ on:
       - "AudioSettingsPersistence.js"
       - "TripLogRangeFeedback.js"
       - "TripLogPinController.js"
+      - "TripLogCustomDates.js"
+      - "tests/trip-log-custom-dates.mjs"
       - "AudioVoiceOptions.js"
       - "AudioInstrumentOptions.js"
       - "tests/audio-instrument-options.mjs"
@@ -194,6 +196,7 @@ jobs:
           node tests/audio-settings-persistence.mjs
           node tests/trip-log-range-feedback.mjs
           node tests/trip-log-pin-controller.mjs
+          node tests/trip-log-custom-dates.mjs
           node tests/audio-voice-options.mjs
           node tests/audio-instrument-options.mjs
           node --check SpeechAssetCache.js
