@@ -6408,20 +6408,14 @@
     }
 
     function normalizedConnectionStatus(value = clockTimer.networkStatus) {
-        return value === "online" ? "online" : "offline";
+        return globalThis.ClockTimerConnectionStatusModel.normalize(value);
     }
 
     function getConnectionVisualStatus(status = clockTimer.networkStatus) {
-        if (
-            connectionCloudPhase === "retry" ||
-            connectionCloudPhase === "awaiting-login"
-        ) {
-            return "pending";
-        }
-
-        return status === "pending"
-            ? "pending"
-            : normalizedConnectionStatus(status);
+        return globalThis.ClockTimerConnectionStatusModel.visualStatus(
+            status,
+            connectionCloudPhase
+        );
     }
 
     function setCloudIconVisualState(element, getState, applyState, nextState, { animate = true } = {}) {
