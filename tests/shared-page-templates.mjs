@@ -10,7 +10,14 @@ for(const page of pages){
  const source=fs.readFileSync(new URL('../templates/'+page+'.html',import.meta.url),'utf8');
  assert.equal(source.trim(),'{{page:'+page+'}}','each page delegates to the shared document');
  const html=render(root,source),staticPage=fs.readFileSync(new URL('../'+page+'.html',import.meta.url),'utf8');
- assert.equal(html,staticPage,'static preview must be regenerated from shared templates');
+ if(html!==staticPage){
+  let difference=0;
+  while(difference<html.length&&difference<staticPage.length&&html[difference]===staticPage[difference])difference++;
+  console.error('Static preview mismatch for',page,'at',difference,'rendered length',html.length,'static length',staticPage.length,
+   '\\nrendered:',JSON.stringify(html.slice(Math.max(0,difference-160),difference+240)),
+   '\\nstatic:',JSON.stringify(staticPage.slice(Math.max(0,difference-160),difference+240)));
+ }
+ assert.equal(html,staticPage,'static preview must be regenerated from shared templates: '+page);
  assert(!/\{\{(?:page|include|text|locale|speech|options|language-pack):?/.test(html),'all placeholders resolve');
  const w=new Window();w.document.write(html);
  for(const id of ['userLookupDialog','appVersion','language-pack'])assert.equal(w.document.querySelectorAll('#'+id).length,1,page+' includes '+id+' once');
