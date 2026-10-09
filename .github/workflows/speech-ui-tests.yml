@@ -6,6 +6,8 @@ on:
       - sherpa-client-asr
   pull_request:
     paths:
+      - "AudioSettingsModel.js"
+      - "tests/audio-settings-model.mjs"
       - "SpeechAssetCache.js"
       - "tests/speech-asset-cache.mjs"
       - "ClassicScriptLoader.js"
@@ -124,6 +126,8 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          node --check AudioSettingsModel.js
+          node tests/audio-settings-model.mjs
           node --check SpeechAssetCache.js
           node tests/speech-asset-cache.mjs
           node --check ClassicScriptLoader.js
