@@ -71,6 +71,7 @@ window.eval(fs.readFileSync(new URL('../SpeechRuntimeLoader.js',import.meta.url)
 window.eval(fs.readFileSync(new URL('../SpeechStartup.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../StartupAnnouncement.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../PersistenceStartup.js',import.meta.url),'utf8'));
+window.eval(fs.readFileSync(new URL('../AudioUnlock.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../PersistenceStartup.js',import.meta.url),'utf8'));
 window.SpeechMenu.testBegin();
 if(process.argv.includes('--voice-feedback')) window.eval(fs.readFileSync(new URL('../AnnouncementCatalog.js',import.meta.url),'utf8'));
