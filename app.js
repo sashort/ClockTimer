@@ -24010,7 +24010,11 @@
                     normalized ===
                         undefined
                 ) {
-                    return provisional ? false : text;
+                    // Preprocessors must preserve the string contract for both
+                    // provisional and final recognition passes. Leave invalid
+                    // values untouched; downstream validation decides whether
+                    // the command can execute.
+                    return text;
                 }
 
                 const start =
