@@ -18,6 +18,7 @@ on:
       - "SettingsPageBootstrap.js"
       - "SettingsFrameController.js"
       - "tests/settings-frame-controller.mjs"
+      - "tests/standalone-settings-page.mjs"
       - "tests/settings-page-bootstrap.mjs"
       - "tests/dispatcher-context.mjs"
       - "SpeechMenu.js"
@@ -124,6 +125,7 @@ jobs:
           node --check SettingsFrameController.js
           node tests/settings-frame-controller.mjs
           node tests/dispatcher-context.mjs
+          node tests/standalone-settings-page.mjs
           node tests/time-range-bootstrap.mjs
           node --check TimeRangeModel.js
           node --check TimeRangeElement.js
