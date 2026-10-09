@@ -29883,16 +29883,21 @@
             }
         })();
     } else showInitialLoginDialog();
-    if (!settingsOnlyPage && capabilityEnabled("calendarStartup")) {
-    void (async () => {
-        try {
-            const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {credentials:"same-origin", headers:{Accept:"application/json"}});
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || "Calendar lookup failed.");
-            calendarRanges.setDatabaseRecords(data.calendars);
-            refreshTripLogSelection();
-        } catch (error) { showTripRangeError(error.message || "Calendar lookup failed."); }
-    })();
+    if (!settingsOnlyPage) {
+        void globalThis.ClockTimerStartup.runWhenEnabled("calendarStartup", pageContext, async () => {
+            try {
+                const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {
+                    credentials: "same-origin",
+                    headers: { Accept: "application/json" }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Calendar lookup failed.");
+                calendarRanges.setDatabaseRecords(data.calendars);
+                refreshTripLogSelection();
+            } catch (error) {
+                showTripRangeError(error.message || "Calendar lookup failed.");
+            }
+        });
     }
 
     // Settings iframe bootstrap waits for this event before invoking the same
