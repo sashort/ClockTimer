@@ -689,7 +689,7 @@ assert.match(
     );
     assert.match(
         appSource,
-        /setMasterChime[\s\S]*?audioSettings\.masters\.chime[\s\S]*?renderAudioSettings\(\)[\s\S]*?saveAudioSettings\(\)[\s\S]*?confirmSettingChange\([\s\S]*?audioSettings\.masters\.chime[\s\S]*?Chime On[\s\S]*?Chime Off/
+        /setMasterChime[\s\S]*?audioSettings\.masters\.chime[\s\S]*?renderAudioSettings\(\)[\s\S]*?saveAudioSettings\(\)[\s\S]*?confirmSettingChange\([\s\S]*?messages\.settings\.chimeOn[\s\S]*?messages\.settings\.chimeOff/
     );
     assert.match(
         micSource,
