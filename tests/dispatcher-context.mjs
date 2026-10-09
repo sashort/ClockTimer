@@ -162,6 +162,34 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     appendedResources[2].onload();
     appendedResources[3].onload();
     await Promise.all([styleOne, styleTwo]);
+
+    const nestedScriptNode = {
+        nodeType: 1,
+        dataset: { clocktimerResourceUrl: "/nested.js", clocktimerResource: "script" },
+        childNodes: []
+    };
+    const nestedSettingsNode = {
+        nodeType: 1,
+        dataset: {
+            clocktimerContext: JSON.stringify({
+                surface: "audioSettingsDialog",
+                presentation: "graphical-settings",
+                features: ["settings"],
+                capabilities: { speechMenu: false }
+            })
+        },
+        childNodes: [nestedScriptNode]
+    };
+    const fragment = { nodeType: 11, childNodes: [nestedSettingsNode] };
+    const hydration = sandbox.ClockTimerResources.hydrate(fragment, context);
+    const nestedResource = appendedResources[4];
+    const nestedContext = JSON.parse(nestedResource.dataset.clocktimerContextData);
+    assert.equal(nestedContext.surface, "audioSettingsDialog");
+    assert.deepEqual(Array.from(nestedContext.features), ["settings"]);
+    assert.equal(nestedContext.capabilities.speechMenu, false);
+    nestedResource.handlers.load();
+    nestedResource.onload();
+    await hydration;
 }
 {
     const { sandbox } = makeRuntime();
