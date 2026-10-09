@@ -6,6 +6,8 @@ on:
       - sherpa-client-asr
   pull_request:
     paths:
+      - "AudioUnlock.js"
+      - "tests/audio-unlock.mjs"
       - "CalendarStartup.js"
       - "StartupTasks.js"
       - "Context.js"
@@ -104,6 +106,8 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          node --check AudioUnlock.js
+          node tests/audio-unlock.mjs
           node --check CalendarStartup.js
           node --check StartupTasks.js
           node --check Context.js
