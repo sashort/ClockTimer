@@ -2630,90 +2630,18 @@
     }
 
     function refreshAudioSettingsBoundary() {
-        if (!audioSettingsDialog) {
-            return false;
-        }
-
-        const visualViewport =
-            globalThis.visualViewport;
-        const viewportTop =
-            visualViewport?.offsetTop ??
-            0;
-        const safeBottom =
-            getAudioSettingsSafeBottom();
-        const safeHeight =
-            Math.max(
-                0,
-                safeBottom -
-                    viewportTop
-            );
-
-        for (
-            const dialog of
-            [
-                audioSettingsDialog,
-                audioAnnouncementsDialog
-            ]
-        ) {
-            if (!dialog) continue;
-
-            dialog.style
-                .setProperty(
-                    "--audio-settings-safe-top",
-                    viewportTop +
-                        "px"
-                );
-
-            dialog.style
-                .setProperty(
-                    "--audio-settings-safe-height",
-                    safeHeight +
-                        "px"
-                );
-        }
-
-        return true;
+        return globalThis.WMOFAudioSettingsBoundary.refresh({
+            settingsDialog: audioSettingsDialog,
+            announcementsDialog: audioAnnouncementsDialog,
+            safeBottom: getAudioSettingsSafeBottom()
+        });
     }
 
     function bindAudioSettingsBoundary() {
-        speechMicBar
-            ?.addEventListener(
-                "speech-surface-boundary-change",
-                refreshAudioSettingsBoundary
-            );
-
-        globalThis.visualViewport
-            ?.addEventListener(
-                "resize",
-                refreshAudioSettingsBoundary
-            );
-
-        globalThis.visualViewport
-            ?.addEventListener(
-                "scroll",
-                refreshAudioSettingsBoundary
-            );
-
-        globalThis.addEventListener(
-            "resize",
-            refreshAudioSettingsBoundary
-        );
-
-        if (
-            typeof ResizeObserver ===
-                "function" &&
-            speechMicBar
-        ) {
-            audioSettingsBoundaryResizeObserver =
-                new ResizeObserver(
-                    refreshAudioSettingsBoundary
-                );
-
-            audioSettingsBoundaryResizeObserver
-                .observe(
-                    speechMicBar
-                );
-        }
+        audioSettingsBoundaryResizeObserver = globalThis.WMOFAudioSettingsBoundary.bind({
+            speechMicBar,
+            refreshCallback: refreshAudioSettingsBoundary
+        });
     }
 
     function buildAudioAnnouncementRows() {
