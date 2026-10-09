@@ -90,7 +90,7 @@
         }],
         ["application-startup", {
             type: "script",
-            url: "ApplicationStartup.js?build=application-startup-2",
+            url: "ApplicationStartup.js?build=application-startup-3",
             hosts: ["order-filler", "settings-frame"]
         }],
         ["audio-unlock", {
