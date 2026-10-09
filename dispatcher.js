@@ -116,6 +116,11 @@
             features: ["calendarStartup"],
             capability: "calendarStartup"
         }],
+        ["trip-log-model", {
+            type: "script",
+            url: "TripLogModel.js?build=trip-log-model-1",
+            hosts: ["order-filler"]
+        }],
         ["trip-preferences-model", {
             type: "script",
             url: "TripPreferencesModel.js?build=trip-preferences-model-2",
