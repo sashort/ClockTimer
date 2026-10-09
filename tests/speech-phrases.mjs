@@ -728,6 +728,6 @@ assert.match(
 
     assert.match(
         appSource,
-        /canCloseSurface\(\)[\s\S]*?getTripListState\(\) ===[\s\S]*?"open"/
+        /if \(\s*!dialog\s*\)[\s\S]*?getTripListState\(\) ===[\s\S]*?"open"[\s\S]*?closeTripList\([\s\S]*?"speech-close"/
     );
 }
