@@ -8,6 +8,8 @@ vm.createContext(sandbox);
 vm.runInContext(readFileSync(new URL("../TripGoalModel.js", import.meta.url), "utf8"), sandbox);
 const model = sandbox.ClockTimerTripGoalModel;
 assert.ok(model, "trip goal model registers its public API");
+assert.deepEqual(Array.from(model.percentModes), ["trip", "total", "auto"],
+    "goal scope modes are exported as a stable ordered list");
 
 for (const mode of ["trip", "total", "auto"]) {
     assert.equal(model.normalizePercentMode(mode), mode, `valid goal scope ${mode} is retained`);
