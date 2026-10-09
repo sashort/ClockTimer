@@ -302,6 +302,17 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     assert.deepEqual(Array.from(result.features), []);
 }
 {
+    const { sandbox, appendedResources } = makeRuntime({ classes: ["drop-in-page"] });
+    const result = await sandbox.ClockTimerDispatcher.bootstrap(sandbox.ClockTimerPageContext);
+    assert.equal(result.context.host, "drop-in");
+    assert.ok(Array.from(result.resources).includes("trip-preferences-model"),
+        "Drop-In should load the shared trip-preferences model used by app.js");
+    assert.ok(appendedResources.some(resource =>
+        String(resource.src || "").startsWith("TripPreferencesModel.js?build=")));
+    assert.equal(result.resources.includes("speech-startup"), false,
+        "Drop-In must not load the Order-Filler speech startup resource");
+}
+{
     const { sandbox } = makeRuntime();
     let requestUrl = "";
     let installedRecords = null;
