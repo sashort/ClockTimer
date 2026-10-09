@@ -14,6 +14,10 @@
         const dropInPage = body?.classList.contains("drop-in-page") === true ||
             Boolean(body?.querySelector("#liveStreamDialog"));
         const surface = params.get("surface");
+        const requestedParentHost = params.get("parentHost");
+        const parentHost = ["order-filler", "drop-in"].includes(requestedParentHost)
+            ? requestedParentHost
+            : null;
         return {
             host: dropInPage ? "drop-in" : (settingsPage ? "settings-frame" : "order-filler"),
             surface: surface || (settingsPage ? "settings" : "application"),
@@ -22,7 +26,7 @@
             capabilities: settingsPage
                 ? { speechMenu: false, speechRecognition: false, audioAnnouncements: false, loginFlow: false, calendarStartup: false, liveStream: false }
                 : {},
-            options: {}
+            options: parentHost ? { parentHost } : {}
         };
     }
 
