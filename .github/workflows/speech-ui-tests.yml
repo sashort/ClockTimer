@@ -44,6 +44,8 @@ on:
       - "AnnouncementCatalogModel.js"
       - "SpeechRuntimeOptions.js"
       - "SpeechTransactionTime.js"
+      - "ActionSignalContext.js"
+      - "tests/action-signal-context.mjs"
       - "tests/speech-transaction-time.mjs"
       - "tests/speech-runtime-options.mjs"
       - "tests/announcement-catalog-model.mjs"
@@ -209,6 +211,8 @@ jobs:
           node tests/speech-runtime-options.mjs
           node --check SpeechTransactionTime.js
           node tests/speech-transaction-time.mjs
+          node --check ActionSignalContext.js
+          node tests/action-signal-context.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
