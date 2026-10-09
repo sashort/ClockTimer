@@ -1290,6 +1290,8 @@ body.settings-page #graphicalSettingsDialog #graphicalSettingsForm { max-height:
 
 <script id="standaloneSettingsPageBootstrap">
 (() => {
+  const pageHeader = document.getElementById("settingsPageHeader");
+  if (window.self !== window.top && pageHeader) pageHeader.hidden = true;
   const ids = ["graphicalSettingsDialog","audioSettingsDialog","audioAnnouncementsDialog","stateSettingsDialog","tripSettingsDialog"];
   for (const id of ids) {
     const dialog = document.getElementById(id);
