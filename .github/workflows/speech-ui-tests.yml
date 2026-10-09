@@ -98,6 +98,7 @@ on:
       - "tests/drop-in-*.mjs"
       - "tests/mode-menu.mjs"
       - "IdentityContext.js"
+      - "tests/identity-context-presentation.mjs"
       - "UserLookup.js"
       - "HamburgerMenu.js"
       - "index.html"
@@ -218,6 +219,7 @@ jobs:
           node --check HamburgerMenu.js
           node --check app.js
           node --check IdentityContext.js
+          node tests/identity-context-presentation.mjs
           node --check UserLookup.js
           node --check LiveTripStream.js
           node --check api/audio/VoiceCatalog.js
