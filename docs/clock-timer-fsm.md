@@ -165,6 +165,8 @@ Regression coverage: `observer-microphone.mjs`, `remote_microphone_permissions.p
 
 ## Shared settings dialog surface
 
-ClockTimer settings are presented by `settings.html`, embedded in an iframe inside a modal dialog. Order-Filler and Drop-In open the same settings document in this dialog; closing the outer dialog returns to the unchanged parent page. The iframe hides its standalone return header while embedded.
+Order-Filler and Drop-In display `settings.html` directly inside an iframe-only modal dialog. The modal adds no heading, navigation, or close button around the standalone page. Escape or clicking the dialog backdrop closes the modal and returns to the unchanged parent page.
 
-The settings surface is orthogonal to the trip lifecycle. Opening or closing the settings dialog must not dispatch `start`, `stop`, or `reset`, alter the focused trip phase, or change persistence semantics. The settings forms continue to use the existing settings handlers and persistence paths. Regression coverage lives in `tests/standalone-settings-page.mjs`.
+Order-Filler keeps distinct launcher entries for Clock/Timer Settings and Audio Settings. Each entry selects its corresponding settings surface in the iframe; the generic Drop-In launcher opens the standalone settings page. The standalone page owns its existing labels, controls, and settings handlers. Its embedded presentation hides the standalone return header, while direct navigation without a selected surface retains the full page.
+
+Settings navigation is orthogonal to the trip lifecycle. Opening or closing the dialog must not dispatch `start`, `stop`, or `reset`, alter the focused trip phase, or change persistence semantics. Existing settings handlers and persistence paths are preserved. Regression coverage lives in `tests/standalone-settings-page.mjs`.
