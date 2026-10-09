@@ -165,28 +165,10 @@
                 ?.invocationContext
                 ?.signal || globalThis.WMOFStateTransactions?.current?.signal;
 
-    const speechTransactionDate =
-        () => {
-            const value =
-                globalThis.SpeechMenu
-                    ?.executionContext
-                    ?.utteranceStartedAt;
-
-            if (!value) {
-                return undefined;
-            }
-
-            const date =
-                new Date(
-                    value
-                );
-
-            return Number.isNaN(
-                date.getTime()
-            )
-                ? undefined
-                : date;
-        };
+    const speechTransactionDate = () =>
+        globalThis.ClockTimerSpeechTransactionTime.fromExecutionContext(
+            globalThis.SpeechMenu?.executionContext
+        );
 
     clockTimer.transactionTimestampProvider =
         speechTransactionDate;
