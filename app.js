@@ -399,76 +399,16 @@
         });
     }
 
-    let liveStreamPresenceQueue =
-        Promise.resolve();
-
     const syncAutomaticLivePublisher =
-        () => {
-            if (!liveTripStream) {
-                return Promise.resolve(
-                    false
-                );
-            }
-
-            liveStreamPresenceQueue =
-                liveStreamPresenceQueue
-                    .catch(
-                        () => {}
-                    )
-                    .then(
-                        async () => {
-                            const shouldPublish =
-                                globalThis.ClockTimerLiveStreamViewModel.shouldPublish(
-                                    signedInProfile,
-                                    clockTimer.networkStatus
-                                );
-
-                            if (
-                                shouldPublish &&
-                                !liveTripStream
-                                    .publishing
-                            ) {
-                                await liveTripStream
-                                    .startPublishing({
-                                        requestMicrophone:
-                                            false
-                                    });
-
-                                if (
-                                    globalThis
-                                        .SpeechMenu
-                                        ?.started
-                                ) {
-                                    await liveTripStream
-                                        .refreshPublisherMicrophone?.();
-                                }
-                            }
-                            else if (
-                                !shouldPublish &&
-                                liveTripStream
-                                    .publishing
-                            ) {
-                                await liveTripStream
-                                    .stopPublishing();
-                            }
-
-                            return liveTripStream
-                                .publishing;
-                        }
-                    )
-                    .catch(
-                        error => {
-                            console.warn(
-                                "Automatic live stream presence failed:",
-                                error
-                            );
-
-                            return false;
-                        }
-                    );
-
-            return liveStreamPresenceQueue;
-        };
+        globalThis.ClockTimerLiveStreamPublisher.create({
+            getStream: () => liveTripStream,
+            getProfile: () => signedInProfile,
+            getNetworkStatus: () => clockTimer.networkStatus,
+            isSpeechStarted: () => Boolean(globalThis.SpeechMenu?.started),
+            shouldPublish: (profile, status) =>
+                globalThis.ClockTimerLiveStreamViewModel.shouldPublish(profile, status),
+            logger: console
+        }).sync;
 
     const accessPolicy = globalThis.ClockTimerAccessPolicyModel;
     const canViewLiveStreams = () => accessPolicy.canViewLiveStreams(signedInProfile?.permissions);
