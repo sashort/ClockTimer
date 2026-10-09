@@ -407,33 +407,25 @@
 
     function buildDropInViewData() {
         const summary = clockTimer.getSummarySnapshot();
-        return {
-            summary: {
-                trip: {available:summary.trip.available,
-                    standardTimeMilliseconds:summary.trip.standardTimeMilliseconds,
-                    countedTimeElapsedMilliseconds:summary.trip.countedTimeElapsedMilliseconds,
-                    percentGoal:summary.trip.percentGoal},
-                total: summary.total ? {percentGoal:summary.total.percentGoal,
-                    standardTimeMilliseconds:summary.total?.standardTimeMilliseconds,
-                    countedTimeElapsedMilliseconds:summary.total?.countedTimeElapsedMilliseconds,
-                    allowanceCreditMilliseconds:summary.total?.allowanceCreditMilliseconds} : null
-            },
-            microphone:globalThis.WMOFMicrophoneControl?.read(globalThis.SpeechMenu),
-            timeDisplay:clockTimer.renderedTimeMode,
-            model:clockTimer.exportObserverSnapshot(),
-            appearance:globalThis.WMOFTimerAppearance?.capture(clockTimer),
-            mode:clockTimer.percentMode, range:getTripLogRange(),
-            customDates:getTripLogRange()==="custom"?{start:tripLogStartDate.value,end:tripLogEndDate.value}:null,
-            active:tripIsLive(), tripId:clockTimer.currentTripId,
-            tripStart:clockTimer.uiState?.trip_start_component?.date?.toISOString?.(),
-            nonProduction:clockTimer.nonProduction, productionFilter:clockTimer.productionFilter,
-            calendars:calendarRanges.databaseRecords.map(record => ({
-                profile:record.profile, searchedYear:record.searchedYear, timezone:record.timezone,
-                rules:Object.fromEntries(['weekStartDay','cutoffTime','effectiveFrom','effectiveThrough',
-                    'recurring','payPeriodDays','payPeriodAnchorDate','payPeriodAnchorBasis']
-                    .filter(key => key in record.rules).map(key => [key,record.rules[key]]))
-            }))
-        };
+        const range = getTripLogRange();
+        return globalThis.ClockTimerDropInViewModel.create({
+            summary,
+            microphone: globalThis.WMOFMicrophoneControl?.read(globalThis.SpeechMenu),
+            timeDisplay: clockTimer.renderedTimeMode,
+            model: clockTimer.exportObserverSnapshot(),
+            appearance: globalThis.WMOFTimerAppearance?.capture(clockTimer),
+            mode: clockTimer.percentMode,
+            range,
+            customDates: range === "custom"
+                ? {start: tripLogStartDate.value, end: tripLogEndDate.value}
+                : null,
+            active: tripIsLive(),
+            tripId: clockTimer.currentTripId,
+            tripStart: clockTimer.uiState?.trip_start_component?.date?.toISOString?.(),
+            nonProduction: clockTimer.nonProduction,
+            productionFilter: clockTimer.productionFilter,
+            calendars: calendarRanges.databaseRecords
+        });
     }
 
     let liveStreamPresenceQueue =
