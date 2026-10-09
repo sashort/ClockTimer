@@ -175,6 +175,11 @@
             type: "script",
             url: "AnnouncementCatalogModel.js?build=announcement-catalog-model-1",
             hosts: ["order-filler", "settings-frame"]
+        }],
+        ["speech-runtime-options", {
+            type: "script",
+            url: "SpeechRuntimeOptions.js?build=speech-runtime-options-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
