@@ -72,6 +72,7 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
     assert.equal(r.events.length, 0, "bootstrap must not open the surface before app handlers are ready");
     assert.equal(r.document.documentElement.dataset.clocktimerSettingsBootstrapPending, "true");
     r.document.dispatchEvent(new r.sandbox.Event("clocktimer-app-ready"));
+    await new Promise(resolve => setImmediate(resolve));
     assert.equal(r.events.length, 1);
     assert.equal(r.events[0].target, "trigger");
     assert.equal(r.surface.attributes["data-primary-settings-surface"], "");
@@ -82,7 +83,8 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
 
 {
     const r = runtime({ readyState: "complete", appReady: true, embedded: false });
-    await new Promise(resolve => setImmediate(resolve));\n    assert.equal(r.events.length, 1, "already-ready app starts the requested surface immediately");
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(r.events.length, 1, "already-ready app starts the requested surface immediately");
     assert.equal(r.events[0].target, "trigger");
     assert.equal(r.classes.length, 0, "standalone settings page does not get embedded styling");
 }
