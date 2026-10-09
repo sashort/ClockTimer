@@ -430,11 +430,11 @@ assert.match(
 );
 assert.match(
     speechMasterAppSource,
-    /setGlobalAudioRatePercent[\s\S]*?audioSettings\.speechVelocity[\s\S]*?audioSettings\.toneVelocity[\s\S]*?Speech Rate/
+    /setGlobalAudioRatePercent[\s\S]*?audioSettings\.speechVelocity[\s\S]*?audioVelocityAtPercent[\s\S]*?renderAudioSettings\(\)[\s\S]*?saveAudioSettings\(\)/
 );
 assert.match(
     speechMasterAppSource,
-    /setGlobalAudioVolumePercent[\s\S]*?audioSettings\.speechVolume[\s\S]*?audioSettings\.toneVolume[\s\S]*?Speech Volume/
+    /setGlobalAudioVolumePercent[\s\S]*?audioSettings\.volume[\s\S]*?audioVolumeAtPercent[\s\S]*?applyAudioOutputSettings\(\)[\s\S]*?saveAudioSettings\(\)/
 );
 assert.match(
     speechMasterAppSource,
