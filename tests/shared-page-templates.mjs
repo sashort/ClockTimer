@@ -61,7 +61,7 @@ for(const page of pages){
    assert(w.document.querySelector('#dropInViewSettings #liveStreamVolumeControls'));
    assert(w.document.querySelector('#dropInViewSettings #dropInSaveDefault'));
    assert.equal(w.document.querySelectorAll('[data-settings-default]').length,3);
-   assert(w.document.getElementById('dropInClockSettings'));
+   assert.equal(w.document.getElementById('dropInClockSettings'),null,'duplicate read-only ClockTimer settings panel is removed');
    assert(w.document.querySelector('script[src^="PanePage.js"]'),'viewer menu requires shared pane runtime');
    for(const id of ['newTripButton','endTripButton','breakButton','downButton','tripListButton','tripListMenuButton'])
     assert.equal(w.document.getElementById(id),null,'observer cannot expose publisher actions');
