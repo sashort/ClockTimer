@@ -4190,8 +4190,10 @@
     }
 
     function showTripRangeError(message = "") {
-        if (tripLogRangeError) { tripLogRangeError.textContent = message; tripLogRangeError.hidden = !message; }
-        for (const input of [tripLogStartDate, tripLogEndDate]) input?.setAttribute("aria-invalid", String(Boolean(message)));
+        globalThis.ClockTimerTripLogRangeFeedback.showError(message, {
+            errorElement: tripLogRangeError,
+            dateInputs: [tripLogStartDate, tripLogEndDate]
+        });
     }
 
     async function resolveTripLogCalendar(range = getTripLogRange()) {
