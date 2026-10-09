@@ -36,6 +36,7 @@ window.eval(fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',i
 window.eval(fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8')+'\nwindow.SpeechMenu=SpeechMenu;');
 window.eval(fs.readFileSync(new URL('../TimerAppearance.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../SpeechStartup.js',import.meta.url),'utf8'));
+window.eval(fs.readFileSync(new URL('../StartupAnnouncement.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../app.js',import.meta.url),'utf8'));
 const settle=()=>new Promise(r=>setTimeout(r,100));await settle();
 assert(window.document.querySelector('#scheduledStartDialog'));
