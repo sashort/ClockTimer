@@ -337,17 +337,7 @@
         const identity =
             identityContext
                 ?.current;
-        const self =
-            Boolean(
-                identity &&
-                Number(
-                    identity.userId
-                ) ===
-                    Number(
-                        signedInProfile
-                            ?.id
-                    )
-            );
+        const self = identityContext.isSameUser(identity, signedInProfile?.id);
 
         liveStreamIdentityName.textContent =
             identityDisplayName(
