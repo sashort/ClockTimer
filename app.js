@@ -2572,86 +2572,10 @@
     }
 
     async function populateAudioInstrumentOptions() {
-        if (!audioInstrument) return;
-
-        try {
-            const catalog =
-                await globalThis.WMOFAudio
-                    ?.load?.();
-            const instruments =
-                Object.entries(
-                    catalog?.instruments ||
-                    {}
-                );
-
-            const fragment =
-                document.createDocumentFragment();
-            const defaultOption =
-                document.createElement(
-                    "option"
-                );
-
-            defaultOption.value = "";
-            defaultOption.textContent =
-                globalThis.WMOFLanguagePack.text("b5b19daf-1b1a-595e-ae3d-ec088d1b1978");
-            fragment.append(
-                defaultOption
-            );
-
-            for (
-                const [
-                    id,
-                    instrument
-                ] of instruments
-            ) {
-                if (
-                    instrument
-                        ?.selectable ===
-                        false
-                ) {
-                    continue;
-                }
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-                option.value =
-                    id;
-                option.textContent =
-                    String(
-                        instrument
-                            ?.displayName ||
-                        id
-                    );
-
-                fragment.append(
-                    option
-                );
-            }
-
-            audioInstrument
-                .replaceChildren(
-                    fragment
-                );
-            audioInstrument.value =
-                audioSettings.instrument;
-
-            if (
-                audioInstrument.value !==
-                    audioSettings.instrument
-            ) {
-                audioInstrument.value =
-                    "";
-            }
-        }
-        catch (error) {
-            console.warn(
-                "Unable to load audio instruments:",
-                error
-            );
-        }
+        return globalThis.WMOFAudioInstrumentOptions.populate({
+            select: audioInstrument,
+            selectedInstrument: audioSettings.instrument
+        });
     }
 
     function getAudioSettingsSafeBottom() {
