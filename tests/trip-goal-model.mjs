@@ -11,6 +11,12 @@ assert.ok(model, "trip goal model registers its public API");
 assert.deepEqual(Array.from(model.percentModes), ["trip", "total", "auto"],
     "goal scope modes are exported as a stable ordered list");
 
+const requirementsObject = {tripGoal: 120};
+assert.equal(model.readRequirements(() => requirementsObject), requirementsObject);
+assert.equal(model.readRequirements(() => null), undefined);
+assert.equal(model.readRequirements(() => "invalid"), undefined);
+assert.equal(model.readRequirements(() => { throw new Error("unavailable"); }), undefined,
+    "requirement calculation failures are treated as unavailable");
 assert.equal(model.syncRuntimeState({connectionStatus: "offline", syncGoalsEnabled: true, tripLive: true}),
     "offline", "offline status takes precedence");
 assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: false, tripLive: true}),
