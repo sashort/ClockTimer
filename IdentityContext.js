@@ -117,6 +117,10 @@
             return displayMeta(value);
         }
 
+        isSameUser(value, userId) {
+            return Boolean(value && Number(value.userId) === Number(userId));
+        }
+
         get current() {
             return this.#current;
         }
