@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+const sandbox={Object};sandbox.globalThis=sandbox;vm.createContext(sandbox);
+vm.runInContext(readFileSync(new URL("../ConnectionNumberPadState.js",import.meta.url),"utf8"),sandbox);
+const api=sandbox.ClockTimerConnectionNumberPadState;
+assert.deepEqual(JSON.parse(JSON.stringify(api.state({id:1},{state:{id:2}}))),{id:1});
+assert.deepEqual(JSON.parse(JSON.stringify(api.state(null,{state:{id:2}}))),{id:2});
+assert.equal(api.token(null,{state:{connectionStatusToken:"token-7"}}),"token-7");
+assert.equal(api.token(null,null),undefined);
+console.log("PASS connection number-pad state and token resolution");
