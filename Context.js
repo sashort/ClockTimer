@@ -2,7 +2,7 @@
 (function (root) {
     "use strict";
 
-    const RESTRICTIVE_CAPABILITIES = [
+    const RESTRICTIVE_CAPABILITIES = root.ClockTimerPageManifest?.restrictiveCapabilities || [
         "speechMenu", "speechRecognition", "audioAnnouncements",
         "loginFlow", "calendarStartup", "liveStream"
     ];
@@ -18,15 +18,21 @@
         const parentHost = ["order-filler", "drop-in"].includes(requestedParentHost)
             ? requestedParentHost
             : null;
-        return {
-            host: dropInPage ? "drop-in" : (settingsPage ? "settings-frame" : "order-filler"),
-            surface: surface || (settingsPage ? "settings" : "application"),
+        const host = dropInPage ? "drop-in" : (settingsPage ? "settings-frame" : "order-filler");
+        const policy = root.ClockTimerPageManifest?.resolve(host) || {
+            host,
             presentation: settingsPage ? "graphical-settings" : "application",
             features: settingsPage ? ["settings"] : (dropInPage ? ["drop-in", "settings"] : ["application", "settings", "calendarStartup"]),
             capabilities: settingsPage
                 ? { speechMenu: false, speechRecognition: false, audioAnnouncements: false, loginFlow: false, calendarStartup: false, liveStream: false }
                 : {},
-            options: parentHost ? { parentHost } : {}
+            options: {}
+        };
+        return {
+            ...policy,
+            host,
+            surface: surface || (settingsPage ? "settings" : "application"),
+            options: parentHost ? { ...(policy.options || {}), parentHost } : { ...(policy.options || {}) }
         };
     }
 
