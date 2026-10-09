@@ -6,6 +6,12 @@ on:
       - sherpa-client-asr
   pull_request:
     paths:
+      - "Context.js"
+      - "ResourceLoader.js"
+      - "Lifecycle.js"
+      - "dispatcher.js"
+      - "SettingsSurfaces.js"
+      - "tests/dispatcher-context.mjs"
       - "SpeechMenu.js"
       - "SpeechEditorRuntime.js"
       - "app.js"
@@ -96,6 +102,12 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          node --check Context.js
+          node --check ResourceLoader.js
+          node --check Lifecycle.js
+          node --check dispatcher.js
+          node --check SettingsSurfaces.js
+          node tests/dispatcher-context.mjs
           node tests/time-range-bootstrap.mjs
           node --check TimeRangeModel.js
           node --check TimeRangeElement.js
