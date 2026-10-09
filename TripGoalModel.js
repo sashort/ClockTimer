@@ -42,5 +42,17 @@
             - counted);
     }
 
-    root.ClockTimerTripGoalModel = Object.freeze({ selectGoal, labelDescriptor, remainingMilliseconds });
+    function remainingOutcome(remaining) {
+        if (!Number.isFinite(remaining)) return "unknown";
+        if (remaining > 0) return "banked";
+        if (remaining < 0) return "over";
+        return "on-target";
+    }
+
+    root.ClockTimerTripGoalModel = Object.freeze({
+        selectGoal,
+        labelDescriptor,
+        remainingMilliseconds,
+        remainingOutcome
+    });
 })(globalThis);
