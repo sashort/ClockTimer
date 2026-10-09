@@ -28,7 +28,8 @@ const controller = factory.create({
     logger: {warn: (...args) => warnings.push(args)}
 });
 assert.equal(await controller.sync(), true);
-assert.deepEqual(calls, [["start", {requestMicrophone: false}], ["refresh-microphone"]]);
+assert.deepEqual(JSON.parse(JSON.stringify(calls)),
+    [["start", {requestMicrophone: false}], ["refresh-microphone"]]);
 assert.equal(await controller.sync(), true, "already-publishing stream is left alone");
 assert.equal(calls.length, 2);
 desired = false;
