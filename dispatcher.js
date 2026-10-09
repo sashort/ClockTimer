@@ -153,7 +153,7 @@
         }],
         ["access-policy-model", {
             type: "script",
-            url: "AccessPolicyModel.js?build=access-policy-model-1",
+            url: "AccessPolicyModel.js?build=access-policy-model-2",
             hosts: ["order-filler", "settings-frame"]
         }],
         ["live-stream-view-model", {
