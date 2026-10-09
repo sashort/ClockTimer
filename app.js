@@ -2823,18 +2823,8 @@
     } = audioSettingsData;
 
     function loadAudioSettings() {
-        try {
-            const raw =
-                safeStorageGet(
-                    STORAGE.audioSettings
-                );
-            return normalizeAudioSettings(
-                raw ? JSON.parse(raw) : undefined
-            );
-        }
-        catch {
-            return defaultAudioSettings();
-        }
+        const raw = safeStorageGet(STORAGE.audioSettings);
+        return audioSettingsData.read(raw);
     }
 
     let audioSettings =
@@ -2843,7 +2833,7 @@
     function saveAudioSettings() {
         safeStorageSet(
             STORAGE.audioSettings,
-            JSON.stringify(audioSettings)
+            audioSettingsData.serialize(audioSettings)
         );
     }
 
