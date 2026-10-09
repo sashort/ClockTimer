@@ -1,4 +1,3 @@
-<p class="drop-in-settings-link"><button id="openClockTimerSettingsFrame" type="button" data-open-clock-timer-settings>Open ClockTimer Settings</button></p>
 <p id="dropInPageStatus" role="status"></p>
 <main id="liveStreamDialog" class="standalone-drop-in">
 <div hidden id="observerSummaryMetadata"><span id="liveStreamStandardLabel"></span><span id="liveStreamStandardTime"></span><span id="liveStreamTimeLabel"></span><span id="liveStreamRemoteTime"></span><span id="liveStreamRemoteGoal"></span></div>
@@ -21,38 +20,3 @@
 <dialog id="dropInNamePicker" class="drop-in-apply-dialog"><h2>{{text:46e156b6-3d08-5945-a6b3-8870899bb133:text0}}</h2><label><input type="checkbox" data-name-field="first"><span>{{text:aa5e2b06-f221-5a0a-9cd2-1494ec035d8d:text0}}</span><output data-name-order="first"></output></label><label><input type="checkbox" data-name-field="middle"><span>{{text:20b3c8a9-2e0a-5954-af67-21ba4522f24f:text0}}</span><output data-name-order="middle"></output></label><label><input type="checkbox" data-name-field="last"><span>{{text:9599c156-85a1-51e2-a5e1-03659fed387a:text0}}</span><output data-name-order="last"></output></label><label><input type="checkbox" data-name-field="preferred"><span>{{text:878bf76b-61cc-50ab-9c35-db4445f5d164:text0}}</span><output data-name-order="preferred"></output></label><output id="dropInNamePreview" class="name-template-preview">[]</output><div class="dialog-actions"><button id="dropInNameInsert" type="button" data-menu-icon="check" disabled>{{text:d6ff1846-6151-5f18-89e6-0b3b55d667e1:text0}}</button><button id="dropInNameClear" type="button" data-menu-icon="clear">{{text:a1dec139-3c14-5e84-b8cb-ec8ba84a4d32:text0}}</button><button id="dropInNameCancel" type="button" data-menu-icon="cancel">{{text:5eabb983-6b64-5fe0-8e62-a8c1dd00b356:text0}}</button></div></dialog>
 
 <dialog id="dropInNameHelpDialog" class="drop-in-apply-dialog"><h2>{{text:30c82f19-666d-549d-8873-8b79117cc927:text0}}</h2><p class="message-template-help">{{text:e9142331-5d9d-524f-b3ba-1cb67ea7830d:text0}}</p><div class="dialog-actions"><button id="dropInNameHelpClose" type="button" data-menu-icon="cancel">{{text:1596c064-3da2-52df-adfa-59060c139028:text0}}</button></div></dialog>
-
-<style id="clockTimerSettingsFrameStyles">
-dialog.clock-timer-settings-frame-dialog { box-sizing:border-box; width:min(1120px,96vw); height:min(900px,94vh); max-width:96vw; max-height:94vh; padding:0; border:1px solid #8886; border-radius:12px; overflow:hidden; }
-dialog.clock-timer-settings-frame-dialog[open] { display:flex; flex-direction:column; }
-dialog.clock-timer-settings-frame-dialog iframe { display:block; width:100%; height:100%; flex:1 1 auto; min-height:0; border:0; background:Canvas; }
-@media(max-width:600px) { dialog.clock-timer-settings-frame-dialog { width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; border-radius:0; } }
-</style>
-<dialog id="clockTimerSettingsFrameDialog" class="clock-timer-settings-frame-dialog" aria-label="ClockTimer settings">
-  <iframe id="clockTimerSettingsFrame" src="settings.html" title="ClockTimer settings" loading="lazy"></iframe>
-</dialog>
-
-<script id="clockTimerSettingsFrameController">
-(() => {
-  const dialog = document.getElementById("clockTimerSettingsFrameDialog");
-  const frame = document.getElementById("clockTimerSettingsFrame");
-  if (!dialog || !frame || dialog.dataset.controllerReady) return;
-  dialog.dataset.controllerReady = "true";
-  document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
-    button.addEventListener("click", () => {
-      const surface = button.dataset.settingsSurface;
-      frame.src = surface
-        ? "settings.html?surface=" + encodeURIComponent(surface)
-        : "settings.html";
-      const menu = document.getElementById("settingsSubmenu");
-      if (menu) menu.hidden = true;
-      const menuButton = document.getElementById("settingsMenuButton");
-      if (menuButton) menuButton.setAttribute("aria-expanded", "false");
-      if (!dialog.open) dialog.showModal();
-    });
-  });
-  dialog.addEventListener("click", event => {
-    if (event.target === dialog) dialog.close();
-  });
-})();
-</script>
