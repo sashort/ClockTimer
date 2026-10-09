@@ -5264,38 +5264,10 @@
                 new Date()
             )
     ) {
-        const trip =
-            summary?.trip;
-
-        if (
-            !tripIsLive() ||
-            !trip?.available
-        ) {
-            return undefined;
-        }
-
-        const counted =
-            trip.countedTimeElapsedMilliseconds;
-
-        const allotted =
-            trip.allottedTimeMilliseconds;
-
-        if (
-            !Number.isSafeInteger(counted) ||
-            counted < 0
-        ) {
-            return undefined;
-        }
-
-        return (
-            Number.isSafeInteger(allotted) &&
-            allotted >= 0
-        )
-            ? Math.max(
-                allotted,
-                counted
-            )
-            : counted;
+        return globalThis.ClockTimerTripLogModel.liveEffectiveMilliseconds(
+            summary,
+            tripIsLive()
+        );
     }
 
     function refreshTripLogLiveProjection(
