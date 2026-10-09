@@ -45,6 +45,7 @@
     "test:speech-asset-cache": "node speech-asset-cache.mjs",
     "test:audio-settings-model": "node audio-settings-model.mjs",
     "test:audio-announcement-draft": "node audio-announcement-draft.mjs",
+    "test:audio-announcement-policy": "node audio-announcement-policy.mjs",
     "test:audio-output-settings": "node audio-output-settings.mjs",
     "test:audio-settings-persistence": "node audio-settings-persistence.mjs",
     "test:audio-voice-options": "node audio-voice-options.mjs",
