@@ -6,9 +6,13 @@
         scriptUrl,
         navigatorRef = root.navigator,
         secureContext = root.isSecureContext,
+        enabled = true,
+        timeoutMs = 1500,
+        setTimeoutRef = root.setTimeout,
+        clearTimeoutRef = root.clearTimeout,
         logger = root.console
     } = {}) {
-        if (!("serviceWorker" in (navigatorRef || {})) || !secureContext) return false;
+        if (!enabled || !("serviceWorker" in (navigatorRef || {})) || !secureContext) return false;
 
         try {
             await navigatorRef.serviceWorker.register(scriptUrl, {
@@ -19,9 +23,9 @@
             if (navigatorRef.serviceWorker.controller) return true;
 
             await new Promise(resolve => {
-                const timeout = setTimeout(resolve, 1500);
+                const timeout = setTimeoutRef(resolve, timeoutMs);
                 navigatorRef.serviceWorker.addEventListener("controllerchange", () => {
-                    clearTimeout(timeout);
+                    clearTimeoutRef(timeout);
                     resolve();
                 }, { once: true });
             });
