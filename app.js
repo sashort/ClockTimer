@@ -29,21 +29,10 @@
     }
 
 
-    if (globalThis.ClockTimerAudioUnlock) {
-        globalThis.ClockTimerAudioUnlock.install(document, globalThis.WMOFAudio);
-    } else {
-        // Compatibility for an older cached page that has not loaded AudioUnlock.js.
-        let audioActivated = false;
-        const activateStartupAudio = () => {
-            if (audioActivated) return;
-            audioActivated = true;
-            void globalThis.WMOFAudio?.unlock?.();
-            document.removeEventListener("pointerdown", activateStartupAudio, true);
-            document.removeEventListener("keydown", activateStartupAudio, true);
-        };
-        document.addEventListener("pointerdown", activateStartupAudio, true);
-        document.addEventListener("keydown", activateStartupAudio, true);
+    if (!globalThis.ClockTimerAudioUnlock) {
+        throw new Error("AudioUnlock.js did not register its installer.");
     }
+    globalThis.ClockTimerAudioUnlock.install(document, globalThis.WMOFAudio);
 
     const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
     await announcementLanguage.load(document.documentElement.lang || "en-US");
