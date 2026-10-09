@@ -20,6 +20,8 @@ on:
       - "tests/trip-log-custom-dates.mjs"
       - "AudioVoiceOptions.js"
       - "AudioInstrumentOptions.js"
+      - "AudioVelocityController.js"
+      - "tests/audio-velocity-controller.mjs"
       - "tests/audio-instrument-options.mjs"
       - "tests/audio-voice-options.mjs"
       - "tests/trip-log-pin-controller.mjs"
@@ -199,6 +201,7 @@ jobs:
           node tests/trip-log-custom-dates.mjs
           node tests/audio-voice-options.mjs
           node tests/audio-instrument-options.mjs
+          node tests/audio-velocity-controller.mjs
           node --check SpeechAssetCache.js
           node tests/speech-asset-cache.mjs
           node --check ClassicScriptLoader.js
