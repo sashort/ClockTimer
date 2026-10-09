@@ -165,6 +165,11 @@
             type: "script",
             url: "LiveStreamPublisher.js?build=live-stream-publisher-1",
             hosts: ["order-filler"]
+        }],
+        ["session-startup", {
+            type: "script",
+            url: "SessionStartup.js?build=session-startup-1",
+            hosts: ["order-filler"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
