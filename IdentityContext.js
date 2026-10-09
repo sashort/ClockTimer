@@ -90,8 +90,32 @@
             });
         };
 
+    function displayName(identity) {
+        if (!identity) return "No user selected";
+        const formal = [identity.firstName, identity.lastName].filter(Boolean).join(" ").trim();
+        return identity.preferredName || formal || identity.username || "User";
+    }
+
+    function displayMeta(identity) {
+        if (!identity) return "Use Account Lookup to select an identity.";
+        const formal = [identity.firstName, identity.lastName].filter(Boolean).join(" ").trim();
+        const parts = [];
+        if (identity.preferredName && formal && identity.preferredName !== formal) parts.push(formal);
+        parts.push("@" + identity.username);
+        parts.push("ID " + identity.userId);
+        return parts.join(" · ");
+    }
+
     class IdentityContext extends EventTarget {
         #current;
+
+        displayName(value = this.#current) {
+            return displayName(value);
+        }
+
+        displayMeta(value = this.#current) {
+            return displayMeta(value);
+        }
 
         get current() {
             return this.#current;
