@@ -35,6 +35,11 @@ for (const requirements of [undefined, {}, {tripGoal: 0, adjustedTimeElapsed: 30
         "missing or invalid goal requirements block sync runtime");
 }
 
+assert.equal(model.fallbackScope("total"), "total");
+assert.equal(model.fallbackScope("auto"), "standard");
+assert.equal(model.fallbackScope("trip"), "trip");
+assert.equal(model.fallbackScope("unknown"), "trip", "unknown scope mode falls back to trip");
+
 for (const mode of ["trip", "total", "auto"]) {
     assert.equal(model.normalizePercentMode(mode), mode, `valid goal scope ${mode} is retained`);
     assert.equal(model.normalizePercentMode(` ${mode.toUpperCase()} `), mode,
