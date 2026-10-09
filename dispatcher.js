@@ -98,6 +98,11 @@
             url: "AudioUnlock.js?build=audio-unlock-2",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["audio-instrument-options", {
+            type: "script",
+            url: "AudioInstrumentOptions.js?build=audio-instrument-options-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["audio-voice-options", {
             type: "script",
             url: "AudioVoiceOptions.js?build=audio-voice-options-1",
