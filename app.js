@@ -2651,7 +2651,7 @@
     let connectionCloudSettleTimer;
     let loginDialogFullyOpen = false;
     let voiceLoginStage = "id", voiceLoginBusy = false, loginInputMode="pin";
-    let pinCancelPrimed=false, pendingLoginAnnouncement, pendingVoiceLoginSwitch=false;
+    let pinCancelPrimed=false, pendingLoginAnnouncement, pendingVoiceLoginSwitch=false, lastAnnouncedLoginPrompt;
     let loginDigitSlots = {id:["","","",""],pin:["","","",""]};
     function syncLoginDigits() {
         for(const stage of ["id","pin"]){
@@ -2688,6 +2688,10 @@
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
     function announceVoiceLogin(text) {
         if(!loginIsOpen())return;
+        if(lastAnnouncedLoginPrompt === text){
+            if(pendingLoginAnnouncement === text)pendingLoginAnnouncement=undefined;
+            return;
+        }
         if(startupAnnouncementPending() || (loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady)){
             pendingLoginAnnouncement=text;
             if(startupAnnouncementPending()) void startupAnnouncementFinished.then(announceLoginAfterModelReady);
@@ -2699,6 +2703,7 @@
         if(before && stateFeedbackChime(before,commandFeedbackState()) === "setting-unchanged") {
             void confirmInformationalChange("setting-unchanged",text,{ignoreSummaryMaster:true});
         } else void globalThis.WMOFAudio?.speak?.(text);
+        lastAnnouncedLoginPrompt=text;
     }
     function announceLoginAfterModelReady(){
         if(globalThis.SpeechMenu?.modelReady && pendingVoiceLoginSwitch && legacyLoginDialog.open && !voiceLoginBusy){
@@ -2712,7 +2717,7 @@
     function resetVoiceLogin(announce = true) {
         loginInputMode="pin";$("#voiceLoginPrompt").hidden=false;$("#loginRecognitionStatus").hidden=false;$("#loginLegacySwitch").hidden=false;
         for(const id of ["loginLegacyUsername","loginLegacyPassword"]){$("#"+id).value="";$("#"+id).disabled=true;$("#"+id).required=false;}
-        pinCancelPrimed=false;pendingLoginAnnouncement=undefined;pendingVoiceLoginSwitch=false;
+        pinCancelPrimed=false;pendingLoginAnnouncement=undefined;pendingVoiceLoginSwitch=false;lastAnnouncedLoginPrompt=undefined;
         loginDigitSlots={id:["","","",""],pin:["","","",""]};
         voiceLoginStage = "id";$("#loginUsername").value = "";$("#loginPassword").value = "";
         $("#loginIdRow").hidden = false;$("#loginPinRow").hidden = true;
