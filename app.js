@@ -474,6 +474,22 @@
                 existing ||
                 document.createElement("script");
 
+            // Preserve the entry context on every nested runtime resource.
+            // Child resources inherit capability restrictions from the page.
+            if (!script.dataset.clocktimerContextData) {
+                const context = globalThis.ClockTimerPageContext ||
+                    globalThis.ClockTimerContext?.normalize?.() || {};
+                script.dataset.clocktimerContextData = JSON.stringify({
+                    host: context.host || "order-filler",
+                    surface: context.surface || "application",
+                    presentation: context.presentation || "application",
+                    features: context.features || [],
+                    capabilities: context.capabilities || {},
+                    options: context.options || {}
+                });
+                script.dataset.clocktimerContext = context.host || "order-filler";
+            }
+
             const onLoad = () => {
                 script.dataset.loaded = "true";
                 resolve();
