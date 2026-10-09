@@ -46,6 +46,8 @@ on:
       - "SpeechTransactionTime.js"
       - "ActionSignalContext.js"
       - "ConnectionStatusModel.js"
+      - "ButtonPressFeedback.js"
+      - "tests/button-press-feedback.mjs"
       - "tests/connection-status-model.mjs"
       - "tests/action-signal-context.mjs"
       - "tests/speech-transaction-time.mjs"
@@ -217,6 +219,8 @@ jobs:
           node tests/action-signal-context.mjs
           node --check ConnectionStatusModel.js
           node tests/connection-status-model.mjs
+          node --check ButtonPressFeedback.js
+          node tests/button-press-feedback.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
