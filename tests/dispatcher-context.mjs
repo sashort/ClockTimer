@@ -192,7 +192,7 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
             forbidden + " must not load in the settings frame");
     }
     assert.deepEqual(started, ["graphicalSettingsDialog"]);
-    assert.ok(appendedResources.some(resource => resource.src === "TripLogModel.js?build=trip-log-model-4"),
+    assert.ok(appendedResources.some(resource => resource.src === "TripLogModel.js?build=trip-log-model-5"),
         "dispatcher uses the current trip-log model cache version");
     assert.equal(events.at(-1).type, "clocktimer-dispatcher-ready");
     await sandbox.ClockTimerLifecycle.stopAll();
