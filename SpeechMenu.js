@@ -8231,7 +8231,34 @@ class SpeechMenu {
         }
         element.speechPreprocFuncs = preprocessors;
         element.speechPreprocFunc = async (text, context) => {
-            for (const preprocessor of preprocessors) text = await preprocessor(text, context);
+            if (typeof text !== "string") {
+                throw new TypeError(
+                    "Speech preprocessing input must be a string."
+                );
+            }
+
+            for (const preprocessor of preprocessors) {
+                // Do not run later stages when this recognition attempt is obsolete.
+                if (context?.signal?.aborted) {
+                    return text;
+                }
+
+                const result = await preprocessor(text, context);
+
+                if (context?.signal?.aborted) {
+                    return text;
+                }
+
+                if (typeof result !== "string") {
+                    throw new TypeError(
+                        "Each speech preprocessor must return a string."
+                    );
+                }
+
+                // Each stage transforms the input for the next stage.
+                text = result;
+            }
+
             return text;
         };
         return true;
