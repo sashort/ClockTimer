@@ -20,6 +20,8 @@ on:
       - "TripLogRangeControls.js"
       - "ConnectionNumberPadState.js"
       - "ConnectionNumberPadSettlement.js"
+      - "ConnectionCloudSettlement.js"
+      - "tests/connection-cloud-settlement.mjs"
       - "tests/connection-number-pad-settlement.mjs"
       - "tests/connection-number-pad-state.mjs"
       - "tests/trip-log-range-controls.mjs"
@@ -210,6 +212,7 @@ jobs:
           node tests/trip-log-range-controls.mjs
           node tests/connection-number-pad-state.mjs
           node tests/connection-number-pad-settlement.mjs
+          node tests/connection-cloud-settlement.mjs
           node tests/audio-voice-options.mjs
           node tests/audio-instrument-options.mjs
           node tests/audio-velocity-controller.mjs
