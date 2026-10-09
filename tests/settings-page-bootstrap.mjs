@@ -18,7 +18,7 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
         dispatchEvent(event) { events.push({ target: "surface", event }); return true; },
         showModal() { this.shown = true; }
     };
-    const rootElement = { dataset: appReady ? { clocktimerAppReady: "true" } : {} };
+    const rootElement = { dataset: appReady ? { clocktimerAppReady: "true" } : {}, classList: { add: value => classes.push(value) } };
     const document = {
         readyState,
         body: { classList: { add: value => classes.push(value) } },
