@@ -7826,14 +7826,7 @@
     }
 
     function normalizePercentMode(value) {
-        const normalized =
-            String(value || "trip")
-                .trim()
-                .toLowerCase();
-
-        return PERCENT_MODES.includes(normalized)
-            ? normalized
-            : "trip";
+        return globalThis.ClockTimerTripGoalModel.normalizePercentMode(value);
     }
 
     function syncScopeUI(persist = false) {
