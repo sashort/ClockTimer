@@ -61,7 +61,7 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
     sandbox.ClockTimerSettingsSurfaces = { normalize: value => value || "graphicalSettingsDialog" };
-    for (const file of ["Context.js", "Lifecycle.js", "dispatcher.js", "SettingsPageBootstrap.js"]) {
+    for (const file of ["PageManifest.js", "Context.js", "Lifecycle.js", "dispatcher.js", "SettingsPageBootstrap.js"]) {
         vm.runInContext(readFileSync(new URL("../" + file, import.meta.url), "utf8"), sandbox, { filename: file });
     }
     return { sandbox, document, classes, events, surface, trigger, get postedMessage() { return postedMessage; } };
