@@ -306,45 +306,7 @@
         );
     }
 
-    const GRAPHICAL_DEFAULTS = {
-        timerType: "radial-overflow",
-        timerMode: "elapsed",
-        tripColor: "#0053e2",
-        earlyStartColor: "#4dbdf5",
-        showEarlyStart: true,
-        breakColor: "#001e60",
-        lunchColor: "#ffc220",
-        breakBufferColor: "#6b7f99",
-        showBreakBuffer: true,
-        downColor: "#5f6772",
-        approvalSurplusColor: "#9c6b30",
-        approvalDeficitColor: "#7a1f3d",
-        toleranceColor: "#2e7d32",
-        overtimeColor: "#ff5c5c",
-        latencyColor: "#e1251b",
-        showTolerance: true,
-        showOvertime: true,
-        showLatency: true,
-        militaryTime: true,
-        timeFormat: "HHmm",
-        dateFormat: "",
-        visibleHours: "12,3,6,9",
-        tickMarks: "[10]",
-        indicatorSymbol: "▲",
-        showHourHand: true,
-        showMinuteHand: true,
-        showSecondHand: true,
-        hourHandLength: "28%",
-        hourHandColor: "#ffffff",
-        minuteHandLength: "38%",
-        minuteHandColor: "#ffffff",
-        secondHandLength: "42%",
-        secondHandColor: "#ffc220",
-        clockFont: "Helvetica, Arial, sans-serif",
-        hourColor: "#ffffff",
-        timeColor: "#ffffff",
-        borderColor: "#001e60"
-    };
+    const GRAPHICAL_DEFAULTS = globalThis.WMOFTimerAppearance.graphicalDefaults;
     const GRAPHICAL_HELP = {
         timerMode: {
             title: globalThis.WMOFLanguagePack.text("20963a74-5865-56b4-b5af-2f073c86cbbe"),
@@ -384,7 +346,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "LUEHN5";
+        "E4GUFA";
 
     const speechRuntimeVersion =
         "?sherpa=" +
@@ -7499,92 +7461,7 @@
         return enabled;
     }
 
-    function normalizeGraphicalSettings(value) {
-        const source =
-            value &&
-            typeof value === "object" &&
-            !Array.isArray(value)
-                ? value
-                : {};
-
-        const settings = {};
-
-        const legacyClockFont =
-            typeof source.clockFont === "string"
-                ? source.clockFont
-                : (
-                    typeof source.timeFont === "string" &&
-                    source.timeFont !==
-                        GRAPHICAL_DEFAULTS.clockFont
-                        ? source.timeFont
-                        : typeof source.hourFont === "string"
-                            ? source.hourFont
-                            : typeof source.timeFont === "string"
-                                ? source.timeFont
-                                : undefined
-                );
-
-        for (
-            const [key, fallback] of
-                Object.entries(GRAPHICAL_DEFAULTS)
-        ) {
-            const candidate =
-                key === "clockFont" &&
-                legacyClockFont !== undefined
-                    ? legacyClockFont
-                    : Object.prototype.hasOwnProperty.call(
-                        source,
-                        key
-                    )
-                        ? source[key]
-                        : fallback;
-
-            // Move saved defaults to the reference palette; keep custom colors.
-            if (
-                (key === "lunchColor" && candidate === "#ffc420") ||
-                (key === "earlyStartColor" && candidate === "#00a6d2")
-            ) {
-                settings[key] = fallback;
-                continue;
-            }
-
-            if (key === "showTolerance") {
-                settings[key] =
-                    candidate === null ||
-                    candidate === undefined
-                        ? undefined
-                        : typeof candidate === "boolean"
-                            ? candidate
-                            : fallback;
-                continue;
-            }
-
-            if (typeof fallback === "boolean") {
-                settings[key] =
-                    typeof candidate === "boolean"
-                        ? candidate
-                        : fallback;
-                continue;
-            }
-
-            settings[key] =
-                typeof candidate === "string"
-                    ? candidate
-                    : fallback;
-        }
-
-        settings.timerType =
-            settings.timerType === "radial-fitted"
-                ? "radial-fitted"
-                : "radial-overflow";
-
-        settings.timerMode =
-            settings.timerMode === "remaining"
-                ? "remaining"
-                : "elapsed";
-
-        return settings;
-    }
+    function normalizeGraphicalSettings(value) {return globalThis.WMOFTimerAppearance.normalizeGraphicalSettings(value);}
 
     function getGraphicalSettings() {
         let stored;
@@ -9252,53 +9129,7 @@
     }
 
     function applyGraphicalSettings(settings, target = clockTimer) {
-        target.setAttribute("timer-type", settings.timerType || GRAPHICAL_DEFAULTS.timerType);
-        target.setAttribute("timer-mode", settings.timerMode || GRAPHICAL_DEFAULTS.timerMode);
-        target.setAttribute("military-time", String(Boolean(settings.militaryTime)));
-        target.setAttribute("time-format", settings.timeFormat || (settings.militaryTime ? "HHmm" : "h:mm A"));
-
-        setOptionalAttribute(target, "date-format", settings.dateFormat);
-        setOptionalAttribute(target, "visible-hours", settings.visibleHours);
-        setOptionalAttribute(target, "tick-marks", settings.tickMarks);
-        setOptionalAttribute(target, "indicator-symbol", settings.indicatorSymbol);
-        target.removeAttribute("grayscale");
-        target.removeAttribute("grayscale-ramp");
-        target.showTolerance = settings.showTolerance;
-        target.toggleAttribute("render-early-start-as-trip", !Boolean(settings.showEarlyStart));
-        target.toggleAttribute("hide-break-buffer", !Boolean(settings.showBreakBuffer));
-        target.toggleAttribute("hide-overtime", !Boolean(settings.showOvertime));
-        target.toggleAttribute("hide-latency", !Boolean(settings.showLatency));
-        target.toggleAttribute("hide-hour-hand", !Boolean(settings.showHourHand));
-        target.toggleAttribute("hide-minute-hand", !Boolean(settings.showMinuteHand));
-        target.toggleAttribute("hide-second-hand", !Boolean(settings.showSecondHand));
-
-        const variables = {
-            "--clock-timer-trip-color": settings.tripColor,
-            "--clock-timer-early-start-color": settings.earlyStartColor,
-            "--clock-timer-break-color": settings.breakColor,
-            "--clock-timer-lunch-color": settings.lunchColor,
-            "--clock-timer-break-buffer-color": settings.breakBufferColor,
-            "--clock-timer-down-color": settings.downColor,
-            "--clock-timer-approval-surplus-color": settings.approvalSurplusColor,
-            "--clock-timer-approval-deficit-color": settings.approvalDeficitColor,
-            "--clock-timer-tolerance-color": settings.toleranceColor,
-            "--clock-timer-overtime-color": settings.overtimeColor,
-            "--clock-timer-latency-color": settings.latencyColor,
-            "--clock-timer-hour-hand-length": settings.hourHandLength,
-            "--clock-timer-hour-hand-color": settings.hourHandColor,
-            "--clock-timer-minute-hand-length": settings.minuteHandLength,
-            "--clock-timer-minute-hand-color": settings.minuteHandColor,
-            "--clock-timer-second-hand-length": settings.secondHandLength,
-            "--clock-timer-second-hand-color": settings.secondHandColor,
-            "--clock-timer-hour-font": settings.clockFont,
-            "--clock-timer-time-font": settings.clockFont,
-            "--clock-timer-time-color": settings.timeColor,
-            "--clock-timer-tick-color": settings.hourColor,
-            "--clock-timer-border-color": settings.borderColor
-        };
-
-        for (const [name, value] of Object.entries(variables)) setClockVariable(target, name, value);
-        target.style.color = settings.hourColor || GRAPHICAL_DEFAULTS.hourColor;
+        globalThis.WMOFTimerAppearance.applyGraphical(target,settings);
 
         if (target === clockPreview) {
             renderClockPreviewRanges(settings);

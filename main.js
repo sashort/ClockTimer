@@ -22,7 +22,8 @@
         $('homeEditProfileButton').hidden = !permitted(128);
         $('homeAdmin').querySelector('a[href="api/admin/new-user/"]').hidden = !permitted(1);
         $('homeAdmin').querySelector('a[href="api/admin/access-tokens/?console=1"]').hidden = !permitted(32);
-        if(expand){$('homeMenu').hidden=false;$('homeMenuButton').setAttribute('aria-expanded','true');}
+        if(expand)$('homeMenu').showPopover();
+        else if(!user)$('homeMenu').hidePopover();
         lookup.sync();
     }
     async function request(body) {
@@ -45,7 +46,6 @@
         }catch(error){$('mainLoginStatus').textContent=error.message;}
         finally{busy=false;$('mainLoginOK').disabled=false;}
     });
-    $('homeMenuButton').addEventListener('click',()=>{const expanded=$('homeMenuButton').getAttribute('aria-expanded')==='true';$('homeMenu').hidden=expanded;$('homeMenuButton').setAttribute('aria-expanded',String(!expanded));});
     $('homeProfileButton').addEventListener('click',()=>{if(!user)return;WMOFIdentityContext.select(user);lookup.setMode('edit');lookup.sync();$('userLookupDialog').showModal();});
     $('homeEditProfileButton').addEventListener('click',()=>{WMOFIdentityContext.clear();lookup.setMode('edit');lookup.clearSearch();lookup.sync();$('userLookupDialog').showModal();});
     for(const button of $('userLookupDialog').querySelectorAll('[data-close-dialog]'))button.addEventListener('click',()=>$('userLookupDialog').close());

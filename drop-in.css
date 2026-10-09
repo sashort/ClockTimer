@@ -15,6 +15,10 @@ body { margin: 0; height: 100dvh; min-height: 0; overflow: hidden; display:flex;
 .standalone-drop-in .app-header { grid-template-columns:52px minmax(0,1fr); grid-template-rows:52px; }
 .standalone-drop-in .scope-control { display:block; grid-column:2; grid-row:1; }
 .standalone-drop-in .scope-toggle { width:100%; height:100%; }
+#scopeToggle {display:flex;align-items:center;justify-content:center;gap:12px;}
+#scopeToggle > .observer-source-badge {margin-inline-start:0;}
+#scopeToggle > [data-menu-icon="mirror"] {display:inline-flex;}
+#scopeToggle > [data-menu-icon="mirror"]::before {margin:0;}
 .standalone-drop-in .scope-control label { display:flex; align-items:center; height:100%; }
 .standalone-drop-in .scope-control label>span { display:none; }
 .standalone-drop-in .scope-control select { width:100%; height:100%; border:0; font-size:24px; }
@@ -86,6 +90,7 @@ body { margin: 0; height: 100dvh; min-height: 0; overflow: hidden; display:flex;
 #dropInMicrophoneButton {border:0;padding:0;margin:0;position:absolute;top:6px;right:6px;z-index:1;}
 #dropInMicrophoneButton[hidden] {display:none;}
 #toggleSyncMenuButton {display:grid;place-items:center end;width:60px;height:56px;padding:0;}
+button#toggleSyncMenuButton:active:not(:disabled) {transform:translateY(calc(-50% + 1px));}
 #toggleSyncMenuButton::after {content:none;}
 #toggleSyncMenuButton > .observer-source-badge {position:absolute;top:0;bottom:auto;right:auto;left:0;z-index:4;width:26px;height:26px;margin:0;border-radius:3px;background:transparent;--badge-backdrop:transparent;pointer-events:none;}
 #toggleSyncMenuButton .sync-mirror-badge {width:26px;height:26px;left:-30px;bottom:-13px;background:transparent;}

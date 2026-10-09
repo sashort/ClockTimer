@@ -15,7 +15,7 @@ w.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../TimerAppearance.js',import.meta.url),'utf8'));
 const events=[],errors=[],stored=new Map();let rejectStart=false,rejectSave=false,deliveryFailures=[];
 w.WMOFPersistence={async getItem(key){return stored.get(key);},async setItem(key,value){stored.set(key,value);}};
-w.WMOFAccountSettings={async load(){},peek:()=>stored.get('settings'),async write(namespace,changes){if(rejectSave)throw new Error('save failed');stored.set('settings',changes.preferences);}};
+w.WMOFAccountSettings={async load(){},peek:namespace=>namespace==='orderFiller'?JSON.stringify({tripColor:'#abcdef'}):stored.get('settings'),async write(namespace,changes){if(rejectSave)throw new Error('save failed');stored.set('settings',changes.preferences);}};
 w.WMOFObserverGoalPad=class {constructor(options){w.testGoalPad=options;}async open(scope,value){w.goalOpened={scope,value};}refresh(){}cancel(){}};
 w.addEventListener("error",event=>errors.push(event.message));
 w.WMOFLiveTripStream=class extends w.EventTarget {
@@ -95,7 +95,11 @@ $('scopeToggle').click();assert.equal($('scopeToggleDropdown').querySelector('[d
 live.viewData.range='year';w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));assert.equal($('scopeToggleDropdown').querySelector('[data-mode=user] .mode-option-label').textContent,'Mirror — Year','open mode menu follows live user');
 $('scopeToggle').click();$('toggleSyncMenuButton').click();assert.equal($('dropInSyncPopover').querySelector('[data-sync=user] .mode-option-label').textContent,'Mirror — On');assert.equal($('dropInSyncPopover').querySelector('[data-sync=off] .observer-source-badge').dataset.source,'default');
 live.uiState.sync_enabled=false;w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));assert.equal($('dropInSyncPopover').querySelector('[data-sync=user] .mode-option-label').textContent,'Mirror — Off');assert.equal($('dropInSyncPopover').querySelector('[data-sync=off] .observer-source-badge').dataset.source,'default-user');
-assert.match($('dropInClockSettings').textContent,/Timer layout/);assert.match($('dropInClockSettings').textContent,/#123456/);$('toggleSyncMenuButton').click();
+const syncPopover=$('dropInSyncPopover');let nativeSyncOpen=true;const originalMatches=syncPopover.matches.bind(syncPopover);syncPopover.matches=selector=>selector===':popover-open'?nativeSyncOpen:originalMatches(selector);syncPopover.showPopover=()=>{nativeSyncOpen=true;};syncPopover.hidePopover=()=>{nativeSyncOpen=false;};
+// Native dismissal happens before its queued toggle event synchronizes hidden.
+syncPopover.hidePopover();assert.equal(syncPopover.hidden,false);$('toggleSyncMenuButton').click();assert.equal(nativeSyncOpen,true,'first click after native dismissal must reopen Sync');
+const staleToggle=new w.Event('toggle');Object.defineProperty(staleToggle,'newState',{value:'closed'});syncPopover.dispatchEvent(staleToggle);assert.equal(syncPopover.hidden,false,'late close event must not hide the reopened popover');assert.equal($('toggleSyncMenuButton').getAttribute('aria-expanded'),'true');
+assert.match($('dropInClockSettings').textContent,/Timer layout/);assert.match($('dropInClockSettings').textContent,/#abcdef/);assert(!$('dropInClockSettings').textContent.includes('#123456'),'observer uses own Order Filler appearance');$('toggleSyncMenuButton').click();
 $('dropInTripLogButton').click();await tick();assert.equal(events.find(e=>e?.logTarget).logTarget,3,'log targets observed user rather than observer');assert.equal($('dropInTripLogRows').children.length,1);$('dropInTripLogCancel').click();
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:2,snapshot:{userId:2}}}));
 assert(!events.includes('snapshot:2'),'old target snapshot ignored');
@@ -124,6 +128,8 @@ rejectStart=false;$('dropInRemoveUser').click();await tick();assert.equal(w.test
 assert.equal($('liveStreamViewTime').closest('.live-stream-view-controls').hidden,true,'Settings cannot edit time display');
 assert.equal($('dropInSettingsMode'),null,'Mode comparison belongs in its popover');
 assert($('dropInClockSettings'),'Settings retains live read-only ClockTimer settings');
+assert.equal($('dropInViewSettings').querySelectorAll(':scope > .drop-in-menu-group').length,2,'Settings has exactly ClockTimer and Inbound Sound sub-items');
+for(const id of ['dropInClockSettingsButton','dropInInboundSoundButton'])assert.equal($( $(id).getAttribute('aria-controls')).hidden,true,'each Settings sub-item starts collapsed');
 assert.equal($('dropInDefaultMode'),null,'default display information is read-only');
 // Defaults remain editable without a selected user and do not rewrite saved user profiles.
 assert.equal($('dropInMenu').contains($('toggleSyncMenuButton')),false,'Sync control is outside the hamburger menu');
@@ -137,6 +143,12 @@ change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();a
 $('toggleSyncMenuButton').click();$('dropInSyncPopover').querySelector('[data-sync=on]').click();assert.equal($('dropInTargetUser').disabled,true);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.sync,'on');
 $('goalPercentValue').click();await tick();assert.equal(w.goalOpened.scope,'total');w.testGoalPad.onConfirm('total',125);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.totalGoal,'125');assert.equal($('goalPercentValue').textContent,'125%');
 rejectSave=true;change('liveStreamViewMode','year');$('dropInTargetApply').click();await tick();assert.equal($('liveStreamViewMode').value,'day','failed default save restores accepted mode');rejectSave=false;
+const timePopover=$('toggleRenderedTimeButtonDropdown');
+$('toggleRenderedTimeButton').click();assert.deepEqual([...timePopover.querySelectorAll('button')].map(button=>button.dataset.mode),['remaining','elapsed','calculated-end']);
+timePopover.querySelector('[data-mode=elapsed]').click();assert.equal($('dropInTargetDialog').open,true);assert.equal($('dropInTargetUser').disabled,true);$('dropInTargetCancel').click();
+const originalTime=$('liveStreamViewTime').value;
+$('toggleRenderedTimeButton').click();timePopover.querySelector('[data-mode=elapsed]').click();$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.timeDisplay,'elapsed');assert.equal($('renderedTimeLabel').textContent,'Elapsed');
+rejectSave=true;$('toggleRenderedTimeButton').click();timePopover.querySelector('[data-mode=calculated-end]').click();$('dropInTargetApply').click();await tick();assert.equal($('liveStreamViewTime').value,'elapsed','failed Time save restores accepted selection');rejectSave=false;
 assert.deepEqual(Object.keys(JSON.parse(stored.get('settings')).users),Object.keys(JSON.parse(previousUsers)),'default-only edits do not create a phantom user');
 assert.equal(JSON.parse(stored.get('settings')).users['3'].sources.view.mode,'default','matching saved user override follows the new default');
 const defaultAudio=w.document.querySelector('[data-default-audio="master"]');defaultAudio.value='75';defaultAudio.dispatchEvent(new w.Event('change'));await tick();

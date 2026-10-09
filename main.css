@@ -12,10 +12,15 @@ body { margin: 0; background: #061b4f; color: #fff; }
 #mainUserName { margin: 0; opacity: .85; }
 #homeMenuButton { display: flex; flex-direction: column; justify-content: center; justify-self: center; margin-inline: auto; gap: 6px; width: 56px; height: 52px; padding: 12px; border: 1px solid #809dcc; border-radius: 10px; background: #123b83; color: white; }
 #homeMenuButton span { height: 3px; width: 100%; background: currentColor; }
-#homeMenu { box-sizing: border-box; width: 100%; background: #0b2d6b; border: 1px solid #809dcc; border-radius: 12px; overflow: hidden; text-align: left; }
-#homeMenu > button, #homeMenu summary { width: 100%; padding: 16px 20px; font: inherit; color: white; background: none; border: 0; border-bottom: 1px solid #5276a766; text-align: left; cursor: pointer; }
-#homeMenu details a, #homeMenu details button { display: block; box-sizing: border-box; width: 100%; padding: 12px 32px; font: inherit; text-decoration: none; color: white; background: #061e50; border: 0; text-align: left; }
-#homeMenu button:hover, #homeMenu summary:hover, #homeMenu a:hover { background: #24539c; }
+#homeMenu { width: 100%; --hamburger-menu-safe-inline-margin: 12px; }
+#homeMenu .hamburger-menu-popover { background: #0b2d6b; color: white; border: 1px solid #809dcc; text-align: left; }
+#homeMenu .hamburger-menu-source button, #homeMenu .hamburger-menu-source a,
+#homeMenu .hamburger-menu-focus-layer button, #homeMenu .hamburger-menu-focus-layer a {
+    display: block; box-sizing: border-box; width: 100%; padding: 16px 20px;
+    font: inherit; color: white; background: none; border: 0; text-align: left;
+    text-decoration: none; cursor: pointer;
+}
+#homeMenu button:hover, #homeMenu a:hover { background: #24539c; }
 #mainStatus { min-height: 1em; }
 #appVersion { opacity: .65; font-size: .8em; }
 #mainLoginDialog { box-sizing: border-box; width: min(440px, calc(100% - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }

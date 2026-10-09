@@ -21,21 +21,23 @@
                     <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:aria-label}}" data-language-id="6e6ea3a3-2d38-5c75-b5ed-9620454a3520" data-menu-icon="settings">{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:text0}}</button>
 
                 </div>
-                    <details class="recognizer-name-settings"><summary data-menu-icon="microphone">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</summary>
+                    <div class="recognizer-name-settings"><button id="recognizerNameMenuButton" type="button" aria-expanded="false" aria-controls="recognizerNameSubmenu" data-menu-icon="microphone">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</button><div id="recognizerNameSubmenu" hidden>
                         <p>{{text:93bbc7ae-c8b0-5546-81c3-304a17ba6272:text0}}</p>
                         <label for="recognizerNamePreset">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</label>
                         <select id="recognizerNamePreset"><option value="">{{text:aaf29102-ffde-519d-b4de-c44844040d6c:text0}}</option><option value="custom">{{text:542b3639-2667-58eb-9544-a3692e3aeaac:text0}}</option></select>
                         <input id="recognizerNameCustom" maxlength="40" hidden aria-label="{{text:35b6f8db-afeb-5290-8f1c-e02ee2688d79:text0}}">
                         <button id="recognizerNameSave" type="button" data-menu-icon="edit">{{text:895ec700-dc9d-574d-b1eb-cef2d0f99adc:text0}}</button>
                         <output id="recognizerNameStatus" role="status"></output>
-                    </details>
+                    </div></div>
                 <div class="main-menu-row sync-goals-menu-row">
                     <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
                     <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="{{text:fe244302-ff9a-5be1-949d-444793532606:aria-label}}" data-language-id="fe244302-ff9a-5be1-949d-444793532606" data-menu-icon="settings">{{text:fe244302-ff9a-5be1-949d-444793532606:text0}}</button>
                 </div>
                 <div class="trip-menu-group">
+<button id="tripLogMenuParentButton" type="button" aria-expanded="false" aria-controls="tripLogSubmenu" data-menu-icon="list">{{text:758b0729-0d3e-5768-acd5-326ec90f35e9:text0}}</button>
+<div id="tripLogSubmenu" hidden>
                 <div class="main-menu-row trip-list-menu-row">
-                    <button id="tripListMenuButton" class="trip-list-menu-button" type="button" data-language-id="758b0729-0d3e-5768-acd5-326ec90f35e9" data-menu-icon="list">{{text:758b0729-0d3e-5768-acd5-326ec90f35e9:text0}}</button>
+                    <button id="tripListMenuButton" class="trip-list-menu-button" type="button" data-language-id="50a3b78e-18b4-5871-a68c-3b94ca40cdf6" data-menu-icon="list">{{text:50a3b78e-18b4-5871-a68c-3b94ca40cdf6:text0}}</button>
                     <button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="{{text:9ef29698-122f-59f2-8410-bb636061c726:aria-label}}" aria-pressed="true" title="{{text:9ef29698-122f-59f2-8410-bb636061c726:title}}" data-language-id="9ef29698-122f-59f2-8410-bb636061c726" data-menu-icon="pin"></button>
                 </div>
                 <label class="trip-log-range-menu" for="tripProductionFilter" data-menu-icon="filter"><span data-language-id="8e9add04-86ec-5731-bd69-5183c77ec1c9">{{text:8e9add04-86ec-5731-bd69-5183c77ec1c9:text0}}</span><select id="tripProductionFilter" data-language-id="db59782c-258e-5188-aada-ba1bba08df80">{{options:db59782c-258e-5188-aada-ba1bba08df80}}</select></label>
@@ -48,12 +50,12 @@
                     <label for="tripLogEndDate" data-language-id="92a78904-7c6f-5666-9ad2-48301e067257">{{text:92a78904-7c6f-5666-9ad2-48301e067257:text0}}</label><input id="tripLogEndDate" type="date" aria-label="{{text:5b827a18-10f3-56fa-b022-4ccf3f47a04e:aria-label}}" disabled data-language-id="5b827a18-10f3-56fa-b022-4ccf3f47a04e">
                 </div>
                 <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
-                </div>
+                </div></div>
                 <hr class="developer-menu-separator">
                 <div id="developerMenuGroup" class="developer-menu-group">
                     <button id="developerMenuButton" type="button" aria-expanded="false" aria-controls="developerSubmenu" data-language-id="8461371b-dd5d-5da0-b561-4d76102e9820" data-menu-icon="tools">{{text:8461371b-dd5d-5da0-b561-4d76102e9820:text0}}</button>
                     <div id="developerSubmenu" class="developer-submenu" hidden>
-                        <div class="app-version">Version <output id="appVersion">LUEHN5</output></div>
+                        <div class="app-version">Version <output id="appVersion">E4GUFA</output></div>
                         <a id="bluetoothAudioTestLink" href="diagnostics/audio-routing/" target="_blank" rel="noopener" data-language-id="6622cb0c-1ee3-4246-afb7-24d8cf0eba41" data-menu-icon="bluetooth">{{text:6622cb0c-1ee3-4246-afb7-24d8cf0eba41:text0}}</a>
                         <button id="developerDocsButton" type="button" hidden data-language-id="f140723f-4ebe-54fd-b9c6-8d694f574c81" data-menu-icon="book">{{text:f140723f-4ebe-54fd-b9c6-8d694f574c81:text0}}</button>
                         <div id="speechToolsGroup" class="speech-tools-group">

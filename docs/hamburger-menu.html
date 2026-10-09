@@ -115,6 +115,9 @@ kbd {
 </div>
 
 <h2>Core behavior</h2>
+<div class="note">
+<strong>Required parent-item behavior:</strong> Every hamburger-menu item that contains sub-items must be expandable and collapsible, at every nesting depth. Use a parent button with <code>aria-controls</code> pointing to its initially <code>hidden</code> submenu and <code>aria-expanded="false"</code>. Opening and collapsing must run through HamburgerMenu's existing promotion, directional row animation, submenu growth/shrink, frozen-pane and reverse-restoration rules. Do not substitute an always-visible group or a separate page-specific show/hide handler. Collapsing returns to the same sibling panel that contained the parent; temporary measurement scroll resets must not change that selection. Genuine content or safe-boundary changes may still repack the menu.</div>
+<p>All parent items start collapsed. The component enforces <code>display: none !important</code> for hidden descendants, so page-specific grid or flex styling cannot reveal a collapsed submenu. In Order Filler this includes Settings, Trip Log (its log action, pin and range/filter controls), and Recognizer Name. Drop-In Settings has separate collapsible ClockTimer and Inbound Sound sub-items. Landing categories also use the shared component.</p>
 <div class="grid">
 <div class="card">
 <h3>Invisible opening calculation</h3>
@@ -130,6 +133,7 @@ kbd {
 </div>
 <div class="card">
 <h3>Horizontal paging</h3>
+<p>The track thumb continuously follows the actual horizontal scroll position during dragging and animated settling. Its position is proportional to swipe progress throughout the movement; it must not run a second, delayed transform animation.</p>
 <p>Normal Hamburger content never vertically scrolls. If it is too tall, Hamburger packs top-level rows into horizontally swipeable <code>&lt;pane-page&gt;</code> elements. Every normal page uses the height of the tallest page in that layout. <strong>The left/right sibling-page swipe gesture, current-page calculation, scroll snapping, and page indicator are HamburgerMenu behavior, not PanePage behavior.</strong> Hamburger leaves PanePage's generic content-overflow option untouched.</p>
 <p>Once a touch/pen gesture commits horizontally, the menu displays a vertical target strip at the destination edge: left edge for the next page, right edge for the previous page. The strip both confirms that the gesture has entered panel-swipe mode and marks the region the pointer must reach to complete the page switch. If the target is not reached, release returns to the current page. The cue is omitted when there is no sibling page in that direction.</p>
 </div>

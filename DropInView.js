@@ -11,6 +11,7 @@
             this.status = root.querySelector('#liveStreamViewStatus');
             this.timer = root.querySelector('#liveStreamClockTimer');
             this.timer.enableObserverMode?.();
+            this.appearanceSettings=globalThis.WMOFTimerAppearance?.normalizeGraphicalSettings();
             this.percent = root.querySelector('#liveStreamViewPercent');
             this.sync = root.querySelector('#liveStreamViewSync');
             this.timeDisplay = root.querySelector('#liveStreamViewTime');
@@ -70,11 +71,13 @@
             this.root.querySelector('#liveStreamInterval').hidden = true;
             this.timer.applyObserverSnapshot?.({events:[],started:false,tripId:null,attributes:[],totals:null,
                 addedToAggregate:false,sync:false,timeDisplay:'remaining'}, {mode:'trip'});
+            globalThis.WMOFTimerAppearance?.applyGraphical(this.timer,this.appearanceSettings);
             for (const id of ['liveStreamPublisherMode', 'liveStreamRemoteState', 'liveStreamRemoteTime', 'liveStreamRemoteGoal',
                 'liveStreamRemainingTime','liveStreamUserTripGoal','liveStreamUserModeGoal','liveStreamUserActiveGoal','liveStreamUserSync','liveStreamViewerActiveGoal']) {
                 this.root.querySelector('#' + id).textContent = '—';
             }
         }
+        setGraphicalSettings(settings) {this.appearanceSettings=settings;globalThis.WMOFTimerAppearance?.applyGraphical(this.timer,settings);this.render();}
         update(snapshot) { this.snapshot = snapshot; this.renderInterval(); this.render(); }
         renderInterval() {
             const interval = this.snapshot?.uiState?.interval_state;
@@ -145,7 +148,7 @@
                 timeDisplay:this.timeDisplay.value === 'user' ? undefined : this.timeDisplay.value,
                 totalLabel:selected, now:new Date(this.snapshot.timestamp)
             });
-            globalThis.WMOFTimerAppearance?.apply(this.timer,this.snapshot?.viewData?.appearance);
+            globalThis.WMOFTimerAppearance?.applyGraphical(this.timer,this.appearanceSettings);
             const state = result.uiState;
             this.showComponents(state);
             this.localScope = state.effective_goal_type;

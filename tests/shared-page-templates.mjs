@@ -20,12 +20,18 @@ for(const page of pages){
  assert.equal(w.document.querySelectorAll('#editProfilePermissions input[type=checkbox]').length,8,'permissions use named choices');
  assert.equal(Boolean(w.document.getElementById('dropInLookupActionTemplate')),page==='drop-in','only Drop-In owns its action template');
  assert.equal(w.document.querySelectorAll('link[href^="MenuIcons.css"]').length,1);
- const menu=page==='index'?'#homeMenu button,#homeMenu a,#homeMenu summary,#signedOutActions button,#signedOutActions a':page==='order-filler'?'#mainMenu button:not(#menuButton),#mainMenu a,#mainMenu summary':'#dropInMenu button:not(#dropInMenuButton),#dropInMenu a';
+ const menu=page==='index'?'#homeMenu button:not(#homeMenuButton),#homeMenu a,#signedOutActions button,#signedOutActions a':page==='order-filler'?'#mainMenu button:not(#menuButton),#mainMenu a,#mainMenu summary':'#dropInMenu button:not(#dropInMenuButton),#dropInMenu a';
  for(const option of w.document.querySelectorAll(menu)){
   assert(option.dataset.menuIcon || option.querySelector('svg'),page+': missing icon for '+(option.id||option.textContent.trim()));
   if(option.dataset.menuIcon)assert(icons.includes('[data-menu-icon="'+option.dataset.menuIcon+'"]'),option.dataset.menuIcon+' must exist in the shared icon library');
  }
  if(page==='order-filler'){
+  for(const id of ['settingsMenuButton','tripLogMenuParentButton','recognizerNameMenuButton']) {
+   const button=w.document.getElementById(id),submenu=w.document.getElementById(button.getAttribute('aria-controls'));
+   assert.equal(button.getAttribute('aria-expanded'),'false');assert(submenu.hidden,'Order Filler parent sub-items must start collapsed');
+  }
+  for(const id of ['tripListMenuButton','tripProductionFilter','tripLogRangeSelect','tripLogStartDate','tripLogEndDate'])assert(w.document.getElementById('tripLogSubmenu').contains(w.document.getElementById(id)),'Trip Log action and filters belong inside its collapsed submenu');
+  assert.equal(w.document.querySelector('#mainMenu details'),null,'menu parents use shared animation, not native details');
   for(const id of ['adminMenuGroup','trainerMenuGroup'])assert.equal(w.document.getElementById(id),null,'landing page owns admin and trainer categories');
   assert.equal(w.document.getElementById('easterEggMenuButton').dataset.menuIcon,'music');
   assert.equal(w.document.getElementById('easterEggMenuButton').getAttribute('href'),'api/audio/easter-eggs/');

@@ -8,7 +8,7 @@
     let user, csrf, exiting=false, busy = false, messageBusy = false, revision = 0, settingsRevision=0;
     const preferences = new WMOFDropInPreferences();
     function currentSettings(){const record=preferences.get(view.userId);if(!view.userId){record.settingsSource='default';record.mirror=false;}return record;}
-    let pendingSettings,pendingViewChange,modeMenu,goalPad;
+    let pendingSettings,pendingViewChange,modeMenu,timeMenu,goalPad;
     const permission = mask => Boolean(Number(user?.permissions) & (mask | 4));
     const name = identity => identity?.preferredName || [identity?.firstName,identity?.lastName].filter(Boolean).join(' ') || identity?.username || '—';
     const text = id => WMOFLanguagePack.text(id);
@@ -24,11 +24,11 @@
         modeMenu?.refresh();goalPad?.refresh();const menu=$('dropInSyncPopover');
         if(menu)for(const option of menu.querySelectorAll('[data-sync]')){const details=optionDetails('sync',option.dataset.sync);option.querySelector('.mode-option-label').textContent=details.label||WMOFLanguagePack.text(option.dataset.labelId);globalThis.WMOFObserverSettingBadge?.render(option,details.source);}
         for(const [id,field,value] of [['scopeToggle','mode',$('liveStreamViewMode').value],['toggleSyncMenuButton','sync',$('liveStreamViewSync').value],['goalPercentValue',view.localScope==='total'?'totalGoal':'tripGoal',goalNumber(view.displayState?.goal_component)]])globalThis.WMOFObserverSettingBadge?.render($(id),optionDetails(field,value).source);
-        if(pendingViewChange){const field=['mode','tripGoal','totalGoal','sync','percent'].find(key=>key in pendingViewChange.view),value=pendingViewChange.view[field];if(value==='user'||value==='mirror')$('dropInTargetChoice').textContent=optionDetails(field,value).label;}
+        if(pendingViewChange){const field=['mode','tripGoal','totalGoal','sync','percent','timeDisplay'].find(key=>key in pendingViewChange.view),value=pendingViewChange.view[field];if(value==='user'||value==='mirror')$('dropInTargetChoice').textContent=optionDetails(field,value).label;}
     }
     function renderClockSettings(){
         const host=$('dropInClockSettings');if(!host)return;host.replaceChildren();
-        const appearance=view.snapshot?.viewData?.appearance;
+        const appearance=globalThis.WMOFTimerAppearance.capture($('liveStreamClockTimer'));
         if(!appearance){host.textContent=WMOFLanguagePack.text('677452f5-d049-54f5-89a0-7869610bd8e2');return;}
         const labels=globalThis.WMOFTimerAppearance.labels;
         const rows={...appearance.attributes};
@@ -77,6 +77,7 @@
         $('liveStreamMute').checked=record.custom.audio.muted;stream.setViewerMuted?.(record.custom.audio.muted);
         for(const [id,[key,setter,output]] of Object.entries(audioFields)){$(id).value=record.custom.audio[key];$(output).value=record.custom.audio[key]+'%';stream[setter]?.(record.custom.audio[key]/100);}
         if(!view.userId){
+            $('renderedTimeLabel').textContent=$('liveStreamViewTime').querySelector('option[value="'+(values.timeDisplay==='user'?'remaining':values.timeDisplay)+'"]')?.textContent||$('liveStreamViewTime').querySelector('option[value="remaining"]').textContent;
             const scope=['trip','user','auto'].includes(values.mode)?'trip':'total';view.localScope=scope;
             $('goalPercentValue').textContent=(values[scope==='total'?'totalGoal':'tripGoal']||100)+'%';
             const icon=$('toggleSyncMenuButton').querySelector('.sync-goals-menu-icon');
@@ -113,12 +114,12 @@
         if(patch.mirror!==undefined){next.mirror=patch.mirror;next.settingsSource=patch.mirror?'user':'custom';}
         if(patch.settingsSource){next.settingsSource=patch.settingsSource;next.mirror=patch.settingsSource==='user';}
         renderSettings(next);
-        if(patch.view && Object.keys(patch.view).some(key=>['mode','sync','tripGoal','totalGoal','percent'].includes(key))){
+        if(patch.view && Object.keys(patch.view).some(key=>['mode','sync','tripGoal','totalGoal','percent','timeDisplay'].includes(key))){
             pendingViewChange={target:view.userId?Number(view.userId):null,view:patch.view};
-            const key=['mode','tripGoal','totalGoal','sync','percent'].find(key=>key in patch.view),value=patch.view[key],mirrored=value==='user'||value==='mirror',choice=$('dropInTargetChoice');
+            const key=['mode','tripGoal','totalGoal','sync','percent','timeDisplay'].find(key=>key in patch.view),value=patch.view[key],mirrored=value==='user'||value==='mirror',choice=$('dropInTargetChoice');
             choice.classList.toggle('mirror-option',mirrored);
             if(mirrored){choice.dataset.menuIcon='mirror';choice.textContent=optionDetails(key,value).label;}
-            else {delete choice.dataset.menuIcon;choice.textContent=key==='mode'?$('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent:key==='sync'?$('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent:value+'%';}
+            else {delete choice.dataset.menuIcon;choice.textContent=key==='mode'?$('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent:key==='sync'?$('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent:key==='timeDisplay'?$('liveStreamViewTime').querySelector('option[value="'+value+'"]')?.textContent:value+'%';}
             $('dropInTargetDefault').checked=current.settingsSource==='default';$('dropInTargetUser').disabled=!view.userId;$('dropInTargetUser').checked=Boolean(view.userId)&&current.settingsSource!=='default';
             $('dropInTargetName').textContent=view.userId?name(context.current):'';$('dropInTargetApply').disabled=false;$('dropInTargetDialog').showModal();return;
         }
@@ -189,23 +190,25 @@
     });
     for(const button of $('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]'))button.addEventListener('click',()=>{$('autoGoalDialog').close();openGoal(button.dataset.autoGoalScope);});
     $('autoGoalDialog').querySelector('[data-close-dialog]').addEventListener('click',()=>$('autoGoalDialog').close());
-    $('toggleRenderedTimeButton').addEventListener('click',()=>{
-        const current=$('liveStreamViewTime').value==='user'?view.snapshot?.viewData?.timeDisplay:$('liveStreamViewTime').value;
-        const modes=['remaining','elapsed','calculated-end'];changeSettings({view:{timeDisplay:modes[(modes.indexOf(current)+1)%modes.length]},mirror:false});
-    });
+    timeMenu=globalThis.WMOFModeMenu.bind($('toggleRenderedTimeButton'),{getValue:()=>$('liveStreamViewTime').value==='user'?view.snapshot?.viewData?.timeDisplay||'remaining':$('liveStreamViewTime').value,
+        optionsList:[['remaining','4b927b44-6410-53c1-98b2-ad81f47e9e61'],['elapsed','89d7fafa-57e0-5a57-93c8-919c0422b960'],['calculated-end','945221ab-82a1-59b2-b957-2ebed11a0a88']],
+        onSelect:value=>changeSettings({view:{timeDisplay:value},mirror:false})});
     const syncMenu=document.createElement('div');syncMenu.id='dropInSyncPopover';syncMenu.className='mode-dropdown';syncMenu.hidden=true;syncMenu.setAttribute('popover','auto');syncMenu.setAttribute('role','menu');document.body.append(syncMenu);
-    const closeSync=()=>{if(syncMenu.hidePopover&&!syncMenu.hidden){try{syncMenu.hidePopover();}catch{}}syncMenu.hidden=true;$('toggleSyncMenuButton').setAttribute('aria-expanded','false');};
+    const syncOpen=()=>WMOFModeMenu.isOpen(syncMenu);
+    const closeSync=()=>{if(syncMenu.hidePopover&&syncOpen()){try{syncMenu.hidePopover();}catch{}}syncMenu.hidden=true;$('toggleSyncMenuButton').setAttribute('aria-expanded','false');};
     for(const [value,id] of [['on','1c9519e8-3320-5a28-9c4a-18a545b065ca'],['off','22a4fe99-d5e6-5ea4-b2df-32a8be5e9992'],['user','b11c3a59-8432-515c-b361-acabaf1e7a88']]) {
         const button=document.createElement('button');button.type='button';button.dataset.sync=value;if(value==='user')button.classList.add('mirror-option');button.dataset.menuIcon=value==='user'?'mirror':'settings';button.setAttribute('role','menuitemradio');const label=document.createElement('span');label.className='mode-option-label';label.textContent=WMOFLanguagePack.text(id);button.append(label);button.dataset.labelId=id;button.addEventListener('click',()=>{closeSync();changeSettings({view:{sync:value},mirror:false});});syncMenu.append(button);
     }
     $('toggleSyncMenuButton').setAttribute('aria-haspopup','menu');
-    $('toggleSyncMenuButton').addEventListener('click',()=>{
-        if(!syncMenu.hidden){closeSync();return;}const button=$('toggleSyncMenuButton'),r=button.getBoundingClientRect(),value=$('liveStreamViewSync').value;
+    $('toggleSyncMenuButton').setAttribute('popovertarget',syncMenu.id);
+    $('toggleSyncMenuButton').addEventListener('click',event=>{
+        event.preventDefault();
+        if(syncOpen()){closeSync();return;}const button=$('toggleSyncMenuButton'),r=button.getBoundingClientRect(),value=$('liveStreamViewSync').value;
         refreshOptionDetails();for(const option of syncMenu.querySelectorAll('button'))option.setAttribute('aria-checked',String(option.dataset.sync===value));
-        syncMenu.style.width=Math.min(260,innerWidth-24)+'px';syncMenu.style.left=Math.max(12,Math.min(r.left,innerWidth-272))+'px';syncMenu.style.top=Math.max(12,Math.min(r.bottom+6,innerHeight-180))+'px';syncMenu.style.maxHeight=Math.max(80,innerHeight-parseFloat(syncMenu.style.top)-12)+'px';syncMenu.hidden=false;syncMenu.showPopover?.();button.setAttribute('aria-expanded','true');syncMenu.querySelector('[aria-checked="true"]')?.focus();
+        syncMenu.style.width=Math.min(260,innerWidth-24)+'px';syncMenu.style.left=Math.max(12,Math.min(r.left,innerWidth-272))+'px';syncMenu.style.top=Math.max(12,Math.min(r.bottom+6,innerHeight-180))+'px';syncMenu.style.maxHeight=Math.max(80,innerHeight-parseFloat(syncMenu.style.top)-12)+'px';syncMenu.hidden=false;syncMenu.showPopover?.({source:button});button.setAttribute('aria-expanded','true');syncMenu.querySelector('[aria-checked="true"]')?.focus();
     });
     syncMenu.addEventListener('keydown',event=>{const choices=[...syncMenu.querySelectorAll('button')],index=choices.indexOf(document.activeElement);if(event.key==='Escape'){closeSync();$('toggleSyncMenuButton').focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();choices[(index+(event.key==='ArrowDown'?1:choices.length-1))%choices.length].focus();}});
-    syncMenu.addEventListener('toggle',event=>{if(event.newState==='closed'){syncMenu.hidden=true;$('toggleSyncMenuButton').setAttribute('aria-expanded','false');}});
+    syncMenu.addEventListener('toggle',()=>{const open=syncOpen();syncMenu.hidden=!open;$('toggleSyncMenuButton').setAttribute('aria-expanded',String(open));});
     document.addEventListener('click',event=>{if(!syncMenu.hidden&&!syncMenu.contains(event.target)&&!$('toggleSyncMenuButton').contains(event.target))closeSync();});
 
     $('liveStreamDialog').addEventListener('observer-summary-changed',event=>{
@@ -226,7 +229,7 @@
         $('liveStreamVolumeControls').disabled = busy || !identity;
         $('dropInMirrorSettings').disabled=$('dropInSettingsSource').disabled = busy || !identity;
         $('goalPercentValue').disabled=$('toggleSyncMenuButton').disabled=$('scopeToggle').disabled=busy||!permission(64);
-        $('toggleRenderedTimeButton').disabled=busy||!identity;
+        $('toggleRenderedTimeButton').disabled=busy||!permission(64);
         $('standardTimeButton').disabled=true;
         $('endTimeGoalLock').hidden=true;
         $('dropInRemoveUser').disabled = busy || !identity;
@@ -246,7 +249,7 @@
     }
     async function select(identity, watch = stream.viewing) {
         if (exiting || busy || !identity || Number(identity.userId) === Number(user?.id)) return;
-        pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();remoteMicrophone?.reset(identity.userId);
+        pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();timeMenu?.close();remoteMicrophone?.reset(identity.userId);
         busy = true; const request = ++revision; settingsRevision++;goalPad?.cancel();$('autoGoalDialog').close(); controls();
         try {
             await stream.stopViewing();
@@ -308,7 +311,7 @@
     });
     stream.addEventListener('viewerChanged', event => {
         controls();
-        if (!stream.viewing) {pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();remoteMicrophone?.reset();view.clear();$('liveStreamRemoteSpeech').textContent='—';}
+        if (!stream.viewing) {pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();timeMenu?.close();remoteMicrophone?.reset();view.clear();$('liveStreamRemoteSpeech').textContent='—';}
         if (!busy) status(stream.viewing ? String(event.detail.state || '') : text('bafe351c-ceef-5648-9536-fcf9da113818'));
     });
     stream.addEventListener('message', event => {
@@ -421,6 +424,9 @@
         const session=await response.json();user=session.user;csrf=session.csrfToken;
         await globalThis.WMOFAccountSettings.load(user.id,csrf);
         await preferences.load(user.id);
+        let graphical;try{const raw=globalThis.WMOFAccountSettings.peek('orderFiller','wmof.clock.graphicalSettings');graphical=raw?JSON.parse(raw):undefined;}catch{}
+        const appearance=globalThis.WMOFTimerAppearance.normalizeGraphicalSettings(graphical);
+        if(view.setGraphicalSettings)view.setGraphicalSettings(appearance);else globalThis.WMOFTimerAppearance.applyGraphical($('liveStreamClockTimer'),appearance);
         $('dropInPageStatus').textContent=permission(64) ? '' : text('07dba185-8a12-583b-bc6c-c900ac30541d');
         lookup.sync();renderSettings();controls();
         const target = new URL(document.URL).searchParams.get('userId');

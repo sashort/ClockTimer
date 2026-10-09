@@ -20,7 +20,7 @@
 <label class="drop-in-source-choice" data-menu-icon="settings"><select id="dropInSettingsSource" aria-label="{{text:95ec8d5a-8ca1-5d0b-9df3-3f9584609195:text0}}"><option value="default">{{text:fc47056b-19eb-5cf0-ac45-9d865e75b708:text0}}</option><option value="custom">{{text:ce252857-8d0d-5d30-8bcf-0c072901bd18:text0}}</option><option value="user">{{text:b65c84d6-1d0d-596b-8962-fdf409f04073:text0}}</option></select></label>
 
 <div class="drop-in-menu-group"><button id="dropInViewSettingsButton" type="button" data-menu-icon="settings" aria-expanded="false" aria-controls="dropInViewSettings">{{text:95ec8d5a-8ca1-5d0b-9df3-3f9584609195:text0}}</button>
-<div id="dropInViewSettings" class="drop-in-menu-fields" hidden><strong id="dropInSettingsOwner"></strong><p id="dropInSettingsApplied" class="settings-applied"></p>
+<div id="dropInViewSettings" class="drop-in-menu-fields" hidden><div hidden><strong id="dropInSettingsOwner"></strong><p id="dropInSettingsApplied" class="settings-applied"></p>
 
 <div class="live-stream-view-controls" hidden><label><span data-language-id="5d99dfac-9cf7-5dda-8b50-c03d646586dc">{{text:5d99dfac-9cf7-5dda-8b50-c03d646586dc:text0}}</span><select id="liveStreamViewTime"><option value="user" data-language-id="3876f75d-2e05-57d4-8e96-e2c6896d2346">{{text:3876f75d-2e05-57d4-8e96-e2c6896d2346:text0}}</option><option value="remaining" data-language-id="4b927b44-6410-53c1-98b2-ad81f47e9e61">{{text:4b927b44-6410-53c1-98b2-ad81f47e9e61:text0}}</option><option value="elapsed" data-language-id="89d7fafa-57e0-5a57-93c8-919c0422b960">{{text:89d7fafa-57e0-5a57-93c8-919c0422b960:text0}}</option><option value="calculated-end" data-language-id="945221ab-82a1-59b2-b957-2ebed11a0a88">{{text:945221ab-82a1-59b2-b957-2ebed11a0a88:text0}}</option></select></label>
 
@@ -38,7 +38,7 @@
                     </div>
 
 
-<fieldset class="observer-clock-settings"><legend>{{text:92a6c5f7-f8b9-51f6-a70b-73669905326c:text0}}</legend><p>{{text:959b4a75-9553-5f36-a7b2-a5e49f4288d7:text0}}</p><div id="dropInClockSettings"></div></fieldset><hr>                    <fieldset id="liveStreamVolumeControls" class="live-stream-volume-controls" disabled>
+</div><div class="drop-in-menu-group"><button id="dropInClockSettingsButton" type="button" data-menu-icon="clock" aria-expanded="false" aria-controls="dropInClockSettingsPanel">{{text:a12fb98d-12e3-59e7-a9bf-30716cc60516:text0}}</button><div id="dropInClockSettingsPanel" hidden><fieldset class="observer-clock-settings"><legend>{{text:92a6c5f7-f8b9-51f6-a70b-73669905326c:text0}}</legend><p>{{text:d275a23e-e682-5678-8e4c-89a503e56077:text0}}</p><div id="dropInClockSettings"></div></fieldset></div></div><div class="drop-in-menu-group"><button id="dropInInboundSoundButton" type="button" data-menu-icon="microphone" aria-expanded="false" aria-controls="dropInInboundSoundPanel">{{text:67af033a-f9ef-5916-b7d0-c60c7ea0c772:text0}}</button><div id="dropInInboundSoundPanel" hidden><fieldset id="liveStreamVolumeControls" class="live-stream-volume-controls" disabled>
                         <legend data-language-id="0f063567-ca2c-5846-aff5-a7f9db310118">{{text:0f063567-ca2c-5846-aff5-a7f9db310118:text0}}</legend>
                         <label class="live-stream-mute">
                             <input id="liveStreamMute" type="checkbox">
@@ -56,11 +56,11 @@
                             <span data-language-id="16ce574f-956c-5e2f-a558-96ad95436660">{{text:16ce574f-956c-5e2f-a558-96ad95436660:text0}}<output id="liveStreamProgramVolumeValue" data-language-id="6282fbd7-2066-5207-82f3-c1507dfd573e">{{text:6282fbd7-2066-5207-82f3-c1507dfd573e:text0}}</output></span>
                             <small class="settings-default-value" data-settings-default="audio.program"></small><input class="default-audio-range" data-default-audio="program" type="range" min="0" max="100" step="1" aria-label="{{text:def617d2-8298-57e9-a7d3-32251c5b24d2:text0}}"><small class="settings-source" data-settings-source="audio.program"></small><input id="liveStreamProgramVolume" type="range" min="0" max="100" step="1" value="100">
                         </label>
-                    </fieldset><hr><button id="dropInSaveDefault" type="button" data-menu-icon="settings" >{{text:306eeb36-21ae-5576-ad2c-293af5b8620b:text0}}</button><button id="dropInRestoreDefault" type="button" data-menu-icon="settings" >{{text:365cc4c0-4688-518f-93d9-fff003c3ea7a:text0}}</button><p id="dropInDefaultStatus" role="status"></p></div></div>
+                    </fieldset><hr><button id="dropInSaveDefault" type="button" data-menu-icon="settings" >{{text:306eeb36-21ae-5576-ad2c-293af5b8620b:text0}}</button><button id="dropInRestoreDefault" type="button" data-menu-icon="settings" >{{text:365cc4c0-4688-518f-93d9-fff003c3ea7a:text0}}</button><p id="dropInDefaultStatus" role="status"></p></div></div></div></div>
 <button id="dropInTripLogButton" type="button" data-menu-icon="book">{{text:15f840c1-78dc-53db-8fe8-af2f1158fa5a:text0}}</button>
 <button id="dropInLogoutButton" type="button" data-menu-icon="logout">{{text:bb11e797-9677-543f-a66c-802d25291202:text0}}</button>
 <button id="dropInExitButton" type="button" data-menu-icon="logout">{{text:8736d538-842c-54ea-9ad7-dad7d6d9dfc6:text0}}</button>
-<p id="dropInSettingsStatus" role="status"></p><a href="index.php" data-menu-icon="clock">WMOF</a><output id="appVersion">LUEHN5</output>
+<p id="dropInSettingsStatus" role="status"></p><a href="index.php" data-menu-icon="clock">WMOF</a><output id="appVersion">E4GUFA</output>
 </hamburger-menu>
 <div hidden aria-hidden="true"><div class="live-stream-readout" aria-live="polite">
                         <div><span data-language-id="01be1c81-fcf4-5ae0-9942-52a9d182147f">{{text:01be1c81-fcf4-5ae0-9942-52a9d182147f:text0}}</span><strong id="liveStreamRemoteState" data-language-id="2997a7c9-b0ed-5104-af1f-aacdd4a4f66e">{{text:2997a7c9-b0ed-5104-af1f-aacdd4a4f66e:text0}}</strong></div>

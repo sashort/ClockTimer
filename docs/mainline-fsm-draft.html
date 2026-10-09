@@ -1209,7 +1209,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "Custom start date / end date",
         "Watcher goal percentage / Sync / time display / Use user’s settings",
         "Selected user remote microphone sleep / wake",
-        "Settings: sound controls and read-only user-following ClockTimer appearance"
+        "Settings: collapsible ClockTimer and Inbound Sound sub-items; ClockTimer uses observer account Order Filler appearance"
       ],
       "family": "settings",
       "binding": {
@@ -11646,7 +11646,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "invariants": [
         "A saved settings owner equals the authenticated account.",
         "Late callbacks cannot repopulate another account cache.",
-        "ClockTimer observer appearance always follows selected publisher; numeric view overrides never alter publisher configuration."
+        "ClockTimer observer appearance uses the observer account Order Filler settings through the shared normalizer and renderer; publisher snapshots and user switching never replace it."
       ]
     }
   },
@@ -12522,13 +12522,15 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "apply_to_all": "If watch list has more than one user, preview immediately and await Selected user / Apply to all / Cancel. Only changed fields are copied. Cancel restores saved settings; failed save restores its checkpoint.",
       "trip_log": "Read-only trips of selected observed user, filtered to selected range. Requires active authorized peer and unexpired publisher session. User switching/disconnect invalidates outstanding requests.",
       "exit": "Close all streams, stop observer timer and audio, return to landing with session retained. Logout also ends authenticated session.",
-      "layout": "Shared timer header: hamburger followed by Mode filling remaining width. Selected user name appears only in user selection. No redundant dash/name header. Timer fits available viewport; message composer sits directly beneath it without document scrolling. Hamburger omits Sync Goals and User Details; Sync control stays beside the goal in the main timer summary. Hamburger menu and promoted submenus stay at least 12 pixels inside the left/right viewport edges and 8 pixels above the trainer message area. Boundary tracking responds to resizing and message-area height changes; excess menu content scrolls internally.",
+      "layout": "Shared timer header: hamburger followed by Mode filling remaining width. Selected user name appears only in user selection. No redundant dash/name header. Timer fits available viewport; message composer sits directly beneath it without document scrolling. Hamburger omits Sync Goals and User Details; Sync control stays beside the goal in the main timer summary. Hamburger menu and promoted submenus stay at least 12 pixels inside the left/right viewport edges and 8 pixels above the trainer message area. Boundary tracking responds to resizing and message-area height changes; excess menu content scrolls internally. Mode button uses a consistent 12-pixel gap between mirror icon, label and source badge.",
       "message_feedback": "A nonempty incoming trainer.tts message starts observer-message, a dedicated eighties attention alert with the retained final upper-midrange E6/B5 square-wave pair (200 ms onset spacing, longer final note), before its trimmed, capped 500-character speech. Use announcement timing and padding; preserve broadcast:false for private text. Ignore unrelated and empty messages.",
       "message_templates": {
         "picker": "Typing an unescaped [ inserts the opening bracket and opens the name picker. First/middle/last/preferred choices show selection order; Insert replaces the opening bracket with the ordered combination; Clear resets choices; Cancel or Escape removes the opening bracket. Escaped \\[ bypasses the picker and renders as a literal [ on delivery. The existing settings circled question-mark help explains this behavior.",
         "delivery": "Wait Async: Send opens a recipient checklist with every observed user checked. Confirm sends a private individually expanded message to each selected authorized publisher. Retain input and failed recipients on partial failure; uncheck successful recipients to avoid retrying them. Clear input only after all selected recipients succeed.",
         "names": "Server resolves current first/middle/last/preferred names for each recipient in bracket order, falls back from a blank/missing preferred name to first name, omits other missing parts, and preserves unknown placeholders. Optional middle name is persisted on the user account and editable in Edit Profile."
-      }
+      },
+      "sync_popover": "Click reads the actual native :popover-open state rather than a delayed hidden flag. Browser dismissal followed by an immediate click reopens on that click. Toggle notifications synchronize hidden and aria-expanded from current native state; stale close events cannot hide a reopened menu. Shared Mode menus use the same state reader.",
+      "time_popover": "Time button opens Remaining / Elapsed / End time choices. Selection uses the same Apply To Default/User Wait Async persistence flow as Mode/Sync/Goal; without selected user, User is unchecked and disabled. Cancel or rejection restores accepted selection."
     },
     "pointer-mode-menu": {
       "options": [
@@ -12564,7 +12566,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "reminder": "Publisher starts a 60-second interval at deactivation. Each minute while muted, announce Microphone deactivated with no chime. Duplicate mute requests preserve cadence. Reactivation cancels interval and queued stale reminders; page exit clears the timer. A later deactivation starts a new cadence."
     },
     "observer-settings": {
-      "surface": "Settings contains editable sound controls and read-only ClockTimer settings that always follow the observed user. Mode/Goal/Sync comparison rows are removed; badges and live Mirror values live beside the actual controls and popover choices.",
+      "surface": "Settings contains exactly two collapsible sub-items: ClockTimer and Inbound Sound. ClockTimer displays the observer account settings shared with Order Filler; Inbound Sound contains editable observer audio gains. Mode/Goal/Sync comparison rows are removed; badges and live Mirror values live beside actual controls and popover choices.",
       "mirror": "Mirrors display settings while retaining saved per-user custom values; audio remains observer-local.",
       "goals": "Same shared Order Filler summary, mode button, percentage numberpad and Auto chooser; independent trip/total overrides; no publisher writes.",
       "multiple": "Setting changes offer selected/all scope; remote mic only targets selected person.",
@@ -12590,7 +12592,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "symbol": "One rounded badge: localized D/C center, person centered or lower-right overlay. Default and Custom are mutually exclusive. Accessible labels give full meaning. Badges match saved default, retained custom, and current publisher values independently.",
         "updates": "Recalculate on user switch, preference save, and incoming snapshot, including open menus. Mirror is separately teal with standard icon and live publisher value."
       },
-      "clockAppearance": "The publisher exports only explicit presentation attributes, CSS variables and range/hand visibility. Viewer applies them after each model projection while preserving host identity and independent Goal/Mode/Sync overrides. Switching users replaces prior appearance.",
+      "clockAppearance": "Drop-In uses the observer account orderFiller graphicalSettings through the same normalization and rendering as Order Filler. Apply after model projection; incoming publisher appearance and user switching must not override it. Timer identity, observed events and independent Goal/Mode/Sync choices are preserved.",
       "empty_watch_list": "Authorized observer can edit Mode, Sync and Goal without an observed user. Preview uses observer defaults; Apply To checks Default, disables and unchecks User, and hides the absent user name. Apply persists defaults only, never creates a user record; Cancel or save failure restores accepted settings. User targeting becomes available when an observed user is selected. Late save completions cannot repaint another selected user."
     },
     "account-settings": {
@@ -12602,6 +12604,13 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "tests/user_settings.php",
         "tests/app-state-transactions.mjs --account-settings"
       ]
+    },
+    "hamburger-menu": {
+      "parent_items": "Every item with sub-items is collapsible at every nesting depth. Parent buttons declare aria-controls and aria-expanded; submenus start hidden. Shared HamburgerMenu owns opening, closing and the existing promotion, directional row animation, submenu growth/shrink, frozen-pane and reverse-restoration rules. No always-visible submenu or page-specific show/hide substitute.",
+      "panel_restoration": "Capture logical panel index before measurement replaces panes and clamps horizontal scroll to zero. Restore that index after packing, clamped only to the genuine new page count; collapsing a parent returns to its original sibling panel.",
+      "track": "Track continuously follows actual horizontal scroll progress during drag and animated settling, without a separate transform transition. Frame tracking stops after settling or closing.",
+      "landing": "Landing Admin, Trainer and Dev Tools use the shared animated HamburgerMenu parent/submenu structure.",
+      "order_filler": "Settings and Trip Log are parent items. Both start collapsed on initial load and after menu reset. Trip Log contains Open Trip Log, pin, production/range/date filters and validation feedback. Recognizer Name also uses the shared collapsible parent structure. Component-level hidden styling must override application grid/flex styles so no hidden submenu renders prematurely."
     }
   },
   "unresolved_contracts": [

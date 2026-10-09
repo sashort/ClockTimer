@@ -4556,7 +4556,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .sync-pause-badge::after {content:"";position:absolute;inset:4px;background:linear-gradient(to right,white 0 30%,transparent 30% 70%,white 70%);}
 .sync-paused .sync-pause-badge {opacity:1;transform:scale(1);}
 .trip-menu-group {position:relative;}
-.trip-menu-group::before {content:"";position:absolute;left:56px;top:10px;bottom:0;width:1px;background:rgb(255 255 255 / 75%);pointer-events:none;}
+.trip-menu-group:has(> #tripLogSubmenu:not([hidden]))::before {content:"";position:absolute;left:56px;top:10px;bottom:0;width:1px;background:rgb(255 255 255 / 75%);pointer-events:none;}
 .trip-menu-group .trip-log-range-menu,.trip-menu-group .trip-log-date-menu {margin-left:64px;padding-left:0;grid-template-columns:100px minmax(0,1fr);gap:10px;}
 .trip-settings-dialog .trip-defer-option,.trip-settings-dialog .trip-productive-option {display:flex;gap:10px;align-items:center;margin:0;padding:4px 0;}
 .trip-settings-dialog .trip-defer-option input,.trip-settings-dialog .trip-productive-option input {width:20px;height:20px;}
@@ -7449,9 +7449,9 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 .main-menu .hamburger-menu-popover summary::-webkit-details-marker { display: none; }
 .main-menu .hamburger-menu-popover summary::after { content: "\203a"; margin-left: auto; font-size: 28px; line-height: 1; }
 .main-menu .hamburger-menu-popover details[open] > summary::after { transform: rotate(90deg); }
-.main-menu .recognizer-name-settings > :not(summary) { margin-inline: 20px; max-width: calc(100% - 40px); }
-.main-menu .recognizer-name-settings > label { display: block; }
-.main-menu .recognizer-name-settings > select, .main-menu .recognizer-name-settings > input { margin-block: 8px; }
+.main-menu #recognizerNameSubmenu > * { margin-inline: 20px; max-width: calc(100% - 40px); }
+.main-menu #recognizerNameSubmenu > label { display: block; }
+.main-menu #recognizerNameSubmenu > select, .main-menu #recognizerNameSubmenu > input { margin-block: 8px; }
 .main-menu .hamburger-menu-popover a[data-menu-icon] { display: flex; }
 
 /* Standard Mirror glyph: lower-left; existing status badges remain lower-right. */

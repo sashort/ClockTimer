@@ -7,6 +7,17 @@ assert(!html.includes('src="app.js'),'landing page excludes timer and recognitio
 w.document.body.innerHTML=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
 w.eval(fs.readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'));
 w.WMOFUserLookup=class{sync(){}setMode(){}clearSearch(){}};
+let menuOpen=false;
+const homeMenu=w.document.getElementById('homeMenu');
+assert.equal(homeMenu.tagName,'HAMBURGER-MENU','landing uses the shared animated menu');
+homeMenu.showPopover=()=>{menuOpen=true;w.document.getElementById('homeMenuButton').setAttribute('aria-expanded','true');};
+homeMenu.hidePopover=()=>{menuOpen=false;};
+for(const id of ['homeAdmin','homeTrainer','homeDev']) {
+ const parent=w.document.getElementById(id),button=parent.querySelector('button[aria-controls]');
+ assert(button,'category must be a collapsible HamburgerMenu parent');
+ assert.equal(button.getAttribute('aria-expanded'),'false');
+ assert.equal(w.document.getElementById(button.getAttribute('aria-controls')).hidden,true);
+}
 let pendingLogin, failLogout=false;
 w.fetch=async(url,options={})=>{
  const body=options.body&&JSON.parse(options.body);
@@ -28,10 +39,12 @@ $('mainLoginForm').dispatchEvent(new w.Event('submit',{cancelable:true}));
 pendingLogin({ok:true,json:async()=>({user:{id:2,username:'bobby',permissions:64},csrfToken:'x'.repeat(32)})});await tick();
 assert.equal($('signedInActions').hidden,false);assert.equal($('homeMenu').hidden,false);
 assert.equal($('homeMenuButton').getAttribute('aria-expanded'),'true');
+assert.equal(menuOpen,true,'login expands the shared menu');
 assert.equal($('homeTrainer').hidden,false);assert.equal($('homeAdmin').hidden,true);assert.equal($('homeDev').hidden,true);
 assert.equal($('signedInActions').querySelector('a').getAttribute('href'),'order-filler.php?session=existing');
 assert.equal($('mainPassword').value,'');
 failLogout=true;$('homeLogoutButton').click();await tick();assert.equal($('signedInActions').hidden,false,'failed logout retains authenticated menu');
 failLogout=false;$('homeLogoutButton').click();await tick();assert.equal($('signedOutActions').hidden,false);
+assert.equal(menuOpen,false,'logout closes the shared menu');
 await w.happyDOM.close();
 console.log('PASS landing login rejection/acceptance, expanded menu, role categories, session handoff and confirmed logout');

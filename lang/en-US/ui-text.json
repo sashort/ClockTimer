@@ -6839,6 +6839,25 @@
       "id": "1596c064-3da2-52df-adfa-59060c139028",
       "text": "Close",
       "default": "Close"
+    },
+    "a12fb98d-12e3-59e7-a9bf-30716cc60516": {
+      "id": "a12fb98d-12e3-59e7-a9bf-30716cc60516",
+      "text": "ClockTimer",
+      "default": "ClockTimer"
+    },
+    "d275a23e-e682-5678-8e4c-89a503e56077": {
+      "id": "d275a23e-e682-5678-8e4c-89a503e56077",
+      "text": "Uses your Order Filler ClockTimer settings.",
+      "default": "Uses your Order Filler ClockTimer settings."
+    },
+    "67af033a-f9ef-5916-b7d0-c60c7ea0c772": {
+      "id": "67af033a-f9ef-5916-b7d0-c60c7ea0c772",
+      "text": "Inbound Sound",
+      "default": "Inbound Sound"
+    },
+    "f90cc749-06cc-503c-9393-fb13fdd856c0": {
+      "id": "f90cc749-06cc-503c-9393-fb13fdd856c0",
+      "text": "Open Trip Log"
     }
   }
 }

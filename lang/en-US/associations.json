@@ -6647,6 +6647,35 @@
         "text0": "1596c064-3da2-52df-adfa-59060c139028"
       },
       "attributes": {}
+    },
+    "a12fb98d-12e3-59e7-a9bf-30716cc60516": {
+      "elementId": "a12fb98d-12e3-59e7-a9bf-30716cc60516",
+      "source": "templates/pages/drop-in/menu.html",
+      "texts": {
+        "text0": "a12fb98d-12e3-59e7-a9bf-30716cc60516"
+      },
+      "attributes": {}
+    },
+    "d275a23e-e682-5678-8e4c-89a503e56077": {
+      "elementId": "d275a23e-e682-5678-8e4c-89a503e56077",
+      "source": "templates/pages/drop-in/menu.html",
+      "texts": {
+        "text0": "d275a23e-e682-5678-8e4c-89a503e56077"
+      },
+      "attributes": {}
+    },
+    "67af033a-f9ef-5916-b7d0-c60c7ea0c772": {
+      "elementId": "67af033a-f9ef-5916-b7d0-c60c7ea0c772",
+      "source": "templates/pages/drop-in/menu.html",
+      "texts": {
+        "text0": "67af033a-f9ef-5916-b7d0-c60c7ea0c772"
+      },
+      "attributes": {}
+    },
+    "50a3b78e-18b4-5871-a68c-3b94ca40cdf6": {
+      "texts": {
+        "text0": "f90cc749-06cc-503c-9393-fb13fdd856c0"
+      }
     }
   },
   "selects": {

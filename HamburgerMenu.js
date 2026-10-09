@@ -62,6 +62,7 @@
             STYLE_ID;
 
         style.textContent = [
+            ":where(hamburger-menu) [hidden] { display: none !important; }",
             "@property --hamburger-menu-target-x {",
             "  syntax: '<length>';",
             "  inherits: true;",
@@ -211,7 +212,7 @@
             "  background: var(--hamburger-menu-indicator-color, currentColor);",
             "  transform: translateX(0);",
             "  will-change: transform, width;",
-            "  transition: transform 220ms ease-in-out, width 220ms ease-in-out;",
+            "  transition: width 220ms ease-in-out;",
             "}",
             ":where(hamburger-menu) .hamburger-menu-focus-layer {",
             "  position: absolute;",
@@ -351,6 +352,7 @@
         #source;
         #indicator;
         #indicatorThumb;
+        #indicatorFrame;
         #focusLayer;
         #observer;
         #resizeObserver;
@@ -413,6 +415,8 @@
         }
 
         disconnectedCallback() {
+            cancelAnimationFrame(this.#indicatorFrame);
+            this.#indicatorFrame = undefined;
             this.#connected =
                 false;
 
@@ -1664,8 +1668,10 @@
             this.#viewport
                 .addEventListener(
                     "scroll",
-                    () =>
-                        this.#updateIndicator(),
+                    () => {
+                        this.#updateIndicator();
+                        this.#followIndicatorScroll();
+                    },
                     {
                         passive:
                             true
@@ -3765,6 +3771,11 @@
             const wasFrozen =
                 this.#frozenPaneLocks.length > 0;
 
+            // Packing temporarily replaces all panes with one measurement
+            // column, which clamps scrollLeft to zero. Preserve the logical
+            // selection before indicator updates read that temporary position.
+            const selectedPanelIndex = this.#panelIndex;
+
             if (wasFrozen) {
                 this.#unfreezePane();
             }
@@ -3900,7 +3911,7 @@
                     Math.min(
                         pages.length -
                             1,
-                        this.#panelIndex
+                        selectedPanelIndex
                     )
                 ),
                 {
@@ -3983,7 +3994,25 @@
                     this.#updateIndicator()
             );
 
+            if (smooth) this.#followIndicatorScroll();
+
             return true;
+        }
+
+        #followIndicatorScroll() {
+            if (this.#indicatorFrame !== undefined) return;
+            let previous = this.#viewport.scrollLeft;
+            let stableFrames = 0;
+            const follow = () => {
+                this.#indicatorFrame = undefined;
+                if (!this.isOpen || !this.isConnected) return;
+                this.#updateIndicator();
+                const position = this.#viewport.scrollLeft;
+                stableFrames = Math.abs(position - previous) < 0.01 ? stableFrames + 1 : 0;
+                previous = position;
+                if (stableFrames < 4) this.#indicatorFrame = requestAnimationFrame(follow);
+            };
+            this.#indicatorFrame = requestAnimationFrame(follow);
         }
 
         #updateIndicator() {

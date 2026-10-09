@@ -11,7 +11,7 @@ for (const file of ['TemporalFormat','RingContainer','TimeRangeModel','TimeRange
 }
 w.document.body.innerHTML = fs.readFileSync(new URL('../drop-in.html', import.meta.url),'utf8')
     .match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
-for (const file of ['CalendarRange.js','DropInView.js']) w.eval(fs.readFileSync(new URL('../'+file,import.meta.url),'utf8'));
+for (const file of ['CalendarRange.js','TimerAppearance.js','DropInView.js']) w.eval(fs.readFileSync(new URL('../'+file,import.meta.url),'utf8'));
 const $ = id => w.document.getElementById(id);
 const totals = value => {
     const production = {tripCount:1,actualTimeMilliseconds:value.countedTimeMilliseconds,...value};
@@ -22,6 +22,7 @@ const stream = {fetchViewerTotals(window,options) {
     return new Promise((resolve,reject) => requests.push({window,options,resolve: value=>resolve(totals(value)),reject}));
 }};
 const controller = new w.WMOFDropInView({root:$('liveStreamDialog'), stream, text:key=>key});
+controller.setGraphicalSettings(w.WMOFTimerAppearance.normalizeGraphicalSettings({tripColor:'#abcdef'}));
 const snapshot = {timestamp:'2026-10-07T12:00:00Z',userId:42,uiState:{state:'trip_running',effective_goal_type:'trip',sync_enabled:false,
     standard_time_component:{text:'USER STANDARD'},standard_time_header_text:'Trip Standard Time',time_header_text:'Remaining',time_component:{text:'USER EXACT TIME'}, current_percent_component:{text:'200%'},goal_component:{text:'100%'},
     trip_goal_component:{text:'100%'},total_goal_component:{text:'110%'}},viewData:{
@@ -108,6 +109,7 @@ assert.equal($('liveStreamInterval').hidden,true,'switching clears the previous 
 await assert.rejects($('liveStreamClockTimer').persistCurrentTrip(),/Connect before saving/);
 assert.equal(apiCalls,0,'observer controls and attempted persistence never access the API');
 assert.equal(w.document.querySelectorAll('.live-stream-mirror clock-timer').length,1,'switching reuses one ClockTimer');
+assert.equal($('liveStreamClockTimer').style.getPropertyValue('--clock-timer-trip-color'),'#abcdef','switching preserves observer account ClockTimer settings');
 assert.equal(w.document.querySelector('.live-stream-mirror #tripListButton'),null,'mirror has no Trip Log button');
 await w.happyDOM.close();
 console.log('PASS independent Drop-In modes, custom dates, active trip deduplication, stale requests, errors and target cleanup');
