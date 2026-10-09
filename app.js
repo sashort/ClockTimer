@@ -13,6 +13,13 @@
     const capabilityEnabled = startupPolicy?.capabilityEnabled
         || (name => pageContext?.capabilities?.[name] !== false);
 
+    // Resolve host-specific startup resources before consuming their APIs.
+    // The dispatcher preserves deterministic dependency order and omits modules
+    // forbidden for the current page context (notably speech and calendar on settings).
+    if (globalThis.ClockTimerDispatcher) {
+        await globalThis.ClockTimerDispatcher.bootstrap(pageContext);
+    }
+
     if (!globalThis.ClockTimerAudioSettingsStartup) {
         throw new Error("AudioSettingsStartup.js did not register its initializer.");
     }
@@ -228,7 +235,9 @@
     });
     const ensureSpeechRuntime = speechStartup
         ? speechStartup.ensureRuntime
-        : () => Promise.reject(new Error("SpeechStartup.js did not register its factory."));
+        : settingsOnlyPage
+            ? () => Promise.resolve(false)
+            : () => Promise.reject(new Error("SpeechStartup.js did not register its factory."));
 
     const clockTimer = $("#clockTimer");
 
