@@ -50,6 +50,7 @@
     "test:audio-voice-options": "node audio-voice-options.mjs",
     "test:audio-instrument-options": "node audio-instrument-options.mjs",
     "test:audio-velocity-controller": "node audio-velocity-controller.mjs",
+    "test:audio-settings-boundary": "node audio-settings-boundary.mjs",
     "test:audio-settings-startup": "node audio-settings-startup.mjs",
     "test:trip-log-range-feedback": "node trip-log-range-feedback.mjs",
     "test:trip-log-pin-controller": "node trip-log-pin-controller.mjs",
