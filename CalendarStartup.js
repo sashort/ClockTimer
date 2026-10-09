@@ -25,5 +25,32 @@
         }
     }
 
-    root.ClockTimerCalendarStartup = Object.freeze({ start });
+    function register({
+        dispatcher = root.ClockTimerDispatcher,
+        startup = root.ClockTimerStartup,
+        context = root.ClockTimerPageContext,
+        settingsOnlyPage = false,
+        apiBase,
+        calendarRanges,
+        refreshTripLogSelection,
+        showTripRangeError
+    }) {
+        if (settingsOnlyPage || !dispatcher || !startup) return false;
+        dispatcher.register(
+            "calendarStartup",
+            currentContext => startup.runWhenEnabled("calendarStartup", currentContext, () => start({
+                apiBase,
+                calendarRanges,
+                refreshTripLogSelection,
+                showTripRangeError
+            })),
+            currentContext => currentContext.capabilities?.calendarStartup !== false
+        );
+        void dispatcher.bootstrap(context).catch(error => {
+            console.error("ClockTimer startup dispatcher failed.", error);
+        });
+        return true;
+    }
+
+    root.ClockTimerCalendarStartup = Object.freeze({ start, register });
 })(globalThis);
