@@ -3219,32 +3219,12 @@
     }
 
     function shiftMasterVelocity(value) {
-        const next =
-            Math.max(
-                0.5,
-                Math.min(
-                    4,
-                    Number(value)
-                )
-            );
-
-        if (!Number.isFinite(next)) return;
-
-        const delta =
-            next -
-            audioSettings.masterVelocity;
-
-        audioSettings.masterVelocity =
-            next;
-        audioSettings.speechVelocity =
-            Math.max(
-                AUDIO_SPEECH_VELOCITY_MIN,
-                Math.min(
-                    AUDIO_SPEECH_VELOCITY_MAX,
-                    audioSettings.speechVelocity +
-                        delta
-                )
-            );
+        return globalThis.WMOFAudioVelocityController.shift(audioSettings, value, {
+            masterMinimum: 0.5,
+            masterMaximum: 4,
+            speechMinimum: AUDIO_SPEECH_VELOCITY_MIN,
+            speechMaximum: AUDIO_SPEECH_VELOCITY_MAX
+        });
     }
 
     buildAudioAnnouncementRows();
