@@ -86,9 +86,12 @@
         updateModeButton();renderSettingSources(record);
     }
     function updateModeButton() {
-        const mode=$('liveStreamViewMode');$('scopeToggle').textContent=mode.value==='user'
+        const mode=$('liveStreamViewMode'),button=$('scopeToggle'),mirrored=mode.value==='user';
+        const label=document.createElement('span');label.className='mode-button-label';label.textContent=mirrored && !view.userId ? text('b11c3a59-8432-515c-b361-acabaf1e7a88') : mirrored
             ? (view.snapshot?.viewData?.mode==='total' ? mode.querySelector('option[value="'+view.snapshot.viewData.range+'"]')?.textContent : mode.querySelector('option[value="'+(view.snapshot?.viewData?.mode||'trip')+'"]')?.textContent) || mode.selectedOptions[0]?.textContent
-            : mode.selectedOptions[0]?.textContent;
+            : mode.querySelector('option[value="'+mode.value+'"]')?.textContent;
+        button.replaceChildren(label);
+        if(mirrored){const icon=document.createElement('span');icon.dataset.menuIcon='mirror';icon.setAttribute('aria-hidden','true');button.prepend(icon);}
     }
     async function commitSettings(patch,targets) {
         const target=Number(view.userId),request=++settingsRevision;
