@@ -2543,64 +2543,33 @@
         });
     }
 
-    function cloneAudioAnnouncementRow(
-        row
-    ) {
-        return row
-            ? structuredClone(
-                row
-            )
-            : undefined;
+    function cloneAudioAnnouncementRow(row) {
+        return globalThis.WMOFAudioAnnouncementDraft.cloneRow(row);
     }
 
     function selectedAudioAnnouncement() {
-        return audioAnnouncementMobileAttributeRow
-            ?.dataset
-            .audioAnnouncement;
+        return globalThis.WMOFAudioAnnouncementDraft.selectedAnnouncement(
+            audioAnnouncementMobileAttributeRow
+        );
     }
 
     function selectedAudioAnnouncementState() {
-        const announcement =
-            selectedAudioAnnouncement();
-
-        if (!announcement) {
-            return undefined;
-        }
-
-        return audioAnnouncementDraft?.announcement ===
-            announcement
-            ? audioAnnouncementDraft.row
-            : audioSettings.rows[
-                announcement
-            ];
+        return globalThis.WMOFAudioAnnouncementDraft.selectedState({
+            announcement: selectedAudioAnnouncement(),
+            draft: audioAnnouncementDraft,
+            rows: audioSettings.rows
+        });
     }
 
-    function beginAudioAnnouncementDraft(
-        announcement
-    ) {
-        const row =
-            audioSettings.rows[
-                announcement
-            ];
-
-        if (!row) {
-            audioAnnouncementDraft =
-                undefined;
-            return;
-        }
-
-        audioAnnouncementDraft = {
-            announcement,
-            row:
-                cloneAudioAnnouncementRow(
-                    row
-                )
-        };
+    function beginAudioAnnouncementDraft(announcement) {
+        audioAnnouncementDraft = globalThis.WMOFAudioAnnouncementDraft.beginDraft(
+            audioSettings.rows,
+            announcement
+        );
     }
 
     function discardAudioAnnouncementDraft() {
-        audioAnnouncementDraft =
-            undefined;
+        audioAnnouncementDraft = globalThis.WMOFAudioAnnouncementDraft.discardDraft();
     }
 
 
