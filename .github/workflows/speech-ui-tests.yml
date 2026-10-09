@@ -55,6 +55,7 @@ on:
       - "api/_core/command_checks.php"
       - "api/trip-events/**"
       - "tests/command_checks.php"
+      - "tests/voice-login.php"
       - "tests/app-state-transactions.mjs"
       - "scripts/stamp-version.py"
       - "tests/build-version.py"
