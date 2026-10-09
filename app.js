@@ -2701,7 +2701,10 @@
         } else void globalThis.WMOFAudio?.speak?.(text);
     }
     function announceLoginAfterModelReady(){
-        if(globalThis.SpeechMenu?.modelReady && pendingVoiceLoginSwitch && legacyLoginDialog.open && !voiceLoginBusy){pendingVoiceLoginSwitch=false;switchToVoiceLogin();}
+        if(globalThis.SpeechMenu?.modelReady && pendingVoiceLoginSwitch && legacyLoginDialog.open && !voiceLoginBusy){
+            pendingVoiceLoginSwitch=false;
+            if(switchToVoiceLogin()) return;
+        }
         if((loginInputMode !== "pin" || globalThis.SpeechMenu?.modelReady) && loginIsOpen() && pendingLoginAnnouncement){
             const text=pendingLoginAnnouncement;pendingLoginAnnouncement=undefined;announceVoiceLogin(text);
         }
