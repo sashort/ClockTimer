@@ -4155,10 +4155,9 @@
     }
 
     function getTripLogRange() {
-        return normalizeTripLogRange(
-            selectedTripLogRange ?? safeStorageGet(
-                STORAGE.tripLogRange
-            )
+        return globalThis.ClockTimerTripLogModel.resolveRange(
+            selectedTripLogRange,
+            () => safeStorageGet(STORAGE.tripLogRange)
         );
     }
 
