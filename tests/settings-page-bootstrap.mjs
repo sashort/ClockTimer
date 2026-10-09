@@ -59,6 +59,15 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
         console
     };
     sandbox.globalThis = sandbox;
+    // The bootstrap test exercises settings readiness and surface behavior, not
+    // network/script loading. Dispatcher resources are already covered by the
+    // dispatcher-context and resource-loader tests, so provide a deterministic
+    // loader rather than letting the registered host resources reject startup.
+    sandbox.ClockTimerResources = {
+        async loadScript() {},
+        async loadStyle() {},
+        async loadTemplate() {}
+    };
     vm.createContext(sandbox);
     sandbox.ClockTimerSettingsSurfaces = { normalize: value => value || "graphicalSettingsDialog" };
     for (const file of ["PageManifest.js", "Context.js", "Lifecycle.js", "dispatcher.js", "SettingsPageBootstrap.js"]) {
