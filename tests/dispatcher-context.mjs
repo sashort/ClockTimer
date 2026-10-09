@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
+function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStreamDialog = false } = {}) {
     const events = [];
     const appendedResources = [];
     const body = {
         classList: { contains: name => classes.includes(name) },
-        querySelector: () => null
+        querySelector: selector => hasLiveStreamDialog && selector === "#liveStreamDialog" ? {} : null
     };
     const document = {
         body: bodyPresent ? body : null,
@@ -62,9 +62,11 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
 }
 
 {
-    const { sandbox } = makeRuntime({ classes: ["settings-page"], search: "?surface=audioSettingsDialog&parentHost=drop-in" });
+    const { sandbox } = makeRuntime({ classes: ["settings-page"], search: "?surface=audioSettingsDialog&parentHost=drop-in", hasLiveStreamDialog: true });
     const ctx = sandbox.ClockTimerContext.forCurrentScript();
-    assert.equal(ctx.host, "settings-frame");
+    assert.equal(ctx.host, "settings-frame", "settings page identity wins over shared live-stream markup");
+    assert.deepEqual(Array.from(ctx.features), ["settings"]);
+    assert.equal(ctx.presentation, "graphical-settings");
     assert.equal(ctx.surface, "audioSettingsDialog");
     assert.equal(ctx.options.parentHost, "drop-in");
     assert.equal(ctx.capabilities.speechMenu, false);
