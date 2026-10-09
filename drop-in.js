@@ -16,14 +16,17 @@
     const mirrorView=()=>({mode:'user',start:'',end:'',percent:'',percentScope:null,sync:'user',timeDisplay:'user'});
     const viewFields={liveStreamViewMode:'mode',liveStreamViewStart:'start',liveStreamViewEnd:'end',liveStreamViewPercent:'percent',liveStreamViewSync:'sync',liveStreamViewTime:'timeDisplay'};
     const audioFields={liveStreamMasterVolume:['master','setViewerMasterVolume','liveStreamMasterVolumeValue'],liveStreamMicVolume:['microphone','setViewerMicrophoneVolume','liveStreamMicVolumeValue'],liveStreamProgramVolume:['program','setViewerProgramVolume','liveStreamProgramVolumeValue']};
-    function publisherValues(){const data=view.snapshot?.viewData,state=view.snapshot?.uiState;return {mode:data?.mode==='total'?data.range:data?.mode,sync:typeof state?.sync_enabled==='boolean'?(state.sync_enabled?'on':'off'):undefined,tripGoal:goalNumber(state?.trip_goal_component),totalGoal:goalNumber(state?.total_goal_component)};}
+    function publisherValues(){const data=view.snapshot?.viewData,state=view.snapshot?.uiState;return {timeDisplay:data?.timeDisplay,mode:data?.mode==='total'?data.range:data?.mode,sync:typeof state?.sync_enabled==='boolean'?(state.sync_enabled?'on':'off'):undefined,tripGoal:goalNumber(state?.trip_goal_component),totalGoal:goalNumber(state?.total_goal_component)};}
     function goalNumber(component){if(typeof component?.value==='number'&&Number.isFinite(component.value)&&component.value>0)return String(Math.round(component.value*100));const match=String(component?.text||component||'').match(/^(\d+)\s*%$/);return match?.[1];}
-    function valueLabel(field,value){if(value===undefined)return '-';if(field==='mode')return $('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent||'-';if(field==='sync')return $('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent||'-';return WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:value});}
+    function valueLabel(field,value){if(value===undefined)return '-';if(field==='mode')return $('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent||'-';if(field==='timeDisplay')return $('liveStreamViewTime').querySelector('option[value="'+value+'"]')?.textContent||'-';if(field==='sync')return $('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent||'-';return WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:value});}
     function optionDetails(field,value){const publisher=publisherValues(),record=currentSettings(),defaults=preferences.defaults.view;return {source:globalThis.WMOFObserverSettingBadge?.match(field,value,record,defaults,publisher),label:value==='user'||value==='mirror'?WMOFLanguagePack.text('c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a',{value:valueLabel(field,publisher[field])}):undefined};}
     function refreshOptionDetails(){
-        modeMenu?.refresh();goalPad?.refresh();const menu=$('dropInSyncPopover');
+        modeMenu?.refresh();timeMenu?.refresh();goalPad?.refresh();const menu=$('dropInSyncPopover');
         if(menu)for(const option of menu.querySelectorAll('[data-sync]')){const details=optionDetails('sync',option.dataset.sync);option.querySelector('.mode-option-label').textContent=details.label||WMOFLanguagePack.text(option.dataset.labelId);globalThis.WMOFObserverSettingBadge?.render(option,details.source);}
-        for(const [id,field,value] of [['scopeToggle','mode',$('liveStreamViewMode').value],['toggleSyncMenuButton','sync',$('liveStreamViewSync').value],['goalPercentValue',view.localScope==='total'?'totalGoal':'tripGoal',goalNumber(view.displayState?.goal_component)]])globalThis.WMOFObserverSettingBadge?.render($(id),optionDetails(field,value).source);
+        for(const [id,field,value] of [['renderedTimeLabel','timeDisplay',$('liveStreamViewTime').value],['scopeToggle','mode',$('liveStreamViewMode').value],['toggleSyncMenuButton','sync',$('liveStreamViewSync').value],['goalPercentValue',view.localScope==='total'?'totalGoal':'tripGoal',goalNumber(view.displayState?.goal_component)]])globalThis.WMOFObserverSettingBadge?.render($(id),optionDetails(field,value).source);
+        const timeLabel=$('renderedTimeLabel');
+        timeLabel.querySelector('[data-menu-icon="mirror"]')?.remove();
+        if($('liveStreamViewTime').value==='user'){const icon=document.createElement('span');icon.dataset.menuIcon='mirror';icon.setAttribute('aria-hidden','true');timeLabel.prepend(icon);}
         if(pendingViewChange){const field=['mode','tripGoal','totalGoal','sync','percent','timeDisplay'].find(key=>key in pendingViewChange.view),value=pendingViewChange.view[field];if(value==='user'||value==='mirror')$('dropInTargetChoice').textContent=optionDetails(field,value).label;}
     }
     function renderClockSettings(){
@@ -190,7 +193,9 @@
     });
     for(const button of $('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]'))button.addEventListener('click',()=>{$('autoGoalDialog').close();openGoal(button.dataset.autoGoalScope);});
     $('autoGoalDialog').querySelector('[data-close-dialog]').addEventListener('click',()=>$('autoGoalDialog').close());
-    timeMenu=globalThis.WMOFModeMenu.bind($('toggleRenderedTimeButton'),{getValue:()=>$('liveStreamViewTime').value==='user'?view.snapshot?.viewData?.timeDisplay||'remaining':$('liveStreamViewTime').value,
+    timeMenu=globalThis.WMOFModeMenu.bind($('toggleRenderedTimeButton'),{getValue:()=>$('liveStreamViewTime').value,
+        extraOptions:[['user','b11c3a59-8432-515c-b361-acabaf1e7a88']],
+        getOptionDetails:value=>optionDetails('timeDisplay',value),
         optionsList:[['remaining','4b927b44-6410-53c1-98b2-ad81f47e9e61'],['elapsed','89d7fafa-57e0-5a57-93c8-919c0422b960'],['calculated-end','945221ab-82a1-59b2-b957-2ebed11a0a88']],
         onSelect:value=>changeSettings({view:{timeDisplay:value},mirror:false})});
     const syncMenu=document.createElement('div');syncMenu.id='dropInSyncPopover';syncMenu.className='mode-dropdown';syncMenu.hidden=true;syncMenu.setAttribute('popover','auto');syncMenu.setAttribute('role','menu');document.body.append(syncMenu);

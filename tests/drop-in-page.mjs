@@ -91,6 +91,14 @@ await chooseSource('user');assert.equal($('liveStreamViewMode').value,'user');as
 await chooseSource('custom');
 const live={userId:3,timestamp:'2026-10-08T12:00:00Z',viewData:{...w.testView.snapshot.viewData,mode:'total',range:'week',appearance:{attributes:{'timer-type':'radial-fitted'},variables:{'--clock-timer-trip-color':'#123456'}}},uiState:{sync_enabled:true,trip_goal_component:{value:1.2,text:'120%'},total_goal_component:{value:1.1,text:'110%'}}};
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));
+live.viewData.timeDisplay='elapsed';w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));
+$('toggleRenderedTimeButton').click();
+const liveTimeMenu=$('toggleRenderedTimeButtonDropdown');
+assert.equal(liveTimeMenu.querySelector('[data-mode=user] .mode-option-label').textContent,'Mirror — Elapsed');
+assert.equal(liveTimeMenu.querySelector('[data-mode=elapsed] .observer-source-badge').dataset.source,'user');
+live.viewData.timeDisplay='remaining';w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));
+assert.equal(liveTimeMenu.querySelector('[data-mode=user] .mode-option-label').textContent,'Mirror — Remaining','open time popover follows publisher');
+$('toggleRenderedTimeButton').click();
 $('scopeToggle').click();assert.equal($('scopeToggleDropdown').querySelector('[data-mode=user] .mode-option-label').textContent,'Mirror — Week');assert.equal($('scopeToggleDropdown').querySelector('[data-mode=week] .observer-source-badge').dataset.source,'user');
 live.viewData.range='year';w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));assert.equal($('scopeToggleDropdown').querySelector('[data-mode=user] .mode-option-label').textContent,'Mirror — Year','open mode menu follows live user');
 $('scopeToggle').click();$('toggleSyncMenuButton').click();assert.equal($('dropInSyncPopover').querySelector('[data-sync=user] .mode-option-label').textContent,'Mirror — On');assert.equal($('dropInSyncPopover').querySelector('[data-sync=off] .observer-source-badge').dataset.source,'default');
@@ -111,7 +119,7 @@ w.testStream.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'dis
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'disconnected');
 w.testStream.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'connected'}}));
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:{userId:3}}}));
-assert.equal(events.filter(value=>value==='snapshot:3').length,5);
+assert.equal(events.filter(value=>value==='snapshot:3').length,7);
 // Full peer loss clears the mirror and disables messaging, then Watch reauthorizes.
 await w.testStream.stopViewing();await tick();
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'Not viewing.');
@@ -144,10 +152,10 @@ $('toggleSyncMenuButton').click();$('dropInSyncPopover').querySelector('[data-sy
 $('goalPercentValue').click();await tick();assert.equal(w.goalOpened.scope,'total');w.testGoalPad.onConfirm('total',125);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.totalGoal,'125');assert.equal($('goalPercentValue').textContent,'125%');
 rejectSave=true;change('liveStreamViewMode','year');$('dropInTargetApply').click();await tick();assert.equal($('liveStreamViewMode').value,'day','failed default save restores accepted mode');rejectSave=false;
 const timePopover=$('toggleRenderedTimeButtonDropdown');
-$('toggleRenderedTimeButton').click();assert.deepEqual([...timePopover.querySelectorAll('button')].map(button=>button.dataset.mode),['remaining','elapsed','calculated-end']);
+$('toggleRenderedTimeButton').click();assert.deepEqual([...timePopover.querySelectorAll('button')].map(button=>button.dataset.mode),['remaining','elapsed','calculated-end','user']);
 timePopover.querySelector('[data-mode=elapsed]').click();assert.equal($('dropInTargetDialog').open,true);assert.equal($('dropInTargetUser').disabled,true);$('dropInTargetCancel').click();
 const originalTime=$('liveStreamViewTime').value;
-$('toggleRenderedTimeButton').click();timePopover.querySelector('[data-mode=elapsed]').click();$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.timeDisplay,'elapsed');assert.equal($('renderedTimeLabel').textContent,'Elapsed');
+$('toggleRenderedTimeButton').click();timePopover.querySelector('[data-mode=elapsed]').click();$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.timeDisplay,'elapsed');assert.match($('renderedTimeLabel').textContent,/^Elapsed/);assert.equal($('renderedTimeLabel').querySelector('.observer-source-badge').dataset.source,'default');
 rejectSave=true;$('toggleRenderedTimeButton').click();timePopover.querySelector('[data-mode=calculated-end]').click();$('dropInTargetApply').click();await tick();assert.equal($('liveStreamViewTime').value,'elapsed','failed Time save restores accepted selection');rejectSave=false;
 assert.deepEqual(Object.keys(JSON.parse(stored.get('settings')).users),Object.keys(JSON.parse(previousUsers)),'default-only edits do not create a phantom user');
 assert.equal(JSON.parse(stored.get('settings')).users['3'].sources.view.mode,'default','matching saved user override follows the new default');

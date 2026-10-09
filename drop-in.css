@@ -142,3 +142,8 @@ button#toggleSyncMenuButton:active:not(:disabled) {transform:translateY(calc(-50
 #dropInNamePicker>label {display:grid;grid-template-columns:22px 1fr 28px;}
 #dropInNamePicker [data-name-order] {text-align:center;font-weight:bold;color:#a9ddf7;}
 .name-template-preview {display:block;padding:14px;margin:12px 0;background:#073a80;border:1px solid #a9ddf755;border-radius:8px;text-align:center;font:600 18px monospace;}
+
+#renderedTimeLabel {display:flex;align-items:center;justify-content:center;gap:.35em;}
+#renderedTimeLabel > [data-menu-icon="mirror"] {display:inline-flex;flex:none;}
+#renderedTimeLabel > .observer-source-badge {margin-inline-start:0;}
+#renderedTimeLabel > [data-menu-icon="mirror"]::before {margin-inline-end:0;}
