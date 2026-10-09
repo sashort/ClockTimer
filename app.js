@@ -21387,39 +21387,26 @@
         return announcementText("messages.speech.percent", { value: goalFailureNumberWords(percent) });
     }
 
-    function renderedGoalLabel(
-        detail
-    ) {
-        const { scope, selected } =
-            globalThis.ClockTimerTripGoalModel.selectGoal(detail);
-        const percentGoal =
-            Number(
-                selected?.percentGoal
-            );
-        const roundedPercent =
-            Number.isFinite(percentGoal)
-                ? Math.round(
-                    percentGoal * 100
-                )
-                : undefined;
+    function renderedGoalLabel(detail) {
+        const descriptor =
+            globalThis.ClockTimerTripGoalModel.labelDescriptor(detail);
 
-        if (
-            scope === "standard" ||
-            roundedPercent === 100
-        ) {
+        if (descriptor.kind === "standard") {
             return announcementText("messages.goal.standard");
         }
-
-        if (!Number.isFinite(roundedPercent)) {
+        if (descriptor.kind !== "percent") {
             return "";
         }
 
         const type =
-            scope === "total"
+            descriptor.scope === "total"
                 ? totalScopeLabel()
                 : announcementText("messages.scope.trip");
 
-        return announcementText("messages.goal.percent", { scope: type, percent: goalFailureNumberWords(roundedPercent) });
+        return announcementText("messages.goal.percent", {
+            scope: type,
+            percent: goalFailureNumberWords(descriptor.percent)
+        });
     }
 
     function renderedGoalRemainingMilliseconds(detail) {
