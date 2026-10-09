@@ -87,6 +87,17 @@
             : "time-blocked";
     }
 
+    function readRequirements(read) {
+        try {
+            const requirements = read?.();
+            return requirements && typeof requirements === "object"
+                ? requirements
+                : undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
     function resolveSyncRuntimeState({
         getConnectionStatus = () => "offline",
         getSyncGoalsEnabled = () => false,
@@ -163,6 +174,7 @@
         fallbackScope,
         renderedGoalScope,
         syncRuntimeState,
+        readRequirements,
         resolveSyncRuntimeState,
         resolveSyncGoalsEnabled,
         currentCalculatedSyncGoal,
