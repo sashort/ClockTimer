@@ -6253,15 +6253,17 @@
     }
 
     function getConnectionNumberPadState() {
-        return numberPadState ??
-            findUIReturnFrame("number-pad")?.state;
+        return globalThis.ClockTimerConnectionNumberPadState.state(
+            numberPadState,
+            uiReturnFrames
+        );
     }
 
     function getConnectionNumberPadToken() {
-        const state =
-            getConnectionNumberPadState();
-
-        return state?.connectionStatusToken;
+        return globalThis.ClockTimerConnectionNumberPadState.token(
+            numberPadState,
+            uiReturnFrames
+        );
     }
 
     async function settleInitialNumberPadConnection(state, preparationPromise) {
