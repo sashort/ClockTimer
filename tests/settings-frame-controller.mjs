@@ -33,7 +33,7 @@ function createRuntime() {
         location: { origin: "https://example.test" },
         addEventListener(name, callback) { windowHandlers[name] = callback; }
     };
-    const sandbox = { document, window, location: window.location, addEventListener: window.addEventListener.bind(window), encodeURIComponent, console };
+    const sandbox = { document, window, location: window.location, addEventListener: window.addEventListener.bind(window), encodeURIComponent, URLSearchParams, console };
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
     sandbox.ClockTimerSettingsSurfaces = {
@@ -48,7 +48,7 @@ function createRuntime() {
     assert.equal(r.dialog.dataset.controllerReady, "true");
     r.handlers.click();
     assert.equal(r.frame.dataset.settingsSurface, "tripSettingsDialog");
-    assert.equal(r.frame.src, "settings.html?surface=tripSettingsDialog");
+    assert.equal(r.frame.src, "settings.html?surface=tripSettingsDialog&parentHost=order-filler");
     assert.equal(r.dialog.open, true);
     assert.equal(r.menu.hidden, 1);
 
