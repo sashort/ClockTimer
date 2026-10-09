@@ -53,7 +53,7 @@ function assertIframeOnlyDialog(markup, label, checkController = true) {
     assert.match(dialog, /^<dialog[^>]*>\s*<iframe id="clockTimerSettingsFrame"[^>]*><\/iframe>\s*<\/dialog>$/, `${label} modal contains only the iframe`);
     assert.doesNotMatch(dialog, /<button|<h[1-6]|<label|<p[ >]/, `${label} modal adds no extra controls or labels around the iframe`);
     if (checkController) {
-        assert.match(settingsFrameController, /frame\\.src = "settings\\.html\\?" \\+ query\\.toString\\(\\)/, `${label} chooses requested surfaces and passes parent context into the iframe`);
+        assert.match(settingsFrameController, /frame\.src = "settings\.html\?" \+ query\.toString\(\)/, `${label} chooses requested surfaces and passes parent context into the iframe`);
         assert.match(settingsFrameController, /event\.source !== frame\.contentWindow/, `${label} listens for close events only from its iframe`);
         assert.match(settingsFrameController, /event\.target === dialog\) dialog\.close\(\)/, `${label} supports backdrop dismissal without an extra close button`);
     }
