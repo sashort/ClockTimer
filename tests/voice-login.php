@@ -7,9 +7,9 @@ function check(bool $ok,string $message):void{if(!$ok)throw new RuntimeException
 function rejected(callable $fn,string $code):void{try{$fn();}catch(LoginFailure $e){check($e->apiCode===$code,'Wrong rejection');return;}throw new RuntimeException('Expected rejection');}
 class LoginTestPDO extends PDO {public function prepare(string $query,array $options=[]):PDOStatement|false{return parent::prepare(str_replace(' FOR UPDATE','',$query),$options);}}
 $db=new LoginTestPDO('sqlite::memory:');$db->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
-$db->exec('CREATE TABLE users(id INTEGER PRIMARY KEY,first_name TEXT,last_name TEXT,preferred_name TEXT,username TEXT,permissions INTEGER,login_id TEXT UNIQUE,pin_hash TEXT)');
+$db->exec('CREATE TABLE users(id INTEGER PRIMARY KEY,first_name TEXT,middle_name TEXT,last_name TEXT,preferred_name TEXT,username TEXT,permissions INTEGER,login_id TEXT UNIQUE,pin_hash TEXT)');
 $db->exec('CREATE TABLE voice_login_attempts(bucket TEXT PRIMARY KEY,window_start INTEGER,attempts INTEGER)');
-$db->prepare('INSERT INTO users VALUES(1,?,?,?,?,?,?,?)')->execute(['Test','User','Test','legacy-name',0,'0042',password_hash('0073',PASSWORD_BCRYPT)]);
+$db->prepare('INSERT INTO users VALUES(1,?,?,?,?,?,?,?,?)')->execute(['Test',null,'User','Test','legacy-name',0,'0042',password_hash('0073',PASSWORD_BCRYPT)]);
 check(four_digit_credential('0042','id')==='0042','Leading zero lost');
 foreach([42,'123','12345','12.3','1e03','１２３４']as$v)rejected(fn()=>four_digit_credential($v,'id'),'invalid_argument');
 $user=authenticate_voice_login($db,['loginId'=>'0042','pin'=>'0073'],'origin',1000);check($user['id']===1&&!isset($user['pin_hash']),'Valid match/hash exposure');
