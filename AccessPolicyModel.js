@@ -40,7 +40,20 @@
         return canAssignPermissions(value) || hasAll(value, bit);
     }
 
+    const constants = Object.freeze({
+        PERMISSION_SUPERUSER,
+        PERMISSION_DEVELOPER_PREVIEW: 8,
+        PERMISSION_DEVELOPER: 16,
+        PERMISSION_GRANT_TOKEN_ACCESS: 32,
+        PERMISSION_VIEW_LIVE_STREAMS,
+        PERMISSION_LOOKUP_USERS,
+        ACCESS_TOKEN_PERMISSION_MASK: PERMISSION_SUPERUSER | 32,
+        SPEECH_EDITOR_PERMISSION_MASK: PERMISSION_SUPERUSER | 8 | 16,
+        DEVELOPER_MENU_PERMISSION_MASK: 8 | 16
+    });
+
     root.ClockTimerAccessPolicyModel = Object.freeze({
+        constants,
         canViewLiveStreams,
         canLookupUsers,
         canEditUsers,
