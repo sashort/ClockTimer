@@ -384,7 +384,7 @@
         "2026-09-24-6";
 
     const SPEECH_RUNTIME_REVISION =
-        "JAV5MH";
+        "RX7L76";
 
     const speechRuntimeVersion =
         "?sherpa=" +

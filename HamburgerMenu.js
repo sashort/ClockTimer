@@ -3267,6 +3267,13 @@
                     this
                 );
 
+            // Optional page-specific gutters apply to every menu placement,
+            // including promoted submenus and resize/keyboard updates.
+            const inlineMargin = Math.max(0, px(hostStyle.getPropertyValue("--hamburger-menu-safe-inline-margin")));
+            const boundaryGap = Math.max(0, px(hostStyle.getPropertyValue("--hamburger-menu-safe-boundary-gap")));
+            documentBounds.left += inlineMargin;
+            documentBounds.right -= inlineMargin;
+
             const boundary =
                 this.#visibleBoundary();
 
@@ -3325,7 +3332,7 @@
                                 px(
                                     hostStyle
                                         .marginBottom
-                                )
+                                ) - boundaryGap
                         ),
                     left: documentBounds.left,
                     right: documentBounds.right,
@@ -3352,7 +3359,7 @@
                             px(
                                 hostStyle
                                     .marginTop
-                            )
+                            ) + boundaryGap
                     ),
                 bottom:
                     documentBottom,

@@ -44,7 +44,7 @@ body { margin: 0; height: 100dvh; min-height: 0; overflow: hidden; display:flex;
 }
 
 .standalone-drop-in .scope-control label[hidden] {display:none;}
-#dropInMenu {align-self:center;}
+#dropInMenu {align-self:center;--hamburger-menu-safe-inline-margin:12px;--hamburger-menu-safe-boundary-gap:8px;}
 #dropInMenu .hamburger-menu-popover {width:min(380px,calc(100vw - 24px));}
 #dropInMenu .drop-in-menu-fields {padding:12px;}
 #dropInMenu .drop-in-menu-fields label {display:grid;gap:8px;margin-block:12px;}
