@@ -21,10 +21,10 @@ assert.deepEqual(JSON.parse(JSON.stringify(model.project({
     state: "break_active",
     timeComponent: {text: "04:00"},
     currentPercentComponent: {text: "45%"}
-})), {state: "break active", time: "04:00", goal: "45%"});
+}))), {state: "break active", time: "04:00", goal: "45%"});
 assert.deepEqual(JSON.parse(JSON.stringify(model.project({
     goalComponent: {text: "100%"}
-})), {state: "—", time: "—", goal: "100%"});
-assert.deepEqual(JSON.parse(JSON.stringify(model.project(null)),
+}))), {state: "—", time: "—", goal: "100%"});
+assert.deepEqual(JSON.parse(JSON.stringify(model.project(null))),
     {state: "—", time: "—", goal: "—"});
 console.log("PASS live-stream snapshot view model");
