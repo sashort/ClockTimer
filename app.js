@@ -265,36 +265,17 @@
         clockPreview.keepAspectRatio =
             true;
     }
-    const PERMISSION_SUPERUSER =
-        4;
-
-    const PERMISSION_DEVELOPER_PREVIEW =
-        8;
-
-    const PERMISSION_DEVELOPER =
-        16;
-
-    const PERMISSION_GRANT_TOKEN_ACCESS =
-        32;
-
-    const PERMISSION_VIEW_LIVE_STREAMS =
-        64;
-
-    const PERMISSION_LOOKUP_USERS =
-        128;
-
-    const ACCESS_TOKEN_PERMISSION_MASK =
-        PERMISSION_SUPERUSER |
-        PERMISSION_GRANT_TOKEN_ACCESS;
-
-    const SPEECH_EDITOR_PERMISSION_MASK =
-        PERMISSION_SUPERUSER |
-        PERMISSION_DEVELOPER_PREVIEW |
-        PERMISSION_DEVELOPER;
-
-    const DEVELOPER_MENU_PERMISSION_MASK =
-        PERMISSION_DEVELOPER_PREVIEW |
-        PERMISSION_DEVELOPER;
+    const {
+        PERMISSION_SUPERUSER,
+        PERMISSION_DEVELOPER_PREVIEW,
+        PERMISSION_DEVELOPER,
+        PERMISSION_GRANT_TOKEN_ACCESS,
+        PERMISSION_VIEW_LIVE_STREAMS,
+        PERMISSION_LOOKUP_USERS,
+        ACCESS_TOKEN_PERMISSION_MASK,
+        SPEECH_EDITOR_PERMISSION_MASK,
+        DEVELOPER_MENU_PERMISSION_MASK
+    } = globalThis.ClockTimerAccessPolicyModel.constants;
 
     const app = $("#app");
     const loginDialog = $("#loginDialog");
