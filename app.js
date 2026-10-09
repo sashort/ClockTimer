@@ -6762,48 +6762,15 @@
     function normalizeGraphicalSettings(value) {return globalThis.WMOFTimerAppearance.normalizeGraphicalSettings(value);}
 
     function getGraphicalSettings() {
-        let stored;
-
-        try {
-            const raw =
-                safeStorageGet(
-                    STORAGE.graphicalSettings
-                );
-
-            stored =
-                raw
-                    ? JSON.parse(raw)
-                    : undefined;
-        }
-        catch {
-            stored = undefined;
-        }
-
-        return normalizeGraphicalSettings(
-            stored
+        return globalThis.WMOFTimerAppearance.read(
+            safeStorageGet(STORAGE.graphicalSettings)
         );
     }
 
     function saveGraphicalSettings(settings) {
-        const normalized =
-            normalizeGraphicalSettings(
-                settings
-            );
-
-        const stored = {
-            ...normalized,
-            showTolerance:
-                normalized.showTolerance === undefined
-                    ? null
-                    : normalized.showTolerance
-        };
-
-        safeStorageSet(
-            STORAGE.graphicalSettings,
-            JSON.stringify(stored)
-        );
-
-        return normalized;
+        const prepared = globalThis.WMOFTimerAppearance.prepareForStorage(settings);
+        safeStorageSet(STORAGE.graphicalSettings, prepared.serialized);
+        return prepared.normalized;
     }
 
     function syncConnectionUI(connected) {
