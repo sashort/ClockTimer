@@ -59,4 +59,10 @@ assert.equal(model.remainingMilliseconds(detail("trip", {
     percentGoal: 0
 })), undefined, "non-positive goal percentages are rejected");
 assert.equal(model.remainingMilliseconds(null), undefined, "missing goal state is rejected");
-console.log("PASS trip goal remaining-time calculation and invalid-state handling");
+
+assert.equal(model.remainingOutcome(1), "banked", "positive remaining time is banked");
+assert.equal(model.remainingOutcome(-1), "over", "negative remaining time is over goal");
+assert.equal(model.remainingOutcome(0), "on-target", "zero remaining time is exactly on target");
+assert.equal(model.remainingOutcome(undefined), "unknown", "missing remaining time is unknown");
+assert.equal(model.remainingOutcome(NaN), "unknown", "non-finite remaining time is unknown");
+console.log("PASS trip goal calculations, outcome classification, and invalid-state handling");
