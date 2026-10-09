@@ -93,6 +93,10 @@
             : undefined;
     }
 
+    function syncGoalMatches(left, right) {
+        return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < 1e-9;
+    }
+
     function countedPercent(detail) {
         return Number(detail?.summary?.total?.countedPercent);
     }
@@ -119,6 +123,7 @@
         fallbackScope,
         syncRuntimeState,
         currentCalculatedSyncGoal,
+        syncGoalMatches,
         formatSummaryPercent,
         formatActualPercent
     });
