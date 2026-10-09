@@ -121,6 +121,11 @@
             url: "TripLogModel.js?build=trip-log-model-1",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["trip-goal-model", {
+            type: "script",
+            url: "TripGoalModel.js?build=trip-goal-model-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["trip-preferences-model", {
             type: "script",
             url: "TripPreferencesModel.js?build=trip-preferences-model-2",
