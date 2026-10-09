@@ -58,6 +58,7 @@
     "test:trip-log-range-controls": "node trip-log-range-controls.mjs",
     "test:connection-number-pad-state": "node connection-number-pad-state.mjs",
     "test:connection-number-pad-settlement": "node connection-number-pad-settlement.mjs",
+    "test:connection-cloud-settlement": "node connection-cloud-settlement.mjs",
     "test:trip-preferences-model": "node trip-preferences-model.mjs",
     "test:trip-preferences-store": "node trip-preferences-store.mjs"
   },
