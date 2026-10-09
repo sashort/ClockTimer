@@ -25,7 +25,11 @@ assert.equal(normalize('standard time nonsense',{...options,provisional:false}),
 assert.equal(
     normalize('five thirty and five thirty',{
         field:'spokenTime',kind:'clock',
-        pattern:'^(?<spokenTime>five thirty) and five thirty
+        pattern:'^(?<spokenTime>five thirty) and five thirty',provisional:false
+    }),
+    '5:30 and five thirty',
+    'normalization must replace the named capture, not a later duplicate phrase'
+);
 const standard=window.document.createElement('button');
 const breakDialog=window.document.createElement('dialog');
 for(const kind of ['short-break','break','lunch']) {
