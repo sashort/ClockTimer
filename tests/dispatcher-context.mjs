@@ -513,7 +513,7 @@ console.log("PASS context restrictions, dispatcher resource manifests, nested re
     await sandbox.ClockTimerDispatcher.bootstrap(context);
     for (const required of ["LiveStreamViewModel.js", "LiveStreamPublisher.js", "SessionStartup.js",
         "SpeechRuntimeOptions.js", "SpeechTransactionTime.js", "ActionSignalContext.js",
-        "ConnectionStatusModel.js", "AnnouncementCatalogModel.js", "AccessPolicyModel.js"]) {
+        "ConnectionStatusModel.js", "ButtonPressFeedback.js", "AnnouncementCatalogModel.js", "AccessPolicyModel.js"]) {
         assert.ok(appendedResources.some(resource => String(resource.src).includes(required)),
             required + " must be available to the Order-Filler app");
     }
