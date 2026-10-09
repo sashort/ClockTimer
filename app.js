@@ -1,6 +1,10 @@
 (async () => {
     "use strict";
 
+    // settings.html embeds this application only to reuse its existing settings
+    // handlers. It must not run the normal app-entry voice/login sequence.
+    const settingsOnlyPage = document.body?.classList.contains("settings-page") === true;
+
     let audioActivated = false;
     const activateStartupAudio = () => {
         if (audioActivated) return;
@@ -22,6 +26,10 @@
     const startStartupAnnouncement = () => {
         if (startupAnnouncementStarted) return;
         startupAnnouncementStarted = true;
+        if (settingsOnlyPage) {
+            finishStartupAnnouncement();
+            return;
+        }
         try {
             const startupSpoken = globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceLogin.applicationStarting"), {
                 onEnd: finishStartupAnnouncement, onError: finishStartupAnnouncement
@@ -8585,6 +8593,8 @@
     }
 
     function showInitialLoginDialog() {
+        // An embedded settings document is not a second app landing page.
+        if (settingsOnlyPage) return false;
         if (landingSessionPending) return;
         if (speechEditorPreview) return false;
 
@@ -29857,4 +29867,9 @@
             refreshTripLogSelection();
         } catch (error) { showTripRangeError(error.message || "Calendar lookup failed."); }
     })();
+
+    // Settings iframe bootstrap waits for this event before invoking the same
+    // pointerup entry point as Order-Filler, avoiding a race with async startup.
+    document.documentElement.dataset.clocktimerAppReady = "true";
+    document.dispatchEvent(new Event("clocktimer-app-ready"));
 })();
