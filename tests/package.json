@@ -56,6 +56,7 @@
     "test:trip-log-pin-controller": "node trip-log-pin-controller.mjs",
     "test:trip-log-custom-dates": "node trip-log-custom-dates.mjs",
     "test:trip-log-range-controls": "node trip-log-range-controls.mjs",
+    "test:connection-number-pad-state": "node connection-number-pad-state.mjs",
     "test:trip-preferences-model": "node trip-preferences-model.mjs",
     "test:trip-preferences-store": "node trip-preferences-store.mjs"
   },
