@@ -6267,22 +6267,16 @@
     }
 
     async function settleInitialNumberPadConnection(state, preparationPromise) {
-        const startedAt =
-            Number.isFinite(state?.connectionAnimationStartedAt)
-                ? state.connectionAnimationStartedAt
-                : performance.now();
-
-        void Promise.resolve(preparationPromise).catch(() => {});
-
-        const remaining =
-            CONNECTION_INDICATOR_MINIMUM -
-            (performance.now() - startedAt);
-        if (remaining > 0) await wait(remaining);
-
-        updateNumberPadConnectionStatus(
-            state.connectionStatusToken,
-            normalizedConnectionStatus(),
-            { presentation: "initial-cloud" }
+        return globalThis.ClockTimerConnectionNumberPadSettlement.settle(
+            state,
+            preparationPromise,
+            {
+                minimumDuration: CONNECTION_INDICATOR_MINIMUM,
+                now: () => performance.now(),
+                wait,
+                updateStatus: updateNumberPadConnectionStatus,
+                normalizedStatus: normalizedConnectionStatus
+            }
         );
     }
 
