@@ -93,6 +93,39 @@
         return { provider: text.slice(0, separator).trim() || "system", voice };
     }
 
+    function audioCellUserEnabled(settings, announcement, layer, { ignoreMaster = false, overridesMaster = () => false } = {}) {
+        const row = settings?.rows?.[announcement];
+        const masterEnabled = ignoreMaster
+            || overridesMaster(announcement, layer)
+            || settings?.masters?.[layer] !== false;
+        return Boolean(row && row.enabled !== false && masterEnabled && row[layer] !== -1);
+    }
+
+    function audioAnnouncementOutput({
+        settings,
+        announcement,
+        rowOverride,
+        language,
+        speechStart,
+        speechPauseAt1x = 300
+    }) {
+        const row = rowOverride || settings?.rows?.[announcement] || {};
+        const custom = row.custom || {};
+        const resolve = property => Object.prototype.hasOwnProperty.call(custom, property)
+            ? custom[property]
+            : settings?.[property];
+        const speechVelocity = resolve("speechVelocity");
+        return {
+            lang: language,
+            speechStart,
+            speechVolume: resolve("volume"),
+            toneVolume: resolve("volume") * CHIME_VOLUME_RATIO,
+            speechVelocity,
+            toneVelocity: resolve("toneVelocity"),
+            speechDelayMs: speechPauseAt1x / Math.max(0.01, Number(speechVelocity) || 1)
+        };
+    }
+
     function create({ announcements = [], language = "en-US" } = {}) {
         function defaultAudioSettings() {
             const rows = {};
@@ -360,6 +393,8 @@
         stepAudioVelocity,
         audioVelocityAtPercent,
         audioVolumeAtPercent,
-        stepAudioVolume
+        stepAudioVolume,
+        audioCellUserEnabled,
+        audioAnnouncementOutput
     });
 })(globalThis);
