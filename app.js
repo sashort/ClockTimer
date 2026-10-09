@@ -21434,60 +21434,8 @@
         return announcementText("messages.goal.percent", { scope: type, percent: goalFailureNumberWords(roundedPercent) });
     }
 
-    function renderedGoalRemainingMilliseconds(
-        detail
-    ) {
-        const summary =
-            detail?.summary;
-        const scope =
-            String(
-                summary?.scope ||
-                ""
-            ).toLowerCase();
-        const selected =
-            summary?.selected ||
-            (
-                scope === "total"
-                    ? summary?.total
-                    : summary?.trip
-            );
-        const standard =
-            Number(
-                selected?.standardTimeMilliseconds
-            );
-        const counted =
-            Number(
-                selected?.countedTimeElapsedMilliseconds
-            );
-        const percentGoal =
-            Number(
-                selected?.percentGoal
-            );
-        const allowanceCredit =
-            Number(
-                selected?.allowanceCreditMilliseconds ??
-                0
-            );
-
-        if (
-            !Number.isFinite(standard) ||
-            !Number.isFinite(counted) ||
-            !Number.isFinite(percentGoal) ||
-            percentGoal <= 0
-        ) {
-            return undefined;
-        }
-
-        return Math.round(
-            standard /
-                percentGoal +
-            (
-                Number.isFinite(allowanceCredit)
-                    ? allowanceCredit
-                    : 0
-            ) -
-            counted
-        );
+    function renderedGoalRemainingMilliseconds(detail) {
+        return globalThis.ClockTimerTripGoalModel.remainingMilliseconds(detail);
     }
 
     function tripStartGoalDetailSpeech(
