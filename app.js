@@ -5984,16 +5984,8 @@
         );
     }
 
-    function syncGoalMatches(
-        left,
-        right
-    ) {
-        return (
-            Number.isFinite(left) &&
-            Number.isFinite(right) &&
-            Math.abs(left - right) <
-                1e-9
-        );
+    function syncGoalMatches(left, right) {
+        return globalThis.ClockTimerTripGoalModel.syncGoalMatches(left, right);
     }
 
     function setSyncAnnouncementBaseline(
