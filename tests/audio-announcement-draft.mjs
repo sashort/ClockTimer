@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+
+const sandbox = { Object, structuredClone };
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+vm.runInContext(readFileSync(new URL("../AudioAnnouncementDraft.js", import.meta.url), "utf8"), sandbox);
+const draft = sandbox.WMOFAudioAnnouncementDraft;
+const original = { enabled: true, custom: { volume: 0.4 } };
+const rows = { "trip.start": original };
+const started = draft.beginDraft(rows, "trip.start");
+assert.notEqual(started.row, original);
+assert.notEqual(started.row.custom, original.custom);
+started.row.custom.volume = 0.9;
+assert.equal(original.custom.volume, 0.4);
+assert.equal(draft.selectedState({ announcement: "trip.start", draft: started, rows }), started.row);
+assert.equal(draft.selectedState({ announcement: "trip.end", draft: started, rows }), undefined);
+assert.equal(draft.selectedState({ announcement: "trip.start", rows }), original);
+assert.equal(draft.beginDraft(rows, "missing"), undefined);
+assert.equal(draft.discardDraft(), undefined);
+assert.equal(draft.selectedAnnouncement({ dataset: { audioAnnouncement: "trip.start" } }), "trip.start");
+assert.equal(draft.selectedAnnouncement(null), undefined);
+console.log("PASS audio announcement draft cloning, selection, and discard transitions");
