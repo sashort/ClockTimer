@@ -2965,96 +2965,16 @@
         );
     }
 
-    function getAudioVoiceSelection(
-        language =
-            AUDIO_LANGUAGE
-    ) {
-        const selection =
-            audioSettings.voices?.[
-                language
-            ];
-
-        return {
-            provider:
-                typeof selection
-                    ?.provider ===
-                    "string" &&
-                selection.provider
-                    .trim()
-                    ? selection.provider
-                        .trim()
-                    : "system",
-            voice:
-                typeof selection
-                    ?.voice ===
-                    "string"
-                    ? selection.voice
-                        .trim()
-                    : ""
-        };
-    }
-
-    function encodeAudioVoiceSelection(
-        provider,
-        voice
-    ) {
-        return (
-            String(
-                provider ||
-                "system"
-            ) +
-            "|" +
-            encodeURIComponent(
-                String(
-                    voice ||
-                    ""
-                )
-            )
+    function getAudioVoiceSelection(language = AUDIO_LANGUAGE) {
+        return globalThis.WMOFAudioSettingsModel.normalizeVoiceSelection(
+            audioSettings.voices?.[language]
         );
     }
 
-    function decodeAudioVoiceSelection(
-        value
-    ) {
-        const text =
-            String(
-                value ||
-                ""
-            );
-        const separator =
-            text.indexOf("|");
-
-        if (separator < 0) {
-            return {
-                provider:
-                    "system",
-                voice:
-                    ""
-            };
-        }
-
-        let voice = "";
-
-        try {
-            voice =
-                decodeURIComponent(
-                    text.slice(
-                        separator + 1
-                    )
-                );
-        }
-        catch {}
-
-        return {
-            provider:
-                text.slice(
-                    0,
-                    separator
-                ).trim() ||
-                "system",
-            voice
-        };
-    }
+    const encodeAudioVoiceSelection =
+        globalThis.WMOFAudioSettingsModel.encodeVoiceSelection;
+    const decodeAudioVoiceSelection =
+        globalThis.WMOFAudioSettingsModel.decodeVoiceSelection;
 
     function applyAudioOutputSettings() {
         const voiceSelection =
