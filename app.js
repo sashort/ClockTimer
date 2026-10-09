@@ -409,12 +409,29 @@
             ? "silero"
             : "raw";
 
-    const speechAssetCacheReady = globalThis.ClockTimerSpeechAssetCache?.register({
-        scriptUrl: "SpeechAssetCacheWorker.js" + speechRuntimeVersion,
-        navigatorRef: navigator,
-        secureContext: globalThis.isSecureContext,
-        enabled: !settingsOnlyPage && capabilityEnabled("speechRecognition")
-    }) || Promise.resolve(false);
+    const speechAssetCacheReady = !settingsOnlyPage && capabilityEnabled("speechRecognition")
+        ? (async () => {
+            try {
+                if (!globalThis.ClockTimerSpeechAssetCache && globalThis.ClockTimerResources) {
+                    await globalThis.ClockTimerResources.loadScript(
+                        "SpeechAssetCache.js?build=speech-asset-cache-2",
+                        pageContext,
+                        { async: true }
+                    );
+                }
+                if (!globalThis.ClockTimerSpeechAssetCache) return false;
+                return await globalThis.ClockTimerSpeechAssetCache.register({
+                    scriptUrl: "SpeechAssetCacheWorker.js" + speechRuntimeVersion,
+                    navigatorRef: navigator,
+                    secureContext: globalThis.isSecureContext,
+                    enabled: true
+                });
+            } catch (error) {
+                console.warn("Sherpa asset cache unavailable:", error);
+                return false;
+            }
+        })()
+        : Promise.resolve(false);
 
     const classicScriptLoader = globalThis.ClockTimerClassicScriptLoader?.create({
         documentRef: document,
