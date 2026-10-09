@@ -29883,7 +29883,30 @@
             }
         })();
     } else showInitialLoginDialog();
-    if (!settingsOnlyPage) {
+    if (!settingsOnlyPage && globalThis.ClockTimerDispatcher) {
+        globalThis.ClockTimerDispatcher.register(
+            "calendarStartup",
+            context => globalThis.ClockTimerStartup.runWhenEnabled("calendarStartup", context, async () => {
+                try {
+                    const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {
+                        credentials: "same-origin",
+                        headers: { Accept: "application/json" }
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.message || "Calendar lookup failed.");
+                    calendarRanges.setDatabaseRecords(data.calendars);
+                    refreshTripLogSelection();
+                } catch (error) {
+                    showTripRangeError(error.message || "Calendar lookup failed.");
+                }
+            }),
+            context => context.capabilities?.calendarStartup !== false
+        );
+        void globalThis.ClockTimerDispatcher.bootstrap(pageContext).catch(error => {
+            console.error("ClockTimer startup dispatcher failed.", error);
+        });
+    } else if (!settingsOnlyPage) {
+        // Compatibility path for deployments whose cached page predates dispatcher.js.
         void globalThis.ClockTimerStartup.runWhenEnabled("calendarStartup", pageContext, async () => {
             try {
                 const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {
