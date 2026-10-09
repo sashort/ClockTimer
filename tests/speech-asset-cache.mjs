@@ -63,6 +63,8 @@ function load() {
         setTimeoutRef(callback) { timeoutCallback = callback; return 7; },
         clearTimeoutRef(id) { assert.equal(id, 7); cleared = true; }
     });
+    await Promise.resolve();
+    await Promise.resolve();
     serviceWorker.controller = {};
     change();
     assert.equal(await pending, true);
