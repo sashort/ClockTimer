@@ -28,6 +28,11 @@ assert.equal(model.currentCalculatedSyncGoal({}, -1), undefined,
     "invalid required and calculated goals produce no goal");
 assert.equal(model.currentCalculatedSyncGoal({tripGoal: "invalid"}, "120"), 120,
     "numeric calculated fallback retains Number conversion semantics");
+assert.equal(model.syncGoalMatches(120, 120), true, "identical finite goals match");
+assert.equal(model.syncGoalMatches(120, 120 + 5e-10), true, "small floating-point differences are tolerated");
+assert.equal(model.syncGoalMatches(120, 120 + 2e-9), false, "differences outside tolerance do not match");
+assert.equal(model.syncGoalMatches(undefined, 120), false, "missing goals do not match");
+assert.equal(model.syncGoalMatches(NaN, NaN), false, "non-finite goals do not match");
 for (const requirements of [undefined, {}, {tripGoal: 0, adjustedTimeElapsed: 30},
     {tripGoal: 120, adjustedTimeElapsed: 0}, {tripGoal: "invalid", adjustedTimeElapsed: 30}]) {
     assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: true,
