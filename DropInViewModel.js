@@ -2,6 +2,10 @@
 (function (root) {
     "use strict";
 
+    function volumePercent(value) {
+        return Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 100);
+    }
+
     function create({
         summary,
         microphone,
@@ -57,5 +61,5 @@
         };
     }
 
-    root.ClockTimerDropInViewModel = Object.freeze({ create });
+    root.ClockTimerDropInViewModel = Object.freeze({ create, volumePercent });
 })(globalThis);
