@@ -60,6 +60,10 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     assert.equal(ctx.surface, "audioSettingsDialog");
     assert.equal(ctx.capabilities.speechMenu, false);
     assert.equal(ctx.capabilities.calendarStartup, false);
+    const settingsPolicy = sandbox.ClockTimerContext.startupPolicy();
+    assert.equal(settingsPolicy.settingsOnlyPage, true);
+    assert.equal(settingsPolicy.capabilityEnabled("speechMenu"), false);
+    assert.equal(settingsPolicy.capabilityEnabled("calendarStartup"), false);
 
     const hostContext = sandbox.ClockTimerContext.normalize({
         host: "order-filler",
