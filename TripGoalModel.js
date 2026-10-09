@@ -26,5 +26,5 @@
             - counted);
     }
 
-    root.ClockTimerTripGoalModel = Object.freeze({ remainingMilliseconds });
+    root.ClockTimerTripGoalModel = Object.freeze({ selectGoal, remainingMilliseconds });
 })(globalThis);
