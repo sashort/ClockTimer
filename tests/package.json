@@ -43,7 +43,8 @@
     "test:audio-unlock": "node audio-unlock.mjs",
     "test:classic-script-loader": "node classic-script-loader.mjs",
     "test:speech-asset-cache": "node speech-asset-cache.mjs",
-    "test:audio-settings-model": "node audio-settings-model.mjs"
+    "test:audio-settings-model": "node audio-settings-model.mjs",
+    "test:audio-settings-startup": "node audio-settings-startup.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
