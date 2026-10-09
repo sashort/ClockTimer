@@ -60,6 +60,7 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     assert.deepEqual(Array.from(sandbox.ClockTimerPageManifest.resolve("order-filler").features), ["application", "settings", "calendarStartup"]);
     assert.deepEqual(Array.from(sandbox.ClockTimerPageManifest.resolve("drop-in").features), ["drop-in", "settings"]);
     assert.equal(sandbox.ClockTimerPageManifest.permitsFeature(sandbox.ClockTimerPageManifest.resolve("settings-frame"), "calendarStartup"), false);
+    assert.equal(sandbox.ClockTimerPageManifest.permitsCapability(sandbox.ClockTimerPageManifest.resolve("settings-frame"), "speechMenu"), false);
 }
 
 {
