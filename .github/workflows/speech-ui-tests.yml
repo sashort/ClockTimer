@@ -31,6 +31,8 @@ on:
       - "tests/trip-goal-model.mjs"
       - "TimerDisplayModel.js"
       - "tests/timer-display-model.mjs"
+      - "DropInViewModel.js"
+      - "tests/drop-in-view-model.mjs"
       - "TripDraftModel.js"
       - "tests/trip-draft-model.mjs"
       - "TripPreferencesModel.js"
@@ -170,6 +172,8 @@ jobs:
           node tests/trip-goal-model.mjs
           node --check TimerDisplayModel.js
           node tests/timer-display-model.mjs
+          node --check DropInViewModel.js
+          node tests/drop-in-view-model.mjs
           node --check TripDraftModel.js
           node tests/trip-draft-model.mjs
           node --check TripPreferencesModel.js
