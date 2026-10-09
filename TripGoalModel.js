@@ -70,6 +70,10 @@
         return percentMode === "total" ? "total" : percentMode === "auto" ? "standard" : "trip";
     }
 
+    function renderedGoalScope(summary, percentMode) {
+        return summary?.scope || fallbackScope(percentMode);
+    }
+
     function syncRuntimeState({ connectionStatus, syncGoalsEnabled, tripLive, requirements } = {}) {
         if (connectionStatus === "offline") return "offline";
         if (!syncGoalsEnabled) return "off";
@@ -137,6 +141,7 @@
         countedPercent,
         normalizePercentMode,
         fallbackScope,
+        renderedGoalScope,
         syncRuntimeState,
         resolveSyncGoalsEnabled,
         currentCalculatedSyncGoal,
