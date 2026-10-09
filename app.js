@@ -5650,30 +5650,13 @@
     }
 
     function computeSyncGoalsState() {
-        if (tripIsLive()) {
-            return Boolean(
-                clockTimer.autoSyncTripGoal
-            );
-        }
-
-        if (
-            tripSettingsSession?.values &&
-            !tripSettingsSession.live
-        ) {
-            return Boolean(
-                tripSettingsSession.values.syncGoals
-            );
-        }
-
-        if (tripDraft) {
-            return Boolean(
-                tripDraft.syncGoals
-            );
-        }
-
-        return Boolean(
-            clockTimer.autoSyncTripGoal
-        );
+        return globalThis.ClockTimerTripGoalModel.resolveSyncGoalsEnabled({
+            isTripLive: tripIsLive,
+            getLiveValue: () => clockTimer.autoSyncTripGoal,
+            getSettingsSession: () => tripSettingsSession,
+            getDraft: () => tripDraft,
+            getFallbackValue: () => clockTimer.autoSyncTripGoal
+        });
     }
 
     function getRenderedGoalScope() {
