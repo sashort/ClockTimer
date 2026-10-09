@@ -6,6 +6,7 @@ on:
       - sherpa-client-asr
   pull_request:
     paths:
+      - "CalendarStartup.js"
       - "StartupTasks.js"
       - "Context.js"
       - "ResourceLoader.js"
@@ -103,6 +104,7 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          node --check CalendarStartup.js
           node --check StartupTasks.js
           node --check Context.js
           node --check ResourceLoader.js
