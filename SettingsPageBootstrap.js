@@ -47,15 +47,33 @@
         return true;
     }
 
+    let launchRequested = false;
+    function launch() {
+        if (launchRequested) return false;
+        launchRequested = true;
+        if (root.ClockTimerDispatcher && root.ClockTimerContext) {
+            root.ClockTimerDispatcher.register(
+                "settings",
+                () => start(),
+                context => context.host === "settings-frame" || context.presentation === "graphical-settings"
+            );
+            void root.ClockTimerDispatcher.bootstrap(root.ClockTimerContext.forCurrentScript()).catch(error => {
+                console.error("Settings-page dispatcher failed.", error);
+            });
+            return true;
+        }
+        return start();
+    }
+
     function initialize() {
         if (document.documentElement.dataset.clocktimerAppReady === "true") {
-            return start();
+            return launch();
         }
         if (document.documentElement.dataset.clocktimerSettingsBootstrapPending === "true") return false;
         document.documentElement.dataset.clocktimerSettingsBootstrapPending = "true";
         document.addEventListener("clocktimer-app-ready", () => {
             delete document.documentElement.dataset.clocktimerSettingsBootstrapPending;
-            start();
+            launch();
         }, { once: true });
         return false;
     }
