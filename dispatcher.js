@@ -190,6 +190,11 @@
             type: "script",
             url: "ActionSignalContext.js?build=action-signal-context-1",
             hosts: ["order-filler", "settings-frame"]
+        }],
+        ["connection-status-model", {
+            type: "script",
+            url: "ConnectionStatusModel.js?build=connection-status-model-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
