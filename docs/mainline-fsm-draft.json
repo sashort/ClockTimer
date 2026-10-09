@@ -12507,7 +12507,8 @@
       "request": "Optimistic icon; disable repeated clicks; commandId and selected target; ten-second timeout.",
       "result": "Publisher acknowledgement confirms actual started/muted; rejection or timeout restores last known state. Switching/disconnect/exit cancels pending request; stale acknowledgements ignored.",
       "validation": "Refresh viewer permission; require viewer-owned peer and matching target; strict boolean enabled and bounded commandId. Recognition off cannot remotely enable capture.",
-      "placement": "Remote mic occupies former cloud position at upper-right of the Mode bar, using mic-bar glyph and red slash. Hidden until an observed user is selected. Sync stays visible and editable with no selected user, editing defaults through Apply To with User disabled."
+      "placement": "Remote mic occupies former cloud position at upper-right of the Mode bar, using mic-bar glyph and red slash. Hidden until an observed user is selected. Sync stays visible and editable with no selected user, editing defaults through Apply To with User disabled.",
+      "feedback": "After a confirmed remote mic change, publisher announcement pipeline plays setting-on plus Microphone activated, or setting-off plus Microphone deactivated. Chime precedes speech using existing calculated timing and padding. The observed user hears this and normal stream audio carries it to viewers. Duplicate requests, rejection, timeout and stale results never announce a successful change."
     },
     "observer-settings": {
       "surface": "Settings contains editable sound controls and read-only ClockTimer settings that always follow the observed user. Mode/Goal/Sync comparison rows are removed; badges and live Mirror values live beside the actual controls and popover choices.",

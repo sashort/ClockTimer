@@ -6,9 +6,10 @@ for(const file of ['MicrophoneControl.js','ObserverMicrophone.js'])w.eval(fs.rea
 w.WMOFLanguagePack={text:id=>id};
 const calls=[];const menu={started:true,muted:false,async sleep(){calls.push('sleep');this.muted=true;},async wake(){calls.push('wake');this.muted=false;}};
 const control=w.WMOFMicrophoneControl;
-assert.equal((await control.setEnabled(menu,false)).accepted,true);await control.setEnabled(menu,false);
+const muted=await control.setEnabled(menu,false);assert.equal(muted.accepted,true);assert.equal(muted.changed,true);
+assert.equal((await control.setEnabled(menu,false)).changed,false,'already muted must not replay change feedback');
 assert.deepEqual(calls,['sleep'],'duplicate explicit command does not toggle back');
-await control.setEnabled(menu,true);assert.deepEqual(calls,['sleep','wake']);
+assert.equal((await control.setEnabled(menu,true)).changed,true);assert.deepEqual(calls,['sleep','wake']);
 menu.started=false;assert.equal((await control.setEnabled(menu,true)).accepted,false);
 assert.equal((await control.setEnabled(menu,'true')).accepted,false);
 const button=w.document.createElement('button');w.document.body.append(button);
@@ -27,4 +28,21 @@ observer.update(3,{started:false,muted:false});assert.equal(button.disabled,true
 assert.match(w.document.head.textContent,/#dropInMicrophoneButton\[data-muted="true"\]::after/);
 assert.match(w.document.head.textContent,/#e32636/,'same red slash as mic-bar');
 assert(!w.document.head.textContent.includes(':host('),'observer CSS cannot retain shadow selectors');
-observer.reset();await w.happyDOM.close();console.log('PASS shared mic sleep/wake, authorization failures, single-flight, timeout, off engine and stale target responses');
+observer.reset();
+// Exercise the publisher's actual remote-mic handler: feedback plays for the
+// observed user after acceptance, never for a repeated or rejected transition.
+const app=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const start=app.indexOf('                    if (detail.type === "trainer.microphone") {');
+const end=app.indexOf('                    if (',start+24);
+const feedback=[],ack=[];menu.started=true;menu.muted=false;w.SpeechMenu=menu;
+w.liveTripStream={broadcast(type,result){ack.push({type,...result});}};
+w.playSemanticSongThenSpeak=async(song,text)=>feedback.push({song,text});
+const english=JSON.parse(fs.readFileSync(new URL('../lang/en-US/announcements.json',import.meta.url),'utf8'));
+w.announcementText=path=>path.split('.').reduce((value,key)=>value[key],english);
+w.eval('globalThis.testRemoteMic=function(detail){'+app.slice(start,end)+'};');
+const send=async enabled=>{w.testRemoteMic({type:'trainer.microphone',payload:{enabled,commandId:'confirmed'}});for(let i=0;i<8;i++)await Promise.resolve();};
+await send(false);assert.equal(feedback[0].song,'setting-off');assert.equal(feedback[0].text,'Microphone deactivated.');assert.equal(ack[0].accepted,true);
+await send(false);assert.equal(feedback.length,1,'duplicate remote mute has no change announcement');
+await send(true);assert.equal(feedback[1].song,'setting-on');assert.equal(feedback[1].text,'Microphone activated.');
+menu.started=false;await send(true);assert.equal(feedback.length,2,'rejection cannot announce success');
+await w.happyDOM.close();console.log('PASS shared mic sleep/wake, authorization failures, single-flight, timeout, stale responses and confirmed publisher feedback');

@@ -185,6 +185,8 @@
       "sleeping": "Voice recognition off.",
       "listening": "Voice recognition on.",
       "off": "Microphone deactivated.",
+      "microphoneDeactivated": "Microphone deactivated.",
+      "microphoneActivated": "Microphone activated.",
       "syncAlready": "Sync already {state}.",
       "modeAlready": "Already in {mode} mode.",
       "standardAlready": "Standard time is already {duration}.",

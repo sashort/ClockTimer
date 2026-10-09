@@ -1356,6 +1356,10 @@
                     if (detail.type === "trainer.microphone") {
                         void WMOFMicrophoneControl.setEnabled(globalThis.SpeechMenu,detail.payload?.enabled).then(result=>{
                             liveTripStream.broadcast("microphone.result",{commandId:detail.payload.commandId,...result});
+                            if(result.accepted&&result.changed){
+                                void playSemanticSongThenSpeak(result.muted?"setting-off":"setting-on",
+                                    announcementText(`messages.voiceFeedback.${result.muted?"microphoneDeactivated":"microphoneActivated"}`));
+                            }
                         });
                         return;
                     }
