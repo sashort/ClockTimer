@@ -45,4 +45,18 @@ await send(false);assert.equal(feedback[0].song,'setting-off');assert.equal(feed
 await send(false);assert.equal(feedback.length,1,'duplicate remote mute has no change announcement');
 await send(true);assert.equal(feedback[1].song,'setting-on');assert.equal(feedback[1].text,'Microphone activated.');
 menu.started=false;await send(true);assert.equal(feedback.length,2,'rejection cannot announce success');
+// Reminder cadence begins at deactivation and duplicates cannot postpone it.
+let now=0,nextTimer=0;const timers=new Map(),reminders=[];
+w.setInterval=(callback,delay)=>{const id=++nextTimer;timers.set(id,{callback,delay,next:now+delay});return id;};
+w.clearInterval=id=>timers.delete(id);
+w.reserveSemanticSpeech=()=>()=>true;w.audioAnnouncementOutput=()=>({});
+w.announcementComponents=(audio,song,chime,speech,output,guard)=>({chime,speech,guard});
+w.runSemanticAnnouncement=async(type,parts)=>reminders.push({type,...parts});
+const reminderStart=app.indexOf('    let microphoneReminderTimer=');
+w.eval(app.slice(reminderStart,app.indexOf("    window.addEventListener('pagehide'",reminderStart))+'\nglobalThis.testReminder=updateMicrophoneReminder;');
+const advance=milliseconds=>{now+=milliseconds;for(const timer of timers.values())while(timer.next<=now){timer.next+=timer.delay;timer.callback();}};
+menu.muted=true;w.testReminder(true);advance(30000);w.testReminder(true);advance(29999);assert.equal(reminders.length,0);
+advance(1);assert.equal(reminders.length,1);assert.equal(reminders[0].chime,false,'minute reminders have no chime');assert.equal(reminders[0].speech[0],'Microphone deactivated.');assert.equal(reminders[0].guard(),true);
+advance(60000);assert.equal(reminders.length,2);menu.muted=false;w.testReminder(false);assert.equal(timers.size,0);assert.equal(reminders[0].guard(),false,'reactivation cancels queued stale reminder speech');advance(120000);assert.equal(reminders.length,2);
+menu.muted=true;w.testReminder(true);advance(59999);assert.equal(reminders.length,2);advance(1);assert.equal(reminders.length,3,'a new deactivation gets a fresh minute cadence');w.testReminder(false);
 await w.happyDOM.close();console.log('PASS shared mic sleep/wake, authorization failures, single-flight, timeout, stale responses and confirmed publisher feedback');

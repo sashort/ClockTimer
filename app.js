@@ -25041,6 +25041,21 @@
             );
         };
 
+    let microphoneReminderTimer=null,microphoneReminderGeneration=0;
+    function updateMicrophoneReminder(muted) {
+        if(!muted){if(microphoneReminderTimer!==null)clearInterval(microphoneReminderTimer);microphoneReminderTimer=null;microphoneReminderGeneration++;return;}
+        if(microphoneReminderTimer!==null)return;
+        const generation=++microphoneReminderGeneration;
+        microphoneReminderTimer=setInterval(()=>{
+            const active=()=>generation===microphoneReminderGeneration&&Boolean(globalThis.SpeechMenu?.muted);
+            if(!active())return;
+            const speechGuard=reserveSemanticSpeech();
+            void runSemanticAnnouncement('microphone-reminder',announcementComponents(globalThis.WMOFAudio,'setting-off',false,
+                [announcementText('messages.voiceFeedback.microphoneDeactivated')],audioAnnouncementOutput('setting-off'),()=>active()&&speechGuard())).catch(console.error);
+        },60000);
+    }
+    window.addEventListener('pagehide',()=>updateMicrophoneReminder(false));
+
     const actions =
         globalThis.WMOFActions;
 
@@ -25348,6 +25363,7 @@
             handleSpeechRuntimeStarted: {
                 metadata: {transaction: false},
                 implementation: function() {
+                    updateMicrophoneReminder(false);
                     queueMicrotask(()=>{syncLoginRecognition();announceLoginAfterModelReady();});
                     setSpeechButtonState(
                         true,
@@ -25396,6 +25412,7 @@
                 implementation: function(
                     muted = true
                 ) {
+                    updateMicrophoneReminder(Boolean(muted));
                     setSpeechButtonState(
                         true,
                         Boolean(
