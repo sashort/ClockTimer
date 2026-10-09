@@ -118,7 +118,7 @@
         }],
         ["drop-in-view-model", {
             type: "script",
-            url: "DropInViewModel.js?build=drop-in-view-model-1",
+            url: "DropInViewModel.js?build=drop-in-view-model-2",
             hosts: ["order-filler"]
         }],
         ["timer-display-model", {
