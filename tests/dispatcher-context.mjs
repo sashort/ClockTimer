@@ -305,10 +305,10 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     const { sandbox, appendedResources } = makeRuntime({ classes: ["drop-in-page"] });
     const result = await sandbox.ClockTimerDispatcher.bootstrap(sandbox.ClockTimerPageContext);
     assert.equal(result.context.host, "drop-in");
-    assert.ok(Array.from(result.resources).includes("trip-preferences-model"),
-        "Drop-In should load the shared trip-preferences model used by app.js");
-    assert.ok(appendedResources.some(resource =>
-        String(resource.src || "").startsWith("TripPreferencesModel.js?build=")));
+    assert.equal(Array.from(result.resources).includes("trip-preferences-model"), false,
+        "Drop-In uses its own preferences module rather than the Order-Filler trip-preferences model");
+    assert.equal(appendedResources.some(resource =>
+        String(resource.src || "").startsWith("TripPreferencesModel.js?build=")), false);
     assert.equal(result.resources.includes("speech-startup"), false,
         "Drop-In must not load the Order-Filler speech startup resource");
 }
