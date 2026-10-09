@@ -65,6 +65,26 @@ assert.equal(model.remainingOutcome(-1), "over", "negative remaining time is ove
 assert.equal(model.remainingOutcome(0), "on-target", "zero remaining time is exactly on target");
 assert.equal(model.remainingOutcome(undefined), "unknown", "missing remaining time is unknown");
 assert.equal(model.remainingOutcome(NaN), "unknown", "non-finite remaining time is unknown");
+assert.deepEqual(
+    Object.assign({}, model.remainingDescriptor(detail("trip", {
+        standardTimeMilliseconds: 60_000,
+        countedTimeElapsedMilliseconds: 20_000,
+        percentGoal: 1
+    }))),
+    {remaining:40_000,outcome:"banked",magnitude:40_000},
+    "remaining descriptor reports positive time as banked");
+assert.deepEqual(
+    Object.assign({}, model.remainingDescriptor(detail("trip", {
+        standardTimeMilliseconds: 60_000,
+        countedTimeElapsedMilliseconds: 80_000,
+        percentGoal: 1
+    }))),
+    {remaining:-20_000,outcome:"over",magnitude:20_000},
+    "remaining descriptor reports absolute overage magnitude");
+assert.deepEqual(
+    Object.assign({}, model.remainingDescriptor(null)),
+    {remaining:undefined,outcome:"unknown",magnitude:undefined},
+    "remaining descriptor preserves unavailable calculations");
 
 assert.equal(model.countedPercent({summary:{total:{countedPercent:82.5}}}), 82.5,
     "total counted percentage is preserved");
