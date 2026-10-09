@@ -230,6 +230,7 @@ jobs:
           node speech-goal-fail.mjs
           node speech-trip-transition.mjs
           node speech-value-preprocessor.mjs
+          node speech-chain-actions.mjs
           node speech-training-model.mjs
           node spoken-duration.mjs
           node voice-catalog.mjs
