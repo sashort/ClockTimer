@@ -72,6 +72,27 @@
         return Number((next / 100).toFixed(6));
     }
 
+    function normalizeVoiceSelection(selection) {
+        return {
+            provider: typeof selection?.provider === "string" && selection.provider.trim()
+                ? selection.provider.trim() : "system",
+            voice: typeof selection?.voice === "string" ? selection.voice.trim() : ""
+        };
+    }
+
+    function encodeVoiceSelection(provider, voice) {
+        return String(provider || "system") + "|" + encodeURIComponent(String(voice || ""));
+    }
+
+    function decodeVoiceSelection(value) {
+        const text = String(value || "");
+        const separator = text.indexOf("|");
+        if (separator < 0) return { provider: "system", voice: "" };
+        let voice = "";
+        try { voice = decodeURIComponent(text.slice(separator + 1)); } catch {}
+        return { provider: text.slice(0, separator).trim() || "system", voice };
+    }
+
     function create({ announcements = [], language = "en-US" } = {}) {
         function defaultAudioSettings() {
             const rows = {};
@@ -311,6 +332,9 @@
 
     root.WMOFAudioSettingsModel = Object.freeze({
         create,
+        normalizeVoiceSelection,
+        encodeVoiceSelection,
+        decodeVoiceSelection,
         CHIME_VOLUME_RATIO,
         AUDIO_PERCENT_STEP,
         AUDIO_SPEECH_VELOCITY_MIN,
