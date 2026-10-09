@@ -38,6 +38,8 @@ on:
       - "TripPreferencesModel.js"
       - "TripPreferencesStore.js"
       - "AccessPolicyModel.js"
+      - "LiveStreamViewModel.js"
+      - "tests/live-stream-view-model.mjs"
       - "tests/access-policy-model.mjs"
       - "tests/trip-preferences-model.mjs"
       - "tests/trip-preferences-store.mjs"
@@ -185,6 +187,8 @@ jobs:
           node tests/trip-preferences-store.mjs
           node --check AccessPolicyModel.js
           node tests/access-policy-model.mjs
+          node --check LiveStreamViewModel.js
+          node tests/live-stream-view-model.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
