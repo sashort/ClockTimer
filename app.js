@@ -6051,11 +6051,23 @@
     }
 
     function getTripPreferences() {
+        const raw = safeStorageGet(STORAGE.tripPreferences);
         const model = globalThis.ClockTimerTripPreferencesModel;
-        if (!model?.read) {
-            throw new Error("TripPreferencesModel.js did not register its API.");
-        }
-        return model.read(safeStorageGet(STORAGE.tripPreferences));
+        if (model?.read) return model.read(raw);
+
+        // Compatibility for legacy/test hosts that evaluate app.js without
+        // running dispatcher bootstrap first.
+        let stored = {};
+        try {
+            stored = raw ? JSON.parse(raw) : {};
+        } catch {}
+
+        return {
+            lateBreakBehavior: stored.lateBreakBehavior === "autoRestartTrip"
+                ? "autoRestartTrip"
+                : "showLateWindow",
+            syncGoals: Boolean(stored.syncGoals ?? false)
+        };
     }
 
     function saveTripPreferences(preferences) {
