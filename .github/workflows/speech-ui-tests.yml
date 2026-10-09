@@ -40,6 +40,8 @@ on:
       - "AccessPolicyModel.js"
       - "LiveStreamViewModel.js"
       - "LiveStreamPublisher.js"
+      - "SessionStartup.js"
+      - "tests/session-startup.mjs"
       - "tests/live-stream-publisher.mjs"
       - "tests/live-stream-view-model.mjs"
       - "tests/access-policy-model.mjs"
@@ -193,6 +195,8 @@ jobs:
           node tests/live-stream-view-model.mjs
           node --check LiveStreamPublisher.js
           node tests/live-stream-publisher.mjs
+          node --check SessionStartup.js
+          node tests/session-startup.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
