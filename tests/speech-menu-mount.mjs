@@ -34,7 +34,11 @@ function load(document) {
                 tagName: tag,
                 dataset: {},
                 attributes: {},
-                matches(selector) { return this.selector === selector; },
+                matches(selector) {
+                    if (selector === "speech-menu:not([speech-modal])") return !this.attributes["speech-modal"];
+                    const match = selector.match(/^speech-menu\\[speech-modal="(.+)"\\]$/);
+                    return Boolean(match && this.attributes["speech-modal"] === match[1]);
+                },
                 setAttribute(name, value) { this.attributes[name] = value; }
             };
         }
