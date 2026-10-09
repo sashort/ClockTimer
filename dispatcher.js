@@ -116,6 +116,11 @@
             features: ["calendarStartup"],
             capability: "calendarStartup"
         }],
+        ["drop-in-view-model", {
+            type: "script",
+            url: "DropInViewModel.js?build=drop-in-view-model-1",
+            hosts: ["order-filler"]
+        }],
         ["timer-display-model", {
             type: "script",
             url: "TimerDisplayModel.js?build=timer-display-model-1",
