@@ -39,6 +39,8 @@ on:
       - "TripPreferencesStore.js"
       - "AccessPolicyModel.js"
       - "LiveStreamViewModel.js"
+      - "LiveStreamPublisher.js"
+      - "tests/live-stream-publisher.mjs"
       - "tests/live-stream-view-model.mjs"
       - "tests/access-policy-model.mjs"
       - "tests/trip-preferences-model.mjs"
@@ -189,6 +191,8 @@ jobs:
           node tests/access-policy-model.mjs
           node --check LiveStreamViewModel.js
           node tests/live-stream-view-model.mjs
+          node --check LiveStreamPublisher.js
+          node tests/live-stream-publisher.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
