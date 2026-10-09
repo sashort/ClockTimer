@@ -9,6 +9,16 @@ vm.runInContext(readFileSync(new URL("../TripGoalModel.js", import.meta.url), "u
 const model = sandbox.ClockTimerTripGoalModel;
 assert.ok(model, "trip goal model registers its public API");
 
+for (const mode of ["trip", "total", "auto"]) {
+    assert.equal(model.normalizePercentMode(mode), mode, `valid goal scope ${mode} is retained`);
+    assert.equal(model.normalizePercentMode(` ${mode.toUpperCase()} `), mode,
+        `goal scope ${mode} is case- and whitespace-insensitive`);
+}
+for (const invalid of [undefined, null, "", "unknown", 42]) {
+    assert.equal(model.normalizePercentMode(invalid), "trip",
+        "invalid goal scope falls back to trip");
+}
+
 const tripGoal = {percentGoal: 0.8};
 const totalGoal = {percentGoal: 0.6};
 let selection = model.selectGoal({summary:{scope:"trip",trip:tripGoal,total:totalGoal}});
