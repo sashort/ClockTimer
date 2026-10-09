@@ -40,7 +40,8 @@
     "test:speech-menu-mount": "node speech-menu-mount.mjs",
     "test:audio-unlock": "node audio-unlock.mjs",
     "test:classic-script-loader": "node classic-script-loader.mjs",
-    "test:speech-asset-cache": "node speech-asset-cache.mjs"
+    "test:speech-asset-cache": "node speech-asset-cache.mjs",
+    "test:audio-settings-model": "node audio-settings-model.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
