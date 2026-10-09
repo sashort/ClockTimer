@@ -2879,91 +2879,27 @@
         syncAdaptiveSpeechTimingRate();
     }
 
-    function audioCellUserEnabled(
-        announcement,
-        layer,
-        {
-            ignoreMaster = false
-        } = {}
-    ) {
-        const row =
-            audioSettings.rows[
-                announcement
-            ];
-        const masterEnabled =
-            ignoreMaster ||
-            announcementOverridesMaster(
-                announcement,
-                layer
-            ) ||
-            audioSettings.masters[
-                layer
-            ] !== false;
-
-        return Boolean(
-            row &&
-            row.enabled !== false &&
-            masterEnabled &&
-            row[layer] !== -1
+    function audioCellUserEnabled(announcement, layer, options = {}) {
+        return globalThis.WMOFAudioSettingsModel.audioCellUserEnabled(
+            audioSettings,
+            announcement,
+            layer,
+            {
+                ...options,
+                overridesMaster: announcementOverridesMaster
+            }
         );
     }
 
-    function audioAnnouncementOutput(
-        announcement,
-        rowOverride
-    ) {
-        const row =
-            rowOverride ||
-            audioSettings.rows[
-                announcement
-            ] ||
-            {};
-        const custom =
-            row.custom ||
-            {};
-
-        const resolve =
-            property =>
-                Object.prototype
-                    .hasOwnProperty
-                    .call(
-                        custom,
-                        property
-                    )
-                    ? custom[
-                        property
-                    ]
-                    : audioSettings[
-                        property
-                    ];
-
-        const speechVelocity =
-            resolve(
-                "speechVelocity"
-            );
-
-        return {
-            lang: announcementLanguage.locale,
+    function audioAnnouncementOutput(announcement, rowOverride) {
+        return globalThis.WMOFAudioSettingsModel.audioAnnouncementOutput({
+            settings: audioSettings,
+            announcement,
+            rowOverride,
+            language: announcementLanguage.locale,
             speechStart: globalThis.WMOFAnnouncementCatalog?.get?.(announcement)?.speechStart,
-            speechVolume:
-                resolve("volume"),
-            toneVolume:
-                resolve("volume") * CHIME_VOLUME_RATIO,
-            speechVelocity,
-            toneVelocity:
-                resolve(
-                    "toneVelocity"
-                ),
-            speechDelayMs:
-                ANNOUNCEMENT_SPEECH_PAUSE_AT_1X /
-                Math.max(
-                    0.01,
-                    Number(
-                        speechVelocity
-                    ) ||
-                    1
-                )
-        };
+            speechPauseAt1x: ANNOUNCEMENT_SPEECH_PAUSE_AT_1X
+        });
     }
 
     function cloneAudioAnnouncementRow(
