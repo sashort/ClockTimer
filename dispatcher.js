@@ -246,6 +246,11 @@
             url: "ActionSignalContext.js?build=action-signal-context-1",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["connection-number-pad-state", {
+            type: "script",
+            url: "ConnectionNumberPadState.js?build=connection-number-pad-state-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["connection-status-model", {
             type: "script",
             url: "ConnectionStatusModel.js?build=connection-status-model-1",
