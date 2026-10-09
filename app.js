@@ -268,90 +268,20 @@
             ? "silero"
             : "raw";
 
-    const speechAssetCacheReady = !settingsOnlyPage && capabilityEnabled("speechRecognition")
-        ? (async () => {
-            try {
-                if (!globalThis.ClockTimerSpeechAssetCache && globalThis.ClockTimerResources) {
-                    await globalThis.ClockTimerResources.loadScript(
-                        "SpeechAssetCache.js?build=speech-asset-cache-2",
-                        pageContext,
-                        { async: true }
-                    );
-                }
-                if (!globalThis.ClockTimerSpeechAssetCache) return false;
-                return await globalThis.ClockTimerSpeechAssetCache.register({
-                    scriptUrl: "SpeechAssetCacheWorker.js" + speechRuntimeVersion,
-                    navigatorRef: navigator,
-                    secureContext: globalThis.isSecureContext,
-                    enabled: true
-                });
-            } catch (error) {
-                console.warn("Sherpa asset cache unavailable:", error);
-                return false;
-            }
-        })()
-        : Promise.resolve(false);
-
-    const classicScriptLoader = globalThis.ClockTimerClassicScriptLoader?.create({
-        documentRef: document,
+    const speechStartup = globalThis.ClockTimerSpeechStartup?.create({
         context: pageContext,
-        version: speechRuntimeVersion
+        enabled: !settingsOnlyPage && capabilityEnabled("speechRecognition"),
+        documentRef: document,
+        navigatorRef: navigator,
+        secureContext: globalThis.isSecureContext,
+        version: speechRuntimeVersion,
+        apiBase: API_BASE,
+        getPipeline: () => speechPipeline,
+        getDiagnosticsEnabled: () => speechDiagnosticsEnabled
     });
-    const loadClassicScript = source => {
-        if (classicScriptLoader) return classicScriptLoader.load(source);
-        // Compatibility fallback for stale HTML whose cache predates the loader module.
-        if (globalThis.ClockTimerResources) {
-            return globalThis.ClockTimerResources.loadScript(
-                source + speechRuntimeVersion,
-                pageContext,
-                { async: true }
-            );
-        }
-        return new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            const context = pageContext || {};
-            script.dataset.clocktimerContext = context.host || "order-filler";
-            script.dataset.clocktimerContextData = JSON.stringify({
-                host: context.host || "order-filler",
-                surface: context.surface || "application",
-                presentation: context.presentation || "application",
-                features: context.features || [],
-                capabilities: context.capabilities || {},
-                options: context.options || {}
-            });
-            script.src = source + speechRuntimeVersion;
-            script.onload = () => resolve(script);
-            script.onerror = () => reject(new Error("Unable to load " + source + "."));
-            document.head.append(script);
-        });
-    };
-
-    let speechRuntimeLoader;
-    let speechRuntimeLoaderPromise;
-    const ensureSpeechRuntime = () => {
-        const initializeLoader = () => {
-            if (!speechRuntimeLoader) {
-                const loader = globalThis.ClockTimerSpeechRuntimeLoader;
-                if (!loader) throw new Error("SpeechRuntimeLoader.js did not register its factory.");
-                speechRuntimeLoader = loader.create({
-                    assetCacheReady: speechAssetCacheReady,
-                    getPipeline: () => speechPipeline,
-                    getDiagnosticsEnabled: () => speechDiagnosticsEnabled,
-                    apiBase: API_BASE,
-                    loadScript: loadClassicScript
-                });
-            }
-            return speechRuntimeLoader.ensure();
-        };
-
-        if (speechRuntimeLoader) return speechRuntimeLoader.ensure();
-        if (globalThis.ClockTimerSpeechRuntimeLoader) return initializeLoader();
-        if (!speechRuntimeLoaderPromise) {
-            speechRuntimeLoaderPromise = loadClassicScript("SpeechRuntimeLoader.js")
-                .then(initializeLoader);
-        }
-        return speechRuntimeLoaderPromise;
-    };
+    const ensureSpeechRuntime = speechStartup
+        ? speechStartup.ensureRuntime
+        : () => Promise.reject(new Error("SpeechStartup.js did not register its factory."));
 
     const clockTimer = $("#clockTimer");
 
