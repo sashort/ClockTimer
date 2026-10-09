@@ -1,5 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import { runInThisContext } from 'node:vm';
+runInThisContext(fs.readFileSync(new URL('../TripDraftModel.js', import.meta.url), 'utf8'));
 const source = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const section = (start, end) => source.slice(source.indexOf(start), source.indexOf(end));
 let prepared = 0, started = 0, frame;
