@@ -287,12 +287,18 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
         capability: "speechMenu"
     });
     const bootstrap = sandbox.ClockTimerDispatcher.bootstrap(sandbox.ClockTimerPageContext);
-    assert.equal(appendedResources.length, 1, "settings context loads only resources allowed by its manifest");
-    assert.equal(appendedResources[0].href, "/settings-surface.css");
-    assert.equal(appendedResources[0].dataset.clocktimerContext, "settings-frame");
-    appendedResources[0].onload();
+    // The dispatcher now has built-in startup resources as well as this test's
+    // custom stylesheet. Wait for the custom resource without assuming it is first.
+    while (!appendedResources.some(resource => resource.href === "/settings-surface.css")) {
+        await new Promise(resolve => setImmediate(resolve));
+    }
+    const style = appendedResources.find(resource => resource.href === "/settings-surface.css");
+    assert.equal(style.dataset.clocktimerContext, "settings-frame");
+    style.onload();
     const result = await bootstrap;
-    assert.deepEqual(Array.from(result.resources), ["settings-style"]);
+    assert.ok(Array.from(result.resources).includes("settings-style"));
+    assert.equal(appendedResources.some(resource => resource.src === "/speech-runtime.js"), false,
+        "settings context must not load application speech resources");
     assert.deepEqual(Array.from(result.features), []);
 }
 {
