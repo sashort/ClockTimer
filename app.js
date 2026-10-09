@@ -6045,13 +6045,31 @@
         }
     }
 
+    let tripPreferencesStore;
+
+    function getTripPreferencesStore() {
+        const storeApi = globalThis.ClockTimerTripPreferencesStore;
+        if (!storeApi?.create) return null;
+        if (!tripPreferencesStore) {
+            tripPreferencesStore = storeApi.create({
+                key: STORAGE.tripPreferences,
+                getItem: safeStorageGet,
+                setItem: safeStorageSet
+            });
+        }
+        return tripPreferencesStore;
+    }
+
     function getTripPreferences() {
+        const store = getTripPreferencesStore();
+        if (store) return store.read();
+
+        // Compatibility for legacy/test hosts that evaluate app.js without
+        // running dispatcher bootstrap first.
         const raw = safeStorageGet(STORAGE.tripPreferences);
         const model = globalThis.ClockTimerTripPreferencesModel;
         if (model?.read) return model.read(raw);
 
-        // Compatibility for legacy/test hosts that evaluate app.js without
-        // running dispatcher bootstrap first.
         let stored = {};
         try {
             stored = raw ? JSON.parse(raw) : {};
@@ -6066,6 +6084,11 @@
     }
 
     function saveTripPreferences(preferences) {
+        const store = getTripPreferencesStore();
+        if (store) {
+            store.save(preferences);
+            return;
+        }
         const model = globalThis.ClockTimerTripPreferencesModel;
         safeStorageSet(
             STORAGE.tripPreferences,
