@@ -28769,65 +28769,25 @@
         );
 
 
-    function ensureSpeechMenu(
-        container = document.body,
-        modalMode
-    ) {
-        if (
-            modalMode === "top-level"
-        ) {
-            const topLevel =
-                document.getElementById(
-                    "speechTopLevelMenu"
-                );
-
-            if (topLevel) {
-                return topLevel;
+    const ensureSpeechMenu = globalThis.ClockTimerSpeechMenuMount?.ensure
+        || function ensureSpeechMenu(container = document.body, modalMode) {
+            // Compatibility for test harnesses and cached pages without the extracted helper.
+            if (modalMode === "top-level") {
+                const topLevel = document.getElementById("speechTopLevelMenu");
+                if (topLevel) return topLevel;
             }
-        }
-
-        const selector =
-            modalMode
+            const selector = modalMode
                 ? `speech-menu[speech-modal="${modalMode}"]`
                 : "speech-menu:not([speech-modal])";
-
-        let menu;
-
-        try {
-            menu =
-                [
-                    ...container.children
-                ].find(
-                    element =>
-                        element.matches?.(
-                            selector
-                        )
-                );
-        }
-        catch {}
-
-        if (menu) {
+            let menu;
+            try { menu = [...container.children].find(element => element.matches?.(selector)); } catch {}
+            if (menu) return menu;
+            menu = document.createElement("speech-menu");
+            menu.dataset.speechRuntimeMenu = "true";
+            if (modalMode) menu.setAttribute("speech-modal", modalMode);
+            container.append(menu);
             return menu;
-        }
-
-        menu =
-            document.createElement(
-                "speech-menu"
-            );
-
-        menu.dataset.speechRuntimeMenu =
-            "true";
-
-        if (modalMode) {
-            menu.setAttribute(
-                "speech-modal",
-                modalMode
-            );
-        }
-
-        container.append(menu);
-        return menu;
-    }
+        };
 
     // Settings surfaces reuse the existing handlers but must not initialize speech UI/runtime.
     if (!settingsOnlyPage && capabilityEnabled("speechMenu")) {
