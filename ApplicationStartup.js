@@ -29,5 +29,38 @@
         return announcement;
     }
 
-    root.ClockTimerApplicationStartup = Object.freeze({ initialize });
+    async function initializePage({
+        context = root.ClockTimerPageContext,
+        settingsOnlyPage,
+        audio = root.WMOFAudio,
+        documentRef = root.document
+    } = {}) {
+        const audioSettingsStartup = root.ClockTimerAudioSettingsStartup;
+        if (!audioSettingsStartup?.ensureModel) {
+            throw new Error("AudioSettingsStartup.js did not register its initializer.");
+        }
+        await audioSettingsStartup.ensureModel({ context });
+
+        const audioUnlock = root.ClockTimerAudioUnlock;
+        if (!audioUnlock?.install) {
+            throw new Error("AudioUnlock.js did not register its installer.");
+        }
+        audioUnlock.install(documentRef, audio);
+
+        const announcementLanguage = root.WMOFAnnouncementLanguage;
+        if (!announcementLanguage?.load || !announcementLanguage?.text) {
+            throw new Error("Announcement language did not register its loader.");
+        }
+        await announcementLanguage.load(documentRef?.documentElement?.lang || "en-US");
+        const text = (key, values) => announcementLanguage.text(key, values);
+        const startupAnnouncement = await initialize({
+            context,
+            settingsOnlyPage,
+            audio,
+            text
+        });
+        return { announcementLanguage, text, startupAnnouncement };
+    }
+
+    root.ClockTimerApplicationStartup = Object.freeze({ initialize, initializePage });
 })(globalThis);
