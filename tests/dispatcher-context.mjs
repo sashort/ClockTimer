@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStreamDialog = false } = {}) {
+function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStreamDialog = false, hasDropInMarker = false } = {}) {
     const events = [];
     const appendedResources = [];
     const body = {
         classList: { contains: name => classes.includes(name) },
-        querySelector: selector => hasLiveStreamDialog && selector === "#liveStreamDialog" ? {} : null
+        querySelector: selector => (hasLiveStreamDialog && selector === "#liveStreamDialog") || (hasDropInMarker && selector === "#dropInPageStatus") ? {} : null
     };
     const document = {
         body: bodyPresent ? body : null,
@@ -63,6 +63,10 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
 
 {
     const { sandbox } = makeRuntime({ hasLiveStreamDialog: true });
+    assert.equal(sandbox.ClockTimerPageContext.host, "order-filler", "shared live-stream dialog does not identify the page as Drop-In");
+}
+{
+    const { sandbox } = makeRuntime({ hasDropInMarker: true });
     assert.equal(sandbox.ClockTimerPageContext.host, "drop-in");
     assert.deepEqual(Array.from(sandbox.ClockTimerPageContext.features), ["drop-in", "settings"]);
 }
