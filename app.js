@@ -17257,27 +17257,11 @@
     }
 
     function tripIsLive() {
-        const timerState =
-            clockTimer
-                ?.uiState;
-
-        if (
-            typeof timerState
-                ?.trip_active ===
-                "boolean"
-        ) {
-            return timerState
-                .trip_active;
-        }
-
-        return (
-            clockTimer
-                ?.status ===
-                "running" ||
-            app.dataset
-                .tripState ===
-                "running"
-        );
+        return globalThis.ClockTimerTripRuntimeModel.isLive({
+            timerState: clockTimer?.uiState,
+            status: clockTimer?.status,
+            appTripState: app.dataset.tripState
+        });
     }
 
     // The single interaction snapshot combines timer and workflow state.
