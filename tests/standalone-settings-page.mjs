@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 const read = path => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
 const standalone = read('../settings.html');
+const settingsBootstrap = read('../SettingsPageBootstrap.js');
+const settingsFrameController = read('../SettingsFrameController.js');
 const dropInTemplate = read('../templates/pages/drop-in/body.html');
 const dropInMenu = read('../templates/pages/drop-in/menu.html');
 const dropInDialogs = read('../templates/pages/drop-in/dialogs.html');
@@ -26,18 +28,18 @@ const settingsSurfaces = [
 
 assert.match(standalone, /<body class="settings-page">/, 'settings has a dedicated standalone page mode');
 assert.match(standalone, /id="settingsPageHeader"/, 'standalone page retains its own header');
-assert.match(standalone, /window\.self !== window\.top/, 'embedded settings hide the standalone return header');
+assert.match(settingsBootstrap, /root\.self !== root\.top/, 'embedded settings hide the standalone return header');
 assert.match(standalone, /standaloneSettingsPageStyles/, 'standalone page has dedicated layout styles');
 assert.match(standalone, /standaloneSettingsPageBootstrap/, 'standalone page initializes settings surfaces');
-assert.match(standalone, /new URLSearchParams\(window\.location\.search\)/, 'surface-specific launches are selected from the query string');
-assert.match(standalone, /const surfaceId = ids\.includes\(requestedSurface\) \? requestedSurface : "graphicalSettingsDialog"/, 'Graphical Settings is the default surface');
-assert.match(standalone, /surface\.setAttribute\("data-primary-settings-surface"/, 'only the selected settings surface is shown');
-assert.match(standalone, /originalTrigger\.dispatchEvent\(new Event\("pointerup"/, 'bootstrap uses the original app settings event handler');
-assert.match(standalone, /clocktimer-settings-closed/, 'closing the original settings dialog closes the containing iframe modal');
-assert.match(standalone, /surface\.showModal\(\)/, 'fallback launch preserves modal form behavior');
+assert.match(settingsBootstrap, /new URLSearchParams\(root\.location\.search\)/, 'surface-specific launches are selected from the query string');
+assert.match(settingsBootstrap, /ClockTimerSettingsSurfaces[\s\S]*?normalize\(requestedSurface\)/, 'Graphical Settings is the default surface through the shared surface contract');
+assert.match(settingsBootstrap, /surface\.setAttribute\("data-primary-settings-surface"/, 'only the selected settings surface is shown');
+assert.match(settingsBootstrap, /originalTrigger\.dispatchEvent\(new Event\("pointerup"/, 'bootstrap uses the original app settings event handler');
+assert.match(settingsBootstrap, /clocktimer-settings-closed/, 'closing the original settings dialog closes the containing iframe modal');
+assert.match(settingsBootstrap, /surface\.showModal\(\)/, 'fallback launch preserves modal form behavior');
 for (const id of settingsSurfaces) {
     assert.match(standalone, new RegExp(`<dialog id="${id}"(?:\\s|>)`), `${id} is included in the standalone page`);
-    assert.match(standalone, new RegExp(`"${id}"`), `${id} is listed for page initialization`);
+    assert.match(settingsBootstrap, new RegExp(`"${id}"`), `${id} is listed for page initialization`);
 }
 assert.match(standalone, /data-primary-settings-surface/, 'selected settings surface is marked for iframe layout');
 assert.match(standalone, /position:static !important/, 'settings surfaces flow in the page instead of overlaying it');
@@ -50,9 +52,9 @@ function assertIframeOnlyDialog(markup, label, checkController = true) {
     assert.match(dialog, /^<dialog[^>]*>\s*<iframe id="clockTimerSettingsFrame"[^>]*><\/iframe>\s*<\/dialog>$/, `${label} modal contains only the iframe`);
     assert.doesNotMatch(dialog, /<button|<h[1-6]|<label|<p[ >]/, `${label} modal adds no extra controls or labels around the iframe`);
     if (checkController) {
-        assert.match(markup, /frame\.src = "settings\.html\?surface=" \+ encodeURIComponent\(surface\)/, `${label} chooses requested surfaces in the iframe`);
-        assert.match(markup, /event\.source !== frame\.contentWindow/, `${label} listens for close events only from its iframe`);
-        assert.match(markup, /event\.target === dialog\) dialog\.close\(\)/, `${label} supports backdrop dismissal without an extra close button`);
+        assert.match(settingsFrameController, /frame\.src = "settings\.html\?surface=" \+ encodeURIComponent\(surface\)/, `${label} chooses requested surfaces in the iframe`);
+        assert.match(settingsFrameController, /event\.source !== frame\.contentWindow/, `${label} listens for close events only from its iframe`);
+        assert.match(settingsFrameController, /event\.target === dialog\) dialog\.close\(\)/, `${label} supports backdrop dismissal without an extra close button`);
     }
 }
 assert.doesNotMatch(dropInTemplate, /drop-in-settings-link|openClockTimerSettingsFrame/, 'Drop-In does not add a launcher at the top of the page');
@@ -60,7 +62,7 @@ assert.match(dropInMenu, /id="dropInClockSettingsButton"[^>]*data-open-clock-tim
 assert.doesNotMatch(dropInMenu, /id="dropInClockSettingsPanel"|id="dropInClockSettings"/, 'Drop-In does not keep the duplicate read-only settings panel');
 assertIframeOnlyDialog(dropInDialogs, 'Drop-In dialogs template', false);
 assertIframeOnlyDialog(dropInBuilt, 'built Drop-In');
-assert.match(dropInScripts, /frame\.src = "settings\.html\?surface=" \+ encodeURIComponent\(surface\)/, 'Drop-In controller opens the selected page in the iframe');
+assert.match(dropInScripts, /SettingsFrameController\.js/, 'Drop-In loads the shared settings iframe controller');
 assert.match(dropInBuilt, /id="dropInClockSettingsButton"[^>]*data-open-clock-timer-settings[^>]*data-settings-surface="graphicalSettingsDialog"/, 'built Drop-In routes its existing ClockTimer menu item to graphical settings');
 assert.doesNotMatch(dropInBuilt, /drop-in-settings-link|openClockTimerSettingsFrame/, 'built Drop-In has no duplicate top-of-page settings launcher');
 assert.doesNotMatch(dropInBuilt, /id="dropInClockSettingsPanel"|id="dropInClockSettings"/, 'built Drop-In removes the duplicate inline settings panel');
@@ -83,7 +85,7 @@ assert.match(orderBuilt, /data-settings-surface="audioSettingsDialog"/, 'built O
 assert.doesNotMatch(orderTemplate, /All ClockTimer Settings/, 'Order-Filler does not merge the separate entries');
 assertIframeOnlyDialog(orderDialogs, 'Order-Filler dialog template', false);
 assertIframeOnlyDialog(orderBuilt, 'built Order-Filler');
-assert.match(orderScripts, /dataset\.settingsSurface/, 'Order-Filler controller handles surface-specific entry points');
+assert.match(orderScripts, /SettingsFrameController\.js/, 'Order-Filler loads the shared settings iframe controller');
 assert.doesNotMatch(dropInBuilt, /href="settings\.html" target="_blank"/, 'Drop-In does not open settings in a new tab');
 
 assert.match(fsmDoc, /Settings navigation is orthogonal to the trip lifecycle/, 'FSM documentation defines settings navigation as lifecycle-neutral');
