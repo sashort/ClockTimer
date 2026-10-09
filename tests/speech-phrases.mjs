@@ -654,6 +654,14 @@ assert.match(
             ),
             "utf8"
         );
+    const audioSettingsModelSource =
+        fs.readFileSync(
+            new URL(
+                "../AudioSettingsModel.js",
+                import.meta.url
+            ),
+            "utf8"
+        );
 
     assert.match(
         appSource,
@@ -709,8 +717,8 @@ assert.match(
         /changeGlobalAudioVolume[\s\S]*?speechVolume[\s\S]*?toneVolume[\s\S]*?Speech Volume/
     );
     assert.match(
-        appSource,
-        /AUDIO_SPEECH_VELOCITY_MAX\s*=\s*4[\s\S]*?AUDIO_TONE_VELOCITY_MAX\s*=\s*1\.5/
+        audioSettingsModelSource,
+        /AUDIO_SPEECH_VELOCITY_MAX\s*=\s*2\.8[\s\S]*?CHIME_RATES[\s\S]*?value:\s*0\.8[\s\S]*?value:\s*1[\s\S]*?value:\s*1\.2/
     );
 
     assert.match(
