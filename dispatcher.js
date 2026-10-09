@@ -128,6 +128,11 @@
             url: "AudioOutputSettings.js?build=audio-output-settings-1",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["audio-announcement-policy", {
+            type: "script",
+            url: "AudioAnnouncementPolicy.js?build=audio-announcement-policy-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["audio-announcement-draft", {
             type: "script",
             url: "AudioAnnouncementDraft.js?build=audio-announcement-draft-1",
