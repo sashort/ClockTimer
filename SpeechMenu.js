@@ -829,12 +829,8 @@ class SpeechMenu {
 
         return (
             !speechPreproc ||
-            Boolean(
-                SpeechMenu
-                    .#resolve(
-                        speechPreproc
-                    )
-            )
+            speechPreproc.split(",").map(name => name.trim()).filter(Boolean)
+                .every(name => Boolean(SpeechMenu.#resolve(name)))
         );
     }
 
@@ -8212,44 +8208,32 @@ class SpeechMenu {
             }
         }
 
-        const preprocName =
-            element.getAttribute(
-                "speech-preproc"
-            );
-
-        if (!preprocName) {
+        const preprocNames = (element.getAttribute("speech-preproc") || "")
+            .split(",").map(name => name.trim()).filter(Boolean);
+        if (!preprocNames.length) {
             delete element.speechPreprocFunc;
+            delete element.speechPreprocFuncs;
             return true;
         }
-
-        const preproc =
-            SpeechMenu.#resolve(
-                preprocName
-            );
-
-        if (!preproc) {
-            SpeechMenu.#emit(
-                "speechMenuFunctionNotFound",
-                {
-                    speechMenuElement:
-                        element,
-                    component:
-                        "speech-preproc",
-                    functionName:
-                        preprocName,
-                    message:
-                        "The speech preprocessor was not found."
-                }
-            );
-
-            return false;
+        const preprocessors = [];
+        for (const preprocName of preprocNames) {
+            const preproc = SpeechMenu.#resolve(preprocName);
+            if (!preproc) {
+                delete element.speechPreprocFunc;
+                delete element.speechPreprocFuncs;
+                SpeechMenu.#emit("speechMenuFunctionNotFound", {
+                    speechMenuElement: element, component: "speech-preproc",
+                    functionName: preprocName, message: "The speech preprocessor was not found."
+                });
+                return false;
+            }
+            preprocessors.push(preproc.fn.bind(preproc.owner));
         }
-
-        element.speechPreprocFunc =
-            preproc.fn.bind(
-                preproc.owner
-            );
-
+        element.speechPreprocFuncs = preprocessors;
+        element.speechPreprocFunc = async (text, context) => {
+            for (const preprocessor of preprocessors) text = await preprocessor(text, context);
+            return text;
+        };
         return true;
     }
 
