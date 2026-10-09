@@ -185,6 +185,11 @@
             type: "script",
             url: "SpeechTransactionTime.js?build=speech-transaction-time-1",
             hosts: ["order-filler", "settings-frame"]
+        }],
+        ["action-signal-context", {
+            type: "script",
+            url: "ActionSignalContext.js?build=action-signal-context-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
