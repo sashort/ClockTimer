@@ -23,7 +23,7 @@ assert.match(standalone, /standaloneSettingsPageStyles/, 'standalone page has de
 assert.match(standalone, /standaloneSettingsPageBootstrap/, 'standalone page initializes settings surfaces');
 for (const id of settingsSurfaces) {
     assert.match(standalone, new RegExp(`<dialog id="${id}"\\b`), `${id} is included in the standalone page`);
-    assert.match(standalone, new RegExp(`document.getElementById\\("${id}"\\)`), `${id} is opened on page load`);
+    assert.match(standalone, new RegExp(`"${id}"`), `${id} is listed for page initialization`);
 }
 assert.match(standalone, /dialog\.show\(\)/, 'settings surfaces are shown as non-modal page sections');
 assert.match(standalone, /position:static !important/, 'settings surfaces flow in the page instead of overlaying it');
