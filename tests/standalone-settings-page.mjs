@@ -28,6 +28,7 @@ assert.match(standalone, /standaloneSettingsPageStyles/, 'standalone page has de
 assert.match(standalone, /standaloneSettingsPageBootstrap/, 'standalone page initializes settings surfaces');
 assert.match(standalone, /new URLSearchParams\(window\.location\.search\)/, 'surface-specific launches are selected from the query string');
 assert.match(standalone, /if \(focusedSurface && id !== focusedSurface\) continue;/, 'only the selected surface opens for a specific launcher');
+assert.match(standalone, /settings-surface-focused > dialog#graphicalSettingsDialog:not\(\[data-requested-settings-surface\]\)/, 'focused CSS overrides the normal visible settings-surface layout');
 for (const id of settingsSurfaces) {
     assert.match(standalone, new RegExp(`<dialog id="${id}"(?:\\s|>)`), `${id} is included in the standalone page`);
     assert.match(standalone, new RegExp(`"${id}"`), `${id} is listed for page initialization`);
