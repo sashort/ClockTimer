@@ -115,6 +115,11 @@
             hosts: ["order-filler"],
             features: ["calendarStartup"],
             capability: "calendarStartup"
+        }],
+        ["trip-preferences-model", {
+            type: "script",
+            url: "TripPreferencesModel.js?build=trip-preferences-model-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
