@@ -17,14 +17,14 @@ assert.deepEqual(JSON.parse(JSON.stringify(model.normalize({
     lateBreakBehavior: "autoRestartTrip",
     syncGoals: 1,
     unrelated: "ignored"
-})), {
+}))), {
     lateBreakBehavior: "autoRestartTrip",
     syncGoals: true
 });
 assert.deepEqual(JSON.parse(JSON.stringify(model.normalize({
     lateBreakBehavior: "invalid",
     syncGoals: null
-})), {
+}))), {
     lateBreakBehavior: "showLateWindow",
     syncGoals: false
 });
