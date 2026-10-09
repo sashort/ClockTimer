@@ -2,6 +2,8 @@
 (function (root) {
     "use strict";
 
+    const percentModes = Object.freeze(["trip", "total", "auto"]);
+
     function selectGoal(detail) {
         const summary = detail?.summary;
         const scope = String(summary?.scope || "").toLowerCase();
@@ -61,7 +63,7 @@
 
     function normalizePercentMode(value) {
         const normalized = String(value || "trip").trim().toLowerCase();
-        return ["trip", "total", "auto"].includes(normalized) ? normalized : "trip";
+        return percentModes.includes(normalized) ? normalized : "trip";
     }
 
     function countedPercent(detail) {
@@ -79,6 +81,7 @@
     }
 
     root.ClockTimerTripGoalModel = Object.freeze({
+        percentModes,
         selectGoal,
         labelDescriptor,
         remainingMilliseconds,
