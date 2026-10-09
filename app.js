@@ -2495,29 +2495,13 @@
         globalThis.WMOFAudioSettingsModel.decodeVoiceSelection;
 
     function applyAudioOutputSettings() {
-        const voiceSelection =
-            getAudioVoiceSelection();
-
-        globalThis.WMOFAudio?.configureOutput?.({
-            speechVolume:
-                audioSettings.volume,
-            toneVolume:
-                (audioSettings.volume * CHIME_VOLUME_RATIO),
-            speechVelocity:
-                audioSettings.speechVelocity,
-            toneVelocity:
-                audioSettings.toneVelocity,
-            instrument:
-                audioSettings.instrument,
-            speechLanguage:
-                AUDIO_LANGUAGE,
-            voiceProvider:
-                voiceSelection.provider,
-            voice:
-                voiceSelection.voice
+        globalThis.WMOFAudioOutputSettings.apply({
+            settings: audioSettings,
+            voiceSelection: getAudioVoiceSelection(),
+            language: AUDIO_LANGUAGE,
+            chimeVolumeRatio: CHIME_VOLUME_RATIO,
+            syncAdaptiveTimingRate: syncAdaptiveSpeechTimingRate
         });
-
-        syncAdaptiveSpeechTimingRate();
     }
 
     function audioCellUserEnabled(announcement, layer, options = {}) {
