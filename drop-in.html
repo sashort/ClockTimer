@@ -9,7 +9,7 @@
 
 </head>
 <body>
-<p class="drop-in-settings-link"><a href="settings.html" target="_blank" rel="noopener noreferrer">Open ClockTimer settings in a new tab</a></p>
+<p class="drop-in-settings-link"><button id="openClockTimerSettingsFrame" type="button" data-open-clock-timer-settings>Open ClockTimer Settings</button></p>
 <p id="dropInPageStatus" role="status"></p>
 <main id="liveStreamDialog" class="standalone-drop-in">
 <div hidden id="observerSummaryMetadata"><span id="liveStreamStandardLabel"></span><span id="liveStreamStandardTime"></span><span id="liveStreamTimeLabel"></span><span id="liveStreamRemoteTime"></span><span id="liveStreamRemoteGoal"></span></div>
@@ -257,5 +257,41 @@
 <script src="DropInText.js?build=E4GUFA"></script>
 <script src="drop-in.js?build=E4GUFA"></script>
 
+
+<style id="clockTimerSettingsFrameStyles">
+dialog.clock-timer-settings-frame-dialog { box-sizing:border-box; width:min(1120px,96vw); height:min(900px,94vh); max-width:96vw; max-height:94vh; padding:0; border:1px solid #8886; border-radius:12px; overflow:hidden; }
+dialog.clock-timer-settings-frame-dialog[open] { display:flex; flex-direction:column; }
+.clock-timer-settings-frame-header { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.65rem 1rem; border-bottom:1px solid #8885; flex:0 0 auto; }
+.clock-timer-settings-frame-header h2 { margin:0; font-size:1.1rem; }
+.clock-timer-settings-frame-header button { padding:.45rem .8rem; }
+dialog.clock-timer-settings-frame-dialog iframe { display:block; width:100%; flex:1 1 auto; min-height:0; border:0; background:Canvas; }
+@media(max-width:600px) { dialog.clock-timer-settings-frame-dialog { width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; border-radius:0; } }
+</style>
+<dialog id="clockTimerSettingsFrameDialog" class="clock-timer-settings-frame-dialog" aria-labelledby="clockTimerSettingsFrameTitle">
+  <div class="clock-timer-settings-frame-header">
+    <h2 id="clockTimerSettingsFrameTitle">ClockTimer Settings</h2>
+    <button id="clockTimerSettingsFrameClose" type="button" data-menu-icon="cancel">Close</button>
+  </div>
+  <iframe id="clockTimerSettingsFrame" src="settings.html" title="ClockTimer settings" loading="lazy"></iframe>
+</dialog>
+
+<script id="clockTimerSettingsFrameController">
+(() => {
+  const dialog = document.getElementById("clockTimerSettingsFrameDialog");
+  const close = document.getElementById("clockTimerSettingsFrameClose");
+  if (!dialog || !close || dialog.dataset.controllerReady) return;
+  dialog.dataset.controllerReady = "true";
+  close.addEventListener("click", () => dialog.close());
+  document.querySelectorAll('[data-open-clock-timer-settings]').forEach(button => {
+    button.addEventListener("click", () => {
+      const menu = document.getElementById("settingsSubmenu");
+      if (menu) menu.hidden = true;
+      const menuButton = document.getElementById("settingsMenuButton");
+      if (menuButton) menuButton.setAttribute("aria-expanded", "false");
+      if (!dialog.open) dialog.showModal();
+    });
+  });
+})();
+</script>
 </body>
 </html>
