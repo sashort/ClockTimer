@@ -35,7 +35,8 @@ for(const key of references) assert.equal(typeof lookup(key),'string',`Missing E
 for(const type of ['trip-started-early','trip-started-late','trip-resumed-early','trip-resumed-after-break']){
  assert.ok(lookup(`announcements.${type}.summary`));assert.ok(lookup(`announcements.${type}.details`));
 }
-assert.ok(app.indexOf('await announcementLanguage.load(')<app.indexOf('const AUDIO_ANNOUNCEMENTS'));
+assert.ok(app.indexOf('await announcementLanguage.load(')<app.indexOf('const announcementPolicy'),
+    'announcement language loads before the catalog policy is created');
 vm.runInContext(fs.readFileSync(new URL('../AnnouncementCatalog.js',import.meta.url),'utf8'),ctx);
 const types=ctx.WMOFAnnouncementCatalog;
 assert.equal(types.id('trip-started'),1);assert.equal(types.id('syncTry'),21);
