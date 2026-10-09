@@ -22,7 +22,7 @@ assert.match(standalone, /id="settingsPageHeader"/, 'standalone page provides a 
 assert.match(standalone, /standaloneSettingsPageStyles/, 'standalone page has dedicated layout styles');
 assert.match(standalone, /standaloneSettingsPageBootstrap/, 'standalone page initializes settings surfaces');
 for (const id of settingsSurfaces) {
-    assert.match(standalone, new RegExp(`<dialog id="${id}"\\b`), `${id} is included in the standalone page`);
+    assert.match(standalone, new RegExp(`<dialog id="${id}"(?:\\s|>)`), `${id} is included in the standalone page`);
     assert.match(standalone, new RegExp(`"${id}"`), `${id} is listed for page initialization`);
 }
 assert.match(standalone, /dialog\.show\(\)/, 'settings surfaces are shown as non-modal page sections');
