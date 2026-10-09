@@ -34,6 +34,7 @@
     "test:settings-page-bootstrap": "node settings-page-bootstrap.mjs",
     "test:settings-frame-controller": "node settings-frame-controller.mjs",
     "test:speech-runtime-loader": "node speech-runtime-loader.mjs",
+    "test:speech-startup": "node speech-startup.mjs",
     "test:dispatcher-context": "node dispatcher-context.mjs",
     "test:startup-announcement": "node startup-announcement.mjs",
     "test:persistence-startup": "node persistence-startup.mjs",
