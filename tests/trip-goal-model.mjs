@@ -11,6 +11,22 @@ assert.ok(model, "trip goal model registers its public API");
 assert.deepEqual(Array.from(model.percentModes), ["trip", "total", "auto"],
     "goal scope modes are exported as a stable ordered list");
 
+assert.equal(model.syncRuntimeState({connectionStatus: "offline", syncGoalsEnabled: true, tripLive: true}),
+    "offline", "offline status takes precedence");
+assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: false, tripLive: true}),
+    "off", "disabled sync goals are off");
+assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: true, tripLive: false}),
+    "ready", "enabled sync goals wait until a trip is live");
+assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: true, tripLive: true,
+    requirements: {tripGoal: 120, adjustedTimeElapsed: 30}}), "active",
+    "positive finite goal requirements activate sync goals");
+for (const requirements of [undefined, {}, {tripGoal: 0, adjustedTimeElapsed: 30},
+    {tripGoal: 120, adjustedTimeElapsed: 0}, {tripGoal: "invalid", adjustedTimeElapsed: 30}]) {
+    assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: true,
+        tripLive: true, requirements}), "time-blocked",
+        "missing or invalid goal requirements block sync runtime");
+}
+
 for (const mode of ["trip", "total", "auto"]) {
     assert.equal(model.normalizePercentMode(mode), mode, `valid goal scope ${mode} is retained`);
     assert.equal(model.normalizePercentMode(` ${mode.toUpperCase()} `), mode,
