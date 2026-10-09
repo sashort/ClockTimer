@@ -33,7 +33,8 @@
         apiBase,
         calendarRanges,
         refreshTripLogSelection,
-        showTripRangeError
+        showTripRangeError,
+        fetchImpl = root.fetch
     }) {
         if (settingsOnlyPage || !dispatcher || !startup) return false;
         dispatcher.register(
@@ -42,7 +43,8 @@
                 apiBase,
                 calendarRanges,
                 refreshTripLogSelection,
-                showTripRangeError
+                showTripRangeError,
+                fetchImpl
             })),
             currentContext => currentContext.capabilities?.calendarStartup !== false
         );
