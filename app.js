@@ -63,7 +63,7 @@
         audioSettings: "wmof.clock.audioSettings"
     };
 
-    const RENDERED_TIME_MODES = ["remaining", "calculated-end", "elapsed"];
+    const RENDERED_TIME_MODES = globalThis.ClockTimerTimerDisplayModel.modes;
     const PERCENT_MODES = ["trip", "total", "auto"];
     const ANNOUNCEMENT_CATALOG =
         globalThis
@@ -7874,14 +7874,9 @@
     }
 
     function applyRenderedTimeMode(mode, persist = true) {
-        const next = RENDERED_TIME_MODES.includes(mode) ? mode : "remaining";
+        const next = globalThis.ClockTimerTimerDisplayModel.normalize(mode);
         clockTimer.configure({
-            rendered_time_type:
-                next === "elapsed"
-                    ? "calculated_start_time"
-                    : next === "calculated-end"
-                        ? "calculated_end_time"
-                        : "time_remaining"
+            rendered_time_type: globalThis.ClockTimerTimerDisplayModel.clockTimerAttribute(next)
         });
         updateSummaryValues();
         if (persist) safeStorageSet(STORAGE.renderedTimeMode, next);
