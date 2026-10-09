@@ -27,9 +27,9 @@
             if (pending.has(source)) return pending.get(source);
 
             const promise = new Promise((resolve, reject) => {
-                const existing = documentRef.querySelector(
-                    'script[data-runtime-source="' + source.replace(/["\\\\]/g, "\\\\$&") + '"]'
-                );
+                const existing = Array.from(
+                    documentRef.querySelectorAll("script[data-runtime-source]")
+                ).find(script => script.dataset.runtimeSource === source);
                 if (existing?.dataset.loaded === "true") {
                     resolve(existing);
                     return;
