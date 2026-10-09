@@ -200,6 +200,11 @@
             type: "script",
             url: "ButtonPressFeedback.js?build=button-press-feedback-1",
             hosts: ["order-filler", "settings-frame"]
+        }],
+        ["trip-runtime-model", {
+            type: "script",
+            url: "TripRuntimeModel.js?build=trip-runtime-model-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
