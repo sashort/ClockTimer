@@ -229,6 +229,30 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
     await hydration;
 }
 {
+    const { sandbox, appendedResources } = makeRuntime({ classes: ["settings-page"] });
+    sandbox.ClockTimerDispatcher.registerResource("settings-style", {
+        type: "style",
+        url: "/settings-surface.css",
+        hosts: ["settings-frame"],
+        features: ["settings"]
+    });
+    sandbox.ClockTimerDispatcher.registerResource("application-speech", {
+        type: "script",
+        url: "/speech-runtime.js",
+        hosts: ["order-filler"],
+        features: ["application"],
+        capability: "speechMenu"
+    });
+    const bootstrap = sandbox.ClockTimerDispatcher.bootstrap(sandbox.ClockTimerPageContext);
+    assert.equal(appendedResources.length, 1, "settings context loads only resources allowed by its manifest");
+    assert.equal(appendedResources[0].href, "/settings-surface.css");
+    assert.equal(appendedResources[0].dataset.clocktimerContext, "settings-frame");
+    appendedResources[0].onload();
+    const result = await bootstrap;
+    assert.deepEqual(Array.from(result.resources), ["settings-style"]);
+    assert.deepEqual(Array.from(result.features), []);
+}
+{
     const { sandbox } = makeRuntime();
     let requestUrl = "";
     let installedRecords = null;
@@ -387,4 +411,4 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
     }), false);
     assert.equal(forbiddenStarts, 0, "settings-only page must not register calendar startup");
 }
-console.log("PASS context restrictions, nested resources, extracted calendar startup, dispatcher gating, and lifecycle cleanup");
+console.log("PASS context restrictions, dispatcher resource manifests, nested resources, extracted calendar startup, dispatcher gating, and lifecycle cleanup");
