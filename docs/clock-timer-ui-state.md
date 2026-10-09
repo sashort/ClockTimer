@@ -1,5 +1,29 @@
 # ClockTimer configuration and UI state
 
+UI persistence behavior uses three terms:
+
+| Behavior | UI outcome |
+| --- | --- |
+| Wait | Update only after acceptance. Authentication uses this behavior. |
+| Optimistic | Update immediately; restore the previous UI on rejection or failure. |
+| Enforce | Update immediately and retain that UI while retrying a valid action until acceptance. Cancellation or invalidation ends retries. |
+
+Every server write must pass validation first. These behaviors describe UI timing and failure handling; they are independent of pointer/voice input, announcements, and pending-operation status.
+
+Every UI component touching persistence must declare `persistenceBehavior` as `Wait`, `Optimistic`, or `Enforce` for each operation. There is no implicit default. A component may have different policies for loading and saving; pointer and voice entry points for the same operation share one policy. Persistence reads use Wait for the loaded result and may retain an existing valid display during loading.
+
+Each declaration needs a test contract:
+
+| Scenario | Wait | Optimistic | Enforce |
+| --- | --- | --- | --- |
+| Pending operation | Retain accepted state; show pending status | Show proposed state immediately | Show proposed state immediately |
+| Accepted | Apply returned state | Confirm proposed state | Confirm proposed state; stop retries |
+| Rejected or failed | Retain accepted state; show failure | Restore previous state; show failure | Retain proposed state and retry while action remains valid |
+| Cancellation or invalidation | Discard pending result | Restore checkpoint | Stop retries and reconcile to the current valid state |
+| Late result after account/target switch | Ignore it | Ignore it | Ignore it; stop old retries |
+
+Tests must cover validation before writes, rejection separately from transport failure, cancellation, duplicate submissions, and account/target changes. Enforce also requires idempotent retries, validity checks before each retry, and proof that retries stop on acceptance. A rejected command that is no longer valid cannot be retried under Enforce.
+
 `ClockTimer.configure()` applies a partial configuration. Omitted keys remain unchanged; `null` clears a goal or external aggregate.
 
 ```js
