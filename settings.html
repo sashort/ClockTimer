@@ -27,29 +27,48 @@
 <style id="standaloneSettingsPageStyles">
 body.settings-page { margin:0; padding:1rem; background:var(--app-background, #f5f5f5); }
 body.settings-page > :not(dialog):not(script):not(style):not(#settingsPageHeader) { display:none !important; }
-body.settings-page > dialog:not(#graphicalSettingsDialog):not(#audioSettingsDialog):not(#audioAnnouncementsDialog):not(#stateSettingsDialog):not(#tripSettingsDialog) { display:none !important; }
 #settingsPageHeader { max-width:1100px; margin:0 auto 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 #settingsPageHeader h1 { margin:0; font-size:1.5rem; }
 #settingsPageHeader a { color:inherit; }
-body.settings-page > dialog#graphicalSettingsDialog,
-body.settings-page > dialog#audioSettingsDialog,
-body.settings-page > dialog#audioAnnouncementsDialog,
-body.settings-page > dialog#stateSettingsDialog,
-body.settings-page > dialog#tripSettingsDialog {
- position:static !important; inset:auto !important; transform:none !important;
- display:block !important; box-sizing:border-box; width:min(100%,1100px) !important;
- max-width:1100px !important; height:auto !important; min-height:0 !important;
- max-height:none !important; margin:0 auto 1rem !important; overflow:visible !important;
- border-radius:12px; box-shadow:0 2px 12px #0002;
+
+/* Only open settings surfaces are visible; all settings forms keep their original
+   padding and scroll behavior from app.css. The primary surface fills the iframe,
+   while the old dialog's centering margin belongs to the iframe element itself. */
+body.settings-page > dialog#graphicalSettingsDialog:not([open]),
+body.settings-page > dialog#audioSettingsDialog:not([open]),
+body.settings-page > dialog#audioAnnouncementsDialog:not([open]),
+body.settings-page > dialog#stateSettingsDialog:not([open]),
+body.settings-page > dialog#tripSettingsDialog:not([open]) { display:none !important; }
+
+body.settings-page > dialog#graphicalSettingsDialog[data-primary-settings-surface],
+body.settings-page > dialog#audioSettingsDialog[data-primary-settings-surface],
+body.settings-page > dialog#audioAnnouncementsDialog[data-primary-settings-surface],
+body.settings-page > dialog#stateSettingsDialog[data-primary-settings-surface],
+body.settings-page > dialog#tripSettingsDialog[data-primary-settings-surface] {
+ position:static !important;
+ inset:auto !important;
+ transform:none !important;
+ display:block !important;
+ box-sizing:border-box;
+ width:100% !important;
+ max-width:100% !important;
+ height:100% !important;
+ min-height:0 !important;
+ max-height:100% !important;
+ margin:0 !important;
+ /* Deliberately do not override padding, border, background, or each form's
+    surface-specific overflow rules. Those are part of the original dialog. */
 }
-body.settings-page > dialog::backdrop { display:none; }
-body.settings-page #graphicalSettingsDialog #graphicalSettingsForm { max-height:none !important; }
-@media (max-width:700px) { body.settings-page { padding:.5rem; } #settingsPageHeader h1 {font-size:1.2rem;} }
-body.settings-page.settings-surface-focused > dialog#graphicalSettingsDialog:not([data-requested-settings-surface]),
-body.settings-page.settings-surface-focused > dialog#audioSettingsDialog:not([data-requested-settings-surface]),
-body.settings-page.settings-surface-focused > dialog#audioAnnouncementsDialog:not([data-requested-settings-surface]),
-body.settings-page.settings-surface-focused > dialog#stateSettingsDialog:not([data-requested-settings-surface]),
-body.settings-page.settings-surface-focused > dialog#tripSettingsDialog:not([data-requested-settings-surface]) { display:none !important; }
+
+body.settings-page.settings-embedded {
+ padding:0 !important;
+ width:100%;
+ height:100%;
+ overflow:auto !important;
+ background:transparent !important;
+}
+html.settings-embedded-document { overflow:auto !important; background:transparent !important; }
+@media (max-width:700px) { body.settings-page:not(.settings-embedded) { padding:.5rem; } #settingsPageHeader h1 {font-size:1.2rem;} }
 </style>
 </head>
 <body class="settings-page">
@@ -1296,25 +1315,21 @@ body.settings-page.settings-surface-focused > dialog#tripSettingsDialog:not([dat
 <script id="standaloneSettingsPageBootstrap">
 (() => {
   const pageHeader = document.getElementById("settingsPageHeader");
-  if (window.self !== window.top && pageHeader) pageHeader.hidden = true;
+  const embedded = window.self !== window.top;
+  if (embedded) {
+    document.body.classList.add("settings-embedded");
+    document.documentElement.classList.add("settings-embedded-document");
+    if (pageHeader) pageHeader.hidden = true;
+  }
   const ids = ["graphicalSettingsDialog","audioSettingsDialog","audioAnnouncementsDialog","stateSettingsDialog","tripSettingsDialog"];
   const requestedSurface = new URLSearchParams(window.location.search).get("surface");
-  const focusedSurface = ids.includes(requestedSurface) ? requestedSurface : null;
-  if (focusedSurface) {
-    document.body.classList.add("settings-surface-focused");
-    for (const id of ids) {
-      const surface = document.getElementById(id);
-      if (surface && id === focusedSurface) surface.setAttribute("data-requested-settings-surface", "");
-    }
-  }
-  for (const id of ids) {
-    if (focusedSurface && id !== focusedSurface) continue;
-    const dialog = document.getElementById(id);
-    if (!dialog) continue;
-    try { dialog.dispatchEvent(new Event("opening")); } catch {}
-    if (!dialog.open) {
-      try { dialog.show(); } catch { dialog.setAttribute("open", ""); }
-    }
+  const surfaceId = ids.includes(requestedSurface) ? requestedSurface : "graphicalSettingsDialog";
+  const surface = document.getElementById(surfaceId);
+  if (!surface) return;
+  surface.setAttribute("data-primary-settings-surface", "");
+  try { surface.dispatchEvent(new Event("opening")); } catch {}
+  if (!surface.open) {
+    try { surface.show(); } catch { surface.setAttribute("open", ""); }
   }
 })();
 </script>
