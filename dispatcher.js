@@ -118,7 +118,7 @@
         }],
         ["trip-preferences-model", {
             type: "script",
-            url: "TripPreferencesModel.js?build=trip-preferences-model-1",
+            url: "TripPreferencesModel.js?build=trip-preferences-model-2",
             hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
