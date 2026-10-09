@@ -208,6 +208,14 @@ const audioEngine =
         ),
         "utf8"
     );
+const audioSettingsModel =
+    fs.readFileSync(
+        new URL(
+            "../AudioSettingsModel.js",
+            import.meta.url
+        ),
+        "utf8"
+    );
 
 assert.match(
     html,
@@ -222,8 +230,8 @@ assert.match(
     /const AUDIO_LANGUAGE = globalThis\.WMOFLanguagePack\?\.locale \|\| "en-US"/
 );
 assert.match(
-    app,
-    /voices:\s*\{[\s\S]*\[AUDIO_LANGUAGE\][\s\S]*provider:[\s\S]*"system"[\s\S]*voice:[\s\S]*""/
+    audioSettingsModel,
+    /voices:\s*\{[\s\S]*\[language\][\s\S]*provider:[\s\S]*"system"[\s\S]*voice:[\s\S]*""/
 );
 assert.match(
     app,
