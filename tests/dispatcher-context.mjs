@@ -153,6 +153,15 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     appendedResources[1].handlers.load();
     appendedResources[1].onload();
     await second;
+
+    const styleOne = sandbox.ClockTimerResources.loadStyle("/feature.css", context);
+    const styleTwo = sandbox.ClockTimerResources.loadStyle("/feature.css", differentContext);
+    assert.equal(appendedResources.length, 4, "stylesheets requested in different contexts keep their own metadata");
+    assert.equal(JSON.parse(appendedResources[2].dataset.clocktimerContextData).surface, "tripSettingsDialog");
+    assert.equal(JSON.parse(appendedResources[3].dataset.clocktimerContextData).surface, "audioSettingsDialog");
+    appendedResources[2].onload();
+    appendedResources[3].onload();
+    await Promise.all([styleOne, styleTwo]);
 }
 {
     const { sandbox } = makeRuntime();
