@@ -45,6 +45,7 @@ body.settings-page > dialog#tripSettingsDialog {
 body.settings-page > dialog::backdrop { display:none; }
 body.settings-page #graphicalSettingsDialog #graphicalSettingsForm { max-height:none !important; }
 @media (max-width:700px) { body.settings-page { padding:.5rem; } #settingsPageHeader h1 {font-size:1.2rem;} }
+body.settings-page.settings-surface-focused > dialog:not([data-requested-settings-surface]) { display:none !important; }
 </style>
 </head>
 <body class="settings-page">
@@ -1293,7 +1294,17 @@ body.settings-page #graphicalSettingsDialog #graphicalSettingsForm { max-height:
   const pageHeader = document.getElementById("settingsPageHeader");
   if (window.self !== window.top && pageHeader) pageHeader.hidden = true;
   const ids = ["graphicalSettingsDialog","audioSettingsDialog","audioAnnouncementsDialog","stateSettingsDialog","tripSettingsDialog"];
+  const requestedSurface = new URLSearchParams(window.location.search).get("surface");
+  const focusedSurface = ids.includes(requestedSurface) ? requestedSurface : null;
+  if (focusedSurface) {
+    document.body.classList.add("settings-surface-focused");
+    for (const id of ids) {
+      const surface = document.getElementById(id);
+      if (surface && id === focusedSurface) surface.setAttribute("data-requested-settings-surface", "");
+    }
+  }
   for (const id of ids) {
+    if (focusedSurface && id !== focusedSurface) continue;
     const dialog = document.getElementById(id);
     if (!dialog) continue;
     try { dialog.dispatchEvent(new Event("opening")); } catch {}
