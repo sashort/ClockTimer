@@ -116,6 +116,11 @@
             features: ["calendarStartup"],
             capability: "calendarStartup"
         }],
+        ["timer-display-model", {
+            type: "script",
+            url: "TimerDisplayModel.js?build=timer-display-model-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["trip-log-model", {
             type: "script",
             url: "TripLogModel.js?build=trip-log-model-2",
