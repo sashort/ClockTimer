@@ -25,6 +25,13 @@ for (const range of model.ranges) {
 for (const invalid of [undefined, null, "", "unknown", "today", 42]) {
     assert.equal(model.normalizeRange(invalid), "day");
 }
+let storedRangeReads = 0;
+assert.equal(model.resolveRange("month", () => { storedRangeReads++; return "week"; }), "month");
+assert.equal(storedRangeReads, 0, "selected range takes precedence without reading storage");
+assert.equal(model.resolveRange(undefined, () => { storedRangeReads++; return "week"; }), "week");
+assert.equal(storedRangeReads, 1, "storage is consulted only when selection is nullish");
+assert.equal(model.resolveRange(null, () => undefined), "day");
+
 
 const trip = (countedTimeElapsedMilliseconds, allottedTimeMilliseconds, available = true) => ({
     trip: { countedTimeElapsedMilliseconds, allottedTimeMilliseconds, available }
