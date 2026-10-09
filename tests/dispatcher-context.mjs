@@ -267,6 +267,16 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     assert.equal(await second.then(value => value.value), "loaded");
     assert.equal(calls, 1);
 
+    const otherSurface = sandbox.ClockTimerContext.child(appContext, {
+        surface: "audioSettingsDialog"
+    });
+    const otherResult = await sandbox.ClockTimerStartup.runWhenEnabled("calendarStartup", otherSurface, async () => {
+        calls++;
+        return "other surface";
+    });
+    assert.equal(otherResult.value, "other surface");
+    assert.equal(calls, 2, "different inherited contexts do not share startup task results");
+
     const disabledContext = sandbox.ClockTimerContext.child(appContext, {
         capabilities: { calendarStartup: false }
     });
