@@ -119,7 +119,7 @@
         ["trip-preferences-model", {
             type: "script",
             url: "TripPreferencesModel.js?build=trip-preferences-model-2",
-            hosts: ["order-filler", "settings-frame", "drop-in"]
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
