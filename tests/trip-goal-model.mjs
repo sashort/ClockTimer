@@ -20,6 +20,32 @@ assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnable
 assert.equal(model.syncRuntimeState({connectionStatus: "online", syncGoalsEnabled: true, tripLive: true,
     requirements: {tripGoal: 120, adjustedTimeElapsed: 30}}), "active",
     "positive finite goal requirements activate sync goals");
+
+const runtimeOrder = [];
+assert.equal(model.resolveSyncRuntimeState({
+    getConnectionStatus: () => { runtimeOrder.push("connection"); return "offline"; },
+    getSyncGoalsEnabled: () => { runtimeOrder.push("sync"); return true; },
+    isTripLive: () => { runtimeOrder.push("live"); return true; },
+    getRequirements: () => { runtimeOrder.push("requirements"); return {tripGoal: 1, adjustedTimeElapsed: 1}; }
+}), "offline");
+assert.deepEqual(runtimeOrder, ["connection"], "offline state short-circuits remaining providers");
+runtimeOrder.length = 0;
+assert.equal(model.resolveSyncRuntimeState({
+    getConnectionStatus: () => { runtimeOrder.push("connection"); return "online"; },
+    getSyncGoalsEnabled: () => { runtimeOrder.push("sync"); return false; },
+    isTripLive: () => { runtimeOrder.push("live"); return true; },
+    getRequirements: () => { runtimeOrder.push("requirements"); return {tripGoal: 1, adjustedTimeElapsed: 1}; }
+}), "off");
+assert.deepEqual(runtimeOrder, ["connection", "sync"]);
+runtimeOrder.length = 0;
+assert.equal(model.resolveSyncRuntimeState({
+    getConnectionStatus: () => "online",
+    getSyncGoalsEnabled: () => true,
+    isTripLive: () => false,
+    getRequirements: () => { runtimeOrder.push("requirements"); return {}; }
+}), "ready");
+assert.deepEqual(runtimeOrder, [], "requirements are not read for a non-live trip");
+
 assert.equal(model.currentCalculatedSyncGoal({tripGoal: 180}, 90), 180,
     "explicit required goal takes precedence over the calculated fallback");
 assert.equal(model.currentCalculatedSyncGoal({tripGoal: 0}, 90), 90,
