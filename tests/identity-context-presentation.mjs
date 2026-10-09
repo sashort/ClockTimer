@@ -11,6 +11,11 @@ assert.ok(context, "identity context registers its shared instance");
 
 assert.equal(context.displayName(null), "No user selected");
 assert.equal(context.displayMeta(null), "Use Account Lookup to select an identity.");
+assert.equal(context.isSameUser(null, 42), false);
+assert.equal(context.isSameUser({userId: 42}, "42"), true,
+    "identity comparison uses the existing numeric ID equivalence");
+assert.equal(context.isSameUser({userId: 42}, 7), false);
+assert.equal(context.isSameUser({userId: 42}, undefined), false);
 
 const identity = context.select({
     userId: 42,
