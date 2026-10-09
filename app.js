@@ -684,21 +684,8 @@
                 })
             : undefined;
 
-    const liveStreamPercent =
-        value =>
-            Math.round(
-                Math.max(
-                    0,
-                    Math.min(
-                        1,
-                        Number(
-                            value
-                        ) ||
-                        0
-                    )
-                ) *
-                100
-            );
+    const liveStreamPercent = value =>
+        globalThis.ClockTimerDropInViewModel.volumePercent(value);
 
     function syncLiveStreamVolumeLabels() {
         if (
