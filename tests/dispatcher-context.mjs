@@ -156,6 +156,26 @@ function makeRuntime({ classes = [], search = "" } = {}) {
 }
 {
     const { sandbox } = makeRuntime();
+    let calendarStarts = 0;
+    sandbox.ClockTimerDispatcher.register("calendarStartup", async context => {
+        calendarStarts++;
+        return context.host;
+    }, context => context.capabilities?.calendarStartup !== false);
+    const appContext = sandbox.ClockTimerContext.normalize();
+    assert.ok(Array.from(appContext.features).includes("calendarStartup"));
+    await sandbox.ClockTimerDispatcher.bootstrap(appContext);
+    assert.equal(calendarStarts, 1, "application context dispatches calendar startup");
+
+    const settingsRuntime = makeRuntime({ classes: ["settings-page"] });
+    let settingsCalendarStarts = 0;
+    settingsRuntime.sandbox.ClockTimerDispatcher.register("calendarStartup", async () => {
+        settingsCalendarStarts++;
+    }, context => context.capabilities?.calendarStartup !== false);
+    await settingsRuntime.sandbox.ClockTimerDispatcher.bootstrap(settingsRuntime.sandbox.ClockTimerPageContext);
+    assert.equal(settingsCalendarStarts, 0, "settings context never dispatches calendar startup");
+}
+{
+    const { sandbox } = makeRuntime();
     let calls = 0;
     const appContext = sandbox.ClockTimerContext.normalize({
         host: "order-filler",
@@ -183,4 +203,4 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     assert.equal(skipped.skipped, true);
     sandbox.ClockTimerStartup.reset();
 }
-console.log("PASS context restrictions, resource propagation, dispatcher selection, startup gating, and lifecycle cleanup");
+console.log("PASS context restrictions, resource propagation, dispatcher-managed startup, task gating, and lifecycle cleanup");
