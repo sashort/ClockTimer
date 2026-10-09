@@ -203,7 +203,7 @@
         }],
         ["trip-runtime-model", {
             type: "script",
-            url: "TripRuntimeModel.js?build=trip-runtime-model-1",
+            url: "TripRuntimeModel.js?build=trip-runtime-model-2",
             hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
