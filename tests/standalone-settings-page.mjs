@@ -83,7 +83,7 @@ assert.match(orderBuilt, /data-settings-surface="audioSettingsDialog"/, 'built O
 assert.doesNotMatch(orderTemplate, /All ClockTimer Settings/, 'Order-Filler does not merge the separate entries');
 assertIframeOnlyDialog(orderDialogs, 'Order-Filler dialog template', false);
 assertIframeOnlyDialog(orderBuilt, 'built Order-Filler');
-assert.match(orderScripts, /data-settings-surface/, 'Order-Filler controller handles surface-specific entry points');
+assert.match(orderScripts, /dataset\.settingsSurface/, 'Order-Filler controller handles surface-specific entry points');
 assert.doesNotMatch(dropInBuilt, /href="settings\.html" target="_blank"/, 'Drop-In does not open settings in a new tab');
 
 assert.match(fsmDoc, /Settings navigation is orthogonal to the trip lifecycle/, 'FSM documentation defines settings navigation as lifecycle-neutral');
