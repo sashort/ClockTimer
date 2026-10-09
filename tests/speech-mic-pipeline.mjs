@@ -22,13 +22,14 @@ Object.defineProperty(globalThis, "navigator", {
     value: window.navigator
 });
 
-// Keep this test isolated from the production English language-pack bootstrap.
-// SpeechMicBar needs only these two language-pack methods during construction;
-// loading the real pack also changes command-chain behavior under test.
+// Keep language-pack DOM observation out of this pipeline test: its purpose is
+// speech-microphone command behavior, not language-resource mutation tracking.
+// Preserve the language pack's real text, markup, and speech-pattern definitions.
+const sourceLanguagePack = window.WMOFLanguagePack;
 const testLanguagePack = Object.freeze({
-    text: key => String(key),
-    markup: value => String(value),
-    patternFor: key => String(key),
+    text: (...args) => sourceLanguagePack.text(...args),
+    markup: (...args) => sourceLanguagePack.markup(...args),
+    patternFor: (...args) => sourceLanguagePack.patternFor(...args),
     observe: () => {}
 });
 globalThis.WMOFLanguagePack = window.WMOFLanguagePack = testLanguagePack;
