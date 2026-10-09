@@ -129,32 +129,15 @@
     const SPEECH_RUNTIME_REVISION =
         "E4GUFA";
 
-    const speechRuntimeVersion =
-        "?sherpa=" +
-        encodeURIComponent(
-            SHERPA_ASSET_VERSION
-        ) +
-        "&runtime=" +
-        encodeURIComponent(
+    const speechRuntimeOptions =
+        globalThis.ClockTimerSpeechRuntimeOptions.read(
+            location.search,
+            SHERPA_ASSET_VERSION,
             SPEECH_RUNTIME_REVISION
         );
-
-    const speechSearchParams =
-        new URLSearchParams(
-            location.search
-        );
-
-    const speechDiagnosticsEnabled =
-        speechSearchParams.has(
-            "speech-diagnostics"
-        );
-
-    const speechPipeline =
-        speechSearchParams.get(
-            "speech-pipeline"
-        ) === "silero"
-            ? "silero"
-            : "raw";
+    const speechRuntimeVersion = speechRuntimeOptions.version;
+    const speechDiagnosticsEnabled = speechRuntimeOptions.diagnosticsEnabled;
+    const speechPipeline = speechRuntimeOptions.pipeline;
 
     const speechStartup = globalThis.ClockTimerSpeechStartup?.create({
         context: pageContext,
