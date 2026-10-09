@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import assert from "node:assert/strict";
-import {Window} from "./LanguageWindow.mjs";
+import {Window, installEnglishPack} from "./LanguageWindow.mjs";
 
 const window = new Window({url:"https://clock.example/"});
+installEnglishPack(window);
 Object.assign(globalThis, {
     window,
     document: window.document,
