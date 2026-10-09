@@ -18095,15 +18095,18 @@
     }
 
     function tripDraftCanRequestStart(draft = tripDraft) {
-        if (tripDraftCanStart(draft)) return true;
-        if (!draft || draft.deferred || !tripDraftHasFutureStart(draft)) return false;
-        const creationTime = parseTimelineTime(draft.creationTime);
-        const scheduledStart = parseTimelineTime(draft.scheduledStart);
-        const actualStart = parseTimelineTime(draft.startTime);
-        return Boolean(parseDateInput(draft.creationDate)) &&
-            Number.isFinite(creationTime) && creationTime >= 0 && creationTime < 86400000 &&
-            Number.isFinite(scheduledStart) && scheduledStart >= 0 &&
-            Number.isFinite(actualStart) && actualStart >= 0;
+        const creationTime = parseTimelineTime(draft?.creationTime);
+        const scheduledStart = parseTimelineTime(draft?.scheduledStart);
+        const actualStart = parseTimelineTime(draft?.startTime);
+        return globalThis.ClockTimerTripDraftModel.canRequestStart({
+            canStartNow: tripDraftCanStart(draft),
+            deferred: Boolean(draft?.deferred),
+            hasFutureStart: tripDraftHasFutureStart(draft),
+            creationDateValid: Boolean(parseDateInput(draft?.creationDate)),
+            creationTime,
+            scheduledStart,
+            actualStart
+        });
     }
 
     function stopScheduledStartTicker() {
@@ -18461,26 +18464,15 @@
         });
 
     function tripDraftCanStart(draft = tripDraft) {
-        if (!draft || !parseDateInput(draft.creationDate)) return false;
-        const standardTimeMilliseconds =
-            draft.standardTimeMilliseconds;
-        const creationTime = parseTimelineTime(draft.creationTime);
-        const scheduledStart = parseTimelineTime(draft.scheduledStart);
-        const actualStart = parseTimelineTime(draft.startTime);
-        return (
-            (
-                draft.deferred ||
-                (
-                    Number.isSafeInteger(
-                        standardTimeMilliseconds
-                    ) &&
-                    standardTimeMilliseconds > 0
-                )
-            ) &&
-            Number.isFinite(creationTime) && creationTime >= 0 && creationTime < 24 * 60 * 60 * 1000 &&
-            (draft.deferred || (Number.isFinite(scheduledStart) && scheduledStart >= 0 &&
-            Number.isFinite(actualStart) && actualStart >= 0))
-        );
+        if (!draft) return false;
+        return globalThis.ClockTimerTripDraftModel.canStart({
+            creationDateValid: Boolean(parseDateInput(draft.creationDate)),
+            deferred: Boolean(draft.deferred),
+            standardTimeMilliseconds: draft.standardTimeMilliseconds,
+            creationTime: parseTimelineTime(draft.creationTime),
+            scheduledStart: parseTimelineTime(draft.scheduledStart),
+            actualStart: parseTimelineTime(draft.startTime)
+        });
     }
 
     async function startTripDraft() {
