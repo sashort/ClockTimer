@@ -5941,11 +5941,7 @@
         }
         catch {}
 
-        return clockTimer.percentMode === "total"
-            ? "total"
-            : clockTimer.percentMode === "auto"
-                ? "standard"
-                : "trip";
+        return globalThis.ClockTimerTripGoalModel.fallbackScope(clockTimer.percentMode);
     }
 
 
