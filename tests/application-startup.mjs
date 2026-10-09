@@ -52,4 +52,12 @@ assert.deepEqual(events, [
     ["announce"],
     ["persistence", undefined]
 ]);
+
+events.length = 0;
+await sandbox.ClockTimerApplicationStartup.initialize({
+    context: { host: "settings-frame", capabilities: { calendarStartup: false } },
+    text: key => key
+});
+assert.equal(events[0][1], true, "settings host suppresses the application announcement even without an explicit flag");
+assert.equal(events[0][2], "settings-frame", "resolved context reaches the announcement module");
 console.log("PASS application startup ordering, context policy, and persistence handoff");
