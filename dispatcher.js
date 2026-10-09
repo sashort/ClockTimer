@@ -74,4 +74,47 @@
     }
 
     root.ClockTimerDispatcher = Object.freeze({ bootstrap, register, registerResource });
+
+    // Core startup resources are selected by host policy rather than duplicated
+    // in every HTML entry point. Keep order deterministic for dependent modules.
+    [
+        ["startup-announcement", {
+            type: "script",
+            url: "StartupAnnouncement.js?build=dispatcher-2",
+            hosts: ["order-filler", "settings-frame"]
+        }],
+        ["persistence-startup", {
+            type: "script",
+            url: "PersistenceStartup.js?build=persistence-startup-2",
+            hosts: ["order-filler", "settings-frame"]
+        }],
+        ["application-startup", {
+            type: "script",
+            url: "ApplicationStartup.js?build=application-startup-2",
+            hosts: ["order-filler", "settings-frame"]
+        }],
+        ["audio-unlock", {
+            type: "script",
+            url: "AudioUnlock.js?build=audio-unlock-2",
+            hosts: ["order-filler", "settings-frame"]
+        }],
+        ["audio-settings-startup", {
+            type: "script",
+            url: "AudioSettingsStartup.js?build=audio-settings-startup-2",
+            hosts: ["order-filler", "settings-frame"]
+        }],
+        ["speech-startup", {
+            type: "script",
+            url: "SpeechStartup.js?build=speech-startup-2",
+            hosts: ["order-filler"],
+            capability: "speechRecognition"
+        }],
+        ["calendar-startup", {
+            type: "script",
+            url: "CalendarStartup.js?build=calendar-startup-3",
+            hosts: ["order-filler"],
+            features: ["calendarStartup"],
+            capability: "calendarStartup"
+        }]
+    ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
