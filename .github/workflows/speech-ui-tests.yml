@@ -6,6 +6,8 @@ on:
       - sherpa-client-asr
   pull_request:
     paths:
+      - "SpeechAssetCache.js"
+      - "tests/speech-asset-cache.mjs"
       - "ClassicScriptLoader.js"
       - "tests/classic-script-loader.mjs"
       - "AudioUnlock.js"
@@ -122,6 +124,8 @@ jobs:
 
       - name: Check JavaScript syntax
         run: |
+          node --check SpeechAssetCache.js
+          node tests/speech-asset-cache.mjs
           node --check ClassicScriptLoader.js
           node tests/classic-script-loader.mjs
           node --check AudioUnlock.js
