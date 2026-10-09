@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+const sandbox = { Object, Intl, Date, JSON };
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+vm.runInContext(readFileSync(new URL("../TripLogCustomDates.js", import.meta.url), "utf8"), sandbox);
+const start = { value: "" }, end = { value: "" };
+sandbox.ClockTimerTripLogCustomDates.initialize({startInput:start,endInput:end,readStorage:()=>null,timezone:"UTC",now:new Date("2026-10-09T12:00:00Z")});
+assert.equal(start.value,"2026-10-09");
+assert.equal(end.value,"2026-10-09");
+const savedStart = { value: "" }, savedEnd = { value: "" };
+sandbox.ClockTimerTripLogCustomDates.initialize({startInput:savedStart,endInput:savedEnd,readStorage:()=>JSON.stringify({start:"2026-10-01",end:"2026-10-05"}),timezone:"UTC"});
+assert.equal(savedStart.value,"2026-10-01");
+assert.equal(savedEnd.value,"2026-10-05");
+console.log("PASS custom trip-log date initialization from saved values and current date");
