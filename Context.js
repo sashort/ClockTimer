@@ -58,6 +58,20 @@
         return normalize(overrides || {}, normalize(parent));
     }
 
-    root.ClockTimerContext = Object.freeze({ infer, normalize, child });
+    // Dynamically loaded scripts can inspect the exact context assigned by the
+    // resource loader without changing the page-wide context for other scripts.
+    function forCurrentScript() {
+        const script = document.currentScript;
+        if (script?.dataset?.clocktimerContextData) {
+            try {
+                return normalize(JSON.parse(script.dataset.clocktimerContextData), root.ClockTimerPageContext);
+            } catch (error) {
+                console.warn("Invalid ClockTimer resource context; using page context.", error);
+            }
+        }
+        return root.ClockTimerPageContext || normalize(infer());
+    }
+
+    root.ClockTimerContext = Object.freeze({ infer, normalize, child, forCurrentScript });
     root.ClockTimerPageContext = normalize(infer());
 })(globalThis);
