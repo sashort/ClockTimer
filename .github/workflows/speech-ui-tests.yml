@@ -14,6 +14,8 @@ on:
       - "AudioAnnouncementDraft.js"
       - "AudioOutputSettings.js"
       - "AudioSettingsPersistence.js"
+      - "TripLogRangeFeedback.js"
+      - "tests/trip-log-range-feedback.mjs"
       - "tests/audio-settings-persistence.mjs"
       - "tests/audio-output-settings.mjs"
       - "SpeechAssetCache.js"
@@ -184,6 +186,7 @@ jobs:
           node tests/audio-announcement-draft.mjs
           node tests/audio-output-settings.mjs
           node tests/audio-settings-persistence.mjs
+          node tests/trip-log-range-feedback.mjs
           node --check SpeechAssetCache.js
           node tests/speech-asset-cache.mjs
           node --check ClassicScriptLoader.js
