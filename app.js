@@ -2510,6 +2510,14 @@
     }
 
     function audioCellUserEnabled(announcement, layer, options = {}) {
+        return globalThis.WMOFAudioAnnouncementPolicy.cellEnabled({
+            settings: audioSettings,
+            announcement,
+            layer,
+            options,
+            overridesMaster: announcementOverridesMaster
+        });
+    }) {
         return globalThis.WMOFAudioSettingsModel.audioCellUserEnabled(
             audioSettings,
             announcement,
@@ -2522,7 +2530,7 @@
     }
 
     function audioAnnouncementOutput(announcement, rowOverride) {
-        return globalThis.WMOFAudioSettingsModel.audioAnnouncementOutput({
+        return globalThis.WMOFAudioAnnouncementPolicy.output({
             settings: audioSettings,
             announcement,
             rowOverride,
