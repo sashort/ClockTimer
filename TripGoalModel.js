@@ -9,6 +9,22 @@
         return { scope, selected };
     }
 
+    function labelDescriptor(detail) {
+        const { scope, selected } = selectGoal(detail);
+        const percentGoal = Number(selected?.percentGoal);
+        const roundedPercent = Number.isFinite(percentGoal)
+            ? Math.round(percentGoal * 100)
+            : undefined;
+
+        if (scope === "standard" || roundedPercent === 100) {
+            return { kind: "standard", scope, percent: roundedPercent };
+        }
+        if (!Number.isFinite(roundedPercent)) {
+            return { kind: "empty", scope, percent: undefined };
+        }
+        return { kind: "percent", scope, percent: roundedPercent };
+    }
+
     function remainingMilliseconds(detail) {
         const { selected } = selectGoal(detail);
         const standard = Number(selected?.standardTimeMilliseconds);
@@ -26,5 +42,5 @@
             - counted);
     }
 
-    root.ClockTimerTripGoalModel = Object.freeze({ selectGoal, remainingMilliseconds });
+    root.ClockTimerTripGoalModel = Object.freeze({ selectGoal, labelDescriptor, remainingMilliseconds });
 })(globalThis);
