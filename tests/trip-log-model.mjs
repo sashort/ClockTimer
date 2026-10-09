@@ -10,6 +10,14 @@ const model = sandbox.ClockTimerTripLogModel;
 
 assert.ok(model, "trip log model registers its public API");
 assert.deepEqual(Array.from(model.ranges), ["day", "week", "pay-period", "month", "year", "custom"]);
+assert.deepEqual(Array.from(model.productionFilters), ["all", "productive", "non-productive"]);
+for (const filter of model.productionFilters) {
+    assert.equal(model.normalizeProductionFilter(filter), filter);
+}
+for (const invalid of [undefined, null, "", "productive-only", 42]) {
+    assert.equal(model.normalizeProductionFilter(invalid), "all",
+        "invalid production filter falls back to all");
+}
 for (const range of model.ranges) {
     assert.equal(model.normalizeRange(range), range);
     assert.equal(model.normalizeRange("  " + range.toUpperCase() + "  "), range);
