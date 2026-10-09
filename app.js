@@ -5552,23 +5552,9 @@
 
 
     function syncGoalRequirements() {
-        try {
-            const requirements =
-                clockTimer
-                    .calculateTotalGoalRequirements
-                    ?.();
-
-            return (
-                requirements &&
-                typeof requirements ===
-                    "object"
-            )
-                ? requirements
-                : undefined;
-        }
-        catch {
-            return undefined;
-        }
+        return globalThis.ClockTimerTripGoalModel.readRequirements(
+            () => clockTimer.calculateTotalGoalRequirements?.()
+        );
     }
 
     function getSyncRuntimeState() {
