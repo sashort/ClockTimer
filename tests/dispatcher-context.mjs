@@ -47,7 +47,7 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     };
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
-    for (const file of ["Context.js", "SettingsSurfaces.js", "ResourceLoader.js", "Lifecycle.js", "StartupTasks.js", "dispatcher.js"]) {
+    for (const file of ["Context.js", "SettingsSurfaces.js", "ResourceLoader.js", "Lifecycle.js", "StartupTasks.js", "CalendarStartup.js", "dispatcher.js"]) {
         vm.runInContext(readFileSync(new URL("../" + file, import.meta.url), "utf8"), sandbox, { filename: file });
     }
     return { sandbox, document, events, appendedResources };
@@ -193,6 +193,38 @@ function makeRuntime({ classes = [], search = "" } = {}) {
 }
 {
     const { sandbox } = makeRuntime();
+    let requestUrl = "";
+    let installedRecords = null;
+    let refreshes = 0;
+    const errors = [];
+    const result = await sandbox.ClockTimerCalendarStartup.start({
+        apiBase: "https://example.test/",
+        calendarRanges: { setDatabaseRecords: value => { installedRecords = value; } },
+        refreshTripLogSelection: () => { refreshes++; },
+        showTripRangeError: message => errors.push(message),
+        fetchImpl: async url => {
+            requestUrl = String(url);
+            return { ok: true, json: async () => ({ calendars: [{ id: "weekday" }] }) };
+        }
+    });
+    assert.equal(requestUrl, "https://example.test/api/calendar/?result=records");
+    assert.deepEqual(Array.from(installedRecords, item => item.id), ["weekday"]);
+    assert.equal(refreshes, 1);
+    assert.equal(result.ok, true);
+    assert.equal(errors.length, 0);
+
+    const failed = await sandbox.ClockTimerCalendarStartup.start({
+        apiBase: "https://example.test/",
+        calendarRanges: { setDatabaseRecords() {} },
+        refreshTripLogSelection() {},
+        showTripRangeError: message => errors.push(message),
+        fetchImpl: async () => ({ ok: false, json: async () => ({ message: "Calendar offline" }) })
+    });
+    assert.equal(failed.ok, false);
+    assert.deepEqual(errors, ["Calendar offline"]);
+}
+{
+    const { sandbox } = makeRuntime();
     let calendarStarts = 0;
     sandbox.ClockTimerDispatcher.register("calendarStartup", async context => {
         calendarStarts++;
@@ -240,4 +272,4 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     assert.equal(skipped.skipped, true);
     sandbox.ClockTimerStartup.reset();
 }
-console.log("PASS context restrictions, resource propagation, dispatcher-managed startup, task gating, and lifecycle cleanup");
+console.log("PASS context restrictions, nested resources, extracted calendar startup, dispatcher gating, and lifecycle cleanup");
