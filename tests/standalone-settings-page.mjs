@@ -5,6 +5,7 @@ const read = path => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
 const standalone = read('../settings.html');
 const settingsBootstrap = read('../SettingsPageBootstrap.js');
 const settingsFrameController = read('../SettingsFrameController.js');
+const settingsSurfaceContract = read('../SettingsSurfaces.js');
 const dropInTemplate = read('../templates/pages/drop-in/body.html');
 const dropInMenu = read('../templates/pages/drop-in/menu.html');
 const dropInDialogs = read('../templates/pages/drop-in/dialogs.html');
@@ -39,7 +40,7 @@ assert.match(settingsBootstrap, /clocktimer-settings-closed/, 'closing the origi
 assert.match(settingsBootstrap, /surface\.showModal\(\)/, 'fallback launch preserves modal form behavior');
 for (const id of settingsSurfaces) {
     assert.match(standalone, new RegExp(`<dialog id="${id}"(?:\\s|>)`), `${id} is included in the standalone page`);
-    assert.match(settingsBootstrap, new RegExp(`"${id}"`), `${id} is listed for page initialization`);
+    assert.match(settingsSurfaceContract, new RegExp(`"${id}"`), `${id} is listed in the shared settings surface contract`);
 }
 assert.match(standalone, /data-primary-settings-surface/, 'selected settings surface is marked for iframe layout');
 assert.match(standalone, /position:static !important/, 'settings surfaces flow in the page instead of overlaying it');
