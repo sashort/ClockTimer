@@ -11,4 +11,9 @@ w.WMOFTimerAppearance.applyGraphical(publisher,own);w.WMOFTimerAppearance.applyG
 assert.deepEqual(w.WMOFTimerAppearance.capture(observer),w.WMOFTimerAppearance.capture(publisher),'Order Filler and Drop-In apply the same own-account settings');
 assert.equal(observer.getAttribute('trip-goal'),'135%');assert.equal(observer.style.getPropertyValue('--clock-timer-trip-color'),'#abcdef');
 assert.equal(w.WMOFTimerAppearance.normalizeGraphicalSettings({timerType:'invalid'}).timerType,'radial-overflow');
+assert.deepEqual(w.WMOFTimerAppearance.read(null), w.WMOFTimerAppearance.normalizeGraphicalSettings(undefined));
+assert.deepEqual(w.WMOFTimerAppearance.read('{broken'), w.WMOFTimerAppearance.normalizeGraphicalSettings(undefined));
+const prepared=w.WMOFTimerAppearance.prepareForStorage({tripColor:'#abcdef',showTolerance:undefined});
+assert.equal(prepared.normalized.tripColor,'#abcdef');
+assert.equal(JSON.parse(prepared.serialized).showTolerance,null,'undefined tolerance persists as explicit null');
 await w.happyDOM.close();console.log('PASS shared account appearance, range visibility and stale style cleanup without overriding local goals');
