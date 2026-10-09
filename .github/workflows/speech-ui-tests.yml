@@ -43,6 +43,8 @@ on:
       - "SessionStartup.js"
       - "AnnouncementCatalogModel.js"
       - "SpeechRuntimeOptions.js"
+      - "SpeechTransactionTime.js"
+      - "tests/speech-transaction-time.mjs"
       - "tests/speech-runtime-options.mjs"
       - "tests/announcement-catalog-model.mjs"
       - "tests/session-startup.mjs"
@@ -205,6 +207,8 @@ jobs:
           node tests/announcement-catalog-model.mjs
           node --check SpeechRuntimeOptions.js
           node tests/speech-runtime-options.mjs
+          node --check SpeechTransactionTime.js
+          node tests/speech-transaction-time.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
