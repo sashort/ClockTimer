@@ -62,6 +62,11 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
 }
 
 {
+    const { sandbox } = makeRuntime({ hasLiveStreamDialog: true });
+    assert.equal(sandbox.ClockTimerPageContext.host, "drop-in");
+    assert.deepEqual(Array.from(sandbox.ClockTimerPageContext.features), ["drop-in", "settings"]);
+}
+{
     const { sandbox } = makeRuntime({ classes: ["settings-page"], search: "?surface=audioSettingsDialog&parentHost=drop-in", hasLiveStreamDialog: true });
     const ctx = sandbox.ClockTimerContext.forCurrentScript();
     assert.equal(ctx.host, "settings-frame", "settings page identity wins over shared live-stream markup");
