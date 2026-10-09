@@ -69,4 +69,35 @@ assert.equal(appended[0].tagName, "speech-diagnostics");
 assert.deepEqual(events.map(event => event.type), ["speech-runtime-ready"]);
 await loader.ensure();
 assert.equal(loaded.length, 6, "subsequent calls do not reload an initialized runtime");
+{
+    const fastEvents = [];
+    const fastDocument = {
+        dispatchEvent: event => { fastEvents.push(event.type); return true; },
+        querySelector: () => null,
+        body: { append() {} },
+        createElement: name => ({ tagName: name })
+    };
+    const fastElements = { get: name => name === "speech-mic-bar" ? {} : undefined };
+    const fastSandbox = {
+        document: fastDocument,
+        customElements: fastElements,
+        SpeechMenu: {},
+        CustomEvent,
+        URL,
+        Promise,
+        console
+    };
+    fastSandbox.globalThis = fastSandbox;
+    vm.createContext(fastSandbox);
+    vm.runInContext(readFileSync(new URL("../SpeechRuntimeLoader.js", import.meta.url), "utf8"), fastSandbox);
+    const fastLoader = fastSandbox.ClockTimerSpeechRuntimeLoader.create({
+        documentRef: fastDocument,
+        customElementsRef: fastElements,
+        apiBase: "https://example.test/",
+        loadScript: async () => { throw new Error("preloaded runtime should not fetch scripts"); }
+    });
+    await fastLoader.ensure();
+    await fastLoader.ensure();
+    assert.deepEqual(fastEvents, ["speech-runtime-ready"], "preloaded runtime emits one readiness event");
+}
 console.log("PASS extracted speech runtime loader ordering, configuration, deduplication, and readiness event");
