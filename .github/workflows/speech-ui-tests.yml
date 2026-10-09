@@ -17,6 +17,8 @@ on:
       - "SettingsSurfaces.js"
       - "SettingsPageBootstrap.js"
       - "SettingsFrameController.js"
+      - "SpeechRuntimeLoader.js"
+      - "tests/speech-runtime-loader.mjs"
       - "tests/settings-frame-controller.mjs"
       - "tests/standalone-settings-page.mjs"
       - "tests/settings-page-bootstrap.mjs"
@@ -123,6 +125,8 @@ jobs:
           node --check SettingsPageBootstrap.js
           node tests/settings-page-bootstrap.mjs
           node --check SettingsFrameController.js
+          node --check SpeechRuntimeLoader.js
+          node tests/speech-runtime-loader.mjs
           node tests/settings-frame-controller.mjs
           node tests/dispatcher-context.mjs
           node tests/standalone-settings-page.mjs
