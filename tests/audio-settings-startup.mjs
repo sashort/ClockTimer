@@ -43,7 +43,7 @@ function runtime() {
     };
     const model = await sandbox.ClockTimerAudioSettingsStartup.ensureModel({ context, resources });
     assert.equal(model.loaded, true);
-    assert.equal(calls[0].url, "AudioSettingsModel.js?build=audio-settings-model-2");
+    assert.equal(calls[0].url, "AudioSettingsModel.js?build=audio-settings-model-3");
     assert.equal(calls[0].passedContext, context);
     assert.equal(calls[0].options.async, true);
 }
