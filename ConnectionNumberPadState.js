@@ -2,12 +2,12 @@
 (function (root) {
     "use strict";
 
-    function state(currentState, returnFrames) {
-        return currentState ?? returnFrames?.find?.(frame => frame?.type === "number-pad")?.state;
+    function state(currentState, returnFrame) {
+        return currentState ?? returnFrame?.state;
     }
 
-    function token(currentState, returnFrames) {
-        return state(currentState, returnFrames)?.connectionStatusToken;
+    function token(currentState, returnFrame) {
+        return state(currentState, returnFrame)?.connectionStatusToken;
     }
 
     root.ClockTimerConnectionNumberPadState = Object.freeze({ state, token });
