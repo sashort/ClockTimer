@@ -13,6 +13,22 @@
     const capabilityEnabled = startupPolicy?.capabilityEnabled
         || (name => pageContext?.capabilities?.[name] !== false);
 
+    if (!globalThis.WMOFAudioSettingsModel) {
+        const modelUrl = "AudioSettingsModel.js?build=audio-settings-model-1";
+        if (globalThis.ClockTimerResources) {
+            await globalThis.ClockTimerResources.loadScript(modelUrl, pageContext, { async: true });
+        } else {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+                script.src = modelUrl;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error("Unable to load AudioSettingsModel.js."));
+                document.head.append(script);
+            });
+        }
+    }
+
+
     if (globalThis.ClockTimerAudioUnlock) {
         globalThis.ClockTimerAudioUnlock.install(document, globalThis.WMOFAudio);
     } else {
@@ -165,180 +181,23 @@
                 )
             );
 
-    const AUDIO_DEFAULTS = Object.freeze({
-        volume: 1,
-        masterVelocity: 1,
-        speechVelocity: 1,
-        toneVelocity: 1,
-        masters: Object.freeze({
-            chime: true,
-            summary: true,
-            details: true
-        })
-    });
-
-    // Browser speech exposes no waveform; use a conservative chime gain ceiling.
-    const CHIME_VOLUME_RATIO = 0.5;
-
     const AUDIO_LANGUAGE = globalThis.WMOFLanguagePack?.locale || "en-US";
-    const AUDIO_PERCENT_STEP = 5;
-    const AUDIO_SPEECH_VELOCITY_MIN = 0.5;
-    // The former 70% point (2.8×) is now the top of the speech range.
-    const AUDIO_SPEECH_VELOCITY_MAX = 2.8;
-    const CHIME_RATES = Object.freeze([
-        { label: "Slow", value: 0.8 },
-        { label: "Medium", value: 1 },
-        { label: "Fast", value: 1.2 }
-    ]);
-
-    function normalizeChimeRate(value) {
-        const numeric = Number(value);
-        if (!Number.isFinite(numeric)) return 1;
-        return CHIME_RATES.reduce((nearest, rate) =>
-            Math.abs(rate.value - numeric) < Math.abs(nearest - numeric)
-                ? rate.value : nearest, 1);
-    }
-
-    function savedChimeRate(value, version) {
-        if (version === 2 || value === undefined) return normalizeChimeRate(value);
-        const numeric = Number(value);
-        if (!Number.isFinite(numeric)) return 1;
-        const oldRates = [1, 1.25, 1.5];
-        const nearest = oldRates.reduce((best, rate) =>
-            Math.abs(rate - numeric) < Math.abs(best - numeric) ? rate : best, 1);
-        return normalizeChimeRate(nearest / 1.25);
-    }
-
-    function formatChimeRate(value) {
-        const rate = CHIME_RATES.find(rate => rate.value === normalizeChimeRate(value));
-        return rate.label;
-    }
-
-    function audioVelocityPercent(value, maximum) {
-        const numeric = Number(value);
-        const limit = Number(maximum);
-        if (!Number.isFinite(numeric) || !Number.isFinite(limit) || limit <= 0) {
-            return 0;
-        }
-
-        return Math.max(
-            0,
-            Math.min(
-                100,
-                numeric / limit * 100
-            )
-        );
-    }
-
-    function formatAudioVelocityPercent(value, maximum) {
-        return Math.round(
-            audioVelocityPercent(
-                value,
-                maximum
-            )
-        ) + "%";
-    }
-
-    function stepAudioVelocity(
-        value,
-        minimum,
-        maximum,
-        deltaPercent
-    ) {
-        const floorPercent =
-            Number(minimum) /
-            Number(maximum) *
-            100;
-        const nextPercent =
-            Math.max(
-                floorPercent,
-                Math.min(
-                    100,
-                    audioVelocityPercent(
-                        value,
-                        maximum
-                    ) +
-                    Number(deltaPercent)
-                )
-            );
-
-        return Number(
-            (
-                Number(maximum) *
-                nextPercent /
-                100
-            ).toFixed(6)
-        );
-    }
-
-    function audioVelocityAtPercent(
-        percent,
-        minimum,
-        maximum
-    ) {
-        const requested =
-            Math.max(
-                0,
-                Math.min(
-                    100,
-                    Number(percent)
-                )
-            );
-
-        return Number(
-            Math.max(
-                Number(minimum),
-                Number(maximum) *
-                    requested /
-                    100
-            )
-                .toFixed(6)
-        );
-    }
-
-    function audioVolumeAtPercent(
-        percent
-    ) {
-        return Number(
-            (
-                Math.max(
-                    0,
-                    Math.min(
-                        100,
-                        Number(percent)
-                    )
-                ) /
-                100
-            )
-                .toFixed(6)
-        );
-    }
-
-    function stepAudioVolume(
-        value,
-        deltaPercent
-    ) {
-        const current =
-            Number.isFinite(
-                Number(value)
-            )
-                ? Number(value) * 100
-                : 100;
-        const next =
-            Math.max(
-                0,
-                Math.min(
-                    100,
-                    current +
-                    Number(deltaPercent)
-                )
-            );
-
-        return Number(
-            (next / 100)
-                .toFixed(6)
-        );
-    }
+    const {
+        CHIME_VOLUME_RATIO,
+        AUDIO_PERCENT_STEP,
+        AUDIO_SPEECH_VELOCITY_MIN,
+        AUDIO_SPEECH_VELOCITY_MAX,
+        CHIME_RATES,
+        normalizeChimeRate,
+        savedChimeRate,
+        formatChimeRate,
+        audioVelocityPercent,
+        formatAudioVelocityPercent,
+        stepAudioVelocity,
+        audioVelocityAtPercent,
+        audioVolumeAtPercent,
+        stepAudioVolume
+    } = globalThis.WMOFAudioSettingsModel;
 
     const GRAPHICAL_DEFAULTS = globalThis.WMOFTimerAppearance.graphicalDefaults;
     const GRAPHICAL_HELP = {
