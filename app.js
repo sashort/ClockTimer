@@ -5451,16 +5451,6 @@
         return true;
     }
 
-    function getStoredJSON(key, fallback) {
-        try {
-            const raw = safeStorageGet(key);
-            return raw ? { ...fallback, ...JSON.parse(raw) } : { ...fallback };
-        }
-        catch {
-            return { ...fallback };
-        }
-    }
-
     let tripPreferencesStore;
 
     function getTripPreferencesStore() {
