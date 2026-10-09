@@ -18,7 +18,7 @@
             host: dropInPage ? "drop-in" : (settingsPage ? "settings-frame" : "order-filler"),
             surface: surface || (settingsPage ? "settings" : "application"),
             presentation: settingsPage ? "graphical-settings" : "application",
-            features: settingsPage ? ["settings"] : (dropInPage ? ["drop-in"] : ["application"]),
+            features: settingsPage ? ["settings"] : (dropInPage ? ["drop-in", "settings"] : ["application", "settings"]),
             capabilities: settingsPage
                 ? { speechMenu: false, speechRecognition: false, audioAnnouncements: false, loginFlow: false, calendarStartup: false, liveStream: false }
                 : {},
