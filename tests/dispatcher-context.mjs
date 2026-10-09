@@ -134,6 +134,30 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
     assert.equal(disposed, 1);
 }
 {
+    const { sandbox } = makeRuntime();
+    const base = sandbox.ClockTimerContext.normalize({
+        host: "order-filler",
+        surface: "graphicalSettingsDialog",
+        features: ["settings"]
+    });
+    const other = sandbox.ClockTimerContext.child(base, { surface: "audioSettingsDialog" });
+    const initialized = [];
+    const cleaned = [];
+    await sandbox.ClockTimerLifecycle.start("settings-module", context => {
+        initialized.push(context.surface);
+        return () => cleaned.push(context.surface);
+    }, base);
+    await sandbox.ClockTimerLifecycle.start("settings-module", context => {
+        initialized.push(context.surface);
+        return () => cleaned.push(context.surface);
+    }, other);
+    assert.deepEqual(initialized, ["graphicalSettingsDialog", "audioSettingsDialog"]);
+    await sandbox.ClockTimerLifecycle.stop("settings-module", base);
+    assert.deepEqual(cleaned, ["graphicalSettingsDialog"]);
+    await sandbox.ClockTimerLifecycle.stopAll();
+    assert.deepEqual(cleaned, ["graphicalSettingsDialog", "audioSettingsDialog"]);
+}
+{
     const { sandbox, appendedResources } = makeRuntime();
     const context = sandbox.ClockTimerContext.normalize({
         host: "order-filler",
