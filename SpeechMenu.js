@@ -6671,7 +6671,12 @@ class SpeechMenu {
                     else select({steps: [step], exact: false, continuation: false, terminal: false,
                         invalid: true, consumedWords: end, remainder: remaining.join(" ")});
                 } else {
-                    const future = context ? SpeechMenu.#chainContextCandidates(context) : [];
+                    // The command that just matched is not a future continuation
+                    // of itself. Keep other commands in the same projected context
+                    // eligible so multi-command dialogs can still continue.
+                    const future = context
+                        ? SpeechMenu.#chainContextCandidates(context).filter(candidate => candidate !== element)
+                        : [];
                     select({steps: [step], exact: true, continuation: future.length > 0 || step.canContinue,
                         terminal: future.length === 0 && !step.canContinue, consumedWords: end, remainder: ""});
                 }
