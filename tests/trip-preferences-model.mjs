@@ -43,4 +43,8 @@ assert.deepEqual(JSON.parse(JSON.stringify(model.read(null))), {
     lateBreakBehavior: "showLateWindow",
     syncGoals: false
 });
-console.log("PASS trip preference model defaults, normalization, JSON parsing, and invalid storage recovery");
+assert.equal(model.serialize({ lateBreakBehavior: "autoRestartTrip", syncGoals: true }),
+    '{"lateBreakBehavior":"autoRestartTrip","syncGoals":true}');
+assert.equal(model.serialize({ lateBreakBehavior: "invalid", syncGoals: 0 }),
+    '{"lateBreakBehavior":"showLateWindow","syncGoals":false}');
+console.log("PASS trip preference model defaults, normalization, serialization, JSON parsing, and invalid storage recovery");
