@@ -40,7 +40,7 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     };
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
-    for (const file of ["Context.js", "SettingsSurfaces.js", "Lifecycle.js", "dispatcher.js"]) {
+    for (const file of ["Context.js", "SettingsSurfaces.js", "Lifecycle.js", "StartupTasks.js", "dispatcher.js"]) {
         vm.runInContext(readFileSync(new URL("../" + file, import.meta.url), "utf8"), sandbox, { filename: file });
     }
     return { sandbox, document, events };
@@ -116,4 +116,33 @@ function makeRuntime({ classes = [], search = "" } = {}) {
     await sandbox.ClockTimerLifecycle.stopAll();
     assert.equal(disposed, 1);
 }
-console.log("PASS context restrictions, nested script context, dispatcher selection, and lifecycle cleanup");
+{
+    const { sandbox } = makeRuntime();
+    let calls = 0;
+    const appContext = sandbox.ClockTimerContext.normalize({
+        host: "order-filler",
+        features: ["application", "settings"],
+        capabilities: { calendarStartup: true }
+    });
+    const first = sandbox.ClockTimerStartup.runWhenEnabled("calendarStartup", appContext, async () => {
+        calls++;
+        return "loaded";
+    });
+    const second = sandbox.ClockTimerStartup.runWhenEnabled("calendarStartup", appContext, async () => {
+        calls++;
+        return "duplicate";
+    });
+    assert.equal(await first.then(value => value.value), "loaded");
+    assert.equal(await second.then(value => value.value), "loaded");
+    assert.equal(calls, 1);
+
+    const disabledContext = sandbox.ClockTimerContext.child(appContext, {
+        capabilities: { calendarStartup: false }
+    });
+    const skipped = await sandbox.ClockTimerStartup.runWhenEnabled("calendarStartup", disabledContext, async () => {
+        throw new Error("disabled startup task must not execute");
+    });
+    assert.equal(skipped.skipped, true);
+    sandbox.ClockTimerStartup.reset();
+}
+console.log("PASS context restrictions, nested script context, dispatcher selection, startup gating, and lifecycle cleanup");
