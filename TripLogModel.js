@@ -32,7 +32,7 @@
 
     function userFacingTotalText(value, label) {
         const text = String(value ?? "");
-        return label === "Total" ? text : text.replace(/\\bTotal\\b/g, label);
+        return label === "Total" ? text : text.replace(/\bTotal\b/g, label);
     }
 
     root.ClockTimerTripLogModel = Object.freeze({
