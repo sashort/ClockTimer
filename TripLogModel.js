@@ -11,6 +11,11 @@
         "custom"
     ]);
     const allowed = new Set(ranges);
+    const productionFilters = Object.freeze(["all", "productive", "non-productive"]);
+
+    function normalizeProductionFilter(value) {
+        return productionFilters.includes(value) ? value : "all";
+    }
 
     function normalizeRange(value) {
         const normalized = String(value || "day").trim().toLowerCase();
@@ -37,6 +42,8 @@
 
     root.ClockTimerTripLogModel = Object.freeze({
         ranges,
+        productionFilters,
+        normalizeProductionFilter,
         normalizeRange,
         liveEffectiveMilliseconds,
         userFacingTotalText
