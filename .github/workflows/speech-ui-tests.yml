@@ -9,6 +9,8 @@ on:
       - "AudioUnlock.js"
       - "tests/audio-unlock.mjs"
       - "CalendarStartup.js"
+      - "SpeechMenuMount.js"
+      - "tests/speech-menu-mount.mjs"
       - "PersistenceStartup.js"
       - "tests/persistence-startup.mjs"
       - "StartupAnnouncement.js"
@@ -120,6 +122,8 @@ jobs:
           node --check AudioUnlock.js
           node tests/audio-unlock.mjs
           node --check CalendarStartup.js
+          node --check SpeechMenuMount.js
+          node tests/speech-menu-mount.mjs
           node --check PersistenceStartup.js
           node tests/persistence-startup.mjs
           node --check StartupAnnouncement.js
