@@ -22,6 +22,8 @@ on:
       - "StartupAnnouncement.js"
       - "tests/startup-announcement.mjs"
       - "StartupTasks.js"
+      - "ApplicationStartup.js"
+      - "tests/application-startup.mjs"
       - "PageManifest.js"
       - "Context.js"
       - "ResourceLoader.js"
@@ -144,6 +146,8 @@ jobs:
           node --check StartupAnnouncement.js
           node tests/startup-announcement.mjs
           node --check StartupTasks.js
+          node --check ApplicationStartup.js
+          node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
           node --check ResourceLoader.js
