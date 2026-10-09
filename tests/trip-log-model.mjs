@@ -17,4 +17,26 @@ for (const range of model.ranges) {
 for (const invalid of [undefined, null, "", "unknown", "today", 42]) {
     assert.equal(model.normalizeRange(invalid), "day");
 }
-console.log("PASS trip log range model supported values, normalization, and fallback");
+
+const trip = (countedTimeElapsedMilliseconds, allottedTimeMilliseconds, available = true) => ({
+    trip: { countedTimeElapsedMilliseconds, allottedTimeMilliseconds, available }
+});
+assert.equal(model.liveEffectiveMilliseconds(trip(10_000, 15_000), true), 15_000,
+    "live projection uses allotted time when greater than counted time");
+assert.equal(model.liveEffectiveMilliseconds(trip(20_000, 15_000), true), 20_000,
+    "live projection never falls below counted time");
+assert.equal(model.liveEffectiveMilliseconds(trip(20_000, undefined), true), 20_000,
+    "missing allotted time falls back to counted time");
+assert.equal(model.liveEffectiveMilliseconds(trip(20_000, -1), true), 20_000,
+    "invalid allotted time falls back to counted time");
+assert.equal(model.liveEffectiveMilliseconds(trip(-1, 15_000), true), undefined,
+    "negative counted time is rejected");
+assert.equal(model.liveEffectiveMilliseconds(trip(Number.MAX_SAFE_INTEGER + 1, 15_000), true), undefined,
+    "unsafe counted time is rejected");
+assert.equal(model.liveEffectiveMilliseconds(trip(10_000, 15_000, false), true), undefined,
+    "unavailable trip data is rejected");
+assert.equal(model.liveEffectiveMilliseconds(trip(10_000, 15_000), false), undefined,
+    "projection is only calculated for a live trip");
+assert.equal(model.liveEffectiveMilliseconds(null, true), undefined,
+    "missing summary is rejected");
+console.log("PASS trip log range and live projection model");
