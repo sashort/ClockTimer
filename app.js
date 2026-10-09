@@ -3941,17 +3941,13 @@
         if (tripLogStartDate) tripLogStartDate.disabled = !custom;
         if (tripLogEndDate) tripLogEndDate.disabled = !custom;
         if (custom) {
-            let saved;
-            try { saved = JSON.parse(safeStorageGet(STORAGE.customTripLogDates)); } catch {}
-            if (saved?.start && saved?.end) {
-                tripLogStartDate.value = saved.start; tripLogEndDate.value = saved.end;
-            }
-            if (!tripLogStartDate.value || !tripLogEndDate.value) {
-                const today = new Intl.DateTimeFormat("en-CA", {timeZone: calendarRanges.getTimezone(), year: "numeric", month: "2-digit", day: "2-digit"}).formatToParts(new Date());
-                const parts = Object.fromEntries(today.map(part => [part.type, part.value]));
-                tripLogStartDate.value ||= `${parts.year}-${parts.month}-${parts.day}`;
-                tripLogEndDate.value ||= tripLogStartDate.value;
-            }
+            globalThis.ClockTimerTripLogCustomDates.initialize({
+                startInput: tripLogStartDate,
+                endInput: tripLogEndDate,
+                readStorage: safeStorageGet,
+                storageKey: STORAGE.customTripLogDates,
+                timezone: calendarRanges.getTimezone()
+            });
         }
         if (notify) refreshTripLogSelection();
         else void resolveTripLogCalendar(range).catch(() => {});
