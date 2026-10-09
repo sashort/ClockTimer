@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import vm from "node:vm";
+const sandbox={Object,String};sandbox.globalThis=sandbox;vm.createContext(sandbox);
+vm.runInContext(readFileSync(new URL("../TripLogRangeControls.js",import.meta.url),"utf8"),sandbox);
+const select={value:""},start={disabled:false},end={disabled:false},saved=[];
+let initialized=0;
+assert.equal(sandbox.ClockTimerTripLogRangeControls.apply("custom",{select,startInput:start,endInput:end,persist:true,writeStorage:(...x)=>saved.push(x),storageKey:"range",initializeCustomDates:()=>initialized++}),"custom");
+assert.equal(select.value,"custom");assert.equal(start.disabled,false);assert.equal(end.disabled,false);assert.deepEqual(saved,[["range","custom"]]);assert.equal(initialized,1);
+sandbox.ClockTimerTripLogRangeControls.apply("week",{select,startInput:start,endInput:end,persist:false,initializeCustomDates:()=>initialized++});
+assert.equal(start.disabled,true);assert.equal(end.disabled,true);assert.equal(initialized,1);assert.equal(saved.length,1);
+console.log("PASS trip log range control synchronization and persistence gating");
