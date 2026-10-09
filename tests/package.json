@@ -31,6 +31,7 @@
     "test:voice-login": "node app-state-transactions.mjs --voice-login --voice-feedback",
     "test:login-layout:windows": "node login-modal-layout-browser.cjs",
     "test:standalone-settings": "node standalone-settings-page.mjs",
+    "test:settings-page-bootstrap": "node settings-page-bootstrap.mjs",
     "test:dispatcher-context": "node dispatcher-context.mjs",
     "test:audio-unlock": "node audio-unlock.mjs"
   },
