@@ -627,53 +627,11 @@
             "%";
     }
 
-    function renderLiveStreamSnapshot(
-        snapshot
-    ) {
-        const state =
-            snapshot?.uiState ||
-            snapshot ||
-            {};
-
-        liveStreamRemoteState.textContent =
-            String(
-                state.state ||
-                "—"
-            )
-                .replaceAll(
-                    "_",
-                    " "
-                );
-
-        liveStreamRemoteTime.textContent =
-            state.time_component
-                ?.text ||
-            state.timeComponent
-                ?.text ||
-            "—";
-
-        const current =
-            state.current_percent_component
-                ?.text ||
-            state.currentPercentComponent
-                ?.text;
-
-        const goal =
-            state.goal_component
-                ?.text ||
-            state.goalComponent
-                ?.text;
-
-        liveStreamRemoteGoal.textContent =
-            current && goal
-                ? current +
-                    " / " +
-                    goal
-                : (
-                    current ||
-                    goal ||
-                    "—"
-                );
+    function renderLiveStreamSnapshot(snapshot) {
+        const view = globalThis.ClockTimerLiveStreamViewModel.project(snapshot);
+        liveStreamRemoteState.textContent = view.state;
+        liveStreamRemoteTime.textContent = view.time;
+        liveStreamRemoteGoal.textContent = view.goal;
     }
 
     function syncLiveStreamViewerUI(
