@@ -246,6 +246,11 @@
             url: "ActionSignalContext.js?build=action-signal-context-1",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["connection-cloud-settlement", {
+            type: "script",
+            url: "ConnectionCloudSettlement.js?build=connection-cloud-settlement-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["connection-number-pad-settlement", {
             type: "script",
             url: "ConnectionNumberPadSettlement.js?build=connection-number-pad-settlement-1",
