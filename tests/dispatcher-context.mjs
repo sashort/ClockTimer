@@ -192,6 +192,8 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
             forbidden + " must not load in the settings frame");
     }
     assert.deepEqual(started, ["graphicalSettingsDialog"]);
+    assert.ok(appendedResources.some(resource => resource.src === "TripLogModel.js?build=trip-log-model-4"),
+        "dispatcher uses the current trip-log model cache version");
     assert.equal(events.at(-1).type, "clocktimer-dispatcher-ready");
     await sandbox.ClockTimerLifecycle.stopAll();
     assert.equal(disposed, 1);
@@ -513,7 +515,7 @@ console.log("PASS context restrictions, dispatcher resource manifests, nested re
     await sandbox.ClockTimerDispatcher.bootstrap(context);
     for (const required of ["LiveStreamViewModel.js", "LiveStreamPublisher.js", "SessionStartup.js",
         "SpeechRuntimeOptions.js", "SpeechTransactionTime.js", "ActionSignalContext.js",
-        "ConnectionStatusModel.js", "ButtonPressFeedback.js", "AnnouncementCatalogModel.js", "AccessPolicyModel.js"]) {
+        "ConnectionStatusModel.js", "ButtonPressFeedback.js", "TripRuntimeModel.js", "TripLogModel.js", "AnnouncementCatalogModel.js", "AccessPolicyModel.js"]) {
         assert.ok(appendedResources.some(resource => String(resource.src).includes(required)),
             required + " must be available to the Order-Filler app");
     }
