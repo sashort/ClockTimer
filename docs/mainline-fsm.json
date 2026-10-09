@@ -4210,5 +4210,25 @@
   },
   "approved_on": "2026-10-06",
   "chart_revision": 6,
-  "implementation_status": "Localized type-specific Start/End commands with optional OK; pointer-only selector; skippable confirmation dialogs and speech. Local working tree, not deployed."
+  "implementation_status": "Localized type-specific Start/End commands with optional OK; pointer-only selector; skippable confirmation dialogs and speech. Local working tree, not deployed.",
+  "external_surfaces": {
+    "settings_page": {
+      "path": "settings.html",
+      "purpose": "Standalone settings document aggregating existing ClockTimer settings surfaces.",
+      "surfaces": [
+        "graphicalSettingsDialog",
+        "audioSettingsDialog",
+        "audioAnnouncementsDialog",
+        "stateSettingsDialog",
+        "tripSettingsDialog"
+      ],
+      "drop_in_access": {
+        "action": "open",
+        "target": "_blank",
+        "preserves_current_page": true
+      },
+      "lifecycle_effect": "none",
+      "invariant": "Settings navigation does not dispatch start, stop, or reset and does not alter trip lifecycle state."
+    }
+  }
 }
