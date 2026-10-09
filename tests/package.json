@@ -44,7 +44,8 @@
     "test:classic-script-loader": "node classic-script-loader.mjs",
     "test:speech-asset-cache": "node speech-asset-cache.mjs",
     "test:audio-settings-model": "node audio-settings-model.mjs",
-    "test:audio-settings-startup": "node audio-settings-startup.mjs"
+    "test:audio-settings-startup": "node audio-settings-startup.mjs",
+    "test:trip-preferences-model": "node trip-preferences-model.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
