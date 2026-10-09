@@ -39,4 +39,13 @@ assert.equal(model.liveEffectiveMilliseconds(trip(10_000, 15_000), false), undef
     "projection is only calculated for a live trip");
 assert.equal(model.liveEffectiveMilliseconds(null, true), undefined,
     "missing summary is rejected");
-console.log("PASS trip log range and live projection model");
+
+assert.equal(model.userFacingTotalText("Total counted: 82%", "Total"), "Total counted: 82%",
+    "default Total label leaves text unchanged");
+assert.equal(model.userFacingTotalText("Total counted; Total elapsed", "Week"), "Week counted; Week elapsed",
+    "localized scope labels replace each whole-word Total");
+assert.equal(model.userFacingTotalText("Totality is unrelated to Total", "Month"), "Totality is unrelated to Month",
+    "scope replacement does not alter words containing Total");
+assert.equal(model.userFacingTotalText(null, "Year"), "",
+    "missing display text normalizes to an empty string");
+console.log("PASS trip log range, live projection, and scope text model");
