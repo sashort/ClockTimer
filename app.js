@@ -1,14 +1,17 @@
 (async () => {
     "use strict";
 
-    // Resolve startup behavior from the page's context contract. Keep the DOM
-    // check as a compatibility fallback for older hosts that do not load Context.js.
-    const pageContext = globalThis.ClockTimerContext?.forCurrentScript?.()
+    // Startup policy is owned by Context.js; retain the DOM fallback for stale hosts.
+    const startupPolicy = globalThis.ClockTimerContext?.startupPolicy?.();
+    const pageContext = startupPolicy?.context
+        || globalThis.ClockTimerContext?.forCurrentScript?.()
         || globalThis.ClockTimerPageContext
         || null;
-    const settingsOnlyPage = pageContext?.host === "settings-frame"
-        || document.body?.classList.contains("settings-page") === true;
-    const capabilityEnabled = name => pageContext?.capabilities?.[name] !== false;
+    const settingsOnlyPage = startupPolicy?.settingsOnlyPage
+        ?? (pageContext?.host === "settings-frame"
+            || document.body?.classList.contains("settings-page") === true);
+    const capabilityEnabled = startupPolicy?.capabilityEnabled
+        || (name => pageContext?.capabilities?.[name] !== false);
 
     if (globalThis.ClockTimerAudioUnlock) {
         globalThis.ClockTimerAudioUnlock.install(document, globalThis.WMOFAudio);
