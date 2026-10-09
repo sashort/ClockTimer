@@ -128,7 +128,7 @@
         }],
         ["trip-log-model", {
             type: "script",
-            url: "TripLogModel.js?build=trip-log-model-2",
+            url: "TripLogModel.js?build=trip-log-model-3",
             hosts: ["order-filler", "settings-frame"]
         }],
         ["trip-goal-model", {
