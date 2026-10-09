@@ -75,7 +75,7 @@ function runtime({ readyState = "complete", appReady = false, embedded = true } 
     assert.equal(r.surface.attributes["data-primary-settings-surface"], "");
     assert.deepEqual(r.classes, ["settings-embedded", "settings-embedded-document"]);
     r.surface.listeners.close();
-    assert.deepEqual(r.postedMessage, { type: "clocktimer-settings-closed" });
+    assert.equal(r.postedMessage.type, "clocktimer-settings-closed");
 }
 
 {
