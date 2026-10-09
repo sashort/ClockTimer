@@ -316,4 +316,72 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
     assert.equal(skipped.skipped, true);
     sandbox.ClockTimerStartup.reset();
 }
+{
+    const { sandbox } = makeRuntime();
+    let registeredName = "";
+    let initializer;
+    let bootstrapPromise;
+    let savedRecords;
+    let refreshed = 0;
+    const context = sandbox.ClockTimerContext.normalize({
+        host: "order-filler",
+        features: ["calendarStartup"],
+        capabilities: { calendarStartup: true }
+    });
+    const dispatcher = {
+        register(name, callback, predicate) {
+            registeredName = name;
+            initializer = callback;
+            assert.equal(predicate(context), true);
+        },
+        bootstrap(receivedContext) {
+            bootstrapPromise = Promise.resolve().then(() => initializer(receivedContext));
+            return bootstrapPromise;
+        }
+    };
+    const startup = {
+        runWhenEnabled: async (name, receivedContext, task) => {
+            assert.equal(name, "calendarStartup");
+            assert.equal(receivedContext, context);
+            return task();
+        }
+    };
+    const registered = sandbox.ClockTimerCalendarStartup.register({
+        dispatcher,
+        startup,
+        context,
+        apiBase: "https://example.test/",
+        calendarRanges: { setDatabaseRecords(records) { savedRecords = records; } },
+        refreshTripLogSelection() { refreshed++; },
+        showTripRangeError(error) { throw new Error(error); },
+        fetchImpl: async url => {
+            assert.equal(String(url), "https://example.test/api/calendar/?result=records");
+            return { ok: true, json: async () => ({ calendars: [{ id: "calendar-1" }] }) };
+        }
+    });
+    assert.equal(registered, true);
+    assert.equal(registeredName, "calendarStartup");
+    await bootstrapPromise;
+    assert.deepEqual(Array.from(savedRecords, record => record.id), ["calendar-1"]);
+    assert.equal(refreshed, 1);
+
+    let forbiddenStarts = 0;
+    const disabledDispatcher = {
+        register(_name, _initializer, predicate) {
+            assert.equal(predicate({ capabilities: { calendarStartup: false } }), false);
+        },
+        bootstrap() { forbiddenStarts++; }
+    };
+    assert.equal(sandbox.ClockTimerCalendarStartup.register({
+        dispatcher: disabledDispatcher,
+        startup,
+        context: { capabilities: { calendarStartup: false } },
+        settingsOnlyPage: true,
+        apiBase: "https://example.test/",
+        calendarRanges: { setDatabaseRecords() {} },
+        refreshTripLogSelection() {},
+        showTripRangeError() {}
+    }), false);
+    assert.equal(forbiddenStarts, 0, "settings-only page must not register calendar startup");
+}
 console.log("PASS context restrictions, nested resources, extracted calendar startup, dispatcher gating, and lifecycle cleanup");
