@@ -11,8 +11,12 @@
         const body = document.body;
         const params = new URLSearchParams(root.location?.search || "");
         const settingsPage = body?.classList.contains("settings-page") === true;
-        const dropInPage = body?.classList.contains("drop-in-page") === true ||
-            Boolean(body?.querySelector("#liveStreamDialog"));
+        // settings.html intentionally contains the shared application DOM, including
+        // #liveStreamDialog. Its explicit page class must win over that shared markup.
+        const dropInPage = !settingsPage && (
+            body?.classList.contains("drop-in-page") === true ||
+            Boolean(body?.querySelector("#liveStreamDialog"))
+        );
         const surface = params.get("surface");
         const requestedParentHost = params.get("parentHost");
         const parentHost = ["order-filler", "drop-in"].includes(requestedParentHost)
