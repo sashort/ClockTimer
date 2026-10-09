@@ -61,3 +61,26 @@ state; it does not imply Sync is on.
 
 Mode, Sync and Goal changes share the Default/User apply confirmation. Matching
 user/default values clear the override and inherit future default updates.
+
+
+## Account settings and observer provenance
+
+Account preferences live in the versioned `users.settings_json` object, split into
+`orderFiller`, `speech`, and `dropIn`. `/api/settings/` authenticates the owner and
+checks CSRF, captured owner, namespace, key format and size before any write.
+Partial changes merge under a row lock. Local trip caches are separate; settings
+have no durable device fallback. Guest changes are memory-only. Logout clears the
+settings cache; account changes invalidate outstanding requests and callbacks.
+Unknown legacy device settings are not automatically assigned to an account.
+
+Mode/Goal/Sync use one badge with five combinations: Default, Custom, User,
+Default + User, Custom + User. Default and Custom cannot coincide. D/C occupy the
+center; the person glyph is centered alone or overlays the lower-right corner.
+Accessible labels explain each badge. Mirror remains a separate teal option with
+the standard icon and the selected publisher's live value. Menus refresh while open.
+
+Settings contains sound controls and read-only publisher ClockTimer presentation,
+including colors, range visibility, hand visibility, formats and timer layout.
+Appearance follows every publisher snapshot independently of viewer mode/goals.
+Migration `011_user_settings` adds the JSON object and revision; the existing
+ordered deployment migration runner applies it before the new app is activated.

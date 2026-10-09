@@ -145,6 +145,7 @@
                 timeDisplay:this.timeDisplay.value === 'user' ? undefined : this.timeDisplay.value,
                 totalLabel:selected, now:new Date(this.snapshot.timestamp)
             });
+            globalThis.WMOFTimerAppearance?.apply(this.timer,this.snapshot?.viewData?.appearance);
             const state = result.uiState;
             this.showComponents(state);
             this.localScope = state.effective_goal_type;

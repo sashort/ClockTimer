@@ -6139,6 +6139,382 @@
         "text0": "2d102628-ecea-5da7-9630-8f87fe8b2b87"
       },
       "attributes": {}
+    },
+    "b59b5d51-a9c8-50c6-8938-1b105de4e22d": {
+      "elementId": "b59b5d51-a9c8-50c6-8938-1b105de4e22d",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "b59b5d51-a9c8-50c6-8938-1b105de4e22d"
+      },
+      "attributes": {}
+    },
+    "36ed2281-60b5-571f-b0d9-a12c26d9cd3c": {
+      "elementId": "36ed2281-60b5-571f-b0d9-a12c26d9cd3c",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "36ed2281-60b5-571f-b0d9-a12c26d9cd3c"
+      },
+      "attributes": {}
+    },
+    "5c7b0850-ae4c-5f12-a82c-43cbca6bc31a": {
+      "elementId": "5c7b0850-ae4c-5f12-a82c-43cbca6bc31a",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "5c7b0850-ae4c-5f12-a82c-43cbca6bc31a"
+      },
+      "attributes": {}
+    },
+    "a8186f8b-5985-5631-bc40-255d58b12099": {
+      "elementId": "a8186f8b-5985-5631-bc40-255d58b12099",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "a8186f8b-5985-5631-bc40-255d58b12099"
+      },
+      "attributes": {}
+    },
+    "68df898b-079f-5dbb-a308-d8e707c16612": {
+      "elementId": "68df898b-079f-5dbb-a308-d8e707c16612",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "68df898b-079f-5dbb-a308-d8e707c16612"
+      },
+      "attributes": {}
+    },
+    "9cae1846-4961-53df-a1a5-5e0036801a8f": {
+      "elementId": "9cae1846-4961-53df-a1a5-5e0036801a8f",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "9cae1846-4961-53df-a1a5-5e0036801a8f"
+      },
+      "attributes": {}
+    },
+    "dc72e554-ac7f-5e9d-be7c-62b90e8209b9": {
+      "elementId": "dc72e554-ac7f-5e9d-be7c-62b90e8209b9",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "dc72e554-ac7f-5e9d-be7c-62b90e8209b9"
+      },
+      "attributes": {}
+    },
+    "c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a": {
+      "elementId": "c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a"
+      },
+      "attributes": {}
+    },
+    "677452f5-d049-54f5-89a0-7869610bd8e2": {
+      "elementId": "677452f5-d049-54f5-89a0-7869610bd8e2",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "677452f5-d049-54f5-89a0-7869610bd8e2"
+      },
+      "attributes": {}
+    },
+    "959b4a75-9553-5f36-a7b2-a5e49f4288d7": {
+      "elementId": "959b4a75-9553-5f36-a7b2-a5e49f4288d7",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "959b4a75-9553-5f36-a7b2-a5e49f4288d7"
+      },
+      "attributes": {}
+    },
+    "e7c0803e-7b6a-5f05-b96f-3f33c42f9592": {
+      "elementId": "e7c0803e-7b6a-5f05-b96f-3f33c42f9592",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "e7c0803e-7b6a-5f05-b96f-3f33c42f9592"
+      },
+      "attributes": {}
+    },
+    "665da4b6-41e4-5d19-b2d6-b65770d18e82": {
+      "elementId": "665da4b6-41e4-5d19-b2d6-b65770d18e82",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "665da4b6-41e4-5d19-b2d6-b65770d18e82"
+      },
+      "attributes": {}
+    },
+    "e74a6bea-0ea6-5496-b2b2-ec3535ca59c7": {
+      "elementId": "e74a6bea-0ea6-5496-b2b2-ec3535ca59c7",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "e74a6bea-0ea6-5496-b2b2-ec3535ca59c7"
+      },
+      "attributes": {}
+    },
+    "76c33c0e-e51c-514e-99b8-8593f2c4d1f2": {
+      "elementId": "76c33c0e-e51c-514e-99b8-8593f2c4d1f2",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "76c33c0e-e51c-514e-99b8-8593f2c4d1f2"
+      },
+      "attributes": {}
+    },
+    "5b203756-bd16-594c-948d-d87c9f1fd33f": {
+      "elementId": "5b203756-bd16-594c-948d-d87c9f1fd33f",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "5b203756-bd16-594c-948d-d87c9f1fd33f"
+      },
+      "attributes": {}
+    },
+    "dc372a12-a472-515f-adc5-922673440297": {
+      "elementId": "dc372a12-a472-515f-adc5-922673440297",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "dc372a12-a472-515f-adc5-922673440297"
+      },
+      "attributes": {}
+    },
+    "adb6f6af-f23a-59be-b81c-98634b11f0cd": {
+      "elementId": "adb6f6af-f23a-59be-b81c-98634b11f0cd",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "adb6f6af-f23a-59be-b81c-98634b11f0cd"
+      },
+      "attributes": {}
+    },
+    "5249882b-7f18-55b6-aa7f-811b4deee58c": {
+      "elementId": "5249882b-7f18-55b6-aa7f-811b4deee58c",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "5249882b-7f18-55b6-aa7f-811b4deee58c"
+      },
+      "attributes": {}
+    },
+    "8a7e20c6-91ba-597d-a557-d53d9c810c7b": {
+      "elementId": "8a7e20c6-91ba-597d-a557-d53d9c810c7b",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "8a7e20c6-91ba-597d-a557-d53d9c810c7b"
+      },
+      "attributes": {}
+    },
+    "abcd6186-be20-5c69-9ef4-4f400cd0309c": {
+      "elementId": "abcd6186-be20-5c69-9ef4-4f400cd0309c",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "abcd6186-be20-5c69-9ef4-4f400cd0309c"
+      },
+      "attributes": {}
+    },
+    "1aab6104-e2f6-5d87-bd35-7dc6eb5d4969": {
+      "elementId": "1aab6104-e2f6-5d87-bd35-7dc6eb5d4969",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "1aab6104-e2f6-5d87-bd35-7dc6eb5d4969"
+      },
+      "attributes": {}
+    },
+    "7da65690-e980-59c0-bb48-6f6e47a8cfe2": {
+      "elementId": "7da65690-e980-59c0-bb48-6f6e47a8cfe2",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "7da65690-e980-59c0-bb48-6f6e47a8cfe2"
+      },
+      "attributes": {}
+    },
+    "c2f0557c-cc10-580b-8bd6-697b15fe0933": {
+      "elementId": "c2f0557c-cc10-580b-8bd6-697b15fe0933",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "c2f0557c-cc10-580b-8bd6-697b15fe0933"
+      },
+      "attributes": {}
+    },
+    "ccd33927-397d-5d4e-a075-0911896ef5b6": {
+      "elementId": "ccd33927-397d-5d4e-a075-0911896ef5b6",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "ccd33927-397d-5d4e-a075-0911896ef5b6"
+      },
+      "attributes": {}
+    },
+    "b19900ba-5089-53dc-963a-18b9ccbfec67": {
+      "elementId": "b19900ba-5089-53dc-963a-18b9ccbfec67",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "b19900ba-5089-53dc-963a-18b9ccbfec67"
+      },
+      "attributes": {}
+    },
+    "ec23675c-d7e5-56ae-84aa-4668dd39c244": {
+      "elementId": "ec23675c-d7e5-56ae-84aa-4668dd39c244",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "ec23675c-d7e5-56ae-84aa-4668dd39c244"
+      },
+      "attributes": {}
+    },
+    "26a70897-632e-5358-96c6-df7825c730c3": {
+      "elementId": "26a70897-632e-5358-96c6-df7825c730c3",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "26a70897-632e-5358-96c6-df7825c730c3"
+      },
+      "attributes": {}
+    },
+    "5e73db72-f005-5765-83af-d7973a0c1488": {
+      "elementId": "5e73db72-f005-5765-83af-d7973a0c1488",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "5e73db72-f005-5765-83af-d7973a0c1488"
+      },
+      "attributes": {}
+    },
+    "679b9584-582c-5d1d-a8ad-ef65aac20052": {
+      "elementId": "679b9584-582c-5d1d-a8ad-ef65aac20052",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "679b9584-582c-5d1d-a8ad-ef65aac20052"
+      },
+      "attributes": {}
+    },
+    "3c2411e0-d95e-55d1-9ce3-bab36c27a4bd": {
+      "elementId": "3c2411e0-d95e-55d1-9ce3-bab36c27a4bd",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "3c2411e0-d95e-55d1-9ce3-bab36c27a4bd"
+      },
+      "attributes": {}
+    },
+    "2c6acfa1-9800-514c-8d40-488acf065e65": {
+      "elementId": "2c6acfa1-9800-514c-8d40-488acf065e65",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "2c6acfa1-9800-514c-8d40-488acf065e65"
+      },
+      "attributes": {}
+    },
+    "6cddd28f-652b-5246-978d-b50fcc0d6a62": {
+      "elementId": "6cddd28f-652b-5246-978d-b50fcc0d6a62",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "6cddd28f-652b-5246-978d-b50fcc0d6a62"
+      },
+      "attributes": {}
+    },
+    "9529d212-c32e-5981-b0bf-ea4c89697808": {
+      "elementId": "9529d212-c32e-5981-b0bf-ea4c89697808",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "9529d212-c32e-5981-b0bf-ea4c89697808"
+      },
+      "attributes": {}
+    },
+    "4e6ca79a-c294-5ef3-b181-b041f1fac852": {
+      "elementId": "4e6ca79a-c294-5ef3-b181-b041f1fac852",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "4e6ca79a-c294-5ef3-b181-b041f1fac852"
+      },
+      "attributes": {}
+    },
+    "c6aed917-edb1-5404-8287-377fbbb52b26": {
+      "elementId": "c6aed917-edb1-5404-8287-377fbbb52b26",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "c6aed917-edb1-5404-8287-377fbbb52b26"
+      },
+      "attributes": {}
+    },
+    "377731c7-db21-5b71-814c-5c05b82b07b3": {
+      "elementId": "377731c7-db21-5b71-814c-5c05b82b07b3",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "377731c7-db21-5b71-814c-5c05b82b07b3"
+      },
+      "attributes": {}
+    },
+    "587c6039-9ab6-55de-a3a4-cc5835dda396": {
+      "elementId": "587c6039-9ab6-55de-a3a4-cc5835dda396",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "587c6039-9ab6-55de-a3a4-cc5835dda396"
+      },
+      "attributes": {}
+    },
+    "3cc1cf81-fbc8-56f9-809f-0324f2274ba6": {
+      "elementId": "3cc1cf81-fbc8-56f9-809f-0324f2274ba6",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "3cc1cf81-fbc8-56f9-809f-0324f2274ba6"
+      },
+      "attributes": {}
+    },
+    "f34a1919-3e5f-50d9-a950-758364938999": {
+      "elementId": "f34a1919-3e5f-50d9-a950-758364938999",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "f34a1919-3e5f-50d9-a950-758364938999"
+      },
+      "attributes": {}
+    },
+    "3ff1600c-1f1e-5e2e-98ea-02c28f47cefa": {
+      "elementId": "3ff1600c-1f1e-5e2e-98ea-02c28f47cefa",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "3ff1600c-1f1e-5e2e-98ea-02c28f47cefa"
+      },
+      "attributes": {}
+    },
+    "0816ba7b-1075-55fe-a90d-a0838cb1fb7d": {
+      "elementId": "0816ba7b-1075-55fe-a90d-a0838cb1fb7d",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "0816ba7b-1075-55fe-a90d-a0838cb1fb7d"
+      },
+      "attributes": {}
+    },
+    "d804af31-46f2-509e-a288-5dd525603b56": {
+      "elementId": "d804af31-46f2-509e-a288-5dd525603b56",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "d804af31-46f2-509e-a288-5dd525603b56"
+      },
+      "attributes": {}
+    },
+    "32ea09ef-8c47-5db0-a5c3-80da8cbe48dd": {
+      "elementId": "32ea09ef-8c47-5db0-a5c3-80da8cbe48dd",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "32ea09ef-8c47-5db0-a5c3-80da8cbe48dd"
+      },
+      "attributes": {}
+    },
+    "ab7aaa22-e64a-5a6d-aa71-42f76420bd9a": {
+      "elementId": "ab7aaa22-e64a-5a6d-aa71-42f76420bd9a",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "ab7aaa22-e64a-5a6d-aa71-42f76420bd9a"
+      },
+      "attributes": {}
+    },
+    "68463c63-89de-5924-b563-0bb7e5beff3f": {
+      "elementId": "68463c63-89de-5924-b563-0bb7e5beff3f",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "68463c63-89de-5924-b563-0bb7e5beff3f"
+      },
+      "attributes": {}
+    },
+    "bc683892-1677-599c-a99a-4d2d9cde89ec": {
+      "elementId": "bc683892-1677-599c-a99a-4d2d9cde89ec",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "bc683892-1677-599c-a99a-4d2d9cde89ec"
+      },
+      "attributes": {}
+    },
+    "96ea0e41-ed08-5ea0-b0ec-f2983ab0ed90": {
+      "elementId": "96ea0e41-ed08-5ea0-b0ec-f2983ab0ed90",
+      "source": "observer:settings",
+      "texts": {
+        "text0": "96ea0e41-ed08-5ea0-b0ec-f2983ab0ed90"
+      },
+      "attributes": {}
     }
   },
   "selects": {

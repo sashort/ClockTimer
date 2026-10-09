@@ -41,6 +41,8 @@
         button?.addEventListener('click',async()=>{button.disabled=true;try{await save(preset.value==='custom'?custom.value:preset.value);status.textContent=globalThis.WMOFLanguagePack.text('af3d50cd-7878-5c14-b6ca-fb4f881852de');}catch{render();status.textContent=globalThis.WMOFLanguagePack.text('cbad6bab-3510-5942-a01e-c5495c77d65e');}finally{button.disabled=false;}});
     }
     globalThis.WMOFRecognizerNames={get name(){return name();},split,save,normalize};
+    globalThis.WMOFAccountSettings?.addEventListener('loaded',()=>{try{saved=JSON.parse(globalThis.WMOFAccountSettings.peek('speech',key)||'{}');}catch{saved={};}render();globalThis.SpeechMenu?.refresh();});
+    globalThis.WMOFAccountSettings?.addEventListener('cleared',()=>{saved={};render();globalThis.SpeechMenu?.refresh();});
     loaded?.then(()=>{render();globalThis.SpeechMenu?.refresh();});
     if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
 })();

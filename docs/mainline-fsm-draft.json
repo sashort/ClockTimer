@@ -1162,7 +1162,7 @@
         "Custom start date / end date",
         "Watcher goal percentage / Sync / time display / Use user’s settings",
         "Selected user remote microphone sleep / wake",
-        "Settings: saved default and selected-user values; retain per-user custom preferences"
+        "Settings: sound controls and read-only user-following ClockTimer appearance"
       ],
       "family": "settings",
       "binding": {
@@ -9549,8 +9549,8 @@
         "guard": "Captured target is current; pending patch present",
         "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
         "timing": "Optimistic display; confirmation chooses save scope",
-        "persistence": "Observer-local preferences only; no publisher mutation",
-        "rollback": "Local storage failure restores baseline and selected-user settings"
+        "persistence": "Observer account settings blob only; no publisher mutation",
+        "rollback": "Rejected server save restores accepted observer preferences"
       }
     },
     {
@@ -9574,8 +9574,8 @@
         "guard": "Captured target is current; pending patch present",
         "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
         "timing": "Optimistic display; confirmation chooses save scope",
-        "persistence": "Observer-local preferences only; no publisher mutation",
-        "rollback": "Local storage failure restores baseline and selected-user settings"
+        "persistence": "Observer account settings blob only; no publisher mutation",
+        "rollback": "Rejected server save restores accepted observer preferences"
       }
     },
     {
@@ -9599,8 +9599,8 @@
         "guard": "Captured target is current; pending patch present",
         "state_changes": "Stage patch, atomically save chosen targets, or restore prior view on Cancel",
         "timing": "Optimistic display; confirmation chooses save scope",
-        "persistence": "Observer-local preferences only; no publisher mutation",
-        "rollback": "Local storage failure restores baseline and selected-user settings"
+        "persistence": "Observer account settings blob only; no publisher mutation",
+        "rollback": "Rejected server save restores accepted observer preferences"
       }
     }
   ],
@@ -11585,6 +11585,22 @@
         "canStart",
         "inputMethod"
       ]
+    },
+    "accountSettings": {
+      "meaning": "Signed-in owner and settings load/save status; namespaces and memory-only cache",
+      "region": "Account configuration",
+      "values": [
+        "guest",
+        "loading",
+        "loaded",
+        "saving",
+        "failed"
+      ],
+      "invariants": [
+        "A saved settings owner equals the authenticated account.",
+        "Late callbacks cannot repopulate another account cache.",
+        "ClockTimer observer appearance always follows selected publisher; numeric view overrides never alter publisher configuration."
+      ]
     }
   },
   "contracts": {
@@ -12430,7 +12446,7 @@
     },
     "drop-in-settings": {
       "authority": "Observer-only view and audio settings; publisher remains authoritative for trip lifecycle. No Break, Down or End mutations are exposed.",
-      "storage": "Client persistence keyed by observer account and watched user; removal retains saved custom settings. Defaults seed new users.",
+      "storage": "Server users.settings_json dropIn namespace belongs to observer account; keyed by watched user inside its preferences. No local durable settings or shared-device migration. Removed users retain account custom settings.",
       "mirror": "Checked follows publisher mode/goals/sync/time. Unchecked restores saved custom settings. Audio stays observer-local.",
       "apply_to_all": "If watch list has more than one user, preview immediately and await Selected user / Apply to all / Cancel. Only changed fields are copied. Cancel restores saved settings; failed save restores its checkpoint.",
       "trip_log": "Read-only trips of selected observed user, filtered to selected range. Requires active authorized peer and unexpired publisher session. User switching/disconnect invalidates outstanding requests.",
@@ -12467,7 +12483,7 @@
       "validation": "Refresh viewer permission; require viewer-owned peer and matching target; strict boolean enabled and bounded commandId. Recognition off cannot remotely enable capture."
     },
     "observer-settings": {
-      "surface": "One informational Settings view shows saved defaults alongside applied Mode/Trip Goal/Mode Goal/Sync and sound settings, with Default/Custom/User source indicators. Display edits use shared timer controls.",
+      "surface": "Settings contains editable sound controls and read-only ClockTimer settings that always follow the observed user. Mode/Goal/Sync comparison rows are removed; badges and live Mirror values live beside the actual controls and popover choices.",
       "mirror": "Mirrors display settings while retaining saved per-user custom values; audio remains observer-local.",
       "goals": "Same shared Order Filler summary, mode button, percentage numberpad and Auto chooser; independent trip/total overrides; no publisher writes.",
       "multiple": "Setting changes offer selected/all scope; remote mic only targets selected person.",
@@ -12481,7 +12497,29 @@
         "meaning": "Two facing panels with a vertical mirror axis; follow corresponding observed-user setting",
         "usage": "data-menu-icon=mirror for every Mirror choice; same glyph as Sync lower-left badge",
         "placement": "Mirror lower-left; existing status lower-right; retain Sync arrows and current on/off state"
-      }
+      },
+      "badges": {
+        "states": [
+          "Default",
+          "Custom",
+          "User",
+          "Default + User",
+          "Custom + User"
+        ],
+        "symbol": "One rounded badge: localized D/C center, person centered or lower-right overlay. Default and Custom are mutually exclusive. Accessible labels give full meaning. Badges match saved default, retained custom, and current publisher values independently.",
+        "updates": "Recalculate on user switch, preference save, and incoming snapshot, including open menus. Mirror is separately teal with standard icon and live publisher value."
+      },
+      "clockAppearance": "The publisher exports only explicit presentation attributes, CSS variables and range/hand visibility. Viewer applies them after each model projection while preserving host identity and independent Goal/Mode/Sync overrides. Switching users replaces prior appearance."
+    },
+    "account-settings": {
+      "storage": "Versioned JSON object on users.settings_json plus settings_revision. orderFiller, speech and dropIn namespaces; active trips, credentials and caches remain separate.",
+      "authority": "GET/PATCH api/settings uses authenticated user only; PATCH also requires CSRF and captured userId. Validate namespace, object, keys and size before writes. Lock row, merge only changed namespace keys, save transactionally.",
+      "lifecycle": "Settings owner and cache are memory-only. Load after confirmed login/session restoration. Clear on logout/account change and reject stale callbacks. Guest changes are memory-only. Requests have a 15-second abort deadline; failed save preserves accepted state. No device preferences are imported into a guessed account.",
+      "validation": [
+        "tests/account-settings.mjs",
+        "tests/user_settings.php",
+        "tests/app-state-transactions.mjs --account-settings"
+      ]
     }
   },
   "unresolved_contracts": [

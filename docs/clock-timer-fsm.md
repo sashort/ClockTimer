@@ -151,8 +151,8 @@ timeout, disconnection, or target change ends the pending operation.
 
 Observer settings use `settingsSource: default | custom | user`. Default applies
 the saved baseline; Custom restores that observer's retained choices for the
-selected person; User mirrors the publisher display. The Settings view reports
-both default and applied values. Display edits use the shared timer controls.
+selected person; User mirrors the publisher display. Mode, Goal and Sync controls show the five source badges and live Mirror values.
+Settings retains sound controls and read-only ClockTimer appearance following the publisher.
 Only listening sound controls are editable in this view. Field provenance is
 stored explicitly; a user value matching default clears its override and follows
 future baseline changes. Mode, Sync and Goal share an Apply to Default/User

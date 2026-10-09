@@ -16,6 +16,7 @@ const consoleErrors=[];window.console.error=(...args)=>consoleErrors.push(args.m
 const errors=[];window.addEventListener('error',e=>{errors.push(e.message);});
 const rules={weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'};
 let summaryTrips=[];let rejectTripStop=false;let holdTripCheck=false;let releaseTripCheck;let rejectTripStart=false;let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];let holdLogin=false,releaseLogin,rejectLogin=false;
+const accountBlob={version:1,orderFiller:{'wmof.clock.graphicalSettings':JSON.stringify({tripColor:'#123456'}),'wmof.clock.percentMode':'auto'}};
 window.fetch=async(url,options={})=>{
  const path=new URL(url,'https://clock.example/').pathname;requests.push({path,options});
  const input=options.body?JSON.parse(options.body):null;
@@ -31,7 +32,8 @@ window.fetch=async(url,options={})=>{
  const tripStartRejected=rejectTripStart&&path.endsWith('/command-check/')&&input.endpoint==='trips';
  const duplicateBreak=path.endsWith('/command-check/')&&input.endpoint==='trip-events'&&input.command.event==='interval.started'&&stored.some(e=>e.event==='interval.started'&&!stored.some(end=>end.event==='interval.ended'&&end.value.intervalKey===e.value.intervalKey));
  if(duplicateBreak&&holdCheck)await new Promise(resolve=>releaseCheck=resolve);
- const data=path.endsWith('/command-check/')?{accepted:!duplicateBreak&&!tripStartRejected&&!tripStopRejected,reason:tripStartRejected?'Trip start rejected.':tripStopRejected?'Trip finish rejected.':'A break is already active.'}:path.endsWith('/calendar/')?{calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
+ if(path.endsWith('/settings/')&&input)Object.assign(accountBlob[input.namespace]||={},input.changes);
+ const data=path.endsWith('/settings/')?{userId:2,settings:structuredClone(accountBlob)}:path.endsWith('/command-check/')?{accepted:!duplicateBreak&&!tripStartRejected&&!tripStopRejected,reason:tripStartRejected?'Trip start rejected.':tripStopRejected?'Trip finish rejected.':'A break is already active.'}:path.endsWith('/calendar/')?{calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
  path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',first_name:'Alex',last_name:'Driver',preferred_name:'Al',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
  path.endsWith('/trip-events/')?(options.method==='POST'?{eventId:eventId-1}:{tripId,events:structuredClone(stored)}):
  path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
@@ -40,6 +42,10 @@ window.fetch=async(url,options={})=>{
 };
 window.document.write(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
 installEnglishPack(window);
+if(process.argv.includes('--account-settings')){
+ window.WMOFPersistence={ready:Promise.resolve(),initializeLegacy:async()=>{},peek:()=>null,getItem:async()=>null,setItem:async()=>{},commit:async()=>{},flush:async()=>{}};
+ window.eval(fs.readFileSync(new URL('../AccountSettings.js',import.meta.url),'utf8'));
+}
 for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(name==='StateTransactions' && process.env.CLOCKTIMER_STATE_SOURCE || name==='ActionFunctions' && process.env.CLOCKTIMER_ACTION_SOURCE || new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
@@ -71,6 +77,14 @@ window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--account-settings')){
+ await timer.connect('test','password');await settle();
+ assert.equal(window.WMOFAccountSettings.owner,2);assert.equal(window.WMOFAccountSettings.loaded,true);
+ assert.equal(timer.style.getPropertyValue('--clock-timer-trip-color'),'#123456');assert.equal(timer.percentMode,'auto','login applies saved account mode');
+ await window.WMOFUtilities.safeStorageSet('wmof.clock.percentMode','trip');assert.equal(accountBlob.orderFiller['wmof.clock.percentMode'],'trip');
+ window.WMOFAccountSettings.clear();assert.equal(window.WMOFUtilities.safeStorageGet('wmof.clock.graphicalSettings'),null);
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);window.happyDOM.abort();console.log('PASS main app account login hydration, graphical settings, mode and server-only saves');process.exit(0);
+}
 if(process.argv.includes('--landing-session')) {
  assert.equal(timer.networkStatus,'online','landing handoff validates and resumes the server session');
  assert.equal(window.document.querySelector('#loginDialog').open,false,'existing authenticated session bypasses PIN login');

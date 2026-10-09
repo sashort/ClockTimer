@@ -22,7 +22,7 @@
         if(record.settingsSource==='custom'&&!Object.values(record.sources.view).some(source=>source!=='default'))record.settingsSource='default';
     };
     class DropInPreferences {
-        constructor({persistence=globalThis.WMOFPersistence}={}) {this.persistence=persistence;this.state={defaults:initial(),users:{}};this.queue=Promise.resolve();this.owner=null;}
+        constructor({persistence}={}) {this.persistence=persistence||{getItem:async()=>globalThis.WMOFAccountSettings.peek('dropIn','preferences'),setItem:(_key,value)=>globalThis.WMOFAccountSettings.write('dropIn',{preferences:value})};this.state={defaults:initial(),users:{}};this.queue=Promise.resolve();this.owner=null;}
         async load(owner) {await this.queue;this.state={defaults:initial(),users:{}};this.owner=String(owner);const raw=await this.persistence?.getItem('drop-in-preferences-v1:'+this.owner);if(raw){try{const value=JSON.parse(raw);if(value.defaults?.view&&value.defaults?.audio&&value.users&&typeof value.users==='object'){this.state.defaults=normalize(value.defaults);for(const [id,record] of Object.entries(value.users)){if(/^[1-9]\d*$/.test(id)&&record?.custom)this.state.users[id]={mirror:record.mirror!==false,custom:normalize(record.custom),sources:sources(normalize(record.custom),this.state.defaults,record.sources),settingsSource:['default','custom','user'].includes(record.settingsSource)?record.settingsSource:record.mirror!==false?'user':'custom'};}}}catch{}}return this;}
         get(id) {
             const record=clone(this.state.users[String(id)] || {mirror:true,custom:this.state.defaults,sources:sources(this.state.defaults,this.state.defaults)});

@@ -866,6 +866,7 @@
             microphone:globalThis.WMOFMicrophoneControl?.read(globalThis.SpeechMenu),
             timeDisplay:clockTimer.renderedTimeMode,
             model:clockTimer.exportObserverSnapshot(),
+            appearance:globalThis.WMOFTimerAppearance?.capture(clockTimer),
             mode:clockTimer.percentMode, range:getTripLogRange(),
             customDates:getTripLogRange()==="custom"?{start:tripLogStartDate.value,end:tripLogEndDate.value}:null,
             active:tripIsLive(), tripId:clockTimer.currentTripId,
@@ -24043,6 +24044,24 @@
 
     function onConnected(event) {
         populateProfile(event.detail?.user);
+        const account=globalThis.WMOFAccountSettings,owner=Number(event.detail?.user?.id);
+        if(account&&owner&&(!account.loaded||account.owner!==owner))void (async()=>{
+            try {
+                const response=await fetch(new URL('api/users/',document.baseURI),{credentials:'same-origin',cache:'no-store'}),session=await response.json();
+                if(!response.ok||Number(session.user?.id)!==owner)throw new Error('Account changed.');
+                if(Number(signedInProfile?.id)!==owner)return;
+                await account.load(owner,session.csrfToken);
+                if(Number(signedInProfile?.id)!==owner)return;
+                const graphical=getGraphicalSettings(),preferences=getTripPreferences();
+                applyGraphicalSettings(graphical);fillGraphicalForm(graphical);fillTripPreferencesForm(preferences);
+                clockTimer.configure({auto_goal:preferences.syncGoals});
+                applyScope(safeStorageGet(STORAGE.percentMode)||'trip',false);
+                applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode)||'remaining',false);
+                setTripLogRange(getTripLogRange(),{persist:false,notify:false});
+                audioSettings=loadAudioSettings();renderAudioSettings();applyAudioOutputSettings();
+                updateSummaryValues();
+            } catch(error){globalThis.dispatchEvent(new CustomEvent('wmof:persistence-error',{detail:{error}}));}
+        })();
 
         void loadSpeechTimingProfile()
             .catch(
@@ -24067,6 +24086,7 @@
             }
 
             signedInProfile = undefined;
+            globalThis.WMOFAccountSettings?.clear();
             identityContext
                 ?.clear?.();
             userLookup

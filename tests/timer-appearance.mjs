@@ -1,0 +1,9 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import {Window} from './LanguageWindow.mjs';
+const w=new Window();w.eval(fs.readFileSync(new URL('../TimerAppearance.js',import.meta.url),'utf8'));
+const publisher=w.document.createElement('div'),observer=w.document.createElement('div');w.document.body.append(publisher,observer);
+publisher.setAttribute('timer-type','radial-fitted');publisher.setAttribute('hide-break-buffer','');publisher.style.setProperty('--clock-timer-trip-color','#123456');publisher.style.setProperty('--clock-timer-border-color','#fedcba');publisher.setAttribute('trip-goal','120%');publisher.showTolerance=true;
+observer.id='observer';observer.setAttribute('trip-goal','135%');observer.refreshLayout=()=>{};
+const settings=w.WMOFTimerAppearance.capture(publisher);w.WMOFTimerAppearance.apply(observer,settings);
+assert.equal(observer.getAttribute('timer-type'),'radial-fitted');assert(observer.hasAttribute('hide-break-buffer'));assert.equal(observer.style.getPropertyValue('--clock-timer-trip-color'),'#123456');assert.equal(observer.getAttribute('trip-goal'),'135%','mirrored appearance never overwrites observer goal');assert.equal(observer.id,'observer');assert.equal(observer.showTolerance,true);
+publisher.removeAttribute('hide-break-buffer');publisher.style.removeProperty('--clock-timer-trip-color');w.WMOFTimerAppearance.apply(observer,w.WMOFTimerAppearance.capture(publisher));assert(!observer.hasAttribute('hide-break-buffer'));assert.equal(observer.style.getPropertyValue('--clock-timer-trip-color'),'','old publisher colors are cleared');
+await w.happyDOM.close();console.log('PASS live publisher appearance, range visibility and stale style cleanup without overriding local goals');

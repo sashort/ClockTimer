@@ -6335,152 +6335,385 @@
       "id": "e86d0474-482b-5969-b67e-52605bae5c98",
       "default": "Date Range"
     },
-
-  "31fe9052-2c7d-55ef-85fe-2b5d207f0336": {
-    "id": "31fe9052-2c7d-55ef-85fe-2b5d207f0336",
-    "text": "Observed user microphone",
-    "default": "Observed user microphone"
-  },
-  "36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6": {
-    "id": "36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6",
-    "text": "{scope} Percent",
-    "default": "{scope} Percent"
-  },
-  "634f965d-1ea9-5ac4-807b-fb3caeef2046": {
-    "id": "634f965d-1ea9-5ac4-807b-fb3caeef2046",
-    "text": "Turn microphone on",
-    "default": "Turn microphone on"
-  },
-  "a3a8c454-03e4-5197-84f5-de0a68cff168": {
-    "id": "a3a8c454-03e4-5197-84f5-de0a68cff168",
-    "text": "Turn microphone off",
-    "default": "Turn microphone off"
-  },
-  "95ec8d5a-8ca1-5d0b-9df3-3f9584609195": {
-    "id": "95ec8d5a-8ca1-5d0b-9df3-3f9584609195",
-    "text": "Settings",
-    "default": "Settings"
-  },
-  "8266febd-cf14-562a-b18d-176c854ffe76": {
-    "id": "8266febd-cf14-562a-b18d-176c854ffe76",
-    "text": "Default",
-    "default": "Default"
-  },
-  "7425da78-04f5-5e04-aaf1-57bc8a4875a9": {
-    "id": "7425da78-04f5-5e04-aaf1-57bc8a4875a9",
-    "text": "Custom · {name}",
-    "default": "Custom · {name}"
-  },
-  "8f867772-6f69-59be-a743-6367c524de06": {
-    "id": "8f867772-6f69-59be-a743-6367c524de06",
-    "text": "Mirroring · {name}",
-    "default": "Mirroring · {name}"
-  },
-  "2e3c70a8-3be2-5ceb-b96f-a4e220368697": {
-    "id": "2e3c70a8-3be2-5ceb-b96f-a4e220368697",
-    "text": "Settings for {name}",
-    "default": "Settings for {name}"
-  },
-  "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5": {
-    "id": "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5",
-    "text": "Mode",
-    "default": "Mode"
-  },
-  "582590c0-9208-57e6-aef8-306d45cd3b27": {
-    "id": "582590c0-9208-57e6-aef8-306d45cd3b27",
-    "text": "Trip Goal",
-    "default": "Trip Goal"
-  },
-  "1479977b-4c33-57c1-a599-a8078dbb0a31": {
-    "id": "1479977b-4c33-57c1-a599-a8078dbb0a31",
-    "text": "Mode Goal",
-    "default": "Mode Goal"
-  },
-  "16369f48-b198-5dd0-abc3-4db631b31e5a": {
-    "id": "16369f48-b198-5dd0-abc3-4db631b31e5a",
-    "text": "Default badges mark values matching your saved defaults. Custom values apply to this user.",
-    "default": "Default badges mark values matching your saved defaults. Custom values apply to this user."
-  },
-  "1c9519e8-3320-5a28-9c4a-18a545b065ca": {
-    "id": "1c9519e8-3320-5a28-9c4a-18a545b065ca",
-    "text": "On",
-    "default": "On"
-  },
-  "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992": {
-    "id": "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992",
-    "text": "Off",
-    "default": "Off"
-  },
-  "def617d2-8298-57e9-a7d3-32251c5b24d2": {
-    "id": "def617d2-8298-57e9-a7d3-32251c5b24d2",
-    "text": "Default: {value}",
-    "default": "Default: {value}"
-  },
-  "306eeb36-21ae-5576-ad2c-293af5b8620b": {
-    "id": "306eeb36-21ae-5576-ad2c-293af5b8620b",
-    "text": "Save sound as default",
-    "default": "Save sound as default"
-  },
-  "365cc4c0-4688-518f-93d9-fff003c3ea7a": {
-    "id": "365cc4c0-4688-518f-93d9-fff003c3ea7a",
-    "text": "Use default sound",
-    "default": "Use default sound"
-  },
-  "43612666-0e7a-5976-9fc7-1ace27dbac32": {
-    "id": "43612666-0e7a-5976-9fc7-1ace27dbac32",
-    "text": "Applied to {name}: {source}",
-    "default": "Applied to {name}: {source}"
-  },
-  "b65c84d6-1d0d-596b-8962-fdf409f04073": {
-    "id": "b65c84d6-1d0d-596b-8962-fdf409f04073",
-    "text": "User",
-    "default": "User"
-  },
-  "ce252857-8d0d-5d30-8bcf-0c072901bd18": {
-    "id": "ce252857-8d0d-5d30-8bcf-0c072901bd18",
-    "text": "Custom",
-    "default": "Custom"
-  },
-  "fc47056b-19eb-5cf0-ac45-9d865e75b708": {
-    "id": "fc47056b-19eb-5cf0-ac45-9d865e75b708",
-    "text": "Default",
-    "default": "Default"
-  },
-  "ca8c7f71-896f-5cc9-9831-67903fa6899a": {
-    "id": "ca8c7f71-896f-5cc9-9831-67903fa6899a",
-    "text": "Shows whether User, Default, or Custom settings are applied. Sound settings can be edited here.",
-    "default": "Shows whether User, Default, or Custom settings are applied. Sound settings can be edited here."
-  },
-
-  "b11c3a59-8432-515c-b361-acabaf1e7a88": {
-    "id": "b11c3a59-8432-515c-b361-acabaf1e7a88",
-    "text": "Mirror",
-    "default": "Mirror"
-  },
-  "4ab2828c-28bd-577c-85ef-912867cec704": {
-    "id": "4ab2828c-28bd-577c-85ef-912867cec704",
-    "text": "Apply to",
-    "default": "Apply to"
-  },
-  "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff": {
-    "id": "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff",
-    "text": "Apply",
-    "default": "Apply"
-  },
-  "e26ae369-fc8a-54b0-a718-1a70dfbfa219": {
-    "id": "e26ae369-fc8a-54b0-a718-1a70dfbfa219",
-    "text": "Default",
-    "default": "Default"
-  },
-  "0963cc34-f4c5-5e05-b989-7043266564e1": {
-    "id": "0963cc34-f4c5-5e05-b989-7043266564e1",
-    "text": "User",
-    "default": "User"
-  },
-  "2d102628-ecea-5da7-9630-8f87fe8b2b87": {
-    "id": "2d102628-ecea-5da7-9630-8f87fe8b2b87",
-    "text": "Choose Default, User, or both.",
-    "default": "Choose Default, User, or both."
-  }
+    "31fe9052-2c7d-55ef-85fe-2b5d207f0336": {
+      "id": "31fe9052-2c7d-55ef-85fe-2b5d207f0336",
+      "text": "Observed user microphone",
+      "default": "Observed user microphone"
+    },
+    "36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6": {
+      "id": "36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6",
+      "text": "{scope} Percent",
+      "default": "{scope} Percent"
+    },
+    "634f965d-1ea9-5ac4-807b-fb3caeef2046": {
+      "id": "634f965d-1ea9-5ac4-807b-fb3caeef2046",
+      "text": "Turn microphone on",
+      "default": "Turn microphone on"
+    },
+    "a3a8c454-03e4-5197-84f5-de0a68cff168": {
+      "id": "a3a8c454-03e4-5197-84f5-de0a68cff168",
+      "text": "Turn microphone off",
+      "default": "Turn microphone off"
+    },
+    "95ec8d5a-8ca1-5d0b-9df3-3f9584609195": {
+      "id": "95ec8d5a-8ca1-5d0b-9df3-3f9584609195",
+      "text": "Settings",
+      "default": "Settings"
+    },
+    "8266febd-cf14-562a-b18d-176c854ffe76": {
+      "id": "8266febd-cf14-562a-b18d-176c854ffe76",
+      "text": "Default",
+      "default": "Default"
+    },
+    "7425da78-04f5-5e04-aaf1-57bc8a4875a9": {
+      "id": "7425da78-04f5-5e04-aaf1-57bc8a4875a9",
+      "text": "Custom · {name}",
+      "default": "Custom · {name}"
+    },
+    "8f867772-6f69-59be-a743-6367c524de06": {
+      "id": "8f867772-6f69-59be-a743-6367c524de06",
+      "text": "Mirroring · {name}",
+      "default": "Mirroring · {name}"
+    },
+    "2e3c70a8-3be2-5ceb-b96f-a4e220368697": {
+      "id": "2e3c70a8-3be2-5ceb-b96f-a4e220368697",
+      "text": "Settings for {name}",
+      "default": "Settings for {name}"
+    },
+    "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5": {
+      "id": "c6f667e2-ba79-5c85-aaa6-f0e49f988ac5",
+      "text": "Mode",
+      "default": "Mode"
+    },
+    "582590c0-9208-57e6-aef8-306d45cd3b27": {
+      "id": "582590c0-9208-57e6-aef8-306d45cd3b27",
+      "text": "Trip Goal",
+      "default": "Trip Goal"
+    },
+    "1479977b-4c33-57c1-a599-a8078dbb0a31": {
+      "id": "1479977b-4c33-57c1-a599-a8078dbb0a31",
+      "text": "Mode Goal",
+      "default": "Mode Goal"
+    },
+    "16369f48-b198-5dd0-abc3-4db631b31e5a": {
+      "id": "16369f48-b198-5dd0-abc3-4db631b31e5a",
+      "text": "Default badges mark values matching your saved defaults. Custom values apply to this user.",
+      "default": "Default badges mark values matching your saved defaults. Custom values apply to this user."
+    },
+    "1c9519e8-3320-5a28-9c4a-18a545b065ca": {
+      "id": "1c9519e8-3320-5a28-9c4a-18a545b065ca",
+      "text": "On",
+      "default": "On"
+    },
+    "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992": {
+      "id": "22a4fe99-d5e6-5ea4-b2df-32a8be5e9992",
+      "text": "Off",
+      "default": "Off"
+    },
+    "def617d2-8298-57e9-a7d3-32251c5b24d2": {
+      "id": "def617d2-8298-57e9-a7d3-32251c5b24d2",
+      "text": "Default: {value}",
+      "default": "Default: {value}"
+    },
+    "306eeb36-21ae-5576-ad2c-293af5b8620b": {
+      "id": "306eeb36-21ae-5576-ad2c-293af5b8620b",
+      "text": "Save sound as default",
+      "default": "Save sound as default"
+    },
+    "365cc4c0-4688-518f-93d9-fff003c3ea7a": {
+      "id": "365cc4c0-4688-518f-93d9-fff003c3ea7a",
+      "text": "Use default sound",
+      "default": "Use default sound"
+    },
+    "43612666-0e7a-5976-9fc7-1ace27dbac32": {
+      "id": "43612666-0e7a-5976-9fc7-1ace27dbac32",
+      "text": "Applied to {name}: {source}",
+      "default": "Applied to {name}: {source}"
+    },
+    "b65c84d6-1d0d-596b-8962-fdf409f04073": {
+      "id": "b65c84d6-1d0d-596b-8962-fdf409f04073",
+      "text": "User",
+      "default": "User"
+    },
+    "ce252857-8d0d-5d30-8bcf-0c072901bd18": {
+      "id": "ce252857-8d0d-5d30-8bcf-0c072901bd18",
+      "text": "Custom",
+      "default": "Custom"
+    },
+    "fc47056b-19eb-5cf0-ac45-9d865e75b708": {
+      "id": "fc47056b-19eb-5cf0-ac45-9d865e75b708",
+      "text": "Default",
+      "default": "Default"
+    },
+    "ca8c7f71-896f-5cc9-9831-67903fa6899a": {
+      "id": "ca8c7f71-896f-5cc9-9831-67903fa6899a",
+      "text": "Shows whether User, Default, or Custom settings are applied. Sound settings can be edited here.",
+      "default": "Shows whether User, Default, or Custom settings are applied. Sound settings can be edited here."
+    },
+    "b11c3a59-8432-515c-b361-acabaf1e7a88": {
+      "id": "b11c3a59-8432-515c-b361-acabaf1e7a88",
+      "text": "Mirror",
+      "default": "Mirror"
+    },
+    "4ab2828c-28bd-577c-85ef-912867cec704": {
+      "id": "4ab2828c-28bd-577c-85ef-912867cec704",
+      "text": "Apply to",
+      "default": "Apply to"
+    },
+    "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff": {
+      "id": "b5ac59a6-2c0d-50f9-877a-d2bc7d8561ff",
+      "text": "Apply",
+      "default": "Apply"
+    },
+    "e26ae369-fc8a-54b0-a718-1a70dfbfa219": {
+      "id": "e26ae369-fc8a-54b0-a718-1a70dfbfa219",
+      "text": "Default",
+      "default": "Default"
+    },
+    "0963cc34-f4c5-5e05-b989-7043266564e1": {
+      "id": "0963cc34-f4c5-5e05-b989-7043266564e1",
+      "text": "User",
+      "default": "User"
+    },
+    "2d102628-ecea-5da7-9630-8f87fe8b2b87": {
+      "id": "2d102628-ecea-5da7-9630-8f87fe8b2b87",
+      "text": "Choose Default, User, or both.",
+      "default": "Choose Default, User, or both."
+    },
+    "b59b5d51-a9c8-50c6-8938-1b105de4e22d": {
+      "id": "b59b5d51-a9c8-50c6-8938-1b105de4e22d",
+      "text": "Default",
+      "default": "Default"
+    },
+    "36ed2281-60b5-571f-b0d9-a12c26d9cd3c": {
+      "id": "36ed2281-60b5-571f-b0d9-a12c26d9cd3c",
+      "text": "Custom",
+      "default": "Custom"
+    },
+    "5c7b0850-ae4c-5f12-a82c-43cbca6bc31a": {
+      "id": "5c7b0850-ae4c-5f12-a82c-43cbca6bc31a",
+      "text": "User",
+      "default": "User"
+    },
+    "a8186f8b-5985-5631-bc40-255d58b12099": {
+      "id": "a8186f8b-5985-5631-bc40-255d58b12099",
+      "text": "Default and User",
+      "default": "Default and User"
+    },
+    "68df898b-079f-5dbb-a308-d8e707c16612": {
+      "id": "68df898b-079f-5dbb-a308-d8e707c16612",
+      "text": "Custom and User",
+      "default": "Custom and User"
+    },
+    "9cae1846-4961-53df-a1a5-5e0036801a8f": {
+      "id": "9cae1846-4961-53df-a1a5-5e0036801a8f",
+      "text": "D",
+      "default": "D"
+    },
+    "dc72e554-ac7f-5e9d-be7c-62b90e8209b9": {
+      "id": "dc72e554-ac7f-5e9d-be7c-62b90e8209b9",
+      "text": "C",
+      "default": "C"
+    },
+    "c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a": {
+      "id": "c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a",
+      "text": "Mirror — {value}",
+      "default": "Mirror — {value}"
+    },
+    "677452f5-d049-54f5-89a0-7869610bd8e2": {
+      "id": "677452f5-d049-54f5-89a0-7869610bd8e2",
+      "text": "Waiting for user settings",
+      "default": "Waiting for user settings"
+    },
+    "959b4a75-9553-5f36-a7b2-a5e49f4288d7": {
+      "id": "959b4a75-9553-5f36-a7b2-a5e49f4288d7",
+      "text": "ClockTimer follows the observed user. Changes appear here automatically.",
+      "default": "ClockTimer follows the observed user. Changes appear here automatically."
+    },
+    "e7c0803e-7b6a-5f05-b96f-3f33c42f9592": {
+      "id": "e7c0803e-7b6a-5f05-b96f-3f33c42f9592",
+      "text": "Timer layout",
+      "default": "Timer layout"
+    },
+    "665da4b6-41e4-5d19-b2d6-b65770d18e82": {
+      "id": "665da4b6-41e4-5d19-b2d6-b65770d18e82",
+      "text": "Timer direction",
+      "default": "Timer direction"
+    },
+    "e74a6bea-0ea6-5496-b2b2-ec3535ca59c7": {
+      "id": "e74a6bea-0ea6-5496-b2b2-ec3535ca59c7",
+      "text": "24-hour time",
+      "default": "24-hour time"
+    },
+    "76c33c0e-e51c-514e-99b8-8593f2c4d1f2": {
+      "id": "76c33c0e-e51c-514e-99b8-8593f2c4d1f2",
+      "text": "Time format",
+      "default": "Time format"
+    },
+    "5b203756-bd16-594c-948d-d87c9f1fd33f": {
+      "id": "5b203756-bd16-594c-948d-d87c9f1fd33f",
+      "text": "Date format",
+      "default": "Date format"
+    },
+    "dc372a12-a472-515f-adc5-922673440297": {
+      "id": "dc372a12-a472-515f-adc5-922673440297",
+      "text": "Visible hours",
+      "default": "Visible hours"
+    },
+    "adb6f6af-f23a-59be-b81c-98634b11f0cd": {
+      "id": "adb6f6af-f23a-59be-b81c-98634b11f0cd",
+      "text": "Tick marks",
+      "default": "Tick marks"
+    },
+    "5249882b-7f18-55b6-aa7f-811b4deee58c": {
+      "id": "5249882b-7f18-55b6-aa7f-811b4deee58c",
+      "text": "Indicator",
+      "default": "Indicator"
+    },
+    "8a7e20c6-91ba-597d-a557-d53d9c810c7b": {
+      "id": "8a7e20c6-91ba-597d-a557-d53d9c810c7b",
+      "text": "Trip color",
+      "default": "Trip color"
+    },
+    "abcd6186-be20-5c69-9ef4-4f400cd0309c": {
+      "id": "abcd6186-be20-5c69-9ef4-4f400cd0309c",
+      "text": "Opening color",
+      "default": "Opening color"
+    },
+    "1aab6104-e2f6-5d87-bd35-7dc6eb5d4969": {
+      "id": "1aab6104-e2f6-5d87-bd35-7dc6eb5d4969",
+      "text": "Break color",
+      "default": "Break color"
+    },
+    "7da65690-e980-59c0-bb48-6f6e47a8cfe2": {
+      "id": "7da65690-e980-59c0-bb48-6f6e47a8cfe2",
+      "text": "Lunch color",
+      "default": "Lunch color"
+    },
+    "c2f0557c-cc10-580b-8bd6-697b15fe0933": {
+      "id": "c2f0557c-cc10-580b-8bd6-697b15fe0933",
+      "text": "Break buffer color",
+      "default": "Break buffer color"
+    },
+    "ccd33927-397d-5d4e-a075-0911896ef5b6": {
+      "id": "ccd33927-397d-5d4e-a075-0911896ef5b6",
+      "text": "Down time color",
+      "default": "Down time color"
+    },
+    "b19900ba-5089-53dc-963a-18b9ccbfec67": {
+      "id": "b19900ba-5089-53dc-963a-18b9ccbfec67",
+      "text": "Surplus color",
+      "default": "Surplus color"
+    },
+    "ec23675c-d7e5-56ae-84aa-4668dd39c244": {
+      "id": "ec23675c-d7e5-56ae-84aa-4668dd39c244",
+      "text": "Deficit color",
+      "default": "Deficit color"
+    },
+    "26a70897-632e-5358-96c6-df7825c730c3": {
+      "id": "26a70897-632e-5358-96c6-df7825c730c3",
+      "text": "Tolerance color",
+      "default": "Tolerance color"
+    },
+    "5e73db72-f005-5765-83af-d7973a0c1488": {
+      "id": "5e73db72-f005-5765-83af-d7973a0c1488",
+      "text": "Overtime color",
+      "default": "Overtime color"
+    },
+    "679b9584-582c-5d1d-a8ad-ef65aac20052": {
+      "id": "679b9584-582c-5d1d-a8ad-ef65aac20052",
+      "text": "Latency color",
+      "default": "Latency color"
+    },
+    "3c2411e0-d95e-55d1-9ce3-bab36c27a4bd": {
+      "id": "3c2411e0-d95e-55d1-9ce3-bab36c27a4bd",
+      "text": "Hour hand color",
+      "default": "Hour hand color"
+    },
+    "2c6acfa1-9800-514c-8d40-488acf065e65": {
+      "id": "2c6acfa1-9800-514c-8d40-488acf065e65",
+      "text": "Minute hand color",
+      "default": "Minute hand color"
+    },
+    "6cddd28f-652b-5246-978d-b50fcc0d6a62": {
+      "id": "6cddd28f-652b-5246-978d-b50fcc0d6a62",
+      "text": "Second hand color",
+      "default": "Second hand color"
+    },
+    "9529d212-c32e-5981-b0bf-ea4c89697808": {
+      "id": "9529d212-c32e-5981-b0bf-ea4c89697808",
+      "text": "Time color",
+      "default": "Time color"
+    },
+    "4e6ca79a-c294-5ef3-b181-b041f1fac852": {
+      "id": "4e6ca79a-c294-5ef3-b181-b041f1fac852",
+      "text": "Tick color",
+      "default": "Tick color"
+    },
+    "c6aed917-edb1-5404-8287-377fbbb52b26": {
+      "id": "c6aed917-edb1-5404-8287-377fbbb52b26",
+      "text": "Border color",
+      "default": "Border color"
+    },
+    "377731c7-db21-5b71-814c-5c05b82b07b3": {
+      "id": "377731c7-db21-5b71-814c-5c05b82b07b3",
+      "text": "Clock font",
+      "default": "Clock font"
+    },
+    "587c6039-9ab6-55de-a3a4-cc5835dda396": {
+      "id": "587c6039-9ab6-55de-a3a4-cc5835dda396",
+      "text": "Hour hand length",
+      "default": "Hour hand length"
+    },
+    "3cc1cf81-fbc8-56f9-809f-0324f2274ba6": {
+      "id": "3cc1cf81-fbc8-56f9-809f-0324f2274ba6",
+      "text": "Minute hand length",
+      "default": "Minute hand length"
+    },
+    "f34a1919-3e5f-50d9-a950-758364938999": {
+      "id": "f34a1919-3e5f-50d9-a950-758364938999",
+      "text": "Second hand length",
+      "default": "Second hand length"
+    },
+    "3ff1600c-1f1e-5e2e-98ea-02c28f47cefa": {
+      "id": "3ff1600c-1f1e-5e2e-98ea-02c28f47cefa",
+      "text": "Show tolerance",
+      "default": "Show tolerance"
+    },
+    "0816ba7b-1075-55fe-a90d-a0838cb1fb7d": {
+      "id": "0816ba7b-1075-55fe-a90d-a0838cb1fb7d",
+      "text": "Show opening range",
+      "default": "Show opening range"
+    },
+    "d804af31-46f2-509e-a288-5dd525603b56": {
+      "id": "d804af31-46f2-509e-a288-5dd525603b56",
+      "text": "Show break buffer",
+      "default": "Show break buffer"
+    },
+    "32ea09ef-8c47-5db0-a5c3-80da8cbe48dd": {
+      "id": "32ea09ef-8c47-5db0-a5c3-80da8cbe48dd",
+      "text": "Show overtime",
+      "default": "Show overtime"
+    },
+    "ab7aaa22-e64a-5a6d-aa71-42f76420bd9a": {
+      "id": "ab7aaa22-e64a-5a6d-aa71-42f76420bd9a",
+      "text": "Show latency",
+      "default": "Show latency"
+    },
+    "68463c63-89de-5924-b563-0bb7e5beff3f": {
+      "id": "68463c63-89de-5924-b563-0bb7e5beff3f",
+      "text": "Hour hand",
+      "default": "Hour hand"
+    },
+    "bc683892-1677-599c-a99a-4d2d9cde89ec": {
+      "id": "bc683892-1677-599c-a99a-4d2d9cde89ec",
+      "text": "Minute hand",
+      "default": "Minute hand"
+    },
+    "96ea0e41-ed08-5ea0-b0ec-f2983ab0ed90": {
+      "id": "96ea0e41-ed08-5ea0-b0ec-f2983ab0ed90",
+      "text": "Second hand",
+      "default": "Second hand"
+    }
   }
 }

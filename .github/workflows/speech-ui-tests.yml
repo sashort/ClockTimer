@@ -31,6 +31,15 @@ on:
       - "tests/active-trip-restore.mjs"
       - "LiveTripStream.js"
       - "DropInPreferences.js"
+      - "AccountSettings.js"
+      - "ObserverSettingBadge.js"
+      - "TimerAppearance.js"
+      - "api/settings/**"
+      - "api/_core/user_settings.php"
+      - "tests/account-settings.mjs"
+      - "tests/observer-setting-badges.mjs"
+      - "tests/timer-appearance.mjs"
+      - "tests/user_settings.php"
       - "ModeMenu.js"
       - "ModeMenu.css"
       - "drop-in.js"
@@ -152,6 +161,21 @@ jobs:
       - name: Check linked TimeRange group events
         working-directory: tests
         run: npm run test:time-range-model
+
+      - name: Check account settings and observer provenance
+        run: |
+          node --check AccountSettings.js
+          node --check ObserverSettingBadge.js
+          node --check TimerAppearance.js
+          php -l api/settings/index.php
+          php -l api/_core/user_settings.php
+          php -l migrations/011_user_settings.php
+          php tests/user_settings.php
+          node tests/account-settings.mjs
+          node tests/observer-setting-badges.mjs
+          node tests/timer-appearance.mjs
+          node tests/drop-in-page.mjs
+          node tests/app-state-transactions.mjs --account-settings
 
       - name: Check model-backed TimeRange element
         working-directory: tests

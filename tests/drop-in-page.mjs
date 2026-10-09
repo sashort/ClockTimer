@@ -9,8 +9,12 @@ const w=new Window({url:'https://clock.example/drop-in.php'});w.structuredClone=
 w.document.body.innerHTML=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
 w.eval(fs.readFileSync(new URL('../DropInPreferences.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'));
+w.eval(fs.readFileSync(new URL('../ObserverSettingBadge.js',import.meta.url),'utf8'));
+w.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
+w.eval(fs.readFileSync(new URL('../TimerAppearance.js',import.meta.url),'utf8'));
 const events=[],errors=[],stored=new Map();let rejectStart=false;
 w.WMOFPersistence={async getItem(key){return stored.get(key);},async setItem(key,value){stored.set(key,value);}};
+w.WMOFAccountSettings={async load(){},peek:()=>stored.get('settings'),async write(namespace,changes){stored.set('settings',changes.preferences);}};
 w.addEventListener("error",event=>errors.push(event.message));
 w.WMOFLiveTripStream=class extends w.EventTarget {
  constructor(){super();w.testStream=this;this.viewing=false;}
@@ -45,6 +49,7 @@ w.testLookup.onLiveStream(identity(3));await tick();
 assert.equal(w.document.getElementById('liveStreamTrainerMessageText').value,'');
 assert(events.indexOf('stop',events.indexOf('start:2'))<events.indexOf('start:3'),'stop old peer before starting new target');
 const $=id=>w.document.getElementById(id),change=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new w.Event('change'));};
+change('liveStreamViewMode','user');assert.equal($('dropInTargetChoice').textContent,'Mirror — -');assert.equal($('dropInTargetChoice').dataset.menuIcon,'mirror');assert($('dropInTargetChoice').classList.contains('mirror-option'));$('dropInTargetCancel').click();
 change('liveStreamViewMode','year');assert.equal($('dropInTargetDialog').open,true);$('dropInTargetCancel').click();assert.equal($('liveStreamViewMode').value,'user');
 change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();assert.equal($('dropInMirrorSettings').checked,false);
 $('dropInMirrorSettings').checked=true;$('dropInMirrorSettings').dispatchEvent(new w.Event('change'));$('dropInApplySelected').click();await tick();assert.equal($('liveStreamViewMode').value,'user');
@@ -62,6 +67,13 @@ assert.match($('dropInSettingsApplied').textContent,/Default/);
 await chooseSource('custom');assert.equal($('liveStreamViewMode').value,retainedMode,'Custom restores per-user choices');
 await chooseSource('user');assert.equal($('liveStreamViewMode').value,'user');assert.match($('dropInSettingsApplied').textContent,/User/);
 await chooseSource('custom');
+const live={userId:3,timestamp:'2026-10-08T12:00:00Z',viewData:{...w.testView.snapshot.viewData,mode:'total',range:'week',appearance:{attributes:{'timer-type':'radial-fitted'},variables:{'--clock-timer-trip-color':'#123456'}}},uiState:{sync_enabled:true,trip_goal_component:{value:1.2,text:'120%'},total_goal_component:{value:1.1,text:'110%'}}};
+w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));
+$('scopeToggle').click();assert.equal($('scopeToggleDropdown').querySelector('[data-mode=user] .mode-option-label').textContent,'Mirror — Week');assert.equal($('scopeToggleDropdown').querySelector('[data-mode=week] .observer-source-badge').dataset.source,'user');
+live.viewData.range='year';w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));assert.equal($('scopeToggleDropdown').querySelector('[data-mode=user] .mode-option-label').textContent,'Mirror — Year','open mode menu follows live user');
+$('scopeToggle').click();$('toggleSyncMenuButton').click();assert.equal($('dropInSyncPopover').querySelector('[data-sync=user] .mode-option-label').textContent,'Mirror — On');assert.equal($('dropInSyncPopover').querySelector('[data-sync=off] .observer-source-badge').dataset.source,'default');
+live.uiState.sync_enabled=false;w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:live}}));assert.equal($('dropInSyncPopover').querySelector('[data-sync=user] .mode-option-label').textContent,'Mirror — Off');assert.equal($('dropInSyncPopover').querySelector('[data-sync=off] .observer-source-badge').dataset.source,'default-user');
+assert.match($('dropInClockSettings').textContent,/Timer layout/);assert.match($('dropInClockSettings').textContent,/#123456/);$('toggleSyncMenuButton').click();
 $('dropInTripLogButton').click();await tick();assert.equal(events.find(e=>e?.logTarget).logTarget,3,'log targets observed user rather than observer');assert.equal($('dropInTripLogRows').children.length,1);$('dropInTripLogCancel').click();
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:2,snapshot:{userId:2}}}));
 assert(!events.includes('snapshot:2'),'old target snapshot ignored');
@@ -73,7 +85,7 @@ w.testStream.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'dis
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'disconnected');
 w.testStream.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'connected'}}));
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:{userId:3}}}));
-assert.equal(events.filter(value=>value==='snapshot:3').length,2);
+assert.equal(events.filter(value=>value==='snapshot:3').length,5);
 // Full peer loss clears the mirror and disables messaging, then Watch reauthorizes.
 await w.testStream.stopViewing();await tick();
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'Not viewing.');
@@ -88,7 +100,8 @@ assert.equal(w.document.getElementById('liveStreamTrainerMessage').disabled,true
 assert.equal(w.testStream.viewing,false,'failed authorization does not optimistically connect');
 rejectStart=false;$('dropInRemoveUser').click();await tick();assert.equal(w.testView.userId,3);assert.equal($('liveStreamViewMode').value,'day','switch after removal restores remaining user custom preferences');$('dropInRemoveUser').click();await tick();assert.match($('liveStreamWatchedName').textContent,/^[—-]$/);assert.equal($('liveStreamTrainerMessage').disabled,true);
 assert.equal($('liveStreamViewTime').closest('.live-stream-view-controls').hidden,true,'Settings cannot edit time display');
-assert.equal($('dropInSettingsMode').tagName,'STRONG','display information is read-only');
+assert.equal($('dropInSettingsMode'),null,'Mode comparison belongs in its popover');
+assert($('dropInClockSettings'),'Settings retains live read-only ClockTimer settings');
 assert.equal($('dropInDefaultMode'),null,'default display information is read-only');
 // Defaults remain editable without a selected user and do not rewrite saved user profiles.
 const previousUsers=JSON.stringify(JSON.parse([...stored.values()][0]).users);
