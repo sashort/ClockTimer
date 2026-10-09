@@ -17,6 +17,8 @@ on:
       - "TripLogRangeFeedback.js"
       - "TripLogPinController.js"
       - "TripLogCustomDates.js"
+      - "TripLogRangeControls.js"
+      - "tests/trip-log-range-controls.mjs"
       - "tests/trip-log-custom-dates.mjs"
       - "AudioVoiceOptions.js"
       - "AudioInstrumentOptions.js"
@@ -201,6 +203,7 @@ jobs:
           node tests/trip-log-range-feedback.mjs
           node tests/trip-log-pin-controller.mjs
           node tests/trip-log-custom-dates.mjs
+          node tests/trip-log-range-controls.mjs
           node tests/audio-voice-options.mjs
           node tests/audio-instrument-options.mjs
           node tests/audio-velocity-controller.mjs
