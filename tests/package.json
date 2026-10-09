@@ -49,6 +49,7 @@
     "test:audio-settings-persistence": "node audio-settings-persistence.mjs",
     "test:audio-settings-startup": "node audio-settings-startup.mjs",
     "test:trip-log-range-feedback": "node trip-log-range-feedback.mjs",
+    "test:trip-log-pin-controller": "node trip-log-pin-controller.mjs",
     "test:trip-preferences-model": "node trip-preferences-model.mjs",
     "test:trip-preferences-store": "node trip-preferences-store.mjs"
   },
