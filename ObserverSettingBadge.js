@@ -15,10 +15,10 @@
    const badge=document.createElement('span');badge.className='observer-source-badge';badge.dataset.source=source;
    const label=WMOFLanguagePack.text(ids[{default:'badgeDefault',custom:'badgeCustom',user:'badgeUser','default-user':'badgeDefaultUser','custom-user':'badgeCustomUser'}[source]]);
    badge.title=label;badge.setAttribute('aria-label',label);badge.setAttribute('role','img');
-   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 32 32');svg.setAttribute('aria-hidden','true');
+   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');const plain=source==='default'||source==='custom';svg.setAttribute('viewBox',plain?'0 0 29 29':'0 0 32 32');svg.setAttribute('aria-hidden','true');
    svg.innerHTML='<rect x="1" y="1" width="27" height="27" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>';
    if(source==='user')svg.innerHTML+='<g transform="translate(5 4) scale(1.25)">'+person+'</g>';
-   else {const letter=document.createElementNS(svg.namespaceURI,'text');letter.setAttribute('x','14');letter.setAttribute('y','21');letter.setAttribute('text-anchor','middle');letter.setAttribute('fill','currentColor');letter.textContent=WMOFLanguagePack.text(ids[source.startsWith('default')?'glyphDefault':'glyphCustom']);svg.append(letter);if(source.endsWith('-user'))svg.innerHTML+='<rect x="18" y="17" width="14" height="15" rx="3" fill="var(--badge-backdrop,#001e60)"/><g transform="translate(19 17) scale(.8)">'+person+'</g>';}
+   else {const letter=document.createElementNS(svg.namespaceURI,'text');letter.setAttribute('x',plain?'14.5':'14');letter.setAttribute('y','21');letter.setAttribute('text-anchor','middle');letter.setAttribute('fill','currentColor');letter.textContent=WMOFLanguagePack.text(ids[source.startsWith('default')?'glyphDefault':'glyphCustom']);svg.append(letter);if(source.endsWith('-user'))svg.innerHTML+='<rect x="18" y="17" width="14" height="15" rx="3" fill="var(--badge-backdrop,#001e60)"/><g transform="translate(19 17) scale(.8)">'+person+'</g>';}
    badge.append(svg);host.append(badge);
   }
  };
