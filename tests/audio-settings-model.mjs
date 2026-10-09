@@ -7,6 +7,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(readFileSync(new URL("../AudioSettingsModel.js", import.meta.url), "utf8"), sandbox);
 const model = sandbox.WMOFAudioSettingsModel;
+const plain = value => JSON.parse(JSON.stringify(value));
 
 assert.equal(model.normalizeChimeRate("not a rate"), 1);
 assert.equal(model.normalizeChimeRate(0.81), 0.8);
@@ -36,7 +37,7 @@ const audioSettings = model.create({
 });
 const defaults = audioSettings.defaultAudioSettings();
 assert.deepEqual(Object.keys(defaults.rows), ["trip.start", "break.start"]);
-assert.deepEqual(defaults.voices["fr-FR"], { provider: "system", voice: "" });
+assert.deepEqual(plain(defaults.voices["fr-FR"]), { provider: "system", voice: "" });
 assert.equal(defaults.rows["trip.start"].enabled, true);
 
 const normalized = audioSettings.normalizeAudioSettings({
@@ -68,12 +69,12 @@ assert.equal(normalized.instrument, "piano");
 assert.equal(normalized.formalTime, true);
 assert.equal(normalized.masters.chime, false);
 assert.equal(normalized.masters.summary, true);
-assert.deepEqual(normalized.voices["fr-FR"], { provider: "custom", voice: "Alice" });
+assert.deepEqual(plain(normalized.voices["fr-FR"]), { provider: "custom", voice: "Alice" });
 assert.equal(normalized.rows["trip.start"].enabled, false);
 assert.equal(normalized.rows["trip.start"].chime, -1);
 assert.equal(normalized.rows["trip.start"].summary, 0, "unsupported row layer values fall back to defaults");
 assert.equal(normalized.rows["trip.start"].details, 0);
-assert.deepEqual(normalized.rows["trip.start"].custom, { volume: 1, speechVelocity: 2.8, toneVelocity: 1.2 });
+assert.deepEqual(plain(normalized.rows["trip.start"].custom), { volume: 1, speechVelocity: 2.8, toneVelocity: 1.2 });
 assert.equal(normalized.rows["unknown.event"], undefined);
 
 console.log("PASS audio settings normalization, legacy rate migration, defaults, and slider scaling");
