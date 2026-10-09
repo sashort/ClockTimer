@@ -158,12 +158,11 @@
 
     const clockTimer = $("#clockTimer");
 
-    const currentActionSignal =
-        () =>
-            globalThis
-                .WMOFActionFunctions
-                ?.invocationContext
-                ?.signal || globalThis.WMOFStateTransactions?.current?.signal;
+    const currentActionSignal = () =>
+        globalThis.ClockTimerActionSignalContext.currentSignal(
+            globalThis.WMOFActionFunctions,
+            globalThis.WMOFStateTransactions
+        );
 
     const speechTransactionDate = () =>
         globalThis.ClockTimerSpeechTransactionTime.fromExecutionContext(
