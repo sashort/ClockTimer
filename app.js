@@ -4245,6 +4245,17 @@
 
     function setTripLogPinned(value, { persist = true } = {}) {
         const pinned = globalThis.ClockTimerTripLogModel.pinnedInput(value);
+        return globalThis.ClockTimerTripLogPinController.setPinned(pinned, {
+            appElement: app,
+            pinButton: tripLogPinButton,
+            tripLogButton,
+            isTripListActive: tripListIsActive,
+            persist,
+            storageKey: STORAGE.tripLogPinned,
+            writeStorage: safeStorageSet
+        });
+    } = {}) {
+        const pinned = globalThis.ClockTimerTripLogModel.pinnedInput(value);
 
         app.dataset.tripLogPinned = String(pinned);
 
