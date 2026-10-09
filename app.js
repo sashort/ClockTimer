@@ -6051,33 +6051,11 @@
     }
 
     function getTripPreferences() {
-        let stored = {};
-
-        try {
-            stored =
-                JSON.parse(
-                    safeStorageGet(
-                        STORAGE.tripPreferences
-                    ) ||
-                        "{}"
-                );
+        const model = globalThis.ClockTimerTripPreferencesModel;
+        if (!model?.read) {
+            throw new Error("TripPreferencesModel.js did not register its API.");
         }
-        catch {}
-
-        const lateBreakBehavior =
-            stored.lateBreakBehavior ===
-                "autoRestartTrip"
-                ? "autoRestartTrip"
-                : TRIP_PREFERENCE_DEFAULTS.lateBreakBehavior;
-
-        return {
-            lateBreakBehavior,
-            syncGoals:
-                Boolean(
-                    stored.syncGoals ??
-                    TRIP_PREFERENCE_DEFAULTS.syncGoals
-                )
-        };
+        return model.read(safeStorageGet(STORAGE.tripPreferences));
     }
 
     function saveTripPreferences(preferences) {
