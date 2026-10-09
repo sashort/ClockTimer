@@ -539,113 +539,31 @@
             }
         });
 
-    let speechRuntimePromise;
+    let speechRuntimeLoader;
+    let speechRuntimeLoaderPromise;
     const ensureSpeechRuntime = () => {
-        if (
-            globalThis.SpeechMenu &&
-            customElements.get("speech-mic-bar")
-        ) {
-            return Promise.resolve();
+        const initializeLoader = () => {
+            if (!speechRuntimeLoader) {
+                const loader = globalThis.ClockTimerSpeechRuntimeLoader;
+                if (!loader) throw new Error("SpeechRuntimeLoader.js did not register its factory.");
+                speechRuntimeLoader = loader.create({
+                    assetCacheReady: speechAssetCacheReady,
+                    getPipeline: () => speechPipeline,
+                    getDiagnosticsEnabled: () => speechDiagnosticsEnabled,
+                    apiBase: API_BASE,
+                    loadScript: loadClassicScript
+                });
+            }
+            return speechRuntimeLoader.ensure();
+        };
+
+        if (speechRuntimeLoader) return speechRuntimeLoader.ensure();
+        if (globalThis.ClockTimerSpeechRuntimeLoader) return initializeLoader();
+        if (!speechRuntimeLoaderPromise) {
+            speechRuntimeLoaderPromise = loadClassicScript("SpeechRuntimeLoader.js")
+                .then(initializeLoader);
         }
-
-        if (!speechRuntimePromise) {
-            speechRuntimePromise =
-                Promise.resolve()
-                    .then(async () => {
-                        await speechAssetCacheReady;
-                        if (
-                            !globalThis
-                                .AdaptiveSpeechTiming
-                        ) {
-                            await loadClassicScript(
-                                "AdaptiveSpeechTiming.js"
-                            );
-                        }
-
-                        if (!globalThis.SherpaRecognizer) {
-                            await loadClassicScript(
-                                "SherpaRecognizer.js"
-                            );
-                        }
-
-                        if (
-                            speechPipeline === "silero" &&
-                            !globalThis.SileroVad
-                        ) {
-                            await loadClassicScript(
-                                "SileroVad.js"
-                            );
-                        }
-
-                        if (!globalThis.SpeechMenu) {
-                            await loadClassicScript(
-                                "SpeechMenu.js"
-                            );
-                        }
-
-                        if (
-                            !globalThis.SpeechMenu.started &&
-                            globalThis.SpeechMenu.pipeline !==
-                                speechPipeline
-                        ) {
-                            globalThis.SpeechMenu.pipeline =
-                                speechPipeline;
-                        }
-
-                        void globalThis.SpeechMenu
-                            .loadCorrections(
-                                new URL(
-                                    "api/speech-corrections/?language=en-US",
-                                    API_BASE
-                                ).href
-                            )
-                            .catch(
-                                () => {}
-                            );
-
-                        if (
-                            !customElements.get(
-                                "speech-mic-bar"
-                            )
-                        ) {
-                            await loadClassicScript(
-                                "SpeechMicBar.js?v=language-pack-20261001"
-                            );
-                        }
-
-                        if (
-                            speechDiagnosticsEnabled &&
-                            !customElements.get(
-                                "speech-diagnostics"
-                            )
-                        ) {
-                            await loadClassicScript(
-                                "SpeechDiagnostics.js?v=language-pack-20261001"
-                            );
-                        }
-
-                        if (
-                            speechDiagnosticsEnabled &&
-                            !document.querySelector(
-                                "speech-diagnostics"
-                            )
-                        ) {
-                            document.body.append(
-                                document.createElement(
-                                    "speech-diagnostics"
-                                )
-                            );
-                        }
-
-                        document.dispatchEvent(
-                            new CustomEvent(
-                                "speech-runtime-ready"
-                            )
-                        );
-                    });
-        }
-
-        return speechRuntimePromise;
+        return speechRuntimeLoaderPromise;
     };
 
     const clockTimer = $("#clockTimer");
