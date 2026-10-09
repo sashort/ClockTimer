@@ -24,8 +24,10 @@
                 const requested = button.dataset.settingsSurface;
                 const surface = surfaces.has(requested) ? requested : "graphicalSettingsDialog";
                 frame.dataset.settingsSurface = surface;
+                // Order-Filler also contains #liveStreamDialog; only the Drop-In
+                // page marker may identify the host of this settings iframe.
                 const parentHost = documentRef.body?.classList?.contains("drop-in-page")
-                    || documentRef.body?.querySelector?.("#liveStreamDialog")
+                    || documentRef.body?.querySelector?.("#dropInPageStatus")
                     ? "drop-in"
                     : "order-filler";
                 const query = new URLSearchParams({ surface, parentHost });
