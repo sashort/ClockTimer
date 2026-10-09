@@ -195,6 +195,11 @@
             type: "script",
             url: "ConnectionStatusModel.js?build=connection-status-model-1",
             hosts: ["order-filler", "settings-frame"]
+        }],
+        ["button-press-feedback", {
+            type: "script",
+            url: "ButtonPressFeedback.js?build=button-press-feedback-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
