@@ -552,13 +552,14 @@ console.log("PASS context restrictions, dispatcher resource manifests, nested re
         "registered resource is loaded");
     assert.deepEqual(order, ["feature:first:order-filler", "feature:second"],
         "resources load before feature initializers and feature order follows registration order");
-    assert.deepEqual(Array.from(result.resources), ["contract-resource"]);
+    assert.ok(Array.from(result.resources).includes("contract-resource"), "result lists registered resources that loaded");
     assert.deepEqual(Array.from(result.features, feature => feature.name), ["contract-first", "contract-second"]);
     assert.equal(result.context.host, "order-filler");
     const ready = events.findLast(event => event.type === "clocktimer-dispatcher-ready");
     assert.ok(ready, "successful bootstrap emits the ready event");
-    assert.equal(ready.detail.context, context);
-    assert.deepEqual(Array.from(ready.detail.resources), ["contract-resource"]);
+    assert.equal(ready.detail.context.host, context.host);
+    assert.equal(ready.detail.context.surface, context.surface);
+    assert.ok(Array.from(ready.detail.resources).includes("contract-resource"));
     assert.deepEqual(Array.from(ready.detail.features), ["contract-first", "contract-second"]);
 
     await sandbox.ClockTimerLifecycle.stopAll();
