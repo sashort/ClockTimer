@@ -49,6 +49,16 @@
         return "on-target";
     }
 
+    function remainingDescriptor(detail) {
+        const remaining = remainingMilliseconds(detail);
+        const outcome = remainingOutcome(remaining);
+        return {
+            remaining,
+            outcome,
+            magnitude: Number.isFinite(remaining) ? Math.abs(remaining) : undefined
+        };
+    }
+
     function countedPercent(detail) {
         return Number(detail?.summary?.total?.countedPercent);
     }
@@ -58,6 +68,7 @@
         labelDescriptor,
         remainingMilliseconds,
         remainingOutcome,
+        remainingDescriptor,
         countedPercent
     });
 })(globalThis);
