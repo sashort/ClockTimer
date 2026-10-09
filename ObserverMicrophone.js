@@ -4,11 +4,14 @@
             Object.assign(this,{button,stream,onFailure,timeout});this.target=null;this.actual=null;this.pending=null;
             const style=document.createElement('style');
             style.textContent=WMOFMicrophoneControl.css
+                .replace('position: relative;', 'position: absolute; top: 6px; right: 6px;')
+                .replaceAll('48px','40px')
                 .replaceAll(':host([state="muted"]) #mic', '#dropInMicrophoneButton[data-muted="true"]')
                 .replaceAll(':host([state="muted"])\n                #mic', '#dropInMicrophoneButton[data-muted="true"]')
                 .replaceAll(':host([state="listening"]) #mic', '#dropInMicrophoneButton[data-muted="false"]')
                 .replaceAll(':host([state="utterance"]) #mic', '#dropInMicrophoneButton[data-muted="false"]')
                 .replaceAll('#mic','#dropInMicrophoneButton').replace('z-index: 2147483647','z-index: 1');
+            style.textContent+='\n#dropInMicrophoneButton[hidden] {display:none;}';
             document.head.append(style);
             button.addEventListener('click',()=>void this.toggle());this.paint();
         }

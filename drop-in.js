@@ -216,6 +216,7 @@
     const remoteMicrophone=globalThis.WMOFObserverMicrophone ? new WMOFObserverMicrophone({button:$('dropInMicrophoneButton'),stream,onFailure:()=>status(WMOFDropInText('failed'))}):null;
     function controls() {
         const identity = context.current;
+        $('dropInMicrophoneButton').hidden=!view.userId;
         $('liveStreamWatchButton').disabled = busy || !permission(64) || !identity || Number(identity.userId) === Number(user?.id);
         $('liveStreamWatchButton').textContent = text(stream.viewing ? 'd82579ae-0ee3-593a-9a3d-6208756e8ae3' : '07ebf99a-22d4-507f-a4b0-7f01bb41ec96');
         $('liveStreamLookupButton').disabled = busy || !permission(128);

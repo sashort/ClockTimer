@@ -49,6 +49,8 @@ const watch=async id=>{
 };
 await watch(2);
 assert.equal(w.testStream.targetUserId,2);
+assert.equal(w.document.getElementById('dropInMicrophoneButton').hidden,false,'selected user exposes the remote mic');
+assert.equal(w.document.getElementById('dropInMicrophoneButton').parentElement.className,'scope-control','mic occupies the former cloud position in the Mode bar');
 assert.equal(w.document.getElementById('liveStreamUserSelect').selectedOptions[0].textContent,'Test 2');
 w.document.getElementById('liveStreamTrainerMessageText').value='hello';
 w.document.getElementById('liveStreamTrainerMessageSend').click();await tick();
@@ -116,6 +118,7 @@ assert.equal($('dropInDefaultMode'),null,'default display information is read-on
 assert.equal($('dropInMenu').contains($('toggleSyncMenuButton')),false,'Sync control is outside the hamburger menu');
 const previousUsers=JSON.stringify(JSON.parse([...stored.values()][0]).users);
 for(const id of ['scopeToggle','toggleSyncMenuButton','goalPercentValue'])assert.equal($(id).disabled,false,'default controls stay enabled without observed users');
+assert.equal($('dropInMicrophoneButton').hidden,true,'no selected user hides the remote mic');
 change('liveStreamViewMode','year');assert.equal($('dropInTargetDefault').checked,true);assert.equal($('dropInTargetUser').disabled,true);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetCancel').click();assert.equal($('liveStreamViewMode').value,'trip','cancel restores defaults');
 change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.mode,'day');
 $('toggleSyncMenuButton').click();$('dropInSyncPopover').querySelector('[data-sync=on]').click();assert.equal($('dropInTargetUser').disabled,true);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.sync,'on');
