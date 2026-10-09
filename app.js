@@ -23984,7 +23984,7 @@
                 const match =
                     new RegExp(
                         pattern,
-                        "i"
+                        "id"
                     )
                         .exec(text);
 
@@ -24013,12 +24013,19 @@
                     return provisional ? false : text;
                 }
 
-                const start =
-                    match.index +
-                    match[0]
-                        .lastIndexOf(
-                            phrase
-                        );
+                const fieldRange =
+                    match.indices
+                        ?.groups
+                        ?.[field];
+
+                if (
+                    !fieldRange
+                ) {
+                    return text;
+                }
+
+                const [start, end] =
+                    fieldRange;
 
                 return (
                     text.slice(
@@ -24027,8 +24034,7 @@
                     ) +
                     normalized +
                     text.slice(
-                        start +
-                            phrase.length
+                        end
                     )
                 );
             }
