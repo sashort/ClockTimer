@@ -37,10 +37,11 @@
     const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
     await announcementLanguage.load(document.documentElement.lang || "en-US");
     const announcementText = (key, values) => announcementLanguage.text(key, values);
-    if (!globalThis.ClockTimerStartupAnnouncement) {
-        throw new Error("StartupAnnouncement.js did not register its factory.");
+    if (!globalThis.ClockTimerApplicationStartup) {
+        throw new Error("ApplicationStartup.js did not register its initializer.");
     }
-    const startupAnnouncement = globalThis.ClockTimerStartupAnnouncement.create({
+    const startupAnnouncement = await globalThis.ClockTimerApplicationStartup.initialize({
+        context: pageContext,
         settingsOnlyPage,
         audio: globalThis.WMOFAudio,
         text: announcementText
@@ -48,12 +49,6 @@
     const startupAnnouncementPending = () => startupAnnouncement.pending;
     const finishStartupAnnouncement = startupAnnouncement.finish;
     const startupAnnouncementFinished = startupAnnouncement.finished;
-    startupAnnouncement.start();
-
-    if (!globalThis.ClockTimerPersistenceStartup) {
-        throw new Error("PersistenceStartup.js did not register its initializer.");
-    }
-    await globalThis.ClockTimerPersistenceStartup.initialize();
 
     const API_BASE = "https://wmof.sashort-apps.com/";
     const calendarRanges = new CalendarRange({baseUrl: API_BASE, databaseOnly: true,
