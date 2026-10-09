@@ -69,6 +69,7 @@ window.SpeechMenu.events.addEventListener('speechFeedbackError',e=>errors.push(e
 window.eval(fs.readFileSync(new URL('../SpeechMicBar.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../SpeechRuntimeLoader.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../SpeechStartup.js',import.meta.url),'utf8'));
+window.eval(fs.readFileSync(new URL('../StartupAnnouncement.js',import.meta.url),'utf8'));
 window.SpeechMenu.testBegin();
 if(process.argv.includes('--voice-feedback')) window.eval(fs.readFileSync(new URL('../AnnouncementCatalog.js',import.meta.url),'utf8'));
 let appSource=fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../app.js',import.meta.url),'utf8');
