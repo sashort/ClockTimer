@@ -313,6 +313,8 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     style.onload();
     const result = await bootstrap;
     assert.ok(Array.from(result.resources).includes("settings-style"));
+    assert.ok(Array.from(result.resources).includes("trip-log-model"),
+        "settings-frame loads shared trip-log policy used by app.js");
     assert.ok(Array.from(result.resources).includes("trip-preferences-model"),
         "settings-frame shares the app preference model");
     assert.ok(Array.from(result.resources).includes("trip-preferences-store"),
