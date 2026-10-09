@@ -26,6 +26,7 @@ source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testAvailable(){return SpeechMenu.#availableCandidates();}
     static testActive(){return SpeechMenu.#utterance;}
     static testReset(){SpeechMenu.#clearPrimed();SpeechMenu.#finishedUtterances.clear();SpeechMenu.#utterance=undefined;}
+    static testPrepare(element){return SpeechMenu.#prepare(element,true);}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
 Function(source)();
 const speech=globalThis.SpeechMenu;
@@ -85,19 +86,19 @@ try {
     const chain=make(document.body,'preprocessor-chain','^chain test','okay',{
         'speech-preproc':'TestPreprocessors.first,TestPreprocessors.second'
     });
-    await new Promise(setImmediate);
+    speech.testPrepare(chain);
     assert.equal(await chain.speechPreprocFunc('input',{}),'input first second');
     assert.deepEqual(preprocessorCalls,['first','second:input first'],'preprocessors run sequentially');
     preprocessorCalls.length=0;
     chain.setAttribute('speech-preproc','TestPreprocessors.first,TestPreprocessors.reject,TestPreprocessors.shouldNotRun');
-    await new Promise(setImmediate);
+    speech.testPrepare(chain);
     assert.equal(await chain.speechPreprocFunc('input',{}),false,'false explicitly rejects the candidate');
     assert.deepEqual(preprocessorCalls,['first','reject'],'rejection stops subsequent stages');
     chain.setAttribute('speech-preproc','TestPreprocessors.invalid');
-    await new Promise(setImmediate);
+    speech.testPrepare(chain);
     await assert.rejects(chain.speechPreprocFunc('input',{}),TypeError,'non-string results are rejected');
     chain.setAttribute('speech-preproc','TestPreprocessors.first,TestPreprocessors.second');
-    await new Promise(setImmediate);
+    speech.testPrepare(chain);
     const controller=new AbortController();controller.abort();
     assert.equal(await chain.speechPreprocFunc('input',{signal:controller.signal}),'input','aborted chains do not start a stage');
     chain.remove();
