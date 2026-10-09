@@ -19,6 +19,7 @@
         if (!persistenceStartup?.initialize) throw new Error("PersistenceStartup.js did not register its initializer.");
 
         const announcement = announcementFactory.create({
+            context,
             settingsOnlyPage: settingsOnly,
             audio,
             text
