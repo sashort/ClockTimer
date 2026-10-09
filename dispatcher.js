@@ -141,6 +141,11 @@
             url: "TimerDisplayModel.js?build=timer-display-model-1",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["trip-log-pin-controller", {
+            type: "script",
+            url: "TripLogPinController.js?build=trip-log-pin-controller-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["trip-log-range-feedback", {
             type: "script",
             url: "TripLogRangeFeedback.js?build=trip-log-range-feedback-1",
