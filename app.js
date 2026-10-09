@@ -61,18 +61,10 @@
     const startupAnnouncementFinished = startupAnnouncement.finished;
     startupAnnouncement.start();
 
-    if (globalThis.ClockTimerPersistenceStartup) {
-        await globalThis.ClockTimerPersistenceStartup.initialize();
-    } else {
-        // Compatibility for cached HTML that predates PersistenceStartup.js.
-        try {
-            await globalThis.WMOFPersistence.ready;
-            await globalThis.WMOFPersistence.initializeLegacy(localStorage);
-        } catch (error) {
-            document.documentElement.dataset.persistenceState = "reverted";
-            globalThis.dispatchEvent(new CustomEvent("wmof:persistence-error", { detail: { error } }));
-        }
+    if (!globalThis.ClockTimerPersistenceStartup) {
+        throw new Error("PersistenceStartup.js did not register its initializer.");
     }
+    await globalThis.ClockTimerPersistenceStartup.initialize();
 
     const API_BASE = "https://wmof.sashort-apps.com/";
     const calendarRanges = new CalendarRange({baseUrl: API_BASE, databaseOnly: true,
