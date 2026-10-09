@@ -2,12 +2,12 @@
 
 UI persistence behavior uses four terms:
 
-| Behavior | UI outcome |
-| --- | --- |
-| Wait Sync | Complete before control returns; update only after acceptance. |
-| Wait Async | Keep UI responsive and show pending status; update only after acceptance. Authentication uses this behavior. |
-| Optimistic | Update immediately; restore the previous UI on rejection or failure. |
-| Enforce | Update immediately and retain that UI while retrying a valid action until acceptance. Cancellation or invalidation ends retries. |
+| Behavior | Execution | UI outcome |
+| --- | --- | --- |
+| Wait Sync | Synchronous | Complete before control returns; update only after acceptance. |
+| Wait Async | Asynchronous | Keep UI responsive and show pending status; update only after acceptance. Authentication uses this behavior. |
+| Optimistic | Asynchronous | Update immediately; restore the previous UI on rejection or failure. |
+| Enforce | Asynchronous | Update immediately and retain that UI while retrying a valid action until acceptance. Cancellation or invalidation ends retries. |
 
 Every server write must pass validation first. These behaviors describe UI timing and failure handling; they are independent of pointer/voice input, announcements, and pending-operation status.
 
@@ -23,7 +23,7 @@ Each declaration needs a test contract:
 | Cancellation or invalidation | Check validity before applying result | Discard pending result | Restore checkpoint | Stop retries and reconcile to the current valid state |
 | Late result after account/target switch | No deferred completion; check ownership before applying | Ignore it | Ignore it | Ignore it; stop old retries |
 
-Wait Async means awaiting acceptance without blocking the UI. Wait Sync describes an actually synchronous operation; asynchronous server calls cannot be classified as Wait Sync merely because their caller uses `await`.
+Wait Async, Optimistic, and Enforce must remain responsive while persistence is pending. Tests should hold persistence unresolved and verify each policy's expected UI before releasing acceptance or rejection. Wait Sync describes an actually synchronous operation; asynchronous server calls cannot be classified as Wait Sync merely because their caller uses `await`.
 
 Tests must cover validation before writes, rejection separately from transport failure, cancellation, duplicate submissions, and account/target changes. Enforce also requires idempotent retries, validity checks before each retry, and proof that retries stop on acceptance. A rejected command that is no longer valid cannot be retried under Enforce.
 

@@ -11608,8 +11608,8 @@
     "ui-persistence-behaviors": {
       "Wait Sync": "Complete the operation before control returns; update UI only after acceptance.",
       "Wait Async": "Keep UI responsive and show pending status; update UI only after acceptance. Authentication uses Wait Async.",
-      "Optimistic": "Update UI immediately; restore the previous UI after rejection or failure.",
-      "Enforce": "Update UI immediately; retain it while retrying a valid action until accepted. Cancellation or a command becoming invalid ends retries.",
+      "Optimistic": "Asynchronous: update UI immediately while persistence is pending; restore the previous UI after rejection or failure.",
+      "Enforce": "Asynchronous: update UI immediately; retain it while retrying a valid action until accepted. Cancellation or a command becoming invalid ends retries.",
       "validation": "All server writes require validation first, regardless of UI persistence behavior.",
       "required": "Every UI component that reads or writes persistence must explicitly declare persistenceBehavior: Wait Sync, Wait Async, Optimistic or Enforce for each operation. No implicit default. Shared pointer and voice paths use the same declaration.",
       "testContract": "Specify initial state, pending UI, accepted UI, rejected/failed UI, cancellation, stale completion after account or target switch, and retry behavior. Wait Sync must finish before control returns; Wait Async must remain responsive. Persistence reads declare the appropriate Wait variant and may retain a valid existing display while loading.",
