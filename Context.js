@@ -53,6 +53,7 @@
             options: inferred.options || {}
         };
         const base = parentContext || (requested.host ? hostPolicy : inferred);
+        const hostChanged = Boolean(parentContext && requested.host && requested.host !== parentContext.host);
         const capabilities = {
             ...(hostPolicy.capabilities || {}),
             ...(base.capabilities || {}),
@@ -83,8 +84,8 @@
             ...base,
             ...requested,
             host,
-            surface: requested.surface || base.surface || (host === "settings-frame" ? "settings" : "application"),
-            presentation: requested.presentation || base.presentation || hostPolicy.presentation || "application",
+            surface: requested.surface || (hostChanged ? (host === "settings-frame" ? "settings" : "application") : base.surface) || (host === "settings-frame" ? "settings" : "application"),
+            presentation: requested.presentation || (hostChanged ? hostPolicy.presentation : base.presentation) || hostPolicy.presentation || "application",
             features: Object.freeze(features),
             capabilities: Object.freeze(capabilities),
             options: Object.freeze({ ...(hostPolicy.options || {}), ...(base.options || {}), ...(requested.options || {}) }),
