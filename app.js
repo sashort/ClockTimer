@@ -2805,14 +2805,6 @@
     const TRIP_LIST_BODY_DURATION = 425;
     const TRIP_LIST_MERGE_DURATION = 300;
     const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;
-    const TRIP_LOG_RANGES = new Set([
-        "day",
-        "week",
-        "pay-period",
-        "month",
-        "year",
-        "custom"
-    ]);
     let activeSettingsHelpButton;
     let graphicalHelpVisible = false;
     let graphicalPreviewAnimationFrame;
@@ -4627,14 +4619,7 @@
     }, true);
 
     function normalizeTripLogRange(value) {
-        const normalized =
-            String(value || "day")
-                .trim()
-                .toLowerCase();
-
-        return TRIP_LOG_RANGES.has(normalized)
-            ? normalized
-            : "day";
+        return globalThis.ClockTimerTripLogModel.normalizeRange(value);
     }
 
     function getTripLogRange() {
