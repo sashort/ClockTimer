@@ -230,6 +230,10 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
 }
 {
     const { sandbox, appendedResources } = makeRuntime({ classes: ["settings-page"] });
+    assert.throws(() => sandbox.ClockTimerDispatcher.registerResource("invalid-resource", {
+        type: "unknown",
+        url: "/invalid"
+    }), /resource needs a name, type, and URL/);
     sandbox.ClockTimerDispatcher.registerResource("settings-style", {
         type: "style",
         url: "/settings-surface.css",
