@@ -17,6 +17,8 @@ on:
       - "TripLogRangeFeedback.js"
       - "TripLogPinController.js"
       - "AudioVoiceOptions.js"
+      - "AudioInstrumentOptions.js"
+      - "tests/audio-instrument-options.mjs"
       - "tests/audio-voice-options.mjs"
       - "tests/trip-log-pin-controller.mjs"
       - "tests/trip-log-range-feedback.mjs"
@@ -193,6 +195,7 @@ jobs:
           node tests/trip-log-range-feedback.mjs
           node tests/trip-log-pin-controller.mjs
           node tests/audio-voice-options.mjs
+          node tests/audio-instrument-options.mjs
           node --check SpeechAssetCache.js
           node tests/speech-asset-cache.mjs
           node --check ClassicScriptLoader.js
