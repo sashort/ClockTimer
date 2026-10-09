@@ -151,7 +151,7 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
 }
 
 {
-    const { sandbox, events } = makeRuntime();
+    const { sandbox, events, appendedResources } = makeRuntime();
     const started = [];
     let disposed = 0;
     sandbox.ClockTimerDispatcher.register("settings", async context => {
@@ -170,6 +170,8 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
         capabilities: { speechMenu: false }
     });
     assert.deepEqual(Array.from(result.features, item => item.name), ["settings"]);
+    assert.ok(appendedResources.some(resource => resource.src === "AudioSettingsStartup.js?build=audio-settings-startup-4"),
+        "dispatcher manifest uses the cache-busted audio startup module");
     assert.deepEqual(started, ["graphicalSettingsDialog"]);
     assert.equal(events.at(-1).type, "clocktimer-dispatcher-ready");
     await sandbox.ClockTimerLifecycle.stopAll();
