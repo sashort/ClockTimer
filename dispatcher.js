@@ -98,6 +98,11 @@
             url: "AudioUnlock.js?build=audio-unlock-2",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["audio-announcement-draft", {
+            type: "script",
+            url: "AudioAnnouncementDraft.js?build=audio-announcement-draft-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["audio-settings-startup", {
             type: "script",
             url: "AudioSettingsStartup.js?build=audio-settings-startup-4",
