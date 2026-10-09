@@ -2,10 +2,19 @@
 (function (root) {
     "use strict";
     const pending = new Map();
-    const keyFor = (kind, url) => kind + ":" + new URL(url, document.baseURI).href;
+    const contextKey = context => JSON.stringify({
+        host: context?.host || "default",
+        surface: context?.surface || "application",
+        presentation: context?.presentation || "application",
+        features: context?.features || [],
+        capabilities: context?.capabilities || {},
+        options: context?.options || {}
+    });
+    const keyFor = (kind, url, context) => kind + ":" + new URL(url, document.baseURI).href
+        + (kind === "script" ? ":" + contextKey(context) : "");
 
     function loadScript(url, context, options = {}) {
-        const key = keyFor("script", url);
+        const key = keyFor("script", url, context);
         if (pending.has(key)) return pending.get(key);
         const promise = new Promise((resolve, reject) => {
             const script = document.createElement("script");
