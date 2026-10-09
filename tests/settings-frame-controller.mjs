@@ -33,7 +33,7 @@ function createRuntime() {
         location: { origin: "https://example.test" },
         addEventListener(name, callback) { windowHandlers[name] = callback; }
     };
-    const sandbox = { document, window, location: window.location, encodeURIComponent, console };
+    const sandbox = { document, window, location: window.location, addEventListener: window.addEventListener.bind(window), encodeURIComponent, console };
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
     sandbox.ClockTimerSettingsSurfaces = {
