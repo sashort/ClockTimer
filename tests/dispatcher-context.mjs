@@ -186,6 +186,11 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     assert.deepEqual(Array.from(result.features, item => item.name), ["settings"]);
     assert.ok(appendedResources.some(resource => resource.src === "AudioSettingsStartup.js?build=audio-settings-startup-4"),
         "dispatcher manifest uses the cache-busted audio startup module");
+    for (const forbidden of ["SpeechStartup.js", "CalendarStartup.js", "DropInViewModel.js",
+        "LiveStreamViewModel.js", "LiveStreamPublisher.js", "SessionStartup.js"]) {
+        assert.equal(appendedResources.some(resource => String(resource.src).includes(forbidden)), false,
+            forbidden + " must not load in the settings frame");
+    }
     assert.deepEqual(started, ["graphicalSettingsDialog"]);
     assert.equal(events.at(-1).type, "clocktimer-dispatcher-ready");
     await sandbox.ClockTimerLifecycle.stopAll();
@@ -496,3 +501,20 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true, hasLiveStr
     assert.equal(forbiddenStarts, 0, "settings-only page must not register calendar startup");
 }
 console.log("PASS context restrictions, dispatcher resource manifests, nested resources, extracted calendar startup, dispatcher gating, and lifecycle cleanup");
+
+{
+    const { sandbox, appendedResources } = makeRuntime();
+    const context = sandbox.ClockTimerContext.normalize({
+        host: "order-filler",
+        surface: "application",
+        features: ["application", "settings", "calendarStartup"],
+        capabilities: {}
+    });
+    await sandbox.ClockTimerDispatcher.bootstrap(context);
+    for (const required of ["LiveStreamViewModel.js", "LiveStreamPublisher.js", "SessionStartup.js",
+        "SpeechRuntimeOptions.js", "SpeechTransactionTime.js", "ActionSignalContext.js",
+        "ConnectionStatusModel.js", "AnnouncementCatalogModel.js", "AccessPolicyModel.js"]) {
+        assert.ok(appendedResources.some(resource => String(resource.src).includes(required)),
+            required + " must be available to the Order-Filler app");
+    }
+}
