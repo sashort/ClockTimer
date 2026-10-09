@@ -37,6 +37,8 @@ on:
       - "tests/trip-draft-model.mjs"
       - "TripPreferencesModel.js"
       - "TripPreferencesStore.js"
+      - "AccessPolicyModel.js"
+      - "tests/access-policy-model.mjs"
       - "tests/trip-preferences-model.mjs"
       - "tests/trip-preferences-store.mjs"
       - "tests/application-startup.mjs"
@@ -181,6 +183,8 @@ jobs:
           node tests/trip-preferences-model.mjs
           node --check TripPreferencesStore.js
           node tests/trip-preferences-store.mjs
+          node --check AccessPolicyModel.js
+          node tests/access-policy-model.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
