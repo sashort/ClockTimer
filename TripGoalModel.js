@@ -49,10 +49,15 @@
         return "on-target";
     }
 
+    function countedPercent(detail) {
+        return Number(detail?.summary?.total?.countedPercent);
+    }
+
     root.ClockTimerTripGoalModel = Object.freeze({
         selectGoal,
         labelDescriptor,
         remainingMilliseconds,
-        remainingOutcome
+        remainingOutcome,
+        countedPercent
     });
 })(globalThis);
