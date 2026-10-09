@@ -485,72 +485,39 @@
             }
         })();
 
-    const loadClassicScript = source =>
-        new Promise((resolve, reject) => {
-            const existing = document.querySelector(
-                `script[data-runtime-source="${source}"]`
+    const classicScriptLoader = globalThis.ClockTimerClassicScriptLoader?.create({
+        documentRef: document,
+        context: pageContext,
+        version: speechRuntimeVersion
+    });
+    const loadClassicScript = source => {
+        if (classicScriptLoader) return classicScriptLoader.load(source);
+        // Compatibility fallback for stale HTML whose cache predates the loader module.
+        if (globalThis.ClockTimerResources) {
+            return globalThis.ClockTimerResources.loadScript(
+                source + speechRuntimeVersion,
+                pageContext,
+                { async: true }
             );
-
-            if (existing?.dataset.loaded === "true") {
-                resolve();
-                return;
-            }
-
-            const script =
-                existing ||
-                document.createElement("script");
-
-            // Preserve the entry context on every nested runtime resource.
-            // Child resources inherit capability restrictions from the page.
-            if (!script.dataset.clocktimerContextData) {
-                const context = globalThis.ClockTimerPageContext ||
-                    globalThis.ClockTimerContext?.normalize?.() || {};
-                script.dataset.clocktimerContextData = JSON.stringify({
-                    host: context.host || "order-filler",
-                    surface: context.surface || "application",
-                    presentation: context.presentation || "application",
-                    features: context.features || [],
-                    capabilities: context.capabilities || {},
-                    options: context.options || {}
-                });
-                script.dataset.clocktimerContext = context.host || "order-filler";
-            }
-
-            const onLoad = () => {
-                script.dataset.loaded = "true";
-                resolve();
-            };
-
-            const onError = () => {
-                reject(
-                    new Error(
-                        `Unable to load ${source}.`
-                    )
-                );
-            };
-
-            script.addEventListener(
-                "load",
-                onLoad,
-                {once: true}
-            );
-
-            script.addEventListener(
-                "error",
-                onError,
-                {once: true}
-            );
-
-            if (!existing) {
-                script.src =
-                    `${source}${speechRuntimeVersion}`;
-                script.dataset.runtimeSource =
-                    source;
-                document.head.append(
-                    script
-                );
-            }
+        }
+        return new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            const context = pageContext || {};
+            script.dataset.clocktimerContext = context.host || "order-filler";
+            script.dataset.clocktimerContextData = JSON.stringify({
+                host: context.host || "order-filler",
+                surface: context.surface || "application",
+                presentation: context.presentation || "application",
+                features: context.features || [],
+                capabilities: context.capabilities || {},
+                options: context.options || {}
+            });
+            script.src = source + speechRuntimeVersion;
+            script.onload = () => resolve(script);
+            script.onerror = () => reject(new Error("Unable to load " + source + "."));
+            document.head.append(script);
         });
+    };
 
     let speechRuntimeLoader;
     let speechRuntimeLoaderPromise;
