@@ -180,6 +180,11 @@
             type: "script",
             url: "SpeechRuntimeOptions.js?build=speech-runtime-options-1",
             hosts: ["order-filler", "settings-frame"]
+        }],
+        ["speech-transaction-time", {
+            type: "script",
+            url: "SpeechTransactionTime.js?build=speech-transaction-time-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
