@@ -4,6 +4,9 @@ import assert from 'node:assert/strict';
 const read = path => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
 const standalone = read('../settings.html');
 const dropInTemplate = read('../templates/pages/drop-in/body.html');
+const dropInMenu = read('../templates/pages/drop-in/menu.html');
+const dropInDialogs = read('../templates/pages/drop-in/dialogs.html');
+const dropInScripts = read('../templates/pages/drop-in/scripts.html');
 const dropInBuilt = read('../drop-in.html');
 const orderTemplate = read('../templates/pages/order-filler/timer-header.html');
 const orderBuilt = read('../order-filler.html');
@@ -48,10 +51,24 @@ function assertIframeOnlyDialog(markup, label, checkController = true) {
         assert.match(markup, /event\.target === dialog\) dialog\.close\(\)/, `${label} supports backdrop dismissal without an extra close button`);
     }
 }
-assert.match(dropInTemplate, /data-open-clock-timer-settings/, 'Drop-In exposes its existing settings trigger');
-assert.match(dropInBuilt, /data-open-clock-timer-settings/, 'built Drop-In includes its settings trigger');
-assertIframeOnlyDialog(dropInTemplate, 'Drop-In template');
+assert.doesNotMatch(dropInTemplate, /drop-in-settings-link|openClockTimerSettingsFrame/, 'Drop-In does not add a launcher at the top of the page');
+assert.match(dropInMenu, /id="dropInClockSettingsButton"[^>]*data-open-clock-timer-settings[^>]*data-settings-surface="graphicalSettingsDialog"/, 'Drop-In reuses its existing ClockTimer menu item for graphical settings');
+assert.doesNotMatch(dropInMenu, /id="dropInClockSettingsPanel"|id="dropInClockSettings"/, 'Drop-In does not keep the duplicate read-only settings panel');
+assertIframeOnlyDialog(dropInDialogs, 'Drop-In dialogs template', false);
 assertIframeOnlyDialog(dropInBuilt, 'built Drop-In');
+assert.match(dropInScripts, /frame\.src = "settings\.html\?surface=" \+ encodeURIComponent\(surface\)/, 'Drop-In controller opens the selected page in the iframe');
+assert.match(dropInBuilt, /id="dropInClockSettingsButton"[^>]*data-open-clock-timer-settings[^>]*data-settings-surface="graphicalSettingsDialog"/, 'built Drop-In routes its existing ClockTimer menu item to graphical settings');
+assert.doesNotMatch(dropInBuilt, /drop-in-settings-link|openClockTimerSettingsFrame/, 'built Drop-In has no duplicate top-of-page settings launcher');
+assert.doesNotMatch(dropInBuilt, /id="dropInClockSettingsPanel"|id="dropInClockSettings"/, 'built Drop-In removes the duplicate inline settings panel');
+for (const markup of [dropInDialogs, dropInBuilt, orderDialogs, orderBuilt]) {
+    assert.match(markup, /width:min\(940px,94vw\); height:90dvh/, 'graphical settings iframe matches original dialog dimensions');
+    assert.match(markup, /margin:auto; padding:0; border:0/, 'iframe takes the old dialog margin and has no browser border');
+    assert.match(markup, /scrolling="yes"/, 'iframe scrolling is enabled');
+}
+const primaryRuleStart = standalone.indexOf('body.settings-page > dialog#graphicalSettingsDialog[data-primary-settings-surface]');
+const primaryRuleEnd = standalone.indexOf('\n}', primaryRuleStart);
+assert(primaryRuleStart >= 0 && primaryRuleEnd > primaryRuleStart, 'selected settings surface CSS exists');
+assert.doesNotMatch(standalone.slice(primaryRuleStart, primaryRuleEnd), /padding\s*:/, 'original settings dialog padding is preserved');
 assert.match(orderTemplate, /data-settings-surface="graphicalSettingsDialog"/, 'Order-Filler keeps a distinct graphical-settings entry');
 assert.match(orderTemplate, /data-settings-surface="audioSettingsDialog"/, 'Order-Filler keeps a distinct audio-settings entry');
 assert.match(orderTemplate, /id="audioSettingsButton"/, 'Audio Settings keeps its existing element ID');
