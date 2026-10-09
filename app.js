@@ -2817,10 +2817,7 @@
         announcements: AUDIO_ANNOUNCEMENTS,
         language: AUDIO_LANGUAGE
     });
-    const {
-        defaultAudioSettings,
-        normalizeAudioSettings
-    } = audioSettingsData;
+    const { defaultAudioSettings } = audioSettingsData;
 
     function loadAudioSettings() {
         const raw = safeStorageGet(STORAGE.audioSettings);
