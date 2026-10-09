@@ -15,9 +15,17 @@
             throw new TypeError("Speech runtime loader requires loadScript.");
         }
         let promise;
+        let readyEventDispatched = false;
+
+        function dispatchReady() {
+            if (readyEventDispatched) return;
+            readyEventDispatched = true;
+            documentRef.dispatchEvent(new CustomEvent("speech-runtime-ready"));
+        }
 
         function ensure() {
             if (root.SpeechMenu && customElementsRef.get("speech-mic-bar")) {
+                dispatchReady();
                 return Promise.resolve();
             }
             if (!promise) {
@@ -46,7 +54,7 @@
                     if (getDiagnosticsEnabled() && !documentRef.querySelector("speech-diagnostics")) {
                         documentRef.body.append(documentRef.createElement("speech-diagnostics"));
                     }
-                    documentRef.dispatchEvent(new CustomEvent("speech-runtime-ready"));
+                    dispatchReady();
                 });
             }
             return promise;
