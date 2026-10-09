@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-function createRuntime() {
+function createRuntime({ dropIn = false, hasLiveStreamDialog = true } = {}) {
     const handlers = {};
     const windowHandlers = {};
     const messages = [];
@@ -21,6 +21,12 @@ function createRuntime() {
     };
     const document = {
         readyState: "complete",
+        body: {
+            classList: { contains: name => dropIn && name === "drop-in-page" },
+            querySelector: selector => selector === "#dropInPageStatus" && dropIn
+                ? {}
+                : (selector === "#liveStreamDialog" && hasLiveStreamDialog ? {} : null)
+        },
         getElementById(id) {
             if (id === "clockTimerSettingsFrameDialog") return dialog;
             if (id === "clockTimerSettingsFrame") return frame;
@@ -44,7 +50,7 @@ function createRuntime() {
 }
 
 {
-    const r = createRuntime();
+    const r = createRuntime({ dropIn: false, hasLiveStreamDialog: true });
     assert.equal(r.dialog.dataset.controllerReady, "true");
     r.handlers.click();
     assert.equal(r.frame.dataset.settingsSurface, "tripSettingsDialog");
@@ -69,4 +75,9 @@ function createRuntime() {
     assert.equal(r.dialog.open, true, "messages from another frame are ignored");
     assert.equal(r.sandbox.ClockTimerSettingsFrameController.install(), false, "controller installs once");
 }
-console.log("PASS settings frame controller opens surfaces and validates close messages");
+{
+    const r = createRuntime({ dropIn: true, hasLiveStreamDialog: true });
+    r.handlers.click();
+    assert.equal(r.frame.src, "settings.html?surface=tripSettingsDialog&parentHost=drop-in");
+}
+console.log("PASS settings frame controller distinguishes host pages and validates close messages");
