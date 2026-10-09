@@ -98,6 +98,11 @@
             url: "AudioUnlock.js?build=audio-unlock-2",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["audio-settings-persistence", {
+            type: "script",
+            url: "AudioSettingsPersistence.js?build=audio-settings-persistence-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["audio-output-settings", {
             type: "script",
             url: "AudioOutputSettings.js?build=audio-output-settings-1",
