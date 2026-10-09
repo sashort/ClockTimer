@@ -73,10 +73,23 @@ let appSource=fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../a
 // The fixture freezes Date.now for trip boundaries; eliminate audio pauses
 // so its frozen wall clock cannot accumulate an artificial playback backlog.
 if(process.argv.includes('--voice-feedback')) appSource=appSource.replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;', 'const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;');
+if(process.argv.includes('--pointer-mode'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--pointer-mode')){
+ const button=window.document.querySelector('#scopeToggle');
+ button.click();window.document.querySelector('#scopeToggleDropdown [data-mode=week]').click();await settle();
+ assert.equal(button.textContent,'Week');
+ button.click();window.document.querySelector('#scopeToggleDropdown [data-mode=day]').click();
+ assert.equal(timer.percentMode,'total','first Day selection switches timer scope immediately');
+ assert.equal(button.textContent,'Day','first selection updates mode label immediately');
+ await settle();
+ assert.equal(timer.percentMode,'total','range loading retains the selected scope');
+ assert.equal(button.textContent,'Day','range loading retains the selected label');
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);window.happyDOM.abort();console.log('PASS first pointer Day selection applies immediately and survives range loading');process.exit(0);
+}
 if(process.argv.includes('--account-settings')){
  await timer.connect('test','password');await settle();
  assert.equal(window.WMOFAccountSettings.owner,2);assert.equal(window.WMOFAccountSettings.loaded,true);

@@ -176,6 +176,7 @@ jobs:
           node tests/timer-appearance.mjs
           node tests/drop-in-page.mjs
           node tests/app-state-transactions.mjs --account-settings
+          node tests/app-state-transactions.mjs --pointer-mode
 
       - name: Check model-backed TimeRange element
         working-directory: tests

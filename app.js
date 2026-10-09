@@ -2875,6 +2875,7 @@
     const tripLogEndDate = $("#tripLogEndDate");
     const tripLogRangeError = $("#tripLogRangeError");
     let tripRangeRevision = 0;
+    let selectedTripLogRange;
     const toggleSyncMenuButton = $("#toggleSyncMenuButton");
     const syncGoalsMenuIcon = toggleSyncMenuButton?.querySelector(".sync-goals-menu-icon");
     const tripLogButton = $("#tripLogButton");
@@ -5468,7 +5469,7 @@
 
     function getTripLogRange() {
         return normalizeTripLogRange(
-            safeStorageGet(
+            selectedTripLogRange ?? safeStorageGet(
                 STORAGE.tripLogRange
             )
         );
@@ -5504,6 +5505,8 @@
             getTripLogRange();
         const range =
             normalizeTripLogRange(value);
+        // Display and calculations use the current selection while its save is pending.
+        selectedTripLogRange = range;
 
         if (tripLogRangeSelect) {
             tripLogRangeSelect.value =
@@ -24057,7 +24060,7 @@
                 clockTimer.configure({auto_goal:preferences.syncGoals});
                 applyScope(safeStorageGet(STORAGE.percentMode)||'trip',false);
                 applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode)||'remaining',false);
-                setTripLogRange(getTripLogRange(),{persist:false,notify:false});
+                setTripLogRange(safeStorageGet(STORAGE.tripLogRange),{persist:false,notify:false});
                 audioSettings=loadAudioSettings();renderAudioSettings();applyAudioOutputSettings();
                 updateSummaryValues();
             } catch(error){globalThis.dispatchEvent(new CustomEvent('wmof:persistence-error',{detail:{error}}));}
@@ -29951,7 +29954,7 @@
                 applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
                 applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
                 setTripLogPinned(getStoredTripLogPinned(), {persist: false});
-                setTripLogRange(getTripLogRange(), {persist: false, notify: false});
+                setTripLogRange(safeStorageGet(STORAGE.tripLogRange), {persist: false, notify: false});
                 document.querySelectorAll(".speech-focused").forEach(element => element.classList.remove("speech-focused"));
                 for (const control of snapshot.controls) {
                     const element = control.element; if (!element.isConnected) continue;
