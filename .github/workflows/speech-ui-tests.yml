@@ -7,6 +7,8 @@ on:
   pull_request:
     paths:
       - "AudioSettingsModel.js"
+      - "AudioSettingsStartup.js"
+      - "tests/audio-settings-startup.mjs"
       - "tests/audio-settings-model.mjs"
       - "SpeechAssetCache.js"
       - "tests/speech-asset-cache.mjs"
@@ -131,6 +133,8 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check AudioSettingsModel.js
+          node --check AudioSettingsStartup.js
+          node tests/audio-settings-startup.mjs
           node tests/audio-settings-model.mjs
           node --check SpeechAssetCache.js
           node tests/speech-asset-cache.mjs
