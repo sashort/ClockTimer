@@ -163,8 +163,8 @@ Regression coverage: `observer-microphone.mjs`, `remote_microphone_permissions.p
 `drop-in-observer-replay.mjs`.
 
 
-## Standalone settings surface
+## Shared settings dialog surface
 
-ClockTimer settings are available at `settings.html` as a standalone page. The page presents the existing graphical, audio, audio-announcement, state, and trip settings surfaces in one scrollable document. Drop-In opens this page in a new tab; it does not replace or navigate away from the live Drop-In session.
+ClockTimer settings are presented by `settings.html`, embedded in an iframe inside a modal dialog. Order-Filler and Drop-In open the same settings document in this dialog; closing the outer dialog returns to the unchanged parent page. The iframe hides its standalone return header while embedded.
 
-Settings-page navigation is orthogonal to the trip lifecycle. Opening or closing the settings page must not dispatch `start`, `stop`, or `reset`, alter the focused trip phase, or change persistence semantics. The settings forms continue to use the existing settings handlers and persistence paths. Regression coverage lives in `tests/standalone-settings-page.mjs`.
+The settings surface is orthogonal to the trip lifecycle. Opening or closing the settings dialog must not dispatch `start`, `stop`, or `reset`, alter the focused trip phase, or change persistence semantics. The settings forms continue to use the existing settings handlers and persistence paths. Regression coverage lives in `tests/standalone-settings-page.mjs`.
