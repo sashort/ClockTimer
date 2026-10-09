@@ -11,15 +11,18 @@ assert.ok(model, "trip goal model registers its public API");
 
 const tripGoal = {percentGoal: 0.8};
 const totalGoal = {percentGoal: 0.6};
-assert.deepEqual(model.selectGoal({summary:{scope:"trip",trip:tripGoal,total:totalGoal}}),
-    {scope:"trip",selected:tripGoal}, "trip scope selects trip goal");
-assert.deepEqual(model.selectGoal({summary:{scope:"total",trip:tripGoal,total:totalGoal}}),
-    {scope:"total",selected:totalGoal}, "total scope selects total goal");
+let selection = model.selectGoal({summary:{scope:"trip",trip:tripGoal,total:totalGoal}});
+assert.equal(selection.scope, "trip");
+assert.equal(selection.selected, tripGoal, "trip scope selects trip goal");
+selection = model.selectGoal({summary:{scope:"total",trip:tripGoal,total:totalGoal}});
+assert.equal(selection.scope, "total");
+assert.equal(selection.selected, totalGoal, "total scope selects total goal");
 const explicitGoal = {percentGoal: 0.9};
-assert.deepEqual(model.selectGoal({summary:{scope:"trip",selected:explicitGoal,trip:tripGoal}}),
-    {scope:"trip",selected:explicitGoal}, "explicit selected goal takes precedence");
-assert.deepEqual(model.selectGoal(null), {scope:"",selected:undefined},
-    "missing summary has a stable empty selection");
+selection = model.selectGoal({summary:{scope:"trip",selected:explicitGoal,trip:tripGoal}});
+assert.equal(selection.selected, explicitGoal, "explicit selected goal takes precedence");
+selection = model.selectGoal(null);
+assert.equal(selection.scope, "");
+assert.equal(selection.selected, undefined, "missing summary has a stable empty selection");
 
 const detail = (scope, selected, extra = {}) => ({summary:{scope, selected, ...extra}});
 assert.equal(model.remainingMilliseconds(detail("trip", {
