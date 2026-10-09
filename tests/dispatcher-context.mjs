@@ -47,7 +47,7 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
     };
     sandbox.globalThis = sandbox;
     vm.createContext(sandbox);
-    for (const file of ["Context.js", "SettingsSurfaces.js", "ResourceLoader.js", "Lifecycle.js", "StartupTasks.js", "CalendarStartup.js", "dispatcher.js"]) {
+    for (const file of ["PageManifest.js", "Context.js", "SettingsSurfaces.js", "ResourceLoader.js", "Lifecycle.js", "StartupTasks.js", "CalendarStartup.js", "dispatcher.js"]) {
         vm.runInContext(readFileSync(new URL("../" + file, import.meta.url), "utf8"), sandbox, { filename: file });
     }
     return { sandbox, document, events, appendedResources };
@@ -57,6 +57,8 @@ function makeRuntime({ classes = [], search = "", bodyPresent = true } = {}) {
     const { sandbox } = makeRuntime({ bodyPresent: false });
     assert.equal(sandbox.ClockTimerPageContext.host, "order-filler");
     assert.equal(sandbox.ClockTimerPageContext.features.includes("drop-in"), false);
+    assert.deepEqual(Array.from(sandbox.ClockTimerPageManifest.resolve("drop-in").features), ["drop-in", "settings"]);
+    assert.equal(sandbox.ClockTimerPageManifest.permitsFeature(sandbox.ClockTimerPageManifest.resolve("settings-frame"), "calendarStartup"), false);
 }
 
 {
