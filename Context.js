@@ -42,7 +42,12 @@
             host: requested.host || base.host,
             surface: requested.surface || base.surface,
             presentation: requested.presentation || base.presentation,
-            features: Object.freeze([...new Set([...(base.features || []), ...(requested.features || [])])]),
+            features: Object.freeze(
+                requested.features
+                    ? [...new Set(requested.features)].filter(feature =>
+                        !parent || (base.features || []).includes("*") || (base.features || []).includes(feature))
+                    : [...(base.features || [])]
+            ),
             capabilities: Object.freeze(capabilities),
             options: Object.freeze({ ...(base.options || {}), ...(requested.options || {}) }),
             parent: parent || null
