@@ -43,16 +43,27 @@
   const frame = document.getElementById("clockTimerSettingsFrame");
   if (!dialog || !frame || dialog.dataset.controllerReady) return;
   dialog.dataset.controllerReady = "true";
+  const surfaces = new Set([
+    "graphicalSettingsDialog",
+    "audioSettingsDialog",
+    "audioAnnouncementsDialog",
+    "stateSettingsDialog",
+    "tripSettingsDialog"
+  ]);
   document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
     button.addEventListener("click", () => {
-      const surface = button.dataset.settingsSurface;
-      frame.src = surface
-        ? "settings.html?surface=" + encodeURIComponent(surface)
-        : "settings.html";
-      const menu = document.getElementById("settingsSubmenu");
-      if (menu) menu.hidden = true;
-      const menuButton = document.getElementById("settingsMenuButton");
-      if (menuButton) menuButton.setAttribute("aria-expanded", "false");
+      const requested = button.dataset.settingsSurface;
+      const surface = surfaces.has(requested) ? requested : "graphicalSettingsDialog";
+      frame.dataset.settingsSurface = surface;
+      frame.src = "settings.html?surface=" + encodeURIComponent(surface);
+      const menu = button.closest("hamburger-menu");
+      if (menu && typeof menu.hidePopover === "function") {
+        try { menu.hidePopover(); } catch {}
+      }
+      const settingsSubmenu = document.getElementById("settingsSubmenu");
+      if (settingsSubmenu) settingsSubmenu.hidden = true;
+      const settingsButton = document.getElementById("settingsMenuButton");
+      if (settingsButton) settingsButton.setAttribute("aria-expanded", "false");
       if (!dialog.open) dialog.showModal();
     });
   });
