@@ -4,6 +4,7 @@ import {Window, installEnglishPack} from "./LanguageWindow.mjs";
 
 const window = new Window({url:"https://clock.example/"});
 installEnglishPack(window);
+globalThis.WMOFLanguagePack = window.WMOFLanguagePack;
 Object.assign(globalThis, {
     window,
     document: window.document,
