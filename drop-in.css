@@ -90,6 +90,8 @@ body { margin: 0; height: 100dvh; min-height: 0; overflow: hidden; display:flex;
 #toggleSyncMenuButton > .observer-source-badge {position:absolute;top:0;bottom:auto;right:auto;left:0;z-index:4;width:26px;height:26px;margin:0;border-radius:3px;background:transparent;--badge-backdrop:transparent;pointer-events:none;}
 #toggleSyncMenuButton .sync-mirror-badge {width:26px;height:26px;left:-30px;bottom:-13px;background:transparent;}
 #toggleSyncMenuButton .sync-mirror-badge[data-menu-icon]::before {position:absolute;inset:0;width:26px;height:26px;margin:0;filter:none;}
+#toggleSyncMenuButton:not(:has(.sync-mirror-badge:not([hidden]))) > .observer-source-badge {top:50%;transform:translateY(-50%);}
+#toggleSyncMenuButton:not(:has(> .observer-source-badge)) .sync-mirror-badge:not([hidden]) {top:50%;bottom:auto;transform:translateY(-50%);}
 #dropInMicrophoneButton:disabled {cursor:default;}
 
 .settings-help {font-size:13px;line-height:1.4;opacity:.8;}
