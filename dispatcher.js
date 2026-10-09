@@ -150,6 +150,11 @@
             type: "script",
             url: "TripPreferencesStore.js?build=trip-preferences-store-1",
             hosts: ["order-filler", "settings-frame"]
+        }],
+        ["access-policy-model", {
+            type: "script",
+            url: "AccessPolicyModel.js?build=access-policy-model-1",
+            hosts: ["order-filler", "settings-frame"]
         }]
     ].forEach(([name, descriptor]) => registerResource(name, descriptor));
 })(globalThis);
