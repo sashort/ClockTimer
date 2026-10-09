@@ -87,8 +87,8 @@ body { margin: 0; height: 100dvh; min-height: 0; overflow: hidden; display:flex;
 #dropInMicrophoneButton[hidden] {display:none;}
 #toggleSyncMenuButton {display:grid;place-items:center end;width:60px;height:56px;padding:0;}
 #toggleSyncMenuButton::after {content:none;}
-#toggleSyncMenuButton > .observer-source-badge {position:absolute;top:0;bottom:auto;right:auto;left:0;z-index:4;width:26px;height:26px;margin:0;border-radius:3px;background:#001e60;pointer-events:none;}
-#toggleSyncMenuButton .sync-mirror-badge {width:26px;height:26px;left:-30px;bottom:-13px;}
+#toggleSyncMenuButton > .observer-source-badge {position:absolute;top:0;bottom:auto;right:auto;left:0;z-index:4;width:26px;height:26px;margin:0;border-radius:3px;background:transparent;--badge-backdrop:transparent;pointer-events:none;}
+#toggleSyncMenuButton .sync-mirror-badge {width:26px;height:26px;left:-30px;bottom:-13px;background:transparent;}
 #toggleSyncMenuButton .sync-mirror-badge[data-menu-icon]::before {position:absolute;inset:0;width:26px;height:26px;margin:0;filter:none;}
 #dropInMicrophoneButton:disabled {cursor:default;}
 
