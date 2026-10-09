@@ -45,6 +45,8 @@ on:
       - "SpeechRuntimeOptions.js"
       - "SpeechTransactionTime.js"
       - "ActionSignalContext.js"
+      - "ConnectionStatusModel.js"
+      - "tests/connection-status-model.mjs"
       - "tests/action-signal-context.mjs"
       - "tests/speech-transaction-time.mjs"
       - "tests/speech-runtime-options.mjs"
@@ -213,6 +215,8 @@ jobs:
           node tests/speech-transaction-time.mjs
           node --check ActionSignalContext.js
           node tests/action-signal-context.mjs
+          node --check ConnectionStatusModel.js
+          node tests/connection-status-model.mjs
           node tests/application-startup.mjs
           node --check PageManifest.js
           node --check Context.js
