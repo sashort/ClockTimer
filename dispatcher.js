@@ -98,6 +98,11 @@
             url: "AudioUnlock.js?build=audio-unlock-2",
             hosts: ["order-filler", "settings-frame"]
         }],
+        ["audio-velocity-controller", {
+            type: "script",
+            url: "AudioVelocityController.js?build=audio-velocity-controller-1",
+            hosts: ["order-filler", "settings-frame"]
+        }],
         ["audio-instrument-options", {
             type: "script",
             url: "AudioInstrumentOptions.js?build=audio-instrument-options-1",
