@@ -12,6 +12,8 @@ on:
       - "tests/audio-settings-model.mjs"
       - "tests/audio-announcement-draft.mjs"
       - "AudioAnnouncementDraft.js"
+      - "AudioOutputSettings.js"
+      - "tests/audio-output-settings.mjs"
       - "SpeechAssetCache.js"
       - "tests/speech-asset-cache.mjs"
       - "ClassicScriptLoader.js"
@@ -178,6 +180,7 @@ jobs:
           node tests/audio-settings-startup.mjs
           node tests/audio-settings-model.mjs
           node tests/audio-announcement-draft.mjs
+          node tests/audio-output-settings.mjs
           node --check SpeechAssetCache.js
           node tests/speech-asset-cache.mjs
           node --check ClassicScriptLoader.js
