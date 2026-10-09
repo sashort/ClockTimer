@@ -49,8 +49,7 @@ assert.match(lookupSource, /"preferredName"/);
 assert.match(lookupSource, /"username"/);
 assert.match(lookupSource, /"id"/);
 assert.match(lookupSource, /#identityContext[\s\S]*\.select/);
-assert.match(lookupSource, /\.copy\(/);
-assert.match(lookupSource, /onLiveStream/);
+assert.doesNotMatch(lookupSource, /copyIdentity|onLiveStream|openLiveStream/);
 
 assert.match(app, /const PERMISSION_LOOKUP_USERS\s*=\s*128/);
 assert.match(app, /WMOFIdentityContext/);
@@ -59,11 +58,7 @@ assert.match(app, /canLookupUsers/);
 assert.match(app, /userLookupButton/);
 assert.match(app, /liveTripStream[\s\S]*startViewing\(\s*targetUserId/);
 
-const adminStart = html.indexOf('id="adminSubmenu"');
-const adminEnd = html.indexOf("</div>", adminStart);
-const admin = html.slice(adminStart, adminEnd);
-assert.match(admin, /id="userLookupButton"/);
-assert.match(admin, /id="liveStreamButton"/);
+assert.doesNotMatch(html, /id="userLookupCopySelected"|id="userLookupLiveStream"/);
 
 for (const id of [
     "userLookupDialog",
@@ -74,8 +69,6 @@ for (const id of [
     "userLookupLastName",
     "userLookupPreferredName",
     "userLookupResults",
-    "userLookupCopySelected",
-    "userLookupLiveStream",
     "userLookupClearSelected"
 ]) {
     assert.match(html, new RegExp(`id="${id}"`));

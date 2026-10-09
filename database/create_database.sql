@@ -74,7 +74,7 @@ VALUES
     (8, 'developer_preview', 'Access developer-preview tools and interfaces.'),
     (16, 'developer', 'Access developer tools and interfaces.'),
     (32, 'grant_token_access', 'Create and manage temporary delegated-access tokens.'),
-    (64, 'view_live_streams', 'View another user\'s active live trip stream, including live audio and speech metadata.'),
+    (64, 'drop_in', 'Observe another user\'s ClockTimer through Drop-In, including live audio and speech metadata.'),
     (128, 'lookup_users', 'Search for user identities by ID, username, first name, last name, or preferred name.')
 ON DUPLICATE KEY UPDATE
     `name` = VALUES(`name`),

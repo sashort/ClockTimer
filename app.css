@@ -7458,3 +7458,9 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 .sync-mirror-badge {position:absolute;left:-2px;bottom:-2px;z-index:3;width:13px;height:13px;border-radius:3px;background:#001e60;color:#a9ddf7;pointer-events:none;}
 .sync-mirror-badge[hidden] {display:none;}
 .main-menu .hamburger-menu-popover .sync-mirror-badge[data-menu-icon]::before {position:absolute;inset:0;width:13px;height:13px;margin:0;filter:drop-shadow(0 0 1px #000);}
+.profile-permissions { grid-column: 1 / -1; border: 1px solid currentColor; border-radius: 8px; padding: 8px 12px; }
+.profile-permissions summary { cursor: pointer; font-weight: bold; }
+.profile-permission-options { display: grid; gap: 8px; padding-top: 12px; }
+.profile-permission-options label { display: flex; align-items: center; gap: 8px; }
+.profile-permission-options input[type="checkbox"] { width: auto; min-width: 18px; margin: 0; }
+.profile-permission-options label:has(input:disabled) { opacity: .5; }

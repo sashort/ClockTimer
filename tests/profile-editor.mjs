@@ -23,12 +23,14 @@ w.fetch=async(url,options={})=>{
  }else data={csrfToken:'csrf-test'};
  return {ok,json:async()=>data};
 };
-let saved;const lookup=new w.WMOFUserLookup({baseUrl:w.document.baseURI,canLookup:()=>true,canEdit:()=>true,canAssignPermissions:()=>true,onProfileSaved:user=>saved=user});
+let saved;const lookup=new w.WMOFUserLookup({baseUrl:w.document.baseURI,canLookup:()=>true,canEdit:()=>true,canAssignPermissions:()=>true,canGrantPermission:bit=>bit===128,onProfileSaved:user=>saved=user});
 const settle=()=>new Promise(r=>setTimeout(r,30));
 $('userLookupUsername').value='jane';await lookup.search();await settle();
 assert.equal(lookup.state.phase,'editing');assert.equal(lookup.state.selectedAccountId,42);assert(lookup.state.canSave);assert.equal($('editProfileAccountId').value,'42');assert($('editProfileAccountId').readOnly);
 assert.equal($('editProfileLoginId').value,'0042');assert.equal($('editProfileFirstName').value,'Jane');assert.equal($('editProfilePin').value,'');
-$('editProfileFirstName').value='Janet';$('editProfilePassword').value='replacement password';$('editProfilePin').value='0073';$('editProfileLoginId').value='0001';$('editProfilePermissions').value='128';
+assert.equal($('editProfilePermissions').querySelector('input[value="4"]').disabled,true,'ungrantable permission is disabled');
+assert.equal($('editProfilePermissions').querySelector('input[value="128"]').disabled,false,'held grantable permission stays enabled');
+$('editProfileFirstName').value='Janet';$('editProfilePassword').value='replacement password';$('editProfilePin').value='0073';$('editProfileLoginId').value='0001';$('editProfilePermissions').querySelector('input[value="128"]').checked=true;
 $('editProfileAccountId').value='999'; // Script tampering must never change the selected immutable target.
 holdSave=true;const saving=lookup.saveProfile();await settle();assert.equal(lookup.state.phase,'saving');assert(!lookup.state.canSave);assert($('profileEditorFields').disabled);assert.equal(profiles[42].first_name,'Jane');resolveSave();await saving;holdSave=false;
 const patch=JSON.parse(requests.find(r=>r.method==='PATCH').body);assert.equal(patch.userId,42);assert.equal(patch.loginId,'0001');assert.equal(patch.pin,'0073');assert.equal(patch.permissions,128);assert.equal(patch.password,'replacement password');assert(!('id'in patch));assert.equal(saved.first_name,'Janet');assert.equal($('editProfilePin').value,'');assert.equal($('editProfilePassword').value,'');

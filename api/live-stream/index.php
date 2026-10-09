@@ -211,7 +211,7 @@ function live_stream_peer(PDO $pdo, int $peerId): array
     $row = $statement->fetch();
 
     if (!$row) {
-        api_error('Live stream peer was not found.', 404, 'live_stream_peer_not_found');
+        api_error('Drop-In peer was not found.', 404, 'live_stream_peer_not_found');
     }
 
     foreach (
@@ -253,7 +253,7 @@ function live_stream_require_viewer(
         $peer['viewer_user_id'] !== (int) $actor['id'] ||
         $peer['owner_user_id'] !== $targetUserId
     ) {
-        api_error('Live stream peer access is denied.', 403, 'permission_required');
+        api_error('Drop-In peer access is denied.', 403, 'permission_required');
     }
 
     return $peer;
@@ -279,7 +279,7 @@ if ($method === 'GET') {
             !has_permission($actor, PERMISSION_LOOKUP_USERS)
         ) {
             api_error(
-                'User lookup and live stream permissions are required.',
+                'Account Lookup and Drop-In permissions are required.',
                 403,
                 'permission_required'
             );

@@ -246,13 +246,23 @@
         finally { if (request === revision) {busy = false; controls();} }
     }
     const lookup = new WMOFUserLookup({baseUrl:new URL('./',document.baseURI),identityContext:context,
-        canLookup:()=>permission(128),canViewLive:()=>permission(64),currentUserId:()=>user?.id,
-        onLiveStream:identity => { $('userLookupDialog').close(); void select(identity, true); }});
+        canLookup:()=>permission(128)});
     lookup.setMode('lookup');
-    $('liveStreamLookupButton').addEventListener('click', () => {lookup.setMode('lookup');lookup.sync();$('userLookupDialog').showModal();});
+    // The caller owns its action; generic account lookup has no streaming controls.
+    let lookupWatchButton;
+    function syncLookupWatch(){if(lookupWatchButton)lookupWatchButton.disabled=!permission(64)||!context.current||Number(context.current.userId)===Number(user?.id);}
+    context.addEventListener('identity-selected',syncLookupWatch);
+    context.addEventListener('identity-cleared',syncLookupWatch);
+    $('liveStreamLookupButton').addEventListener('click', () => {
+        lookup.setMode('lookup');lookup.sync();
+        lookupWatchButton=$('dropInLookupActionTemplate').content.firstElementChild.cloneNode(true);
+        lookupWatchButton.addEventListener('click',()=>{if(!lookupWatchButton.disabled)$('userLookupDialog').close();});
+        $('userLookupDialog').querySelector('.user-lookup-selected-actions').append(lookupWatchButton);syncLookupWatch();$('userLookupDialog').showModal();
+    });
     for (const button of $('userLookupDialog').querySelectorAll('.dialog-close')) button.addEventListener('click', () => $('userLookupDialog').close());
     // Copy/select in Account Lookup can choose an identity without starting a connection.
     $('userLookupDialog').addEventListener('close', () => {
+        lookupWatchButton?.remove();lookupWatchButton=undefined;
         const identity = context.current;
         if (!busy && identity && Number(identity.userId) !== view.userId) void select(identity,true);
     });

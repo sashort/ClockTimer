@@ -2,20 +2,15 @@
     "use strict";
 
     let audioActivated = false;
-    let enableStartupAudio;
-    const startupAudioEnabled = new Promise(resolve => { enableStartupAudio = resolve; });
-    let startStartupAnnouncement;
-    let startupAudioDialog;
     const activateStartupAudio = () => {
         if (audioActivated) return;
         audioActivated = true;
-        // Resume in the OK handler without waiting for async catalog loading.
         void globalThis.WMOFAudio?.unlock?.();
-        startupAudioDialog.close();
-        startupAudioDialog.remove();
-        startStartupAnnouncement?.();
-        enableStartupAudio();
+        document.removeEventListener('pointerdown', activateStartupAudio, true);
+        document.removeEventListener('keydown', activateStartupAudio, true);
     };
+    document.addEventListener('pointerdown', activateStartupAudio, true);
+    document.addEventListener('keydown', activateStartupAudio, true);
 
     const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
     await announcementLanguage.load(document.documentElement.lang || "en-US");
@@ -24,7 +19,7 @@
     let startupAnnouncementStarted = false;
     let finishStartupAnnouncement;
     const startupAnnouncementFinished = new Promise(resolve => { finishStartupAnnouncement = () => { startupAnnouncementPending = false; resolve(); }; });
-    startStartupAnnouncement = () => {
+    const startStartupAnnouncement = () => {
         if (startupAnnouncementStarted) return;
         startupAnnouncementStarted = true;
         try {
@@ -36,33 +31,7 @@
             finishStartupAnnouncement();
         }
     };
-    startupAudioDialog = document.createElement("dialog");
-    startupAudioDialog.id = "startupAudioDialog";
-    startupAudioDialog.className = "app-dialog startup-audio-dialog";
-    startupAudioDialog.setAttribute("aria-labelledby", "startupAudioTitle");
-    const startupForm = document.createElement("form");
-    const startupTitle = document.createElement("h2");
-    startupTitle.id = "startupAudioTitle";
-    startupTitle.textContent = announcementText("messages.voiceLogin.applicationStarting");
-    const startupInstructions = document.createElement("p");
-    startupInstructions.textContent = announcementText("messages.voiceLogin.enableAudioPrompt");
-    const startupActions = document.createElement("div");
-    startupActions.className = "dialog-actions";
-    const startupOK = document.createElement("button");
-    startupOK.id = "startupAudioOK";
-    startupOK.type = "submit";
-    startupOK.className = "primary-action";
-    startupOK.textContent = announcementText("messages.voiceLogin.enableAudioAction");
-    startupActions.append(startupOK);
-    startupForm.append(startupTitle, startupInstructions, startupActions);
-    startupAudioDialog.append(startupForm);
-    document.body.append(startupAudioDialog);
-    startupAudioDialog.addEventListener("cancel", event => event.preventDefault());
-    startupForm.addEventListener("submit", event => {
-        event.preventDefault();
-        activateStartupAudio();
-    });
-    startupAudioDialog.showModal();
+    startStartupAnnouncement();
     if (!globalThis.WMOFAudio?.speak) finishStartupAnnouncement();
 
     try {
@@ -1133,17 +1102,7 @@
                     onProfileSaved: user => {if(Number(user.id) === Number(signedInProfile?.id)) populateProfile(user);},
                     canEdit: () => Boolean(Number(signedInProfile?.permissions) & (2 | PERMISSION_SUPERUSER)),
                     canAssignPermissions: () => Boolean(Number(signedInProfile?.permissions) & PERMISSION_SUPERUSER),
-                    canViewLive:
-                        canViewLiveStreams,
-                    currentUserId:
-                        () =>
-                            signedInProfile
-                                ?.id,
-                    onLiveStream: identity => {
-                        const url = new URL("drop-in.php", API_BASE);
-                        url.searchParams.set("userId", identity.userId);
-                        window.open(url, "_blank", "noopener");
-                    }
+                    canGrantPermission: bit => Boolean(Number(signedInProfile?.permissions) & PERMISSION_SUPERUSER) || (Number(signedInProfile?.permissions) & bit) === bit
                 })
             : undefined;
 
@@ -8441,10 +8400,6 @@
     }
 
     function openDialogElement(dialog, { duration = 250, reason = "user" } = {}) {
-        if (startupAudioDialog.open) {
-            void startupAudioEnabled.then(() => openDialogElement(dialog, {duration, reason}));
-            return false;
-        }
         if (
             !dialog ||
             dialog.open ||
@@ -30041,7 +29996,6 @@
                 else {
                     syncNetworkStatusUI();
                     if (new URL(window.location.href).searchParams.get("tool") === "speechTiming") {
-                        await startupAudioEnabled;
                         void actions.openSpeechTiming().catch(console.error);
                     }
                 }

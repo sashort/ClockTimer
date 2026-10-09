@@ -1419,8 +1419,8 @@
     },
     "f5cf8059-9ca7-58b6-af57-288662f83229": {
       "id": "f5cf8059-9ca7-58b6-af57-288662f83229",
-      "text": "Previous",
-      "default": "Previous"
+      "text": "Previous Totals",
+      "default": "Previous Totals"
     },
     "5998d8da-b99e-55cb-95d9-3ef6b43620ed": {
       "id": "5998d8da-b99e-55cb-95d9-3ef6b43620ed",
@@ -3014,8 +3014,8 @@
     },
     "e85c70a4-19b7-5d75-b382-1243317e3509": {
       "id": "e85c70a4-19b7-5d75-b382-1243317e3509",
-      "text": "The selected identity supplies the target user ID. Live-stream permission is checked independently when the connection is opened.",
-      "default": "The selected identity supplies the target user ID. Live-stream permission is checked independently when the connection is opened."
+      "text": "The selected identity supplies the target user ID. Drop-In permission is checked independently when the connection is opened.",
+      "default": "The selected identity supplies the target user ID. Drop-In permission is checked independently when the connection is opened."
     },
     "9e1890c9-d8a7-5e9a-ba77-22f4d2140858": {
       "id": "9e1890c9-d8a7-5e9a-ba77-22f4d2140858",
@@ -3806,9 +3806,9 @@
     },
     "07dba185-8a12-583b-bc6c-c900ac30541d": {
       "id": "07dba185-8a12-583b-bc6c-c900ac30541d",
-      "text": "Live stream permission is required.",
+      "text": "Drop-In permission is required.",
       "source": "app.js:45635",
-      "default": "Live stream permission is required."
+      "default": "Drop-In permission is required."
     },
     "77eb095c-b3c7-5925-a60e-475a1facb32c": {
       "id": "77eb095c-b3c7-5925-a60e-475a1facb32c",
@@ -6714,6 +6714,46 @@
       "id": "96ea0e41-ed08-5ea0-b0ec-f2983ab0ed90",
       "text": "Second hand",
       "default": "Second hand"
+    },
+    "0331bd70-25f8-52d7-adb2-c9eb2c62dc4f": {
+      "id": "0331bd70-25f8-52d7-adb2-c9eb2c62dc4f",
+      "text": "Create accounts",
+      "default": "Create accounts"
+    },
+    "c506c615-675e-5e7e-a6a8-a552e7fc9374": {
+      "id": "c506c615-675e-5e7e-a6a8-a552e7fc9374",
+      "text": "Edit accounts",
+      "default": "Edit accounts"
+    },
+    "fac9c285-5924-5e6d-8b86-2e210234e1e1": {
+      "id": "fac9c285-5924-5e6d-8b86-2e210234e1e1",
+      "text": "Superuser",
+      "default": "Superuser"
+    },
+    "6491e21d-061d-5470-9937-a79263e1506a": {
+      "id": "6491e21d-061d-5470-9937-a79263e1506a",
+      "text": "Developer preview",
+      "default": "Developer preview"
+    },
+    "f944d4da-2cd3-5285-9563-5d59b90095be": {
+      "id": "f944d4da-2cd3-5285-9563-5d59b90095be",
+      "text": "Developer tools",
+      "default": "Developer tools"
+    },
+    "836f1d6e-a7a2-5b96-bdaa-76a9d699b5e3": {
+      "id": "836f1d6e-a7a2-5b96-bdaa-76a9d699b5e3",
+      "text": "Manage access tokens",
+      "default": "Manage access tokens"
+    },
+    "eabd9982-2431-526c-96b3-09d8992d3e4d": {
+      "id": "eabd9982-2431-526c-96b3-09d8992d3e4d",
+      "text": "Drop-In",
+      "default": "Drop-In"
+    },
+    "467a93e7-5d14-5046-bc85-20e64efc6ae2": {
+      "id": "467a93e7-5d14-5046-bc85-20e64efc6ae2",
+      "text": "Look up accounts",
+      "default": "Look up accounts"
     }
   }
 }

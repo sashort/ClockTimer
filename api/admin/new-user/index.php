@@ -108,6 +108,7 @@ $link =
     . rawurlencode($token);
 
 $permissionLabel = static function (string $name): string {
+    if (in_array($name, ['drop_in', 'view_live_streams'], true)) return 'Drop-In';
     return ucwords(str_replace('_', ' ', $name));
 };
 
@@ -136,6 +137,7 @@ h1{width:min(100%,460px);margin:0;padding:10px 14px;background:linear-gradient(1
 .permission-menu{position:absolute;z-index:5;top:calc(100% + 5px);left:0;width:min(340px,82vw);max-height:240px;overflow:auto;padding:8px;border:1px solid #5b81a5;border-radius:9px;background:#fff;box-shadow:0 12px 28px rgb(0 30 96 / 24%)}
 .permission-menu label{display:grid;grid-template-columns:22px 1fr;gap:8px;padding:7px;border-radius:6px;color:#001e60}
 .permission-menu label:hover{background:#e8f6fd}
+.permission-menu label:has(input:disabled){opacity:.5;cursor:not-allowed}
 .permission-menu small{grid-column:2;color:#31577d}
 .multi-use{display:flex;align-items:center;gap:7px;min-height:40px;padding:8px 12px;border:1px solid #5b81a5;border-radius:8px;background:#fff;color:#001e60;font-weight:800}
 input[type=checkbox]{width:18px;height:18px;accent-color:#0053e2}
@@ -158,13 +160,14 @@ button{font:inherit;font-weight:700;padding:10px 20px;border:1px solid #a9ddf7;b
 <?php if ($grantablePermissions === []): ?>
 <div>No additional permissions available.</div>
 <?php else: ?>
-<?php foreach ($grantablePermissions as $permission): ?>
+<?php foreach ($rows as $row): $permission = ['value'=>(int)$row['value'],'name'=>(string)$row['name'],'description'=>(string)$row['description']]; ?>
 <label>
 <input
     type="checkbox"
     name="permissions[]"
     value="<?=htmlspecialchars((string) $permission['value'], ENT_QUOTES)?>"
     <?=isset($selectedPermissions[$permission['value']]) ? 'checked' : ''?>
+    <?=isset($grantablePermissions[$permission['value']]) ? '' : 'disabled'?>
 >
 <span><?=htmlspecialchars($permissionLabel($permission['name']), ENT_QUOTES)?></span>
 <small><?=htmlspecialchars($permission['description'], ENT_QUOTES)?></small>

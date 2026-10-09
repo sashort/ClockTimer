@@ -127,25 +127,21 @@ if(process.argv.includes('--setting-chimes')) {
  console.log('PASS setting on/off/unchanged, final chime-off cue, disabled master, readback and unchanged rate');
 }
 if(!process.argv.includes('--startup-speech')) {
- window.document.querySelector('#startupAudioOK').click();await settle();
+ await settle();
 }
 if(process.argv.includes('--startup-speech')) {
- assert.equal(spoken.length,0,'no startup speech before a user gesture');
- assert.deepEqual(startupAudioCalls,[],'audio is not initialized before OK');
- assert(window.document.querySelector('#startupAudioDialog').open,'startup dialog is shown while initialization continues');
+ assert.equal(spoken.filter(t=>t==='Application is loading').length,1,'page loading announces startup once');
+ assert.equal(window.document.querySelector('#startupAudioDialog'),null,'startup has no blocking dialog');
  window.document.dispatchEvent(new window.Event('pointerdown'));
- assert.equal(spoken.length,0,'only OK releases startup speech');
- const startupButton=window.document.querySelector('#startupAudioOK');
- startupButton.click();startupButton.click();
- assert.equal(spoken.filter(t=>t==='Application is loading').length,1,'OK releases startup exactly once');
- assert.deepEqual(startupAudioCalls,['unlock','speak'],'unlock is invoked before speaking, without awaiting catalog work');
- assert.equal(window.document.querySelector('#startupAudioDialog'),null,'OK removes startup dialog');
+ window.document.dispatchEvent(new window.Event('pointerdown'));
+ assert.deepEqual(startupAudioCalls,['speak','unlock'],'startup speaks while loading; first interaction unlocks audio exactly once');
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();
  await window.WMOFActions.switchToVoiceLogin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
  assert.equal(spoken.filter(t=>t==='Please login using voice').length,0,'ready model must not overtake startup announcement');
  assert(window.WMOFInteractionState.state,'UI initialized while startup audio is pending');
  finishStartup();await settle();assert.equal(spoken.filter(t=>t==='Please login using voice').length,1,'release latest prompt after startup speech completes');
  console.log('PASS startup speech completion barrier without blocking UI/model initialization');
+ if(!process.argv.includes('--voice-login')){window.happyDOM.abort();process.exit(0);}
 }
 if(process.argv.includes('--voice-login')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();

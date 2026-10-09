@@ -14,6 +14,7 @@
         #usersEndpoint;
         #canEdit;
         #canAssignPermissions;
+        #canGrantPermission;
         #onProfileSaved;
         #mode = "edit";
         #profile;
@@ -22,17 +23,12 @@
         #profilePhase = "search";
         #identityContext;
         #canLookup;
-        #canViewLive;
-        #currentUserId;
-        #onLiveStream;
         #dialog;
         #form;
         #status;
         #results;
         #resultCount;
         #loadMore;
-        #copySelected;
-        #liveSelected;
         #clearSelected;
         #selectedName;
         #selectedMeta;
@@ -50,14 +46,10 @@
             onProfileSaved = () => {},
             canEdit = () => false,
             canAssignPermissions = () => false,
+            canGrantPermission = () => canAssignPermissions(),
             canLookup =
-                () => false,
-            canViewLive =
-                () => false,
-            currentUserId =
-                () => undefined,
-            onLiveStream =
-                () => {}
+                () => false
+
         } = {}) {
             this.#endpoint =
                 new URL(
@@ -68,16 +60,11 @@
             this.#canEdit = canEdit;
             this.#onProfileSaved = onProfileSaved;
             this.#canAssignPermissions = canAssignPermissions;
+            this.#canGrantPermission = canGrantPermission;
             this.#identityContext =
                 identityContext;
             this.#canLookup =
                 canLookup;
-            this.#canViewLive =
-                canViewLive;
-            this.#currentUserId =
-                currentUserId;
-            this.#onLiveStream =
-                onLiveStream;
 
             this.#dialog =
                 $("#userLookupDialog");
@@ -91,10 +78,6 @@
                 $("#userLookupResultCount");
             this.#loadMore =
                 $("#userLookupLoadMore");
-            this.#copySelected =
-                $("#userLookupCopySelected");
-            this.#liveSelected =
-                $("#userLookupLiveStream");
             this.#clearSelected =
                 $("#userLookupClearSelected");
             this.#selectedName =
@@ -132,7 +115,7 @@
             this.#profileBusy = false;
             this.#profilePhase = "search";
             const editor = $("#profileEditor");
-            if(editor) {editor.hidden = true; for(const input of editor.querySelectorAll("input")) input.value = "";}
+            if(editor) {editor.hidden = true; for(const input of editor.querySelectorAll("input")){if(input.type==='checkbox')input.checked=false;else input.value = "";}}
         }
         async loadProfile() {
             this.clearProfile();
@@ -151,9 +134,9 @@
                 if(!response.ok || !data.user) throw new Error(data.message || this.#text("loadFailed"));
                 this.#profile = data.user;
                 this.#profilePhase = "editing";
-                const mapping = {AccountId:"id",FirstName:"first_name",LastName:"last_name",PreferredName:"preferred_name",Username:"username",LoginId:"login_id",Permissions:"permissions"};
+                const mapping = {AccountId:"id",FirstName:"first_name",LastName:"last_name",PreferredName:"preferred_name",Username:"username",LoginId:"login_id"};
                 for(const [key,column] of Object.entries(mapping)) $("#editProfile"+key).value = String(data.user[column] ?? "");
-                $("#editProfilePermissions").disabled = !this.#canAssignPermissions();
+                for(const option of $("#editProfilePermissions").querySelectorAll("input")){option.checked=Boolean(Number(data.user.permissions)&Number(option.value));option.disabled=!this.#canAssignPermissions()||!this.#canGrantPermission(Number(option.value));}
                 fields.disabled = false; $("#editProfileSave").disabled = false; status.textContent = "";
                 return true;
             } catch(error) {
@@ -172,7 +155,8 @@
             if(password) input.password = password;
             if(pin) input.pin = pin;
             if(loginId !== (this.#profile.login_id ?? "")) input.loginId = loginId;
-            if(this.#canAssignPermissions() && Number($("#editProfilePermissions").value) !== Number(this.#profile.permissions)) input.permissions = Number($("#editProfilePermissions").value);
+            const permissions=[...$("#editProfilePermissions").querySelectorAll("input:checked")].reduce((mask,option)=>mask|Number(option.value),0);
+            if(this.#canAssignPermissions() && permissions !== Number(this.#profile.permissions)) input.permissions = permissions;
             this.#profilePhase = "saving";
             this.#profileBusy = true; fields.disabled = true; $("#editProfileSave").disabled = true; status.textContent = this.#text("saving");
             try {
@@ -233,16 +217,6 @@
                             })
                 );
 
-            this.#copySelected
-                ?.addEventListener(
-                    "click",
-                    () =>
-                        void this
-                            .copyIdentity(
-                                this
-                                    .currentIdentity
-                            )
-                );
 
             this.#clearSelected
                 ?.addEventListener(
@@ -253,16 +227,6 @@
                             ?.clear?.()
                 );
 
-            this.#liveSelected
-                ?.addEventListener(
-                    "click",
-                    () =>
-                        this
-                            .openLiveStream(
-                                this
-                                    .currentIdentity
-                            )
-                );
 
             this.#dialog
                 ?.addEventListener(
@@ -444,21 +408,6 @@
             );
         }
 
-        #isSelf(
-            identity
-        ) {
-            return Boolean(
-                identity &&
-                Number(
-                    identity.userId
-                ) ===
-                    Number(
-                        this
-                            .#currentUserId()
-                    )
-            );
-        }
-
         #renderResults() {
             this.#results
                 ?.replaceChildren();
@@ -562,64 +511,7 @@
                             )
                 );
 
-                const copy =
-                    document
-                        .createElement(
-                            "button"
-                        );
-                copy.type =
-                    "button";
-                copy.textContent =
-                    globalThis.WMOFLanguagePack.text("9b02e0b1-7add-5cec-ba58-0f0c2b915c37");
-                copy.addEventListener(
-                    "click",
-                    () =>
-                        void this
-                            .copyIdentity(
-                                identity
-                            )
-                );
-
-                actions.append(
-                    select,
-                    copy
-                );
-
-                if (
-                    this
-                        .#canViewLive() &&
-                    !this
-                        .#isSelf(
-                            identity
-                        )
-                ) {
-                    const live =
-                        document
-                            .createElement(
-                                "button"
-                            );
-
-                    live.type =
-                        "button";
-                    live.className =
-                        "primary-action";
-                    live.dataset.action =
-                        "live-stream";
-                    live.textContent =
-                        globalThis.WMOFLanguagePack.text("c796d00c-df14-54c9-91ae-40022ff832db");
-                    live.addEventListener(
-                        "click",
-                        () =>
-                            this
-                                .openLiveStream(
-                                    identity
-                                )
-                    );
-
-                    actions.append(
-                        live
-                    );
-                }
+                actions.append(select);
 
                 row.append(
                     card,
@@ -676,21 +568,6 @@
                     this
                         .#canLookup()
                 );
-            const canView =
-                Boolean(
-                    this
-                        .#canViewLive()
-                );
-            const canStream =
-                Boolean(
-                    identity &&
-                    canView &&
-                    !this
-                        .#isSelf(
-                            identity
-                        )
-                );
-
             if (
                 this.#selectedName
             ) {
@@ -714,26 +591,10 @@
             }
 
             if (
-                this.#copySelected
-            ) {
-                this.#copySelected.disabled =
-                    !identity;
-            }
-
-            if (
                 this.#clearSelected
             ) {
                 this.#clearSelected.disabled =
                     !identity;
-            }
-
-            if (
-                this.#liveSelected
-            ) {
-                this.#liveSelected.hidden =
-                    !canView;
-                this.#liveSelected.disabled =
-                    !canStream;
             }
 
             for (
@@ -747,11 +608,7 @@
             ) {
                 if (
                     element ===
-                        this.#copySelected ||
-                    element ===
-                        this.#clearSelected ||
-                    element ===
-                        this.#liveSelected
+                        this.#clearSelected
                 ) {
                     continue;
                 }
@@ -1069,63 +926,7 @@
             }
         }
 
-        async copyIdentity(
-            identity
-        ) {
-            if (!identity) {
-                return false;
-            }
 
-            try {
-                await this
-                    .#identityContext
-                    .copy(
-                        identity
-                    );
-
-                this.#status.textContent =
-                    globalThis.WMOFLanguagePack.text("9c8f7cef-a26e-57d8-bd87-7719b71f3376");
-
-                return true;
-            }
-            catch (error) {
-                this.#status.textContent =
-                    error.message ||
-                    globalThis.WMOFLanguagePack.text("f07d2624-75dd-54c5-b3b7-7744ecb393d0");
-
-                return false;
-            }
-        }
-
-        openLiveStream(
-            identity
-        ) {
-            if (
-                !identity ||
-                !this
-                    .#canViewLive() ||
-                this
-                    .#isSelf(
-                        identity
-                    )
-            ) {
-                return false;
-            }
-
-            const selected =
-                this
-                    .#identityContext
-                    .select(
-                        identity
-                    );
-
-            this
-                .#onLiveStream(
-                    selected
-                );
-
-            return true;
-        }
     }
 
     globalThis.WMOFUserLookup =

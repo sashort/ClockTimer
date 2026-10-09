@@ -11,6 +11,8 @@ function api_error(string $message, int $status = 400, string $code = 'bad_reque
 function authenticated_user_id(): int { return $GLOBALS['actorId']; }
 require_once __DIR__ . '/../api/_core/permissions.php';
 require_once __DIR__ . '/../api/_core/user_accounts.php';
+require_once __DIR__ . '/../api/_core/access_tokens.php';
+require_once __DIR__ . '/../api/_core/new_user_invites.php';
 // Use the real input-validation helpers; api_error above replaces HTTP exits.
 $source = file_get_contents(__DIR__ . '/../api/_core/response.php');
 $start = strpos($source, 'function require_string');
@@ -81,6 +83,10 @@ test('creator creates ordinary account', fn()=>expect($new['permissions']===0 &&
 test('hash never returned', fn()=>expect(!isset($new['password_hash'])));
 test('password spaces preserved', function() use($pdo,$new) { $s=$pdo->prepare('SELECT password_hash FROM users WHERE id=?'); $s->execute([$new['id']]); expect(password_verify(' with spaces ',$s->fetchColumn())); });
 test('creator cannot create elevated account', fn()=>rejects(fn()=>save_user_account($pdo,array_merge($input,['username'=>'elevated','permissions'=>4]),true),403,'permission_required'));
+test('QR redemption rejects permissions creator does not hold', fn()=>rejects(fn()=>create_invited_user($pdo,2,128,array_merge($input,['username'=>'qr-forged'])),403,'permission_required'));
+$pdo->exec('UPDATE users SET permissions=0 WHERE id=2');
+test('QR redemption rejects a revoked creator', fn()=>rejects(fn()=>create_invited_user($pdo,2,1,array_merge($input,['username'=>'qr-revoked'])),403,'permission_required'));
+$pdo->exec('UPDATE users SET permissions=1 WHERE id=2');
 $GLOBALS['actorId']=1;
 test('self profile update', fn()=>expect(save_user_account($pdo,['preferredName'=>'Bob'],false)['preferred_name']==='Bob'));
 test('self cannot escalate', fn()=>rejects(fn()=>save_user_account($pdo,['permissions'=>4],false),403,'permission_required'));

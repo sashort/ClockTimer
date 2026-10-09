@@ -7,9 +7,9 @@
     const permitted = mask => Boolean(Number(user?.permissions) & (mask | 4));
     const lookup = new WMOFUserLookup({baseUrl:new URL('./',document.baseURI),identityContext:WMOFIdentityContext,
         canLookup:()=>permitted(128),canEdit:()=>Boolean(user && (Number(WMOFIdentityContext.current?.userId) === Number(user.id) || permitted(2))),
-        canAssignPermissions:()=>permitted(4),canViewLive:()=>permitted(64),currentUserId:()=>user?.id,
-        onProfileSaved:profile=>{if(Number(profile.id)===Number(user?.id)){user=profile;render();}},
-        onLiveStream:identity=>{const url=new URL('drop-in.php',document.baseURI);url.searchParams.set('userId',identity.userId);window.open(url,'_blank','noopener');}});
+        canAssignPermissions:()=>permitted(4),
+        canGrantPermission:bit=>permitted(bit),
+        onProfileSaved:profile=>{if(Number(profile.id)===Number(user?.id)){user=profile;render();}}});
     function render(expand = false) {
         $('signedOutActions').hidden = Boolean(user);
         $('signedInActions').hidden = !user;
