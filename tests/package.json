@@ -39,7 +39,8 @@
     "test:persistence-startup": "node persistence-startup.mjs",
     "test:speech-menu-mount": "node speech-menu-mount.mjs",
     "test:audio-unlock": "node audio-unlock.mjs",
-    "test:classic-script-loader": "node classic-script-loader.mjs"
+    "test:classic-script-loader": "node classic-script-loader.mjs",
+    "test:speech-asset-cache": "node speech-asset-cache.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
