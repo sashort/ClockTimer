@@ -710,11 +710,11 @@ assert.match(
 
     assert.match(
         appSource,
-        /changeGlobalAudioRate[\s\S]*?speechVelocity[\s\S]*?toneVelocity[\s\S]*?Speech Rate/
+        /changeGlobalAudioRate[\s\S]*?audioSettings\.speechVelocity[\s\S]*?stepAudioVelocity[\s\S]*?messages\.settings\.speechRate/
     );
     assert.match(
         appSource,
-        /changeGlobalAudioVolume[\s\S]*?speechVolume[\s\S]*?toneVolume[\s\S]*?Speech Volume/
+        /changeGlobalAudioVolume[\s\S]*?audioSettings\.volume[\s\S]*?stepAudioVolume[\s\S]*?messages\.settings\.volume/
     );
     assert.match(
         audioSettingsModelSource,
