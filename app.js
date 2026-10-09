@@ -28869,7 +28869,9 @@
         return menu;
     }
 
-    void (async () => {
+    // Settings surfaces reuse the existing handlers but must not initialize speech UI/runtime.
+    if (!settingsOnlyPage && globalThis.ClockTimerContext?.normalize().capabilities.speechMenu !== false) {
+        void (async () => {
         try {
             await ensureSpeechRuntime();
             bindVoiceEntryTranscriptPipe();
@@ -29565,6 +29567,8 @@
 
     })();
 
+    }
+
     function captureVoiceCommandFeedback(element, context) {
         const rangeCommand = element?.getAttribute("speech-function") === "WMOFActions.changeGoalMode" &&
             Boolean(globalThis.WMOFLanguagePack.language.speech.ranges?.[context?.arguments?.[0]]);
@@ -29858,6 +29862,7 @@
             }
         })();
     } else showInitialLoginDialog();
+    if (!settingsOnlyPage && globalThis.ClockTimerContext?.normalize().capabilities.calendarStartup !== false) {
     void (async () => {
         try {
             const response = await fetch(new URL("api/calendar/?result=records", API_BASE), {credentials:"same-origin", headers:{Accept:"application/json"}});
@@ -29867,6 +29872,7 @@
             refreshTripLogSelection();
         } catch (error) { showTripRangeError(error.message || "Calendar lookup failed."); }
     })();
+    }
 
     // Settings iframe bootstrap waits for this event before invoking the same
     // pointerup entry point as Order-Filler, avoiding a race with async startup.
