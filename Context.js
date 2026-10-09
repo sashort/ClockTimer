@@ -59,4 +59,5 @@
     }
 
     root.ClockTimerContext = Object.freeze({ infer, normalize, child });
+    root.ClockTimerPageContext = normalize(infer());
 })(globalThis);
