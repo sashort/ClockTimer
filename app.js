@@ -21438,12 +21438,8 @@
     function tripEndTotalSpeech(
         detail
     ) {
-        const total =
-            detail?.summary?.total;
         const countedPercent =
-            Number(
-                total?.countedPercent
-            );
+            globalThis.ClockTimerTripGoalModel.countedPercent(detail);
         const parts = [];
         const summary =
             consumeAnnouncementAction(
