@@ -3068,6 +3068,54 @@ class SpeechMenu {
         }
     }
 
+    /*
+     * Scope hypotheses using the active registered command phrases before
+     * they enter the live dispatcher. This is prefix-only: parameter values
+     * and command-chain tails remain the planner's responsibility. If the
+     * active grammar contains opaque patterns, fail open rather than deleting
+     * speech that may belong to a free-form collector.
+     */
+    static #scopeTranscriptToCommands(transcript) {
+        const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
+        if (!words.length) return "";
+
+        const starts = new Set();
+        let uncertain = false;
+        for (const element of SpeechMenu.#availableCandidates()) {
+            const pattern = element.getAttribute("speech-pattern");
+            if (!pattern) continue;
+            const phrases = SpeechMenu.#expandRegexSource(pattern);
+            if (!phrases.length) {
+                uncertain = true;
+                continue;
+            }
+            let foundStart = false;
+            for (const phrase of phrases) {
+                const normalized = SpeechMenu.#normalizeTranscript(
+                    String(phrase).replace(/<[^>]+>/g, " ")
+                );
+                const first = normalized.split(" ").filter(Boolean)[0];
+                if (!first || /[()[\]{}*+?|\\^$]/.test(first)) continue;
+                starts.add(first);
+                foundStart = true;
+            }
+            if (!foundStart) uncertain = true;
+        }
+
+        if (uncertain || !starts.size) return words.join(" ");
+
+        const canStart = word => [...starts].some(start =>
+            start === word || start.startsWith(word)
+        );
+        const index = words.findIndex(canStart);
+        if (index >= 0) return words.slice(index).join(" ");
+
+        // Preserve a final partial command word while removing clearly
+        // out-of-scope leading speech. Later cumulative hypotheses can finish it.
+        const last = words[words.length - 1];
+        return [...starts].some(start => start.startsWith(last)) ? last : "";
+    }
+
     static #onSherpaTranscript = event => {
         const detail =
             event.detail || {};
@@ -3086,11 +3134,16 @@ class SpeechMenu {
             return;
         }
 
-        const transcript = SpeechMenu.#stripSynthesizedSpeech(
+        const rawTranscript = SpeechMenu.#stripSynthesizedSpeech(
             SpeechMenu.#normalizeTranscript(
                 [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" ")
             )
         );
+        const transcript = SpeechMenu.#scopeTranscriptToCommands(rawTranscript);
+
+        SpeechMenu.#emit("speechTranscriptScoped", {
+            utteranceId: id, rawTranscript, transcript, isFinal: Boolean(detail.isFinal)
+        });
 
         if (!transcript) {
             return;
