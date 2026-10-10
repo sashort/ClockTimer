@@ -30,6 +30,7 @@ source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
 Function(source)();
 const speech=globalThis.SpeechMenu;
+globalThis.__speechPlannerDebug=true;
 window.SpeechMenu=speech;
 const calls=[],errors=[];
 speech.events.addEventListener('utteranceUnrecognized',e=>errors.push(e.detail));
