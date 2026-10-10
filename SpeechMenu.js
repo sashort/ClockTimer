@@ -6563,14 +6563,10 @@ class SpeechMenu {
         const words = normalizedTranscript.split(" ").filter(Boolean);
         const pattern = element.getAttribute("speech-pattern") || "";
         const phrases = SpeechMenu.#expandRegexSource(pattern);
-        // A parameterized command cannot be complete until its parameter is
-        // present, even when its literal prefix is also a shorter command.
-        // Conversely, a parameter-free pattern that matches exactly is complete.
-        if (!pattern.includes("(?<")) {
-            try {
-                if (new RegExp(pattern, "i").test(normalizedTranscript)) return false;
-            } catch {}
-        }
+        // Do not use a broad regex match to classify an exact command:
+        // optional literal prefixes can backtrack into a free-form parameter
+        // (for example, "standard" can be captured as the duration itself).
+        // The expanded phrase's literal prefix below distinguishes that case.
         return phrases.some(phrase => {
             if (!SpeechMenu.#phraseCanContinue(transcript, phrase)) return false;
             const prefix = SpeechMenu.#normalizeTranscript(phrase).split(/\s+/).filter(Boolean);
