@@ -6554,6 +6554,25 @@ class SpeechMenu {
         return Boolean(firstKind && secondKind);
     }
 
+    // Normalize a declared time/duration capture independently of command
+    // planning. This lets the planner test the first context's interpretation
+    // even when a competing tail parse has already split the raw words.
+    static #normalizeDeclaredSpeechValue(element, transcript) {
+        const kind = SpeechMenu.#speechValueKind(element);
+        const field = element?.getAttribute?.("speech-preproc-field");
+        const pattern = element?.speechPattern;
+        if (!kind || !field || !pattern) return undefined;
+        pattern.lastIndex = 0;
+        const match = pattern.exec(transcript);
+        const value = match?.groups?.[field];
+        if (!value) return undefined;
+        const normalize = globalThis.EnglishSpeechValuePreprocessor?.normalize;
+        if (typeof normalize !== "function") return undefined;
+        const canonical = normalize(value, kind === "time" ? "clock" : kind);
+        if (typeof canonical !== "string" || !canonical) return undefined;
+        return transcript.replace(value, canonical);
+    }
+
     // Collect an opaque sequence using the item's own matching/preprocessing
     // contract. No language, numeric format, or value type is assumed.
     static async #collectSpeechSequence(element, words, utterance, signal, probe) {
@@ -6801,7 +6820,10 @@ class SpeechMenu {
                         const mergedEnd = end + skippedTailWords + tail.consumedWords;
                         if (tailWords.length && mergedEnd > end) {
                             const mergedSegment = words.slice(0, mergedEnd).join(" ");
-                            const mergedProbe = await probeSegment(mergedSegment);
+                            const normalizedMerged = SpeechMenu.#normalizeDeclaredSpeechValue(element, mergedSegment);
+                            const mergedProbe = normalizedMerged
+                                ? await probeSegment(normalizedMerged)
+                                : await probeSegment(mergedSegment);
                             if (mergedProbe && !signal?.aborted) {
                                 const mergedStep = {...mergedProbe, segmentTranscript: mergedSegment, optimistic,
                                     nextContext: context, nextSurfaceStack: frames, context: projectedContext,
