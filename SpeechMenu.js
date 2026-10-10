@@ -2057,7 +2057,6 @@ class SpeechMenu {
             }
         }
 
-        append(globalThis.WMOFRecognizerNames?.name);
         return values;
     }
 
@@ -3086,15 +3085,11 @@ class SpeechMenu {
             return;
         }
 
-        const rawTranscript = SpeechMenu.#normalizeTranscript(
-            [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" "));
-        const barge = (active === utterance || (!active && detail.isFinal)) && !utterance.bargeInFlushing
-            ? globalThis.WMOFRecognizerNames?.split(rawTranscript) : null;
-        if (barge) {
-            SpeechMenu.#flushNamedStream(utterance, barge, Boolean(detail.isFinal));
-            return;
-        }
-        const transcript = SpeechMenu.#stripSynthesizedSpeech(rawTranscript);
+        const transcript = SpeechMenu.#stripSynthesizedSpeech(
+            SpeechMenu.#normalizeTranscript(
+                [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" ")
+            )
+        );
 
         if (!transcript) {
             return;
