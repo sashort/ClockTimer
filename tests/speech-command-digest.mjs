@@ -436,9 +436,13 @@ try {
     delete globalThis.WMOFStateTransactions;
     // Leading recognition junk is slid off the stream without preventing a
     // command or its chained tail from being recognized.
-    // A free-form parameter can otherwise swallow leading ASR gibberish and
-    // prevent the concrete command at the tail from ever being considered.
-    const catchAll=make(document.body,'catchAll','^(?<textValue>.+)    const noisy=fresh();
+    // A free-form parameter must not swallow a valid command at the tail.
+    const catchAll=make(document.body,'catchAll','^(?<textValue>.+)$','sleep',{'speech-open-ended':''});
+    const swallowed=fresh();
+    await hear(swallowed,'um nonsense show log',true);await swallowed.digestQueue;
+    assert.deepEqual(calls,[['log']],'a catch-all parameter must not swallow a valid command at the tail');
+    catchAll.remove();
+    const noisy=fresh();
     await hear(noisy,'um nonsense show log',true);await noisy.digestQueue;
     assert.deepEqual(calls,[['log']],'leading junk is discarded before a valid command');
     const noisyChain=fresh();
