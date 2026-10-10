@@ -6568,12 +6568,16 @@ class SpeechMenu {
         // (for example, "standard" can be captured as the duration itself).
         // The expanded phrase's literal prefix below distinguishes that case.
         return phrases.some(phrase => {
-            if (!SpeechMenu.#phraseCanContinue(transcript, phrase)) return false;
             const prefix = SpeechMenu.#normalizeTranscript(phrase).split(/\s+/).filter(Boolean);
             const parameter = prefix.findIndex(token => /^<[^>]+>$/.test(token));
             const literal = parameter < 0 ? prefix : prefix.slice(0, parameter);
-            return literal.length > 0 && words[0] === literal[0] && words.slice(0, literal.length).every((word, index) =>
-                literal[index] === word || (index === words.length - 1 && literal[index]?.startsWith(word)));
+            const literalPrefixMatches = literal.length > 0 && words.length <= literal.length &&
+                words.every((word, index) =>
+                    literal[index] === word || (index === words.length - 1 && literal[index]?.startsWith(word)));
+            // An exact short alternative (such as "sync") must remain pending
+            // when it is also the literal prefix of a parameterized alternative.
+            return literalPrefixMatches && (parameter >= 0 ||
+                SpeechMenu.#phraseCanContinue(transcript, phrase));
         });
     }
 
