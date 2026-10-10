@@ -148,53 +148,12 @@ try {
     future.open=false;
     editor.remove();
     standard.setAttribute('speech-pattern','^standard(?: time)? (?<timeValue>.+)$');
-    // Named boundaries finalize old continuations while capture continues independently.
-    globalThis.WMOFRecognizerNames={name:'Beatrice',split(text){
-        const m=/\bbeatrice\b/i.exec(text);return m ? {name:'Beatrice',before:text.slice(0,m.index).trim(),after:text.slice(m.index+m[0].length).trim()} : null;
-    }};
-    const continuing=fresh();
-    await hear(continuing,'ready at four twenty');
-    assert.equal(calls.length,0);
-    const restarted=speech.testResult(continuing,'ready at four twenty two trailing rubbish Beatrice show log',true);
-    assert.notEqual(restarted.id,continuing.id,'capture restarts before old command completion');
-    await restarted.bargeInBarrier;await new Promise(setImmediate);await restarted.digestQueue;
-    assert.deepEqual(calls,[['ready','4:22'],['log']],'longest valid old continuation finishes before fresh command');
-    assert.equal(errors.length,0,'unmatched tail does not reject completed commands');
-
-    let releaseBuffered;
-    readyOutcome=()=>new Promise(resolve=>{releaseBuffered=resolve;});
-    const blocked=fresh();
-    await hear(blocked,'ready at four twenty two show log');
-    assert.deepEqual(calls,[['ready','4:22']]);
-    const buffered=speech.testResult(blocked,'ready at four twenty two show log junk Beatrice show log',true);
-    await new Promise(setImmediate);
-    assert.deepEqual(calls,[['ready','4:22']],'new commands wait while old asynchronous action is pending');
-    speech.testInvalidate();
-    assert.equal(speech.testActive(),buffered,'old action state changes preserve newly buffered capture');
-    releaseBuffered(true);await buffered.bargeInBarrier;await new Promise(setImmediate);await buffered.digestQueue;
-    assert.deepEqual(calls,[['ready','4:22'],['log'],['log']],'queued old command completes once, then fresh command runs');
-    readyOutcome=()=>Promise.resolve(true);
-
-    const repeated=fresh();
-    const latest=speech.testResult(repeated,'show log Beatrice show log Beatrice show log',true);
-    await latest.bargeInBarrier;await new Promise(setImmediate);await latest.digestQueue;
-    assert.deepEqual(calls,[['log'],['log'],['log']],'multiple boundaries preserve the commands between names');
-    const nameFirst=fresh();
-    const namedStart=speech.testResult(nameFirst,'Beatrice show log',true);
-    await namedStart.bargeInBarrier;await new Promise(setImmediate);await namedStart.digestQueue;
-    assert.deepEqual(calls,[['log']],'streams may begin with the configured name');
-    const nameOnly=fresh();
-    const waiting=speech.testResult(nameOnly,'Beatrice',false);
-    await waiting.bargeInBarrier;
-    assert.equal(calls.length,0,'name alone waits without executing a command');
-    speech.testResult(waiting,'show log',true);await new Promise(setImmediate);await waiting.digestQueue;
-    assert.deepEqual(calls,[['log']],'command after a name-only boundary uses the fresh capture');
-    const finalBoundary=fresh();
-    await hear(finalBoundary,'ready at four twenty');
-    speech.testFinish('candidate-silence',true);
-    const finalRestart=speech.testResult(finalBoundary,'ready at four twenty two junk Beatrice show log',true);
-    await finalRestart.bargeInBarrier;await new Promise(setImmediate);await finalRestart.digestQueue;
-    assert.deepEqual(calls,[['ready','4:22'],['log']],'a name first resolved by final decode also preserves old continuations');
+    // Recognizer-name preferences are intentionally not speech-command prefixes.
+    globalThis.WMOFRecognizerNames={name:'Beatrice',split(){throw new Error('recognizer name must not split command streams');}};
+    const ordinary=fresh();
+    await hear(ordinary,'show log Beatrice show log',true);
+    await ordinary.digestQueue;
+    assert.deepEqual(calls,[['log'],['log']],'recognizer name is ordinary transcript text, not a stream boundary');
     delete globalThis.WMOFRecognizerNames;
     // Independent command groups compete for the same unconsumed words.
     const syncGroup=document.createElement('section');document.body.append(syncGroup);
