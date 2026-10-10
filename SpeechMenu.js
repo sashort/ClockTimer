@@ -6668,8 +6668,27 @@ class SpeechMenu {
                     canContinue: SpeechMenu.#isOpenEndedParameter(element) || SpeechMenu.#digestCanContinue(element, segment, candidates)};
                 const remaining = words.slice(end);
                 if (remaining.length) {
-                    const tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context, frames, optimistic);
-                    if (tail) select({...tail, steps: [step, ...tail.steps], consumedWords: end + tail.consumedWords});
+                    let tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context, frames, optimistic);
+                    let skippedTailWords = 0;
+                    // A non-collector command may be followed by recognition
+                    // junk before the next valid command. If direct continuation
+                    // fails, search later tail offsets rather than invalidating
+                    // the already-valid command at the head.
+                    if ((!tail || tail.invalid) && !SpeechMenu.#isOpenEndedParameter(element)) {
+                        for (let skip = 1; skip < remaining.length; skip++) {
+                            const later = await SpeechMenu.#planDigest(
+                                next, remaining.slice(skip), utterance, signal, depth + 1, memo,
+                                context, frames, optimistic);
+                            if (signal?.aborted) return undefined;
+                            if (later && !later.invalid && (later.steps.length || later.pending)) {
+                                tail = later;
+                                skippedTailWords = skip;
+                                break;
+                            }
+                        }
+                    }
+                    if (tail) select({...tail, steps: [step, ...tail.steps],
+                        consumedWords: end + skippedTailWords + tail.consumedWords});
                     else select({steps: [step], exact: false, continuation: false, terminal: false,
                         invalid: true, consumedWords: end, remainder: remaining.join(" ")});
                 } else {
