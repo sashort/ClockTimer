@@ -4391,7 +4391,7 @@ class SpeechMenu {
         for (const phrase of phrases) {
             const escaped = phrase.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
             transcript = transcript.replace(new RegExp("(?:^|\\s)" + escaped + "(?=\\s|$)", "g"), " ")
-                .replace(/\\s+/g, " ").trim();
+                .replace(/\s+/g, " ").trim();
             if (!transcript) return "";
         }
 
