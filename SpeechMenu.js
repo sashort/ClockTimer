@@ -6599,17 +6599,16 @@ class SpeechMenu {
         if (!words.length) return undefined;
         let best;
         let offset = 0;
-        // Search the head and the remaining tail. An open-ended/collecting
-        // command can superficially absorb arbitrary leading recognition noise;
-        // keep it as a fallback, but prefer a concrete command found later.
-        // This lets "gibberish show log" recover without losing a legitimate
-        // open-ended command when no later command is present.
+        // Search beyond a free-form collector at the head. During voice login,
+        // for example, the spoken prompt can be transcribed as leading noise;
+        // a collector must not absorb that noise and hide the following digits.
+        // Keep the collector as a fallback if no more specific tail command fits.
         for (let attempt = 0; attempt < 2; attempt++) {
             SpeechMenu.#index().flush();
             const generation = SpeechMenu.#index().generation;
             best = undefined;
             offset = 0;
-            let openEndedFallback;
+            let collectorFallback;
             for (let start = 0; start < words.length; start++) {
                 const candidate = await SpeechMenu.#planDigest(
                     SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
@@ -6617,21 +6616,20 @@ class SpeechMenu {
                 if (signal?.aborted) return undefined;
                 if (!candidate || (!candidate.steps.length && !candidate.pending)) continue;
                 const firstStep = candidate.steps[0];
-                const openEnded = firstStep && (
-                    firstStep.canContinue ||
-                    firstStep.commandElement.hasAttribute("speech-open-ended") ||
-                    firstStep.commandElement.hasAttribute("speech-collect"));
-                if (openEnded && start < words.length - 1) {
-                    openEndedFallback ??= {candidate, offset: start};
+                const collector = firstStep && (
+                    firstStep.commandElement.hasAttribute("speech-collect") ||
+                    firstStep.commandElement.hasAttribute("speech-open-ended"));
+                if (collector && start < words.length - 1) {
+                    collectorFallback ??= {candidate, offset: start};
                     continue;
                 }
                 best = candidate;
                 offset = start;
                 break;
             }
-            if (!best && openEndedFallback) {
-                best = openEndedFallback.candidate;
-                offset = openEndedFallback.offset;
+            if (!best && collectorFallback) {
+                best = collectorFallback.candidate;
+                offset = collectorFallback.offset;
             }
             SpeechMenu.#index().flush();
             if (generation === SpeechMenu.#index().generation) break;
