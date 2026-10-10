@@ -43,7 +43,8 @@ globalThis.TestChain=window.TestChain={
     okay(){calls.push(['okay']);return true;},
     permitted(){return false;},
     sync(syncAction){calls.push(['sync',syncAction]);return true;},
-    sleep(){calls.push(['sleep']);return true;}
+    sleep(){calls.push(['sleep']);return true;},
+    collect(value){calls.push(['collect',value]);return true;}
 
 };
 const preprocessorCalls=[];
@@ -442,6 +443,24 @@ try {
     await hear(swallowed,'um nonsense show log',true);await swallowed.digestQueue;
     assert.deepEqual(calls,[['log']],'a catch-all parameter must not swallow a valid command at the tail');
     catchAll.remove();
+    // A digit collector can accept both a complete four-digit sequence and a
+    // single final digit. The complete sequence after announcement noise wins.
+    const loginDigits=make(document.body,'loginDigits','^(?<digits>1 2 3 4|4)
+    await hear(noisy,'um nonsense show log',true);await noisy.digestQueue;
+    assert.deepEqual(calls,[['log']],'leading junk is discarded before a valid command');
+    const noisyChain=fresh();
+    await hear(noisyChain,'uh random ready at four fifteen standard time one hour',true);
+    await noisyChain.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']],
+        'leading junk is discarded while the remaining command chain stays intact');
+    console.log('PASS incremental command digestion, priming, UI lag, parameter boundaries, ordered actions, invalid tails, failure, cancellation and hard gates');
+} finally {speech.testReset();await window.happyDOM.close();}
+,'collect',{'speech-collect':''});
+    const loginNoise=fresh();
+    await hear(loginNoise,'please login via voice 1 2 3 4',true);await loginNoise.digestQueue;
+    assert.deepEqual(calls,[['collect','1 2 3 4']],
+        'leading announcement text must not reduce a valid digit sequence to its final digit');
+    loginDigits.remove();
     const noisy=fresh();
     await hear(noisy,'um nonsense show log',true);await noisy.digestQueue;
     assert.deepEqual(calls,[['log']],'leading junk is discarded before a valid command');
