@@ -6539,6 +6539,21 @@ class SpeechMenu {
         return Boolean(element?.hasAttribute?.("speech-open-ended") || element?.hasAttribute?.("speech-collect"));
     }
 
+    // Only these declared parser contexts participate in adjacent-value
+    // ambiguity resolution. Other free-form collectors keep their own rules.
+    static #speechValueKind(element) {
+        const kind = String(element?.getAttribute?.("speech-preproc-context") || "").trim().toLocaleLowerCase();
+        if (kind === "clock" || kind === "clock-parts") return "time";
+        if (kind === "duration") return "duration";
+        return undefined;
+    }
+
+    static #hasAdjacentTimeValueAmbiguity(first, second) {
+        const firstKind = SpeechMenu.#speechValueKind(first);
+        const secondKind = SpeechMenu.#speechValueKind(second);
+        return Boolean(firstKind && secondKind);
+    }
+
     // Collect an opaque sequence using the item's own matching/preprocessing
     // contract. No language, numeric format, or value type is assumed.
     static async #collectSpeechSequence(element, words, utterance, signal, probe) {
@@ -6773,6 +6788,34 @@ class SpeechMenu {
                         ? Boolean(tail.pending.hasCommandPrefix)
                         : tailRoot && (!tailCollector ||
                             SpeechMenu.#hasExplicitCommandAnchor(tailRoot, tailTranscript));
+
+                    // When adjacent time/duration values overlap, give the
+                    // earlier value first refusal over the ambiguous words.
+                    // This is parser-driven: absorb the tail only if the
+                    // complete combined phrase is valid in the first value's
+                    // declared context. Literal command anchors that cannot
+                    // parse as part of the first value remain real boundaries.
+                    if (tail && !tail.invalid && tailRoot &&
+                        SpeechMenu.#hasAdjacentTimeValueAmbiguity(element, tailRoot)) {
+                        const tailWords = tailTranscript.split(" ").filter(Boolean);
+                        const mergedEnd = end + skippedTailWords + tail.consumedWords;
+                        if (tailWords.length && mergedEnd > end) {
+                            const mergedSegment = words.slice(0, mergedEnd).join(" ");
+                            const mergedProbe = await probeSegment(mergedSegment);
+                            if (mergedProbe && !signal?.aborted) {
+                                const mergedStep = {...mergedProbe, segmentTranscript: mergedSegment, optimistic,
+                                    nextContext: context, nextSurfaceStack: frames, context: projectedContext,
+                                    surfaceStack: projectedFrames, surface: projectedFrames?.at(-1)?.surface,
+                                    canContinue: SpeechMenu.#isOpenEndedParameter(element) ||
+                                        SpeechMenu.#digestCanContinue(element, mergedSegment, candidates)};
+                                select({steps: [mergedStep], exact: true,
+                                    continuation: mergedStep.canContinue, terminal: !mergedStep.canContinue,
+                                    consumedWords: mergedEnd, remainder: words.slice(mergedEnd).join(" ")});
+                                continue;
+                            }
+                        }
+                    }
+
                     if (collectorStep && (!tail || tail.invalid || !explicitTailBoundary)) {
                         // Never split a growing free-form value at a bare
                         // parameter match. A real command literal can end it.
