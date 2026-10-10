@@ -3505,6 +3505,12 @@ class SpeechMenu {
             transcript = words.slice(
                 utterance.discardedTranscriptPrefixWords || 0
             ).join(" ");
+            if (transcript !== normalizedTranscript) {
+                utterance.transcript = transcript;
+                SpeechMenu.#emit("utteranceTranscriptChanged", {
+                    id: utterance.id, transcript, isFinal: Boolean(isFinal)
+                });
+            }
         }
         else {
             utterance.discardedTranscriptPrefixWords = 0;
