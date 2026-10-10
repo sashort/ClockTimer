@@ -6580,6 +6580,7 @@ class SpeechMenu {
         const select = plan => {
             if (!plan) return;
             const score = candidate => (candidate.invalid || (utterance.digestIsFinal && candidate.pending) ? 0 : 1000000) +
+                (!utterance.digestIsFinal && candidate.pending?.hasCommandPrefix ? 2000000 : 0) +
                 (candidate.steps[0]?.segmentTranscript.split(" ").length || 0) * 10000 + (candidate.pending ? 4000 : 0) +
                 (candidate.exact ? 2000 : 0) + candidate.consumedWords;
             if (!best || score(plan) > score(best)) best = plan;
