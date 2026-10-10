@@ -3491,12 +3491,11 @@ class SpeechMenu {
             controller;
 
         /*
-         * Drop recognition noise before digesting the command remainder. Until
-         * a command has consumed words, re-plan every revision so a revised ASR
-         * prefix can be reconsidered rather than permanently discarded. Once
-         * digesting has begun, retain the established prefix length and remove
-         * those words from each cumulative recognition result before validating
-         * the already-consumed command prefix.
+         * Once a command has consumed words, remove the previously identified
+         * noise prefix from each cumulative recognition result before checking
+         * the consumed command prefix. Before that point, let the normal
+         * candidate refresh identify and prune the prefix so collector state is
+         * not reset by a second planning pass.
          */
         const normalizedTranscript =
             SpeechMenu.#normalizeTranscript(transcript);
@@ -3514,35 +3513,11 @@ class SpeechMenu {
         }
         else {
             utterance.discardedTranscriptPrefixWords = 0;
-            const prefixPlan = await SpeechMenu.#planCommandChain(
-                utterance, normalizedTranscript, controller.signal
-            );
-            if (
-                controller.signal.aborted ||
-                SpeechMenu.#utterance !== utterance ||
-                revision !== utterance.transcriptRevision ||
-                utterance.candidatePoolController !== controller
-            ) {
-                return;
-            }
-            const ignoredWords = prefixPlan?.ignoredPrefix
-                ?.split(" ").filter(Boolean).length || 0;
-            if (ignoredWords) {
-                utterance.discardedTranscriptPrefixWords = ignoredWords;
-                transcript = normalizedTranscript.split(" ").filter(Boolean)
-                    .slice(ignoredWords).join(" ");
-                utterance.transcript = transcript;
-                SpeechMenu.#emit("utteranceTranscriptChanged", {
-                    id: utterance.id, transcript, isFinal: Boolean(isFinal)
-                });
-            }
-            else {
-                transcript = normalizedTranscript;
-            }
+            transcript = normalizedTranscript;
         }
 
         utterance.digestIsFinal = Boolean(isFinal);
-        const remainingTranscript = SpeechMenu.#digestRemainder(utterance, transcript);
+        let remainingTranscript = SpeechMenu.#digestRemainder(utterance, transcript);
         if (remainingTranscript === undefined) {
             SpeechMenu.#rejectDigest(utterance, "consumed-prefix-revised", transcript);
             return;
@@ -3566,6 +3541,28 @@ class SpeechMenu {
                 controller
         ) {
             return;
+        }
+
+        /*
+         * The chain planner already matched from the first viable word and
+         * records everything before it as ignoredPrefix. Commit that boundary
+         * to the live transcript now, before digesting, and reuse the planned
+         * chain rather than planning again (which would clear collector state).
+         */
+        const plannedPrefix = pool[0]?.kind === "chain"
+            ? pool[0].ignoredPrefix
+            : "";
+        if (plannedPrefix && !utterance.digestTranscript) {
+            const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
+            utterance.discardedTranscriptPrefixWords = ignoredWords;
+            transcript = SpeechMenu.#normalizeTranscript(transcript)
+                .split(" ").filter(Boolean).slice(ignoredWords).join(" ");
+            remainingTranscript = SpeechMenu.#digestRemainder(utterance, transcript);
+            utterance.transcript = transcript;
+            pool[0].ignoredPrefix = "";
+            SpeechMenu.#emit("utteranceTranscriptChanged", {
+                id: utterance.id, transcript, isFinal: Boolean(isFinal)
+            });
         }
 
         utterance.candidatePool =
