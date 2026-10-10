@@ -6708,24 +6708,12 @@ class SpeechMenu {
                     SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
                     words.slice(start), utterance, signal);
                 if (signal?.aborted) return undefined;
-                if (normalized.includes("eleven twenty six") && globalThis.__speechPlannerDebug) {
-                    console.log("speech planner candidate", {start, candidate: candidate && {
-                        invalid: candidate.invalid, exact: candidate.exact,
-                        consumedWords: candidate.consumedWords, remainder: candidate.remainder,
-                        steps: candidate.steps?.map(step => ({
-                            id: step.commandElement?.dataset?.speechEditorId,
-                            pattern: step.commandElement?.getAttribute("speech-pattern"),
-                            transcript: step.segmentTranscript
-                        })),
-                        pending: candidate.pending && {
-                            id: candidate.pending.element?.dataset?.speechEditorId,
-                            pattern: candidate.pending.element?.getAttribute("speech-pattern"),
-                            transcript: candidate.pending.transcript,
-                            hasCommandPrefix: candidate.pending.hasCommandPrefix
-                        }
-                    }});
-                }
                 if (!candidate || (!candidate.steps.length && !candidate.pending)) continue;
+                // A bare pending parameter at a later offset is not a command
+                // boundary; it must not preempt a collector that validly owns
+                // the complete value at the head of the transcript.
+                if (start > 0 && !candidate.steps.length && candidate.pending &&
+                    !candidate.pending.hasCommandPrefix) continue;
                 if (start === 0 && !candidate.invalid) headViable = true;
                 if (candidate.invalid) {
                     // A short command may match the head but leave junk behind.
@@ -6783,15 +6771,6 @@ class SpeechMenu {
                 if (signal?.aborted) return undefined;
                 if (attempted?.exact) { best = attempted; offset = start; break; }
             }
-        }
-        if (normalized.includes("eleven twenty six") && globalThis.__speechPlannerDebug) {
-            console.log("speech planner", {normalized, offset, headViable,
-                best: best && {invalid: best.invalid, exact: best.exact, consumedWords: best.consumedWords,
-                    remainder: best.remainder, steps: best.steps.map(step => ({
-                        id: step.commandElement?.dataset?.speechEditorId,
-                        pattern: step.commandElement?.getAttribute("speech-pattern"),
-                        transcript: step.segmentTranscript
-                    })), pending: best.pending?.element?.dataset?.speechEditorId}});
         }
         if (!best || (!best.steps.length && !utterance.chainActive)) return undefined;
         const root = best.steps[0] || best.pending;
