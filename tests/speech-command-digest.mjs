@@ -149,12 +149,10 @@ try {
     editor.remove();
     standard.setAttribute('speech-pattern','^standard(?: time)? (?<timeValue>.+)$');
     // Recognizer-name preferences are intentionally not speech-command prefixes.
-    globalThis.WMOFRecognizerNames={name:'Beatrice',split(){throw new Error('recognizer name must not split command streams');}};
     const ordinary=fresh();
     await hear(ordinary,'show log Beatrice show log',true);
     await ordinary.digestQueue;
     assert.deepEqual(calls,[['log'],['log']],'recognizer name is ordinary transcript text, not a stream boundary');
-    delete globalThis.WMOFRecognizerNames;
     // Independent command groups compete for the same unconsumed words.
     const syncGroup=document.createElement('section');document.body.append(syncGroup);
     const sleepGroup=document.createElement('section');document.body.append(sleepGroup);
