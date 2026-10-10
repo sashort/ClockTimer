@@ -3552,7 +3552,7 @@ class SpeechMenu {
         const plannedPrefix = pool[0]?.kind === "chain"
             ? pool[0].ignoredPrefix
             : "";
-        if (plannedPrefix && !pool[0]?.pending && !utterance.digestTranscript) {
+        if (plannedPrefix && !pool[0]?.headViable && !utterance.digestTranscript) {
             const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
             utterance.discardedTranscriptPrefixWords = ignoredWords;
             transcript = SpeechMenu.#normalizeTranscript(transcript)
@@ -6648,6 +6648,7 @@ class SpeechMenu {
         if (!words.length) return undefined;
         let best;
         let offset = 0;
+        let headViable = false;
         // Search beyond a free-form collector at the head. During voice login,
         // for example, the spoken prompt can be transcribed as leading noise;
         // a collector must not absorb that noise and hide the following digits.
@@ -6657,6 +6658,7 @@ class SpeechMenu {
             const generation = SpeechMenu.#index().generation;
             best = undefined;
             offset = 0;
+            headViable = false;
             let collectorFallback;
             for (let start = 0; start < words.length; start++) {
                 const candidate = await SpeechMenu.#planDigest(
@@ -6664,6 +6666,7 @@ class SpeechMenu {
                     words.slice(start), utterance, signal);
                 if (signal?.aborted) return undefined;
                 if (!candidate || (!candidate.steps.length && !candidate.pending)) continue;
+                if (start === 0) headViable = true;
                 const firstStep = candidate.steps[0];
                 const collector = firstStep && (
                     firstStep.commandElement.hasAttribute("speech-collect") ||
@@ -6715,7 +6718,7 @@ class SpeechMenu {
             ignoredPrefix: words.slice(0, offset).join(" "),
             exact: Boolean(best.exact), continuation: Boolean(best.continuation),
             system: false, depth: best.depth ?? Number.MAX_SAFE_INTEGER, order: -1,
-            chain: best.steps, pending: best.pending, terminal: Boolean(best.terminal),
+            chain: best.steps, pending: best.pending, headViable, terminal: Boolean(best.terminal),
             invalid: Boolean(best.invalid), remainder: best.remainder || ""};
     }
 
