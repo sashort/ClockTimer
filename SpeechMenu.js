@@ -4371,93 +4371,67 @@ class SpeechMenu {
     }
 
     static #stripSynthesizedSpeech(value) {
-        let transcript =
-            SpeechMenu
-                .#normalizeTranscript(
-                    value
-                );
+        let transcript = SpeechMenu.#normalizeTranscript(value);
+        if (!transcript || !SpeechMenu.#synthesizedSpeech.size) return transcript;
 
-        if (
-            !transcript ||
-            !SpeechMenu
-                .#synthesizedSpeech
-                .size
-        ) {
-            return transcript;
-        }
-
-        const now =
-            performance.now();
-
+        const now = performance.now();
         const phrases = [];
-
-        for (
-            const [
-                id,
-                entry
-            ] of SpeechMenu
-                .#synthesizedSpeech
-        ) {
-            if (
-                entry.expiresAt !==
-                    Infinity &&
-                entry.expiresAt <= now
-            ) {
-                clearTimeout(
-                    entry.timer
-                );
-
-                SpeechMenu
-                    .#synthesizedSpeech
-                    .delete(id);
-
+        for (const [id, entry] of SpeechMenu.#synthesizedSpeech) {
+            if (entry.expiresAt !== Infinity && entry.expiresAt <= now) {
+                clearTimeout(entry.timer);
+                SpeechMenu.#synthesizedSpeech.delete(id);
                 continue;
             }
-
-            phrases.push(
-                entry.text
-            );
+            phrases.push(entry.text);
         }
 
-        phrases.sort(
-            (left, right) =>
-                right.length -
-                left.length
-        );
+        // Prefer exact suppression, then tolerate partial/imperfect ASR while
+        // the corresponding synthesized announcement remains active.
+        phrases.sort((a, b) => b.length - a.length);
+        for (const phrase of phrases) {
+            const escaped = phrase.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+            transcript = transcript.replace(new RegExp("(?:^|\\s)" + escaped + "(?=\\s|$)", "g"), " ")
+                .replace(/\\s+/g, " ").trim();
+            if (!transcript) return "";
+        }
 
-        for (
-            const phrase of
-            phrases
-        ) {
-            const escaped =
-                phrase.replace(
-                    /[-/\\^$*+?.()|[\]{}]/g,
-                    "\\$&"
-                );
-
-            transcript =
-                transcript
-                    .replace(
-                        new RegExp(
-                            "(?:^|\\s)" +
-                            escaped +
-                            "(?=\\s|$)",
-                            "g"
-                        ),
-                        " "
-                    )
-                    .replace(
-                        /\s+/g,
-                        " "
-                    )
-                    .trim();
-
-            if (!transcript) {
-                break;
+        const editDistance = (a, b) => {
+            const row = Array.from({length: b.length + 1}, (_, i) => i);
+            for (let i = 1; i <= a.length; i++) {
+                let diagonal = row[0]; row[0] = i;
+                for (let j = 1; j <= b.length; j++) {
+                    const above = row[j];
+                    row[j] = Math.min(row[j] + 1, row[j - 1] + 1,
+                        diagonal + (a[i - 1] === b[j - 1] ? 0 : 1));
+                    diagonal = above;
+                }
             }
-        }
+            return row[b.length];
+        };
+        const similarWord = (a, b) => a === b ||
+            (Math.min(a.length, b.length) >= 4 &&
+             editDistance(a, b) <= Math.max(1, Math.floor(Math.max(a.length, b.length) * 0.34)));
 
-        return transcript;
+        let words = transcript.split(" ").filter(Boolean);
+        for (const phrase of phrases) {
+            const expected = phrase.split(" ").filter(Boolean);
+            let best;
+            for (let start = 0; start < words.length; start++) {
+                for (let length = 2; length <= Math.min(words.length - start, expected.length); length++) {
+                    for (let offset = 0; offset <= expected.length - length; offset++) {
+                        let matches = 0;
+                        for (let i = 0; i < length; i++)
+                            if (similarWord(words[start + i], expected[offset + i])) matches++;
+                        const ratio = matches / length;
+                        if (matches >= 2 && ratio >= 0.67 &&
+                            (!best || length > best.length || (length === best.length && ratio > best.ratio)))
+                            best = {start, length, ratio};
+                    }
+                }
+            }
+            if (best) words.splice(best.start, best.length);
+        }
+        return words.join(" ");
     }
 
     static #activeSynthesizedPhrases() {
