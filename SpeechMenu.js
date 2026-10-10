@@ -6599,26 +6599,39 @@ class SpeechMenu {
         if (!words.length) return undefined;
         let best;
         let offset = 0;
-        // Slide past leading words only when the current head cannot be a
-        // command or a revisable parameter. A pending candidate owns its words.
-        // Rebuild the unconsumed cursor if DOM registrations change while a
-        // preprocessor is awaiting. Consumed commands are never replayed.
+        // Search the head and the remaining tail. An open-ended/collecting
+        // command can superficially absorb arbitrary leading recognition noise;
+        // keep it as a fallback, but prefer a concrete command found later.
+        // This lets "gibberish show log" recover without losing a legitimate
+        // open-ended command when no later command is present.
         for (let attempt = 0; attempt < 2; attempt++) {
             SpeechMenu.#index().flush();
             const generation = SpeechMenu.#index().generation;
             best = undefined;
             offset = 0;
-            for (; offset < words.length; offset++) {
+            let openEndedFallback;
+            for (let start = 0; start < words.length; start++) {
                 const candidate = await SpeechMenu.#planDigest(
                     SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
-                    words.slice(offset), utterance, signal);
+                    words.slice(start), utterance, signal);
                 if (signal?.aborted) return undefined;
-                // Preserve a valid prefix even if its tail is invalid. Only
-                // skip words when no command step or pending value owns them.
-                if (candidate && (candidate.steps.length || candidate.pending)) {
-                    best = candidate;
-                    break;
+                if (!candidate || (!candidate.steps.length && !candidate.pending)) continue;
+                const firstStep = candidate.steps[0];
+                const openEnded = firstStep && (
+                    firstStep.canContinue ||
+                    firstStep.commandElement.hasAttribute("speech-open-ended") ||
+                    firstStep.commandElement.hasAttribute("speech-collect"));
+                if (openEnded && start < words.length - 1) {
+                    openEndedFallback ??= {candidate, offset: start};
+                    continue;
                 }
+                best = candidate;
+                offset = start;
+                break;
+            }
+            if (!best && openEndedFallback) {
+                best = openEndedFallback.candidate;
+                offset = openEndedFallback.offset;
             }
             SpeechMenu.#index().flush();
             if (generation === SpeechMenu.#index().generation) break;
