@@ -6849,8 +6849,17 @@ class SpeechMenu {
                         invalid: true, consumedWords: end, remainder: remaining.join(" ")});
                 } else {
                     const future = context ? SpeechMenu.#chainContextCandidates(context) : [];
-                    select({steps: [step], exact: true, continuation: future.length > 0 || step.canContinue,
-                        terminal: future.length === 0 && !step.canContinue, consumedWords: end, remainder: ""});
+                    // A valid time/duration prefix is not necessarily a complete
+                    // value ("four twenty" can still become "four twenty two").
+                    // Hold these typed collectors until the utterance boundary
+                    // so later words are adjudicated in the original context.
+                    const awaitingTypedValueBoundary = !utterance.digestIsFinal &&
+                        element.hasAttribute("speech-collect") &&
+                        Boolean(SpeechMenu.#speechValueKind(element));
+                    select({steps: [step], exact: !awaitingTypedValueBoundary,
+                        continuation: awaitingTypedValueBoundary || future.length > 0 || step.canContinue,
+                        terminal: !awaitingTypedValueBoundary && future.length === 0 && !step.canContinue,
+                        consumedWords: end, remainder: ""});
                 }
             }
         }
