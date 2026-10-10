@@ -2841,7 +2841,6 @@ class SpeechMenu {
             chainActive: false,
             chainCanceled: false,
             digestFailed: false,
-            noCandidateTranscript: "",
             firstTranscriptAt:
                 undefined,
             candidatePool: [],
@@ -3667,61 +3666,6 @@ class SpeechMenu {
             }
         }
 
-        if (pool.length || streamResult?.viable || utterance.lastExactCandidate) {
-            utterance.noCandidateTranscript = "";
-        }
-
-        if (
-            !pool.length &&
-            !streamResult
-                ?.viable &&
-            !utterance.committing &&
-            !utterance.lastExactCandidate &&
-            SpeechMenu.#shouldFailFast(utterance, transcript, isFinal)
-        ) {
-            if (
-                SpeechMenu
-                    .synthesizedSpeechActive &&
-                (
-                    SpeechMenu
-                        .#repeatableStreamHead(
-                            utterance
-                        ) ||
-                    SpeechMenu
-                        .#recognitionStreamHead(
-                            utterance
-                        )?.source !==
-                            "initial"
-                )
-            ) {
-                return;
-            }
-
-            const id =
-                utterance.id;
-            const failedTranscript =
-                utterance.transcript;
-
-            SpeechMenu.#finishUtterance(
-                "no-candidates",
-                false
-            );
-
-            SpeechMenu.#emit(
-                "utteranceUnrecognized",
-                {
-                    id,
-                    transcript:
-                        failedTranscript,
-                    reason:
-                        "no-candidates",
-                    fast: true
-                }
-            );
-
-            return;
-        }
-
         SpeechMenu
             .#scheduleCandidateCommit(
                 utterance,
@@ -3778,7 +3722,6 @@ class SpeechMenu {
             utterance.expectedSurfaces ??= new Set(); utterance.expectedSurfaces.add(frame.surface);
         }
         utterance.valueCollectors?.delete(step.commandElement);
-        utterance.noCandidateTranscript = "";
         SpeechMenu.#clearPrimed(utterance);
         SpeechMenu.#primeContext(utterance, step.nextContext);
         const nextSurface = step.nextSurfaceStack?.at(-1)?.surface;
@@ -3889,14 +3832,11 @@ class SpeechMenu {
             n + step.segmentTranscript.split(" ").length, 0);
         const tail = remainder.split(" ").filter(Boolean).slice(consumedWords).join(" ");
         utterance.digestPending = tail;
-        if (candidate?.invalid || (!candidate && tail)) {
-            if (SpeechMenu.#shouldFailFast(utterance, tail, isFinal)) {
-                SpeechMenu.#rejectDigest(utterance, "no-candidates", tail);
-                return true;
-            }
-        } else utterance.noCandidateTranscript = "";
+        // Interim recognition is revisable: keep unmatched head/tail text pending.
+        // The digest's final validation, not a separate fail-fast heuristic,
+        // decides whether the utterance is accepted or rejected.
         if (isFinal) {
-            if (tail) SpeechMenu.#rejectDigest(utterance, "no-candidates", tail);
+            if (tail || candidate?.invalid) SpeechMenu.#rejectDigest(utterance, "no-candidates", tail || remainder);
             else {
                 utterance.committed = true;
                 utterance.digestCommitted = true;
@@ -3908,29 +3848,6 @@ class SpeechMenu {
             }
         }
         return true;
-    }
-
-    static #shouldFailFast(utterance, transcript, isFinal) {
-        if (isFinal) return true;
-        // Capture-only sessions keep complete mismatches for training/editor review.
-        if (!SpeechMenu.#executionEnabled) return false;
-        const previous = SpeechMenu.#normalizeTranscript(utterance.noCandidateTranscript);
-        const current = SpeechMenu.#normalizeTranscript(transcript);
-        utterance.noCandidateTranscript = current;
-        // The last word may still revise ("re" / "read" -> "ready").
-        // Reject only when the stable prefix itself cannot begin a command.
-        // Viable commands reset this history.
-        const previousWords = previous.split(" ").filter(Boolean);
-        const words = current.split(" ").filter(Boolean);
-        let stableLength = 0;
-        while (stableLength < words.length - 1 && stableLength < previousWords.length &&
-            words[stableLength] === previousWords[stableLength]) stableLength++;
-        if (!stableLength) return false;
-        const stablePrefix = words.slice(0, stableLength).join(" ");
-        const viablePrefix = SpeechMenu.#phraseGroups.some(group => group.phrases.some(phrase =>
-            SpeechMenu.#phraseCanContinue(stablePrefix, phrase) ||
-            SpeechMenu.#normalizeTranscript(phrase) === stablePrefix));
-        return !viablePrefix;
     }
 
     static async #executeCommandChain(
