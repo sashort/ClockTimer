@@ -3827,10 +3827,14 @@ class SpeechMenu {
         if (!isFinal && last && (last.canContinue ||
             last.commandElement.hasAttribute("speech-open-ended") ||
             last.commandElement.hasAttribute("speech-collect")) && (!candidate.pending || !candidate.pending.hasCommandPrefix)) count--;
+        if (count && candidate?.ignoredPrefix) {
+            utterance.digestTranscript = [utterance.digestTranscript, candidate.ignoredPrefix].filter(Boolean).join(" ");
+        }
         for (const step of steps.slice(0, count)) SpeechMenu.#queueDigestStep(utterance, step);
         const consumedWords = steps.slice(0, count).reduce((n, step) =>
             n + step.segmentTranscript.split(" ").length, 0);
-        const tail = remainder.split(" ").filter(Boolean).slice(consumedWords).join(" ");
+        const ignoredWords = candidate?.ignoredPrefix?.split(" ").filter(Boolean).length || 0;
+        const tail = remainder.split(" ").filter(Boolean).slice(ignoredWords + consumedWords).join(" ");
         utterance.digestPending = tail;
         // Interim recognition is revisable: keep unmatched head/tail text pending.
         // The final digest validation decides whether the utterance is accepted or rejected.
@@ -6599,38 +6603,60 @@ class SpeechMenu {
         const words = normalized.split(" ").filter(Boolean);
         if (!words.length) return undefined;
         let best;
+        let offset = 0;
+        // Slide past leading words only when the current head cannot be a
+        // command or a revisable parameter. A pending candidate owns its words.
         // Rebuild the unconsumed cursor if DOM registrations change while a
         // preprocessor is awaiting. Consumed commands are never replayed.
         for (let attempt = 0; attempt < 2; attempt++) {
             SpeechMenu.#index().flush();
             const generation = SpeechMenu.#index().generation;
-            best = await SpeechMenu.#planDigest(SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
-                words, utterance, signal);
+            best = undefined;
+            offset = 0;
+            for (; offset < words.length; offset++) {
+                const candidate = await SpeechMenu.#planDigest(
+                    SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
+                    words.slice(offset), utterance, signal);
+                if (signal?.aborted) return undefined;
+                // Preserve a valid prefix even if its tail is invalid. Only
+                // skip words when no command step or pending value owns them.
+                if (candidate && (candidate.steps.length || candidate.pending)) {
+                    best = candidate;
+                    break;
+                }
+            }
             SpeechMenu.#index().flush();
             if (generation === SpeechMenu.#index().generation) break;
             best = undefined;
+            offset = 0;
             utterance.valueCollectors?.clear();
         }
-        // Invalid-state commands are attempted only after valid groups have had
-        // priority. A formed command can be accepted on an interim update. Authorization and
-        // explicit command disabling remain hard gates.
-        if (((!best?.steps.length && !best?.pending) || best?.invalid) && SpeechMenu.#executionEnabled && globalThis.WMOFStateTransactions) {
-            const attempted = await SpeechMenu.#planDigest(SpeechMenu.#stateAttemptCandidates(utterance.digestContext, utterance.digestSurfaceStack),
-                words, utterance, signal, 0, new Map(), utterance.digestContext, utterance.digestSurfaceStack, true);
-            if (attempted?.exact) best = attempted;
+        // Invalid-state commands remain lower priority, but can also begin
+        // after leading recognition noise.
+        if ((!best || best.invalid) && SpeechMenu.#executionEnabled && globalThis.WMOFStateTransactions) {
+            for (let start = 0; start < words.length; start++) {
+                const attempted = await SpeechMenu.#planDigest(
+                    SpeechMenu.#stateAttemptCandidates(utterance.digestContext, utterance.digestSurfaceStack),
+                    words.slice(start), utterance, signal, 0, new Map(),
+                    utterance.digestContext, utterance.digestSurfaceStack, true);
+                if (signal?.aborted) return undefined;
+                if (attempted?.exact) { best = attempted; offset = start; break; }
+            }
         }
         if (!best || (!best.steps.length && !utterance.chainActive)) return undefined;
         const root = best.steps[0] || best.pending;
         return {kind: "chain", utteranceId: utterance.id,
             commandElement: root?.commandElement || root?.element,
-            speechMenuElement: root?.speechMenuElement, transcript: normalized,
+            speechMenuElement: root?.speechMenuElement,
+            transcript: words.slice(offset).join(" "),
+            ignoredPrefix: words.slice(0, offset).join(" "),
             exact: Boolean(best.exact), continuation: Boolean(best.continuation),
             system: false, depth: best.depth ?? Number.MAX_SAFE_INTEGER, order: -1,
             chain: best.steps, pending: best.pending, terminal: Boolean(best.terminal),
             invalid: Boolean(best.invalid), remainder: best.remainder || ""};
     }
 
-    static async #refreshCandidatePool(
+        static async #refreshCandidatePool(
         utterance,
         transcript,
         signal
