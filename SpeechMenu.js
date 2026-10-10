@@ -3552,7 +3552,11 @@ class SpeechMenu {
         const plannedPrefix = pool[0]?.kind === "chain"
             ? pool[0].ignoredPrefix
             : "";
-        if (plannedPrefix && !pool[0]?.headViable && !utterance.digestContext && !utterance.digestTranscript) {
+        if (plannedPrefix &&
+            !pool[0]?.headViable &&
+            !utterance.digestContext &&
+            !utterance.digestTranscript &&
+            !pool[0]?.commandElement?.hasAttribute("speech-chain-context")) {
             const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
             utterance.discardedTranscriptPrefixWords = ignoredWords;
             transcript = SpeechMenu.#normalizeTranscript(transcript)
