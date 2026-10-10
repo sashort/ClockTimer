@@ -3095,7 +3095,16 @@ class SpeechMenu {
                     String(phrase).replace(/<[^>]+>/g, " ")
                 );
                 const first = normalized.split(" ").filter(Boolean)[0];
-                if (!first || /[()[\]{}*+?|\\^$]/.test(first)) continue;
+                // An expansion beginning with a parameter placeholder means
+                // the command accepts a bare value; don't prune that input.
+                if (!first) {
+                    uncertain = true;
+                    continue;
+                }
+                if (/[()[\]{}*+?|\\^$]/.test(first)) {
+                    uncertain = true;
+                    continue;
+                }
                 starts.add(first);
                 foundStart = true;
             }
