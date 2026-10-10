@@ -6628,8 +6628,8 @@ class SpeechMenu {
             const prefix = String(phrase)
                 .replace(/<[^>]+>/g, token => ` ${token} `)
                 .toLocaleLowerCase()
-                .replace(/[^\\p{L}\\p{N}<>\\s:]/gu, " ")
-                .split(/\\s+/).filter(Boolean);
+                .replace(/[^\p{L}\p{N}<>\s:]/gu, " ")
+                .split(/\s+/).filter(Boolean);
             const parameter = prefix.findIndex(token => /^<[^>]+>$/.test(token));
             const literal = parameter < 0 ? prefix : prefix.slice(0, parameter);
             return literal.length > 0 && words.length >= literal.length &&
