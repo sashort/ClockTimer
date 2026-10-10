@@ -3568,7 +3568,6 @@ class SpeechMenu {
             ? pool[0].ignoredPrefix
             : "";
         if (plannedPrefix &&
-            !pool[0]?.headViable &&
             !utterance.digestTranscript) {
             const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
             utterance.discardedTranscriptPrefixWords = ignoredWords;
