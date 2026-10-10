@@ -6619,15 +6619,14 @@ class SpeechMenu {
                 const collector = firstStep && (
                     firstStep.commandElement.hasAttribute("speech-collect") ||
                     firstStep.commandElement.hasAttribute("speech-open-ended"));
-                // Collectors can accept arbitrary text, so an early collector
-                // match is not evidence that the transcript starts with a command.
-                // Keep scanning and retain the *latest* standalone collector match:
-                // words before it are unmatched leading noise, while the suffix is
-                // the longest suffix that can still be a collector value.
+                // A collector is only a fallback when it stands alone. Keep
+                // scanning every offset (including the last word): a one-word
+                // collector match must not preempt a longer valid value later
+                // in the transcript, such as the four digits after an announcement.
                 if (collector && candidate.steps.length === 1 && !candidate.pending) {
-                    if (!collectorFallback || start > collectorFallback.offset ||
-                        (start === collectorFallback.offset &&
-                            candidate.consumedWords > collectorFallback.candidate.consumedWords)) {
+                    const score = candidate.consumedWords;
+                    const priorScore = collectorFallback?.candidate.consumedWords ?? -1;
+                    if (score > priorScore || (score === priorScore && start < collectorFallback.offset)) {
                         collectorFallback = {candidate, offset: start};
                     }
                     continue;
