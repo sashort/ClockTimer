@@ -3556,6 +3556,7 @@ class SpeechMenu {
             !pool[0]?.headViable &&
             !utterance.digestContext &&
             !utterance.digestTranscript &&
+            !utterance.chainActive &&
             !pool[0]?.commandElement?.hasAttribute("speech-chain-context") &&
             !pool[0]?.commandElement?.hasAttribute("speech-chain-next")) {
             const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
