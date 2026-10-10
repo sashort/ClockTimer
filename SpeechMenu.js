@@ -6767,6 +6767,15 @@ class SpeechMenu {
                 if (attempted?.exact) { best = attempted; offset = start; break; }
             }
         }
+        if (normalized.includes("eleven twenty six") && globalThis.__speechPlannerDebug) {
+            console.log("speech planner", {normalized, offset, headViable,
+                best: best && {invalid: best.invalid, exact: best.exact, consumedWords: best.consumedWords,
+                    remainder: best.remainder, steps: best.steps.map(step => ({
+                        id: step.commandElement?.dataset?.speechEditorId,
+                        pattern: step.commandElement?.getAttribute("speech-pattern"),
+                        transcript: step.segmentTranscript
+                    })), pending: best.pending?.element?.dataset?.speechEditorId}});
+        }
         if (!best || (!best.steps.length && !utterance.chainActive)) return undefined;
         const root = best.steps[0] || best.pending;
         return {kind: "chain", utteranceId: utterance.id,
