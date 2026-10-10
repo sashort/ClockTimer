@@ -6741,13 +6741,13 @@ class SpeechMenu {
                 offset = start;
                 break;
             }
-            if (!best && invalidFallback) {
-                best = invalidFallback.candidate;
-                offset = invalidFallback.offset;
-            }
             if (!best && collectorFallback) {
                 best = collectorFallback.candidate;
                 offset = collectorFallback.offset;
+            }
+            if (!best && invalidFallback) {
+                best = invalidFallback.candidate;
+                offset = invalidFallback.offset;
             }
             SpeechMenu.#index().flush();
             if (generation === SpeechMenu.#index().generation) break;
