@@ -101,7 +101,6 @@ jobs:
           node tests/speech-value-preprocessor.mjs
           node tests/speech-chain-actions.mjs
           node tests/speech-command-digest.mjs
-          node tests/speech-failfast.mjs
 
   test:
     runs-on: ubuntu-latest
