@@ -3032,13 +3032,6 @@
                                         )
                                     );
 
-                                synthesizedSpeechToken =
-                                    globalThis
-                                        .SpeechMenu
-                                        ?.registerSynthesizedSpeech?.(
-                                            text
-                                        );
-
                                 console.debug(
                                     "Audio speech started:",
                                     text
@@ -3078,9 +3071,22 @@
                         }
                         catch {}
 
-                        synthesis.speak(
-                            utterance
-                        );
+                        synthesizedSpeechToken =
+                            globalThis
+                                .SpeechMenu
+                                ?.registerSynthesizedSpeech?.(
+                                    text
+                                );
+
+                        try {
+                            synthesis.speak(
+                                utterance
+                            );
+                        }
+                        catch (error) {
+                            console.warn("Audio speech failed to start:", text, error);
+                            finish();
+                        }
                     },
                     delay
                 );
@@ -4052,12 +4058,6 @@
                             );
                     }
 
-                    synthesizedSpeechToken =
-                        globalThis
-                            .SpeechMenu
-                            ?.registerSynthesizedSpeech?.(
-                                text
-                            );
                 },
                 {
                     once: true
@@ -4093,6 +4093,13 @@
             catch {}
 
             try {
+                synthesizedSpeechToken =
+                    globalThis
+                        .SpeechMenu
+                        ?.registerSynthesizedSpeech?.(
+                            text
+                        );
+
                 synthesis.speak(
                     utterance
                 );
