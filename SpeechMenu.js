@@ -6607,14 +6607,9 @@ class SpeechMenu {
                 (candidate.exact ? 2000 : 0) + candidate.consumedWords;
             if (!best || score(plan) > score(best)) best = plan;
         };
-        const indexed = SpeechMenu.#indexedMatching ? SpeechMenu.#index().candidates(words, new Set(candidates)) : undefined;
         for (const element of candidates) {
             if (signal?.aborted) return undefined;
             const full = words.join(" ");
-            const contextCandidate = projectedContext &&
-                element.getAttribute("speech-chain-context") === projectedContext;
-            if (indexed && !indexed.has(element) && !contextCandidate &&
-                (utterance.digestIsFinal || !SpeechMenu.#hasExplicitCommandPrefix(element, full))) continue;
             const partialDepth = SpeechMenu.#elementDirectContinuationDepth(element, full);
             if (partialDepth !== undefined) select({steps: [], exact: false, continuation: true,
                 terminal: false, pending: {element, transcript: full,
