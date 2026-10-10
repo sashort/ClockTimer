@@ -9,19 +9,15 @@ const context={document:{readyState:'loading',addEventListener(){},getElementByI
  SpeechMenu:{refresh(){}},WMOFPersistence:{async getItem(key){return stored.get(key);},async setItem(key,value){if(reject)throw Error('storage failed');stored.set(key,value);}}};
 vm.createContext(context);vm.runInContext(source,context);await new Promise(setImmediate);
 const names=context.WMOFRecognizerNames;
-assert.equal(names.split('ready at four twenty two Beatrice sync off').before,'ready at four twenty two');
-assert.equal(names.split('ready at four twenty two Beatrice sync off').after,'sync off');
-assert.equal(names.split('beatrices sync off'),null);
-assert.equal(names.split('BEATRICE, sync off').after,'sync off');
-assert.equal(names.split('Beatrice sync off Beatrice time').after,'sync off Beatrice time','first boundary preserves intermediate commands');
+assert.equal(names.split,undefined,'recognizer name preference no longer splits speech commands');
 await names.save('Octavia');assert.equal(names.name,'Octavia');
 context.WMOFLanguagePack.locale='fr-FR';assert.equal(names.name,'Beatrice');
-await names.save('Élodie');assert.equal(names.split('ÉLODIE temps').after,'temps');
+await names.save('Élodie');assert.equal(names.name,'Élodie');
 context.WMOFLanguagePack.locale='en-US';assert.equal(names.name,'Octavia','custom names are locale scoped');
 reject=true;await assert.rejects(names.save('Theodore'));assert.equal(names.name,'Octavia','failed saving restores the previous name');
-reject=false;await names.save('');assert.equal(names.split('Octavia sync off'),null,'Off disables named boundaries');
+reject=false;await names.save('');assert.equal(names.name,'');
 await assert.rejects(names.save('sync off 3'));
-console.log('PASS recognizer names, word boundaries, locale persistence, Off, and failed-save rollback');
+console.log('PASS recognizer-name preference persistence, locale scoping, Off, and failed-save rollback');
 
 const ui=new Window({url:'https://clock.example/'});
 ui.document.body.innerHTML='<select id="recognizerNamePreset"><option value="">Off</option><option value="custom">Custom name</option></select><input id="recognizerNameCustom" hidden><button id="recognizerNameSave">Save</button><output id="recognizerNameStatus"></output>';
