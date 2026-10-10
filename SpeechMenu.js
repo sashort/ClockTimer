@@ -6695,8 +6695,10 @@ class SpeechMenu {
                     const tailRoot = tail?.steps[0]?.commandElement || tail?.pending?.element;
                     const tailTranscript = tail?.steps[0]?.segmentTranscript || tail?.pending?.transcript || "";
                     const tailCollector = SpeechMenu.#isOpenEndedParameter(tailRoot);
-                    const explicitTailBoundary = tailRoot &&
-                        (!tailCollector || SpeechMenu.#hasExplicitCommandPrefix(tailRoot, tailTranscript));
+                    const explicitTailBoundary = tail?.pending
+                        ? Boolean(tail.pending.hasCommandPrefix)
+                        : tailRoot && (!tailCollector ||
+                            SpeechMenu.#hasExplicitCommandPrefix(tailRoot, tailTranscript));
                     if (collectorStep && (!tail || tail.invalid || !explicitTailBoundary)) {
                         // Never split a growing free-form value at a bare
                         // parameter match. A real command literal can end it.
