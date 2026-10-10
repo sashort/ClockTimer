@@ -3552,7 +3552,7 @@ class SpeechMenu {
         const plannedPrefix = pool[0]?.kind === "chain"
             ? pool[0].ignoredPrefix
             : "";
-        if (plannedPrefix && !utterance.digestTranscript) {
+        if (plannedPrefix && !pool[0]?.pending && !utterance.digestTranscript) {
             const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
             utterance.discardedTranscriptPrefixWords = ignoredWords;
             transcript = SpeechMenu.#normalizeTranscript(transcript)
