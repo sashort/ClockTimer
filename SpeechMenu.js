@@ -6759,7 +6759,7 @@ class SpeechMenu {
                 // scanning every offset (including the last word): a one-word
                 // collector match must not preempt a longer valid value later
                 // in the transcript, such as the four digits after an announcement.
-                if (collector && candidate.steps.length === 1 && !candidate.pending) {
+                if (collector && candidate.steps.length === 1 && !candidate.pending && !candidate.invalid) {
                     const score = candidate.consumedWords;
                     const priorScore = collectorFallback?.candidate.consumedWords ?? -1;
                     if (score > priorScore || (score === priorScore && start < collectorFallback.offset)) {
