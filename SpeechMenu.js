@@ -6519,6 +6519,11 @@ class SpeechMenu {
         const state = {status: accepted ? "valid" : "pending",
             transcript: words.join(" "), value: accepted?.result.transcript,
             acceptedTranscript: accepted?.segment, end: accepted?.end};
+        if (globalThis.__speechPlannerDebug && element.dataset?.speechEditorId === "ready" &&
+            words.join(" ").includes("four twenty two")) {
+            console.log("collector debug", {words: words.join(" "), accepted: accepted?.segment,
+                value: accepted?.result?.transcript, end: accepted?.end});
+        }
         // Final decodes after VAD closure may collect locally, but must not
         // recreate persistent state for an utterance whose capture ended.
         if (!utterance.digestClosed && !utterance.digestFailed && !signal?.aborted) {
