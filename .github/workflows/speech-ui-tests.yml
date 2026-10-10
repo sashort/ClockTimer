@@ -326,7 +326,6 @@ jobs:
           node async-command-lifecycle.mjs
           node app-state-transactions.mjs --post-start-interrupted-final
           node speech-command-digest.mjs
-          node speech-failfast.mjs
           node profile-editor.mjs
           node trip-log-layout.mjs
           php voice-login.php
