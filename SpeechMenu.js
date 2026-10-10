@@ -6600,7 +6600,9 @@ class SpeechMenu {
         for (const element of candidates) {
             if (signal?.aborted) return undefined;
             const full = words.join(" ");
-            if (indexed && !indexed.has(element) &&
+            const contextCandidate = projectedContext &&
+                element.getAttribute("speech-chain-context") === projectedContext;
+            if (indexed && !indexed.has(element) && !contextCandidate &&
                 (utterance.digestIsFinal || !SpeechMenu.#hasExplicitCommandPrefix(element, full))) continue;
             const partialDepth = SpeechMenu.#elementDirectContinuationDepth(element, full);
             if (partialDepth !== undefined) select({steps: [], exact: false, continuation: true,
