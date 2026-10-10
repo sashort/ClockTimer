@@ -6708,6 +6708,23 @@ class SpeechMenu {
                     SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
                     words.slice(start), utterance, signal);
                 if (signal?.aborted) return undefined;
+                if (normalized.includes("eleven twenty six") && globalThis.__speechPlannerDebug) {
+                    console.log("speech planner candidate", {start, candidate: candidate && {
+                        invalid: candidate.invalid, exact: candidate.exact,
+                        consumedWords: candidate.consumedWords, remainder: candidate.remainder,
+                        steps: candidate.steps?.map(step => ({
+                            id: step.commandElement?.dataset?.speechEditorId,
+                            pattern: step.commandElement?.getAttribute("speech-pattern"),
+                            transcript: step.segmentTranscript
+                        })),
+                        pending: candidate.pending && {
+                            id: candidate.pending.element?.dataset?.speechEditorId,
+                            pattern: candidate.pending.element?.getAttribute("speech-pattern"),
+                            transcript: candidate.pending.transcript,
+                            hasCommandPrefix: candidate.pending.hasCommandPrefix
+                        }
+                    }});
+                }
                 if (!candidate || (!candidate.steps.length && !candidate.pending)) continue;
                 if (start === 0 && !candidate.invalid) headViable = true;
                 if (candidate.invalid) {
