@@ -3501,10 +3501,25 @@ class SpeechMenu {
             SpeechMenu.#normalizeTranscript(transcript);
         if (utterance.digestTranscript) {
             const words = normalizedTranscript.split(" ").filter(Boolean);
-            transcript = words.slice(
-                utterance.discardedTranscriptPrefixWords || 0
-            ).join(" ");
+            const consumedWords = SpeechMenu.#normalizeTranscript(
+                utterance.digestTranscript
+            ).split(" ").filter(Boolean);
+            // Recognition can revise the words that preceded the command after
+            // the command has already started digesting. Re-anchor on the exact
+            // consumed command prefix instead of blindly slicing the old noise
+            // word count, which could now remove valid command words.
+            let consumedOffset = -1;
+            for (let start = 0; start <= words.length - consumedWords.length; start++) {
+                if (consumedWords.every((word, index) => words[start + index] === word)) {
+                    consumedOffset = start;
+                    break;
+                }
+            }
+            transcript = consumedOffset < 0
+                ? normalizedTranscript
+                : words.slice(consumedOffset).join(" ");
             if (transcript !== normalizedTranscript) {
+                utterance.discardedTranscriptPrefixWords = consumedOffset;
                 utterance.transcript = transcript;
                 SpeechMenu.#emit("utteranceTranscriptChanged", {
                     id: utterance.id, transcript, isFinal: Boolean(isFinal)
