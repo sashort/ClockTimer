@@ -452,18 +452,3 @@ try {
         'leading junk is discarded while the remaining command chain stays intact');
     console.log('PASS incremental command digestion, priming, UI lag, parameter boundaries, ordered actions, invalid tails, failure, cancellation and hard gates');
 } finally {speech.testReset();await window.happyDOM.close();}
-,'sleep',{'speech-open-ended':''});
-    const swallowed=fresh();
-    await hear(swallowed,'um nonsense show log',true);await swallowed.digestQueue;
-    assert.deepEqual(calls,[['log']],'a catch-all parameter must not swallow a valid command at the tail');
-    catchAll.remove();
-    const noisy=fresh();
-    await hear(noisy,'um nonsense show log',true);await noisy.digestQueue;
-    assert.deepEqual(calls,[['log']],'leading junk is discarded before a valid command');
-    const noisyChain=fresh();
-    await hear(noisyChain,'uh random ready at four fifteen standard time one hour',true);
-    await noisyChain.digestQueue;
-    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']],
-        'leading junk is discarded while the remaining command chain stays intact');
-    console.log('PASS incremental command digestion, priming, UI lag, parameter boundaries, ordered actions, invalid tails, failure, cancellation and hard gates');
-} finally {speech.testReset();await window.happyDOM.close();}
