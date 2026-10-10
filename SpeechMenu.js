@@ -3552,11 +3552,16 @@ class SpeechMenu {
         const plannedPrefix = pool[0]?.kind === "chain"
             ? pool[0].ignoredPrefix
             : "";
+        const hasContextBoundary = pool[0]?.chain?.some(step =>
+            step.commandElement?.hasAttribute("speech-chain-context") ||
+            step.commandElement?.hasAttribute("speech-chain-next")
+        );
         if (plannedPrefix &&
             !pool[0]?.headViable &&
             !utterance.digestContext &&
             !utterance.digestTranscript &&
             !utterance.chainActive &&
+            !hasContextBoundary &&
             !pool[0]?.commandElement?.hasAttribute("speech-chain-context") &&
             !pool[0]?.commandElement?.hasAttribute("speech-chain-next")) {
             const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
