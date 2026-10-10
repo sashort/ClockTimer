@@ -6595,6 +6595,16 @@ class SpeechMenu {
                 terminal: false, pending: {element, transcript: full,
                     hasCommandPrefix: SpeechMenu.#hasExplicitCommandPrefix(element, full)}, consumedWords: 0,
                 remainder: full, depth: partialDepth});
+            else if (!utterance.digestIsFinal &&
+                SpeechMenu.#hasExplicitCommandPrefix(element, full)) {
+                // Some patterns have a literal prefix followed by an optional
+                // word and a parameter; direct-continuation analysis can miss
+                // that prefix. Keep it pending instead of executing a shorter
+                // exact command that happens to match the same first word.
+                select({steps: [], exact: false, continuation: true, terminal: false,
+                    pending: {element, transcript: full, hasCommandPrefix: true},
+                    consumedWords: 0, remainder: full, depth: 0});
+            }
             if (!memo.probes.has(element)) memo.probes.set(element, new Map());
             const probes = memo.probes.get(element);
             const probeSegment = segment => {
