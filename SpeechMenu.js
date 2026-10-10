@@ -3573,12 +3573,7 @@ class SpeechMenu {
         );
         if (plannedPrefix &&
             !pool[0]?.headViable &&
-            !utterance.digestContext &&
-            !utterance.digestTranscript &&
-            !utterance.chainActive &&
-            !hasContextBoundary &&
-            !pool[0]?.commandElement?.hasAttribute("speech-chain-context") &&
-            !pool[0]?.commandElement?.hasAttribute("speech-chain-next")) {
+            !utterance.digestTranscript) {
             const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
             utterance.discardedTranscriptPrefixWords = ignoredWords;
             transcript = SpeechMenu.#normalizeTranscript(transcript)
