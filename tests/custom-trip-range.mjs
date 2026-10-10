@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {Window} from 'happy-dom';
 const window=new Window({url:'https://clock.example/',settings:{disableJavaScriptEvaluation:true}});
-window.document.write(fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'));
+window.document.write(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../CalendarRange.js',import.meta.url),'utf8'));
 const CalendarRange=window.CalendarRange;
 const calendarRanges=new CalendarRange({databaseOnly:true});

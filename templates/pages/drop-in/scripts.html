@@ -1,0 +1,62 @@
+<script src="LanguagePack.js?build=E4GUFA"></script>
+<script src="ObserverSettingBadge.js?build=E4GUFA"></script>
+<script src="ModeMenu.js?build=E4GUFA"></script>
+<script src="TimerSummaryView.js?build=E4GUFA"></script>
+<script src="MicrophoneControl.js?build=E4GUFA"></script>
+<script src="ObserverGoalPad.js?build=E4GUFA"></script>
+<script src="ObserverMicrophone.js?build=E4GUFA"></script>
+<script src="AsyncPersistence.js?build=E4GUFA"></script>
+<script src="AccountSettings.js?build=E4GUFA"></script>
+<script src="DropInPreferences.js?build=E4GUFA"></script>
+<script src="PanePage.js?build=E4GUFA"></script>
+<script src="HamburgerMenu.js?build=E4GUFA"></script>
+<script src="TemporalFormat.js?build=E4GUFA"></script>
+<script src="RingContainer.js?build=E4GUFA"></script>
+<script src="TimeRangeModel.js?build=E4GUFA"></script>
+<script src="TimeRangeElement.js?build=E4GUFA"></script>
+<script src="ClockTimer.js?build=E4GUFA"></script>
+<script src="TimerAppearance.js?build=E4GUFA"></script>
+<script src="CalendarRange.js?build=E4GUFA"></script>
+<script src="IdentityContext.js?build=E4GUFA"></script>
+<script src="UserLookup.js?build=E4GUFA"></script>
+<script src="api/audio/VoiceCatalog.js?build=E4GUFA"></script>
+<script src="api/audio/AudioEngine.js?build=E4GUFA"></script>
+<script src="LiveTripStream.js?build=E4GUFA"></script>
+<script src="DropInView.js?build=E4GUFA"></script>
+<script src="DropInText.js?build=E4GUFA"></script>
+<script src="drop-in.js?build=E4GUFA"></script>
+<script id="clockTimerSettingsFrameController">
+(() => {
+  const dialog = document.getElementById("clockTimerSettingsFrameDialog");
+  const frame = document.getElementById("clockTimerSettingsFrame");
+  if (!dialog || !frame || dialog.dataset.controllerReady) return;
+  dialog.dataset.controllerReady = "true";
+  const surfaces = new Set([
+    "graphicalSettingsDialog",
+    "audioSettingsDialog",
+    "audioAnnouncementsDialog",
+    "stateSettingsDialog",
+    "tripSettingsDialog"
+  ]);
+  document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
+    button.addEventListener("click", () => {
+      const requested = button.dataset.settingsSurface;
+      const surface = surfaces.has(requested) ? requested : "graphicalSettingsDialog";
+      frame.dataset.settingsSurface = surface;
+      frame.src = "settings.html?surface=" + encodeURIComponent(surface);
+      const menu = button.closest("hamburger-menu");
+      if (menu && typeof menu.hidePopover === "function") {
+        try { menu.hidePopover(); } catch {}
+      }
+      if (!dialog.open) dialog.showModal();
+    });
+  });
+  window.addEventListener("message", event => {
+    if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
+    if (event.data?.type === "clocktimer-settings-closed" && dialog.open) dialog.close();
+  });
+  dialog.addEventListener("click", event => {
+    if (event.target === dialog) dialog.close();
+  });
+})();
+</script>

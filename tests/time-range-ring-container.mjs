@@ -71,7 +71,7 @@ for (
         [
             "TemporalFormat",
             "RingContainer",
-            "TimeRange"
+            "TimeRangeModel", "TimeRangeElement"
         ]
 ) {
     window.eval(
@@ -230,85 +230,17 @@ ring.appendChild(
     existing
 );
 
-let collisionEvent;
-
-ring.addEventListener(
-    "time-ranges-changed",
-    event => {
-        if (
-            event.detail?.reason ===
-                "collision"
-        ) {
-            collisionEvent =
-                event;
-        }
-    }
-);
-
-const inserted =
-    window.document
-        .createElement(
-            "time-range"
-        );
-
-inserted.setAttribute(
-    "type",
-    "trip"
-);
-
-inserted.setAttribute(
-    "start-time",
-    "2026-09-22 12:20:00.000"
-);
-
-inserted.setAttribute(
-    "end-time",
-    "2026-09-22 12:30:00.000"
-);
-
-inserted.timeRangeFullEntry =
-    true;
-
-ring.appendChild(
-    inserted
-);
-
-assert(
-    collisionEvent,
-    "collision emits time-ranges-changed"
-);
-
-assert.equal(
-    collisionEvent.cancelable,
-    false,
-    "time-ranges-changed is non-cancelable"
-);
-
-assert(
-    collisionEvent.detail.ranges.length >=
-        3,
-    "one event reports every range affected by a split collision"
-);
-
-assert(
-    collisionEvent.detail.changes.some(
-        change =>
-            change.action ===
-                "trimmed-end"
-    ),
-    "batched event identifies the trimmed range"
-);
-
-assert(
-    collisionEvent.detail.changes.some(
-        change =>
-            change.action ===
-                "created" &&
-            change.range !==
-                inserted
-    ),
-    "batched event identifies the split range that was created"
-);
+// Interval conflicts are validated in the model rather than rewritten by a DOM element.
+const originalModel = existing.model;
+assert.throws(() => window.TimeRange.create({group: originalModel.group, type: 'Fixed',
+    start: new window.Date('2026-09-22T12:20:00Z'), end: new window.Date('2026-09-22T12:30:00Z')}), /overlap/);
+let change;
+ring.addEventListener('time-range-changed', event => { change = event.detail; });
+existing.transitionTo({startTime: new window.Date('2026-09-22T12:10:00Z'),
+    endTime: new window.Date('2026-09-22T13:10:00Z')});
+assert.equal(change.range, existing);
+assert.equal(change.after.rangeLength, 3600000);
+assert.equal(existing.model, originalModel, 'Rendering changes preserve model identity');
 
 const elapsed =
     window.document
@@ -382,8 +314,20 @@ assert.equal(
     "TimeRange has no rendering shadow tree"
 );
 
+assert(
+    Number(existing.style.zIndex) >
+        Number(elapsed.style.zIndex),
+    "base/history layer stays above the elapsed logical layer"
+);
+
+assert(
+    Number(existing.style.zIndex) >
+        Number(remaining.style.zIndex),
+    "base/history layer stays above the remaining logical layer"
+);
+
 console.log(
-    "PASS TimeRange transactions and RingContainer annular layers"
+    "PASS model interval validation, generic presentation changes, and RingContainer annular layers"
 );
 
 ring.remove();

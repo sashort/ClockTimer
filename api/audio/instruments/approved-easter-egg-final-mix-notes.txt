@@ -1,0 +1,21 @@
+APPROVED EASTER EGG MIX - 7 October 2026
+
+Final approved render: ClockTimer-full-song-stronger-percussion-hits-v89.wav
+
+Keep the driving beat and former tuba/oboe pulse melody prominent.
+Foreground gain: +4 dB relative to the v86 backing.
+Lead-and-strings duo: -7 dB relative to the v86 generated duo stems.
+Kick, snare and clap hits: +4 dB relative to the v86 backing.
+Lead and strings start together and have matching echo: 270 ms, feedback 0.42, wet 0.38.
+Both have vibrato throughout each note, including attack, sustain and release.
+Lead vibrato: 5.1 Hz, 10 cents. Strings: 6 cents, four gently detuned voices.
+Both duo voices are two octaves above the original cinematic pulse part.
+Preserve the corrected second opening group: C, Eb, G, with G held through the removed final Eb slot.
+Preserve coordinated backing attacks and shorter dry tails in beats 32 through 56.
+Keep the accepted recorded G2-F2-Eb2-C2 rhythm and its instrument articulation at all four repeated sites.
+The final slide and natural ending remain.
+
+Exact levels and render details: approved-easter-egg-final-mix.json
+Instrument synthesis reference: approved-lead-strings-full-vibrato-settings.json
+
+Runtime plays the exact approved v89 mix through the existing asynchronous sampled-instrument engine. The editable source score remains in catalog scoreEvents.

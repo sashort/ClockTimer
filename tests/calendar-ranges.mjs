@@ -53,7 +53,7 @@ try {
     client.fetcher = async () => ({ok: false, status: 422, json: async () => ({message: 'No verified calendar'})});
     await check('authoritative coverage errors cannot be bypassed with cache', async () => assert.rejects(client.resolve({at: '2028-02-29T17:00:00Z', timezone: 'America/New_York'}), /No verified/));
     const appSource = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
-    window.CalendarRange=CalendarRange; window.eval(fs.readFileSync(new URL('../TripLog.js',import.meta.url),'utf8'));
+    window.CalendarRange=CalendarRange; window.eval(fs.readFileSync(new URL('../TripAggregates.js',import.meta.url),'utf8'));window.eval(fs.readFileSync(new URL('../TripLog.js',import.meta.url),'utf8'));
     const handlers = appSource.slice(appSource.indexOf('    async function dispatchTripListRequest('), appSource.indexOf('    function animateTripLogBody('));
     const body = window.document.createElement('section'); window.document.body.append(body);
     const calls = [], totals = [], events = [];

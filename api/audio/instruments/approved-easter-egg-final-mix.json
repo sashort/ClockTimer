@@ -1,0 +1,25 @@
+{
+  "render": "D:\\Temp\\ClockTimer-instrument-recording-5\\ClockTimer-full-song-stronger-percussion-hits-v89.wav",
+  "foregroundInstrumentIds": [
+    "easter-egg-steady-beat",
+    "easter-egg-low-driving-beat",
+    "easter-egg-pulse-lead",
+    "easter-egg-recorded-phrase-0",
+    "easter-egg-recorded-phrase-1",
+    "easter-egg-recorded-phrase-2",
+    "easter-egg-recorded-phrase-3"
+  ],
+  "foregroundChangeDb": 4,
+  "kickSnareClapChangeDb": 4,
+  "leadAndStringsChangeDb": -7,
+  "relativeForegroundIncreaseDb": 11,
+  "masterGain": 0.6591519848902415,
+  "peak": 0.9650000000000001,
+  "durationSeconds": 66.0,
+  "unchanged": "notes, timing, full-note vibrato, echo and approved cleanup",
+  "songCatalogModified": false,
+  "status": "Final mix approved by user on 2026-10-07",
+  "instrumentSettingsFile": "approved-lead-strings-full-vibrato-settings.json",
+  "renderVersion": "v89",
+  "reproductionScript": "D:/Temp/mix-clocktimer-stronger-percussion.py"
+}

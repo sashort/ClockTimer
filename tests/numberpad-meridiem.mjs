@@ -7,9 +7,9 @@ const controller = new Function(`
     function refreshNumberPad() {}
     ${section('    function splitAbsoluteDigits(', '    function renderAbsoluteDigits(')}
     ${section('    function absoluteHour24(', '    function absoluteTimelineMilliseconds(')}
-    ${section('    function absoluteValuesEqual(', '    function getNumberPadClearAction(')}
+    ${section('    function absoluteValuesEqual(', '    function refreshNumberPad(')}
     ${section('    function changeNumberPadMeridiem(', '    function formatTripTimeDisplay(')}
-    ${section('    function eraseNumberPadPendingValue(', '    function runNumberPadClearShortAction(')}
+    ${section('    function eraseNumberPadPendingValue(', '    function changeNumberPadMeridiem(')}
     return {set: state => numberPadState = state, changeNumberPadMeridiem,
         get: () => numberPadState, absoluteHour24, numberPadHasChanges,
         eraseNumberPadPendingValue, resetNumberPadPendingValue};
@@ -99,14 +99,14 @@ const returnController = new Function(`
     let tripSettingsNavigation = {returnTarget:'number-pad', numberPadState:{
         mode:'duration', source:'standard-time', initial:'003000', pending:'003000', everEdited:false
     }};
-    const tripSettingsSession = {values:{standardTime:'0:45:00'}};
+    const tripSettingsSession = {values:{standardTimeMilliseconds:2700000}};
     function getTripSettingsReturnNumberPadState() { return tripSettingsNavigation.numberPadState; }
-    ${section('    function normalizeTimeDigits(', '    function normalizePercentDigits(')}
+    ${section('    function durationValueToRawDigits(', '    function canonicalClockTimerDuration(')}
     ${section('    function syncTripSettingsCallerAfterSave(', '    async function closeTripSettingsToNavigation(')}
     syncTripSettingsCallerAfterSave();
     return tripSettingsNavigation.numberPadState;
 `)();
 assert.equal(returnController.initial,'003000');
-assert.equal(returnController.pending,'04500');
+assert.equal(returnController.pending,'4500');
 assert.equal(returnController.everEdited,true);
 console.log('PASS returning from Trip Settings preserves the original and marks the new numberpad value changed');

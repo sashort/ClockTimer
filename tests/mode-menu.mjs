@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import {Window} from './LanguageWindow.mjs';
+const w=new Window();w.document.body.innerHTML='<button id="mode">Trip</button>';
+w.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
+const selected=[],button=w.document.getElementById('mode');const {menu,dates}=w.WMOFModeMenu.bind(button,{getValue:()=> 'week',onSelect:(...args)=>selected.push(args)});
+button.click();assert.equal(menu.hidden,false);assert.equal(button.getAttribute('aria-expanded'),'true');
+assert.deepEqual([...menu.querySelectorAll('button')].map(b=>b.dataset.mode),['day','week','pay-period','month','year','custom','trip','auto']);assert.equal(menu.querySelectorAll('hr').length,2);assert.equal(w.document.activeElement.dataset.mode,'week');
+menu.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));assert.equal(w.document.activeElement.dataset.mode,'pay-period');
+menu.querySelector('[data-mode=day]').click();assert.equal(selected[0][0],'day');assert.equal(menu.hidden,true);
+button.click();menu.querySelector('[data-mode=custom]').click();assert.equal(dates.open,true);assert.equal(selected.length,1,'opening date selection does not change mode');
+const inputs=dates.querySelectorAll('input');inputs[0].value='2026-10-08';inputs[1].value='2026-10-07';dates.querySelector('form').dispatchEvent(new w.Event('submit',{cancelable:true}));assert.equal(selected.length,1,'inverted dates rejected');
+inputs[1].value='2026-10-10';dates.querySelector('form').dispatchEvent(new w.Event('submit',{cancelable:true}));assert.equal(selected[1][0],'custom');assert.deepEqual(JSON.parse(JSON.stringify(selected[1][1])),{start:'2026-10-08',end:'2026-10-10'});assert.equal(dates.open,false);
+const observer=w.document.createElement('button');observer.id='observerMode';w.document.body.append(observer);
+const extra=w.WMOFModeMenu.bind(observer,{getValue:()=> 'user',onSelect:value=>selected.push([value]),extraOptions:[['user','b11c3a59-8432-515c-b361-acabaf1e7a88']]});observer.click();assert.equal(extra.menu.querySelector('[data-mode=user]').getAttribute('aria-checked'),'true');assert.equal(extra.menu.querySelector('[data-mode=user]').dataset.menuIcon,'mirror');assert(extra.menu.querySelector('[data-mode=user]').classList.contains('mirror-option'));extra.menu.querySelector('[data-mode=user]').click();assert.equal(selected.at(-1)[0],'user');assert.equal(menu.querySelector('[data-mode=user]'),null,'Order Filler gets no Mirror choice');
+await w.happyDOM.close();console.log('PASS shared mode options, separators, keyboard selection and validated Custom date dialog');

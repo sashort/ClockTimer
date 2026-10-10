@@ -1,0 +1,74 @@
+<script src="LanguagePack.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
+<script src="ModeMenu.js?build=E4GUFA"></script>
+<script src="TimerSummaryView.js?build=E4GUFA"></script>
+<script src="MicrophoneControl.js?build=E4GUFA"></script>
+    <script src="StateTransactions.js?build=E4GUFA"></script>
+    <script src="AsyncPersistence.js?build=E4GUFA"></script>
+    <script src="AccountSettings.js?build=E4GUFA"></script>
+    <script src="RecognizerNames.js?build=E4GUFA"></script>
+    <script src="TimerAppearance.js?build=E4GUFA"></script>
+    <script src="TemporalFormat.js?build=E4GUFA"></script>
+    <script src="RingContainer.js?v=history-layer-top-1&amp;build=E4GUFA"></script>
+    <script src="TimeRangeModel.js?build=E4GUFA"></script>
+    <script src="TimeRangeElement.js?build=E4GUFA"></script>
+    <script src="ClockTimer.js?v=sync-try-event-20261001&amp;build=E4GUFA"></script>
+    <script src="CalendarRange.js?build=E4GUFA"></script>
+    <script src="DigitSequence.js?build=E4GUFA"></script>
+    <script src="TripAggregates.js?build=E4GUFA"></script>
+    <script src="TripLog.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
+    <script src="ParameterParser.js?build=E4GUFA"></script>
+    {{language-rules}}
+    <script src="SpeechFunctionRoles.js?build=E4GUFA"></script>
+    <script src="SpeechFunctionRegistry.js?build=E4GUFA"></script>
+    <script src="UtilityFunctions.js?build=E4GUFA"></script>
+    <script src="SpeechProcessingFunctions.js?build=E4GUFA"></script>
+    <script src="ActionFunctions.js?v=verb-validation-3&amp;build=E4GUFA"></script>
+    <script src="InteractionFunctions.js?build=E4GUFA"></script>
+    <script src="PresentationSetters.js?build=E4GUFA"></script>
+    <script src="AnnouncementLanguage.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
+    <script src="AnnouncementCatalog.js?v=stable-announcement-types-20261001&amp;build=E4GUFA"></script>
+    <script src="api/audio/VoiceCatalog.js?v=language-aware-voices-1&amp;build=E4GUFA"></script>
+    <script src="api/audio/AudioEngine.js?v=dynamic-system-voices-1&amp;build=E4GUFA"></script>
+    <script src="IdentityContext.js?build=E4GUFA"></script>
+    <script src="UserLookup.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
+    <script src="LiveTripStream.js?build=E4GUFA"></script>
+    <script src="PanePage.js?v=overflow-3&amp;build=E4GUFA"></script>
+    <script src="HamburgerMenu.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
+    <script src="app.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
+    <script src="SpeechEditorRuntime.js?build=E4GUFA"></script>
+
+<script id="clockTimerSettingsFrameController">
+(() => {
+  const dialog = document.getElementById("clockTimerSettingsFrameDialog");
+  const frame = document.getElementById("clockTimerSettingsFrame");
+  if (!dialog || !frame || dialog.dataset.controllerReady) return;
+  dialog.dataset.controllerReady = "true";
+  const surfaces = new Set([
+    "graphicalSettingsDialog",
+    "audioSettingsDialog",
+    "audioAnnouncementsDialog",
+    "stateSettingsDialog",
+    "tripSettingsDialog"
+  ]);
+  document.querySelectorAll("[data-open-clock-timer-settings]").forEach(button => {
+    button.addEventListener("click", () => {
+      const requested = button.dataset.settingsSurface;
+      const surface = surfaces.has(requested) ? requested : "graphicalSettingsDialog";
+      frame.dataset.settingsSurface = surface;
+      frame.src = "settings.html?surface=" + encodeURIComponent(surface);
+      const menu = button.closest("hamburger-menu");
+      if (menu && typeof menu.hidePopover === "function") {
+        try { menu.hidePopover(); } catch {}
+      }
+      if (!dialog.open) dialog.showModal();
+    });
+  });
+  window.addEventListener("message", event => {
+    if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
+    if (event.data?.type === "clocktimer-settings-closed" && dialog.open) dialog.close();
+  });
+  dialog.addEventListener("click", event => {
+    if (event.target === dialog) dialog.close();
+  });
+})();
+</script>

@@ -4,7 +4,7 @@ declare(strict_types=1);
 function find_user_account(PDO $pdo, int $userId, bool $lock = false): array
 {
     $statement = $pdo->prepare(
-        'SELECT id, first_name, last_name, preferred_name, username, permissions FROM users WHERE id = :id'
+        'SELECT id, first_name, middle_name, last_name, preferred_name, username, permissions FROM users WHERE id = :id'
         . ($lock ? ' FOR UPDATE' : '')
     );
     $statement->execute([':id' => $userId]);
@@ -17,23 +17,23 @@ function find_user_account(PDO $pdo, int $userId, bool $lock = false): array
 
 function account_fields(array $input, bool $creating): array
 {
-    $allowed = ['action', 'userId', 'firstName', 'lastName', 'preferredName', 'username', 'password', 'permissions'];
+    $allowed = ['action', 'userId', 'firstName', 'middleName', 'lastName', 'preferredName', 'username', 'password', 'permissions', 'loginId', 'pin'];
     foreach ($input as $key => $value) {
         if (!in_array($key, $allowed, true)) {
             api_error('Unknown account field.', 422, 'invalid_argument');
         }
     }
     $fields = [];
-    foreach (['firstName' => 'first_name', 'lastName' => 'last_name', 'preferredName' => 'preferred_name', 'username' => 'username'] as $key => $column) {
+    foreach (['firstName' => 'first_name', 'middleName' => 'middle_name', 'lastName' => 'last_name', 'preferredName' => 'preferred_name', 'username' => 'username'] as $key => $column) {
         if (!array_key_exists($key, $input)) {
-            if ($creating && $key !== 'preferredName') require_string($input, $key);
+            if ($creating && !in_array($key, ['preferredName','middleName'], true)) require_string($input, $key);
             continue;
         }
-        if ($key === 'preferredName' && $input[$key] === null) {
+        if (in_array($key, ['preferredName','middleName'], true) && $input[$key] === null) {
             $fields[$column] = null;
             continue;
         }
-        $text = require_string($input, $key, $key === 'preferredName');
+        $text = require_string($input, $key, in_array($key, ['preferredName','middleName'], true));
         $length = preg_match_all('/./us', $text);
         if ($length === false || $length > ($key === 'username' ? 191 : 100)) {
             api_error($key . ' is too long or is invalid UTF-8.', 422, 'invalid_argument');
@@ -47,6 +47,11 @@ function account_fields(array $input, bool $creating): array
             api_error('password must contain between 1 and 72 bytes.', 422, 'invalid_argument');
         }
         $fields['password_hash'] = password_hash($password, PASSWORD_BCRYPT);
+    }
+    if (array_key_exists('loginId', $input) || array_key_exists('pin', $input)) {
+        require_once __DIR__ . '/voice_login.php';
+        if (array_key_exists('loginId', $input)) $fields['login_id'] = four_digit_credential($input['loginId'], 'loginId');
+        if (array_key_exists('pin', $input)) $fields['pin_hash'] = password_hash(four_digit_credential($input['pin'], 'pin'), PASSWORD_BCRYPT);
     }
     return $fields;
 }
@@ -64,6 +69,19 @@ function save_user_account(PDO $pdo, array $input, bool $creating): array
         $userId = isset($input['userId']) ? require_positive_int($input, 'userId') : $actor['id'];
         $target = find_user_account($pdo, $userId, true);
         require_user_edit_access($actor, $target);
+    }
+    if ((array_key_exists('loginId', $input) || array_key_exists('pin', $input)) && !has_permission($actor, PERMISSION_MODIFY_USERS)) api_error('Assigning main-page login credentials requires an administrator.', 403, 'permission_required');
+    if (array_key_exists('loginId', $input) || array_key_exists('pin', $input)) {
+        $existing = null;
+        if (!$creating) {
+            $query = $pdo->prepare('SELECT login_id, pin_hash FROM users WHERE id = :id');
+            $query->execute([':id' => $userId]);
+            $existing = $query->fetch();
+        }
+        if ((!$existing || !$existing['login_id'] || !$existing['pin_hash']) &&
+            (!array_key_exists('loginId', $input) || !array_key_exists('pin', $input))) {
+            api_error('Assign user ID and PIN together.', 422, 'invalid_argument');
+        }
     }
     $fields = account_fields($input, $creating);
     if (array_key_exists('permissions', $input)) {
@@ -86,7 +104,7 @@ function save_user_account(PDO $pdo, array $input, bool $creating): array
         $pdo->prepare($sql)->execute($parameters);
     } catch (PDOException $error) {
         if (($error->errorInfo[1] ?? null) === 1062) {
-            api_error('That username is already in use.', 409, 'username_conflict');
+            api_error('That username or main-page user ID is already in use.', 409, 'account_identity_conflict');
         }
         throw $error;
     }

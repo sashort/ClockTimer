@@ -13,9 +13,30 @@
     "test:deferred-trip": "node deferred-trip.mjs",
     "test:ui-state": "node clock-timer-ui-state.mjs",
     "test:active-restore": "node active-trip-restore.mjs",
-    "test:speech-editor": "node speech-editor.mjs"
+    "test:speech-editor": "node speech-editor.mjs",
+    "test:speech-phrases": "node speech-phrases.mjs",
+    "test:action-macros": "node action-macros.mjs",
+    "test:editor-actions": "node editor-actions.mjs",
+    "test:hamburger-menu": "node hamburger-menu.mjs",
+    "test:clock-fsm": "node clock-timer-fsm.mjs",
+    "test:time-range-model": "node time-range-model.mjs && node time-range-model-events.mjs",
+    "test:time-range-element": "node time-range-element.mjs",
+    "test:clock-renderer": "node clock-timer-renderer-browser.mjs",
+    "test:speech-index": "node speech-command-index.mjs && node speech-dialog-surfaces.mjs",
+    "bench:speech-index": "node speech-command-performance.mjs",
+    "test:speech-chain": "node speech-command-digest.mjs && node speech-chain-actions.mjs",
+    "test:speech-failfast": "node speech-failfast.mjs",
+    "test:time-range": "node time-range-group.mjs && node counted-time-accounting.mjs && node time-range-ring-container.mjs",
+    "test:state-transactions": "node async-command-lifecycle.mjs && node trip-summary.mjs && node clock-state-contract.mjs && node async-persistence.mjs && node clock-state-transactions.mjs && node app-state-transactions.mjs && node app-state-transactions.mjs --pointer-confirmation && node app-state-transactions.mjs --ready-finish && node app-state-transactions.mjs --ready-finish --saved-ready --voice-feedback --range-voice --summary-state --voicepad-gate --trip-summary && node app-state-transactions.mjs --voice-feedback && node app-state-transactions.mjs --scheduled-standard && node app-state-transactions.mjs --scheduled-cancel && node speech-command-digest.mjs && node app-state-transactions.mjs --post-start-interrupted-final",
+    "test:voice-login": "node app-state-transactions.mjs --voice-login --voice-feedback",
+    "test:login-layout:windows": "node login-modal-layout-browser.cjs",
+    "test:standalone-settings": "node standalone-settings-page.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
+  },
+  "devDependencies": {
+    "playwright": "1.55.0",
+    "pngjs": "7.0.0"
   }
 }

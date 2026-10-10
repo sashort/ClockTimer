@@ -1,0 +1,268 @@
+{
+  "version": 1,
+  "locale": "en-US",
+  "announcements": {
+    "lunch-clock-out": {
+      "summary": "Start meal now",
+      "speechOptions": {},
+      "id": "1522a18c-6ad2-5c36-a19c-6570f8676e25"
+    },
+    "lunch-clock-in": {
+      "summary": "End meal now",
+      "speechOptions": {},
+      "id": "5639c8f8-6a85-525e-8bd7-2dd123ca90ad"
+    },
+    "break-started": {
+      "summary": "Break Started. Say end break to end your break.",
+      "speechOptions": {},
+      "id": "41cd16c1-160d-5279-b699-fd05128164c9"
+    },
+    "short-break-started": {
+      "summary": "Short Break Started. Say end short break to end your short break.",
+      "speechOptions": {},
+      "id": "66102f48-2b07-5554-8563-1867da690e49"
+    },
+    "lunch-started": {
+      "summary": "Lunch Started. Say end lunch to end your lunch.",
+      "speechOptions": {},
+      "id": "0fe91ff0-f7b8-5edf-ac18-a0e717aed311"
+    },
+    "trip-resumed-early": {
+      "summary": "Trip resumed early.",
+      "details": "{duration} saved.",
+      "id": "80b44f6c-3054-5117-b063-630f3c56865d"
+    },
+    "trip-resumed-automatically": {
+      "summary": "Trip automatically resumed",
+      "speechOptions": {},
+      "id": "6d51de98-78b8-5eb5-ba83-9e7dd155299e"
+    },
+    "trip-resumed-after-break": {
+      "summary": "Trip resumed.",
+      "details": "{duration} lost.",
+      "id": "dc9e9b8a-77a3-5fc7-b209-cf48b52b77ae"
+    },
+    "down-time-started": {
+      "summary": "Down time started",
+      "speechOptions": {},
+      "id": "fde6e706-f976-583c-91ff-1725b0d85745"
+    },
+    "trip-resumed-from-down": {
+      "summary": "Trip resumed",
+      "speechOptions": {},
+      "id": "0b2e307f-4ae1-542e-a849-4ffc8c8a0edd"
+    },
+    "trip-started": {
+      "summary": "Trip started.",
+      "inProgress": "Trip in Progress.",
+      "details": "{duration} until {goal}.",
+      "id": "32ece2cb-10fd-52f7-9462-e2b46eca5003"
+    },
+    "trip-started-early": {
+      "summary": "Trip started early.",
+      "details": "{duration} saved.",
+      "id": "9b98120b-c14e-5100-9374-161339e2e14e"
+    },
+    "trip-started-late": {
+      "summary": "Trip started late.",
+      "details": "{duration} lost.",
+      "id": "0e0ae7e3-e08f-56d7-a65e-fe570767e9d0"
+    },
+    "trip-ended": {
+      "summary": "Trip ended.",
+      "total": "{scope} percent: {percent}.",
+      "banked": "{duration} banked toward {goal}.",
+      "over": "{duration} over {goal}.",
+      "id": "a4e6d697-96d8-5603-a8ef-517d3d36fb9b",
+      "newTripPrompt": "Say OK to start a new trip."
+    },
+    "goal-failed": {
+      "standard": "Standard Goal Failed.",
+      "trip": "Trip Goal Failed.",
+      "total": "{scope} Goal Failed.",
+      "details": "{duration} until {goal}.",
+      "overtime": "Overtime in progress.",
+      "id": "8d5e2266-930f-5e22-a5a5-6a317100a2b7"
+    },
+    "syncTry": {
+      "on": "Sync On",
+      "off": "Sync Off",
+      "offline": "Cannot sync offline",
+      "blocked": "Not enough time to sync",
+      "failed": "Sync Fail",
+      "goal": "Sync Goal {percent}",
+      "id": "33c1ed3d-ea40-5598-85b8-ec94020472c2"
+    },
+    "voice-pad-recognition-required": {
+      "id": "81f42d82-8483-44fa-963c-4598e76f214c",
+      "summary": "Voice Pad requires speech recognition enabled. Say OK to turn on speech recognition"
+    },
+    "voice-pad-number-pad": {
+      "id": "217a08ba-6559-4d22-964e-cb252bdcd9ae",
+      "summary": "Switched to number pad."
+    },
+    "setting-on": {
+      "id": "3cd33514-f4b4-4ea2-9816-2dec81902c9e"
+    },
+    "setting-off": {
+      "id": "28b87bb1-2bbd-446f-b563-96dc70d81e7c"
+    },
+    "setting-unchanged": {
+      "id": "41f91f65-f4e4-4198-a3e4-2ac82d464588"
+    },
+    "observer-message": {
+      "id": "5095a9ba-0e96-519b-8077-ed04a7fe7018"
+    }
+  },
+  "messages": {
+    "goal": {
+      "standard": "Standard Goal",
+      "trip": "Trip",
+      "percent": "{scope} Goal {percent} percent",
+      "label": "{scope} Goal",
+      "fallbackPercent": "{scope} Goal {percent} percent"
+    },
+    "scope": {
+      "standard": "Standard",
+      "trip": "Trip",
+      "day": "Day",
+      "week": "Week",
+      "pay-period": "Money",
+      "month": "Month",
+      "year": "Year",
+      "custom": "Total",
+      "auto": "Auto"
+    },
+    "speech": {
+      "percent": "{value} percent",
+      "percentSuffix": " percent"
+    },
+    "settings": {
+      "speechOn": "Speech On",
+      "speechOff": "Speech Off",
+      "chimeOn": "Chime On",
+      "chimeOff": "Chime Off",
+      "chimeRate": "Chime {rate}",
+      "speechRate": "Speech Rate {percent}",
+      "volume": "Volume {percent}%",
+      "viewing": "Viewing {scope}",
+      "mode": "{scope} Mode",
+      "endTimeLocked": "End Time Locked to {time}",
+      "standardTime": "Standard Time Set to {time}",
+      "showingEnd": "Showing End Time",
+      "showingElapsed": "Showing Elapsed Time",
+      "showingBanked": "Showing Banked Time",
+      "showingOver": "Showing Time Over",
+      "showingLeft": "Showing Time Left",
+      "goalSet": "{scope} Goal Set to {percent}",
+      "standardTimePrefix": "Standard Time Set to",
+      "endTimePrefix": "End Time Locked to",
+      "chimeSlow": "Slow",
+      "chimeMedium": "Medium",
+      "chimeFast": "Fast"
+    },
+    "readback": {
+      "metric": "{label} {value}",
+      "tripGoal": "Trip Goal",
+      "endTime": "End Time",
+      "overBy": "Over by {duration}",
+      "mode": "Mode"
+    },
+    "voiceFeedback": {
+      "entryCancelled": "Trip entry cancelled.",
+      "editCancelled": "Edit cancelled.",
+      "scheduledCancelled": "Scheduled start cancelled.",
+      "numberPad": "Number pad.",
+      "deferred": "Trip deferred.",
+      "breakChoices": "Choose Short Break, Break, or Lunch.",
+      "breakSelected": "{choice} selected. Say OK to start.",
+      "cancelledRunning": "Cancelled. Trip still running.",
+      "cancelledDown": "Cancelled. Down time continues.",
+      "intervalContinues": "{interval} continues.",
+      "downRemoved": "Down time removed. Trip running.",
+      "downContinues": "Down time continues.",
+      "settingsSaved": "Trip settings saved.",
+      "fieldSaved": "{field} set to {value}.",
+      "logOpened": "Trip log.",
+      "logClosed": "Trip log closed.",
+      "sleeping": "Voice recognition off.",
+      "listening": "Voice recognition on.",
+      "off": "Microphone deactivated.",
+      "microphoneDeactivated": "Microphone deactivated.",
+      "microphoneActivated": "Microphone activated.",
+      "syncAlready": "Sync already {state}.",
+      "modeAlready": "Already in {mode} mode.",
+      "standardAlready": "Standard time is already {duration}.",
+      "invalidValue": "{prompt}",
+      "breakEndQuestion": "Are you ready to end your {type}?",
+      "breakStartQuestion": "Are you ready to start your {type}?",
+      "breakNotStarted": "Break not started.",
+      "intervalTypes": {
+        "break": "break",
+        "short-break": "short break",
+        "lunch": "lunch"
+      },
+      "summaryClosed": "Trip Summary closed."
+    },
+    "tripSummary": {
+      "title": "Trip Summary",
+      "range": "{scope} range.",
+      "noData": "No trip data available.",
+      "loading": "Loading trip data…",
+      "loadFailed": "Trip data could not be loaded.",
+      "tripCountLabel": "Trips",
+      "tripCount": "{count} trips.",
+      "standardLabel": "Standard time",
+      "standard": "Standard time: {duration}.",
+      "actualLabel": "Actual time",
+      "actual": "Actual time: {duration}.",
+      "countedLabel": "Counted time",
+      "counted": "Counted time: {duration}.",
+      "percentLabel": "Percent",
+      "percent": "{percent}.",
+      "bankedLabel": "Banked toward range goal",
+      "banked": "{duration} banked toward the range goal.",
+      "overLabel": "Over range goal",
+      "over": "{duration} over the range goal."
+    },
+    "voiceLogin": {
+      "idPrompt": "Please login using voice",
+      "pinPrompt": "Password",
+      "invalid": "Enter exactly four digits, then say OK.",
+      "failed": "Login failed. Password",
+      "userIdLabel": "User ID",
+      "pinLabel": "PIN",
+      "adminTitle": "Assign main-page login",
+      "accountLabel": "Account ID",
+      "assign": "Assign ID and PIN",
+      "assigned": "Main-page login assigned.",
+      "success": "Login successful, say standard time or ready at",
+      "recognitionOff": "Voice recognition is off. Enter digits below or enable voice recognition.",
+      "recognitionSleeping": "Voice recognition is sleeping. Enter digits below or wake voice recognition.",
+      "recognitionListening": "Voice recognition is on. Say four digits, then OK.",
+      "enableRecognition": "Enable voice recognition",
+      "ok": "OK",
+      "cancel": "Cancel",
+      "idDigit": "User ID digit {index}",
+      "pinDigit": "PIN digit {index}",
+      "assignmentFailed": "Assignment failed.",
+      "unauthorized": "Not authorized.",
+      "legacyLogin": "Login with username and password",
+      "usernameLabel": "Username",
+      "passwordLabel": "Password",
+      "voiceLogin": "Login via voice",
+      "passwordModePrompt": "Login with username and password.",
+      "recognitionPasswordListening": "Voice recognition is on. Say Voice to login using your user ID and PIN.",
+      "recognitionStarting": "Voice recognition is starting. You can continue entering your login below.",
+      "recognitionSuspended": "Voice recognition is paused. You can continue entering your login below.",
+      "recognitionPasswordOff": "Voice recognition is off. Enter your username and password below or enable voice recognition.",
+      "recognitionPasswordSleeping": "Voice recognition is sleeping. Enter your username and password below or wake voice recognition.",
+      "loginTitle": "Login",
+      "loginAction": "Login",
+      "applicationStarting": "Application is loading",
+      "enableAudioPrompt": "Press OK to enable audio.",
+      "enableAudioAction": "OK",
+      "legacyFailed": "Login failed."
+    }
+  }
+}

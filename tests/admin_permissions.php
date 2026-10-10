@@ -11,6 +11,8 @@ function api_error(string $message, int $status = 400, string $code = 'bad_reque
 function authenticated_user_id(): int { return $GLOBALS['actorId']; }
 require_once __DIR__ . '/../api/_core/permissions.php';
 require_once __DIR__ . '/../api/_core/user_accounts.php';
+require_once __DIR__ . '/../api/_core/access_tokens.php';
+require_once __DIR__ . '/../api/_core/new_user_invites.php';
 // Use the real input-validation helpers; api_error above replaces HTTP exits.
 $source = file_get_contents(__DIR__ . '/../api/_core/response.php');
 $start = strpos($source, 'function require_string');
@@ -25,8 +27,8 @@ class FixturePDO extends PDO {
 $pdo = new FixturePDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-$pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, last_name TEXT NOT NULL, preferred_name TEXT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, permissions INTEGER NOT NULL DEFAULT 0)');
-$seed = $pdo->prepare('INSERT INTO users VALUES (?, ?, ?, NULL, ?, ?, ?)');
+$pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, first_name TEXT NOT NULL, middle_name TEXT, last_name TEXT NOT NULL, preferred_name TEXT, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, permissions INTEGER NOT NULL DEFAULT 0)');
+$seed = $pdo->prepare('INSERT INTO users (id, first_name, last_name, preferred_name, username, password_hash, permissions) VALUES (?, ?, ?, NULL, ?, ?, ?)');
 foreach ([1=>0, 2=>1, 3=>2, 4=>4] as $id=>$mask) $seed->execute([$id,'First','Last','user'.$id,password_hash('test', PASSWORD_BCRYPT),$mask]);
 $passed = 0;
 function test(string $name, callable $callback): void {
@@ -44,6 +46,10 @@ function rejects(callable $callback, int $status, string $code): void {
 }
 $normal=['id'=>1,'permissions'=>0]; $creator=['id'=>2,'permissions'=>1];
 $editor=['id'=>3,'permissions'=>2]; $super=['id'=>4,'permissions'=>4];
+$developerPreview=['id'=>5,'permissions'=>8]; $developer=['id'=>6,'permissions'=>16];
+$tokenGrantor=['id'=>7,'permissions'=>32];
+$liveViewer=['id'=>8,'permissions'=>64];
+$lookupUser=['id'=>9,'permissions'=>128];
 test('no permissions by default', fn()=>expect(!has_permission($normal,1)));
 test('creator cannot modify others', fn()=>rejects(fn()=>require_user_edit_access($creator,$normal),403,'permission_required'));
 test('editor may modify others', fn()=>require_user_edit_access($editor,$normal));
@@ -52,9 +58,21 @@ test('normal user cannot edit others', fn()=>rejects(fn()=>require_user_edit_acc
 test('editor cannot modify superuser', fn()=>rejects(fn()=>require_user_edit_access($editor,$super),403,'permission_required'));
 test('superuser can modify superuser', fn()=>require_user_edit_access($super,['id'=>5,'permissions'=>4]));
 test('superuser implies create and modify', fn()=>expect(has_permission($super,1) && has_permission($super,2)));
+test('developer preview permission', fn()=>expect(has_permission($developerPreview, PERMISSION_DEVELOPER_PREVIEW) && !has_permission($developerPreview, PERMISSION_DEVELOPER)));
+test('developer permission', fn()=>expect(has_permission($developer, PERMISSION_DEVELOPER) && !has_permission($developer, PERMISSION_DEVELOPER_PREVIEW)));
+test('developer access accepts either developer flag', fn()=>expect(has_any_permission($developerPreview, PERMISSION_DEVELOPER_PREVIEW, PERMISSION_DEVELOPER) && has_any_permission($developer, PERMISSION_DEVELOPER_PREVIEW, PERMISSION_DEVELOPER)));
+test('superuser implies developer permissions', fn()=>expect(has_any_permission($super, PERMISSION_DEVELOPER_PREVIEW, PERMISSION_DEVELOPER)));
+test('grant token access permission', fn()=>expect(has_permission($tokenGrantor, PERMISSION_GRANT_TOKEN_ACCESS)));
+test('superuser implies grant token access', fn()=>expect(has_permission($super, PERMISSION_GRANT_TOKEN_ACCESS)));
+test('live stream viewing permission', fn()=>expect(has_permission($liveViewer, PERMISSION_VIEW_LIVE_STREAMS)));
+test('ordinary user cannot view live streams', fn()=>expect(!has_permission($normal, PERMISSION_VIEW_LIVE_STREAMS)));
+test('superuser implies live stream viewing permission', fn()=>expect(has_permission($super, PERMISSION_VIEW_LIVE_STREAMS)));
+test('user lookup permission', fn()=>expect(has_permission($lookupUser, PERMISSION_LOOKUP_USERS)));
+test('ordinary user cannot lookup users', fn()=>expect(!has_permission($normal, PERMISSION_LOOKUP_USERS)));
+test('superuser implies user lookup permission', fn()=>expect(has_permission($super, PERMISSION_LOOKUP_USERS)));
 foreach ([$normal,$creator,$editor] as $actor) test('cannot assign permissions: '.$actor['id'], fn()=>rejects(fn()=>require_permission_assignment($actor,4),403,'permission_required'));
-foreach ([-1,8,'4',1.5,true] as $value) test('invalid permission mask '.json_encode($value), fn()=>rejects(fn()=>require_permission_assignment($super,$value),422,'invalid_argument'));
-test('combined permission mask', fn()=>expect(require_permission_assignment($super,7)===7));
+foreach ([-1,256,'4',1.5,true] as $value) test('invalid permission mask '.json_encode($value), fn()=>rejects(fn()=>require_permission_assignment($super,$value),422,'invalid_argument'));
+test('combined permission mask', fn()=>expect(require_permission_assignment($super,255)===255));
 test('revoke permissions', fn()=>expect(require_permission_assignment($super,0)===0));
 $input=['firstName'=>' Test ','lastName'=>'Account','username'=>'temp-account','password'=>' with spaces '];
 $GLOBALS['actorId']=1;
@@ -65,6 +83,10 @@ test('creator creates ordinary account', fn()=>expect($new['permissions']===0 &&
 test('hash never returned', fn()=>expect(!isset($new['password_hash'])));
 test('password spaces preserved', function() use($pdo,$new) { $s=$pdo->prepare('SELECT password_hash FROM users WHERE id=?'); $s->execute([$new['id']]); expect(password_verify(' with spaces ',$s->fetchColumn())); });
 test('creator cannot create elevated account', fn()=>rejects(fn()=>save_user_account($pdo,array_merge($input,['username'=>'elevated','permissions'=>4]),true),403,'permission_required'));
+test('QR redemption rejects permissions creator does not hold', fn()=>rejects(fn()=>create_invited_user($pdo,2,128,array_merge($input,['username'=>'qr-forged'])),403,'permission_required'));
+$pdo->exec('UPDATE users SET permissions=0 WHERE id=2');
+test('QR redemption rejects a revoked creator', fn()=>rejects(fn()=>create_invited_user($pdo,2,1,array_merge($input,['username'=>'qr-revoked'])),403,'permission_required'));
+$pdo->exec('UPDATE users SET permissions=1 WHERE id=2');
 $GLOBALS['actorId']=1;
 test('self profile update', fn()=>expect(save_user_account($pdo,['preferredName'=>'Bob'],false)['preferred_name']==='Bob'));
 test('self cannot escalate', fn()=>rejects(fn()=>save_user_account($pdo,['permissions'=>4],false),403,'permission_required'));

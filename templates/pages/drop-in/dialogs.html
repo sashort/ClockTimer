@@ -1,0 +1,40 @@
+{{include:shared/auto-goal-dialog.html}}
+{{include:pages/drop-in/lookup-action.html}}
+
+<style id="clockTimerSettingsFrameStyles">
+dialog.clock-timer-settings-frame-dialog {
+  position:fixed; inset:0; box-sizing:border-box;
+  width:100vw; height:100dvh; max-width:none; max-height:none;
+  margin:0; padding:0; border:0; border-radius:0;
+  overflow:hidden; background:transparent;
+}
+dialog.clock-timer-settings-frame-dialog[open] { display:grid; place-items:center; }
+dialog.clock-timer-settings-frame-dialog::backdrop { background:rgb(0 0 0 / 48%); }
+dialog.clock-timer-settings-frame-dialog iframe {
+  display:block; box-sizing:border-box;
+  width:min(940px,94vw); height:90dvh;
+  max-width:calc(100vw - 16px); max-height:calc(100dvh - 16px);
+  margin:auto; padding:0; border:0;
+  background:transparent; overflow:auto;
+}
+dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="audioSettingsDialog"] {
+  width:min(860px,calc(100vw - 32px)); height:min(88dvh,820px);
+}
+dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="audioAnnouncementsDialog"] {
+  width:min(760px,calc(100vw - 32px)); height:min(88dvh,820px);
+}
+dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="stateSettingsDialog"] {
+  width:min(940px,94vw); height:min(90dvh,820px);
+}
+dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="tripSettingsDialog"] {
+  width:min(760px,94vw); height:min(92dvh,760px);
+}
+@media(max-width:600px) {
+  dialog.clock-timer-settings-frame-dialog iframe {
+    max-width:calc(100vw - 16px); max-height:calc(100dvh - 16px);
+  }
+}
+</style>
+<dialog id="clockTimerSettingsFrameDialog" class="clock-timer-settings-frame-dialog" aria-label="ClockTimer settings">
+  <iframe id="clockTimerSettingsFrame" src="about:blank" title="ClockTimer settings" scrolling="yes"></iframe>
+</dialog>

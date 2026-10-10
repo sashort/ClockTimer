@@ -1,0 +1,683 @@
+{
+  "song": "dark-eighties",
+  "displayName": "Dark 80s",
+  "menuIcon": "pumpkin",
+  "approvedMix": {
+    "status": "Preview only; not installed or deployed",
+    "song": "Dark 80s",
+    "easterEggIcon": "🎃",
+    "easterEggIconRequirement": "Pumpkin icon when this song is added to Easter Eggs",
+    "vocalRequested": false,
+    "render": "Dark-80s-washboard-full-song-v27.wav",
+    "durationSeconds": 130.0,
+    "peak": 0.6459965596744647,
+    "clapperboardHits": 96,
+    "washboardStrokes": 13,
+    "sha256": "d8fe6abc399d87a5d08e58a374ca1396e3185dcb4733ec04f00f2868dff75d20"
+  },
+  "clap": {
+    "instrument": "Dry unpitched clap",
+    "bpm": 225,
+    "feelBpm": 112.5,
+    "hitPeak": 0.65,
+    "changeFromV25": "Removed all pitched resonances; broadband clap aligned with existing snare beats 2 and 6 of each eight-score-beat bar",
+    "events": [
+      {
+        "beat": 50,
+        "seconds": 13.333333333333334,
+        "velocity": 0.95
+      },
+      {
+        "beat": 54,
+        "seconds": 14.4,
+        "velocity": 0.82
+      },
+      {
+        "beat": 58,
+        "seconds": 15.466666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 62,
+        "seconds": 16.533333333333335,
+        "velocity": 0.82
+      },
+      {
+        "beat": 66,
+        "seconds": 17.6,
+        "velocity": 0.95
+      },
+      {
+        "beat": 70,
+        "seconds": 18.666666666666668,
+        "velocity": 0.82
+      },
+      {
+        "beat": 74,
+        "seconds": 19.733333333333334,
+        "velocity": 0.95
+      },
+      {
+        "beat": 78,
+        "seconds": 20.8,
+        "velocity": 0.82
+      },
+      {
+        "beat": 82,
+        "seconds": 21.866666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 86,
+        "seconds": 22.933333333333334,
+        "velocity": 0.82
+      },
+      {
+        "beat": 90,
+        "seconds": 24.0,
+        "velocity": 0.95
+      },
+      {
+        "beat": 94,
+        "seconds": 25.066666666666666,
+        "velocity": 0.82
+      },
+      {
+        "beat": 98,
+        "seconds": 26.133333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 102,
+        "seconds": 27.2,
+        "velocity": 0.82
+      },
+      {
+        "beat": 106,
+        "seconds": 28.266666666666666,
+        "velocity": 0.95
+      },
+      {
+        "beat": 110,
+        "seconds": 29.333333333333332,
+        "velocity": 0.82
+      },
+      {
+        "beat": 114,
+        "seconds": 30.4,
+        "velocity": 0.95
+      },
+      {
+        "beat": 118,
+        "seconds": 31.466666666666665,
+        "velocity": 0.82
+      },
+      {
+        "beat": 122,
+        "seconds": 32.53333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 126,
+        "seconds": 33.6,
+        "velocity": 0.82
+      },
+      {
+        "beat": 130,
+        "seconds": 34.666666666666664,
+        "velocity": 0.95
+      },
+      {
+        "beat": 134,
+        "seconds": 35.733333333333334,
+        "velocity": 0.82
+      },
+      {
+        "beat": 138,
+        "seconds": 36.8,
+        "velocity": 0.95
+      },
+      {
+        "beat": 142,
+        "seconds": 37.86666666666667,
+        "velocity": 0.82
+      },
+      {
+        "beat": 146,
+        "seconds": 38.93333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 150,
+        "seconds": 40.0,
+        "velocity": 0.82
+      },
+      {
+        "beat": 154,
+        "seconds": 41.06666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 158,
+        "seconds": 42.13333333333333,
+        "velocity": 0.82
+      },
+      {
+        "beat": 162,
+        "seconds": 43.2,
+        "velocity": 0.95
+      },
+      {
+        "beat": 166,
+        "seconds": 44.266666666666666,
+        "velocity": 0.82
+      },
+      {
+        "beat": 170,
+        "seconds": 45.333333333333336,
+        "velocity": 0.95
+      },
+      {
+        "beat": 174,
+        "seconds": 46.4,
+        "velocity": 0.82
+      },
+      {
+        "beat": 178,
+        "seconds": 47.46666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 182,
+        "seconds": 48.53333333333333,
+        "velocity": 0.82
+      },
+      {
+        "beat": 186,
+        "seconds": 49.6,
+        "velocity": 0.95
+      },
+      {
+        "beat": 190,
+        "seconds": 50.666666666666664,
+        "velocity": 0.82
+      },
+      {
+        "beat": 194,
+        "seconds": 51.733333333333334,
+        "velocity": 0.95
+      },
+      {
+        "beat": 198,
+        "seconds": 52.8,
+        "velocity": 0.82
+      },
+      {
+        "beat": 202,
+        "seconds": 53.86666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 206,
+        "seconds": 54.93333333333333,
+        "velocity": 0.82
+      },
+      {
+        "beat": 210,
+        "seconds": 56.0,
+        "velocity": 0.95
+      },
+      {
+        "beat": 214,
+        "seconds": 57.06666666666667,
+        "velocity": 0.82
+      },
+      {
+        "beat": 218,
+        "seconds": 58.13333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 222,
+        "seconds": 59.2,
+        "velocity": 0.82
+      },
+      {
+        "beat": 226,
+        "seconds": 60.266666666666666,
+        "velocity": 0.95
+      },
+      {
+        "beat": 230,
+        "seconds": 61.333333333333336,
+        "velocity": 0.82
+      },
+      {
+        "beat": 234,
+        "seconds": 62.4,
+        "velocity": 0.95
+      },
+      {
+        "beat": 238,
+        "seconds": 63.46666666666667,
+        "velocity": 0.82
+      },
+      {
+        "beat": 242,
+        "seconds": 64.53333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 246,
+        "seconds": 65.6,
+        "velocity": 0.82
+      },
+      {
+        "beat": 250,
+        "seconds": 66.66666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 254,
+        "seconds": 67.73333333333333,
+        "velocity": 0.82
+      },
+      {
+        "beat": 258,
+        "seconds": 68.8,
+        "velocity": 0.95
+      },
+      {
+        "beat": 262,
+        "seconds": 69.86666666666666,
+        "velocity": 0.82
+      },
+      {
+        "beat": 266,
+        "seconds": 70.93333333333334,
+        "velocity": 0.95
+      },
+      {
+        "beat": 270,
+        "seconds": 72.0,
+        "velocity": 0.82
+      },
+      {
+        "beat": 274,
+        "seconds": 73.06666666666666,
+        "velocity": 0.95
+      },
+      {
+        "beat": 278,
+        "seconds": 74.13333333333334,
+        "velocity": 0.82
+      },
+      {
+        "beat": 282,
+        "seconds": 75.2,
+        "velocity": 0.95
+      },
+      {
+        "beat": 286,
+        "seconds": 76.26666666666667,
+        "velocity": 0.82
+      },
+      {
+        "beat": 290,
+        "seconds": 77.33333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 294,
+        "seconds": 78.4,
+        "velocity": 0.82
+      },
+      {
+        "beat": 298,
+        "seconds": 79.46666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 302,
+        "seconds": 80.53333333333333,
+        "velocity": 0.82
+      },
+      {
+        "beat": 306,
+        "seconds": 81.6,
+        "velocity": 0.95
+      },
+      {
+        "beat": 310,
+        "seconds": 82.66666666666667,
+        "velocity": 0.82
+      },
+      {
+        "beat": 314,
+        "seconds": 83.73333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 318,
+        "seconds": 84.8,
+        "velocity": 0.82
+      },
+      {
+        "beat": 322,
+        "seconds": 85.86666666666666,
+        "velocity": 0.95
+      },
+      {
+        "beat": 326,
+        "seconds": 86.93333333333334,
+        "velocity": 0.82
+      },
+      {
+        "beat": 330,
+        "seconds": 88.0,
+        "velocity": 0.95
+      },
+      {
+        "beat": 334,
+        "seconds": 89.06666666666666,
+        "velocity": 0.82
+      },
+      {
+        "beat": 338,
+        "seconds": 90.13333333333334,
+        "velocity": 0.95
+      },
+      {
+        "beat": 342,
+        "seconds": 91.2,
+        "velocity": 0.82
+      },
+      {
+        "beat": 346,
+        "seconds": 92.26666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 350,
+        "seconds": 93.33333333333333,
+        "velocity": 0.82
+      },
+      {
+        "beat": 354,
+        "seconds": 94.4,
+        "velocity": 0.95
+      },
+      {
+        "beat": 362,
+        "seconds": 96.53333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 370,
+        "seconds": 98.66666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 378,
+        "seconds": 100.8,
+        "velocity": 0.95
+      },
+      {
+        "beat": 386,
+        "seconds": 102.93333333333334,
+        "velocity": 0.95
+      },
+      {
+        "beat": 390,
+        "seconds": 104.0,
+        "velocity": 0.82
+      },
+      {
+        "beat": 394,
+        "seconds": 105.06666666666666,
+        "velocity": 0.95
+      },
+      {
+        "beat": 398,
+        "seconds": 106.13333333333334,
+        "velocity": 0.82
+      },
+      {
+        "beat": 402,
+        "seconds": 107.2,
+        "velocity": 0.95
+      },
+      {
+        "beat": 406,
+        "seconds": 108.26666666666667,
+        "velocity": 0.82
+      },
+      {
+        "beat": 410,
+        "seconds": 109.33333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 414,
+        "seconds": 110.4,
+        "velocity": 0.82
+      },
+      {
+        "beat": 418,
+        "seconds": 111.46666666666667,
+        "velocity": 0.95
+      },
+      {
+        "beat": 422,
+        "seconds": 112.53333333333333,
+        "velocity": 0.82
+      },
+      {
+        "beat": 426,
+        "seconds": 113.6,
+        "velocity": 0.95
+      },
+      {
+        "beat": 430,
+        "seconds": 114.66666666666667,
+        "velocity": 0.82
+      },
+      {
+        "beat": 434,
+        "seconds": 115.73333333333333,
+        "velocity": 0.95
+      },
+      {
+        "beat": 438,
+        "seconds": 116.8,
+        "velocity": 0.82
+      },
+      {
+        "beat": 442,
+        "seconds": 117.86666666666666,
+        "velocity": 0.95
+      },
+      {
+        "beat": 446,
+        "seconds": 118.93333333333334,
+        "velocity": 0.82
+      }
+    ],
+    "source": "D:\\Codex\\Projects\\ClockTimer-Music\\Drafts\\Dark-80s-Extended-v23\\Dark-80s-extended-unprocessed-v23.wav",
+    "existingNotesUnchanged": true,
+    "introAndOutroArrangementPreserved": true,
+    "wholeSongEffects": "Same tape saturation, parallel compression and top-end softening as v23",
+    "headroomGain": 1,
+    "rmsCompensation": 1.1042449145513478
+  },
+  "washboard": {
+    "style": "Short unpitched metal scraper strokes",
+    "ridgeSpacingMs": [
+      12,
+      20
+    ],
+    "peak": 0.19,
+    "events": [
+      {
+        "beat": 130,
+        "seconds": 34.666666666666664,
+        "durationSeconds": 0.22,
+        "velocity": 0.9
+      },
+      {
+        "beat": 134,
+        "seconds": 35.733333333333334,
+        "durationSeconds": 0.16,
+        "velocity": 0.7
+      },
+      {
+        "beat": 138,
+        "seconds": 36.8,
+        "durationSeconds": 0.25,
+        "velocity": 1
+      },
+      {
+        "beat": 146,
+        "seconds": 38.93333333333333,
+        "durationSeconds": 0.24,
+        "velocity": 0.9
+      },
+      {
+        "beat": 150,
+        "seconds": 40.0,
+        "durationSeconds": 0.16,
+        "velocity": 0.8
+      },
+      {
+        "beat": 154,
+        "seconds": 41.06666666666667,
+        "durationSeconds": 0.25,
+        "velocity": 1
+      },
+      {
+        "beat": 158,
+        "seconds": 42.13333333333333,
+        "durationSeconds": 0.16,
+        "velocity": 0.75
+      },
+      {
+        "beat": 290,
+        "seconds": 77.33333333333333,
+        "durationSeconds": 0.22,
+        "velocity": 0.8
+      },
+      {
+        "beat": 298,
+        "seconds": 79.46666666666667,
+        "durationSeconds": 0.18,
+        "velocity": 0.9
+      },
+      {
+        "beat": 306,
+        "seconds": 81.6,
+        "durationSeconds": 0.25,
+        "velocity": 1
+      },
+      {
+        "beat": 314,
+        "seconds": 83.73333333333333,
+        "durationSeconds": 0.18,
+        "velocity": 0.8
+      },
+      {
+        "beat": 354,
+        "seconds": 94.4,
+        "durationSeconds": 0.22,
+        "velocity": 0.75
+      },
+      {
+        "beat": 370,
+        "seconds": 98.66666666666667,
+        "durationSeconds": 0.23,
+        "velocity": 0.8
+      }
+    ],
+    "placement": "Organ features, two-bar percussion break, sparse breakdown"
+  },
+  "arrangement": {
+    "bpm": 225,
+    "insertAtOriginalBeat": 224,
+    "addedBeats": 224,
+    "addedSeconds": 59.733333333333334,
+    "sections": [
+      {
+        "startBeat": 0,
+        "endBeat": 32,
+        "name": "Main theme variation",
+        "startSeconds": 59.733333333333334,
+        "endSeconds": 68.26666666666667
+      },
+      {
+        "startBeat": 32,
+        "endBeat": 64,
+        "name": "Contrasting answer",
+        "startSeconds": 68.26666666666667,
+        "endSeconds": 76.8
+      },
+      {
+        "startBeat": 64,
+        "endBeat": 96,
+        "name": "Extended organ feature",
+        "startSeconds": 76.8,
+        "endSeconds": 85.33333333333334
+      },
+      {
+        "startBeat": 96,
+        "endBeat": 128,
+        "name": "Lead and organ exchange",
+        "startSeconds": 85.33333333333334,
+        "endSeconds": 93.86666666666667
+      },
+      {
+        "startBeat": 128,
+        "endBeat": 160,
+        "name": "Sparse breakdown",
+        "startSeconds": 93.86666666666667,
+        "endSeconds": 102.4
+      },
+      {
+        "startBeat": 160,
+        "endBeat": 208,
+        "name": "Original melody returns",
+        "startSeconds": 102.4,
+        "endSeconds": 115.2
+      },
+      {
+        "startBeat": 208,
+        "endBeat": 224,
+        "name": "Final answer into original outro",
+        "startSeconds": 115.2,
+        "endSeconds": 119.46666666666667
+      }
+    ],
+    "tripletsRequired": false,
+    "insertAtSeconds": 59.733333333333334,
+    "totalSeconds": 130.0
+  },
+  "wholeSongEffects": {
+    "scope": "Whole song, all instruments and sections",
+    "tapeSaturationDrive": 1.5,
+    "parallelCompression": {
+      "ratio": 1.35,
+      "thresholdDbFS": -11.056839373155615,
+      "attackMs": 25,
+      "releaseMs": 150,
+      "wetPercent": 20
+    },
+    "tonalFilter": {
+      "highShelfDb": -1.8,
+      "highShelfHz": 5500,
+      "gentleUpperRollOffHz": 14000
+    },
+    "sectionOnlySweep": false,
+    "fixedRmsCompensation": 1.0997950026399659,
+    "constantHeadroomGain": 1
+  },
+  "savedPulseSettings": "api/audio/instruments/approved-pulse-melody-settings.json",
+  "voice": null
+}
