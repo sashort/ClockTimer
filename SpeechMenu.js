@@ -6546,13 +6546,16 @@ class SpeechMenu {
     static #hasExplicitCommandPrefix(element, transcript) {
         const normalizedTranscript = SpeechMenu.#normalizeTranscript(transcript);
         const words = normalizedTranscript.split(" ").filter(Boolean);
-        const phrases = SpeechMenu.#expandRegexSource(element.getAttribute("speech-pattern") || "");
-        // An exact literal alternative is a complete command, not a partial
-        // prefix merely because the same pattern also has a longer alternative.
-        if (phrases.some(phrase =>
-            !/<[A-Za-z_$][\\w$]*>/.test(phrase) &&
-            SpeechMenu.#normalizeTranscript(phrase) === normalizedTranscript
-        )) return false;
+        const pattern = element.getAttribute("speech-pattern") || "";
+        const phrases = SpeechMenu.#expandRegexSource(pattern);
+        // A parameterized command cannot be complete until its parameter is
+        // present, even when its literal prefix is also a shorter command.
+        // Conversely, a parameter-free pattern that matches exactly is complete.
+        if (!pattern.includes("(?<")) {
+            try {
+                if (new RegExp(pattern, "i").test(normalizedTranscript)) return false;
+            } catch {}
+        }
         return phrases.some(phrase => {
             if (!SpeechMenu.#phraseCanContinue(transcript, phrase)) return false;
             const prefix = SpeechMenu.#normalizeTranscript(phrase).split(/\s+/).filter(Boolean);
