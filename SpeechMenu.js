@@ -6678,7 +6678,8 @@ class SpeechMenu {
                     // junk before the next valid command. If direct continuation
                     // fails, search later tail offsets rather than invalidating
                     // the already-valid command at the head.
-                    if ((!tail || tail.invalid) && !SpeechMenu.#isOpenEndedParameter(element)) {
+                    const collectorStep = SpeechMenu.#isOpenEndedParameter(element);
+                    if ((!tail || tail.invalid) && !collectorStep) {
                         for (let skip = 1; skip < remaining.length; skip++) {
                             const later = await SpeechMenu.#planDigest(
                                 next, remaining.slice(skip), utterance, signal, depth + 1, memo,
@@ -6691,7 +6692,17 @@ class SpeechMenu {
                             }
                         }
                     }
-                    if (tail) select({...tail, steps: [step, ...tail.steps],
+                    const tailRoot = tail?.steps[0]?.commandElement || tail?.pending?.element;
+                    const tailTranscript = tail?.steps[0]?.segmentTranscript || tail?.pending?.transcript || "";
+                    const tailCollector = SpeechMenu.#isOpenEndedParameter(tailRoot);
+                    const explicitTailBoundary = tailRoot &&
+                        (!tailCollector || SpeechMenu.#hasExplicitCommandPrefix(tailRoot, tailTranscript));
+                    if (collectorStep && (!tail || tail.invalid || !explicitTailBoundary)) {
+                        // Never split a growing free-form value at a bare
+                        // parameter match. A real command literal can end it.
+                        select({steps: [step], exact: false, continuation: false, terminal: false,
+                            invalid: true, consumedWords: end, remainder: remaining.join(" ")});
+                    } else if (tail) select({...tail, steps: [step, ...tail.steps],
                         consumedWords: end + skippedTailWords + tail.consumedWords});
                     else select({steps: [step], exact: false, continuation: false, terminal: false,
                         invalid: true, consumedWords: end, remainder: remaining.join(" ")});
@@ -6738,17 +6749,6 @@ class SpeechMenu {
                 if (start > 0 && !candidate.steps.length && candidate.pending &&
                     !candidate.pending.hasCommandPrefix) continue;
                 if (start === 0 && !candidate.invalid) headViable = true;
-                if (candidate.invalid) {
-                    // A short command may match the head but leave junk behind.
-                    // Keep it as a fallback while searching later offsets for
-                    // a complete valid command chain.
-                    const score = candidate.consumedWords;
-                    const priorScore = invalidFallback?.candidate.consumedWords ?? -1;
-                    if (score > priorScore || (score === priorScore && start < invalidFallback.offset)) {
-                        invalidFallback = {candidate, offset: start};
-                    }
-                    continue;
-                }
                 const firstStep = candidate.steps[0];
                 const collector = firstStep && (
                     firstStep.commandElement.hasAttribute("speech-collect") ||
@@ -6762,6 +6762,16 @@ class SpeechMenu {
                     const priorScore = collectorFallback?.candidate.consumedWords ?? -1;
                     if (score > priorScore || (score === priorScore && start < collectorFallback.offset)) {
                         collectorFallback = {candidate, offset: start};
+                    }
+                    continue;
+                }
+                if (candidate.invalid) {
+                    // Keep invalid plans as a fallback, but continue looking
+                    // for a valid command or collector at a later offset.
+                    const score = candidate.consumedWords;
+                    const priorScore = invalidFallback?.candidate.consumedWords ?? -1;
+                    if (score > priorScore || (score === priorScore && start < invalidFallback.offset)) {
+                        invalidFallback = {candidate, offset: start};
                     }
                     continue;
                 }
