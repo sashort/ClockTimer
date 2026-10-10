@@ -3833,8 +3833,7 @@ class SpeechMenu {
         const tail = remainder.split(" ").filter(Boolean).slice(consumedWords).join(" ");
         utterance.digestPending = tail;
         // Interim recognition is revisable: keep unmatched head/tail text pending.
-        // The digest's final validation, not a separate fail-fast heuristic,
-        // decides whether the utterance is accepted or rejected.
+        // The final digest validation decides whether the utterance is accepted or rejected.
         if (isFinal) {
             if (tail || candidate?.invalid) SpeechMenu.#rejectDigest(utterance, "no-candidates", tail || remainder);
             else {
