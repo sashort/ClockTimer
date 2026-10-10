@@ -2831,6 +2831,7 @@ class SpeechMenu {
             sampleCount,
             transcript: "",
             transcriptRevision: 0,
+            discardedTranscriptPrefixWords: 0,
             expectedSurfaces: new Set([...document.querySelectorAll('dialog[open]')].slice(-1)),
             valueCollectors: new Map(),
             digestTranscript: "",
@@ -3488,6 +3489,51 @@ class SpeechMenu {
 
         utterance.candidatePoolController =
             controller;
+
+        /*
+         * Drop recognition noise before digesting the command remainder. Until
+         * a command has consumed words, re-plan every revision so a revised ASR
+         * prefix can be reconsidered rather than permanently discarded. Once
+         * digesting has begun, retain the established prefix length and remove
+         * those words from each cumulative recognition result before validating
+         * the already-consumed command prefix.
+         */
+        const normalizedTranscript =
+            SpeechMenu.#normalizeTranscript(transcript);
+        if (utterance.digestTranscript) {
+            const words = normalizedTranscript.split(" ").filter(Boolean);
+            transcript = words.slice(
+                utterance.discardedTranscriptPrefixWords || 0
+            ).join(" ");
+        }
+        else {
+            utterance.discardedTranscriptPrefixWords = 0;
+            const prefixPlan = await SpeechMenu.#planCommandChain(
+                utterance, normalizedTranscript, controller.signal
+            );
+            if (
+                controller.signal.aborted ||
+                SpeechMenu.#utterance !== utterance ||
+                revision !== utterance.transcriptRevision ||
+                utterance.candidatePoolController !== controller
+            ) {
+                return;
+            }
+            const ignoredWords = prefixPlan?.ignoredPrefix
+                ?.split(" ").filter(Boolean).length || 0;
+            if (ignoredWords) {
+                utterance.discardedTranscriptPrefixWords = ignoredWords;
+                transcript = normalizedTranscript.split(" ").filter(Boolean)
+                    .slice(ignoredWords).join(" ");
+                utterance.transcript = transcript;
+                SpeechMenu.#emit("utteranceTranscriptChanged", {
+                    id: utterance.id, transcript, isFinal: Boolean(isFinal)
+                });
+            }
+            else {
+                transcript = normalizedTranscript;
+            }
+        }
 
         utterance.digestIsFinal = Boolean(isFinal);
         const remainingTranscript = SpeechMenu.#digestRemainder(utterance, transcript);
