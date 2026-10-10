@@ -6741,15 +6741,26 @@ class SpeechMenu {
                 // the complete value at the head of the transcript.
                 if (start > 0 && !candidate.steps.length && candidate.pending &&
                     !candidate.pending.hasCommandPrefix) continue;
-                if (start === 0 && !candidate.invalid) headViable = true;
                 const firstStep = candidate.steps[0];
                 const collector = firstStep && (
                     firstStep.commandElement.hasAttribute("speech-collect") ||
                     firstStep.commandElement.hasAttribute("speech-open-ended"));
-                // A collector is only a fallback when it stands alone. Keep
-                // scanning every offset (including the last word): a one-word
-                // collector match must not preempt a longer valid value later
-                // in the transcript, such as the four digits after an announcement.
+                if (start === 0 && !candidate.invalid &&
+                    (!collector || SpeechMenu.#hasExplicitCommandPrefix(
+                        firstStep.commandElement, firstStep.segmentTranscript))) headViable = true;
+                // An explicitly introduced collector owns the head until a
+                // following command establishes a real boundary. Do not let a
+                // trailing fragment (for example, "two") steal part of its value.
+                if (start === 0 && collector && candidate.steps.length === 1 &&
+                    !candidate.pending && !candidate.invalid &&
+                    SpeechMenu.#hasExplicitCommandPrefix(firstStep.commandElement, firstStep.segmentTranscript)) {
+                    best = candidate;
+                    offset = 0;
+                    break;
+                }
+                // An unanchored collector is only a fallback when it stands
+                // alone. Keep scanning every offset so a login collector does
+                // not absorb announcement noise before the digits.
                 if (collector && candidate.steps.length === 1 && !candidate.pending && !candidate.invalid) {
                     const score = candidate.consumedWords;
                     const priorScore = collectorFallback?.candidate.consumedWords ?? -1;
