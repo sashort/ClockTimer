@@ -17,6 +17,7 @@ assert.equal(Preprocessor.parse("one hundred and five percent", "percent"), 105)
 assert.equal(Preprocessor.normalize("one hundred and five percent", "percent"), "105");
 assert.deepEqual(Preprocessor.parse("five thirty pm", "clock-parts"), {hour:5, minute:30, meridiem:"pm", day:undefined});
 assert.equal(Preprocessor.normalize("five thirty pm", "clock"), "5:30 pm");
+assert.equal(Preprocessor.normalize("four twenty two", "clock"), "4:22");
 assert.equal(Preprocessor.normalize("a quarter to six pm", "clock"), "5:45 pm");
 assert.equal(Preprocessor.normalize("a half past five", "clock"), "5:30");
 const baseDate = new Date(2026, 8, 21, 14, 0, 0);
