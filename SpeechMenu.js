@@ -6702,13 +6702,25 @@ class SpeechMenu {
             offset = 0;
             headViable = false;
             let collectorFallback;
+            let invalidFallback;
             for (let start = 0; start < words.length; start++) {
                 const candidate = await SpeechMenu.#planDigest(
                     SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
                     words.slice(start), utterance, signal);
                 if (signal?.aborted) return undefined;
                 if (!candidate || (!candidate.steps.length && !candidate.pending)) continue;
-                if (start === 0) headViable = true;
+                if (start === 0 && !candidate.invalid) headViable = true;
+                if (candidate.invalid) {
+                    // A short command may match the head but leave junk behind.
+                    // Keep it as a fallback while searching later offsets for
+                    // a complete valid command chain.
+                    const score = candidate.consumedWords;
+                    const priorScore = invalidFallback?.candidate.consumedWords ?? -1;
+                    if (score > priorScore || (score === priorScore && start < invalidFallback.offset)) {
+                        invalidFallback = {candidate, offset: start};
+                    }
+                    continue;
+                }
                 const firstStep = candidate.steps[0];
                 const collector = firstStep && (
                     firstStep.commandElement.hasAttribute("speech-collect") ||
@@ -6728,6 +6740,10 @@ class SpeechMenu {
                 best = candidate;
                 offset = start;
                 break;
+            }
+            if (!best && invalidFallback) {
+                best = invalidFallback.candidate;
+                offset = invalidFallback.offset;
             }
             if (!best && collectorFallback) {
                 best = collectorFallback.candidate;
