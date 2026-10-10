@@ -6619,8 +6619,16 @@ class SpeechMenu {
                 const collector = firstStep && (
                     firstStep.commandElement.hasAttribute("speech-collect") ||
                     firstStep.commandElement.hasAttribute("speech-open-ended"));
-                if (collector && start < words.length - 1) {
-                    collectorFallback ??= {candidate, offset: start};
+                // A collector is only a fallback when it stands alone. Keep
+                // scanning every offset (including the last word): a one-word
+                // collector match must not preempt a longer valid value later
+                // in the transcript, such as the four digits after an announcement.
+                if (collector && candidate.steps.length === 1 && !candidate.pending) {
+                    const score = candidate.consumedWords;
+                    const priorScore = collectorFallback?.candidate.consumedWords ?? -1;
+                    if (score > priorScore || (score === priorScore && start < collectorFallback.offset)) {
+                        collectorFallback = {candidate, offset: start};
+                    }
                     continue;
                 }
                 best = candidate;
