@@ -6768,6 +6768,21 @@ class SpeechMenu {
                     continue;
                 }
                 if (candidate.invalid) {
+                    // If a command with a literal prefix owns the head and its
+                    // collector cannot establish a real boundary, do not slide
+                    // into the remainder and reinterpret part of that value as
+                    // a standalone command. This is what keeps "ready at four
+                    // twenty two" together instead of turning "two" into a
+                    // separate duration. Unanchored collectors (e.g. login
+                    // digits after announcement noise) still allow tail search.
+                    const first = candidate.steps[0];
+                    const firstIsCollector = first && SpeechMenu.#isOpenEndedParameter(first.commandElement);
+                    if (start === 0 && firstIsCollector &&
+                        SpeechMenu.#hasExplicitCommandPrefix(first.commandElement, first.segmentTranscript)) {
+                        best = candidate;
+                        offset = 0;
+                        break;
+                    }
                     // Keep invalid plans as a fallback, but continue looking
                     // for a valid command or collector at a later offset.
                     const score = candidate.consumedWords;
