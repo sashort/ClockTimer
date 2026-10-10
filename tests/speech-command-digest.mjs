@@ -477,5 +477,15 @@ try {
     assert.equal(transactionStates.length,2,'optimistic attempts do not bypass authorization');
     attemptRoot.remove();attemptChoice.remove();attemptConfirm.remove();
     delete globalThis.WMOFStateTransactions;
+    // Leading recognition junk is slid off the stream without preventing a
+    // command or its chained tail from being recognized.
+    const noisy=fresh();
+    await hear(noisy,'um nonsense show log',true);await noisy.digestQueue;
+    assert.deepEqual(calls,[['log']],'leading junk is discarded before a valid command');
+    const noisyChain=fresh();
+    await hear(noisyChain,'uh random ready at four fifteen standard time one hour',true);
+    await noisyChain.digestQueue;
+    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']],
+        'leading junk is discarded while the remaining command chain stays intact');
     console.log('PASS incremental command digestion, priming, UI lag, parameter boundaries, ordered actions, invalid tails, failure, cancellation and hard gates');
 } finally {speech.testReset();await window.happyDOM.close();}
