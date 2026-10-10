@@ -3075,13 +3075,16 @@ class SpeechMenu {
      * active grammar contains opaque patterns, fail open rather than deleting
      * speech that may belong to a free-form collector.
      */
-    static #scopeTranscriptToCommands(transcript) {
+    static #scopeTranscriptToCommands(transcript, utterance) {
         const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
         if (!words.length) return "";
 
         const starts = new Set();
         let uncertain = false;
-        for (const element of SpeechMenu.#availableCandidates()) {
+        const candidates = SpeechMenu.#digestCandidates(
+            utterance?.digestContext, utterance?.digestSurfaceStack
+        );
+        for (const element of candidates) {
             const pattern = element.getAttribute("speech-pattern");
             if (!pattern) continue;
             const phrases = SpeechMenu.#expandRegexSource(pattern);
@@ -3148,7 +3151,7 @@ class SpeechMenu {
                 [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" ")
             )
         );
-        const transcript = SpeechMenu.#scopeTranscriptToCommands(rawTranscript);
+        const transcript = SpeechMenu.#scopeTranscriptToCommands(rawTranscript, utterance);
 
         SpeechMenu.#emit("speechTranscriptScoped", {
             utteranceId: id, rawTranscript, transcript, isFinal: Boolean(detail.isFinal)
