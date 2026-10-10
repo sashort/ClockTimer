@@ -3556,7 +3556,8 @@ class SpeechMenu {
             !pool[0]?.headViable &&
             !utterance.digestContext &&
             !utterance.digestTranscript &&
-            !pool[0]?.commandElement?.hasAttribute("speech-chain-context")) {
+            !pool[0]?.commandElement?.hasAttribute("speech-chain-context") &&
+            !pool[0]?.commandElement?.hasAttribute("speech-chain-next")) {
             const ignoredWords = plannedPrefix.split(" ").filter(Boolean).length;
             utterance.discardedTranscriptPrefixWords = ignoredWords;
             transcript = SpeechMenu.#normalizeTranscript(transcript)
