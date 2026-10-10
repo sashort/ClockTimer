@@ -81,7 +81,20 @@ const standard=make(future,'standard','^standard(?: time)? (?<timeValue>.+)$','s
     'speech-chain-context':'scheduled-start','data-speech-target':'#future-standard',
     'speech-preproc':'TestValues.normalize','speech-preproc-context':'duration','speech-preproc-field':'timeValue'});
 standard.id='future-standard';
-const log=make(document.body,'log','^show log
+const log=make(document.body,'log','^show log$','showLog',{'speech-modal':'top-level'});
+    assert.equal(speech.testScope('please login via voice ready at four twenty two'),
+        'ready at four twenty two',
+        'transcription removes leading tokens outside registered command scope');
+    assert.equal(speech.testScope('ready at four twenty two'),
+        'ready at four twenty two',
+        'transcription preserves command parameters intact');
+    assert.equal(speech.testScope('show log'),
+        'show log',
+        'transcription preserves another registered command');
+    assert.equal(speech.testScope('please login via voice rea'), 'rea',
+        'transcription preserves a partial command-start token');
+    assert.equal(speech.testScope('please login via voice'), '',
+        'transcription discards a transcript with no in-scope command token');
 const hear=async(...args)=>{await speech.testTranscript(...args);await new Promise(setImmediate);};
 const fresh=()=>{speech.testReset();calls.length=0;errors.length=0;return speech.testBegin();};
 try {
