@@ -6607,6 +6607,22 @@ class SpeechMenu {
         });
     }
 
+    // True when the transcript begins with a command's literal introducer,
+    // even when parameter words already follow it. Unlike #hasExplicitCommandPrefix,
+    // this is for collector-boundary decisions, not partial-command detection.
+    static #hasExplicitCommandAnchor(element, transcript) {
+        const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
+        if (!words.length) return false;
+        const phrases = SpeechMenu.#expandRegexSource(element.getAttribute("speech-pattern") || "");
+        return phrases.some(phrase => {
+            const prefix = SpeechMenu.#normalizeTranscript(phrase).split(/\s+/).filter(Boolean);
+            const parameter = prefix.findIndex(token => /^<[^>]+>$/.test(token));
+            const literal = parameter < 0 ? prefix : prefix.slice(0, parameter);
+            return literal.length > 0 && words.length >= literal.length &&
+                literal.every((word, index) => words[index] === word);
+        });
+    }
+
     static #digestCanContinue(element, segment, candidates) {
         return SpeechMenu.#elementDirectContinuationDepth(element, segment) !== undefined ||
             candidates.some(other => other !== element &&
@@ -6724,7 +6740,7 @@ class SpeechMenu {
                     const explicitTailBoundary = tail?.pending
                         ? Boolean(tail.pending.hasCommandPrefix)
                         : tailRoot && (!tailCollector ||
-                            SpeechMenu.#hasExplicitCommandPrefix(tailRoot, tailTranscript));
+                            SpeechMenu.#hasExplicitCommandAnchor(tailRoot, tailTranscript));
                     if (collectorStep && (!tail || tail.invalid || !explicitTailBoundary)) {
                         // Never split a growing free-form value at a bare
                         // parameter match. A real command literal can end it.
@@ -6781,14 +6797,14 @@ class SpeechMenu {
                     firstStep.commandElement.hasAttribute("speech-collect") ||
                     firstStep.commandElement.hasAttribute("speech-open-ended"));
                 if (start === 0 && !candidate.invalid &&
-                    (!collector || SpeechMenu.#hasExplicitCommandPrefix(
+                    (!collector || SpeechMenu.#hasExplicitCommandAnchor(
                         firstStep.commandElement, firstStep.segmentTranscript))) headViable = true;
                 // An explicitly introduced collector owns the head until a
                 // following command establishes a real boundary. Do not let a
                 // trailing fragment (for example, "two") steal part of its value.
                 if (start === 0 && collector && candidate.steps.length === 1 &&
                     !candidate.pending && !candidate.invalid &&
-                    SpeechMenu.#hasExplicitCommandPrefix(firstStep.commandElement, firstStep.segmentTranscript)) {
+                    SpeechMenu.#hasExplicitCommandAnchor(firstStep.commandElement, firstStep.segmentTranscript)) {
                     best = candidate;
                     offset = 0;
                     break;
@@ -6815,7 +6831,7 @@ class SpeechMenu {
                     const first = candidate.steps[0];
                     const firstIsCollector = first && SpeechMenu.#isOpenEndedParameter(first.commandElement);
                     if (start === 0 && firstIsCollector &&
-                        SpeechMenu.#hasExplicitCommandPrefix(first.commandElement, first.segmentTranscript)) {
+                        SpeechMenu.#hasExplicitCommandAnchor(first.commandElement, first.segmentTranscript)) {
                         best = candidate;
                         offset = 0;
                         break;
