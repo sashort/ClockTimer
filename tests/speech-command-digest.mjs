@@ -284,8 +284,8 @@ try {
     assert.equal(future.open,false,'test deliberately never opens the future dialog');
     speech.testInvalidate();
     assert.equal(speech.testActive(),u,'surface lag does not restart the utterance');
-    await hear(u,'ready at four fifteen standard time one hour');
-    assert.equal(calls.length,1,'dependent action waits for successful prerequisite');
+    await hear(u,'please login via voice ready at four fifteen standard time one hour');
+    assert.equal(calls.length,1,'revised leading noise is discarded without replaying the consumed command');
     await hear(u,'ready at four fifteen standard time one hour',true);
     assert.equal(standard.hasAttribute('primed'),false,'utterance completion removes priming even while queue waits');
     release(true);await u.digestQueue;
