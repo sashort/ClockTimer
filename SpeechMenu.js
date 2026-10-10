@@ -6622,7 +6622,7 @@ class SpeechMenu {
         const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
         if (!words.length) return false;
         const phrases = SpeechMenu.#expandRegexSource(element.getAttribute("speech-pattern") || "");
-        return phrases.some(phrase => {
+        const expandedAnchor = phrases.some(phrase => {
             // Preserve generated parameter placeholders while normalizing
             // literal words; normalizeTranscript intentionally strips angle brackets.
             const prefix = String(phrase)
@@ -6635,6 +6635,24 @@ class SpeechMenu {
             return literal.length > 0 && words.length >= literal.length &&
                 literal.every((word, index) => words[index] === word);
         });
+        if (expandedAnchor) return true;
+
+        // Regex expansion can fail closed for constructs it cannot safely
+        // enumerate. Still recognize an unambiguous literal head directly
+        // from the source pattern (e.g. "^ready at (?<spokenTime>.+)$").
+        // Stop at the first regex operator so optional prefixes and parameter
+        // syntax are never mistaken for required command words.
+        const source = (element.getAttribute("speech-pattern") || "").replace(/^\^/, "");
+        let literalSource = "";
+        for (const char of source) {
+            if ("\\\\()[]{}.*+?|^$".includes(char)) break;
+            literalSource += char;
+        }
+        const literal = literalSource.toLocaleLowerCase()
+            .replace(/[^\p{L}\p{N}\s:]/gu, " ")
+            .split(/\s+/).filter(Boolean);
+        return literal.length > 0 && words.length >= literal.length &&
+            literal.every((word, index) => words[index] === word);
     }
 
     static #digestCanContinue(element, segment, candidates) {
