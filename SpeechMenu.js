@@ -6544,8 +6544,16 @@ class SpeechMenu {
     // A bare parameter fragment is not a boundary for the preceding value.
     // Only a matching literal command prefix can release it before final decode.
     static #hasExplicitCommandPrefix(element, transcript) {
-        const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
-        return SpeechMenu.#expandRegexSource(element.getAttribute("speech-pattern") || "").some(phrase => {
+        const normalizedTranscript = SpeechMenu.#normalizeTranscript(transcript);
+        const words = normalizedTranscript.split(" ").filter(Boolean);
+        const phrases = SpeechMenu.#expandRegexSource(element.getAttribute("speech-pattern") || "");
+        // An exact literal alternative is a complete command, not a partial
+        // prefix merely because the same pattern also has a longer alternative.
+        if (phrases.some(phrase =>
+            !/<[A-Za-z_$][\\w$]*>/.test(phrase) &&
+            SpeechMenu.#normalizeTranscript(phrase) === normalizedTranscript
+        )) return false;
+        return phrases.some(phrase => {
             if (!SpeechMenu.#phraseCanContinue(transcript, phrase)) return false;
             const prefix = SpeechMenu.#normalizeTranscript(phrase).split(/\s+/).filter(Boolean);
             const parameter = prefix.findIndex(token => /^<[^>]+>$/.test(token));
