@@ -3119,7 +3119,11 @@ class SpeechMenu {
             if (!foundStart) uncertain = true;
         }
 
-        if (uncertain || !starts.size) return words.join(" ");
+        // An opaque pattern must not disable pruning for every other command.
+        // Retain only tokens that can begin a known command phrase; cumulative
+        // Sherpa hypotheses are re-evaluated on every update, so rejected
+        // leading tokens disappear as soon as they cannot match a valid start.
+        if (!starts.size) return "";
 
         const canStart = word => [...starts].some(start =>
             start === word || start.startsWith(word)
