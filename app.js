@@ -19994,6 +19994,19 @@
                                 return;
                             }
 
+                            // Commit numeric input at the same point as the
+                            // touch tone. Waiting for pointerup can leave an
+                            // audible keypress with no corresponding digit
+                            // if another interaction interrupts that event.
+                            if (
+                                button.dataset.number !== undefined &&
+                                !globalThis.WMOFActions?.enterNumberPadDigit?.(
+                                    button.dataset.number
+                                )
+                            ) {
+                                return;
+                            }
+
                             button
                                 .setPointerCapture?.(
                                     event.pointerId
@@ -20081,26 +20094,21 @@
             )
             .forEach(
                 button => {
-                    globalThis
-                        .WMOFInteractionFunctions
-                        .bindAction({
-                            element:
-                                button,
-                            event:
-                                "pointerup",
-                            name:
-                                "enterNumberPadDigit" +
-                                button.dataset
-                                    .number +
-                                "PointerUp",
-                            action:
-                                "enterNumberPadDigit",
-                            args:
-                                () => [
-                                    button.dataset
-                                        .number
-                                ]
-                        });
+                    // Preserve keyboard/assistive activation, which produces
+                    // a click without a preceding pointerdown.
+                    button.addEventListener(
+                        "click",
+                        event => {
+                            if (event.detail !== 0) {
+                                return;
+                            }
+
+                            globalThis
+                                .WMOFActions
+                                ?.enterNumberPadDigit
+                                ?.(button.dataset.number);
+                        }
+                    );
                 }
             );
 
