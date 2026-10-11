@@ -8295,8 +8295,11 @@
             `${transitionDuration}ms`
         );
         dialog.showModal();
-        speechMicBar
-            ?.promoteTopLayer?.();
+        // The microphone bar is a separate top-layer popover. Never raise it
+        // over a modal when speech recognition is disabled.
+        if (speechRecognitionEnabled()) {
+            speechMicBar?.promoteTopLayer?.();
+        }
 
         setTimeout(() => {
             if (!dialog.open || dialog.classList.contains("dialog-closing")) return;
@@ -8474,6 +8477,7 @@
         "toggle",
         event => {
             if (
+                speechRecognitionEnabled() &&
                 event.target !== speechMicBar &&
                 event.newState === "open"
             ) {
