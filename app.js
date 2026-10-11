@@ -3053,14 +3053,29 @@
     }
 
     function refreshLoginBoundary() {
-        const viewport=globalThis.visualViewport;
-        const top=viewport?.offsetTop ?? 0, bottom=top+(viewport?.height ?? globalThis.innerHeight);
-        const micVisible=speechRecognitionEnabled() && speechMicBar && !speechMicBar.hidden && popoverIsOpen(speechMicBar);
-        const micTop=micVisible ? Number(speechMicBar.getSafeTop?.() ?? speechMicBar.getBoundingClientRect().top) : bottom;
-        const safeBottom=Number.isFinite(micTop) ? Math.min(bottom,micTop) : bottom;
-        for(const dialog of [loginDialog,legacyLoginDialog,$("#liveStreamDialog"),$("#userLookupDialog")]){
-            dialog.style.setProperty("--login-safe-top",top+"px");
-            dialog.style.setProperty("--login-safe-height",Math.max(0,safeBottom-top)+"px");
+        const viewport = globalThis.visualViewport;
+        // visualViewport can briefly report zero/invalid dimensions during startup
+        // or viewport transitions. Never let that collapse a modal to 0px tall:
+        // the dialog would become invisible while retaining modal focus.
+        const fallbackHeight = Math.max(1, Number(globalThis.innerHeight) || 1);
+        const reportedTop = Number(viewport?.offsetTop);
+        const reportedHeight = Number(viewport?.height);
+        const top = Number.isFinite(reportedTop) && reportedTop >= 0 ? reportedTop : 0;
+        const viewportHeight = Number.isFinite(reportedHeight) && reportedHeight > 100
+            ? reportedHeight
+            : fallbackHeight;
+        const bottom = top + viewportHeight;
+        const micVisible = speechRecognitionEnabled() && speechMicBar && !speechMicBar.hidden && popoverIsOpen(speechMicBar);
+        const reportedMicTop = micVisible
+            ? Number(speechMicBar.getSafeTop?.() ?? speechMicBar.getBoundingClientRect().top)
+            : bottom;
+        const micTop = Number.isFinite(reportedMicTop) ? reportedMicTop : bottom;
+        const safeBottom = Math.min(bottom, Math.max(top + 100, micTop));
+        const safeHeight = Math.max(100, safeBottom - top);
+        for (const dialog of [loginDialog, legacyLoginDialog, $("#liveStreamDialog"), $("#userLookupDialog")]) {
+            if (!dialog) continue;
+            dialog.style.setProperty("--login-safe-top", top + "px");
+            dialog.style.setProperty("--login-safe-height", safeHeight + "px");
         }
     }
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
