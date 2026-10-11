@@ -3066,9 +3066,9 @@
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
     function announceVoiceLogin(text) {
         if(!loginIsOpen())return;
-        if(startupAnnouncementPending || (loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady)){
+        if(startupAnnouncementPending){
             pendingLoginAnnouncement=text;
-            if(startupAnnouncementPending) void startupAnnouncementFinished.then(announceLoginAfterModelReady);
+            void startupAnnouncementFinished.then(announceLoginAfterModelReady);
             return;
         }
         pendingLoginAnnouncement=undefined;
@@ -3080,7 +3080,7 @@
     }
     function announceLoginAfterModelReady(){
         if(globalThis.SpeechMenu?.modelReady && pendingVoiceLoginSwitch && legacyLoginDialog.open && !voiceLoginBusy){pendingVoiceLoginSwitch=false;switchToVoiceLogin();}
-        if((loginInputMode !== "pin" || globalThis.SpeechMenu?.modelReady) && loginIsOpen() && pendingLoginAnnouncement){
+        if(loginIsOpen() && pendingLoginAnnouncement){
             const text=pendingLoginAnnouncement;pendingLoginAnnouncement=undefined;announceVoiceLogin(text);
         }
     }
