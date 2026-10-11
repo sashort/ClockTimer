@@ -67,6 +67,12 @@ await recognizer.start("commands");
 assert.equal(worker.sent.at(-1).command, "start");
 assert.equal(worker.sent.at(-1).data, 7);
 
+assert.equal(recognizer.acceptAudioFrame(new Float32Array([0, 0.5, -0.5]), 16000), true);
+assert.equal(worker.sent.at(-1).command, "process");
+assert.deepEqual(worker.sent.at(-1).data, [0, 16384, -16384]);
+assert.throws(() => recognizer.acceptAudioFrame([0, 1], 16000), /Float32Array/);
+assert.throws(() => recognizer.acceptAudioFrame(new Float32Array([0]), 0), /sample rate/);
+
 let transcript;
 recognizer.addEventListener("transcript", event => { transcript = event.detail; });
 worker.emit({ hyp: "READY", hypseg: [], final: false });
