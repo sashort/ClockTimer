@@ -2727,19 +2727,25 @@
             }
         };
 
-    // Speech recognition is intentionally disabled application-wide.
-    // Keep the rest of the UI intact, but never start microphone capture.
     const enableSpeechRecognitionRuntime =
         async () => {
-            speechActivationPending = false;
-            setSpeechButtonState(false, false);
-            setSpeechLayoutState(false);
-            try {
-                await globalThis.SpeechMenu?.stop?.();
-            } catch (error) {
-                console.warn("Speech recognition shutdown failed:", error);
-            }
-            return false;
+            await ensureSpeechRuntime();
+
+            const speechMenu =
+                globalThis.SpeechMenu;
+
+            speechRecognitionSuspended = false;
+
+            const englishLanguage =
+                globalThis.WMOFLanguages?.[AUDIO_LANGUAGE];
+
+            return Boolean(
+                await speechMenu?.start?.(
+                    englishLanguage
+                        ?.speechRecognitionLanguage ||
+                        "en-US"
+                )
+            );
         };
 
     setSpeechButtonState(false);
@@ -3065,14 +3071,22 @@
     }
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
     function announceVoiceLogin(text) {
-        // Voice recognition is disabled. Do not repeatedly announce the
-        // voice-login instruction or queue login speech for later playback.
-        pendingLoginAnnouncement = undefined;
-        return false;
+        if(!loginIsOpen())return;
+        if(startupAnnouncementPending || (loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady)){
+            pendingLoginAnnouncement=text;
+            if(startupAnnouncementPending) void startupAnnouncementFinished.then(announceLoginAfterModelReady);
+            return;
+        }
+        pendingLoginAnnouncement=undefined;
+        const context=globalThis.SpeechMenu?.executionContext;
+        const before=context && voiceFeedbackSnapshots.get(context)?.semantic;
+        if(before && stateFeedbackChime(before,commandFeedbackState()) === "setting-unchanged") {
+            void confirmInformationalChange("setting-unchanged",text,{ignoreSummaryMaster:true});
+        } else void globalThis.WMOFAudio?.speak?.(text);
     }
     function announceLoginAfterModelReady(){
         if(globalThis.SpeechMenu?.modelReady && pendingVoiceLoginSwitch && legacyLoginDialog.open && !voiceLoginBusy){pendingVoiceLoginSwitch=false;switchToVoiceLogin();}
-        if(loginIsOpen() && pendingLoginAnnouncement){
+        if((loginInputMode !== "pin" || globalThis.SpeechMenu?.modelReady) && loginIsOpen() && pendingLoginAnnouncement){
             const text=pendingLoginAnnouncement;pendingLoginAnnouncement=undefined;announceVoiceLogin(text);
         }
     }
@@ -8297,9 +8311,8 @@
         dialog.showModal();
         // The microphone bar is a separate top-layer popover. Never raise it
         // over a modal when speech recognition is disabled.
-        if (speechRecognitionEnabled()) {
-            speechMicBar?.promoteTopLayer?.();
-        }
+        speechMicBar
+            ?.promoteTopLayer?.();
 
         setTimeout(() => {
             if (!dialog.open || dialog.classList.contains("dialog-closing")) return;
@@ -8477,7 +8490,6 @@
         "toggle",
         event => {
             if (
-                speechRecognitionEnabled() &&
                 event.target !== speechMicBar &&
                 event.newState === "open"
             ) {
