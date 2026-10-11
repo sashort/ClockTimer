@@ -2728,37 +2728,18 @@
         };
 
     // Speech recognition is intentionally disabled application-wide.
-    // Keep the rest of the speech-related UI/runtime available where needed,
-    // but never start microphone capture or Sherpa recognition.
+    // Keep the rest of the UI intact, but never start microphone capture.
     const enableSpeechRecognitionRuntime =
         async () => {
+            speechActivationPending = false;
             setSpeechButtonState(false, false);
             setSpeechLayoutState(false);
-            speechActivationPending = false;
             try {
                 await globalThis.SpeechMenu?.stop?.();
             } catch (error) {
                 console.warn("Speech recognition shutdown failed:", error);
             }
             return false;
-
-            await ensureSpeechRuntime();
-
-            const speechMenu =
-                globalThis.SpeechMenu;
-
-            speechRecognitionSuspended = false;
-
-            const englishLanguage =
-                globalThis.WMOFLanguages?.[AUDIO_LANGUAGE];
-
-            return Boolean(
-                await speechMenu?.start?.(
-                    englishLanguage
-                        ?.speechRecognitionLanguage ||
-                        "en-US"
-                )
-            );
         };
 
     setSpeechButtonState(false);
