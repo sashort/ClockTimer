@@ -87,6 +87,11 @@ worker.emit({ hyp: "READY", hypseg: [], final: false });
 assert.equal(transcript.transcript, "ready");
 assert.equal(transcript.isFinal, false);
 
+// Finality is a lifecycle event, not merely a text change.
+worker.emit({ hyp: "READY", hypseg: [], final: true });
+assert.equal(transcript.transcript, "ready");
+assert.equal(transcript.isFinal, true);
+
 await recognizer.close();
 assert.equal(worker.terminated, true);
 console.log("PocketSphinx recognizer adapter tests passed.");
