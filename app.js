@@ -20983,6 +20983,8 @@
         return true;
     }
 
+    let completedTripEndMoment;
+
     async function confirmCompletedTripSummary() {
         if (!completedTripSummary) return false;
         if (completedTripSummary.invocation.reason !== "trip-ended") return dismissCompletedTripSummary();
@@ -20990,8 +20992,16 @@
         // inherits the enabled microphone's preference for speech entry.
         const speechPath = Boolean(globalThis.SpeechMenu?.executionContext);
         const inputMode = speechPath && voicePadAvailable() ? "voice" : "touch";
+        const tripMoment = completedTripEndMoment instanceof Date
+            ? new Date(completedTripEndMoment.getTime())
+            : new Date();
         dismissCompletedTripSummary();
-        return beginNewTripWorkflow({initialValue: "", inputMode, signal: currentActionSignal()});
+        return beginNewTripWorkflow({
+            initialValue: "",
+            inputMode,
+            tripMoment,
+            signal: currentActionSignal()
+        });
     }
 
     let speechBreakPromptState;
@@ -23157,6 +23167,13 @@
     }
 
     function onTripEnded(event) {
+        const exactStopTime = event?.detail?.stopTime;
+        const parsedStopTime = exactStopTime instanceof Date
+            ? new Date(exactStopTime.getTime())
+            : new Date(exactStopTime);
+        if (!Number.isNaN(parsedStopTime.getTime())) {
+            completedTripEndMoment = parsedStopTime;
+        }
         const speechTimingProfile =
             globalThis
                 .SpeechMenu
