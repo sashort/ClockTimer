@@ -301,7 +301,7 @@ class SpeechMenu {
             const trailing = digitTokens.slice(-4);
             if (trailing.length === 4 && trailing.every(Boolean)) digits = trailing.join("");
             else {
-                const numericTail = String(transcript || "").match(/(?:^|\\D)(\\d{4})\\s*$/);
+                const numericTail = String(transcript || "").match(/(?:^|\D)(\d{4})\s*$/);
                 digits = numericTail?.[1] || "";
             }
         }
