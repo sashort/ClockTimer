@@ -31,7 +31,8 @@
     "test:voice-login": "node app-state-transactions.mjs --voice-login --voice-feedback",
     "test:login-layout:windows": "node login-modal-layout-browser.cjs",
     "test:standalone-settings": "node standalone-settings-page.mjs",
-    "test:speech-grammar-context": "node speech-grammar-context.mjs"
+    "test:speech-grammar-context": "node speech-grammar-context.mjs",
+    "test:pocketsphinx-grammar": "node pocketsphinx-grammar-catalog.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
