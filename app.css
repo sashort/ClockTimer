@@ -1,3 +1,11 @@
+/* Speech recognition is temporarily disabled application-wide. */
+speech-mic-bar,
+#speechMicBar {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
 :root {
     --wm-blue: #0053e2;
     --wm-blue-dark: #001e60;
