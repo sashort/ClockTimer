@@ -27,8 +27,10 @@ before committing model files.
 - `PocketSphinxGrammarCatalog.js` builds FSG objects for command phrases and
   constrained value vocabularies.
 - `PocketSphinxRecognizer.js` wraps the upstream worker protocol, exposes
-  grammar registration and switching at utterance boundaries, and captures/
-  resamples microphone audio to 16 kHz signed 16-bit PCM.
+  grammar registration and switching at utterance boundaries, and can either
+  capture its own microphone or accept Float32 audio frames from an existing
+  capture pipeline through `acceptAudioFrame(samples, sampleRate)`. Frames are
+  resampled and batched into 16 kHz signed 16-bit PCM for the worker.
 - Tests exercise the grammar context, grammar catalog, and worker adapter
   protocol without requiring a microphone or WASM model.
 
