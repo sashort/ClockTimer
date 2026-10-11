@@ -250,8 +250,6 @@ class SpeechMenu {
     static #utteranceSequence = 0;
     static #preRollFrames = [];
     static #preRollSamples = 0;
-    // Diagnostic-only user pitch baseline from accepted four-digit login utterances.
-    static #voicePitchBaseline;
     static #startPromise;
     static #sessionGeneration = 0;
     static #contextGeneration = 0;
@@ -264,81 +262,6 @@ class SpeechMenu {
     static #feedbackAdapter;
 
     static setFeedbackAdapter(adapter) { SpeechMenu.#feedbackAdapter = adapter; }
-
-    static get voicePitchBaseline() {
-        return SpeechMenu.#voicePitchBaseline ? {...SpeechMenu.#voicePitchBaseline} : undefined;
-    }
-
-    static #estimatePitch(samples, sampleRate) {
-        if (!(samples instanceof Float32Array) || samples.length < sampleRate * 0.032) return undefined;
-        const minLag = Math.max(1, Math.floor(sampleRate / 350));
-        const maxLag = Math.min(Math.floor(sampleRate / 70), samples.length - 2);
-        let energy = 0;
-        for (let i = 0; i < samples.length; i++) energy += samples[i] * samples[i];
-        if (energy / samples.length < 0.000025) return undefined;
-        let bestLag = 0, bestCorrelation = 0;
-        for (let lag = minLag; lag <= maxLag; lag++) {
-            let cross = 0, left = 0, right = 0;
-            for (let i = 0; i < samples.length - lag; i++) {
-                const a = samples[i], b = samples[i + lag];
-                cross += a * b; left += a * a; right += b * b;
-            }
-            const correlation = cross / Math.sqrt((left || 1) * (right || 1));
-            if (correlation > bestCorrelation) { bestCorrelation = correlation; bestLag = lag; }
-        }
-        return bestCorrelation >= 0.55 && bestLag ? sampleRate / bestLag : undefined;
-    }
-
-    static #calibrateVoicePitch(utterance, transcript) {
-        if (SpeechMenu.#voicePitchBaseline || !utterance?.pitchFrames?.length) return;
-        const words = String(transcript || "").toLocaleLowerCase().trim()
-            .replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
-        const digitWords = {zero:"0", oh:"0", one:"1", two:"2", three:"3", four:"4",
-            five:"5", six:"6", seven:"7", eight:"8", nine:"9"};
-        const digitTokens = words.map(word => /^\d$/.test(word) ? word : digitWords[word]);
-        let digits = digitTokens.join("");
-        if (!/^\d{4}$/.test(digits)) {
-            const trailing = digitTokens.slice(-4);
-            if (trailing.length === 4 && trailing.every(Boolean)) digits = trailing.join("");
-            else {
-                const numericTail = String(transcript || "").match(/(?:^|\D)(\d{4})\s*$/);
-                digits = numericTail?.[1] || "";
-            }
-        }
-        if (!/^\d{4}$/.test(digits)) return;
-        const sampleRate = utterance.pitchSampleRate || 16000;
-        const maxSamples = Math.floor(sampleRate * 3);
-        const chunks = [];
-        let total = 0;
-        for (const frame of utterance.pitchFrames) {
-            if (total >= maxSamples) break;
-            const part = frame.subarray(0, Math.min(frame.length, maxSamples - total));
-            chunks.push(part); total += part.length;
-        }
-        if (total < sampleRate * 0.25) return;
-        const samples = new Float32Array(total);
-        let offset = 0;
-        for (const chunk of chunks) { samples.set(chunk, offset); offset += chunk.length; }
-        const windowSize = Math.floor(sampleRate * 0.04);
-        const hop = Math.floor(sampleRate * 0.02);
-        const pitches = [];
-        for (let start = 0; start + windowSize <= samples.length; start += hop) {
-            const pitch = SpeechMenu.#estimatePitch(samples.subarray(start, start + windowSize), sampleRate);
-            if (pitch) pitches.push(pitch);
-        }
-        if (pitches.length < 5) {
-            SpeechMenu.#emit("voicePitchCalibrationSkipped", {reason:"insufficient-voiced-frames", voicedFrames:pitches.length});
-            return;
-        }
-        pitches.sort((a, b) => a - b);
-        const percentile = p => pitches[Math.min(pitches.length - 1, Math.floor((pitches.length - 1) * p))];
-        SpeechMenu.#voicePitchBaseline = Object.freeze({
-            medianHz: Math.round(percentile(0.5)), lowHz: Math.round(percentile(0.1)),
-            highHz: Math.round(percentile(0.9)), voicedFrames:pitches.length,
-            sampleCount:total, sampleRate, source:"accepted-four-digit-utterance", diagnosticOnly:true
-        });
-        SpeechMenu.#emit("voicePitchBaselineChanged", SpeechMenu.voicePitchBaseline);
-    }
 
     static #flushCommandFeedback(utterance, accepted) {
         const callbacks = utterance?.feedbackCallbacks || [];
@@ -2906,9 +2829,6 @@ class SpeechMenu {
                 wallStartedAt.toISOString(),
             silenceMilliseconds: 0,
             sampleCount,
-            pitchFrames: [],
-            pitchSampleCount: 0,
-            pitchSampleRate: globalThis.SherpaRecognizer?.sampleRate || 16000,
             transcript: "",
             transcriptRevision: 0,
             discardedTranscriptPrefixWords: 0,
@@ -3031,14 +2951,6 @@ class SpeechMenu {
 
         utterance.sampleCount +=
             frame.length;
-        if (!SpeechMenu.#voicePitchBaseline && utterance.pitchFrames) {
-            const maxSamples = utterance.pitchSampleRate * 3;
-            if (utterance.pitchSampleCount < maxSamples) {
-                const retained = Math.min(frame.samples.length, maxSamples - utterance.pitchSampleCount);
-                utterance.pitchFrames.push(frame.samples.slice(0, retained));
-                utterance.pitchSampleCount += retained;
-            }
-        }
 
         SpeechMenu.#recognizer
             ?.accept(
@@ -9492,8 +9404,6 @@ class SpeechMenu {
 
                 return false;
             }
-
-            SpeechMenu.#calibrateVoicePitch(utterance, text);
 
             SpeechMenu.#emit(
                 "speechCommandDispatched",
