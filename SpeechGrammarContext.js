@@ -17,6 +17,8 @@
         pin: "digits",
         percent: "number",
         amount: "number",
+        spokenValue: "number",
+        rate: "number",
         duration: "duration"
     });
 
