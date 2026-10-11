@@ -138,12 +138,16 @@
 
             if (typeof message.hyp === "string") {
                 const transcript = message.hyp.trim().toLocaleLowerCase();
-                if (transcript !== this.#lastHypothesis) {
+                const isFinal = Boolean(message.final);
+                // A final message must be delivered even when its text is
+                // identical to the last streaming hypothesis; consumers use
+                // the final boundary to commit the utterance.
+                if (transcript !== this.#lastHypothesis || isFinal) {
                     this.#lastHypothesis = transcript;
                     this.dispatchEvent(new CustomEvent("transcript", {
                         detail: {
                             transcript,
-                            isFinal: Boolean(message.final),
+                            isFinal,
                             segments: Array.isArray(message.hypseg) ? message.hypseg : []
                         }
                     }));
