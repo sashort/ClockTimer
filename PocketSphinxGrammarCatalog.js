@@ -76,6 +76,97 @@
         });
     }
 
+    function expandRegexPrefix(source) {
+        let text = String(source ?? "").replace(/^\^/, "");
+        const capture = text.search(/\(\?<[^>]+>/);
+        if (capture >= 0) text = text.slice(0, capture);
+        text = text.replace(/\$/, "");
+
+        // Expand the simple alternation/optional groups used by speech-patterns.
+        // This intentionally refuses unsupported regex constructs instead of
+        // guessing at the language of an arbitrary regular expression.
+        function expand(input, depth = 0) {
+            if (depth > 12) throw new Error("Speech pattern prefix nesting is too deep.");
+            let results = [""];
+            for (let i = 0; i < input.length;) {
+                if (input.startsWith("(?:", i) || input[i] === "(") {
+                    const nonCapture = input.startsWith("(?:", i);
+                    const start = i + (nonCapture ? 3 : 1);
+                    let nesting = 1;
+                    let end = start;
+                    for (; end < input.length; end++) {
+                        if (input[end] === "(" && input[end - 1] !== "\\") nesting++;
+                        else if (input[end] === ")" && input[end - 1] !== "\\") {
+                            nesting--;
+                            if (nesting === 0) break;
+                        }
+                    }
+                    if (end >= input.length) throw new Error("Unclosed group in speech pattern prefix.");
+                    const body = input.slice(start, end);
+                    const alternatives = splitAlternatives(body).flatMap(part => expand(part, depth + 1));
+                    const optional = input[end + 1] === "?";
+                    const choices = optional ? ["", ...alternatives] : alternatives;
+                    results = results.flatMap(prefix => choices.map(choice => prefix + choice));
+                    i = end + 1 + (optional ? 1 : 0);
+                    continue;
+                }
+                if ("[]{}*+?".includes(input[i])) {
+                    throw new Error("Unsupported regex construct in speech pattern prefix: " + input[i]);
+                }
+                const char = input[i] === "\\" ? input[i + 1] : input[i];
+                results = results.map(prefix => prefix + char);
+                i += input[i] === "\\" ? 2 : 1;
+            }
+            return results;
+        }
+
+        function splitAlternatives(input) {
+            const parts = [];
+            let start = 0;
+            let nesting = 0;
+            for (let i = 0; i < input.length; i++) {
+                if (input[i] === "(" && input[i - 1] !== "\\") nesting++;
+                else if (input[i] === ")" && input[i - 1] !== "\\") nesting--;
+                else if (input[i] === "|" && nesting === 0) {
+                    parts.push(input.slice(start, i));
+                    start = i + 1;
+                }
+            }
+            parts.push(input.slice(start));
+            return parts;
+        }
+
+        return [...new Set(expand(text).map(normalize).filter(Boolean))];
+    }
+
+    function compileCommandPatterns(patternRecords) {
+        const prefixes = [];
+        const byPrefix = {};
+        for (const record of patternRecords || []) {
+            const pattern = typeof record === "string" ? record : record?.pattern;
+            if (typeof pattern !== "string") continue;
+            const capture = pattern.match(/\(\?<([A-Za-z][A-Za-z0-9_]*)>/);
+            if (!capture) continue;
+            const type = globalThis.SpeechGrammarContext?.fromPattern(pattern)?.grammar || "commands";
+            if (type === "commands") continue;
+            const prefixSource = pattern.slice(0, capture.index);
+            const phrases = expandRegexPrefix(prefixSource);
+            for (const phrase of phrases) {
+                prefixes.push(phrase);
+                byPrefix[phrase] = Object.freeze({
+                    grammar: type,
+                    capture: capture[1],
+                    pattern
+                });
+            }
+        }
+        return Object.freeze({
+            grammar: compilePhrases(prefixes),
+            prefixes: Object.freeze([...new Set(prefixes)]),
+            byPrefix: Object.freeze(byPrefix)
+        });
+    }
+
     function compileValue(type) {
         const words = VALUE_WORDS[type];
         if (!words) throw new TypeError("Unknown speech value grammar: " + type);
@@ -102,6 +193,10 @@
 
         static compilePhrases(phrases) {
             return compilePhrases(phrases);
+        }
+
+        static compileCommandPatterns(patternRecords) {
+            return compileCommandPatterns(patternRecords);
         }
 
         static compileValue(type) {
