@@ -14,7 +14,12 @@ example `vendor/pocketsphinx/`:
 - a pronunciation dictionary for every word that can appear in any registered
   grammar
 
-The adapter does not bundle these upstream binary/model assets. The worker
+The adapter does not bundle these upstream binary/model assets. Configure
+`runtimeFiles` as PocketSphinx.js lazy-load tuples
+`[virtualDirectory, virtualFilename, sameOriginUrl]` and `runtimeFolders` as
+`[virtualParentDirectory, folderName]` tuples. The adapter loads these into
+the worker's virtual filesystem before calling `initialize`, so the
+`-dict`/model configuration can refer to the virtual filenames. The worker
 wrapper expects the `recognizer.js` and `pocketsphinx.js` versions to match.
 Use an English acoustic model whose sample-rate/features match the adapter's
 16 kHz PCM output, and verify the model's license and redistribution terms
