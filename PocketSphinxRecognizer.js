@@ -14,6 +14,8 @@
         #workerUrl;
         #runtimeUrls;
         #config;
+        #runtimeFiles;
+        #runtimeFolders;
         #workerReady = false;
         #initialized = false;
         #readyResolve;
@@ -38,6 +40,8 @@
             workerUrl,
             runtimeUrls = {},
             config = [],
+            runtimeFiles = [],
+            runtimeFolders = [],
             sampleRate = 16000,
             maxBatchSamples = 2048
         } = {}) {
@@ -52,6 +56,10 @@
             this.#workerUrl = workerUrl;
             this.#runtimeUrls = runtimeUrls;
             this.#config = config;
+            // PocketSphinx.js loads external dictionary/model files into its
+            // virtual filesystem before initialize() can reference them.
+            this.#runtimeFiles = runtimeFiles;
+            this.#runtimeFolders = runtimeFolders;
             this.#sampleRate = sampleRate;
             this.#maxBatchSamples = maxBatchSamples;
             this.#readyPromise = new Promise((resolve, reject) => {
@@ -87,8 +95,8 @@
             const message = event.data || {};
             if (!this.#workerReady && !("command" in message) && !("status" in message)) {
                 this.#workerReady = true;
-                this.#worker.postMessage({ command: "initialize", data: this.#config });
                 this.dispatchEvent(new Event("runtimeReady"));
+                void this.#loadRuntimeAssetsAndInitialize();
                 return;
             }
 
@@ -142,6 +150,24 @@
                 }
             }
         };
+
+        async #loadRuntimeAssetsAndInitialize() {
+            try {
+                if (this.#runtimeFiles.length || this.#runtimeFolders.length) {
+                    await this.#request("lazyLoad", {
+                        folders: this.#runtimeFolders.map(item => [...item]),
+                        files: this.#runtimeFiles.map(item => [...item])
+                    });
+                }
+                if (this.#closed) return;
+                await this.#request("initialize", this.#config);
+            } catch (error) {
+                this.#readyReject?.(error);
+                this.dispatchEvent(new CustomEvent("error", {
+                    detail: { error, fatal: true, command: "initialize" }
+                }));
+            }
+        }
 
         #rejectPending(error) {
             for (const pending of this.#pending.values()) pending.reject(error);
