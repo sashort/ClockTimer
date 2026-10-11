@@ -47,4 +47,13 @@ assert.ok(commandPatterns.prefixes.includes("AT"));
 assert.equal(commandPatterns.byPrefix["READY AT"].grammar, "time");
 assert.equal(commandPatterns.byPrefix["STANDARD TIME"].capture, "timeValue");
 
+const speechPatternData = JSON.parse(
+    await readFile(new URL("../lang/en-US/speech-patterns.json", import.meta.url), "utf8")
+);
+const realPatterns = Object.values(speechPatternData.patterns || {});
+const derived = Catalog.compileCommandPatterns(realPatterns);
+assert.ok(derived.prefixes.length > 0, "real command patterns produce a prefix grammar");
+assert.ok(derived.prefixes.includes("READY AT"), "real ready-at pattern is discovered");
+assert.equal(derived.byPrefix["READY AT"].grammar, "time");
+
 console.log("PocketSphinx grammar catalog tests passed.");
