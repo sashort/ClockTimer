@@ -150,7 +150,15 @@
             const type = globalThis.SpeechGrammarContext?.fromPattern(pattern)?.grammar || "commands";
             if (type === "commands") continue;
             const prefixSource = pattern.slice(0, capture.index);
-            const phrases = expandRegexPrefix(prefixSource);
+            let phrases;
+            try {
+                phrases = expandRegexPrefix(prefixSource);
+            } catch {
+                // Some legacy patterns put the first capture inside an optional
+                // group. Leave those out until their prefix can be represented
+                // without changing the command's accepted language.
+                continue;
+            }
             for (const phrase of phrases) {
                 prefixes.push(phrase);
                 byPrefix[phrase] = Object.freeze({
