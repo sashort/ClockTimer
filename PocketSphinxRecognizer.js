@@ -206,6 +206,33 @@
             this.#worker.postMessage({ command: "stop" });
         }
 
+        /*
+         * Accept frames from an existing capture pipeline (such as
+         * SpeechAudioWorklet) instead of opening a second microphone graph.
+         * Samples are Float32 in [-1, 1], at the supplied source rate.
+         */
+        acceptAudioFrame(samples, sourceSampleRate) {
+            if (this.#closed) return false;
+            if (!this.#workerReady || !this.#initialized) {
+                throw new Error("PocketSphinx runtime is not ready.");
+            }
+            if (!(samples instanceof Float32Array) || samples.length === 0) {
+                return false;
+            }
+            const inputRate = Number(sourceSampleRate);
+            if (!Number.isFinite(inputRate) || inputRate <= 0) {
+                throw new TypeError("A valid source sample rate is required.");
+            }
+
+            const pcm = this.#resampleToInt16(samples, inputRate, this.#sampleRate);
+            for (const sample of pcm) this.#sampleBuffer.push(sample);
+            while (this.#sampleBuffer.length >= this.#maxBatchSamples) {
+                const batch = this.#sampleBuffer.splice(0, this.#maxBatchSamples);
+                this.#worker.postMessage({ command: "process", data: batch });
+            }
+            return true;
+        }
+
         async attachMicrophone(stream, { audioContext } = {}) {
             if (!stream || typeof stream.getAudioTracks !== "function") {
                 throw new TypeError("attachMicrophone requires a MediaStream.");
