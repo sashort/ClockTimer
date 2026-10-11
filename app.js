@@ -19331,6 +19331,23 @@
             );
         }
 
+        // A trip is not prepared or persisted until the user confirms the
+        // required standard time. Cancellation therefore leaves no trip record.
+        if (!draft.preparationConfirmed) {
+            const preparedAt = draft.creationDate
+                ? new Date(draft.creationDate)
+                : new Date();
+            await clockTimer.prepareTrip({
+                timeout: 5000,
+                at: preparedAt
+            });
+            if (tripDraft !== draft) {
+                await clockTimer.discardPreparedTrip?.();
+                return false;
+            }
+            draft.preparationConfirmed = true;
+        }
+
         await clockTimer.start({
             standardTimeMilliseconds,
             creationDate: draft.creationDate,
@@ -20552,40 +20569,15 @@
         }
 
         renderDeferredTrip();
-        let preparationPromise;
-        try {
-            preparationPromise = Promise
-                .resolve(
-                    resetPromise
-                )
-                .then(
-                    () =>
-                        deferredDraft
-                            ? {
-                                pending:
-                                    true
-                            }
-                            : clockTimer
-                                .prepareTrip({
-                                    timeout:
-                                        5000,
-                                    at:
-                                        moment
-                                })
-                )
-                .catch(() => ({
-                    persisted: false,
-                    pending: true,
-                    reason: "offline"
-                }));
-        }
-        catch {
-            preparationPromise = Promise.resolve({
-                persisted: false,
-                pending: true,
-                reason: "offline"
-            });
-        }
+        // Keep the next trip as an in-memory draft while the user enters
+        // its standard time. Preparing here can persist an unwanted trip even
+        // when the user cancels the editor. Preparation now happens only after
+        // confirmation, immediately before startTripDraft starts the trip.
+        const preparationPromise = Promise.resolve({
+            persisted: false,
+            pending: true,
+            reason: "awaiting-confirmation"
+        });
 
         const opened =
             await openValueEditor(
