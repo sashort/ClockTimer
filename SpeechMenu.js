@@ -295,7 +295,16 @@ class SpeechMenu {
             .replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
         const digitWords = {zero:"0", oh:"0", one:"1", two:"2", three:"3", four:"4",
             five:"5", six:"6", seven:"7", eight:"8", nine:"9"};
-        const digits = words.map(word => /^\d$/.test(word) ? word : digitWords[word]).join("");
+        const digitTokens = words.map(word => /^\d$/.test(word) ? word : digitWords[word]);
+        let digits = digitTokens.join("");
+        if (!/^\d{4}$/.test(digits)) {
+            const trailing = digitTokens.slice(-4);
+            if (trailing.length === 4 && trailing.every(Boolean)) digits = trailing.join("");
+            else {
+                const numericTail = String(transcript || "").match(/(?:^|\\D)(\\d{4})\\s*$/);
+                digits = numericTail?.[1] || "";
+            }
+        }
         if (!/^\d{4}$/.test(digits)) return;
         const sampleRate = utterance.pitchSampleRate || 16000;
         const maxSamples = Math.floor(sampleRate * 3);
