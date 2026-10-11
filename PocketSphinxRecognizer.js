@@ -15,6 +15,7 @@
         #runtimeUrls;
         #config;
         #workerReady = false;
+        #initialized = false;
         #readyResolve;
         #readyReject;
         #readyPromise;
@@ -109,11 +110,12 @@
                         code: message.code
                     }
                 }));
-                if (!this.#workerReady) this.#readyReject?.(error);
+                if (!this.#initialized) this.#readyReject?.(error);
                 return;
             }
 
             if (message.status === "done" && message.command === "initialize") {
+                this.#initialized = true;
                 this.dispatchEvent(new Event("ready"));
                 this.#readyResolve?.(this);
                 this.#readyResolve = null;
