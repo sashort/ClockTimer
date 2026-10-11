@@ -71,7 +71,7 @@ assert.equal(addGrammar.command, "addGrammar");
 worker.emit({ id: addGrammar.callbackId, data: 7, status: "done", command: "addGrammar" });
 assert.equal(await grammarPromise, 7);
 
-await recognizer.start("commands");
+await recognizer.start("commands", 42);
 assert.equal(worker.sent.at(-1).command, "start");
 assert.equal(worker.sent.at(-1).data, 7);
 
@@ -85,6 +85,7 @@ let transcript;
 recognizer.addEventListener("transcript", event => { transcript = event.detail; });
 worker.emit({ hyp: "READY", hypseg: [], final: false });
 assert.equal(transcript.transcript, "ready");
+assert.equal(transcript.utteranceId, 42);
 assert.equal(transcript.isFinal, false);
 
 // Finality is a lifecycle event, not merely a text change.
