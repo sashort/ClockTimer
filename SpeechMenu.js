@@ -6681,6 +6681,10 @@ class SpeechMenu {
             utterance.valueCollectors ??= new Map();
             utterance.valueCollectors.set(element, state);
         }
+        // A four-digit credential is captured by the collector, not necessarily
+        // by ordinary command dispatch. Calibrate from this accepted capture too;
+        // the calibration routine itself rejects anything other than four digits.
+        if (accepted) SpeechMenu.#calibrateVoicePitch(utterance, accepted.result?.transcript || accepted.segment);
         return {state, accepted};
     }
 
