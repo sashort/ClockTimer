@@ -3071,10 +3071,8 @@ class SpeechMenu {
     /*
      * Scope hypotheses using the active registered command phrases before
      * they enter the live dispatcher. This is prefix-only: parameter values
-     * and command-chain tails remain the planner's responsibility. If the
-     * active grammar contains opaque patterns, fail open rather than deleting
-     * speech that may belong to a free-form collector unless another known
-     * command start can be identified.
+     * and command-chain tails remain the planner's responsibility. Opaque
+     * patterns must not disable pruning for known command starts.
      */
     static #scopeTranscriptToCommands(transcript, utterance) {
         const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
@@ -3089,7 +3087,6 @@ class SpeechMenu {
             if (!pattern) continue;
             const phrases = SpeechMenu.#expandRegexSource(pattern);
             if (!phrases.length) continue;
-            let foundStart = false;
             for (const phrase of phrases) {
                 const normalized = SpeechMenu.#normalizeTranscript(
                     String(phrase).replace(/<[^>]+>/g, " ")
@@ -3100,7 +3097,6 @@ class SpeechMenu {
                 if (!first) continue;
                 if (/[()[\]{}*+?|\\^$]/.test(first)) continue;
                 starts.add(first);
-                foundStart = true;
             }
         }
 
