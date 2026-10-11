@@ -3071,10 +3071,16 @@
     }
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
     function announceVoiceLogin(text) {
+        // Voice recognition may hear its own login prompt. Suppress this prompt
+        // while recognition is active so it cannot re-trigger the login flow.
+        if (speechRecognitionEnabled()) {
+            pendingLoginAnnouncement = undefined;
+            return false;
+        }
         if(!loginIsOpen())return;
-        if(startupAnnouncementPending || (loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady)){
+        if(startupAnnouncementPending){
             pendingLoginAnnouncement=text;
-            if(startupAnnouncementPending) void startupAnnouncementFinished.then(announceLoginAfterModelReady);
+            void startupAnnouncementFinished.then(announceLoginAfterModelReady);
             return;
         }
         pendingLoginAnnouncement=undefined;
