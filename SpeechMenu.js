@@ -2907,6 +2907,7 @@ class SpeechMenu {
             silenceMilliseconds: 0,
             sampleCount,
             pitchFrames: [],
+            pitchSampleCount: 0,
             pitchSampleRate: globalThis.SherpaRecognizer?.sampleRate || 16000,
             transcript: "",
             transcriptRevision: 0,
@@ -3032,10 +3033,10 @@ class SpeechMenu {
             frame.length;
         if (!SpeechMenu.#voicePitchBaseline && utterance.pitchFrames) {
             const maxSamples = utterance.pitchSampleRate * 3;
-            let retained = 0;
-            for (const part of utterance.pitchFrames) retained += part.length;
-            if (retained < maxSamples) {
-                utterance.pitchFrames.push(frame.samples.slice(0, Math.min(frame.samples.length, maxSamples - retained)));
+            if (utterance.pitchSampleCount < maxSamples) {
+                const retained = Math.min(frame.samples.length, maxSamples - utterance.pitchSampleCount);
+                utterance.pitchFrames.push(frame.samples.slice(0, retained));
+                utterance.pitchSampleCount += retained;
             }
         }
 
