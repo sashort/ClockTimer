@@ -36,7 +36,10 @@ const recognizer = new Recognizer({
     runtimeUrls: {
         pocketsphinxJs: "/vendor/pocketsphinx/pocketsphinx.js",
         pocketsphinxWasm: "/vendor/pocketsphinx/pocketsphinx.wasm"
-    }
+    },
+    runtimeFiles: [
+        ["/", "cmudict.dict", "/vendor/pocketsphinx/cmudict.dict"]
+    ]
 });
 const worker = workers[0];
 assert.equal(worker.url, "/vendor/pocketsphinx/recognizer.js");
@@ -44,8 +47,13 @@ assert.equal(worker.sent.length, 1);
 assert.equal(worker.sent[0]["pocketsphinx.js"], "/vendor/pocketsphinx/pocketsphinx.js");
 
 worker.emit({});
-assert.equal(worker.sent[1].command, "initialize");
-worker.emit({ status: "done", command: "initialize" });
+assert.equal(worker.sent[1].command, "lazyLoad");
+assert.deepEqual(worker.sent[1].data.files, [
+    ["/", "cmudict.dict", "/vendor/pocketsphinx/cmudict.dict"]
+]);
+worker.emit({ id: worker.sent[1].callbackId, status: "done", command: "lazyLoad" });
+assert.equal(worker.sent[2].command, "initialize");
+worker.emit({ id: worker.sent[2].callbackId, status: "done", command: "initialize" });
 await recognizer.ready;
 
 const wordsPromise = recognizer.registerWords({ READY: "R EH D IY" });
