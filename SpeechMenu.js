@@ -3073,7 +3073,8 @@ class SpeechMenu {
      * they enter the live dispatcher. This is prefix-only: parameter values
      * and command-chain tails remain the planner's responsibility. If the
      * active grammar contains opaque patterns, fail open rather than deleting
-     * speech that may belong to a free-form collector.
+     * speech that may belong to a free-form collector unless another known
+     * command start can be identified.
      */
     static #scopeTranscriptToCommands(transcript, utterance) {
         const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
@@ -3086,11 +3087,6 @@ class SpeechMenu {
         for (const element of candidates) {
             const pattern = element.getAttribute("speech-pattern");
             if (!pattern) continue;
-            // Optional leading command phrases can make a collector accept a
-            // bare parameter (e.g. "eleven twenty six"). Do not prune those
-            // values merely because they don't begin with a command keyword.
-            if ((element.hasAttribute("speech-collect") || element.hasAttribute("speech-open-ended")) &&
-                /^\^?\(\?:/.test(pattern) && /\)\?/.test(pattern)) uncertain = true;
             const phrases = SpeechMenu.#expandRegexSource(pattern);
             if (!phrases.length) continue;
             let foundStart = false;
