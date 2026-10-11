@@ -3065,18 +3065,10 @@
     }
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
     function announceVoiceLogin(text) {
-        if(!loginIsOpen())return;
-        if(startupAnnouncementPending){
-            pendingLoginAnnouncement=text;
-            void startupAnnouncementFinished.then(announceLoginAfterModelReady);
-            return;
-        }
-        pendingLoginAnnouncement=undefined;
-        const context=globalThis.SpeechMenu?.executionContext;
-        const before=context && voiceFeedbackSnapshots.get(context)?.semantic;
-        if(before && stateFeedbackChime(before,commandFeedbackState()) === "setting-unchanged") {
-            void confirmInformationalChange("setting-unchanged",text,{ignoreSummaryMaster:true});
-        } else void globalThis.WMOFAudio?.speak?.(text);
+        // Voice recognition is disabled. Do not repeatedly announce the
+        // voice-login instruction or queue login speech for later playback.
+        pendingLoginAnnouncement = undefined;
+        return false;
     }
     function announceLoginAfterModelReady(){
         if(globalThis.SpeechMenu?.modelReady && pendingVoiceLoginSwitch && legacyLoginDialog.open && !voiceLoginBusy){pendingVoiceLoginSwitch=false;switchToVoiceLogin();}
