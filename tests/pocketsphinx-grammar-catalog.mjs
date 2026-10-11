@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
-const source = await readFile(new URL("../PocketSphinxGrammarCatalog.js", import.meta.url), "utf8");
 const context = {};
 context.globalThis = context;
+const contextSource = await readFile(new URL("../SpeechGrammarContext.js", import.meta.url), "utf8");
+const source = await readFile(new URL("../PocketSphinxGrammarCatalog.js", import.meta.url), "utf8");
+vm.runInNewContext(contextSource, context, { filename: "SpeechGrammarContext.js" });
 vm.runInNewContext(source, context, { filename: "PocketSphinxGrammarCatalog.js" });
 
 const Catalog = context.PocketSphinxGrammarCatalog;
@@ -29,5 +31,20 @@ for (const type of ["digits", "number", "duration", "time", "date"]) {
     assert.ok(grammar.transitions.some(t => t.from === 0 && t.to === 1 && t.word === ""));
 }
 assert.throws(() => Catalog.compileValue("unknown"), /Unknown speech value grammar/);
+
+const commandPatterns = Catalog.compileCommandPatterns([
+    { pattern: "^(?:ready|ruddy|rudd) at (?<spokenTime>.+)$" },
+    { pattern: "^standard(?: time)? (?<timeValue>.+)$" },
+    { pattern: "^at (?<spokenTime>.+)$" },
+    { pattern: "^ready$" }
+]);
+assert.ok(commandPatterns.prefixes.includes("READY AT"));
+assert.ok(commandPatterns.prefixes.includes("RUDDY AT"));
+assert.ok(commandPatterns.prefixes.includes("RUDD AT"));
+assert.ok(commandPatterns.prefixes.includes("STANDARD"));
+assert.ok(commandPatterns.prefixes.includes("STANDARD TIME"));
+assert.ok(commandPatterns.prefixes.includes("AT"));
+assert.equal(commandPatterns.byPrefix["READY AT"].grammar, "time");
+assert.equal(commandPatterns.byPrefix["STANDARD TIME"].capture, "timeValue");
 
 console.log("PocketSphinx grammar catalog tests passed.");
