@@ -3080,7 +3080,6 @@ class SpeechMenu {
         if (!words.length) return "";
 
         const starts = new Set();
-        let uncertain = false;
         const candidates = SpeechMenu.#digestCandidates(
             utterance?.digestContext, utterance?.digestSurfaceStack
         );
@@ -3093,10 +3092,7 @@ class SpeechMenu {
             if ((element.hasAttribute("speech-collect") || element.hasAttribute("speech-open-ended")) &&
                 /^\^?\(\?:/.test(pattern) && /\)\?/.test(pattern)) uncertain = true;
             const phrases = SpeechMenu.#expandRegexSource(pattern);
-            if (!phrases.length) {
-                uncertain = true;
-                continue;
-            }
+            if (!phrases.length) continue;
             let foundStart = false;
             for (const phrase of phrases) {
                 const normalized = SpeechMenu.#normalizeTranscript(
@@ -3105,18 +3101,11 @@ class SpeechMenu {
                 const first = normalized.split(" ").filter(Boolean)[0];
                 // An expansion beginning with a parameter placeholder means
                 // the command accepts a bare value; don't prune that input.
-                if (!first) {
-                    uncertain = true;
-                    continue;
-                }
-                if (/[()[\]{}*+?|\\^$]/.test(first)) {
-                    uncertain = true;
-                    continue;
-                }
+                if (!first) continue;
+                if (/[()[\]{}*+?|\\^$]/.test(first)) continue;
                 starts.add(first);
                 foundStart = true;
             }
-            if (!foundStart) uncertain = true;
         }
 
         // An opaque pattern must not disable pruning for every other command.
