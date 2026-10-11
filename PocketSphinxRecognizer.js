@@ -25,6 +25,7 @@
         #nextId = 1;
         #grammarIds = new Map();
         #activeGrammar = null;
+        #activeUtteranceId = null;
         #closed = false;
         #audioContext;
         #mediaStream;
@@ -147,6 +148,7 @@
                     this.dispatchEvent(new CustomEvent("transcript", {
                         detail: {
                             transcript,
+                            utteranceId: this.#activeUtteranceId,
                             isFinal,
                             segments: Array.isArray(message.hypseg) ? message.hypseg : []
                         }
@@ -209,13 +211,14 @@
             return id;
         }
 
-        async start(grammarName = "commands") {
+        async start(grammarName = "commands", utteranceId = null) {
             await this.ready;
             const id = this.#grammarIds.get(grammarName);
             if (!Number.isInteger(id)) {
                 throw new Error("Unknown PocketSphinx grammar: " + grammarName);
             }
             this.#activeGrammar = grammarName;
+            this.#activeUtteranceId = utteranceId;
             this.#sampleBuffer.length = 0;
             this.#lastHypothesis = "";
             this.#worker.postMessage({ command: "start", data: id });
@@ -234,6 +237,11 @@
             if (!this.#workerReady || this.#closed) return;
             this.#flushSamples();
             this.#worker.postMessage({ command: "stop" });
+        }
+
+        // SpeechMenu-compatible naming for utterance-boundary integration.
+        async endUtterance() {
+            return this.stop();
         }
 
         /*
