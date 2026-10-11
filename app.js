@@ -2727,8 +2727,21 @@
             }
         };
 
+    // Speech recognition is intentionally disabled application-wide.
+    // Keep the rest of the speech-related UI/runtime available where needed,
+    // but never start microphone capture or Sherpa recognition.
     const enableSpeechRecognitionRuntime =
         async () => {
+            setSpeechButtonState(false, false);
+            setSpeechLayoutState(false);
+            speechActivationPending = false;
+            try {
+                await globalThis.SpeechMenu?.stop?.();
+            } catch (error) {
+                console.warn("Speech recognition shutdown failed:", error);
+            }
+            return false;
+
             await ensureSpeechRuntime();
 
             const speechMenu =
