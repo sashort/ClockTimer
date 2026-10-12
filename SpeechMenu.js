@@ -1308,14 +1308,32 @@ class SpeechMenu {
                     const configuredGrammars = {
                         ...(globalThis.WMOF_POCKETSPHINX_CONFIG.grammars || {})
                     };
+                    if (!configuredGrammars.commands) {
+                        const catalog = globalThis.PocketSphinxGrammarCatalog;
+                        const records = [...document.querySelectorAll("[speech-pattern]")]
+                            .map(element => ({ pattern: element.getAttribute("speech-pattern") }))
+                            .filter(record => record.pattern);
+                        const commandPrefixes =
+                            catalog.compileCommandPatterns(records).prefixes;
+                        const fixedCommands = [];
+                        for (const {pattern} of records) {
+                            if (/(?<([A-Za-z][A-Za-z0-9_]*)>/.test(pattern)) continue;
+                            try {
+                                fixedCommands.push(...SpeechMenu.extrapolatePattern(pattern));
+                            } catch {
+                                // Unsupported legacy regexes are omitted rather than
+                                // broadened into an incorrect grammar.
+                            }
+                        }
+                        const phrases = [...new Set([...fixedCommands, ...commandPrefixes])];
+                        if (!phrases.length) {
+                            throw new Error("No command phrases could be compiled for PocketSphinx.");
+                        }
+                        configuredGrammars.commands = catalog.compilePhrases(phrases);
+                    }
                     for (const type of globalThis.PocketSphinxGrammarCatalog.valueTypes()) {
                         configuredGrammars[type] ??=
                             globalThis.PocketSphinxGrammarCatalog.compileValue(type);
-                    }
-                    if (!configuredGrammars.commands) {
-                        throw new Error(
-                            "PocketSphinx configuration must provide a compiled 'commands' grammar."
-                        );
                     }
                     for (const [name, grammar] of Object.entries(configuredGrammars)) {
                         await recognizer.addGrammar(name, grammar);
