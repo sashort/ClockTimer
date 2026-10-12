@@ -93,6 +93,16 @@ worker.emit({ hyp: "READY", hypseg: [], final: true });
 assert.equal(transcript.transcript, "ready");
 assert.equal(transcript.isFinal, true);
 
+// SpeechMenu compatibility serializes the next utterance start after the
+// previous stop and only then submits its audio frames.
+await recognizer.accept(43, new Float32Array([0.25, -0.25]), 16000, "commands");
+assert.equal(worker.sent.at(-3).command, "stop");
+assert.equal(worker.sent.at(-2).command, "start");
+assert.equal(worker.sent.at(-1).command, "process");
+assert.deepEqual(worker.sent.at(-1).data, [8192, -8192]);
+await recognizer.finishUtterance(43);
+assert.equal(worker.sent.at(-1).command, "stop");
+
 await recognizer.close();
 assert.equal(worker.terminated, true);
 console.log("PocketSphinx recognizer adapter tests passed.");
