@@ -1317,7 +1317,7 @@ class SpeechMenu {
                             catalog.compileCommandPatterns(records).prefixes;
                         const fixedCommands = [];
                         for (const {pattern} of records) {
-                            if (/(?<([A-Za-z][A-Za-z0-9_]*)>/.test(pattern)) continue;
+                            if (/\(\?<([A-Za-z][A-Za-z0-9_]*)>/.test(pattern)) continue;
                             try {
                                 fixedCommands.push(...SpeechMenu.extrapolatePattern(pattern));
                             } catch {
