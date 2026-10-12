@@ -25,6 +25,42 @@ Use an English acoustic model whose sample-rate/features match the adapter's
 16 kHz PCM output, and verify the model's license and redistribution terms
 before committing model files.
 
+The opt-in SpeechMenu configuration is a global object with the adapter's
+constructor options plus a `grammars` map:
+
+```js
+globalThis.WMOF_SPEECH_BACKEND = "pocketsphinx";
+globalThis.WMOF_POCKETSPHINX_CONFIG = {
+  workerUrl: "/vendor/pocketsphinx/recognizer.js",
+  runtimeUrls: {
+    pocketsphinxJs: "/vendor/pocketsphinx/pocketsphinx.js",
+    pocketsphinxWasm: "/vendor/pocketsphinx/pocketsphinx.wasm"
+  },
+  config: [
+    ["-hmm", "/model/en-us"],
+    ["-dict", "/model/commands.dict"],
+    ["-samprate", "16000"]
+  ],
+  runtimeFiles: [
+    ["/model", "commands.dict", "/vendor/pocketsphinx/commands.dict"]
+  ],
+  runtimeFolders: [],
+  grammars: {
+    commands: compiledCommandGrammar,
+    time: compiledTimeGrammar,
+    date: compiledDateGrammar,
+    digits: compiledDigitsGrammar,
+    number: compiledNumberGrammar,
+    duration: compiledDurationGrammar
+  }
+};
+```
+
+The `compiled*Grammar` values above are placeholders for FSG objects produced
+by `PocketSphinxGrammarCatalog`; they are not variables provided by the app
+until the grammar-building step is completed. Do not enable this configuration
+with placeholders or absent model files.
+
 ## Current code
 
 - `SpeechGrammarContext.js` infers the next expected value category from named
