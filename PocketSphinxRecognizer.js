@@ -260,7 +260,7 @@
                     detail: { error, message: error?.message, fatal: true, utteranceId }
                 }));
             });
-            return true;
+            return this.#speechQueue;
         }
 
         async finishUtterance(utteranceId) {
