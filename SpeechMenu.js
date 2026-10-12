@@ -242,6 +242,7 @@ class SpeechMenu {
     static #sourceNode;
     static #captureNode;
     static #recognizer;
+    static #recognizerBackend = "sherpa";
     static #vad;
     static #pipeline = "raw";
     static #finishedUtterances = new Map();
@@ -1239,7 +1240,15 @@ class SpeechMenu {
                 if (
                     !context.audioWorklet ||
                     typeof AudioWorkletNodeCtor !== "function" ||
-                    typeof globalThis.SherpaRecognizer !== "function" ||
+                    !(
+                        typeof globalThis.SherpaRecognizer === "function" ||
+                        (
+                            globalThis.WMOF_SPEECH_BACKEND === "pocketsphinx" &&
+                            globalThis.WMOF_POCKETSPHINX_CONFIG &&
+                            typeof globalThis.PocketSphinxRecognizer === "function" &&
+                            typeof globalThis.PocketSphinxGrammarCatalog === "function"
+                        )
+                    ) ||
                     (
                         SpeechMenu.#pipeline === "silero" &&
                         typeof globalThis.SileroVad !== "function"
@@ -1251,17 +1260,24 @@ class SpeechMenu {
                     );
                 }
 
+                const usePocketSphinx =
+                    globalThis.WMOF_SPEECH_BACKEND === "pocketsphinx" &&
+                    Boolean(globalThis.WMOF_POCKETSPHINX_CONFIG) &&
+                    typeof globalThis.PocketSphinxRecognizer === "function";
+
                 await context.audioWorklet.addModule(
-                    globalThis.SherpaRecognizer.assetUrl(
-                        "speech/SpeechAudioWorklet.js"
-                    )
+                    globalThis.SherpaRecognizer?.assetUrl
+                        ? globalThis.SherpaRecognizer.assetUrl("speech/SpeechAudioWorklet.js")
+                        : new URL("speech/SpeechAudioWorklet.js", document.baseURI).href
                 );
 
-                const recognizer =
-                    new globalThis.SherpaRecognizer({
-                        hotwords:
-                            SpeechMenu.#hotwords()
+                const recognizer = usePocketSphinx
+                    ? new globalThis.PocketSphinxRecognizer(globalThis.WMOF_POCKETSPHINX_CONFIG)
+                    : new globalThis.SherpaRecognizer({
+                        hotwords: SpeechMenu.#hotwords()
                     });
+                SpeechMenu.#recognizerBackend =
+                    usePocketSphinx ? "pocketsphinx" : "sherpa";
 
                 SpeechMenu.#recognizer =
                     recognizer;
@@ -1287,6 +1303,19 @@ class SpeechMenu {
                 );
 
                 await recognizer.ready;
+
+                if (usePocketSphinx) {
+                    const configuredGrammars =
+                        globalThis.WMOF_POCKETSPHINX_CONFIG.grammars || {};
+                    for (const [name, grammar] of Object.entries(configuredGrammars)) {
+                        await recognizer.addGrammar(name, grammar);
+                    }
+                    if (!configuredGrammars.commands) {
+                        throw new Error(
+                            "PocketSphinx configuration must provide a compiled 'commands' grammar."
+                        );
+                    }
+                }
 
                 if (
                     SpeechMenu.#pipeline === "silero"
@@ -1397,7 +1426,7 @@ class SpeechMenu {
                     language:
                         SpeechMenu.#language,
                     recognizer:
-                        "sherpa",
+                        SpeechMenu.#recognizerBackend,
                     pipeline:
                         SpeechMenu.#pipeline,
                     sampleRate:
@@ -2952,11 +2981,19 @@ class SpeechMenu {
         utterance.sampleCount +=
             frame.length;
 
-        SpeechMenu.#recognizer
-            ?.accept(
+        if (SpeechMenu.#recognizerBackend === "pocketsphinx") {
+            SpeechMenu.#recognizer?.accept(
+                utterance.id,
+                frame.samples,
+                SpeechMenu.#audioContext?.sampleRate || 16000,
+                utterance.recognitionGrammar || "commands"
+            );
+        } else {
+            SpeechMenu.#recognizer?.accept(
                 utterance.id,
                 frame.samples
             );
+        }
     }
 
     static #finishUtterance(
@@ -3141,7 +3178,9 @@ class SpeechMenu {
                 [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" ")
             )
         );
-        const transcript = SpeechMenu.#scopeTranscriptToCommands(rawTranscript, utterance);
+        const transcript = SpeechMenu.#recognizerBackend === "pocketsphinx"
+            ? rawTranscript
+            : SpeechMenu.#scopeTranscriptToCommands(rawTranscript, utterance);
 
         SpeechMenu.#emit("speechTranscriptScoped", {
             utteranceId: id, rawTranscript, transcript, isFinal: Boolean(detail.isFinal)
