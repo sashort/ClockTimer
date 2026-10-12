@@ -26,6 +26,8 @@
         #grammarIds = new Map();
         #activeGrammar = null;
         #activeUtteranceId = null;
+        #activeStarted = false;
+        #speechQueue = Promise.resolve();
         #closed = false;
         #audioContext;
         #mediaStream;
@@ -222,6 +224,7 @@
             this.#sampleBuffer.length = 0;
             this.#lastHypothesis = "";
             this.#worker.postMessage({ command: "start", data: id });
+            this.#activeStarted = true;
         }
 
         switchGrammar(grammarName) {
@@ -234,14 +237,48 @@
         }
 
         async stop() {
-            if (!this.#workerReady || this.#closed) return;
+            if (!this.#workerReady || this.#closed || !this.#activeStarted) return;
             this.#flushSamples();
             this.#worker.postMessage({ command: "stop" });
+            this.#activeStarted = false;
         }
 
-        // SpeechMenu-compatible naming for utterance-boundary integration.
+        /*
+         * SpeechMenu compatibility. Audio frames are serialized with utterance
+         * starts/stops so the worker never receives process() before start().
+         */
+        accept(utteranceId, samples, sourceSampleRate = this.#sampleRate, grammarName = "commands") {
+            if (this.#closed) return false;
+            this.#speechQueue = this.#speechQueue.then(async () => {
+                if (this.#activeUtteranceId !== utteranceId || !this.#activeStarted) {
+                    if (this.#activeStarted) await this.stop();
+                    await this.start(grammarName, utteranceId);
+                }
+                this.acceptAudioFrame(samples, sourceSampleRate);
+            }).catch(error => {
+                this.dispatchEvent(new CustomEvent("error", {
+                    detail: { error, message: error?.message, fatal: true, utteranceId }
+                }));
+            });
+            return true;
+        }
+
+        async finishUtterance(utteranceId) {
+            this.#speechQueue = this.#speechQueue.then(async () => {
+                if (this.#activeUtteranceId === utteranceId) await this.stop();
+            });
+            return this.#speechQueue;
+        }
+
+        async abortUtterance(utteranceId) {
+            this.#speechQueue = this.#speechQueue.then(async () => {
+                if (this.#activeUtteranceId === utteranceId) await this.stop();
+            });
+            return this.#speechQueue;
+        }
+
         async endUtterance() {
-            return this.stop();
+            return this.finishUtterance(this.#activeUtteranceId);
         }
 
         /*
