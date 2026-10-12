@@ -114,7 +114,16 @@
                 if (nameEnd < 0) throw new Error("malformed named capture");
                 const name = source.slice(i + 3, nameEnd);
                 const open = nameEnd + 1;
-                const close = findGroupEnd(source, open);
+                let close = -1;
+                let depth = 1;
+                let escaped = false;
+                for (let cursor = open; cursor < source.length; cursor++) {
+                    const ch = source[cursor];
+                    if (escaped) { escaped = false; continue; }
+                    if (ch === "\\\\") { escaped = true; continue; }
+                    if (ch === "(") depth++;
+                    else if (ch === ")" && --depth === 0) { close = cursor; break; }
+                }
                 if (close < 0) throw new Error("unclosed named capture: " + name);
                 const choices = capturePhrases[name];
                 if (!Array.isArray(choices) || choices.length === 0) {
