@@ -120,7 +120,7 @@
                 for (let cursor = open; cursor < source.length; cursor++) {
                     const ch = source[cursor];
                     if (escaped) { escaped = false; continue; }
-                    if (ch === "\\\\") { escaped = true; continue; }
+                    if (ch === "\\") { escaped = true; continue; }
                     if (ch === "(") depth++;
                     else if (ch === ")" && --depth === 0) { close = cursor; break; }
                 }
