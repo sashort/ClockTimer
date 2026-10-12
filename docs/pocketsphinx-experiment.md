@@ -26,7 +26,7 @@ Use an English acoustic model whose sample-rate/features match the adapter's
 before committing model files.
 
 The opt-in SpeechMenu configuration is a global object with the adapter's
-constructor options plus a `grammars` map:
+constructor options. An optional `grammars` map can override generated FSGs:
 
 ```js
 globalThis.WMOF_SPEECH_BACKEND = "pocketsphinx";
@@ -46,17 +46,17 @@ globalThis.WMOF_POCKETSPHINX_CONFIG = {
   ],
   runtimeFolders: [],
   grammars: {
+    // Optional: override the command grammar built from registered patterns.
     commands: compiledCommandGrammar
-    // Value grammars (time/date/digits/number/duration) are compiled
-    // automatically when omitted.
   }
 };
 ```
 
-`compiledCommandGrammar` is a placeholder for an FSG object built from the app's
-registered command patterns. That command-grammar builder is still a remaining
-integration step; it is not a variable provided by the app yet. Do not enable
-this configuration with placeholders or absent model files.
+The adapter configuration's `config`, model paths, dictionary, and runtime URLs
+must refer to real deployed assets. The app now attempts to build command FSGs
+from registered patterns and compiles value vocabularies automatically, but
+that generated command coverage still needs tests against the full command set.
+Do not enable PocketSphinx without deployed and validated runtime/model assets.
 
 ## Current code
 
@@ -85,9 +85,10 @@ this configuration with placeholders or absent model files.
 1. Supply and validate the actual runtime/model/dictionary assets. No model or
    dictionary is bundled, so recognition cannot be activated until a compatible
    runtime set is deployed.
-2. Generate the configured `commands`, `time`, `date`, `digits`, `number`, and
-   `duration` FSG objects from the existing command patterns and vocabulary;
-   every grammar token must have a pronunciation in the loaded dictionary.
+2. Verify generated command-prefix coverage against the full registered command set.
+   Unsupported legacy regexes are intentionally omitted rather than widened;
+   every generated grammar token still needs a pronunciation in the loaded
+   dictionary.
 3. Complete the grammar-boundary protocol. The adapter selects a grammar at
    utterance start; it does not switch the active PocketSphinx search mid-utterance.
    A command prefix such as “ready at” therefore needs a recognized boundary or
