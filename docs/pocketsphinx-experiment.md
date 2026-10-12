@@ -34,25 +34,35 @@ before committing model files.
 - `PocketSphinxRecognizer.js` wraps the upstream worker protocol, exposes
   grammar registration and switching at utterance boundaries, and can either
   capture its own microphone or accept Float32 audio frames from an existing
-  capture pipeline through `acceptAudioFrame(samples, sampleRate)`. Frames are
-  resampled and batched into 16 kHz signed 16-bit PCM for the worker.
+  capture pipeline. Its SpeechMenu-compatible `accept(utteranceId, samples,
+  sampleRate, grammarName)`, `finishUtterance()`, and `abortUtterance()` methods
+  serialize audio processing around utterance starts and stops.
+- `SpeechMenu.js` now has an opt-in PocketSphinx path selected by setting
+  `WMOF_SPEECH_BACKEND = "pocketsphinx"` and supplying
+  `WMOF_POCKETSPHINX_CONFIG`. It registers the configured FSG grammars, feeds
+  SpeechMenu's existing AudioWorklet frames into the adapter, and routes
+  transcripts into the existing planner without the Sherpa-specific transcript
+  head-pruning step. Sherpa remains the default unless this configuration is
+  explicitly supplied.
 - Tests exercise the grammar context, grammar catalog, and worker adapter
   protocol without requiring a microphone or WASM model.
 
 ## Remaining integration work
 
-1. Supply and validate the actual runtime/model/dictionary assets.
-2. Build command-prefix grammars from the existing speech-pattern definitions
-   and ensure every vocabulary token has a pronunciation before registering
-   grammars.
-3. Connect the adapter to SpeechMenu's existing utterance lifecycle and route
-   hypotheses through its current command planner. Do not introduce a second
-   command executor or transcript head/tail salvage.
-4. Define a boundary protocol for switching from command-prefix to value
-   grammar. PocketSphinx's worker API selects a search at `start()`; do not
-   assume it can switch the active decoder search mid-utterance.
-5. Run unit tests and browser tests with a real model and microphone, including
-   time entry, date entry, digit/PIN entry, command chaining, and cancellation.
+1. Supply and validate the actual runtime/model/dictionary assets. No model or
+   dictionary is bundled, so recognition cannot be activated until a compatible
+   runtime set is deployed.
+2. Generate the configured `commands`, `time`, `date`, `digits`, `number`, and
+   `duration` FSG objects from the existing command patterns and vocabulary;
+   every grammar token must have a pronunciation in the loaded dictionary.
+3. Complete the grammar-boundary protocol. The adapter selects a grammar at
+   utterance start; it does not switch the active PocketSphinx search mid-utterance.
+   A command prefix such as “ready at” therefore needs a recognized boundary or
+   a supported runtime-level search-switch operation before a value grammar can
+   take over.
+4. Run the adapter unit tests and browser tests with a real model and
+   microphone, covering time/date entry, digit/PIN entry, command chaining,
+   final transcript delivery, and cancellation.
 
-Until these steps are complete, the existing Sherpa path remains the active
-production path on this branch.
+The integration is opt-in and is not yet verified end to end. Sherpa remains the
+production default until the runtime assets and browser tests pass.
