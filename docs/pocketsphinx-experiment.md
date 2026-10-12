@@ -46,20 +46,17 @@ globalThis.WMOF_POCKETSPHINX_CONFIG = {
   ],
   runtimeFolders: [],
   grammars: {
-    commands: compiledCommandGrammar,
-    time: compiledTimeGrammar,
-    date: compiledDateGrammar,
-    digits: compiledDigitsGrammar,
-    number: compiledNumberGrammar,
-    duration: compiledDurationGrammar
+    commands: compiledCommandGrammar
+    // Value grammars (time/date/digits/number/duration) are compiled
+    // automatically when omitted.
   }
 };
 ```
 
-The `compiled*Grammar` values above are placeholders for FSG objects produced
-by `PocketSphinxGrammarCatalog`; they are not variables provided by the app
-until the grammar-building step is completed. Do not enable this configuration
-with placeholders or absent model files.
+`compiledCommandGrammar` is a placeholder for an FSG object built from the app's
+registered command patterns. That command-grammar builder is still a remaining
+integration step; it is not a variable provided by the app yet. Do not enable
+this configuration with placeholders or absent model files.
 
 ## Current code
 
