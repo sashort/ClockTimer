@@ -1318,10 +1318,14 @@ class SpeechMenu {
                             catalog.compileCommandPatterns(records).prefixes;
                         const fixedCommands = [];
                         for (const {pattern} of records) {
-                            if (/\(\?<([A-Za-z][A-Za-z0-9_]*)>/.test(pattern)) continue;
                             try {
+                                // Finite captures such as (lunch|short) can be
+                                // expanded into complete commands; free-form value
+                                // captures are handled by their prefix grammar.
                                 fixedCommands.push(...SpeechMenu.extrapolatePattern(pattern));
+                                continue;
                             } catch {
+                                if (/\(\?<([A-Za-z][A-Za-z0-9_]*)>/.test(pattern)) continue;
                                 // Unsupported legacy regexes are omitted rather than
                                 // broadened into an incorrect grammar.
                             }
