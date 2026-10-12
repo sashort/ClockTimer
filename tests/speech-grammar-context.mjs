@@ -15,6 +15,8 @@ assert.deepEqual(
     { grammar: "time", capture: "spokenTime", reason: "named-capture" }
 );
 assert.equal(GrammarContext.fromPattern("^standard time (?<timeValue>.+)$").grammar, "time");
+assert.equal(GrammarContext.fromPattern("^ready at (?<time>.+)$").grammar, "time");
+assert.equal(GrammarContext.fromPattern("^(?<date>.+)$").grammar, "date");
 assert.equal(GrammarContext.fromPattern("^(?<dateValue>.+)$").grammar, "date");
 assert.equal(GrammarContext.fromPattern("^(?<pin>.+)$").grammar, "digits");
 assert.equal(GrammarContext.fromPattern("^(?<percent>.+) percent$").grammar, "number");
