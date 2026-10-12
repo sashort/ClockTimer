@@ -1305,15 +1305,20 @@ class SpeechMenu {
                 await recognizer.ready;
 
                 if (usePocketSphinx) {
-                    const configuredGrammars =
-                        globalThis.WMOF_POCKETSPHINX_CONFIG.grammars || {};
-                    for (const [name, grammar] of Object.entries(configuredGrammars)) {
-                        await recognizer.addGrammar(name, grammar);
+                    const configuredGrammars = {
+                        ...(globalThis.WMOF_POCKETSPHINX_CONFIG.grammars || {})
+                    };
+                    for (const type of globalThis.PocketSphinxGrammarCatalog.valueTypes()) {
+                        configuredGrammars[type] ??=
+                            globalThis.PocketSphinxGrammarCatalog.compileValue(type);
                     }
                     if (!configuredGrammars.commands) {
                         throw new Error(
                             "PocketSphinx configuration must provide a compiled 'commands' grammar."
                         );
+                    }
+                    for (const [name, grammar] of Object.entries(configuredGrammars)) {
+                        await recognizer.addGrammar(name, grammar);
                     }
                 }
 
