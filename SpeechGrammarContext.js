@@ -11,8 +11,10 @@
     const VALUE_CAPTURE_TYPES = Object.freeze({
         spokenTime: "time",
         timeValue: "time",
+        time: "time",
         dateValue: "date",
         spokenDate: "date",
+        date: "date",
         digits: "digits",
         pin: "digits",
         percent: "number",
