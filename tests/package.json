@@ -33,7 +33,8 @@
     "test:standalone-settings": "node standalone-settings-page.mjs",
     "test:speech-grammar-context": "node speech-grammar-context.mjs",
     "test:pocketsphinx-grammar": "node pocketsphinx-grammar-catalog.mjs",
-    "test:pocketsphinx-recognizer": "node pocketsphinx-recognizer.mjs"
+    "test:pocketsphinx-recognizer": "node pocketsphinx-recognizer.mjs",
+    "test:vosk-phrase-list": "node vosk-phrase-list-compiler.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
