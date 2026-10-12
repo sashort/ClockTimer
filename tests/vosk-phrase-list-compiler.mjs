@@ -13,6 +13,7 @@ const result = Compiler.compile([
     { id: "ready-at", pattern: "^(?:ready|ruddy) at (?<spokenTime>.+)$" },
     { id: "standard", pattern: "^standard(?: time)? (?<timeValue>.+)$" },
     { id: "confirm", pattern: "^(?:ok(?:ay)?|o\\s+k)$" },
+    { id: "resume", pattern: "^resumed?$" },
     { id: "unsupported", pattern: "^speech (?!on$|off$)(?<percent>.+?)(?: percent|%)?$" }
 ], {
     capturePhrases: {
@@ -28,9 +29,11 @@ assert.ok(result.phrases.includes("standard time thirty minutes"));
 assert.ok(result.phrases.includes("ok"));
 assert.ok(result.phrases.includes("okay"));
 assert.ok(result.phrases.includes("o k"));
+assert.ok(result.phrases.includes("resume"));
+assert.ok(result.phrases.includes("resumed"));
 assert.ok(!result.phrases.includes("ready at"));
-assert.equal(result.recordsSeen, 4);
-assert.equal(result.supportedPatterns, 3);
+assert.equal(result.recordsSeen, 5);
+assert.equal(result.supportedPatterns, 4);
 assert.equal(result.unsupported.length, 1);
 assert.match(result.unsupported[0].reason, /unsupported regex|only non-capturing/);
 
