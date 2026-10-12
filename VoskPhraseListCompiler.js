@@ -85,7 +85,15 @@
                     }
                     throw new Error("unsupported escape sequence \\" + next);
                 }
-                if ("[]{}*+".includes(ch) || ch === "?") {
+                if (ch === "?") {
+                    if (values.some(value => !value.length)) {
+                        throw new Error("optional quantifier has no preceding literal");
+                    }
+                    values = [...new Set(values.flatMap(value => [value, value.slice(0, -1)]))];
+                    i++;
+                    continue;
+                }
+                if ("[]{}*+".includes(ch)) {
                     throw new Error("unsupported regex quantifier or character class: " + ch);
                 }
                 values = values.map(value => value + ch);
