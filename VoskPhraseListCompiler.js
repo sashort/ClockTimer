@@ -148,6 +148,7 @@
         const unsupported = [];
         let recordsSeen = 0;
         let supportedPatterns = 0;
+        let expandedPhraseCount = 0;
 
         for (const record of patternRecords || []) {
             const pattern = typeof record === "string" ? record : record?.pattern;
@@ -158,6 +159,7 @@
                 const phrases = expandRegex(substituted, maxPhrasesPerPattern);
                 if (!phrases.length) throw new Error("pattern expanded to no phrases");
                 supportedPatterns++;
+                expandedPhraseCount += phrases.length;
                 for (const phrase of phrases) all.add(phrase);
             } catch (error) {
                 unsupported.push(Object.freeze({
@@ -175,7 +177,7 @@
             recordsSeen,
             supportedPatterns,
             unsupported: Object.freeze(unsupported),
-            duplicateCount: 0
+            duplicateCount: expandedPhraseCount - phrases.length
         });
     }
 
