@@ -2856,6 +2856,22 @@ class SpeechMenu {
             startedAt: now,
             wallStartedAt:
                 wallStartedAt.toISOString(),
+            recognitionGrammar: (() => {
+                const context = globalThis.SpeechGrammarContext?.fromUIContext({
+                    mode: document.activeElement?.dataset?.speechInputMode ||
+                        document.activeElement?.getAttribute?.("data-speech-input-mode") || "",
+                    pinEntry: Boolean(document.activeElement?.matches?.(
+                        "[autocomplete='one-time-code'], [inputmode='numeric'][maxlength='4']"
+                    )),
+                    dateEntry: document.activeElement?.type === "date",
+                    timeEntry: document.activeElement?.type === "time"
+                });
+                const requested = context?.grammar || "commands";
+                const configured = globalThis.WMOF_POCKETSPHINX_CONFIG?.grammars || {};
+                return Object.prototype.hasOwnProperty.call(configured, requested)
+                    ? requested
+                    : "commands";
+            })(),
             silenceMilliseconds: 0,
             sampleCount,
             transcript: "",
