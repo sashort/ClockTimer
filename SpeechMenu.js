@@ -243,6 +243,7 @@ class SpeechMenu {
     static #captureNode;
     static #recognizer;
     static #recognizerBackend = "sherpa";
+    static #pocketSphinxGrammarNames = new Set(["commands"]);
     static #vad;
     static #pipeline = "raw";
     static #finishedUtterances = new Map();
@@ -1338,6 +1339,8 @@ class SpeechMenu {
                     for (const [name, grammar] of Object.entries(configuredGrammars)) {
                         await recognizer.addGrammar(name, grammar);
                     }
+                    SpeechMenu.#pocketSphinxGrammarNames =
+                        new Set(Object.keys(configuredGrammars));
                 }
 
                 if (
@@ -2890,8 +2893,7 @@ class SpeechMenu {
                     timeEntry: document.activeElement?.type === "time"
                 });
                 const requested = context?.grammar || "commands";
-                const configured = globalThis.WMOF_POCKETSPHINX_CONFIG?.grammars || {};
-                return Object.prototype.hasOwnProperty.call(configured, requested)
+                return SpeechMenu.#pocketSphinxGrammarNames.has(requested)
                     ? requested
                     : "commands";
             })(),
