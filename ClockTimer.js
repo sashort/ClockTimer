@@ -561,7 +561,7 @@
                     background:
                         var(
                             --clock-timer-hour-hand-color,
-                            currentColor
+                            #163b66
                         );
                 }
 
