@@ -56,6 +56,16 @@ ready/summary state. Summary cancellation cannot restore a running trip.
 
 ## Verification
 
+SpeechMenu rejects an invalid final/only segment immediately and aborts that
+utterance's decoder without stopping microphone recognition for later utterances.
+Late decoder results cannot revive a rejected utterance. Malformed middle segments
+can be skipped at an explicit command boundary in the available context; skipped
+words remain part of the consumed transcript. A malformed state-changing command
+does not grant its projected context to the next segment. Interim values remain
+revisable. Execution/persistence failures retain coordinator cancellation and
+recovery semantics rather than being treated as harmless recognition noise.
+Run `node tests/speech-failfast.mjs` for the focused segment regressions.
+
 Run `node tests/application-coordinator.mjs`,
 `node tests/async-command-lifecycle.mjs`, and
 `node tests/app-state-transactions.mjs --coordinator-end-trip`.

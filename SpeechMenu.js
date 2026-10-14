@@ -3739,6 +3739,10 @@ class SpeechMenu {
         utterance.candidatePool =
             pool;
         if (SpeechMenu.#digestCandidate(utterance, pool[0], remainingTranscript, isFinal)) return;
+        if (isFinal && SpeechMenu.#executionEnabled && !pool.some(candidate => candidate.exact)) {
+            SpeechMenu.#rejectDigest(utterance, "invalid-final-segment", remainingTranscript);
+            return;
+        }
 
         const streamResult =
             await SpeechMenu
@@ -3914,6 +3918,7 @@ class SpeechMenu {
     }
 
     static #rejectDigest(utterance, reason, remainder) {
+        if (utterance.digestFailed) return;
         utterance.digestFailed = true;
         utterance.releaseFinalResult?.();
         void (utterance.operation ? utterance.operation.cancel(new Error(reason)) :
@@ -3929,7 +3934,10 @@ class SpeechMenu {
 
     static #queueDigestStep(utterance, step) {
         const segment = step.segmentTranscript;
-        utterance.digestTranscript = [utterance.digestTranscript, segment].filter(Boolean).join(" ");
+        utterance.digestTranscript = [utterance.digestTranscript, step.ignoredBefore, segment].filter(Boolean).join(" ");
+        if (step.ignoredBefore) SpeechMenu.#emit("speechSegmentSkipped", {
+            utteranceId: utterance.id, transcript: step.ignoredBefore, reason: "malformed-segment"
+        });
         utterance.digestSteps.push(step);
         utterance.digestContext = step.nextContext;
         utterance.digestSurfaceStack = step.nextSurfaceStack;
@@ -3950,7 +3958,7 @@ class SpeechMenu {
             commandElement: step.commandElement, transcript: segment,
             consumedTranscript: utterance.digestTranscript});
         utterance.digestQueue = utterance.digestQueue.then(async () => {
-            if (utterance.chainCanceled || utterance.digestExecutionFailed || SpeechMenu.#stopped ||
+            if (utterance.digestFailed || utterance.chainCanceled || utterance.digestExecutionFailed || SpeechMenu.#stopped ||
                 utterance.sessionGeneration !== SpeechMenu.#sessionGeneration) {
                 utterance.chainCanceled = true;
                 SpeechMenu.#clearPrimed(utterance);
@@ -4047,7 +4055,7 @@ class SpeechMenu {
         }
         for (const step of steps.slice(0, count)) SpeechMenu.#queueDigestStep(utterance, step);
         const consumedWords = steps.slice(0, count).reduce((n, step) =>
-            n + step.segmentTranscript.split(" ").length, 0);
+            n + step.segmentTranscript.split(" ").length + (step.ignoredBefore?.split(" ").filter(Boolean).length || 0), 0);
         const ignoredWords = candidate?.ignoredPrefix?.split(" ").filter(Boolean).length || 0;
         const tail = remainder.split(" ").filter(Boolean).slice(ignoredWords + consumedWords).join(" ");
         utterance.digestPending = tail;
@@ -4380,6 +4388,7 @@ class SpeechMenu {
         if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
         if (
             !utterance ||
+            utterance.digestFailed ||
             utterance.contextGeneration !==
                 SpeechMenu.#contextGeneration
         ) {
@@ -4424,6 +4433,10 @@ class SpeechMenu {
             }
             const pool = await SpeechMenu.#refreshCandidatePool(utterance, remaining);
             if (SpeechMenu.#digestCandidate(utterance, pool[0], remaining, true)) return;
+            if (!pool.some(candidate => candidate.exact)) {
+                SpeechMenu.#rejectDigest(utterance, "invalid-final-segment", remaining);
+                return;
+            }
         }
 
         const streamResult =
@@ -6918,8 +6931,11 @@ class SpeechMenu {
                                 next, remaining.slice(skip), utterance, signal, depth + 1, memo,
                                 context, frames, optimistic);
                             if (signal?.aborted) return undefined;
-                            if (later && !later.invalid && (later.steps.length || later.pending)) {
-                                tail = later;
+                            const root = later?.steps[0];
+                            if (later && !later.invalid && root &&
+                                SpeechMenu.#hasExplicitCommandAnchor(root.commandElement, root.segmentTranscript)) {
+                                tail = {...later, steps: [{...root,
+                                    ignoredBefore: [remaining.slice(0, skip).join(" "), root.ignoredBefore].filter(Boolean).join(" ")}, ...later.steps.slice(1)]};
                                 skippedTailWords = skip;
                                 break;
                             }
@@ -6963,7 +6979,10 @@ class SpeechMenu {
                         }
                     }
 
-                    if (collectorStep && (!tail || tail.invalid || !explicitTailBoundary)) {
+                    const skippedBoundary = tail?.steps[0]?.ignoredBefore;
+                    const skippedCommand = skippedBoundary && next.some(candidate =>
+                        SpeechMenu.#hasExplicitCommandAnchor(candidate, skippedBoundary));
+                    if (collectorStep && (!tail || tail.invalid || !explicitTailBoundary || (skippedBoundary && !skippedCommand))) {
                         // Never split a growing free-form value at a bare
                         // parameter match. A real command literal can end it.
                         select({steps: [step], exact: false, continuation: false, terminal: false,
@@ -6986,6 +7005,22 @@ class SpeechMenu {
                         terminal: !awaitingTypedValueBoundary && future.length === 0 && !step.canContinue,
                         consumedWords: end, remainder: ""});
                 }
+            }
+        }
+        // A malformed collector does not earn its projected state transition.
+        // Recover only at a literal command boundary in the original context.
+        if (!best || best.invalid || (utterance.digestIsFinal && best.pending)) {
+            for (let skip = 1; skip < words.length; skip++) {
+                if (!candidates.some(element => SpeechMenu.#hasExplicitCommandAnchor(element, words.slice(skip).join(" ")))) continue;
+                const later = await SpeechMenu.#planDigest(candidates, words.slice(skip), utterance, signal,
+                    depth + 1, memo, projectedContext, projectedFrames, optimistic);
+                if (signal?.aborted) return undefined;
+                const root = later?.steps[0];
+                if (!later || later.invalid || !root || !SpeechMenu.#hasExplicitCommandAnchor(root.commandElement, root.segmentTranscript)) continue;
+                best = {...later, steps: [{...root,
+                    ignoredBefore: [words.slice(0, skip).join(" "), root.ignoredBefore].filter(Boolean).join(" ")}, ...later.steps.slice(1)],
+                    consumedWords: skip + later.consumedWords};
+                break;
             }
         }
         memo.set(key, best);
