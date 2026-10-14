@@ -24134,9 +24134,7 @@
             inputMode
         } = {}) => {
             if (
-                tripIsLive() ||
-                $("#newTripButton")
-                    ?.disabled
+                !readInteractionState().actions.startTrip
             ) {
                 return false;
             }
@@ -25343,8 +25341,7 @@
                 if (
                     tripIsLive() ||
                     (
-                        $("#newTripButton")
-                            ?.disabled &&
+                        !readInteractionState().actions.startTrip &&
                         !continuingReady
                     )
                 ) {

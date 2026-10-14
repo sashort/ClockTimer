@@ -289,7 +289,12 @@ window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
 await settle();
 if(process.argv.includes('--coordinator-end-trip')) {
-    await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:1200000}));await settle();
+    const newTrip=window.document.querySelector('#newTripButton');
+    assert.equal(newTrip.disabled,false,'New Trip is available before input');
+    newTrip.dispatchEvent(new window.Event('pointerup',{bubbles:true}));await settle();
+    assert(window.document.querySelector('#numberPadDialog').open,'real New Trip input opens the standard-time editor despite its own pending state');
+    for(const digit of '2000') await window.WMOFActions.enterNumberPadDigit(digit);
+    assert.equal(await window.WMOFActions.confirmNumberPad(),true,'standard-time confirmation starts the trip through application actions');await settle();
     assert.equal(timer.status,'running');
     holdStopResponse=true;
     const ending=window.WMOFActions.endTrip();await settle();
@@ -325,6 +330,15 @@ if(process.argv.includes('--coordinator-end-trip')) {
     await window.SpeechMenu.testTranscript(spokenEnd,'ready',true);await spokenEnd.digestQueue;await settle();
     assert(spokenEnd.hadCommittedCommand && !spokenEnd.digestExecutionFailed,'voice End Trip completion survives its own availability change');
     assert.equal(timer.status,'ready');assert.equal(window.WMOFInteractionState.state.tripActive,false);
+    await window.WMOFActions.cancelTripSummary();await settle();
+    const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await settle();assert(u.hadCommittedCommand&&!u.digestExecutionFailed,text+' executes');return u;};
+    await say('ready at eleven fifty nine pm');
+    assert(window.document.querySelector('#scheduledStartDialog').open,'Ready At opens despite its own pending disabled button');
+    await say('cancel');
+    await say('ready');
+    assert(window.document.querySelector('#voiceEntrySurface').open,'Ready opens the standard-time voice editor');
+    await say('twenty minutes');await say('okay');
+    assert.equal(timer.status,'running','voice starts another trip after ending the previous one');
     console.log('PASS delayed End Trip save and summary cancellation keep model and UI ended');
     await window.happyDOM.close();process.exit(0);
 }
