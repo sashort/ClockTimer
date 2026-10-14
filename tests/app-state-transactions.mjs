@@ -356,6 +356,39 @@ await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
 await settle();
+if(process.argv.includes('--interval-actions')) {
+ await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ window.__testTime+=60000;
+ assert.equal(await window.WMOFActions.startDownTime(),true,'Down action accepts its own pending state');await settle();
+ assert.equal(timer.getActiveIntervalState()?.intervalType,'down');
+ await window.WMOFActions.resumeTrip();await settle();assert(!timer.getActiveIntervalState());
+ window.__testTime+=60000;
+ assert.equal(await window.WMOFActions.startBreak('break'),true,'Break action starts an interval');await settle();
+ assert.equal(timer.getActiveIntervalState()?.intervalType,'break');
+ await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
+ for(const kind of ['break','short-break','lunch']) {
+   window.document.querySelector('#breakButton').dispatchEvent(new window.Event('pointerup',{bubbles:true}));await settle();
+   assert(window.document.querySelector('#breakDialog').open,'Break pointer opens selector');
+   window.document.querySelector('#breakDialog [data-break-type="'+kind+'"]').click();await settle();
+   assert.equal(timer.getActiveIntervalState()?.intervalType,kind==='lunch'?'lunch':'break',kind+' pointer starts');
+   await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
+ }
+ const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');return u;};
+ await say('down');assert.equal(timer.getActiveIntervalState()?.intervalType,'down');
+ await say('resume');assert(!timer.getActiveIntervalState());window.__testTime+=60000;
+ for(const [phrase,type] of [['start break','break'],['start short break','break'],['start lunch','lunch']]) {
+   const before=stored.filter(e=>e.event==='interval.started').length;
+   await say(phrase+' okay');assert.equal(timer.getActiveIntervalState()?.intervalType,type,phrase+' combined OK starts');
+   assert.equal(stored.filter(e=>e.event==='interval.started').length,before+1,phrase+' persists once');
+   await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
+   await say(phrase);assert(window.document.querySelector('#speechBreakConfirmDialog').open,phrase+' asks confirmation');
+   await say('okay');assert.equal(timer.getActiveIntervalState()?.intervalType,type,phrase+' separate OK starts');
+   await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
+ }
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS Down/resume and direct, chained and separately confirmed Break/Short Break/Lunch actions');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--coordinator-end-trip')) {
     const newTrip=window.document.querySelector('#newTripButton');
     assert.equal(newTrip.disabled,false,'New Trip is available before input');

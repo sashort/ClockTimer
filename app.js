@@ -25699,7 +25699,7 @@
                 if (
                     activeIntervalType ===
                         "down" ||
-                    downButton?.disabled
+                    !readInteractionState().actions.startDown
                 ) {
                     return false;
                 }

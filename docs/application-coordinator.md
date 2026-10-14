@@ -53,6 +53,10 @@ Break or Down. During the pending end operation the existing controls stay visib
 dimmed and disabled, including the summary confirmation buttons. They cannot accept
 pointer input. When the operation settles, the interface presents the committed
 ready/summary state. Summary cancellation cannot restore a running trip.
+Action implementations, including Down and New Trip, read semantic availability
+rather than the disabled state that their own pending operation applies to the
+buttons. `--interval-actions` covers pointer Break selection, voice confirmation,
+Down/resume and one persisted event per accepted interval.
 
 ## Verification
 
