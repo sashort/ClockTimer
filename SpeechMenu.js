@@ -3248,6 +3248,10 @@ class SpeechMenu {
         });
 
         if (!transcript) {
+            if (detail.isFinal && (rawTranscript || !SpeechMenu.synthesizedSpeechActive)) {
+                SpeechMenu.#finishedUtterances.delete(id);
+                SpeechMenu.#rejectDigest(utterance, "invalid-final-segment", rawTranscript);
+            }
             return;
         }
 

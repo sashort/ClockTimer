@@ -92,6 +92,10 @@ try {
  let u=fresh();await hear(u,'nonsense',true);
  assert.equal(speech.testActive(),undefined,'invalid only segment closes capture immediately');
  assert.deepEqual(aborts,[u.id]);assert.equal(errors.length,1);assert.equal(errors[0].fast,true);assert.deepEqual(calls,[]);
+ u=fresh();speech.testResult(u,'nonsense',true);await new Promise(setImmediate);
+ assert.equal(speech.testActive(),undefined,'scoped-out final decoder events also close the stream');assert.deepEqual(aborts,[u.id]);assert.equal(errors.length,1);
+ u=fresh();speech.testResult(u,'',true);await new Promise(setImmediate);
+ assert.equal(speech.testActive(),undefined,'empty final decoder events release the stream');assert.deepEqual(aborts,[u.id]);assert.equal(errors.length,1);
  await speech.testFinal(u,'show log');assert.deepEqual(calls,[],'late decoder results cannot revive a rejected utterance');assert.equal(errors.length,1);
  u=fresh();await speech.testFinal(u,'nonsense');await u.digestQueue;
  assert.equal(speech.testActive(),undefined,'completed decode rejects an invalid only segment');assert.equal(errors.length,1);
