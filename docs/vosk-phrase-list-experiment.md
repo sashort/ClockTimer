@@ -2,7 +2,8 @@
 
 `VoskPhraseListCompiler.js` expands complete phrases from the existing
 `lang/en-US/speech-patterns.json` records. It is intentionally separate
-from `SpeechMenu` and the active recognizer while the grammar is measured.
+from command execution. The opt-in `VoskRecognizer` now uses its staged compiler
+with `VoskGrammarRouter` and SpeechMenu's active/contextual planner.
 
 ## Contract
 
@@ -26,13 +27,67 @@ not yet support arbitrary regex quantifiers, character classes, lookarounds, or 
 capture values. Those patterns are listed in `unsupported` and need an explicit
 finite grammar representation before they can be included safely.
 
-This is not yet wired to the microphone or Vosk runtime. In particular, phrase generation
-must be measured against realistic finite vocabularies for spoken times, durations,
-percentages, and PIN entry before choosing a model or activating it. A PIN grammar should
-be bounded by the actual PIN-entry context rather than enumerating arbitrary digit strings.
+The staged compiler does not expand a Cartesian product of command/value phrases.
+It expands literal syntax with capture markers, substitutes finite vocabularies for
+typed stages, and validates capture choices against their original capture regex.
+Finite named choices without a value type remain complete command phrases.
+
+## Browser integration
+
+Load a matched [vosk-browser runtime](https://github.com/ccoreilly/vosk-browser) and
+a model that supports dynamic grammars before opting in:
+
+```js
+// Load your deployed vosk-browser script first (it exposes globalThis.Vosk).
+globalThis.WMOF_SPEECH_BACKEND = "vosk";
+globalThis.WMOF_VOSK_CONFIG = {
+    modelUrl: "/vendor/vosk/model.tar.gz",
+    overlapMilliseconds: 320,
+    // Optional, finite per-capture restrictions for the actual input context:
+    capturePhrases: { pin: ["one two three four", "four three two one"] }
+};
+```
+
+Alternatively supply an already loaded `model`. SpeechMenu provides the authoritative
+`contextProvider`; configuration cannot override that provider. The adapter uses the
+existing 16 kHz audio-worklet/VAD path, without opening another microphone. It creates
+a constrained KaldiRecognizer for each internal stage, fences stale callbacks, retains
+a bounded PCM tail, and replays it into the replacement. Recognized next-stage text
+that predates the replay window is carried forward. Audio endpoint results remain
+interim; only the VAD final request emits a final SpeechMenu transcript.
+
+Initial records come from `#availableCandidates`, including SpeechMenu's permitted
+global commands in a modal. Future contexts come from isolated probes of the existing
+chain planner with the utterance's initial candidates/surfaces. Probes do not execute
+actions or modify live collectors. A value stage also includes the projected command
+heads needed to recognize its boundary. Once a finite value and an available next head
+match, the router consumes that boundary and selects the next stage. All stages use
+the same SpeechMenu utterance ID and publish a cumulative transcript.
+
+Default English choices cover 12-hour times with minutes/meridiem, numbers 0–999,
+single-unit durations using those numbers, one to four spoken digits, and month/day
+dates plus today/tomorrow. They are bounded recognition choices, not new semantic
+parsers. Supply `valuePhrases` by type or `capturePhrases` by capture to narrow or
+extend a finite range (including composite durations, years and longer PINs).
+Preprocessor context/field metadata overrides ambiguous capture types: `timeValue`
+on Standard Time is a duration, while `spokenTime` on Ready At is a clock time.
+
+Unknown or unsupported syntax is omitted and reported as `grammar-omissions` status.
+An empty active grammar fails explicitly; it never falls back to unrestricted Vosk.
+Vosk phrase lists constrain decoder vocabulary, but do not enforce regex order or
+semantic validity. SpeechMenu continues to validate and execute every command.
+
+The runtime/model are not bundled or enabled by default. Real microphone accuracy
+and switch timing still need acoustic validation against the deployed model.
+PocketSphinx implementation files are unchanged.
 
 ## Tests
 
 Run `node tests/vosk-phrase-list-compiler.mjs` to exercise complete-phrase expansion,
 capture substitution, optional/alternative forms, expansion caps, and explicit rejection
-of unsupported patterns.
+of unsupported patterns. `node tests/vosk-grammar-router.mjs` covers stage switching,
+unanimous/ambiguous prefixes, finite values, typed/suffix/chained transitions, utterance
+IDs, bounded replay, text carry, stale callbacks and final-result ordering.
+`node tests/vosk-speechmenu-context.mjs` verifies active/modal availability, projected
+contexts without execution, and authoritative execution of Ready At → Standard Time
+chains including four twelve, four thirteen and four twenty two.

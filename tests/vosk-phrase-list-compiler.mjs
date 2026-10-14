@@ -18,6 +18,7 @@ const result = Compiler.compile([
 ], {
     capturePhrases: {
         spokenTime: ["five pm", "five thirty", "17:30"],
+        percent: ["twenty"],
         timeValue: ["one hour", "thirty minutes"]
     }
 });

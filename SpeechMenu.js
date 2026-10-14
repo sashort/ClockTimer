@@ -1243,6 +1243,9 @@ class SpeechMenu {
                     typeof AudioWorkletNodeCtor !== "function" ||
                     !(
                         typeof globalThis.SherpaRecognizer === "function" ||
+                        (globalThis.WMOF_SPEECH_BACKEND === "vosk" &&
+                            globalThis.WMOF_VOSK_CONFIG &&
+                            typeof globalThis.VoskRecognizer === "function") ||
                         (
                             globalThis.WMOF_SPEECH_BACKEND === "pocketsphinx" &&
                             globalThis.WMOF_POCKETSPHINX_CONFIG &&
@@ -1265,6 +1268,12 @@ class SpeechMenu {
                     globalThis.WMOF_SPEECH_BACKEND === "pocketsphinx" &&
                     Boolean(globalThis.WMOF_POCKETSPHINX_CONFIG) &&
                     typeof globalThis.PocketSphinxRecognizer === "function";
+                const useVosk = globalThis.WMOF_SPEECH_BACKEND === "vosk" &&
+                    Boolean(globalThis.WMOF_VOSK_CONFIG) &&
+                    typeof globalThis.VoskRecognizer === "function";
+                if (globalThis.WMOF_SPEECH_BACKEND === "vosk" && !useVosk) {
+                    throw new Error("The requested Vosk backend is not configured.");
+                }
 
                 await context.audioWorklet.addModule(
                     globalThis.SherpaRecognizer?.assetUrl
@@ -1272,13 +1281,18 @@ class SpeechMenu {
                         : new URL("speech/SpeechAudioWorklet.js", document.baseURI).href
                 );
 
-                const recognizer = usePocketSphinx
+                const recognizer = useVosk
+                    ? new globalThis.VoskRecognizer({
+                        ...globalThis.WMOF_VOSK_CONFIG,
+                        contextProvider: SpeechMenu.#voskContext
+                    })
+                    : usePocketSphinx
                     ? new globalThis.PocketSphinxRecognizer(globalThis.WMOF_POCKETSPHINX_CONFIG)
                     : new globalThis.SherpaRecognizer({
                         hotwords: SpeechMenu.#hotwords()
                     });
                 SpeechMenu.#recognizerBackend =
-                    usePocketSphinx ? "pocketsphinx" : "sherpa";
+                    useVosk ? "vosk" : usePocketSphinx ? "pocketsphinx" : "sherpa";
 
                 SpeechMenu.#recognizer =
                     recognizer;
@@ -3223,7 +3237,7 @@ class SpeechMenu {
                 [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" ")
             )
         );
-        const transcript = SpeechMenu.#recognizerBackend === "pocketsphinx"
+        const transcript = ["pocketsphinx", "vosk"].includes(SpeechMenu.#recognizerBackend)
             ? rawTranscript
             : SpeechMenu.#scopeTranscriptToCommands(rawTranscript, utterance);
 
@@ -3250,7 +3264,7 @@ class SpeechMenu {
             "speechRecognitionTiming",
             {
                 backend:
-                    "sherpa",
+                    SpeechMenu.#recognizerBackend,
                 utteranceId:
                     id,
                 isFinal:
@@ -6664,6 +6678,33 @@ class SpeechMenu {
         }
         return {state, accepted};
     }
+
+    static #voskContext = async (id, transcript) => {
+        const utterance = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
+        if (!utterance || utterance.chainCanceled || utterance.digestFailed) return {records: []};
+        let candidates = SpeechMenu.#availableCandidates();
+        utterance.voskInitialCandidates ??= candidates;
+        utterance.voskInitialFrames ??= SpeechMenu.#surfaceFrames();
+        if (transcript) {
+            // Use the real planner's projected surfaces/context, with isolated
+            // collector state and no execution or persistent utterance changes.
+            const probe = {...utterance, digestClosed: true, digestIsFinal: false,
+                chainActive: false, digestContext: undefined, digestSurfaceStack: utterance.voskInitialFrames,
+                valueCollectors: new Map()};
+            const plan = await SpeechMenu.#planDigest(utterance.voskInitialCandidates,
+                SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean), probe);
+            if (!plan || plan.invalid || !plan.steps?.length) return {records: []};
+            const last = plan.steps.at(-1);
+            candidates = SpeechMenu.#digestCandidates(last.nextContext, last.nextSurfaceStack);
+        }
+        return {records: candidates.map(element => {
+            const kind = element.getAttribute("speech-preproc-context");
+            return {id: element.id || element.getAttribute("data-speech-editor-id"),
+                pattern: element.getAttribute("speech-pattern"),
+                capture: element.getAttribute("speech-preproc-field"),
+                expect: kind === "clock" ? "time" : ["duration", "number", "digits", "date", "time"].includes(kind) ? kind : undefined};
+        }).filter(record => record.pattern)};
+    };
 
     static #digestCandidates(context, frames) {
         const contextual = context ? SpeechMenu.#chainContextCandidates(context) : [];

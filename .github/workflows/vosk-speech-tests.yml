@@ -1,0 +1,28 @@
+name: Vosk speech routing tests
+on:
+  push:
+    branches: [pocketsphinx-experiment]
+  pull_request:
+    paths:
+      - 'Vosk*.js'
+      - 'SpeechMenu.js'
+      - 'SpeechGrammarContext.js'
+      - 'tests/vosk-*.mjs'
+      - '.github/workflows/vosk-speech-tests.yml'
+jobs:
+  routing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+        working-directory: tests
+      - run: |
+          node tests/vosk-phrase-list-compiler.mjs
+          node tests/vosk-grammar-router.mjs
+          node tests/speech-grammar-context.mjs
+          node tests/pocketsphinx-grammar-catalog.mjs
+          node tests/vosk-speechmenu-context.mjs
+          node tests/speech-chain-actions.mjs

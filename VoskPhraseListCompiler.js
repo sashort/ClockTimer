@@ -52,6 +52,12 @@
     function expandRegex(source, maxPhrases) {
         function expand(input, depth = 0) {
             if (depth > 16) throw new Error("regex nesting exceeds 16 levels");
+            const branches = splitTopLevel(input, "|");
+            if (branches.length > 1) {
+                const result = branches.flatMap(part => expand(part, depth + 1));
+                if (result.length > maxPhrases) throw new Error("phrase expansion exceeds limit of " + maxPhrases);
+                return result;
+            }
             let values = [""];
             for (let i = 0; i < input.length;) {
                 const ch = input[i];
@@ -93,7 +99,7 @@
                     i++;
                     continue;
                 }
-                if ("[]{}*+".includes(ch)) {
+                if ("[]{}*+.^$".includes(ch)) {
                     throw new Error("unsupported regex quantifier or character class: " + ch);
                 }
                 values = values.map(value => value + ch);
@@ -192,6 +198,60 @@
     class VoskPhraseListCompiler {
         static normalize(value) { return normalize(value); }
         static compile(patternRecords, options) { return compile(patternRecords, options); }
+        // Replace typed captures with markers before expansion, avoiding the
+        // Cartesian product of large value vocabularies. Literal regex syntax
+        // still goes through the same strict finite compiler.
+        static compileStages(records, { capturePhrases = {}, valuePhrases = {} } = {}) {
+            const paths = [], unsupported = [];
+            for (const record of records || []) {
+                const pattern = typeof record === "string" ? record : record.pattern;
+                if (typeof pattern !== "string") continue;
+                try {
+                    const markers = {}, captures = new Map();
+                    let source = "", cursor = 0;
+                    for (const match of pattern.matchAll(/\(\?<([A-Za-z][A-Za-z0-9_]*)>/g)) {
+                        if (match.index < cursor) continue;
+                        const end = findGroupEnd(pattern, match.index);
+                        if (end < 0) throw new Error("unclosed named capture");
+                        const name = match[1];
+                        const grammar = record.expect && (!record.capture || record.capture === name)
+                            ? record.expect : globalThis.SpeechGrammarContext.VALUE_CAPTURE_TYPES[name];
+                        const body = pattern.slice(match.index + match[0].length, end);
+                        let choices = capturePhrases[name] || valuePhrases[grammar];
+                        if (!choices) choices = expandRegex(body, 50000);
+                        const validator = new RegExp("^(?:" + body + ")$", "i");
+                        choices = [...new Set(choices.map(normalize).filter(value => value && validator.test(value)))];
+                        if (!choices.length) throw new Error("no finite vocabulary for capture: " + name);
+                        if (choices.length > 50000) throw new Error("capture vocabulary exceeds limit of 50000: " + name);
+                        if (!grammar) {
+                            markers[name] = choices;
+                        } else {
+                            const marker = "voskcapture" + captures.size;
+                            markers[name] = [marker];
+                            captures.set(marker, { grammar, capture: name, phrases: choices });
+                        }
+                        source += pattern.slice(cursor, match.index) + "(?<" + name + ">.+)";
+                        cursor = end + 1;
+                    }
+                    source += pattern.slice(cursor);
+                    const result = compile([{ pattern: source }], { capturePhrases: markers });
+                    if (result.unsupported.length) throw new Error(result.unsupported[0].reason);
+                    for (const phrase of result.phrases) {
+                        const stages = [], words = [];
+                        const flush = () => { if (words.length) stages.push({grammar: "commands", phrases: [words.splice(0).join(" ")]}); };
+                        for (const word of phrase.split(" ")) {
+                            if (captures.has(word)) { flush(); stages.push(captures.get(word)); }
+                            else words.push(word);
+                        }
+                        flush();
+                        paths.push({ record, stages });
+                    }
+                } catch (error) {
+                    unsupported.push({ id: record.id || null, pattern, reason: String(error.message || error) });
+                }
+            }
+            return { paths, unsupported };
+        }
     }
 
     globalThis.VoskPhraseListCompiler = VoskPhraseListCompiler;

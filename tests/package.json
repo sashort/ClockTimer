@@ -34,7 +34,8 @@
     "test:speech-grammar-context": "node speech-grammar-context.mjs",
     "test:pocketsphinx-grammar": "node pocketsphinx-grammar-catalog.mjs",
     "test:pocketsphinx-recognizer": "node pocketsphinx-recognizer.mjs",
-    "test:vosk-phrase-list": "node vosk-phrase-list-compiler.mjs"
+    "test:vosk-phrase-list": "node vosk-phrase-list-compiler.mjs",
+    "test:vosk-router": "node vosk-grammar-router.mjs && node vosk-speechmenu-context.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
