@@ -21,6 +21,11 @@ jobs:
       - run: npm install --no-audit --no-fund
         working-directory: tests
       - run: |
+          node tests/application-coordinator.mjs
+          node tests/async-command-lifecycle.mjs
+          node tests/app-state-transactions.mjs --coordinator-end-trip
+          node tests/clock-state-transactions.mjs
+          node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs
           node tests/vosk-grammar-router.mjs
           node tests/vosk-speechmenu-context.mjs

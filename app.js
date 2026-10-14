@@ -2915,7 +2915,8 @@
             return false;
         }
 
-        button.disabled = !readInteractionState().actions.startTrip;
+        const state = readInteractionState();
+        button.disabled = state.controls.busy || !state.actions.startTrip;
 
         return !button.disabled;
     }
@@ -8340,6 +8341,7 @@
         const alreadyClosing=dialog.classList.contains("dialog-closing");
         if (alreadyClosing && !immediate) return false;
         if (alreadyClosing) {
+            globalThis.WMOFCoordinator?.cancelEffect(dialog);
             clearTimeout(dialogCloseTimers.get(dialog));
             dialogCloseTimers.delete(dialog);
         } else if (!emitUIEvent(dialog, "closing", {reason,immediate}, true)) return false;
@@ -8371,7 +8373,10 @@
         dialog.classList.add("dialog-closing");
         dialogCloseTimers.set(
             dialog,
-            setTimeout(finishClose, duration)
+            globalThis.WMOFCoordinator
+                ? globalThis.WMOFCoordinator.defer(dialog, finishClose, {delay: duration,
+                    stateAware: false, valid: () => dialog.classList.contains("dialog-closing")})
+                : setTimeout(finishClose, duration)
         );
         return true;
     }
@@ -18758,10 +18763,13 @@
                 [...document.querySelectorAll("[popover]")].some(element=>element !== speechMicBar && popoverIsOpen(element)))
         });
         const primaryAction = kind ? "endInterval" : interval === "down" ? "resume" : live ? "endTrip" : "ready";
+        const pendingOperations = globalThis.WMOFCoordinator?.pending || Object.freeze([]);
+        const endingTransient = !live && pendingOperations.length > 0 &&
+            (clockTimer.status === "stopped" || interactionStateSnapshot?.controls?.transient === true);
         const value = {
             profileEditor: userLookup?.state,
             clock: timerState,
-            pending: globalThis.WMOFStateTransactions?.pending || Object.freeze([]),
+            pending: pendingOperations,
             speechRecognition,
             session: Object.freeze({userId: signedInProfile?.id || null, permissions: Number(signedInProfile?.permissions) || 0,
                 connection: clockTimer.networkStatus || "unknown"}),
@@ -18787,10 +18795,12 @@
                 date: editor?.pendingDate || null, meridiem: editor?.meridiem || null, workflow: editor?.workflow || null,
                 confirmation: editor?.startsTripOnConfirm ? "start-trip" : editor?.source || null}),
             actions,
-            controls: Object.freeze({primaryAction,
-                primaryText: live ? timerState?.controls?.primary_action?.text || "End Trip"
+            controls: Object.freeze({primaryAction: endingTransient ? "endTrip" : primaryAction,
+                busy: pendingOperations.length > 0,
+                transient: endingTransient,
+                primaryText: live || endingTransient ? timerState?.controls?.primary_action?.text || "End Trip"
                     : globalThis.WMOFLanguagePack.text("1cf0b3f1-858c-50c8-8cb9-8b3af9e1decd"),
-                activeTripVisible: live, primaryVisible: interval !== "down",
+                activeTripVisible: live || endingTransient, primaryVisible: interval !== "down",
                 actionRowVisible: !paused, breakVisible: !paused, downVisible: !paused,
                 downVisiblePanel: interval === "down"})
         };
@@ -18804,24 +18814,28 @@
 
     function renderInteractionControls(state = readInteractionState()) {
         const {actions, controls} = state;
+        app.dataset.tripTransition = controls.transient ? "pending" : "settled";
+        app.dataset.operationPending = controls.busy ? "true" : "false";
         for(const id of ["loginButton","loginDigitsCancel","legacyLoginButton","legacyLoginCancel"])$("#"+id).disabled=!actions.loginInput;
         $("#loginLegacySwitch").disabled=!actions.loginSwitch;
         $("#loginVoiceSwitch").disabled=!actions.loginSwitch || state.login.voiceRequested;
         for(const id of ["loginLegacyUsername","loginLegacyPassword"])$("#"+id).disabled=!actions.loginPassword;
         for(const input of loginDialog.querySelectorAll('[data-login-digit]'))input.disabled=!actions.loginDigits || input.dataset.loginDigit!==state.login.stage;
-        newTripButton.disabled = !actions.startTrip;
+        newTripButton.disabled = controls.busy || !actions.startTrip;
         activeTripControls.hidden = !controls.activeTripVisible;
         tripActionRow.hidden = !controls.actionRowVisible;
         breakButton.hidden = !controls.breakVisible;
-        breakButton.disabled = !actions.openBreakSelector;
+        breakButton.disabled = controls.busy || !actions.openBreakSelector;
         downButton.hidden = !controls.downVisible;
-        downButton.disabled = !actions.startDown;
+        downButton.disabled = controls.busy || !actions.startDown;
         endTripButton.hidden = !controls.primaryVisible;
-        endTripButton.disabled = !actions[controls.primaryAction];
+        endTripButton.disabled = controls.busy || !actions[controls.primaryAction];
         endTripButton.textContent = controls.primaryText;
         downTripControls.hidden = !controls.downVisiblePanel;
         downCancelButton.disabled = !actions.cancelDown;
         downResumeButton.disabled = !actions.resume;
+        $("#tripTransitionSummaryOk").disabled = controls.busy;
+        $("#tripTransitionSummaryCancel").disabled = controls.busy;
         setEndTripButtonIntervalPalette(state.interval);
     }
 
@@ -18908,6 +18922,7 @@
     }
 
     function cancelScheduledStartSpeechPrompt() {
+        globalThis.WMOFCoordinator?.cancelEffect("scheduled-start-prompt");
         clearTimeout(
             scheduledStartSpeechPromptTimer
         );
@@ -18926,9 +18941,7 @@
             return false;
         }
 
-        scheduledStartSpeechPromptTimer =
-            setTimeout(
-                () => {
+        const prompt = () => {
                     scheduledStartSpeechPromptTimer =
                         undefined;
 
@@ -18957,9 +18970,11 @@
                                 ? "Say Start to start early"
                                 : "Say standard time"
                         );
-                },
-                180
-            );
+                };
+        scheduledStartSpeechPromptTimer = globalThis.WMOFCoordinator
+            ? globalThis.WMOFCoordinator.defer("scheduled-start-prompt", prompt, {delay: 180, afterCompletion: true,
+                valid: () => scheduledStartDialog?.open && tripDraft === draft})
+            : setTimeout(prompt, 180);
 
         return true;
     }
@@ -21043,6 +21058,7 @@
         // Finish an old close before creating a new confirmation. Its delayed
         // callback must never clear or close the newly opened prompt.
         if (dialog.classList.contains("dialog-closing")) {
+            globalThis.WMOFCoordinator?.cancelEffect(dialog);
             clearTimeout(dialogCloseTimers.get(dialog));
             dialogCloseTimers.delete(dialog);
             dialog.classList.remove("dialog-closing");
@@ -22069,7 +22085,9 @@
         entry.promise = new Promise((resolve, reject) => Object.assign(entry, { resolve, reject }));
         queue[-queue.length++] = entry;
         scheduleSemanticAnnouncements();
-        return entry.promise;
+        return globalThis.WMOFCoordinator
+            ? globalThis.WMOFCoordinator.effect("announcement", () => entry.promise, {source: "audio"})
+            : entry.promise;
     }
 
     function announcementComponents(audio, songName, chimeEnabled, speech, output, guard, options = {}) {
@@ -22988,7 +23006,10 @@
         enqueueTripTransitionOverlay(tripSummaryText("title"), [{label: "", value: tripSummaryText("loading")}], true);
         // Lookup is a cancellable read, independent of UI/command completion.
         // It performs no remote writes and never holds Applying on screen.
-        void loadTripSummary(request, localTrips, signal).catch(error => {
+        const lookup = () => loadTripSummary(request, localTrips, signal);
+        void (globalThis.WMOFCoordinator
+            ? globalThis.WMOFCoordinator.effect("summary-read", lookup, {source: "network", signal})
+            : lookup()).catch(error => {
             if (signal.aborted || completedTripSummary?.requestId !== request.requestId) return;
             completedTripSummary = Object.freeze({...request, loading: false, error: true});
             renderTripTransitionOverlayItem({title: tripSummaryText("title"), rows: [{label: "", value: tripSummaryText("loadFailed")}], awaitConfirmation: true});
@@ -29743,16 +29764,28 @@
             document.documentElement.dataset.persistenceState = state;
             status.hidden = state === "confirmed";
             status.textContent = state === "reverted"
-                ? `Reverted — ${detail.error?.message || "The command could not be completed."}`
+                ? detail.recoveryRequired ? `Saved state could not be refreshed — ${detail.error?.message || "Please refresh the trip state."}`
+                    : detail.reconciled ? "Saved changes retained; remaining commands cancelled."
+                    : `Reverted — ${detail.error?.message || "The command could not be completed."}`
                 : detail.state === "retrying" ? "Retrying…" : "Applying…";
+            renderTripActionState();
         });
         stateTransactions.register("clock", {
             capture: () => clockTimer.captureState(),
             restore: snapshot => clockTimer.restoreState(snapshot),
+            reconcile: () => clockTimer.reconcileCommittedState(),
             begin: transaction => clockTimer.beginStateTransaction(transaction),
             end: transaction => clockTimer.endStateTransaction(transaction)
         });
         stateTransactions.register("interface", {
+            reconcile: () => {
+                // Recovery derives availability from the reconciled timer. Never
+                // restore a running-trip DOM snapshot after a durable End Trip.
+                cancelScheduledStartSpeechPrompt();
+                pendingSpeechReady = undefined;
+                if (clockTimer.uiState.trip_active) tripDraft = undefined;
+                updateSummaryValues(); renderTripActionState(); renderSyncGoalsState();
+            },
             capture: () => ({
                 focus: document.activeElement, audio: structuredClone(audioSettings), draft: tripDraft && {...tripDraft},
                 ready: pendingSpeechReady, breakPrompt: speechBreakPromptState && {...speechBreakPromptState},
@@ -29800,6 +29833,11 @@
                 document.querySelectorAll(".speech-focused").forEach(element => element.classList.remove("speech-focused"));
                 for (const control of snapshot.controls) {
                     const element = control.element; if (!element.isConnected) continue;
+                    if (element.tagName === "DIALOG") {
+                        globalThis.WMOFCoordinator?.cancelEffect(element);
+                        clearTimeout(dialogCloseTimers.get(element)); dialogCloseTimers.delete(element);
+                        element.classList.remove("dialog-closing");
+                    }
                     if (control.value !== undefined) element.value = control.value;
                     if (control.checked !== undefined) element.checked = control.checked;
                     element.hidden = control.hidden;

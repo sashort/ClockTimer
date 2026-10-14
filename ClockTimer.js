@@ -1733,7 +1733,7 @@
                 : Number(selected?.percentGoal);
             const goal = ordinaryGoal;
             const intervalType = String(interval?.intervalType || "").trim().toLowerCase();
-            const tripActive = this.#hasStartProperties();
+            const tripActive = this.#hasStartProperties() && this.status !== "stopped";
             const creationDate = this.#getJSONCreationDate();
             const startMilliseconds = this.#getStartTimeMilliseconds();
             const tripStartDate = creationDate instanceof Date && Number.isFinite(startMilliseconds)
@@ -3185,8 +3185,7 @@
                 headers["X-CSRF-Token"] = this.#csrfToken;
             }
 
-            const result =
-                await this.#fetchRequest(
+            const fetchResult = () => this.#fetchRequest(
                     this.#apiURL(endpoint, query),
                     {
                         method,
@@ -3199,6 +3198,13 @@
                         signal
                     }
                 );
+            const coordinator = globalThis.WMOFCoordinator;
+            const transaction = this.#stateTransaction;
+            const mutation = ["trips", "trip-events", "trip-editor"].includes(endpoint) && !/^(GET|HEAD)$/i.test(method);
+            const write = mutation ? coordinator?.beginWrite(transaction, {endpoint, method, event: body?.event}) : undefined;
+            const result = coordinator
+                ? await coordinator.effect("persistence", fetchResult, {transaction, source: "network", signal})
+                : await fetchResult();
 
             const response =
                 result.response;
@@ -3236,6 +3242,7 @@
             }
 
             if (!response.ok) {
+                coordinator?.finishWrite(write, "rejected");
                 const error = new Error(
                     data.message || `API request failed (${response.status}).`
                 );
@@ -3250,6 +3257,10 @@
                     error.clockTimerOffline = true;
                 }
                 throw error;
+            }
+            if (mutation) {
+                coordinator?.finishWrite(write, "acknowledged");
+                coordinator?.acknowledge(transaction, {endpoint, method, event: body?.event, tripId: body?.tripId});
             }
             return data;
         }
@@ -4956,6 +4967,30 @@
         }
 
         beginStateTransaction(transaction) {this.#stateTransactionSignal = transaction.signal; this.#stateTransaction = transaction;}
+        async reconcileCommittedState() {
+            // Recovery is a fresh, coordinator-owned read. The cancelled
+            // operation's signal must not cancel reconciliation itself.
+            const transaction = this.#stateTransaction;
+            const signal = this.#stateTransactionSignal;
+            const recovery = new AbortController();
+            const timeout = setTimeout(() => recovery.abort(), 10000);
+            this.#stateTransaction = undefined; this.#stateTransactionSignal = recovery.signal;
+            try {
+                const data = await this.#apiRequest("trips", {query: {result: "active"}});
+                if (!("activeTripId" in data)) throw new Error("The server did not return an authoritative active-trip state.");
+                const tripId = Number(data?.activeTripId);
+                if (Number.isInteger(tripId) && tripId > 0) await this.loadTrip(tripId);
+                else {
+                    this.#clearLocal(); this.#tripId = undefined; this.#preparedTrip = undefined;
+                    this.#pendingIntervalRecord = undefined; this.#pendingTripEvents = [];
+                    this.#emitUIState("activeTripChecked");
+                    this.#emitClockTimerEvent("cleared", {reconciled: true});
+                }
+            } finally {
+                clearTimeout(timeout);
+                this.#stateTransaction = transaction; this.#stateTransactionSignal = signal;
+            }
+        }
         endStateTransaction(transaction) {
             if (this.#stateTransactionSignal === transaction.signal) {this.#stateTransactionSignal = undefined; this.#stateTransaction = undefined;}
         }

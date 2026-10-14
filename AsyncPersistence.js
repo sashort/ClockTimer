@@ -11,6 +11,7 @@
             worker.addEventListener("message", ({data}) => {
                 const request = this.#requests.get(data.id); if (!request) return;
                 this.#requests.delete(data.id);
+                globalThis.WMOFCoordinator?.endEvent(request.event, data.error ? "failed" : "completed", data.error);
                 if (data.error) {
                     const error = new Error(data.error);error.name = data.errorName || "Error";error.retryable = data.retryable === true;
                     request.reject(error);
@@ -18,7 +19,7 @@
             });
             worker.addEventListener("error", event => {
                 this.#failure = new Error(event.message || "Browser storage is unavailable.");
-                for (const request of this.#requests.values()) request.reject(this.#failure);
+                for (const request of this.#requests.values()) {globalThis.WMOFCoordinator?.endEvent(request.event, "failed", this.#failure);request.reject(this.#failure);}
                 this.#requests.clear();
             });
             this.#ready = this.#request("entries").then(entries => {
@@ -30,9 +31,11 @@
             if (this.#failure) return Promise.reject(this.#failure);
             const id = ++this.#nextId;
             return new Promise((resolve, reject) => {
-                this.#requests.set(id, {resolve, reject});
+                const coordinator = globalThis.WMOFCoordinator;
+                const event = coordinator?.beginEvent("persistence", {source: "storage", operation, parentId: coordinator.current?.owner?.event.id || coordinator.active?.owner?.event.id});
+                this.#requests.set(id, {resolve, reject, event});
                 try {this.#worker.postMessage({id, operation, key, value});}
-                catch (error) {this.#requests.delete(id); reject(error);}
+                catch (error) {this.#requests.delete(id); coordinator?.endEvent(event, "failed", error); reject(error);}
             });
         }
         get ready() {return this.#legacyReady || this.#ready;}

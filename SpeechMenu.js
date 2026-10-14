@@ -2893,6 +2893,7 @@ class SpeechMenu {
 
         SpeechMenu.#utterance = {
             id,
+            orchestrationEvent: globalThis.WMOFCoordinator?.beginEvent("utterance", {source: "voice", utteranceId: id}),
             sessionGeneration:
                 SpeechMenu.#sessionGeneration,
             contextGeneration:
@@ -3129,6 +3130,7 @@ class SpeechMenu {
                     utterance.transcript || ""
             }
         );
+        globalThis.WMOFCoordinator?.endEvent(utterance.orchestrationEvent, "capture-ended");
 
         const exactCandidate =
             SpeechMenu
@@ -3972,7 +3974,7 @@ class SpeechMenu {
                         isFinal: () => utterance.digestCommitted,
                         canCommit: () => !utterance.chainCanceled && !utterance.digestExecutionFailed &&
                             !SpeechMenu.#stopped && utterance.sessionGeneration === SpeechMenu.#sessionGeneration &&
-                            (step.optimistic ? SpeechMenu.#canAttemptStateCommand(step.commandElement) : SpeechMenu.#candidateStateAvailable(step.commandElement, true))});
+                            SpeechMenu.#commandStillAuthorized(step.commandElement)});
                 if (utterance.chainCanceled) return false;
                 if (!result) {
                     utterance.digestExecutionFailed = true;
@@ -4022,7 +4024,7 @@ class SpeechMenu {
         if (utterance.digestFailed || utterance.digestCommitted) return true;
         utterance.chainActive = true;
         if (!utterance.operation && globalThis.WMOFStateTransactions?.createOperation) {
-            utterance.operation = globalThis.WMOFStateTransactions.createOperation({group:`speech:${utterance.id}`, source:"voice"});
+            utterance.operation = globalThis.WMOFStateTransactions.createOperation({group:`speech:${utterance.id}`, source:"voice", parentId: utterance.orchestrationEvent?.id});
             utterance.operation.signal.addEventListener("abort", () => {
                 if (!utterance.digestFailed) {
                     utterance.chainCanceled = true;
@@ -6705,6 +6707,19 @@ class SpeechMenu {
                 expect: kind === "clock" ? "time" : ["duration", "number", "digits", "date", "time"].includes(kind) ? kind : undefined};
         }).filter(record => record.pattern)};
     };
+
+    static #commandStillAuthorized(element) {
+        // Availability is checked before dispatch. A successful operation may
+        // disable or hide its own trigger (End Trip is the clearest example).
+        // Completion checks ownership/cancellation and authorization, not the
+        // pre-operation UI state that the command was meant to change.
+        if (!element?.isConnected) return false;
+        const authorization = element.getAttribute("speech-authorized");
+        if (!authorization) return true;
+        const resolved = SpeechMenu.#resolve(authorization);
+        try {return Boolean(resolved && resolved.fn.call(resolved.owner, element) === true);}
+        catch {return false;}
+    }
 
     static #digestCandidates(context, frames) {
         const contextual = context ? SpeechMenu.#chainContextCandidates(context) : [];

@@ -15,7 +15,7 @@ const animationCalls=[];window.Element.prototype.animate=function(keyframes,opti
 const consoleErrors=[];window.console.error=(...args)=>consoleErrors.push(args.map(a=>a?.stack||String(a)).join(' '));
 const errors=[];window.addEventListener('error',e=>{errors.push(e.message);});
 const rules={weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'};
-let summaryTrips=[];let rejectTripStop=false;let holdTripCheck=false;let releaseTripCheck;let rejectTripStart=false;let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];let holdLogin=false,releaseLogin,rejectLogin=false;
+let summaryTrips=[];let holdStopResponse=false,releaseStopResponse;let rejectTripStop=false;let holdTripCheck=false;let releaseTripCheck;let rejectTripStart=false;let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];let holdLogin=false,releaseLogin,rejectLogin=false;
 const accountBlob={version:1,orderFiller:{'wmof.clock.graphicalSettings':JSON.stringify({tripColor:'#123456'}),'wmof.clock.percentMode':'auto'}};
 window.fetch=async(url,options={})=>{
  const path=new URL(url,'https://clock.example/').pathname;requests.push({path,options});
@@ -23,6 +23,7 @@ window.fetch=async(url,options={})=>{
  if(rejectLogin&&path.endsWith('/users/')&&input?.action==='connect-pin'){const data={error:'invalid_credentials',message:'Incorrect credentials.'};return {ok:false,status:401,json:async()=>data,text:async()=>JSON.stringify(data),clone(){return this;}};}
  if(holdLogin&&path.endsWith('/users/')&&options.method==='POST')await new Promise(resolve=>releaseLogin=resolve);
  if(path.endsWith('/trip-events/')&&options.method==='POST') stored.push({...input,id:eventId++});
+ if(holdStopResponse&&path.endsWith('/trip-events/')&&input?.event==='trip.stopped')await new Promise(resolve=>releaseStopResponse=resolve);
  if(path.endsWith('/trip-editor/')&&input) {
     if(input.operation==='entry') stored.find(e=>e.event==='interval.started'&&e.value.intervalKey===input.entry.intervalKey).timestamp=input.entry.start;
     if(input.operation==='settings') Object.assign(stored.find(e=>e.event==='trip.started').value,input.settings);
@@ -37,6 +38,8 @@ window.fetch=async(url,options={})=>{
  path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2,username:'test',first_name:'Alex',last_name:'Driver',preferred_name:'Al',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules}]}:
  path.endsWith('/trip-events/')?(options.method==='POST'?{eventId:eventId-1}:{tripId,events:structuredClone(stored)}):
  path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
+ path.endsWith('/trips/')&&new URL(url,'https://clock.example/').searchParams.get('result')==='active'
+    ? {activeTripId: stored.findLast(e=>['trip.started','trip.stopped'].includes(e.event))?.event==='trip.started' ? tripId : null} :
  {tripId, trips:summaryTrips,aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
@@ -46,7 +49,7 @@ if(process.argv.includes('--account-settings')){
  window.WMOFPersistence={ready:Promise.resolve(),initializeLegacy:async()=>{},peek:()=>null,getItem:async()=>null,setItem:async()=>{},commit:async()=>{},flush:async()=>{}};
  window.eval(fs.readFileSync(new URL('../AccountSettings.js',import.meta.url),'utf8'));
 }
-for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(name==='StateTransactions' && process.env.CLOCKTIMER_STATE_SOURCE || name==='ActionFunctions' && process.env.CLOCKTIMER_ACTION_SOURCE || new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','TimerAppearance','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(name==='StateTransactions' && process.env.CLOCKTIMER_STATE_SOURCE || name==='ActionFunctions' && process.env.CLOCKTIMER_ACTION_SOURCE || new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
@@ -285,6 +288,46 @@ await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
 await settle();
+if(process.argv.includes('--coordinator-end-trip')) {
+    await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:1200000}));await settle();
+    assert.equal(timer.status,'running');
+    holdStopResponse=true;
+    const ending=window.WMOFActions.endTrip();await settle();
+    assert.equal(timer.status,'stopped','local End Trip happens while the server response is delayed');
+    assert.equal(timer.uiState.trip_active,false,'ended trip is not active while persistence is pending');
+    assert.equal(window.WMOFInteractionState.state.actions.endTrip,false);
+    assert.equal(window.document.querySelector('#activeTripControls').hidden,false,'transient controls remain visible');
+    for(const id of ['endTripButton','breakButton','downButton','tripTransitionSummaryOk','tripTransitionSummaryCancel'])
+        assert.equal(window.document.querySelector('#'+id).disabled,true,id+' is disabled while the save is pending');
+    const stopsBefore=stored.filter(e=>e.event==='trip.stopped').length;
+    for(const id of ['endTripButton','breakButton','downButton','tripTransitionSummaryCancel'])window.document.querySelector('#'+id).click();
+    await settle();assert.equal(stored.filter(e=>e.event==='trip.stopped').length,stopsBefore,'transient controls cannot dispatch another command');
+    assert(window.document.querySelector('#tripTransitionOverlay').open,'summary is visible during the delayed save');
+    releaseStopResponse();await ending;await settle();holdStopResponse=false;
+    await window.WMOFActions.cancelTripSummary();await settle();
+    assert.equal(timer.status,'ready');assert.equal(window.WMOFInteractionState.state.tripActive,false);
+    assert.equal(window.document.querySelector('#activeTripControls').hidden,true,'summary cancellation cannot revive running controls');
+    const trace=window.WMOFCoordinator.trace;
+    assert(trace.some(e=>e.kind==='persistence-acknowledged'&&e.event==='trip.stopped'));
+    assert(trace.some(e=>e.kind==='operation'&&e.source==='gesture'&&e.endedAt!==null));
+    await window.WMOFCoordinator.run('test-restart',()=>timer.start({standardTimeMilliseconds:1200000}));await settle();
+    const owner=window.WMOFCoordinator.createOperation({source:'voice',group:'late-final'});
+    const releaseFinal=owner.expect('recognition-final');
+    await window.WMOFCoordinator.run('endTrip',()=>window.WMOFActions.endTrip(),{owner,chain:true});
+    await owner.cancel(new Error('late utterance context change'));releaseFinal();await settle();
+    assert.equal(timer.status,'ready','acknowledged trip end is reconciled after late cancellation');
+    assert.equal(window.WMOFInteractionState.state.tripActive,false);
+    assert.equal(window.document.querySelector('#activeTripControls').hidden,true,'late rollback cannot revive End Trip/Break/Down');
+    assert(window.WMOFCoordinator.trace.some(e=>e.reconciled&&e.source==='voice'));
+    await window.WMOFActions.cancelTripSummary();await settle();
+    await window.WMOFCoordinator.run('test-voice-restart',()=>timer.start({standardTimeMilliseconds:1200000}));await settle();
+    const spokenEnd=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(spokenEnd,'ready',true);await spokenEnd.digestQueue;await settle();
+    assert(spokenEnd.hadCommittedCommand && !spokenEnd.digestExecutionFailed,'voice End Trip completion survives its own availability change');
+    assert.equal(timer.status,'ready');assert.equal(window.WMOFInteractionState.state.tripActive,false);
+    console.log('PASS delayed End Trip save and summary cancellation keep model and UI ended');
+    await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--voicepad-gate')) {
     const button=window.document.querySelector('#speechRecognitionButton');
     await window.WMOFActions.handleSpeechRuntimeStopped();await settle();

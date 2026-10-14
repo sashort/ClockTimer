@@ -373,7 +373,7 @@ html[data-trip-log-startup="unpinned"] .app {
     min-height: 0;
 }
 
-.app[data-trip-state="running"] {
+.app[data-trip-state="running"], .app[data-trip-transition="pending"] {
     grid-template-rows:
         52px 142px 122px 0 1fr
         calc(
@@ -383,12 +383,21 @@ html[data-trip-log-startup="unpinned"] .app {
         var(--speech-mic-row-height);
 }
 
-.app[data-trip-state="running"] .new-trip-button {
+.app[data-trip-state="running"] .new-trip-button, .app[data-trip-transition="pending"] .new-trip-button {
     display: none;
 }
 
-.app[data-trip-state="running"] .active-trip-controls {
+.app[data-trip-state="running"] .active-trip-controls, .app[data-trip-transition="pending"] .active-trip-controls {
     display: grid;
+}
+
+.app[data-operation-pending="true"] .active-trip-controls button:disabled,
+.app[data-operation-pending="true"] .new-trip-button:disabled,
+#tripTransitionSummaryActions button:disabled {
+    opacity: .5;
+    filter: grayscale(.8);
+    cursor: progress;
+    pointer-events: none;
 }
 
 /*
