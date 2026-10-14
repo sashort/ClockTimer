@@ -376,13 +376,14 @@ if(process.argv.includes('--interval-actions')) {
  const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');return u;};
  await say('down');assert.equal(timer.getActiveIntervalState()?.intervalType,'down');
  await say('resume');assert(!timer.getActiveIntervalState());window.__testTime+=60000;
- for(const [phrase,type] of [['start break','break'],['start short break','break'],['start lunch','lunch']]) {
+ for(const [phrase,type] of [['start break','break'],['break start','break'],['start short break','break'],['start lunch','lunch']]) {
    const before=stored.filter(e=>e.event==='interval.started').length;
-   await say(phrase+' okay');assert.equal(timer.getActiveIntervalState()?.intervalType,type,phrase+' combined OK starts');
+   const confirmation=phrase==='break start'?'ok':'okay';
+   await say(phrase+' '+confirmation);assert.equal(timer.getActiveIntervalState()?.intervalType,type,phrase+' combined OK starts');
    assert.equal(stored.filter(e=>e.event==='interval.started').length,before+1,phrase+' persists once');
    await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
    await say(phrase);assert(window.document.querySelector('#speechBreakConfirmDialog').open,phrase+' asks confirmation');
-   await say('okay');assert.equal(timer.getActiveIntervalState()?.intervalType,type,phrase+' separate OK starts');
+   await say(confirmation);assert.equal(timer.getActiveIntervalState()?.intervalType,type,phrase+' separate OK starts');
    await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
  }
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
@@ -921,8 +922,9 @@ for(const [phrase,resume] of [['down','resumed'],['downtime','resume'],['down ti
 if(process.argv.includes('--voice-feedback')) {
     const speakCommand=async phrase=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await settle();return u;};
     const dialog=window.document.querySelector('#speechBreakConfirmDialog');
-    const obsolete=await speakCommand('break start');
-    assert(!obsolete.hadCommittedCommand && !dialog.open,'Break Start is removed');
+    const restored=await speakCommand('break start');
+    assert(restored.hadCommittedCommand && dialog.open,'Break Start is equivalent to Start Break');
+    await speakCommand('cancel');
     assert(!window.document.querySelector('#breakDialog speech-command'),'Break Selector has no voice commands');
     for(const [phrase,label,type,summary] of [
         ['start break','break','break','Break'],

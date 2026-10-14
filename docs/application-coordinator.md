@@ -57,6 +57,8 @@ Action implementations, including Down and New Trip, read semantic availability
 rather than the disabled state that their own pending operation applies to the
 buttons. `--interval-actions` covers pointer Break selection, voice confirmation,
 Down/resume and one persisted event per accepted interval.
+Both "start break" and "break start" select the regular break. Either accepts
+OK in the same utterance or through the existing confirmation dialog.
 
 ## Verification
 

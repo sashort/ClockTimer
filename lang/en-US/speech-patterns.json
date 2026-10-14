@@ -396,7 +396,7 @@
     },
     "9d72dea6-abb5-5476-bcf7-49a962c21ac3": {
       "id": "9d72dea6-abb5-5476-bcf7-49a962c21ac3",
-      "pattern": "^start break$",
+      "pattern": "^(?:start break|break start)$",
       "command": "startBreak"
     },
     "ba5b6e70-3dee-5b8b-be9e-52e619e9ad84": {
