@@ -78,6 +78,13 @@ The numeric voice-login surface accepts only an atomic four-digit code followed
 by OK, or Cancel. Standalone digits/OK cannot edit credentials or advance login;
 five-digit runs cannot be recovered as a four-digit suffix. Pointer login entry
 retains its existing behavior. `--voice-code` verifies these rules in the app.
+`--voice-code-adapter` also drives the actual Vosk adapter through consecutive ID
+and PIN confirmations. After digit four its decoder vocabulary contains only OK
+and Cancel forms. Unsupported words from the wider pre-switch vocabulary are
+not carried into the confirmation stage; overlap audio is re-decoded there.
+Terminal literal text remains seeded until consumed, so a new partial for the
+PIN cannot erase the preceding ID's OK. An unrelated word such as "day" cannot
+confirm a code.
 
 SpeechMenu rejects an invalid final/only segment immediately and aborts that
 utterance's decoder without stopping microphone recognition for later utterances.

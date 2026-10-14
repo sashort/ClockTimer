@@ -67,6 +67,9 @@ speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', 
     static testDeliverFinal(u,text){SpeechMenu.#onSherpaTranscript({detail:{utteranceId:u.id,transcript:text,isFinal:true}});}
     static testFinal(u,text){return SpeechMenu.#handleCompletedTranscript(u,text);}
     static testAvailable(){return SpeechMenu.#availableCandidates();}
+    static testVoskContext(id,text){return SpeechMenu.#voskContext(id,text);}
+    static testUseRecognizer(recognizer){SpeechMenu.#recognizerBackend='vosk';SpeechMenu.#recognizer=recognizer;}
+    static testResult(u,text,final=false){SpeechMenu.#onSherpaTranscript({detail:{utteranceId:u.id,transcript:text,isFinal:final}});}
     static async testSilence(u,text){u.transcript=text;u.candidatePool=await SpeechMenu.#refreshCandidatePool(u,text);return SpeechMenu.#commitUtterance(u);}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
 window.eval(speechSource+'\nwindow.SpeechMenu=SpeechMenu;');
@@ -147,6 +150,42 @@ if(process.argv.includes('--startup-speech')) {
  finishStartup();await settle();assert.equal(spoken.filter(t=>t==='Please login using voice').length,1,'release latest prompt after startup speech completes');
  console.log('PASS startup speech completion barrier without blocking UI/model initialization');
  if(!process.argv.includes('--voice-login')){window.happyDOM.abort();process.exit(0);}
+}
+if(process.argv.includes('--voice-code-adapter')) {
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
+ window.eval(fs.readFileSync(new URL('../VoskRecognizer.js',import.meta.url),'utf8'));
+ const decoders=[];class Decoder {constructor(rate,grammar){this.listeners={};this.phrases=JSON.parse(grammar);decoders.push(this);}on(event,fn){this.listeners[event]=fn;}setWords(){}acceptWaveformFloat(){}remove(){}emit(text){this.listeners.partialresult({result:{partial:text}});}}
+ const u=window.SpeechMenu.testBegin();const recognizer=new window.VoskRecognizer({model:{KaldiRecognizer:Decoder},contextProvider:(id,text)=>window.SpeechMenu.testVoskContext(id,text)});
+ const observed=[];window.SpeechMenu.testUseRecognizer(recognizer);recognizer.addEventListener('transcript',event=>{observed.push(event.detail.transcript);window.SpeechMenu.testResult(u,event.detail.transcript,event.detail.isFinal);});
+ const adapterErrors=[];recognizer.addEventListener('error',event=>adapterErrors.push(event.detail.message));
+ await recognizer.beginUtterance(u.id);
+ const emit=async text=>{decoders.at(-1).emit(text);for(let i=0;i<20;i++)await new Promise(resolve=>setTimeout(resolve,10));await u.digestQueue;await u.segmentBarrier;await settle();};
+ await emit('zero zero four two');
+ assert.deepEqual(decoders.at(-1).phrases,['cancel','castle','o k','okay','ok'].sort(),'ID confirmation decoder contains only OK and Cancel');
+ await emit('okay');
+ assert.equal(window.WMOFInteractionState.state.login.stage,'pin','adapter confirms ID');
+ await emit('one two three four day');
+ assert.deepEqual(decoders.at(-1).phrases,['cancel','castle','o k','okay','ok'].sort(),'PIN confirmation decoder excludes day and new digit runs');
+ assert(!observed.at(-1).endsWith('day'),'unsupported pre-switch confirmation is re-decoded rather than carried into the narrow grammar');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,0,'day is never accepted as OK');
+ await emit('okay');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'adapter confirms PIN after ID');
+ assert.deepEqual(adapterErrors,[]);assert(!u.digestFailed);recognizer.close();
+ console.log('PASS Vosk adapter consecutive ID and PIN confirmation');await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--voice-code-router')) {
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
+ const u=window.SpeechMenu.testBegin();const initial=await window.SpeechMenu.testVoskContext(u.id);
+ const router=new window.VoskGrammarRouter({...initial,valuePhrases:window.VoskGrammarRouter.valuePhrases(),nextRecords:async text=>(await window.SpeechMenu.testVoskContext(u.id,text)).records});
+ const route=async text=>{const result=await router.update(text);await window.SpeechMenu.testTranscript(u,result.transcript,false);await u.digestQueue;await u.segmentBarrier;await settle();return result;};
+ await route('zero zero four two');await route('okay');
+ assert.equal(window.WMOFInteractionState.state.login.stage,'pin','routed ID confirms');
+ await route('okay one two three four');await route('okay');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'routed PIN confirms after the ID in one acoustic utterance');
+ assert.equal(u.digestExecutionFailed,undefined);assert(!u.digestFailed);
+ console.log('PASS Vosk routing of consecutive ID and PIN confirmations');await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--voice-code')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();

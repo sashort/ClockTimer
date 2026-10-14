@@ -6824,6 +6824,8 @@ class SpeechMenu {
             const kind = element.getAttribute("speech-preproc-context");
             return {id: element.id || element.getAttribute("data-speech-editor-id"),
                 pattern: element.getAttribute("speech-pattern"),
+                atomic: element.getAttribute("speech-atomic-input"),
+                action: element.getAttribute("speech-function"),
                 capture: element.getAttribute("speech-preproc-field"),
                 expect: kind === "clock" ? "time" : ["duration", "number", "digits", "date", "time"].includes(kind) ? kind : undefined};
         }).filter(record => record.pattern)};

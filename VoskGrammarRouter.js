@@ -13,6 +13,7 @@
             this.prefix = "";
             this.text = "";
             this.unsupported = [];
+            this.confirmationLocked = false;
             this.setRecords(records);
         }
 
@@ -36,8 +37,11 @@
         }
 
         get phrases() {
+            const continuations = this.confirmationLocked
+                ? this.continuations.filter(path => path.record.action === "SpeechMenu.cancel")
+                : this.continuations;
             return unique([...this.paths.flatMap(path => path.stages[0]?.phrases || []),
-                ...this.continuations.flatMap(path => path.stages[0]?.phrases || [])]).sort();
+                ...continuations.flatMap(path => path.stages[0]?.phrases || [])]).sort();
         }
 
         get transcript() { return [this.prefix, this.text].filter(Boolean).join(" "); }
@@ -58,6 +62,7 @@
 
         async update(hypothesis) {
             let text = normalize(hypothesis);
+            let stableHead;
             if (!this.prefix && this.grammar === "commands") {
                 // Locate a literal head before vocabulary routing. This does
                 // not grant a command context or reinterpret a value fragment;
@@ -87,7 +92,13 @@
                     if (types.length !== 1 || types[0] === "terminal") {
                         // Only SpeechMenu can establish a boundary after a
                         // terminal command and choose its next context.
-                        if (text === head) await this.project(head);
+                        if (text === head) {
+                            await this.project(head);
+                            if (types.length === 1) {
+                                stableHead = head;
+                                this.confirmationLocked = false;
+                            }
+                        }
                         const tail = text.slice(head.length).trim();
                         if (!tail || !this.continuations.some(path => path.stages[0]?.phrases.some(phrase => begins(phrase, tail) || begins(tail, phrase)))) break;
                         this.consume(head);
@@ -100,6 +111,7 @@
                     this.consume(head);
                     this.paths = selected.map(path => ({ ...path, stages: path.stages.slice(1) }));
                     this.grammar = types[0];
+                    this.confirmationLocked = selected.every(path => path.record.atomic === "digits") && types[0] === "commands";
                     text = text.slice(head.length).trim();
                     // Ask SpeechMenu to project the next UI context using a
                     // representative finite value, without executing it.
@@ -126,8 +138,15 @@
                 }
                 if (!switched) break;
             }
+            if (this.confirmationLocked && text && !this.phrases.some(phrase =>
+                begins(text, phrase) || begins(phrase, text))) {
+                // A word decoded under the wider digit vocabulary is not a
+                // confirmation. Let the narrow decoder replay its audio instead
+                // of seeding that unsupported word into the next stage.
+                text = "";
+            }
             this.text = text;
-            return { transcript: this.transcript, grammar: this.grammar, phrases: this.phrases };
+            return { transcript: this.transcript, grammar: this.grammar, phrases: this.phrases, stableHead };
         }
 
         static valuePhrases() {

@@ -26,6 +26,7 @@ jobs:
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip
           node tests/app-state-transactions.mjs --voice-code
+          node tests/app-state-transactions.mjs --voice-code-adapter
           node tests/clock-state-transactions.mjs
           node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs

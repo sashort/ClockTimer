@@ -173,6 +173,11 @@
                             status: "grammar-switch", grammar: routed.grammar, utteranceId: this.#id,
                             replaySamples: this.#overlap.length, prefix: this.#router.prefix
                         }}));
+                    } else if (routed.stableHead && event === "partialresult") {
+                        // A terminal literal can disappear from the next partial
+                        // after rapid speech resumes. Carry that boundary until
+                        // the router consumes it; never deduplicate digit runs.
+                        this.#seed = stageText;
                     } else if (event === "result" && this.#router.prefix === prefix) {
                         this.#segment = stageText;
                         this.#seed = "";
