@@ -36,6 +36,9 @@ if ($method === 'GET') {
         $actor = current_user();
         $target = find_user_account(db(), require_positive_int($_GET, 'userId'));
         require_user_edit_access($actor, $target);
+        $credentials = db()->prepare('SELECT login_id FROM users WHERE id = :id');
+        $credentials->execute([':id' => $target['id']]);
+        $target['login_id'] = $credentials->fetchColumn() ?: null;
         json_response(['user' => $target]);
     }
     json_response([
@@ -116,10 +119,14 @@ if ($action === 'disconnect') {
     ]);
 }
 
-if ($action !== 'connect') {
+if (!in_array($action, ['connect', 'connect-pin'], true)) {
     api_error('Unknown user action.', 422, 'invalid_action');
 }
 
+if ($action === 'connect-pin') {
+    require_once dirname(__DIR__) . '/_core/voice_login.php';
+    $user = authenticate_voice_login(db(), $input, (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+} else {
 $username = require_string($input, 'username');
 $password = $input['password'] ?? null;
 if (!is_string($password)) {
@@ -134,6 +141,8 @@ $user = $statement->fetch();
 
 if (!$user || !password_verify($password, (string) $user['password_hash'])) {
     api_error('The username or password is incorrect.', 401, 'invalid_credentials');
+}
+
 }
 
 session_regenerate_id(true);

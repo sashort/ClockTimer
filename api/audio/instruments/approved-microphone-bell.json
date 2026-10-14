@@ -1,0 +1,48 @@
+{
+  "instrument": "microphone-bell",
+  "approvedPreview": "mic-bell-activated-then-deactivated.wav",
+  "notes": {
+    "activated": [
+      "E5",
+      "B5"
+    ],
+    "deactivated": [
+      "B5",
+      "E5"
+    ]
+  },
+  "onsetSpacingMs": 120,
+  "naturalDecayMs": 480,
+  "definition": {
+    "class": "expressive",
+    "type": "oscillator",
+    "displayName": "Microphone Bell",
+    "volume": 1,
+    "envelope": {
+      "attack": 0,
+      "decay": 0,
+      "sustain": 1,
+      "release": 0
+    },
+    "samples": [
+      {
+        "url": "api/audio/samples/microphone-bell-E5.wav",
+        "rootFrequency": 659.255,
+        "naturalDecay": true
+      },
+      {
+        "url": "api/audio/samples/microphone-bell-B5.wav",
+        "rootFrequency": 987.767,
+        "naturalDecay": true
+      }
+    ],
+    "reference": {
+      "source": "Original synthesized bell preview 2, approved by user",
+      "basis": "Fundamental with short-lived partials at 2.01 and 3.98 ratios, 4 ms attack, exponential natural decay; no loop or echo."
+    }
+  },
+  "reminder": "Speech only, no chime",
+  "remember": true,
+  "name": "Microphone Bell",
+  "status": "Approved and explicitly marked for reuse by user"
+}

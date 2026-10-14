@@ -6,7 +6,8 @@ require_once dirname(__DIR__) . '/_core/bootstrap.php';
 $method = require_method('GET', 'POST', 'PATCH', 'DELETE');
 
 if ($method === 'GET') {
-    $userId = authenticated_user_id();
+    $userId = defined('CLOCKTIMER_DROP_IN_TRIP_USER_ID')
+        ? CLOCKTIMER_DROP_IN_TRIP_USER_ID : authenticated_user_id();
 
     $result = $_GET['result'] ?? 'totals';
     if (!is_string($result)) {

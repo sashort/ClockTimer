@@ -14,7 +14,7 @@ window.fetch=async(url,options={})=>{
  const data=path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2},calendars:[]}:path.endsWith('/trip-events/')?{eventId:id++}:{tripId:1,aggregateBreakdown:{production:{...empty,tripCount:1,standardTimeMilliseconds:standard,actualTimeMilliseconds:counted,countedTimeMilliseconds:counted},nonProduction:{trips:[]}}};
  return {ok:true,status:200,json:async()=>data,clone(){return this;}};
 };
-for(const name of ['TemporalFormat','RingContainer','TimeRange','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 const c=window.document.createElement('clock-timer');window.document.body.append(c);
 await c.connect('test','test');
 c.autoSyncTripGoal=true;c.totalGoal='100%';

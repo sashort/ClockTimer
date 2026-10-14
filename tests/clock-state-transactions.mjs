@@ -1,0 +1,74 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {Window} from 'happy-dom';
+import {installAsyncStorage} from './async-storage-fixture.mjs';
+const window = new Window({url: 'https://clock.example/'});
+installAsyncStorage(window);
+const css = window.CSS; css.registerProperty = () => {}; Object.defineProperty(window, 'CSS', {value: css});
+Object.defineProperty(window, 'AbortController', {value: globalThis.AbortController});
+Object.defineProperty(window, 'AbortSignal', {value: globalThis.AbortSignal});
+window.Element.prototype.animate = () => ({finished: Promise.resolve(), cancel(){}, finish(){}, play(){}, pause(){}, effect:{getComputedTiming(){return {progress:1};}}});
+window.__testTime = Date.parse('2026-10-06T12:00:00Z');
+window.eval(`const RealDate=Date;window.Date=class extends RealDate {constructor(...args){super(...(args.length?args:[window.__testTime]));}static now(){return window.__testTime;}};`);
+let serverCalls=0;let fail, eventId = 1, tripId = 100;
+window.fetch = async (url, options={}) => {
+    serverCalls++;await new Promise(setImmediate);
+    const path = new URL(url, window.location.href).pathname;
+    const body = options.body ? JSON.parse(options.body) : {};
+    const rejected = options.method === 'POST' && (fail === 'trip' && path.endsWith('/trips/') || fail && fail === body.event);
+    const data = path.endsWith('/command-check/') ? {accepted:true} : rejected ? {message:'Rejected'} : path.endsWith('/users/') ? {csrfToken:'a'.repeat(64),user:{id:2}} :
+        path.endsWith('/trips/') && options.method === 'POST' ? {tripId:tripId++} :
+        path.endsWith('/trip-events/') ? {eventId:eventId++} : {};
+    return {ok:!rejected,status:rejected?500:200,json:async()=>data,clone(){return this;}};
+};
+for (const name of ['TemporalFormat','RingContainer','TimeRangeModel','TimeRangeElement','ClockTimer','StateTransactions','ActionFunctions']) {
+    window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+}
+const timer = window.document.createElement('clock-timer'); window.document.body.append(timer);
+await timer.connect('test','test');
+const transactions = window.WMOFStateTransactions;
+transactions.register('clock', {capture:()=>timer.captureState(), restore:snapshot=>timer.restoreState(snapshot),
+    begin:transaction=>timer.beginStateTransaction(transaction),end:transaction=>timer.endStateTransaction(transaction)});
+const states = []; transactions.addEventListener('state', event=>states.push(event.detail.state));
+window.WMOFActionFunctions.define('startTrip', ()=>timer.start({standardTimeMilliseconds:3600000}));
+window.WMOFActionFunctions.define('stopTrip', ()=>timer.stop());
+window.WMOFActionFunctions.define('startLunch', ()=>timer.startInterval('lunch',1800000,{breakType:'lunch'},150000,150000));
+const callsBeforeLocal=serverCalls;
+assert.equal(await transactions.run('unmarkedServerAttempt',()=>timer.start({standardTimeMilliseconds:3600000}),{persist:false}),false);
+assert.equal(serverCalls,callsBeforeLocal,'unmarked commands cannot leave the client');
+assert.equal(timer.status,'ready');
+fail='trip';
+assert.equal(await window.WMOFActions.startTrip(),false);
+assert.equal(timer.status,'ready'); assert.equal(states.at(-1),'reverted');
+fail=undefined;
+assert(await window.WMOFActions.startTrip());
+assert.equal(timer.uiState.trip_active,true);
+const originalId = timer.currentTripId;
+window.__testTime += 600000;
+fail='trip.stopped';
+assert.equal(await window.WMOFActions.stopTrip(),false);
+assert.equal(timer.uiState.trip_active,true,'failed stop restores running trip');
+assert.equal(timer.currentTripId,originalId);
+assert.equal(timer.getSummarySnapshot().trip.countedTimeElapsedMilliseconds,600000);
+fail='interval.started';
+assert.equal(await window.WMOFActions.startLunch(),false,'background interval save participates in transaction');
+assert.equal(timer.getActiveIntervalState(new window.Date())?.intervalType,undefined);
+assert.equal(timer.uiState.trip_active,true);
+fail=undefined;
+assert(await window.WMOFActions.startLunch());
+assert.equal(timer.getActiveIntervalState(new window.Date())?.intervalType,'lunch');
+window.WMOFActionFunctions.define('endLunch', ()=>timer.endInterval(new window.Date()));
+const beforeEnd = timer.captureState();
+window.__testTime += 600000;
+fail='interval.ended';
+assert.equal(await window.WMOFActions.endLunch(),false);
+assert.equal(timer.getActiveIntervalState(new window.Date())?.intervalType,'lunch','failed resume restores a buffered break');
+assert.equal(timer.currentTripId,originalId);
+fail=undefined;
+const original = JSON.stringify(timer.toJSON());
+window.WMOFActionFunctions.define('startAnotherBreak', ()=>false);
+assert.equal(await window.WMOFActions.startAnotherBreak(),false);
+assert.equal(JSON.stringify(timer.toJSON()),original,'rejection preserves the original active break');
+assert.equal(states.at(-1),'reverted');
+console.log('PASS actual command dispatcher restores failed starts, stops, interval persistence and existing breaks');
+window.happyDOM.abort();

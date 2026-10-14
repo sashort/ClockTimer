@@ -1,0 +1,336 @@
+name: Speech UI tests
+
+on:
+  push:
+    branches:
+      - sherpa-client-asr
+  pull_request:
+    paths:
+      - "SpeechMenu.js"
+      - "SpeechEditorRuntime.js"
+      - "app.js"
+      - "ClockTimer.js"
+      - "AsyncPersistence.js"
+      - "PersistenceWorker.js"
+      - "StateTransactions.js"
+      - "api/command-check/**"
+      - "api/_core/command_checks.php"
+      - "api/trip-events/**"
+      - "tests/command_checks.php"
+      - "tests/app-state-transactions.mjs"
+      - "scripts/stamp-version.py"
+      - "tests/build-version.py"
+      - "tests/async-*.mjs"
+      - "tests/clock-state-transactions.mjs"
+      - "TimeRangeModel.js"
+      - "TimeRangeElement.js"
+      - "RingContainer.js"
+      - "tests/clock-timer-renderer-browser.mjs"
+      - "tests/time-range-*.mjs"
+      - "tests/counted-time-accounting.mjs"
+      - "tests/active-trip-restore.mjs"
+      - "LiveTripStream.js"
+      - "DropInPreferences.js"
+      - "AccountSettings.js"
+      - "ObserverSettingBadge.js"
+      - "TimerAppearance.js"
+      - "api/settings/**"
+      - "api/_core/user_settings.php"
+      - "tests/account-settings.mjs"
+      - "tests/observer-setting-badges.mjs"
+      - "tests/timer-appearance.mjs"
+      - "tests/user_settings.php"
+      - "ModeMenu.js"
+      - "ModeMenu.css"
+      - "drop-in.js"
+      - "drop-in.css"
+      - "tests/drop-in-*.mjs"
+      - "tests/mode-menu.mjs"
+      - "IdentityContext.js"
+      - "UserLookup.js"
+      - "HamburgerMenu.js"
+      - "index.html"
+      - "index.php"
+      - "templates/**"
+      - "lib/PageTemplate.php"
+      - "lib/LanguageTemplate.php"
+      - "MenuIcons.css"
+      - "scripts/build-pages.cjs"
+      - "tests/shared-page-templates.mjs"
+      - "tests/page-template.php"
+      - "tests/time-range-bootstrap.mjs"
+      - "app.css"
+      - "api/admin/speech-editor/**"
+      - "api/admin/access-tokens/**"
+      - "api/admin/user-lookup/**"
+      - "api/admin/sql/**"
+      - "api/_core/access_tokens.php"
+      - "api/_core/sql_console.php"
+      - "api/_core/developer_docs.php"
+      - "api/docs/**"
+      - "api/audio/**"
+      - "docs/**"
+      - "api/speech-editor-config/**"
+      - "api/speech-corrections/**"
+      - "api/_core/speech_corrections.php"
+      - "migrations/**"
+      - "database/create_database.sql"
+      - "lang/en-US/DurationParser.js"
+      - "tests/speech-*.mjs"
+      - "tests/spoken-duration.mjs"
+      - "tests/package.json"
+      - "tests/hamburger-menu.mjs"
+      - "tests/developer_docs.php"
+
+jobs:
+  speech-preprocessor-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install focused test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+      - name: Verify speech preprocessing contracts
+        run: |
+          node --check app.js
+          node --check SpeechMenu.js
+          node tests/speech-value-preprocessor.mjs
+          node tests/speech-chain-actions.mjs
+          node tests/speech-command-digest.mjs
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: |
+          node tests/time-range-bootstrap.mjs
+          node --check TimeRangeModel.js
+          node --check TimeRangeElement.js
+          node --check RingContainer.js
+          node --check ClockTimer.js
+          node --check AsyncPersistence.js
+          node --check PersistenceWorker.js
+          node --check StateTransactions.js
+          node --check SpeechMenu.js
+          node --check AdaptiveSpeechTiming.js
+          node --check SherpaRecognizer.js
+          node --check SileroVad.js
+          node --check SpeechDiagnostics.js
+          node --check speech/SherpaWorker.js
+          node --check speech/SileroVadWorker.js
+          node --check speech/SpeechAudioWorklet.js
+          node --check SpeechEditorRuntime.js
+          node --check ActionFunctions.js
+          node --check HamburgerMenu.js
+          node --check app.js
+          node --check IdentityContext.js
+          node --check UserLookup.js
+          node --check LiveTripStream.js
+          node --check api/audio/VoiceCatalog.js
+          node --check api/audio/AudioEngine.js
+          node --check api/admin/speech-editor/EditorActionFunctions.js
+          node --check api/admin/speech-editor/RegexBuilder.js
+          node --check api/admin/speech-editor/editor.js
+          node --check lang/en-US/DurationParser.js
+
+      - name: Check PHP syntax
+        run: |
+          php -l api/admin/speech-editor/index.php
+          php -l api/admin/access-tokens/index.php
+          php -l api/admin/sql/index.php
+          php -l api/admin/user-lookup/index.php
+          php -l api/_core/access_tokens.php
+          php -l api/_core/new_user_invites.php
+          php -l api/admin/new-user/index.php
+          php -l api/new-user/index.php
+          php -l api/_core/sql_console.php
+          php -l api/_core/developer_docs.php
+          php -l api/docs/index.php
+          php -l api/admin/speech-editor/agent/index.php
+          php -l api/_core/permissions.php
+          php -l api/live-stream/index.php
+          php -l services/live-stream-websocket.php
+          php -l api/_core/csrf.php
+          php -l api/speech-editor-config/index.php
+          php -l api/speech-corrections/index.php
+          php -l api/_core/speech_corrections.php
+          php -l migrations/006_speech_model_training.php
+          php -l migrations/007_live_streams.php
+          php -l migrations/008_live_stream_websocket.php
+          php -l migrations/009_lookup_users.php
+          php -l api/_core/user_accounts.php
+          php -l api/users/index.php
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+
+      - name: Check linked TimeRange group events
+        working-directory: tests
+        run: npm run test:time-range-model
+
+      - name: Check account settings and observer provenance
+        run: |
+          node --check AccountSettings.js
+          node --check ObserverSettingBadge.js
+          node --check TimerAppearance.js
+          php -l api/settings/index.php
+          php -l api/_core/user_settings.php
+          php -l migrations/011_user_settings.php
+          php tests/user_settings.php
+          node tests/account-settings.mjs
+          node tests/observer-setting-badges.mjs
+          node tests/timer-appearance.mjs
+          node tests/drop-in-page.mjs
+          node tests/app-state-transactions.mjs --account-settings
+          node tests/app-state-transactions.mjs --pointer-mode
+
+      - name: Check model-backed TimeRange element
+        working-directory: tests
+        run: npm run test:time-range-element
+
+      - name: Check ClockTimer model migration and accounting
+        working-directory: tests
+        run: |
+          npm run test:time-range
+          npm run test:active-restore
+          npm run test:clock-fsm
+
+      - name: Install browser for rendering checks
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Check ClockTimer browser rendering
+        working-directory: tests
+        run: npm run test:clock-renderer
+
+      - name: Run speech tests
+        working-directory: tests
+        run: |
+          npm run test:speech-editor
+          node adaptive-speech-timing.mjs
+          npm run test:speech-phrases
+          npm run test:action-macros
+          npm run test:editor-actions
+          npm run test:hamburger-menu
+          php admin_permissions.php
+          php live_stream_permissions.php
+          php user_lookup_permissions.php
+          php access_tokens.php
+          php new_user_invites.php
+          php sql_batch.php
+          php developer_docs.php
+          node new-user-qr.mjs
+          node regex-builder.mjs
+          node trip-log.mjs
+          npm run test:state-transactions
+          node offline-trip-buffer.mjs
+          node autosync-downtime.mjs
+          node live-trip-stream.mjs
+          node user-lookup.mjs
+          node deferred-trip.mjs
+          node numberpad-meridiem.mjs
+          php trip_editor.php
+          php command_checks.php
+          python3 build-version.py
+          node speech-mic-pipeline.mjs
+          node speech-goal-fail.mjs
+          node speech-trip-transition.mjs
+          node speech-value-preprocessor.mjs
+          node speech-chain-actions.mjs
+          node speech-training-model.mjs
+          node spoken-duration.mjs
+          node voice-catalog.mjs
+
+  ui-state-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+      - name: Check FSM loopback sounds and voice login
+        working-directory: tests
+        run: |
+          node app-state-transactions.mjs --voice-feedback --setting-chimes --loopback-only
+          node app-state-transactions.mjs --voice-login --voice-feedback --startup-speech
+      - name: Check optimistic UI transitions and speech recovery
+        working-directory: tests
+        run: npm run test:state-transactions
+
+  audio-profile-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install --no-audit --no-fund
+      - name: Check released audio, diagnostics, profile editing, and login
+        working-directory: tests
+        run: |
+          node voice-catalog.mjs
+          node announcement-language.mjs
+          node announcement-timing.mjs
+          node chime-song-tempo.mjs
+          node expressive-instruments.mjs
+          node easter-egg-arrangement.mjs
+          node dark-eighties-song.mjs
+          node easter-egg-media-page.mjs
+          php easter-egg-media-page.php
+          php -l ../api/audio/easter-eggs/index.php
+          node recognizer-names.mjs
+          node --check ../RecognizerNames.js
+          node audio-routing-diagnostic.mjs
+          node microphone-capture-lifecycle.mjs
+          node drop-in-view.mjs
+          TZ=America/New_York node drop-in-view.mjs
+          TZ=America/Los_Angeles node drop-in-view.mjs
+          node drop-in-page.mjs
+          node drop-in-preferences.mjs
+          node mode-menu.mjs
+          node drop-in-observer-replay.mjs
+          node main-page.mjs
+          node shared-page-templates.mjs
+          php page-template.php
+          node php-language-template.mjs
+          php -l ../lib/PageTemplate.php
+          php -l ../lib/LanguageTemplate.php
+          node app-state-transactions.mjs --landing-session
+          php drop-in-totals-permissions.php
+          php -l ../api/live-stream/index.php
+          php -l ../api/trips/index.php
+          php -l ../drop-in.php
+          php -l ../order-filler.php
+          php -l ../index.php
+          node fsm-loopback-feedback.mjs
+          node async-command-lifecycle.mjs
+          node app-state-transactions.mjs --post-start-interrupted-final
+          node speech-command-digest.mjs
+          node profile-editor.mjs
+          node trip-log-layout.mjs
+          php voice-login.php
+          node --check ../api/audio/AudioEngine.js
+          node --check ../UserLookup.js
+          node --check ../app.js
+          php -l ../api/_core/user_accounts.php
+          php -l ../api/users/index.php

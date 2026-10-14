@@ -10,6 +10,19 @@ return [
     'calendar_extraction_model' => 'gpt-5.5',
     'calendar_cache_directory' => '/var/lib/clocktimer/calendars',
     // Optional calendar_profiles: see docs/calendar-ranges.md for regional/store settings.
+    'live_stream' => [
+        'websocket_bind' => '127.0.0.1:8765',
+    ],
+    'webrtc' => [
+        'ice_servers' => [
+            // ['urls' => 'stun:stun.example.com:3478'],
+            // [
+            //     'urls' => 'turn:turn.example.com:3478',
+            //     'username' => 'clocktimer',
+            //     'credential' => 'replace-me',
+            // ],
+        ],
+    ],
     'database' => [
         'host' => '127.0.0.1',
         'port' => 3306,

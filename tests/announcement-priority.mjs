@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const ctx=vm.createContext({queueMicrotask,console:{error:()=>{}},audioAnnouncementOutput:()=>({speechDelayMs:0}),waitForAnnouncementDelay:async()=>{}});
+vm.runInContext(source.slice(source.indexOf('    const semanticAnnouncementQueue'),source.indexOf('    function waitForAnnouncementDelay'))+source.slice(source.indexOf('    let previousAnnouncementEntry'),source.indexOf('    function playSemanticSong('))+'\nglobalThis.enqueue=runSemanticAnnouncement;globalThis.batch=beginAnnouncementBatch;globalThis.queue=semanticAnnouncementQueue;globalThis.id=announcementId;globalThis.cancel=cancelQueuedAnnouncement;',ctx);
+const order=[];
+const release=ctx.batch('trip-start');
+const sync=ctx.enqueue('setting-change',async()=>{order.push('sync-on');return true;},{id:'sync-on'});
+const remaining=ctx.enqueue('time-readback',async()=>{order.push('time-remaining');return true;},{id:'remaining'});
+const start=ctx.enqueue('trip-started',async()=>{order.push('trip-started');return true;});
+assert.equal(ctx.queue.length,3);assert.ok(ctx.queue[0].id > 0);assert.ok(ctx.queue[-1].id > 0);assert.ok(ctx.queue[-2].id > 0);
+const duplicate=ctx.enqueue('trip-started',async()=>{throw Error('duplicate played');});
+assert.notEqual(duplicate,start);assert.equal(ctx.queue.length,4);
+await Promise.resolve();assert.deepEqual(order,[]);release();await Promise.all([sync,remaining,start,duplicate]);
+await Promise.resolve();assert.deepEqual(order,['trip-started','sync-on','time-remaining']);
+assert.equal(ctx.queue.pointer,0);assert.equal(ctx.queue.length,0);assert.equal(ctx.queue.announced.size,0);
+// Finished IDs remain blocked while a later entry is playing.
+let unlock;const gate=new Promise(resolve=>unlock=resolve);
+const first=ctx.enqueue('a',async()=>{order.push('a');return true;});
+const last=ctx.enqueue('b',async()=>{order.push('b');await gate;return true;});
+await first;await Promise.resolve();assert.ok(ctx.queue.announced.has(ctx.id('a')));
+assert.equal(await ctx.enqueue('a',async()=>{throw Error('replayed');}),false);
+assert.equal(ctx.queue.length,2);
+assert.equal(await ctx.enqueue('b',async()=>{throw Error('concurrent replay');}),false);
+unlock();await last;await Promise.resolve();
+assert.equal(await ctx.enqueue('a',async()=>true),true);
+// Explicit priority can vary by situation; IDs do not rank entries.
+const end=ctx.batch('other');const pending=[];order.length=0;
+for(const [id,priority] of [['1',0],['warning',20],['2',0],['urgent',30]]) pending.push(ctx.enqueue(id,async()=>{order.push(id);return true;},{priority}));
+end();await Promise.all(pending);assert.deepEqual(order,['urgent','warning','1','2']);
+// A failed entry remains in the pool for this cycle and doesn't block others.
+const endFailure=ctx.batch('other');let releaseFailure;const tailGate=new Promise(resolve=>releaseFailure=resolve);
+const failure=ctx.enqueue('failed',async()=>{throw Error('audio failed');});
+const tail=ctx.enqueue('tail',async()=>{await tailGate;return true;});endFailure();
+await assert.rejects(failure,/audio failed/);const retried=ctx.enqueue('failed',async()=>true);
+releaseFailure();await tail;assert.equal(await retried,true);await Promise.resolve();
+const cancelBatch=ctx.batch('other');
+const canceled=ctx.enqueue('cancel-me',async()=>{throw Error('canceled entry played');});
+assert.equal(ctx.cancel('cancel-me'),true);cancelBatch();assert.equal(await canceled,false);
+assert.throws(()=>ctx.enqueue('bad',async()=>true,{id:0}),/positive integers/);
+assert.throws(()=>ctx.enqueue('bad',async()=>true,{id:-1}),/positive integers/);
+assert.equal(ctx.queue.pointer,0);
+console.log('PASS decreasing pointer, positive IDs, contextual priority, FIFO ties, announced deduplication, cancellation and failure recovery');

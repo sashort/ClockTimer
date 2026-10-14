@@ -13,18 +13,28 @@ function csrf_token(): string
     return $token;
 }
 
-function require_csrf(): void
+function csrf_is_valid(mixed $provided): bool
 {
-    $provided = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     $expected = $_SESSION['csrf_token'] ?? '';
 
-    if (
-        !is_string($provided) ||
-        !is_string($expected) ||
-        $provided === '' ||
-        $expected === '' ||
-        !hash_equals($expected, $provided)
-    ) {
+    return
+        is_string($provided) &&
+        is_string($expected) &&
+        $provided !== '' &&
+        $expected !== '' &&
+        hash_equals($expected, $provided);
+}
+
+function require_csrf(): void
+{
+    if (!csrf_is_valid($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) {
+        api_error('The CSRF token is invalid or expired.', 403, 'invalid_csrf');
+    }
+}
+
+function require_csrf_form(string $field = 'csrf_token'): void
+{
+    if (!csrf_is_valid($_POST[$field] ?? '')) {
         api_error('The CSRF token is invalid or expired.', 403, 'invalid_csrf');
     }
 }

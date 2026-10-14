@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/_core/bootstrap.php';
+require_once dirname(__DIR__) . '/_core/command_checks.php';
 
 $method = require_method('GET', 'POST');
 
@@ -71,7 +72,8 @@ $eventId = audited_write(
         $event,
         $timestamp,
         $valueJson,
-        $clientToken
+        $clientToken,
+        $input
     ): int {
         // Serialize event appends with Trip Log edits and their revision check.
         $lock = $pdo->prepare('SELECT id FROM trips WHERE id = :id FOR UPDATE');
@@ -109,6 +111,8 @@ $eventId = audited_write(
                 return (int) $row['id'];
             }
         }
+
+        require_accepted_state_command(check_trip_event_command(fetch_trip_events($pdo, $tripId), $input));
 
         $statement = $pdo->prepare(
             'INSERT INTO trip_events '

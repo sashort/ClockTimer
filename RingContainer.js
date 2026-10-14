@@ -203,6 +203,17 @@ class RingContainer extends HTMLElement {
                     event
                 )
         );
+        // Model-backed elements publish data changes without knowing their renderer.
+        this.addEventListener("time-range-changed", event => {
+            const range = event.detail?.range;
+            if (!range || range.parentElement !== this) return;
+            if (event.detail.after === null) {
+                this.#cancelRangeAnimation(range);
+                range.style.removeProperty("clip-path");
+            } else if (this.clockTimerExternalRangeLayout !== true) {
+                this.refreshRangeGeometry(range);
+            }
+        });
     }
 
     connectedCallback() {
@@ -2926,7 +2937,7 @@ class RingContainer extends HTMLElement {
             fullWidth;
 
         let zIndex =
-            0;
+            25;
 
         if (
             layerName ===

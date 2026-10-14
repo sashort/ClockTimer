@@ -104,7 +104,8 @@ try {
     for (const file of [
         'TemporalFormat.js',
         'RingContainer.js',
-        'TimeRange.js',
+        'TimeRangeModel.js',
+        'TimeRangeElement.js',
         'ClockTimer.js'
     ]) {
         await page.addScriptTag({

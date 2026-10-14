@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../order-filler.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app.css', import.meta.url), 'utf8');
 const js = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
 const clockTimerSource = fs.readFileSync(new URL('../ClockTimer.js', import.meta.url), 'utf8');

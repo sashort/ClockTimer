@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TimeRange Migration</title>
+<style>
+body{max-width:1100px;margin:auto;padding:2rem;font:16px/1.6 system-ui,sans-serif}
+section{margin:2rem 0;padding:1rem;border:1px solid #bbb;border-radius:8px}
+pre{background:#eee;padding:1rem;overflow:auto;white-space:pre-wrap}
+button{padding:.5rem .8rem;border:1px solid #777;border-radius:6px;background:#fff;cursor:pointer}
+.status{margin-left:.7rem}
+</style>
+</head>
+<body>
+<h1>TimeRange Migration</h1>
+<p>This document defines the post-migration responsibilities and provides copyable JavaScript fragments. Each Copy button copies only the JavaScript in its associated block.</p>
+
+<section>
+<h2>Migration contract</h2>
+<p><strong>TimeRange</strong> owns its individual interval and counted state.</p>
+<p><strong>TimeRangeGroup</strong> owns aggregate counted time and emits a boundary event when a boundary is reached.</p>
+<p><strong>ClockTimer</strong> owns timer lifecycle/orchestration and reacts to group events.</p>
+<p><strong>RingContainer</strong> owns presentation.</p>
+</section>
+
+<section>
+<h2>TimeRangeGroup — boundary event contract</h2>
+<button onclick="copySource('boundary',this)">Copy boundary contract</button><span class="status"></span>
+<pre id="boundary">{
+type: "boundary-reached",
+before: previousTimeRange, // omitted when none exists
+after: nextTimeRange       // omitted when none exists
+}</pre>
+</section>
+
+<section>
+<h2>TimeRangeGroup — aggregate counted time</h2>
+<button onclick="copySource('group',this)">Copy TimeRangeGroup fragment</button><span class="status"></span>
+<pre id="group">class TimeRangeGroup {
+    constructor(timeRanges = []) {
+        this.timeRanges = [];
+        this.totalCountedTime = 0;
+        this.elapsedCountedTime = 0;
+        this.remainingCountedTime = 0;
+        this._listeners = new Set();
+        this.addAll(timeRanges);
+    }
+
+    addEventListener(type, listener) {
+        if (type === "boundary-reached") this._listeners.add(listener);
+    }
+
+    removeEventListener(type, listener) {
+        if (type === "boundary-reached") this._listeners.delete(listener);
+    }
+
+    _emitBoundary(before, after) {
+        const event = { type: "boundary-reached" };
+        if (before) event.before = before;
+        if (after) event.after = after;
+        for (const listener of this._listeners) listener(event);
+    }
+
+    add(timeRange) {
+        if (!timeRange || this.timeRanges.includes(timeRange)) return;
+        this.timeRanges.push(timeRange);
+        this.recalculateCountedTime();
+    }
+
+    addAll(timeRanges) {
+        for (const timeRange of timeRanges) this.add(timeRange);
+    }
+
+    remove(timeRange) {
+        const index = this.timeRanges.indexOf(timeRange);
+        if (index !== -1) {
+            this.timeRanges.splice(index, 1);
+            this.recalculateCountedTime();
+        }
+    }
+
+    clear() {
+        this.timeRanges.length = 0;
+        this.recalculateCountedTime();
+    }
+
+    recalculateCountedTime() {
+        this.totalCountedTime = this.timeRanges.reduce(
+            (sum, range) => sum + Number(range.counted?.total || 0), 0
+        );
+        this.elapsedCountedTime = this.timeRanges.reduce(
+            (sum, range) => sum + Number(range.counted?.elapsed || 0), 0
+        );
+        this.remainingCountedTime = this.timeRanges.reduce(
+            (sum, range) => sum + Number(range.counted?.remaining || 0), 0
+        );
+        return this;
+    }
+}
+</pre>
+</section>
+
+<section>
+<h2>ClockTimer — migration rule</h2>
+<button onclick="copySource('clock-rule',this)">Copy ClockTimer migration rule</button><span class="status"></span>
+<pre id="clock-rule">// ClockTimer delegates aggregate counted-time state to TimeRangeGroup.
+const totalCountedTime = timeRangeGroup.totalCountedTime;
+const elapsedCountedTime = timeRangeGroup.elapsedCountedTime;
+const remainingCountedTime = timeRangeGroup.remainingCountedTime;
+
+timeRangeGroup.addEventListener("boundary-reached", ({ before, after }) => {
+    // Handle the transition without calculating the boundary in ClockTimer.
+});</pre>
+</section>
+
+<script>
+async function copySource(id, button) {
+    const text = document.getElementById(id).textContent;
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch (e) {
+        const area = document.createElement('textarea');
+        area.value = text;
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        area.remove();
+    }
+    const status = button.nextElementSibling;
+    status.textContent = 'Copied';
+    setTimeout(() => status.textContent = '', 1200);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+--- ClockTimer.js
++++ ClockTimer.js
+@@
+         #tickAlignmentMilliseconds;
++
++        #timeRangeGroup;
++        #lastTickDate;
++        #insertedRangeTimeRanges = new Map();
+@@
++        get timeRangeGroup() {
++            return this.#timeRangeGroup;
++        }
++
++        #getTimeRangeBoundaries() {
++            const boundaries = [];
++            for (const ring of this.#getTimerRings()) {
++                const start = Number(ring.clockTimerStart);
++                if (Number.isFinite(start)) {
++                    const iso = this.#timelineToISO(start);
++                    if (iso) boundaries.push(new Date(iso));
++                }
++            }
++            return boundaries;
++        }
++
++        #ensureTimeRangeGroup() {
++            if (typeof globalThis.TimeRangeGroup !== "function") return undefined;
++            if (!this.#timeRangeGroup) {
++                this.#timeRangeGroup = new globalThis.TimeRangeGroup(this, this.#getTimeRangeBoundaries());
++                this.#timeRangeGroup.addEventListener("change", event => {
++                    const range = event.detail?.range;
++                    const element = range?.element;
++                    if (!element) return;
++                    if (range.start instanceof Date) this.#setRangeStart(element, this.#dateToTimelineTime(range.start));
++                    if (range.end instanceof Date) this.#setRangeEnd(element, this.#dateToTimelineTime(range.end));
++                });
++            }
++            this.#timeRangeGroup.setBoundaries(this.#getTimeRangeBoundaries());
++            return this.#timeRangeGroup;
++        }
++
++        #createModelTimeRange(record, element) {
++            const TimeRange = globalThis.TimeRange;
++            if (typeof TimeRange?.create !== "function") return;
++            const group = this.#ensureTimeRangeGroup();
++            if (!group) return;
++            const start = record.startDate;
++            const end = record.endDate ?? start;
++            const type = record.openEnded === true ? TimeRange.Type.EXPANDABLE : TimeRange.Type.FIXED;
++            if (end.getTime() < start.getTime()) return;
++            const result = TimeRange.create({ type, group, start, end, element });
++            this.#insertedRangeTimeRanges.set(record.id, result.ranges);
++        }
++
++        #removeModelTimeRange(record) {
++            const ranges = this.#insertedRangeTimeRanges.get(record?.id);
++            if (!ranges || !this.#timeRangeGroup) return;
++            for (const range of ranges) this.#timeRangeGroup.remove(range);
++            this.#insertedRangeTimeRanges.delete(record.id);
++        }
+@@
+             const insertedElement =
+                 this.#getManagedTimeRanges()
+@@
+                     );
++
++            if (insertedElement) this.#createModelTimeRange(record, insertedElement);
+@@
+                 this.#insertedRanges =
+                     this.#insertedRanges.filter(
+@@
+                     );
++
++                this.#removeModelTimeRange(record);
+@@
+             this.#stopTickTimer();
++            this.#lastTickDate = undefined;
++            this.#timeRangeGroup?.dispose?.();
++            this.#timeRangeGroup = undefined;
++            this.#insertedRangeTimeRanges.clear();
+             this.#cancelTimeRangeTimingAnimations();
+@@
+         #tick() {
+             if (!this.#needsTick()) return;
+             const nowDate = this.#normalizeTickDate(new Date());
++            const lastTickTime = this.#lastTickDate ?? nowDate;
++            this.#lastTickDate = new Date(nowDate.getTime());
+@@
+-            this.#dispatch("tick", [state], { nowDate });
++            this.#dispatch("tick", [state], {
++                nowDate,
++                currentTime: new Date(nowDate.getTime()),
++                lastTickTime: new Date(lastTickTime.getTime())
++            });
+*** End Patch

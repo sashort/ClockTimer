@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';import {Window} from './LanguageWindow.mjs';
+const w=new Window({url:'https://clock.example/order-filler.php'});w.structuredClone=structuredClone;w.eval(fs.readFileSync(new URL('../AccountSettings.js',import.meta.url),'utf8'));
+let session=1,reject=false,hold=false,release;const profiles=new Map([[1,{version:1,orderFiller:{'wmof.clock.percentMode':'trip'}}],[2,{version:1,orderFiller:{'wmof.clock.percentMode':'auto'}}]]),requests=[];
+const account=new w.AccountSettings({fetcher:async(url,options)=>{
+ const input=options.body?JSON.parse(options.body):null;requests.push(input);
+ if(hold)await new Promise(resolve=>release=resolve);
+ if(input&&input.userId!==session)return {ok:false,json:async()=>({message:'Owner changed'})};
+ if(reject)return {ok:false,json:async()=>({message:'Rejected'})};
+ if(input)profiles.get(session)[input.namespace]={...profiles.get(session)[input.namespace],...input.changes};
+ return {ok:true,json:async()=>structuredClone({userId:session,settings:profiles.get(session)})};
+}});
+const localWrites=[],local={ready:Promise.resolve(),initializeLegacy(){},peek(){return 'old device setting';},getItem:async()=>null,setItem:async(...args)=>localWrites.push(args),commit:async()=>{},flush:async()=>{}};
+const storage=account.installPersistence(local);
+await account.load(1,'csrf');assert.equal(storage.peek('wmof.clock.percentMode'),'trip');await storage.setItem('wmof.clock.percentMode','week');assert.equal(localWrites.length,0);
+await account.write('dropIn',{preferences:'observer 1'});assert.equal(account.peek('dropIn','preferences'),'observer 1');assert.equal(account.peek('orderFiller','wmof.clock.percentMode'),'week','namespace writes preserve other settings');
+reject=true;await assert.rejects(storage.setItem('wmof.clock.percentMode','year'));assert.equal(storage.peek('wmof.clock.percentMode'),'week','rejected write keeps accepted state');reject=false;
+account.clear();assert.equal(storage.peek('wmof.clock.percentMode'),null,'logout clears memory');session=2;await account.load(2,'new csrf');assert.equal(storage.peek('wmof.clock.percentMode'),'auto');assert.equal(account.peek('dropIn','preferences'),null,'shared device does not share observer preferences');
+hold=true;const stale=account.write('orderFiller',{'wmof.clock.percentMode':'year'});await Promise.resolve();account.clear();hold=false;release();await assert.rejects(stale,{name:'AbortError'});assert.equal(storage.peek('wmof.clock.percentMode'),null);
+await storage.setItem('wmof.clock.percentMode','trip');assert.equal(localWrites.length,0,'guest settings remain memory-only');await storage.setItem('wmof.tripLogCache','data');assert.equal(localWrites.length,1,'trip cache remains separate from account settings');
+const stalled=new w.AccountSettings({timeoutMs:10,fetcher:()=>new Promise(()=>{})});await assert.rejects(stalled.load(1,'csrf'),{name:'AbortError'});assert.equal(stalled.requests.size,0,'stalled requests release their lifecycle');
+const bodyStalled=new w.AccountSettings({timeoutMs:10,fetcher:async()=>({ok:true,json:()=>new Promise(()=>{})})});await assert.rejects(bodyStalled.load(1,'csrf'),{name:'AbortError'},'deadline includes response parsing');
+await w.happyDOM.close();console.log('PASS server-only settings, account isolation, namespace merge, rejected saves and stale response cancellation');

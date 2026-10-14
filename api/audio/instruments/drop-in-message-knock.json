@@ -1,0 +1,46 @@
+{
+  "instrument": "drop-in-message-knock",
+  "purpose": "Distinct incoming observer message alert before speech",
+  "definition": {
+    "class": "expressive",
+    "type": "oscillator",
+    "displayName": "Drop-In Eighties Attention Alert",
+    "waveform": "square",
+    "volume": 1.8,
+    "envelope": {
+      "attack": 0.003,
+      "decay": 0.035,
+      "sustain": 0.72,
+      "release": 0.035
+    },
+    "partials": [
+      {
+        "ratio": 1,
+        "gain": 0.72,
+        "waveform": "square"
+      },
+      {
+        "ratio": 2,
+        "gain": 0.16,
+        "waveform": "sine"
+      },
+      {
+        "ratio": 3,
+        "gain": 0.08,
+        "waveform": "sine"
+      }
+    ],
+    "filter": {
+      "type": "lowpass",
+      "frequency": 4800,
+      "Q": 0.65
+    },
+    "noise": {
+      "amount": 0.025,
+      "decay": 0.012
+    }
+  },
+  "song": "observer-message",
+  "style": "Eighties square-wave attention alert: retain the final E6/B5 pair from attention preview v2, preserving crisp attack, 200 ms onset spacing and longer final B5 note.",
+  "retainedPreview": "drop-in-message-eighties-attention-v2.wav, final two notes"
+}

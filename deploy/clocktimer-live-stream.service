@@ -1,0 +1,21 @@
+[Unit]
+Description=ClockTimer live stream WebSocket signaling service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=daemon
+Group=daemon
+WorkingDirectory=/opt/bitnami/apache2/htdocs
+ExecStart=/opt/bitnami/php/bin/php /opt/bitnami/apache2/htdocs/services/live-stream-websocket.php
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/opt/bitnami/apache2/htdocs /etc/clocktimer
+
+[Install]
+WantedBy=multi-user.target

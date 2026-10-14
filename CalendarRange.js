@@ -81,7 +81,7 @@
         };
     }
     class CalendarRange {
-        constructor({baseUrl = location.origin + "/", fetcher = (...args) => fetch(...args), storage = localStorage, profile = "walmart-us", databaseOnly = false} = {}) {
+        constructor({baseUrl = location.origin + "/", fetcher = (...args) => fetch(...args), storage = globalThis.WMOFPersistence, profile = "walmart-us", databaseOnly = false} = {}) {
             this.baseUrl = baseUrl; this.fetcher = fetcher; this.storage = storage;
             this.profile = profile; this.databaseOnly = databaseOnly; this.databaseRecords = [];
         }
@@ -139,12 +139,12 @@
                 }
                 if (!["web-search", "manual"].includes(record.provenance)) throw new Error("Calendar rules have not been discovered from a source.");
                 calculate(record.rules, range, at, record.timezone);
-                try { this.storage.setItem(key, JSON.stringify(record)); } catch {}
+                try { await this.storage.setItem(key, JSON.stringify(record)); } catch {}
                 return {...record, offline: false};
             } catch (error) {
                 if (error.authoritative) throw error;
                 let cached;
-                try { cached = JSON.parse(this.storage.getItem(key)); } catch {}
+                try { cached = JSON.parse(await this.storage.getItem(key)); } catch {}
                 if (!cached?.rules || !["web-search", "manual"].includes(cached.provenance)) throw error;
                 const result = calculate(cached.rules, range, at, cached.timezone);
                 return {...cached, ...result, offline: true, refreshNeeded: true,
