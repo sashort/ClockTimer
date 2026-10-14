@@ -4,3 +4,4 @@
 !/inbound/.htaccess
 
 /build-version.json
+/speech/vosk/

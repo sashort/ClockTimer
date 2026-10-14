@@ -77,8 +77,19 @@ An empty active grammar fails explicitly; it never falls back to unrestricted Vo
 Vosk phrase lists constrain decoder vocabulary, but do not enforce regex order or
 semantic validity. SpeechMenu continues to validate and execute every command.
 
-The runtime/model are not bundled or enabled by default. Real microphone accuracy
-and switch timing still need acoustic validation against the deployed model.
+Lightsail now deploys this branch and enables Vosk via `speech/VoskTestConfig.js`.
+`deploy/install_vosk_assets.py` installs vosk-browser 0.0.8 and the official small
+English 0.15 model from checksum-pinned sources, serves them from the same origin,
+and verifies installed hashes on repeat deployments. The model archive includes
+explicit directory entries so the browser's IndexedDB cache can persist it.
+Runtime/model binaries are not committed to Git. Runtime loading is lazy and
+model initialization rejects on worker errors or a timeout.
+
+Visit `order-filler.php?speech-backend=sherpa` for a per-visit Sherpa comparison.
+The Lightsail deployment is gated on the focused speech tests. Browser smoke checks
+verify real WASM/model initialization, constrained decoder creation, and a complete
+silent utterance with its original ID. Real microphone accuracy and switch timing
+still need acoustic validation against the deployed model.
 PocketSphinx implementation files are unchanged.
 
 ## Tests

@@ -128,4 +128,32 @@ await recognizer.finishUtterance(45);
 assert.equal(transcripts.filter(event => event.utteranceId === 45 && event.isFinal).length, 1,
     'pending audio endpoints cannot prematurely finalize the utterance');
 recognizer.close();
+
+// An upstream worker model-load error must reject startup rather than leave
+// the browser microphone UI indefinitely waiting for a "load" event.
+let failedModelTerminated = false;
+context.Vosk = {createModel() {}, Model: class {
+    constructor() {this.listeners={}; setTimeout(()=>this.listeners.error({error:'test model unavailable'}),0);}
+    on(event,callback) {this.listeners[event]=callback;}
+    terminate() {failedModelTerminated=true;}
+}};
+const failedModel = new Recognizer({modelUrl:'/missing-model.tar.gz',contextProvider:async()=>({records:initial})});
+await assert.rejects(failedModel.ready,/test model unavailable/);
+assert.equal(failedModelTerminated,true);
+failedModel.close();
+
+let scriptsLoaded = 0;
+context.Vosk = undefined;
+context.document = {
+    createElement() {return {remove(){}};},
+    head: {append(script) {
+        scriptsLoaded++;
+        setTimeout(()=>{context.Vosk={createModel:async()=>({KaldiRecognizer:Decoder,terminate(){}})};script.onload();},0);
+    }}
+};
+const lazyA = new Recognizer({runtimeUrl:'/vosk.js',modelUrl:'/model.tar.gz',contextProvider:async()=>({records:initial})});
+const lazyB = new Recognizer({runtimeUrl:'/vosk.js',modelUrl:'/model.tar.gz',contextProvider:async()=>({records:initial})});
+await Promise.all([lazyA.ready,lazyB.ready]);
+assert.equal(scriptsLoaded,1,'concurrent startup shares the configured runtime download');
+lazyA.close();lazyB.close();
 console.log('Vosk grammar router/adapter tests passed.');

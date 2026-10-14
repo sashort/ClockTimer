@@ -3,7 +3,7 @@ name: Deploy to Lightsail
 on:
   push:
     branches:
-      - sherpa-client-asr
+      - pocketsphinx-experiment
   workflow_dispatch:
 
 concurrency:
@@ -11,7 +11,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  speech-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+        working-directory: tests
+      - run: |
+          node tests/vosk-phrase-list-compiler.mjs
+          node tests/vosk-grammar-router.mjs
+          node tests/vosk-speechmenu-context.mjs
+          node tests/speech-grammar-context.mjs
+          node tests/pocketsphinx-grammar-catalog.mjs
+          node tests/speech-chain-actions.mjs
   deploy:
+    needs: speech-tests
     runs-on: ubuntu-latest
 
     steps:
@@ -42,7 +59,7 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             "$LAMP_USER@$LAMP_HOST" \
             'set -euo pipefail
-             DEPLOY_BRANCH=sherpa-client-asr
+             DEPLOY_BRANCH=pocketsphinx-experiment
 
              if ! sudo -n /opt/bitnami/ctlscript.sh status mariadb; then
                echo "MariaDB is not running; starting it."
@@ -96,6 +113,8 @@ jobs:
 
              echo "Deploy branch: $(git branch --show-current)"
              echo "Deploy commit: $(git rev-parse HEAD)"
+
+             python3 deploy/install_vosk_assets.py
 
              SHERPA_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/runtime
              SHERPA_VERSION=v1.13.7

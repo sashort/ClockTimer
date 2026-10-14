@@ -4,6 +4,7 @@
 (() => {
     "use strict";
     class VoskRecognizer extends EventTarget {
+        static #runtimeLoads = new Map();
         #model;
         #ownsModel = false;
         #decoder;
@@ -22,7 +23,8 @@
         #seed = "";
         #reportedOmissions = 0;
 
-        constructor({ model, modelUrl, sampleRate = 16000, overlapMilliseconds = 320,
+        constructor({ model, modelUrl, runtimeUrl, modelLoadTimeoutMilliseconds = 120000,
+            sampleRate = 16000, overlapMilliseconds = 320,
             finalTimeoutMilliseconds = 5000, contextProvider, ...routerOptions } = {}) {
             super();
             if (sampleRate !== 16000) throw new Error("Vosk requires the 16 kHz SpeechAudioWorklet pipeline.");
@@ -35,14 +37,64 @@
             this.ready = (async () => {
                 if (model) this.#model = model;
                 else {
+                    if (runtimeUrl && typeof globalThis.Vosk?.createModel !== "function") {
+                        this.dispatchEvent(new CustomEvent("status", {detail: {status: "loading-runtime"}}));
+                        await VoskRecognizer.#loadRuntime(runtimeUrl);
+                    }
                     if (!modelUrl || typeof globalThis.Vosk?.createModel !== "function")
                         throw new Error("Configure WMOF_VOSK_CONFIG.modelUrl and load vosk-browser before starting speech.");
-                    this.#model = await globalThis.Vosk.createModel(modelUrl);
+                    this.dispatchEvent(new CustomEvent("status", {detail: {status: "loading-model"}}));
+                    this.#model = await VoskRecognizer.#loadModel(modelUrl, modelLoadTimeoutMilliseconds);
                     this.#ownsModel = true;
                 }
                 if (this.#closed && this.#ownsModel) this.#model.terminate();
                 return this;
             })();
+        }
+
+        static #loadRuntime(url) {
+            if (!this.#runtimeLoads.has(url)) {
+                const loading = new Promise((resolve, reject) => {
+                    const script = document.createElement("script");
+                    const timer = setTimeout(() => failed(), 60000);
+                    const failed = () => {
+                        clearTimeout(timer); script.remove();
+                        reject(new Error("Failed to load the configured Vosk runtime."));
+                    };
+                    script.src = url;
+                    script.async = true;
+                    script.onerror = failed;
+                    script.onload = () => {
+                        clearTimeout(timer);
+                        if (typeof globalThis.Vosk?.createModel !== "function") failed();
+                        else resolve();
+                    };
+                    document.head.append(script);
+                }).catch(error => { this.#runtimeLoads.delete(url); throw error; });
+                this.#runtimeLoads.set(url, loading);
+            }
+            return this.#runtimeLoads.get(url);
+        }
+
+        static #loadModel(url, timeout) {
+            // Upstream createModel waits for "load" but does not reject on
+            // worker "error". Listen directly so a bad model cannot hang start.
+            if (typeof globalThis.Vosk.Model !== "function") return globalThis.Vosk.createModel(url);
+            return new Promise((resolve, reject) => {
+                const model = new globalThis.Vosk.Model(url);
+                const failed = error => {
+                    clearTimeout(timer);
+                    model.terminate();
+                    reject(new Error(String(error.error || error.message || JSON.stringify(error))));
+                };
+                const timer = setTimeout(() => failed(new Error("Vosk model load timed out")), timeout);
+                model.on("error", failed);
+                model.on("load", message => {
+                    clearTimeout(timer);
+                    if (message.result) resolve(model);
+                    else failed(new Error("Vosk model did not initialize"));
+                });
+            });
         }
 
         #enqueue(task) {
