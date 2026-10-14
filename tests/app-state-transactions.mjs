@@ -44,12 +44,14 @@ window.fetch=async(url,options={})=>{
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
 window.document.write(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
+// PHP embeds the current resources; discard the static HTML export's snapshot.
+window.document.querySelector('#language-pack')?.remove();
 installEnglishPack(window);
 if(process.argv.includes('--account-settings')){
  window.WMOFPersistence={ready:Promise.resolve(),initializeLegacy:async()=>{},peek:()=>null,getItem:async()=>null,setItem:async()=>{},commit:async()=>{},flush:async()=>{}};
  window.eval(fs.readFileSync(new URL('../AccountSettings.js',import.meta.url),'utf8'));
 }
-for(const name of ['TemporalFormat','TimerAppearance','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(name==='StateTransactions' && process.env.CLOCKTIMER_STATE_SOURCE || name==='ActionFunctions' && process.env.CLOCKTIMER_ACTION_SOURCE || new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','TimerAppearance','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(name==='StateTransactions' && process.env.CLOCKTIMER_STATE_SOURCE || name==='ActionFunctions' && process.env.CLOCKTIMER_ACTION_SOURCE || new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
@@ -146,6 +148,28 @@ if(process.argv.includes('--startup-speech')) {
  console.log('PASS startup speech completion barrier without blocking UI/model initialization');
  if(!process.argv.includes('--voice-login')){window.happyDOM.abort();process.exit(0);}
 }
+if(process.argv.includes('--voice-code')) {
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
+ const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();return u;};
+ const posts=()=>requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length;
+ const before=posts();
+ for(const text of ['one two three four','okay','one two three okay','one two three four five okay']) {
+   await say(text);assert.equal(window.WMOFInteractionState.state.login.stage,'id',text+' cannot advance ID');
+   assert.equal(window.document.querySelector('#loginUsername').value,'',text+' cannot edit ID');assert.equal(posts(),before);
+ }
+ const collecting=await say('zero zero four two',false);assert.equal(window.document.querySelector('#loginUsername').value,'','digits stay pending until OK');
+ await say('zero zero four two okay',false,collecting);
+ assert.equal(window.WMOFInteractionState.state.login.stage,'pin','four digits plus OK executes before final recognition');
+ assert.equal(window.document.querySelector('#loginUsername').value,'0042');assert.equal(window.WMOFCoordinator.pending.length,0);
+ await say('okay');await say('one two three four five okay');assert.equal(posts(),before,'standalone OK and five digits cannot authenticate');
+ await say('cancel');assert.equal(window.document.querySelector('#loginPassword').value,'');
+ await say('background chatter one two three four okay');assert.equal(posts(),before+1,'valid PIN head authenticates exactly once');
+ assert.equal(window.document.querySelector('#loginPassword').value,'','confirmed PIN is cleared');
+ assert.equal(errors.length,0,errors.join('\n'));assert.deepEqual(consoleErrors,[]);
+ console.log('PASS atomic four-digit voice codes plus OK, early confirmation, Cancel and malformed-code rejection');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--voice-login')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const legacyDialog=window.document.querySelector('#legacyLoginDialog');
@@ -223,7 +247,12 @@ if(process.argv.includes('--voice-login')) {
  await speak('cancel');assert.equal(window.document.querySelector('#loginUsername').value,'','second consecutive Cancel also clears ID');assert.equal(window.WMOFInteractionState.state.login.stage,'id');await speak('voice');
  await speak('zero zero four two okay');await window.WMOFActions.enterLoginDigits('one two');await speak('cancel cancel');assert.equal(window.WMOFInteractionState.state.login.stage,'id','Cancel Cancel in one utterance resets ID');assert.equal(window.document.querySelector('#loginUsername').value,'');
 
- await speak('one two three four');await speak('zero zero four two');assert.equal(window.document.querySelector('#loginUsername').value,'0042','fresh User ID replaces previous entry');await speak('voice');
+ for(const phrase of ['one two three four','zero zero four two','okay','one two three okay','one two three four five okay']) {
+    const stage=window.WMOFInteractionState.state.login.stage;const value=window.document.querySelector('#loginUsername').value;
+    await speak(phrase);assert.equal(window.WMOFInteractionState.state.login.stage,stage,phrase+' cannot advance login');
+    assert.equal(window.document.querySelector('#loginUsername').value,value,phrase+' cannot edit credentials');
+ }
+ await speak('voice');
 
 
  const cells=[...dialog.querySelectorAll('[data-login-digit="id"]')];for(let i=0;i<4;i++)cells[i].dispatchEvent(new window.KeyboardEvent('keydown',{key:'0042'[i],bubbles:true,cancelable:true}));
@@ -332,8 +361,16 @@ if(process.argv.includes('--coordinator-end-trip')) {
     assert.equal(timer.status,'ready');assert.equal(window.WMOFInteractionState.state.tripActive,false);
     await window.WMOFActions.cancelTripSummary();await settle();
     const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await settle();assert(u.hadCommittedCommand&&!u.digestExecutionFailed,text+' executes');return u;};
-    await say('ready at eleven fifty nine pm');
+    const interruptedChain=window.SpeechMenu.testBegin();
+    await window.SpeechMenu.testTranscript(interruptedChain,'background noise ready at eleven fifty nine pm sync on',false);
+    await interruptedChain.digestQueue;await interruptedChain.segmentBarrier;await settle();
+    assert(!interruptedChain.digestExecutionFailed,'Ready At and intervening Sync execute without waiting for final recognition');
+    assert.equal(window.WMOFCoordinator.pending.length,0,'intervening terminal command settles the current operation');
     assert(window.document.querySelector('#scheduledStartDialog').open,'Ready At opens despite its own pending disabled button');
+    await window.SpeechMenu.testTranscript(interruptedChain,'revised background noise ready at eleven fifty nine pm sync on standard time seventeen minutes',true);
+    await interruptedChain.digestQueue;await settle();
+    assert(!interruptedChain.digestExecutionFailed,'Standard Time retains chain context across Sync and revised leading noise');
+    assert.match(window.document.querySelector('#scheduledStartStandardValue').textContent,/17/,'the interrupted chain applies its duration');
     await say('cancel');
     await say('ready');
     assert(window.document.querySelector('#voiceEntrySurface').open,'Ready opens the standard-time voice editor');

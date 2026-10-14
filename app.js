@@ -3113,9 +3113,10 @@
     }
     function enterLoginDigits(digits, confirmation) {
         if(!readInteractionState().actions.loginDigits) return false;
-        pinCancelPrimed=false;
         const value = DigitSequence.parse(digits, globalThis.WMOFLanguagePack.language.speech.digits);
         if(value === null || !value.length){$("#loginError").textContent=voiceLoginText("invalid");return false;}
+        if (globalThis.SpeechMenu?.executionContext && (value.length !== 4 || !confirmation)) return false;
+        pinCancelPrimed=false;
         // A new complete sequence replaces the selected credential. Streaming
         // another digit after a complete group starts the next group.
         if(value.length >= 4)loginDigitSlots[voiceLoginStage]=["","","",""];
@@ -29376,6 +29377,8 @@
                 SpeechMenu.registerSurface(surface, {
                     priority: 100,
                     isOpen: () => surface.matches('dialog') ? surface.open : popoverIsOpen(surface),
+                    acceptCommand: surface === loginDialog ? command =>
+                        ['WMOFActions.enterLoginDigits','SpeechMenu.cancel'].includes(command.getAttribute('speech-function')) : undefined,
                     close: dismiss, cancel: dismiss
                 });
             }
@@ -29386,8 +29389,7 @@
                 }
             }
             const loginDigitsCommand = installSpeechCommand("loginDigits", "enterLoginDigits", loginDialog, false);
-            const loginConfirmCommand = installSpeechCommand("confirm", "confirmLoginDigits", loginDialog, false);
-            for(const command of [loginDigitsCommand,loginConfirmCommand])if(command){command.setAttribute("speech-persist", "");command.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");}
+            if(loginDigitsCommand){loginDigitsCommand.setAttribute("speech-persist", "");loginDigitsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");loginDigitsCommand.setAttribute("speech-atomic-input", "digits");}
             installSpeechCommand("tripSummary", "readTripSummary", document.body, true);
             const summaryConfirm = installSpeechCommand("confirm", "confirmTripSummary", tripTransitionOverlay, false);
             summaryConfirm?.setAttribute("speech-available", "WMOFSpeechAvailability.canConfirmTripSummary");

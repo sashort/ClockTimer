@@ -7,6 +7,7 @@ on:
       - 'Vosk*.js'
       - 'SpeechMenu.js'
       - 'SpeechGrammarContext.js'
+      - 'lang/en-US/speech-patterns.json'
       - 'StateTransactions.js'
       - 'ClockTimer.js'
       - 'ActionFunctions.js'
@@ -32,6 +33,7 @@ jobs:
           node tests/speech-failfast.mjs
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip
+          node tests/app-state-transactions.mjs --voice-code
           node tests/clock-state-transactions.mjs
           node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs

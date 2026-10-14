@@ -11,6 +11,12 @@ const scheduled = [{pattern: '^standard(?: time)? (?<timeValue>.+)$', expect: 'd
 const values = {time: ['four twelve', 'four thirteen', 'four twenty two'], duration: ['twenty minutes', 'thirteen minutes']};
 const nextRecords = async text => text.startsWith('ready at four') ? scheduled : [];
 const router = new Router({records: initial, valuePhrases: values, nextRecords});
+const noisyHead = new Router({records: initial, valuePhrases: values, nextRecords});
+assert.equal((await noisyHead.update('background chatter ready')).grammar,'commands','discarding noise cannot force an ambiguous head to execute');
+assert.equal(noisyHead.transcript,'ready');
+assert.equal((await noisyHead.update('different chatter ready at')).grammar,'time','leading junk does not block the value grammar switch');
+await noisyHead.update('four twelve standard time');
+assert.equal((await noisyHead.update('twenty minutes')).transcript,'ready at four twelve standard time twenty minutes');
 assert.deepEqual(Array.from(router.phrases), ['ready', 'ready at']);
 assert.equal((await router.update('ready')).grammar, 'commands', 'ambiguous prefix stays in command grammar');
 assert.equal((await router.update('ready at')).grammar, 'time');

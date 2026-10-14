@@ -431,7 +431,7 @@
     },
     "ca8315b4-5d42-4aa7-9987-e0edbfe08048": {
       "id": "ca8315b4-5d42-4aa7-9987-e0edbfe08048",
-      "pattern": "^(?<digits>(?:[0-9]+|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]+|zero|oh|one|two|three|four|five|six|seven|eight|nine))*)(?:\\s+(?<confirmation>ok|okay|o\\s+k))?$"
+      "pattern": "^(?<digits>(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3}))\\s+(?<confirmation>ok|okay|o\\s+k)$"
     },
     "6554460d-3a71-486e-baae-6388767527d9": {
       "id": "6554460d-3a71-486e-baae-6388767527d9",

@@ -58,6 +58,19 @@
 
         async update(hypothesis) {
             let text = normalize(hypothesis);
+            if (!this.prefix && this.grammar === "commands") {
+                // Locate a literal head before vocabulary routing. This does
+                // not grant a command context or reinterpret a value fragment;
+                // SpeechMenu still validates every resulting segment.
+                const heads = this.paths.filter(path => path.stages[0]?.grammar === "commands")
+                    .flatMap(path => path.stages[0].phrases);
+                const words = text.split(" ").filter(Boolean);
+                const start = words.findIndex((word, offset) => {
+                    const tail = words.slice(offset).join(" ");
+                    return heads.some(head => begins(tail, head) || begins(head, tail));
+                });
+                if (start > 0) text = words.slice(start).join(" ");
+            }
             // Decoder stages report only their own text. Never deduplicate
             // numbers: "one one" can be a PIN or a legitimate time value.
             for (let iteration = 0; iteration < 16; iteration++) {

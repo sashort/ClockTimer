@@ -56,6 +56,29 @@ ready/summary state. Summary cancellation cannot restore a running trip.
 
 ## Verification
 
+The user-defined speech contract is: one acoustic utterance can contain separate
+commands, related chains, and intervening commands. A fully formed command with
+no legal continuation executes and settles immediately. The command-processing
+stream then ends, while the acoustic utterance ID, captured PCM and Vosk overlap
+buffer remain alive. Future planning waits for the operation to settle. Valid
+chain context survives unrelated commands, such as Ready At → Sync On → Standard
+Time; a malformed Ready At earns no context for its dependent Standard Time.
+
+Leading junk is excluded from the consumed command head, including in decoder
+finals and Vosk vocabulary routing. Revised noise cannot cancel or repeat that
+head. Malformed intermediate segments are omitted. An invalid final suffix
+cannot revert prior completed commands. Typed continuations fail immediately
+when known vocabulary proves them malformed; opaque patterns remain conservative.
+Detected silence gives an unfinished segment at most 350 ms to continue. A valid
+collector settles at that boundary; an incomplete one is discarded. Resuming
+speech cancels the deadline. The decoder's finite vocabulary is not used to
+claim that an unbounded application value parser has no possible continuation.
+
+The numeric voice-login surface accepts only an atomic four-digit code followed
+by OK, or Cancel. Standalone digits/OK cannot edit credentials or advance login;
+five-digit runs cannot be recovered as a four-digit suffix. Pointer login entry
+retains its existing behavior. `--voice-code` verifies these rules in the app.
+
 SpeechMenu rejects an invalid final/only segment immediately and aborts that
 utterance's decoder without stopping microphone recognition for later utterances.
 Late decoder results cannot revive a rejected utterance. Malformed middle segments
