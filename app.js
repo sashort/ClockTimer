@@ -24347,6 +24347,7 @@
         canUseReady: () => readInteractionState().actions.ready,
         canContinueStartAt: () => readInteractionState().actions.continueStartAt,
         canUseInformational: () => readInteractionState().actions.informational,
+        canUseSyncSettings: () => {const state=readInteractionState();return Boolean(state.session.userId) && !state.login.open;},
         canOpenBreakMenu: () => readInteractionState().actions.startBreak,
         canStartDownTime: () => readInteractionState().actions.startDown,
         canConfirmBreakEnd: () => readInteractionState().actions.confirmBreak,
@@ -29123,6 +29124,8 @@
             }
 
             const speechAvailability = {
+                sync: "WMOFSpeechAvailability.canUseSyncSettings",
+                syncStatus: "WMOFSpeechAvailability.canUseSyncSettings",
                 readyAt:
                     "WMOFSpeechAvailability.canStartTrip",
                 ready:

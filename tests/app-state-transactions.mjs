@@ -62,6 +62,7 @@ let speechSource=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testPause(u){u.continuationPauseStartedAt=performance.now()-220;SpeechMenu.#armContinuationPauseDeadline(u);}
     static testResume(){const pipeline=SpeechMenu.#pipeline;SpeechMenu.#pipeline="silero";try{SpeechMenu.#onVadSpeechStart({detail:{}});}finally{SpeechMenu.#pipeline=pipeline;}}
+    static testBackend(name){SpeechMenu.#recognizerBackend=name;}
     static testModelReady(ready){SpeechMenu.#modelReady=ready;}
     static testBegin(){SpeechMenu.#modelReady=true;SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={beginUtterance(){},setHotwords(){},abortUtterance(){},finishUtterance(){}};SpeechMenu.#beginUtterance(window.__testTime-performance.timeOrigin);return SpeechMenu.#utterance;}
     static testTranscript(u,text,final=true){return SpeechMenu.#handleLiveTranscript(u,text,final);}
@@ -358,6 +359,44 @@ await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
 await settle();
+if(process.argv.includes('--sync-voice')) {
+ const system=window.document.createElement('speech-menu');system.setAttribute('speech-modal','system');
+ const off=window.document.createElement('speech-command');off.setAttribute('speech-pattern','^off$');off.setAttribute('speech-function','WMOFActions.disableSpeechRecognition');system.append(off);window.document.body.append(system);
+ const menu=window.document.querySelector('#toggleSyncMenuButton');const goal=window.document.querySelector('#toggleSyncGoalButton');
+ const dispatched=[];window.SpeechMenu.events.addEventListener('speechCommandDispatched',e=>dispatched.push(e.detail.commandElement.getAttribute('speech-function')));
+ const receive=async(u,text,final=false)=>{window.SpeechMenu.testResult(u,text,final);await settle();await u.digestQueue;await u.segmentBarrier;await settle();};
+ for(const backend of ['sherpa','vosk']) {
+   window.SpeechMenu.testBackend(backend);
+   for(const voicepad of [false,true]) {
+     if(voicepad) {const ready=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(ready,'ready',true);await ready.digestQueue;await settle();assert(window.WMOFVoiceEntry.active);}
+     await window.WMOFActions.toggleSync('on');await settle();
+     menu.hidden=true;goal.hidden=true;window.SpeechMenu.refresh();await settle();dispatched.length=0;
+     const u=window.SpeechMenu.testBegin();
+     assert((await window.SpeechMenu.testVoskContext(u.id)).records.some(r=>r.action==='WMOFActions.toggleSync'),'hidden pointers cannot remove Sync from the active Vosk grammar');
+     await receive(u,'sync');assert.equal(menu.getAttribute('aria-pressed'),'true','bare Sync awaits optional On/Off');
+     await receive(u,'sync off');await receive(u,'sync off',true);
+     assert.equal(window.SpeechMenu.started,true,backend+' Sync Off must keep recognition on');
+     assert.equal(window.document.querySelector('#speechMicBar').hidden,false,'mic bar stays visible');
+     assert.equal(menu.getAttribute('aria-pressed'),'false',backend+' hidden hamburger toggle updates');
+     assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncState,'disabled');
+     assert.deepEqual(dispatched,['WMOFActions.toggleSync'],'Sync Off is one setting command');
+     assert.equal(timer.autoSyncTripGoal,false,'timer Sync state is off');
+     assert.equal(JSON.parse(await storage.getItem('wmof.clock.tripPreferences')).syncGoals,false,'Sync preference is persisted');
+     dispatched.length=0;const repeated=window.SpeechMenu.testBegin();await receive(repeated,'sync off',true);
+     assert.equal(window.SpeechMenu.started,true,'repeated Sync Off keeps the mic on');assert.equal(menu.getAttribute('aria-pressed'),'false');
+     assert.deepEqual(dispatched,['WMOFActions.toggleSync'],'repeated Sync Off remains a setting command');
+     if(voicepad) {const cancel=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(cancel,'cancel',true);await cancel.digestQueue;await settle();}
+     menu.hidden=false;goal.hidden=false;
+   }
+ }
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ await window.WMOFActions.toggleSync('on');await settle();
+ const standaloneOff=window.SpeechMenu.testBegin();await receive(standaloneOff,'off',true);
+ assert.equal(window.SpeechMenu.started,false,'standalone Off still stops recognition');
+ assert.equal(timer.autoSyncTripGoal,true,'standalone Off leaves Sync unchanged');
+ console.log('PASS Sync Off changes and persists the hidden menu setting without stopping Sherpa/Vosk; standalone Off still works');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--voicepad-continuation')) {
  const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
  const scheduled=window.SpeechMenu.testBegin();await say(scheduled,'ready at eleven fifty nine pm',true);
