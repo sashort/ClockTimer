@@ -15462,7 +15462,8 @@
                     ...(
                         valueCommand
                             ? [
-                                "keypad",
+                                numberPadState?.mode === "absolute" ? "clock-parts" :
+                                    numberPadState?.mode === "percent" ? "percent" : "duration",
                                 "spokenValue"
                             ]
                             : []
@@ -17745,6 +17746,8 @@
 
         numberPadState =
             state;
+
+        installVoiceEntrySpeechCommands();
 
         voiceEntryState = {
             source:

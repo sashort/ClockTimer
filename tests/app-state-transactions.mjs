@@ -60,6 +60,8 @@ window.eval(fs.readFileSync(new URL('../lang/en-US/PercentParser.js',import.meta
 window.eval(fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',import.meta.url),'utf8'));
 let speechSource=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
+    static testPause(u){u.continuationPauseStartedAt=performance.now()-220;SpeechMenu.#armContinuationPauseDeadline(u);}
+    static testResume(){const pipeline=SpeechMenu.#pipeline;SpeechMenu.#pipeline="silero";try{SpeechMenu.#onVadSpeechStart({detail:{}});}finally{SpeechMenu.#pipeline=pipeline;}}
     static testModelReady(ready){SpeechMenu.#modelReady=ready;}
     static testBegin(){SpeechMenu.#modelReady=true;SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={beginUtterance(){},setHotwords(){},abortUtterance(){},finishUtterance(){}};SpeechMenu.#beginUtterance(window.__testTime-performance.timeOrigin);return SpeechMenu.#utterance;}
     static testTranscript(u,text,final=true){return SpeechMenu.#handleLiveTranscript(u,text,final);}
@@ -356,6 +358,71 @@ await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
 await settle();
+if(process.argv.includes('--voicepad-continuation')) {
+ const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
+ const scheduled=window.SpeechMenu.testBegin();await say(scheduled,'ready at eleven fifty nine pm',true);
+ assert(window.document.querySelector('#scheduledStartDialog').open,'scheduled control opens');
+ const standard=window.SpeechMenu.testBegin();
+ for(const phrase of ['standard time twenty five','standard time twenty five minutes','standard time twenty five minutes thirty seconds']) {
+   await say(standard,phrase);assert.equal(standard.digestSteps.length,0,'scheduled standard-time collector still waits for continuations');
+ }
+ await say(standard,'standard time twenty five minutes thirty seconds',true);
+ assert(!standard.digestExecutionFailed);assert.equal(standard.digestSteps.length,1);
+ assert.match(window.document.querySelector('#scheduledStartStandardValue').textContent,/25.*30/,'scheduled control retains the complete duration');
+ const cancelScheduled=window.SpeechMenu.testBegin();await say(cancelScheduled,'cancel',true);
+ const ready=window.SpeechMenu.testBegin();await say(ready,'ready',true);
+ assert(window.document.querySelector('#voiceEntrySurface').open,'Ready opens duration voicepad');
+ const u=window.SpeechMenu.testBegin();
+ const durationGrammar=await window.SpeechMenu.testVoskContext(u.id);
+ const durationRecord=durationGrammar.records.find(r=>r.id?.includes('keypadValue:voiceEntrySurface'));
+ assert.equal(durationRecord?.expect,'duration','voicepad advertises its duration context to Vosk');
+ const compiled=window.VoskPhraseListCompiler.compileStages([durationRecord],{valuePhrases:window.VoskGrammarRouter.valuePhrases()});
+ assert.equal(compiled.unsupported.length,0);
+ assert(compiled.paths.some(p=>p.stages.some(stage=>stage.grammar==='duration'&&stage.phrases.includes('twenty five minutes'))),'decoder grammar includes duration units');
+ for(const phrase of ['twenty five','twenty five minutes','twenty five minutes thirty','twenty five minutes thirty seconds']) {
+   await say(u,phrase);
+   assert.equal(u.digestSteps.length,0,phrase+' remains extendable until a speech boundary');
+   assert.equal(u.completedStreams,undefined,'continuing value keeps the same command stream');
+   assert(window.document.querySelector('#voiceEntrySurface').open,'continuing speech leaves voicepad open');
+   window.SpeechMenu.testPause(u);await new Promise(resolve=>setTimeout(resolve,60));window.SpeechMenu.testResume();
+   await new Promise(resolve=>setTimeout(resolve,180));
+   assert.equal(u.completedStreams,undefined,'speech resumption cancels pending silence commitment');
+ }
+ await say(u,'twenty five minutes thirty seconds',true);
+ assert(!u.digestExecutionFailed,'full compound duration is accepted');
+ assert.equal(u.digestSteps.length,1,'value executes once');
+ const ok=window.SpeechMenu.testBegin();await say(ok,'ok',true);
+ assert.equal(timer.standardTimeMilliseconds,1530000,'OK commits the whole duration including seconds');
+ assert.equal(timer.status,'running');
+ let absolute;
+ await window.WMOFVoiceEntry.open({mode:'absolute',source:'test-clock',initialValue:new window.Date(),confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{absolute=value;return true;}});await settle();
+ const clock=window.SpeechMenu.testBegin();
+ const clockGrammar=await window.SpeechMenu.testVoskContext(clock.id);
+ assert.equal(clockGrammar.records.find(r=>r.id?.includes('keypadValue:voiceEntrySurface'))?.expect,'time','clock voicepad changes the decoder context');
+ for(const phrase of ['four','four twenty','four twenty two','four twenty two pm']) {
+   await say(clock,phrase);assert.equal(clock.completedStreams,undefined,phrase+' remains extendable');assert.equal(absolute,undefined);
+ }
+ await say(clock,'four twenty two pm',true);
+ const clockOK=window.SpeechMenu.testBegin();await say(clockOK,'okay',true);
+ assert.equal(new window.Date(absolute).getHours(),16);assert.equal(new window.Date(absolute).getMinutes(),22);
+ let percentage;
+ await window.WMOFVoiceEntry.open({mode:'percent',source:'test-percent',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{percentage=value;return true;}});await settle();
+ const percent=window.SpeechMenu.testBegin();
+ assert.equal((await window.SpeechMenu.testVoskContext(percent.id)).records.find(r=>r.id?.includes('keypadValue:voiceEntrySurface'))?.expect,'number','percentage context replaces clock grammar');
+ await say(percent,'seventy');await say(percent,'seventy five percent');
+ assert.equal(percent.completedStreams,undefined,'percent collector also waits for a speech boundary');
+ window.SpeechMenu.testPause(percent);await new Promise(resolve=>setTimeout(resolve,250));await percent.digestQueue;await settle();
+ assert(percent.hadCommittedCommand,'actual silence completes a valid value');
+ assert.equal(percentage,undefined,'silence alone cannot press OK');
+ const percentOK=window.SpeechMenu.testBegin();await say(percentOK,'ok',true);assert.equal(percentage,75);
+ let combinedDuration;
+ await window.WMOFVoiceEntry.open({mode:'duration',source:'test-duration',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{combinedDuration=value;return true;}});await settle();
+ const combined=window.SpeechMenu.testBegin();await say(combined,'thirty five minutes seventeen seconds okay',true);
+ assert(!combined.digestExecutionFailed);assert.equal(combinedDuration,2117000,'complete duration plus OK preserves both units and commits once');
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS contextual voicepad duration, clock and percent continuation, resumed speech, silence and scheduled-time control');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--interval-actions')) {
  await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
  window.__testTime+=60000;
