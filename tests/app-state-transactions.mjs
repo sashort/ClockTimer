@@ -11,6 +11,8 @@ let recognition;
 window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abort(){this.onend?.();}};
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
+const capturedShadows=new WeakMap();
+if(process.argv.includes('--commands-close')) {const attach=window.Element.prototype.attachShadow;window.Element.prototype.attachShadow=function(...args){const root=attach.apply(this,args);capturedShadows.set(this,root);return root;};}
 const animationCalls=[];window.Element.prototype.animate=function(keyframes,options){animationCalls.push({target:this,keyframes,options});return{finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}}};
 const consoleErrors=[];window.console.error=(...args)=>consoleErrors.push(args.map(a=>a?.stack||String(a)).join(' '));
 const errors=[];window.addEventListener('error',e=>{errors.push(e.message);});
@@ -359,6 +361,55 @@ await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
 await settle();
+if(process.argv.includes('--commands-close')) {
+ const bar=window.document.querySelector('#speechMicBar');
+ const assertUsable=label=>{
+   assert.equal(window.WMOFCoordinator.lockCount,0,label+' releases all owned locks');
+   assert.equal(window.WMOFCoordinator.pending.length,0,label+' leaves no pending operation: '+JSON.stringify(window.WMOFCoordinator.pending));
+   assert.equal(window.document.querySelector('#newTripButton').disabled,false,label+' releases New Trip');
+   assert.equal(window.document.querySelector('#app').dataset.operationPending,'false',label+' releases the UI');
+ };
+ const bounded=async promise=>{let timeout;try{return await Promise.race([promise,new Promise((_,reject)=>timeout=setTimeout(()=>reject(Error('commands action never settled')),2000))]);}finally{clearTimeout(timeout);}};
+ await bounded(window.WMOFActions.openSpeechOptions());await settle();assert(bar.optionsOpen);assertUsable('pointer open');
+ capturedShadows.get(bar).querySelector('#optionsClose').click();await settle();assert(bar.optionsCollapsed);assertUsable('pointer collapse');
+ for(const finalize of [false,true]) {
+   const opening=window.SpeechMenu.testBegin();
+   await window.SpeechMenu.testTranscript(opening,'commands',false);
+   await bounded(opening.digestQueue);await settle();
+   if(finalize) window.SpeechMenu.testFinish();
+   capturedShadows.get(bar).querySelector('#optionsClose').click();await settle();
+   assertUsable('close before final '+finalize);
+ }
+ for(const close of ['close','cancel']) {
+   const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,'commands',true);await bounded(u.digestQueue);await settle();assert(bar.optionsOpen,'voice Commands opens list');assertUsable('voice open');
+   const c=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(c,close,true);await bounded(c.digestQueue);await settle();assert(bar.optionsCollapsed,close+' collapses list');assertUsable('voice '+close);
+ }
+ const coordinator=window.WMOFCoordinator, edges=[], mutations=[];
+ const button=window.document.querySelector('#newTripButton');
+ const observer=new window.MutationObserver(records=>mutations.push(...records));observer.observe(button,{attributes:true,attributeFilter:['disabled']});
+ coordinator.addEventListener('lockStateChanged',e=>edges.push(e.detail.locked));
+ let failCleanup=true;
+ const unregister=coordinator.register('test-cleanup',{capture:()=>null,restore:()=>{},end(){if(failCleanup){failCleanup=false;throw Error('fixture cleanup failure');}}});
+ const first=coordinator.createOperation();await coordinator.run('first-save',()=>true,{owner:first,chain:true});await settle();
+ const second=coordinator.createOperation();const secondWork=coordinator.run('second-save',()=>true,{owner:second,chain:true});
+ assert.equal(coordinator.lockCount,2);assert(button.disabled,'two operations keep the UI locked');
+ await bounded(window.WMOFActions.openSpeechOptions());assert(bar.optionsOpen,'Commands opens while a save is pending');
+ const closing=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(closing,'close',true);await bounded(closing.digestQueue);await settle();
+ assert(bar.optionsCollapsed);assert.equal(coordinator.lockCount,2,'presentation does not acquire another state lock: '+JSON.stringify(coordinator.locks));
+ await first.complete();await secondWork;await settle();assert.equal(coordinator.lockCount,1);assert(button.disabled,'first completion cannot unlock the second operation');
+ unregister();await second.complete();await settle();assertUsable('last save completion');
+ observer.disconnect();assert.deepEqual(edges,[true,false],'overlapping operations produce one lock and one unlock');
+ assert.equal(mutations.length,2,'the actual button is disabled once and enabled once');
+ assert(coordinator.trace.some(e=>e.kind==='cleanup'&&e.phase==='failed'),'cleanup failure is recorded without stranding the UI');
+ button.dispatchEvent(new window.Event('pointerup',{bubbles:true}));await settle();
+ assert(window.document.querySelector('#numberPadDialog').open,'New Trip remains functional after Commands closes and the last save settles');
+ for(const digit of '2000') await window.WMOFActions.enterNumberPadDigit(digit);
+ assert.equal(await window.WMOFActions.confirmNumberPad(),true);await settle();assert.equal(timer.status,'running','trip can still start');
+ assert.equal(coordinator.lockCount,0);
+ assert.equal(window.SpeechMenu.started,true,'closing Commands keeps recognition active');
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS Commands open/close settles orchestration and re-enables controls');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--sync-voice')) {
  const system=window.document.createElement('speech-menu');system.setAttribute('speech-modal','system');
  const off=window.document.createElement('speech-command');off.setAttribute('speech-pattern','^off$');off.setAttribute('speech-function','WMOFActions.disableSpeechRecognition');system.append(off);window.document.body.append(system);

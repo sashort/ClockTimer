@@ -72,6 +72,7 @@
     class ApplicationCoordinator extends EventTarget {
         #adapters = new Map(); #groups = new Map(); #current; #nextId = 0; #last; #active;
         #eventId = 0; #events = []; #effects = new Map(); #revision = 0;
+        #locks = new Map(); #nextLockId = 0;
         #independentDepth = 0;
         #inputEvent;
         observeInputs(root) {
@@ -196,6 +197,23 @@
         finishWrite(write, outcome) {if (write) write.outcome = outcome;}
         createOperation(options = {}) {return new CommandOperation(this, {parentId: this.#inputEvent?.id, ...options});}
         register(name, adapter) {this.#adapters.set(name, adapter); return () => this.#adapters.delete(name);}
+        get locks() {return Object.freeze([...this.#locks.values()].map(({event, ...lock}) => Object.freeze(lock)));}
+        get lockCount() {return this.#locks.size;}
+        #lockChanged(wasLocked) {
+            const detail = Object.freeze({locked: this.lockCount > 0, count: this.lockCount, locks: this.locks});
+            this.dispatchEvent(new CustomEvent("locksChanged", {detail}));
+            if (wasLocked !== detail.locked) this.dispatchEvent(new CustomEvent("lockStateChanged", {detail}));
+        }
+        #acquireLock(transaction) {
+            const wasLocked = this.lockCount > 0;
+            const event = this.beginEvent("ui-lock", {source: transaction.owner?.source || "system", parentId: transaction.owner?.event.id, reason: transaction.action});
+            const lock = {id: ++this.#nextLockId, ownerId: transaction.owner?.event.id || null, reason: transaction.action, startedAt: event.startedAt, event};
+            this.#locks.set(lock.id, lock); transaction.lockId = lock.id; this.#lockChanged(wasLocked);
+        }
+        #releaseLock(transaction) {
+            const lock = this.#locks.get(transaction.lockId); if (!lock) return;
+            this.#locks.delete(lock.id); this.endEvent(lock.event, "released"); this.#lockChanged(true);
+        }
         get current() {return this.#current;}
         get active() {return this.#active;}
         get pending() {return Object.freeze([...this.#groups.values()].filter(t=>t.status === "pending" || t.rollingBack)
@@ -238,15 +256,15 @@
                 group: transaction.group, action: transaction.action, reconciled: Boolean(transaction.reconciled),
                 recoveryRequired: Boolean(transaction.reconciliationError), revision: this.#revision, error}}));
         }
-        #begin(group, action) {
+        #begin(group, action, owner) {
             let transaction = this.#groups.get(group);
             if (!transaction) {
                 let settle;
-                transaction = {id: ++this.#nextId, group, action, controller: new AbortController(),
+                transaction = {id: ++this.#nextId, group, action, owner, controller: new AbortController(),
                     snapshots: new Map(), writes: new Map(), undo: [], pending: [], status: "pending",
                     predecessor: this.#last, queue: Promise.resolve(), settled: new Promise(resolve => settle = resolve)};
                 transaction.settle = settle; transaction.signal = transaction.controller.signal;
-                this.#last = transaction; this.#groups.set(group, transaction); this.#emit("pending", transaction);
+                this.#last = transaction; this.#groups.set(group, transaction); this.#acquireLock(transaction); this.#emit("pending", transaction);
             }
             return transaction;
         }
@@ -256,7 +274,7 @@
             owner ??= !chain ? this.createOperation({group, signal, source}) : undefined;
             group = owner?.group ?? group ?? Symbol(action);
             if (owner?.settled || owner?.signal.aborted) return Promise.resolve(false);
-            const transaction = this.#begin(group, action);
+            const transaction = this.#begin(group, action, owner);
             transaction.owner ??= owner;
             if (owner) {owner.event.dependencyId = transaction.predecessor?.owner?.event.id; this.recordPhase(owner.event, "queued");}
             const cancellationSignals = new Set([signal, owner?.signal].filter(Boolean));
@@ -330,15 +348,29 @@
             })();
         }
         #end(transaction) {
+            if (transaction.ended) return;
+            transaction.ended = true;
             if (this.#active === transaction) this.#active = undefined;
-            for (const adapter of this.#adapters.values()) adapter.end?.(transaction);
-            for (const unlink of transaction.signalLinks || []) unlink();
-            this.#groups.delete(transaction.group); transaction.settle(transaction.status);
-            if (transaction.owner) transaction.owner.event.settledRevision = this.#revision;
-            if (transaction.owner) transaction.owner.event.reconciled = Boolean(transaction.reconciled);
-            transaction.owner?.settleFromTransaction(transaction.status);
-            transaction.snapshots.clear(); transaction.writes.clear(); transaction.undo.length = 0;
-            if (this.#last === transaction) this.#last = undefined;
+            // A failing cleanup hook must not strand every queued operation or
+            // leave the UI disabled after the operation itself has settled.
+            try {
+                for (const [name, adapter] of this.#adapters) {
+                    try {adapter.end?.(transaction);} catch (error) {
+                        const event = this.beginEvent("cleanup", {parentId: transaction.owner?.event.id, adapter: name});
+                        this.endEvent(event, "failed", error);
+                    }
+                }
+            } finally {
+                transaction.rollingBack = false;
+                for (const unlink of transaction.signalLinks || []) unlink();
+                this.#groups.delete(transaction.group); transaction.settle(transaction.status);
+                this.#releaseLock(transaction);
+                if (transaction.owner) transaction.owner.event.settledRevision = this.#revision;
+                if (transaction.owner) transaction.owner.event.reconciled = Boolean(transaction.reconciled);
+                transaction.owner?.settleFromTransaction(transaction.status);
+                transaction.snapshots.clear(); transaction.writes.clear(); transaction.undo.length = 0;
+                if (this.#last === transaction) this.#last = [...this.#groups.values()].filter(item => item.status === "pending").at(-1);
+            }
         }
         rollback(group, error) {
             const transaction = this.#groups.get(group);
@@ -358,9 +390,6 @@
             if (transaction.active) await transaction.active.catch(() => {});
             const committedRemotely = Boolean(transaction.acknowledgements?.length ||
                 transaction.remoteWrites?.some(write => write.outcome !== "rejected"));
-            if (!committedRemotely) for (const item of [...dependents.reverse(), transaction]) {
-                for (const undo of item.undo.reverse()) undo();
-            }
             try {
                 if (committedRemotely) {
                     // A remote acknowledgement cannot be undone by restoring a
@@ -380,8 +409,17 @@
                         transaction.reconciled = true;
                         this.endEvent(recovery);
                     } catch (failure) {this.endEvent(recovery, "failed", failure); throw failure;}
-                } else for (const [name, snapshot] of transaction.snapshots) {
-                    await this.#adapters.get(name)?.restore(snapshot);
+                } else {
+                    let failure;
+                    for (const item of [...dependents].reverse().concat(transaction)) {
+                        for (const undo of [...item.undo].reverse()) {
+                            try {undo();} catch (error) {failure ||= error;}
+                        }
+                    }
+                    for (const [name, snapshot] of transaction.snapshots) {
+                        try {await this.#adapters.get(name)?.restore(snapshot);} catch (error) {failure ||= error;}
+                    }
+                    if (failure) throw failure;
                 }
             } catch (failure) {
                 transaction.reconciliationError = failure;

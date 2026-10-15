@@ -31,6 +31,25 @@ also wait for operation completion, so they cannot interrupt a collecting comman
 chain. Mechanical dialog closes use their dialog identity and closing-state guard.
 Already settled transactions cannot be reused by late bound callbacks.
 
+## UI lock ownership
+
+Each queued mutation owns one entry in the coordinator's lock map. Nested and
+chained steps share their operation's entry. The first entry disables controls;
+the final removal enables them according to current application state. Completion,
+cancellation and rollback remove only the corresponding entries. Late cleanup
+cannot release another operation's lock. `locks`, `lockCount` and `locksChanged`
+expose a read-only diagnostic view; `lockStateChanged` fires only at the first
+acquisition and final release. Lock receipts retain start/end timing in `trace`.
+
+Controls derive their disabled state from that map, including during restoration;
+an older snapshot cannot restore a stale orchestration lock. Cleanup and recovery
+failures are recorded while the remaining participants still run and their locks
+are released. Removing queued work preserves the surviving predecessor.
+Commands-list presentation and speech-start notifications remain independent of
+state mutations, allowing dismissal while persistence is pending.
+`--commands-close` covers pointer and voice dismissal, unfinished recognition,
+overlapping saves, cleanup failure and a single actual disable/enable transition.
+
 ## Persistence and recovery
 
 Browser writes are staged until command acceptance. Explicit server rejection
@@ -57,8 +76,8 @@ Action implementations, including Down and New Trip, read semantic availability
 rather than the disabled state that their own pending operation applies to the
 buttons. `--interval-actions` covers pointer Break selection, voice confirmation,
 Down/resume and one persisted event per accepted interval.
-Both "start break" and "break start" select the regular break. Either accepts
-OK in the same utterance or through the existing confirmation dialog.
+"Break Start" opens the type chooser; a break type followed by OK starts it.
+"Break End" is the shared end command for every break type.
 
 ## Verification
 

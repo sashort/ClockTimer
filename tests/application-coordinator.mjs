@@ -72,4 +72,49 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
  assert.throws(()=>c.effect('read',failed),/read failed/);
  assert.equal(c.trace.at(-1).phase,'failed');
 }
+{
+ const c=new ApplicationCoordinator(),edges=[];c.addEventListener('lockStateChanged',e=>edges.push(e.detail.locked));
+ const first=c.createOperation(), middle=c.createOperation();
+ await c.run('first',()=>true,{owner:first,chain:true});
+ let middleRan=false;const middleWork=c.run('middle',()=>{middleRan=true;return true;},{owner:middle,chain:true});
+ assert.equal(c.lockCount,2);assert.equal(c.locks.length,2);assert.notEqual(c.locks[0].id,c.locks[1].id);
+ await middle.cancel();assert.equal(middleRan,false);
+ assert.equal(c.lockCount,1,'cancel removes only its own queued lock');assert.deepEqual(edges,[true]);
+ let lastRan=false;const last=c.createOperation();const lastWork=c.run('last',()=>{lastRan=true;return true;},{owner:last,chain:true});
+ await sleep(5);assert.equal(lastRan,false,'removing the middle keeps the surviving predecessor');
+ await first.complete();assert.equal(await middleWork,false);await lastWork;assert.equal(c.lockCount,1,'later work still holds the UI lock');
+ await middle.cancel();assert.equal(c.lockCount,1,'late cancellation cannot release another operation');
+ await last.complete();assert.equal(c.lockCount,0);assert.deepEqual(edges,[true,false],'only the first acquire and last release change UI lock state');
+ assert(c.trace.filter(e=>e.kind==='ui-lock').every(e=>e.endedAt!==null));
+}
+{
+ const c=new ApplicationCoordinator();let rendered;let continued=false;
+ c.addEventListener('state',e=>rendered=e.detail.state);
+ c.register('broken-cleanup',{capture:()=>null,restore:()=>{},end(){throw new Error('presentation cleanup failed');}});
+ c.register('other-cleanup',{capture:()=>null,restore:()=>{},end(){continued=true;}});
+ assert.equal(await c.run('close',()=>true),true);
+ assert.equal(continued,true,'a failing hook does not prevent other cleanup');assert.equal(rendered,'confirmed');
+ assert.equal(c.lockCount,0);assert.equal(c.pending.length,0);assert.equal(c.active,undefined);
+ assert(c.trace.some(e=>e.kind==='cleanup'&&e.phase==='failed'),'cleanup failure is recorded');
+ assert.equal(await c.run('failed',()=>{throw new Error('rejected');}),false);
+ assert.equal(c.lockCount,0);assert.equal(rendered,'reverted');
+}
+{
+ const c=new ApplicationCoordinator();const edges=[];c.addEventListener('lockStateChanged',e=>edges.push(e.detail.locked));
+ await c.run('outer',async()=>{assert.equal(c.lockCount,1);await c.run('nested',()=>{assert.equal(c.lockCount,1);return true;});return true;});
+ assert.deepEqual(edges,[true,false],'nested actions share one lock owner');
+}
+{
+ const c=new ApplicationCoordinator();let restored=false,undone=false,lastState;
+ c.addEventListener('state',e=>lastState=e.detail);
+ c.register('broken-restore',{capture:()=>null,restore(){throw Error('restore failed');}});
+ c.register('other-restore',{capture:()=>null,restore(){restored=true;}});
+ const owner=c.createOperation();
+ await c.run('bad-undo',transaction=>{transaction.undo.push(()=>{undone=true;},()=>{throw Error('undo failed');});return true;},{owner,chain:true});
+ await owner.cancel();
+ assert(undone&&restored,'failed undo or restore does not prevent the remaining recovery participants');
+ assert.equal(c.lockCount,0);assert.equal(c.pending.length,0);assert.equal(await owner.completion,false);
+ assert.equal(lastState.recoveryRequired,true,'failed recovery is reported after releasing the lock');
+ assert.equal(await c.run('next',()=>true),true,'later work is not stranded by failed recovery');
+}
 console.log('PASS single coordinator: timing, acknowledgements, dependent cancellation, state revisions and owned UI effects');

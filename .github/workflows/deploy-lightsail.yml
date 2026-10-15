@@ -26,6 +26,7 @@ jobs:
           node tests/speech-failfast.mjs
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip
+          node tests/app-state-transactions.mjs --commands-close
           node tests/app-state-transactions.mjs --sync-voice
           node tests/app-state-transactions.mjs --voicepad-continuation
           node tests/app-state-transactions.mjs --interval-actions

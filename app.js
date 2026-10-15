@@ -8277,7 +8277,7 @@
 
         context.allowOk =
             next;
-        if (context === breakDialog && $("#breakTypeOK")) $("#breakTypeOK").disabled = !next;
+        if (context === breakDialog && $("#breakTypeOK")) setInteractionDisabled($("#breakTypeOK"), !next || Boolean(globalThis.WMOFCoordinator?.lockCount));
 
         emitUIEvent(
             context,
@@ -18769,12 +18769,13 @@
         });
         const primaryAction = kind ? "endInterval" : interval === "down" ? "resume" : live ? "endTrip" : "ready";
         const pendingOperations = globalThis.WMOFCoordinator?.pending || Object.freeze([]);
-        const endingTransient = !live && pendingOperations.length > 0 &&
+        const lockouts = globalThis.WMOFCoordinator?.locks || Object.freeze([]);
+        const endingTransient = !live && lockouts.length > 0 &&
             (clockTimer.status === "stopped" || interactionStateSnapshot?.controls?.transient === true);
         const value = {
             profileEditor: userLookup?.state,
             clock: timerState,
-            pending: pendingOperations,
+            pending: pendingOperations, locks: lockouts,
             speechRecognition,
             session: Object.freeze({userId: signedInProfile?.id || null, permissions: Number(signedInProfile?.permissions) || 0,
                 connection: clockTimer.networkStatus || "unknown"}),
@@ -18801,7 +18802,7 @@
                 confirmation: editor?.startsTripOnConfirm ? "start-trip" : editor?.source || null}),
             actions,
             controls: Object.freeze({primaryAction: endingTransient ? "endTrip" : primaryAction,
-                busy: pendingOperations.length > 0,
+                busy: lockouts.length > 0,
                 transient: endingTransient,
                 primaryText: live || endingTransient ? timerState?.controls?.primary_action?.text || "End Trip"
                     : globalThis.WMOFLanguagePack.text("1cf0b3f1-858c-50c8-8cb9-8b3af9e1decd"),
@@ -18817,6 +18818,11 @@
         return interactionStateSnapshot;
     }
 
+    const orchestrationControlIds = new Set(["newTripButton", "breakButton", "breakTypeOK", "downButton", "endTripButton", "downCancelButton", "downResumeButton", "tripTransitionSummaryOk", "tripTransitionSummaryCancel"]);
+    function setInteractionDisabled(control, value) {
+        const disabled = Boolean(value);
+        if (control && control.disabled !== disabled) control.disabled = disabled;
+    }
     function renderInteractionControls(state = readInteractionState()) {
         const {actions, controls} = state;
         app.dataset.tripTransition = controls.transient ? "pending" : "settled";
@@ -18826,22 +18832,22 @@
         $("#loginVoiceSwitch").disabled=!actions.loginSwitch || state.login.voiceRequested;
         for(const id of ["loginLegacyUsername","loginLegacyPassword"])$("#"+id).disabled=!actions.loginPassword;
         for(const input of loginDialog.querySelectorAll('[data-login-digit]'))input.disabled=!actions.loginDigits || input.dataset.loginDigit!==state.login.stage;
-        newTripButton.disabled = controls.busy || !actions.startTrip;
+        setInteractionDisabled(newTripButton, controls.busy || !actions.startTrip);
         activeTripControls.hidden = !controls.activeTripVisible;
         tripActionRow.hidden = !controls.actionRowVisible;
         breakButton.hidden = !controls.breakVisible;
-        breakButton.disabled = controls.busy || !actions.openBreakSelector;
-        if ($("#breakTypeOK")) $("#breakTypeOK").disabled = controls.busy || !breakDialog.allowOk;
+        setInteractionDisabled(breakButton, controls.busy || !actions.openBreakSelector);
+        if ($("#breakTypeOK")) setInteractionDisabled($("#breakTypeOK"), controls.busy || !breakDialog.allowOk);
         downButton.hidden = !controls.downVisible;
-        downButton.disabled = controls.busy || !actions.startDown;
+        setInteractionDisabled(downButton, controls.busy || !actions.startDown);
         endTripButton.hidden = !controls.primaryVisible;
-        endTripButton.disabled = controls.busy || !actions[controls.primaryAction];
+        setInteractionDisabled(endTripButton, controls.busy || !actions[controls.primaryAction]);
         endTripButton.textContent = controls.primaryText;
         downTripControls.hidden = !controls.downVisiblePanel;
-        downCancelButton.disabled = !actions.cancelDown;
-        downResumeButton.disabled = !actions.resume;
-        $("#tripTransitionSummaryOk").disabled = controls.busy;
-        $("#tripTransitionSummaryCancel").disabled = controls.busy;
+        setInteractionDisabled(downCancelButton, controls.busy || !actions.cancelDown);
+        setInteractionDisabled(downResumeButton, controls.busy || !actions.resume);
+        setInteractionDisabled($("#tripTransitionSummaryOk"), controls.busy);
+        setInteractionDisabled($("#tripTransitionSummaryCancel"), controls.busy);
         setEndTripButtonIntervalPalette(state.interval);
     }
 
@@ -24228,10 +24234,7 @@
                 speechMicBar
                     ?.optionsOpen
             ) {
-                void speechMicBar
-                    .hideOptions?.();
-
-                return true;
+                return actions.closeSpeechOptions();
             }
 
             const popover = targetSurface?.matches?.('dialog') ? undefined
@@ -25226,7 +25229,7 @@
                 );
             },
 
-            openSpeechOptions() {
+            openSpeechOptions: {metadata: {transaction: false}, implementation() {
                 if (
                     speechMicBar
                         ?.optionsOpen
@@ -25257,7 +25260,11 @@
                             []
                         )
                 );
-            },
+            }},
+
+            closeSpeechOptions: {metadata: {transaction: false}, implementation() {
+                return speechMicBar?.hideOptions?.() ?? false;
+            }},
 
             closeActiveSurface(targetSurface = undefined) {
                 return closeActiveSpeechSurface(targetSurface);
@@ -25330,7 +25337,7 @@
                 }
             },
 
-            handleSpeechUtteranceStarted() {
+            handleSpeechUtteranceStarted: {metadata: {transaction: false}, implementation() {
                 void globalThis
                     .WMOFPresentationSetters
                     ?.dismissSpeechResponse?.({
@@ -25339,7 +25346,7 @@
                     });
 
                 return true;
-            },
+            }},
 
             async scheduleStartAt(
                 spokenTime,
@@ -29392,14 +29399,15 @@
             installSpeechCommand("close", "closeActiveSurface", document.body, "default");
             SpeechMenu.registerSurface(document.body, {
                 isOpen: () => true,
-                close: () => actions.closeActiveSurface(),
-                cancel: () => !document.querySelector('dialog[open]') && !voiceEntryState && getTripListState() !== 'open' &&
+                close: () => speechMicBar?.optionsOpen ? actions.closeSpeechOptions() : actions.closeActiveSurface(),
+                cancel: () => speechMicBar?.optionsOpen ? actions.closeSpeechOptions() : !document.querySelector('dialog[open]') && !voiceEntryState && getTripListState() !== 'open' &&
                     globalThis.WMOFSpeechAvailability.canCancelDownTime()
                     ? actions.cancelDownTime() : actions.closeActiveSurface()
             });
             for (const surface of document.querySelectorAll('dialog, [popover]')) {
                 if (surface === speechMicBar || surface.getAttribute('role') === 'status') continue;
                 const dismiss = async () => {
+                    if (speechMicBar?.optionsOpen) return actions.closeSpeechOptions();
                     const result = surface === voiceEntrySurface ? await closeVoiceEntry({cancel: true})
                         : surface === tripLogDialog ? await actions.closeTripLog()
                         : surface.id === 'cancelDownConfirmDialog' ? await actions.continueDownTime()
@@ -29798,10 +29806,8 @@
         status.className = "persistence-status";
         status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
         status.hidden = true; document.body.append(status);
-        const pendingAttempts = new Set();
         stateTransactions.addEventListener("state", ({detail}) => {
-            if (["pending", "retrying"].includes(detail.state)) pendingAttempts.add(detail.id); else pendingAttempts.delete(detail.id);
-            const state = pendingAttempts.size ? "pending" : detail.state;
+            const state = stateTransactions.lockCount ? "pending" : detail.state;
             app.dataset.persistenceState = state;
             document.documentElement.dataset.persistenceState = state;
             status.hidden = state === "confirmed";
@@ -29883,7 +29889,7 @@
                     if (control.value !== undefined) element.value = control.value;
                     if (control.checked !== undefined) element.checked = control.checked;
                     element.hidden = control.hidden;
-                    if (control.disabled !== undefined) element.disabled = control.disabled;
+                    if (control.disabled !== undefined && !orchestrationControlIds.has(element.id)) setInteractionDisabled(element, control.disabled);
                     if (element.tagName === "DIALOG" && element.open !== control.open) {
                         if (control.open) element.showModal(); else element.close();
                     }
