@@ -57,7 +57,15 @@
             this.reportUnsupported(compiled.unsupported);
             const suffixes = this.paths.filter(path => path.stages.length > 1)
                 .map(path => ({ ...path, stages: path.stages.slice(1) }));
-            this.continuations = suffixes.length ? suffixes : compiled.paths;
+            // An extendable value is still the same collector, not the next
+            // command. Keep compound duration fragments in the current stage.
+            this.continuations = suffixes.length ? suffixes : compiled.paths.filter(next =>
+                this.grammar === "commands" || next.stages[0]?.grammar === "commands" ||
+                !this.paths.some(current => current.stages.length === 1 &&
+                    (current.record.id && next.record.id
+                        ? current.record.id === next.record.id
+                        : current.record.pattern === next.record.pattern &&
+                            current.record.action === next.record.action && current.record.capture === next.record.capture)));
         }
 
         async update(hypothesis) {
@@ -164,7 +172,38 @@
                     time.push(phrase, phrase + " am", phrase + " pm");
                 }
             }
-            const duration = ["twenty minutes", ...numbers];
+            // Preserve the pre-Vosk parser's compositional vocabulary. These
+            // finite pieces let recognition retain articles, omitted units,
+            // connectors and digit aliases; SpeechMenu validates the full value.
+            const aliases = ["oh", "o", "naught", "nought", "tutu"];
+            const duration = ["twenty minutes", ...numbers, "a", "an", "and", "double", "triple", "to", "too", ...aliases];
+            for (const unit of ["hour", "hours", "hr", "hrs", "minute", "minutes", "min", "mins", "second", "seconds", "sec", "secs"]) {
+                duration.push("a " + unit, "an " + unit);
+                for (let n = 0; n < 60; n++) duration.push(number(n) + " " + unit);
+            }
+            for (let n = 0; n < 60; n++) duration.push("and " + number(n));
+            for (const article of ["a", "an", "one"]) for (let minute = 0; minute < 60; minute++) {
+                duration.push(article + " hour " + number(minute), article + " hour and " + number(minute));
+            }
+            for (let hour = 1; hour <= 12; hour++) for (let minute = 0; minute < 60; minute++) {
+                duration.push(number(hour) + " hours " + number(minute), number(hour) + " hours and " + number(minute));
+            }
+            for (let minute = 0; minute < 60; minute++) for (let second = 0; second < 60; second++) {
+                duration.push(number(minute) + " minutes " + number(second), number(minute) + " minutes and " + number(second));
+            }
+            // Clock idioms and 24-hour/digit-alias forms accepted before Vosk.
+            for (let hour = 0; hour < 24; hour++) for (let minute = 0; minute < 60; minute++) {
+                time.push(number(hour) + " " + number(minute));
+                if (minute < 10) for (const alias of aliases.slice(0, 4)) time.push(number(hour) + " " + alias + " " + number(minute));
+            }
+            for (let hour = 1; hour <= 12; hour++) {
+                for (const fraction of ["quarter", "half"]) for (const relation of ["past", "after", "to", "till", "until"]) {
+                    for (const article of ["", "a "]) for (const suffix of ["", " am", " pm"])
+                        time.push(article + fraction + " " + relation + " " + number(hour) + suffix);
+                }
+                for (const day of ["today", "tomorrow"]) time.push(day + " at " + number(hour));
+            }
+            time.push("noon tomorrow", "noon today", "midnight tomorrow", "midnight today", "today", "tomorrow", "at", "oclock", "o clock", ...aliases);
             for (const n of numbers) for (const unit of ["second", "seconds", "minute", "minutes", "hour", "hours"]) duration.push(n + " " + unit);
             // Bounded vocabularies. Deployments may supply different finite
             // ranges/capture choices; no catch-all or unknown-word fallback.

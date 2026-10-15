@@ -405,6 +405,14 @@ if(process.argv.includes('--voicepad-continuation')) {
  await say(clock,'four twenty two pm',true);
  const clockOK=window.SpeechMenu.testBegin();await say(clockOK,'okay',true);
  assert.equal(new window.Date(absolute).getHours(),16);assert.equal(new window.Date(absolute).getMinutes(),22);
+ for(const [phrase,hour,minute] of [['quarter to six pm',17,45],['half past five',5,30],['thirteen forty five',13,45],['five naught five',5,5]]) {
+   let acceptedClock;
+   await window.WMOFVoiceEntry.open({mode:'absolute',source:'test-legacy-clock',initialValue:new window.Date(),confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{acceptedClock=value;return true;}});await settle();
+   const legacyClock=window.SpeechMenu.testBegin();await say(legacyClock,phrase);assert.equal(legacyClock.completedStreams,undefined);
+   await say(legacyClock,phrase+' okay',true);assert(!legacyClock.digestExecutionFailed,phrase);
+   assert.equal(new window.Date(acceptedClock).getHours(),hour,phrase);assert.equal(new window.Date(acceptedClock).getMinutes(),minute,phrase);
+ }
+
  let percentage;
  await window.WMOFVoiceEntry.open({mode:'percent',source:'test-percent',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{percentage=value;return true;}});await settle();
  const percent=window.SpeechMenu.testBegin();
@@ -419,6 +427,15 @@ if(process.argv.includes('--voicepad-continuation')) {
  await window.WMOFVoiceEntry.open({mode:'duration',source:'test-duration',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{combinedDuration=value;return true;}});await settle();
  const combined=window.SpeechMenu.testBegin();await say(combined,'thirty five minutes seventeen seconds okay',true);
  assert(!combined.digestExecutionFailed);assert.equal(combinedDuration,2117000,'complete duration plus OK preserves both units and commits once');
+ for(const [phrase,expected] of [['an hour and five',3900000],['an hour one and twelve',3672000],['two hours thirty five and forty five',9345000],['twenty three minutes and twenty four',1404000],['one seventeen oh nine',4629000],['a minute and five',65000]]) {
+   let accepted;
+   await window.WMOFVoiceEntry.open({mode:'duration',source:'test-legacy-duration',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{accepted=value;return true;}});await settle();
+   const legacy=window.SpeechMenu.testBegin();
+   await say(legacy,phrase);assert.equal(accepted,undefined);assert.equal(legacy.completedStreams,undefined,'legacy value remains extendable: '+phrase);
+   await say(legacy,phrase+' okay',true);
+   assert(!legacy.digestExecutionFailed,'legacy phrase executes: '+phrase);assert.equal(accepted,expected,phrase);
+ }
+
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  console.log('PASS contextual voicepad duration, clock and percent continuation, resumed speech, silence and scheduled-time control');
  await window.happyDOM.close();process.exit(0);
