@@ -13,17 +13,17 @@
       "id": "5639c8f8-6a85-525e-8bd7-2dd123ca90ad"
     },
     "break-started": {
-      "summary": "Break Started. Say end break to end your break.",
+      "summary": "Break started. Say break end to end your break.",
       "speechOptions": {},
       "id": "41cd16c1-160d-5279-b699-fd05128164c9"
     },
     "short-break-started": {
-      "summary": "Short Break Started. Say end short break to end your short break.",
+      "summary": "Short break started. Say break end to end your short break.",
       "speechOptions": {},
       "id": "66102f48-2b07-5554-8563-1867da690e49"
     },
     "lunch-started": {
-      "summary": "Lunch Started. Say end lunch to end your lunch.",
+      "summary": "Lunch started. Say break end to end your lunch.",
       "speechOptions": {},
       "id": "0fe91ff0-f7b8-5edf-ac18-a0e717aed311"
     },
@@ -174,7 +174,7 @@
       "scheduledCancelled": "Scheduled start cancelled.",
       "numberPad": "Number pad.",
       "deferred": "Trip deferred.",
-      "breakChoices": "Choose Short Break, Break, or Lunch.",
+      "breakChoices": "Say/press break type then OK.",
       "breakSelected": "{choice} selected. Say OK to start.",
       "cancelledRunning": "Cancelled. Trip still running.",
       "cancelledDown": "Cancelled. Down time continues.",

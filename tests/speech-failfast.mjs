@@ -161,6 +161,10 @@ try {
  assert.equal(errors.length,0,'silence completes a valid collector without waiting for decoder final');
  u=fresh();await hear(u,'ready at bananas sync on standard time seventeen minutes',true);
  assert(!calls.some(call=>call[0]==='ready'||call[0]==='standard'),'malformed Ready At cannot authorize the dependent Standard Time');
+ const protectedHead=make(document.body,'protected','^break end$','showLog',{'speech-modal':'top-level','speech-reject-prefix':'short'});
+ u=fresh();await hear(u,'short break end',true);assert.deepEqual(calls,[],'removed qualified command cannot recover its valid suffix');
+ u=fresh();await hear(u,'sync on short break end show log',true);assert.deepEqual(calls,[['sync','on'],['log']],'removed command in the middle is omitted without dropping surrounding commands');
+ protectedHead.remove();
  sync.remove();
  const short=make(document.body,'short-ready','^ready$','showLog',{'speech-modal':'top-level'});
  u=fresh();await hear(u,'ready');assert.deepEqual(calls,[],'Ready waits because Ready At can continue it');assert.equal(u.completedStreams,undefined);short.remove();

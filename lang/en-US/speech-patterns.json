@@ -89,7 +89,7 @@
     },
     "ac142905-7527-5832-97fb-00bd047e44f2": {
       "id": "ac142905-7527-5832-97fb-00bd047e44f2",
-      "pattern": "^(?<breakChoice>10|15|break|long|short|lunch)$"
+      "pattern": "^(?<breakChoice>break|lunch|short break)$"
     },
     "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012": {
       "id": "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012",
@@ -172,7 +172,7 @@
     },
     "fd26842e-d902-537c-b813-3f94de48dad0": {
       "id": "fd26842e-d902-537c-b813-3f94de48dad0",
-      "pattern": "^(?<breakChoice>10|15|break|long|short|lunch)$",
+      "pattern": "^(?<breakChoice>break|lunch|short break)$",
       "command": "breakChoice"
     },
     "772e6012-32b8-5baa-bc6a-24e7a15119a2": {
@@ -411,7 +411,7 @@
     },
     "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c": {
       "id": "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c",
-      "pattern": "^end break$",
+      "pattern": "^break end$",
       "command": "endBreak"
     },
     "afa08a22-a3f1-5ce0-b917-b50e240dbb5c": {

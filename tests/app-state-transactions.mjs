@@ -5,7 +5,7 @@ const storage=installAsyncStorage(window);
 window.__testTime=Date.parse('2026-10-06T12:00:00Z');
 window.eval(`const OriginalDate=Date;window.Date=class extends OriginalDate {constructor(...args){super(...(args.length?args:[window.__testTime]));}static now(){return window.__testTime;}};`);
 const spoken=[],chimes=[],startupAudioCalls=[];let finishStartup;
-if(process.argv.includes('--voice-feedback')) window.WMOFAudio={unlock(){startupAudioCalls.push('unlock');return new Promise(()=>{});},speak(text,options={}){startupAudioCalls.push('speak');spoken.push(String(text));if(process.argv.includes("--startup-speech") && text === "Application is loading") finishStartup=options.onEnd;else queueMicrotask(()=>options.onEnd?.());return true;},
+if(process.argv.includes('--voice-feedback') || process.argv.includes('--interval-actions')) window.WMOFAudio={unlock(){startupAudioCalls.push('unlock');return new Promise(()=>{});},speak(text,options={}){startupAudioCalls.push('speak');spoken.push(String(text));if(process.argv.includes("--startup-speech") && text === "Application is loading") finishStartup=options.onEnd;else queueMicrotask(()=>options.onEnd?.());return true;},
     async startSong(name){chimes.push(name);return {hasChime:true,finished:Promise.resolve()};}};
 let recognition;
 window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abort(){this.onend?.();}};
@@ -76,11 +76,11 @@ window.eval(speechSource+'\nwindow.SpeechMenu=SpeechMenu;');
 window.SpeechMenu.events.addEventListener('speechFeedbackError',e=>errors.push(e.detail.error?.stack||String(e.detail.error)));
 window.eval(fs.readFileSync(new URL('../SpeechMicBar.js',import.meta.url),'utf8'));
 window.SpeechMenu.testBegin();
-if(process.argv.includes('--voice-feedback')) window.eval(fs.readFileSync(new URL('../AnnouncementCatalog.js',import.meta.url),'utf8'));
+if(process.argv.includes('--voice-feedback') || process.argv.includes('--interval-actions')) window.eval(fs.readFileSync(new URL('../AnnouncementCatalog.js',import.meta.url),'utf8'));
 let appSource=fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../app.js',import.meta.url),'utf8');
 // The fixture freezes Date.now for trip boundaries; eliminate audio pauses
 // so its frozen wall clock cannot accumulate an artificial playback backlog.
-if(process.argv.includes('--voice-feedback')) appSource=appSource.replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;', 'const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;');
+if(process.argv.includes('--voice-feedback') || process.argv.includes('--interval-actions')) appSource=appSource.replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;', 'const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;');
 if(process.argv.includes('--pointer-mode'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 window.eval(appSource);
 
@@ -190,6 +190,13 @@ if(process.argv.includes('--voice-code-router')) {
 if(process.argv.includes('--voice-code')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
+ const grammarUtterance=window.SpeechMenu.testBegin();
+ const initialGrammar=await window.SpeechMenu.testVoskContext(grammarUtterance.id);
+ assert(!initialGrammar.records.some(r=>r.id?.includes('breakChoice:breakDialog')),'closed type selector stays out of initial grammar');
+ assert(!initialGrammar.records.some(r=>r.id?.includes('endLunch:')||r.id?.includes('endShortBreak:')),'removed end aliases are not in Vosk grammar');
+ const projectedGrammar=await window.SpeechMenu.testVoskContext(grammarUtterance.id,'break start');
+ assert(projectedGrammar.records.some(r=>r.pattern==='^(?<breakChoice>break|lunch|short break)$'),'Break Start projects finite type choices into Vosk');
+ assert(!window.document.querySelector('#breakDialog').open,'grammar projection does not open the UI');
  const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();return u;};
  const posts=()=>requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length;
  const before=posts();
@@ -370,22 +377,49 @@ if(process.argv.includes('--interval-actions')) {
    window.document.querySelector('#breakButton').dispatchEvent(new window.Event('pointerup',{bubbles:true}));await settle();
    assert(window.document.querySelector('#breakDialog').open,'Break pointer opens selector');
    window.document.querySelector('#breakDialog [data-break-type="'+kind+'"]').click();await settle();
-   assert.equal(timer.getActiveIntervalState()?.intervalType,kind==='lunch'?'lunch':'break',kind+' pointer starts');
+   assert(!timer.getActiveIntervalState(),kind+' selection waits for OK');
+   assert.equal(window.document.querySelector('#breakTypeOK').disabled,false,'selected type enables OK');
+   window.document.querySelector('#breakTypeOK').click();await settle();
+   assert.equal(timer.getActiveIntervalState()?.intervalType,kind==='lunch'?'lunch':'break',kind+' pointer OK starts');
    await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
  }
  const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');return u;};
  await say('down');assert.equal(timer.getActiveIntervalState()?.intervalType,'down');
  await say('resume');assert(!timer.getActiveIntervalState());window.__testTime+=60000;
- for(const [phrase,type] of [['start break','break'],['break start','break'],['start short break','break'],['start lunch','lunch']]) {
-   const before=stored.filter(e=>e.event==='interval.started').length;
-   const confirmation=phrase==='break start'?'ok':'okay';
-   await say(phrase+' '+confirmation);assert.equal(timer.getActiveIntervalState()?.intervalType,type,phrase+' combined OK starts');
-   assert.equal(stored.filter(e=>e.event==='interval.started').length,before+1,phrase+' persists once');
-   await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
-   await say(phrase);assert(window.document.querySelector('#speechBreakConfirmDialog').open,phrase+' asks confirmation');
-   await say(confirmation);assert.equal(timer.getActiveIntervalState()?.intervalType,type,phrase+' separate OK starts');
-   await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
+ for(const [choice,type,label] of [['break','break','Break'],['short break','break','Short break'],['lunch','lunch','Lunch']]) {
+   for(const incremental of [false,true]) {
+     const before=stored.filter(e=>e.event==='interval.started').length;
+     const u=window.SpeechMenu.testBegin();
+     if(incremental) {
+       await say('break start',false,u);
+       assert(!window.document.querySelector('#breakDialog').open,'interim chain does not flash selector');
+       await say('break start '+choice,false,u);
+       assert(!timer.getActiveIntervalState(),'type without OK waits');
+     }
+     spoken.length=0;
+     await say('break start '+choice+' ok',true,u);
+     assert.equal(timer.getActiveIntervalState()?.intervalType,type,choice+' chained OK starts');
+     assert.equal(stored.filter(e=>e.event==='interval.started').length,before+1,'persists once');
+     assert(!window.document.querySelector('#breakDialog').open,'complete chain skips selector');
+     assert(spoken.includes(label+' started. Say break end to end your '+choice+'.'),'selected type announcement '+JSON.stringify({choice,spoken,chimes,consoleErrors,errors}));
+     const key=timer.getActiveIntervalState().intervalKey;
+     for(const invalidEnd of (incremental ? [] : ['lunch end','short break end','end lunch','end short break','end break'])) {
+       const rejected=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(rejected,invalidEnd+' ok',true);await rejected.digestQueue;await settle();assert.equal(timer.getActiveIntervalState()?.intervalKey,key,invalidEnd+' is not an end command');
+     }
+     await say('break end ok');assert(!timer.getActiveIntervalState(),'Break End ends '+choice);
+     window.__testTime+=60000;
+   }
+   await say('break start');assert(window.document.querySelector('#breakDialog').open,'standalone root opens type selector');
+   assert.equal(window.document.querySelector('#breakTypeOK').disabled,true,'OK requires type');
+   assert(spoken.includes('Say/press break type then OK.'),'standalone prompt');
+   await say(choice);assert(!timer.getActiveIntervalState(),'separate choice waits');
+   await say('ok');assert.equal(timer.getActiveIntervalState()?.intervalType,type,'separate OK starts');
+   await say('break end ok');assert(!timer.getActiveIntervalState());window.__testTime+=60000;
  }
+ const invalid=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(invalid,'break start ok',true);await invalid.digestQueue;await settle();
+ assert(!timer.getActiveIntervalState(),'missing type cannot start a break');
+ if(window.document.querySelector('#breakDialog').open) await say('cancel');
+ await say('break start cancel');assert(!window.document.querySelector('#breakDialog').open,'canceled chain cannot reopen deferred selector');
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  console.log('PASS Down/resume and direct, chained and separately confirmed Break/Short Break/Lunch actions');
  await window.happyDOM.close();process.exit(0);
@@ -923,12 +957,11 @@ if(process.argv.includes('--voice-feedback')) {
     const speakCommand=async phrase=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await settle();return u;};
     const dialog=window.document.querySelector('#speechBreakConfirmDialog');
     const restored=await speakCommand('break start');
-    assert(restored.hadCommittedCommand && dialog.open,'Break Start is equivalent to Start Break');
+    assert(restored.hadCommittedCommand && window.document.querySelector('#breakDialog').open,'Break Start opens the type selector');
     await speakCommand('cancel');
-    assert(!window.document.querySelector('#breakDialog speech-command'),'Break Selector has no voice commands');
+    assert(window.document.querySelector('#breakDialog speech-command'),'Break Selector supports voice choices');
     for(const [phrase,label,type,summary] of [
-        ['start break','break','break','Break'],
-        ['start short break','short break','break','Short Break'],
+        ['start short break','short break','break','Short break'],
         ['start lunch','lunch','lunch','Lunch']]) {
         spoken.length=0;
         const selection=await speakCommand(phrase);
@@ -944,11 +977,11 @@ if(process.argv.includes('--voice-feedback')) {
         await speakCommand('cancel');assert(!timer.getActiveIntervalState(),'Cancel leaves the trip running');
         await speakCommand(phrase);await speakCommand('ok');
         assert.equal(timer.getActiveIntervalState()?.intervalType,type,'a separate OK starts the selected interval');
-        assert(spoken.includes(summary+' Started. Say end '+label+' to end your '+label+'.'),'the final start announcement is preserved');
+        assert(spoken.includes(summary+' started. Say break end to end your '+label+'.'),'the final start announcement is preserved');
         const beforeWrongEnd=timer.getActiveIntervalState().intervalKey;
         const wrongEnd=await speakCommand(label==='break'?'end lunch ok':'end break ok');
         assert(!wrongEnd.hadCommittedCommand && timer.getActiveIntervalState()?.intervalKey===beforeWrongEnd,'a mismatched end command cannot end the active interval');
-        await speakCommand('end '+label);
+        await speakCommand('break end');
         assert(dialog.open && spoken.includes('Are you ready to end your '+label+'?'),'standalone Break end asks its question');
         const key=timer.getActiveIntervalState().intervalKey;
         await speakCommand('cancel');assert.equal(timer.getActiveIntervalState()?.intervalKey,key,'end Cancel retains the interval');
@@ -965,20 +998,20 @@ if(process.argv.includes('--voice-feedback')) {
             assert(!chain.digestExecutionFailed && timer.getActiveIntervalState(),phrase+' OK starts the interval');
             assert(!dialog.open && !window.document.querySelector('#breakDialog').open,'combined start skips both dialogs');
             assert(!spoken.some(t=>t.startsWith('Are you ready')||t.includes('selected. Say OK')||t.includes('Choose Short Break')),'combined start skips intermediate feedback');
-            assert(spoken.includes(summary+' Started. Say end '+label+' to end your '+label+'.'),'combined start retains outcome speech');
+            assert(spoken.includes(summary+' started. Say break end to end your '+label+'.'),'combined start retains outcome speech');
             const end=window.SpeechMenu.testBegin();
             if(incremental) {
-                await window.SpeechMenu.testTranscript(end,'end '+label,false);await end.digestQueue;await settle();
+                await window.SpeechMenu.testTranscript(end,'break end',false);await end.digestQueue;await settle();
                 assert(!dialog.open,'interim end defers confirmation');
             }
-            await window.SpeechMenu.testTranscript(end,'end '+label+' ok',true);await end.digestQueue;await settle();
+            await window.SpeechMenu.testTranscript(end,'break end ok',true);await end.digestQueue;await settle();
             assert(!end.digestExecutionFailed && !timer.getActiveIntervalState(),'combined end completes');
             assert(!spoken.includes('Are you ready to end your '+label+'?'),'combined end skips its question');
             assert.equal(animationCalls.filter(c=>c.target?.id==='speechBreakConfirmDialog').length,before,'combined commands do not flash a dialog');
         }
     }
     const translatedStart=window.document.querySelector('[data-speech-editor-id="builtin:startLunch:page"]');
-    const translatedEnd=window.document.querySelector('[data-speech-editor-id="builtin:endLunch:page"]');
+    const translatedEnd=window.document.querySelector('[data-speech-editor-id="builtin:endBreak:page"]');
     const translatedOK=window.document.querySelector('[data-speech-editor-id="builtin:confirm:speechBreakConfirmDialog"]');
     const endPattern=translatedEnd.getAttribute('speech-pattern'),startPattern=translatedStart.getAttribute('speech-pattern'),okPattern=translatedOK.getAttribute('speech-pattern');
     translatedEnd.setAttribute('speech-pattern','^terminer repas$');translatedStart.setAttribute('speech-pattern','^commencer repas$');translatedOK.setAttribute('speech-pattern','^daccord$');
@@ -995,7 +1028,7 @@ if(process.argv.includes('--voice-feedback')) {
     assert(spoken.includes('Are you ready to start your lunch?'),'Skippable=false retains the localized question');
     assert(!dialog.open,'the combined utterance still skips the dialog');
     translatedStart.setAttribute('speech-skippable','');
-    await speakCommand('end lunch ok');
+    await speakCommand('break end ok');
     await speakCommand('sync off');const beforeSyncLoop=chimes.length;await speakCommand('sync off');assert(spoken.includes('Sync already off.'));if(process.argv.includes('--setting-chimes'))assert.deepEqual(chimes.slice(beforeSyncLoop),['setting-unchanged'],'unchanged sync loopback gets exactly one neutral chime');
     if(process.argv.includes('--setting-chimes')) {
         for(const mode of ['trip','auto','total','year','money','week','day']) {

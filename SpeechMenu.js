@@ -567,17 +567,19 @@ class SpeechMenu {
     static async #dismissSurface(intent) {
         const context = SpeechMenu.#executionContext;
         const projected = context?.chainSurface;
-        const surface = SpeechMenu.activeSurface;
-        if (projected && projected !== surface) return false;
+        const surface = projected || SpeechMenu.activeSurface;
         const handlers = SpeechMenu.#surfaceHandlers.get(surface);
-        if (!handlers || !surface?.isConnected || handlers.isOpen?.() === false ||
+        const owner = SpeechMenu.#utterance?.id === context?.utteranceId
+            ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(context?.utteranceId);
+        const deferred = Boolean(context?.chain && projected && context.ownsProjectedSurface?.() === true &&
+            handlers?.canDismissProjected?.(context) === true);
+        if (projected && projected !== SpeechMenu.activeSurface && !deferred) return false;
+        if (!handlers || !surface?.isConnected || (!deferred && handlers.isOpen?.() === false) ||
             handlers.canClose?.(intent) === false) return false;
         const handler = intent === 'cancel' ? handlers.cancel || handlers.close : handlers.close;
         const result = await handler({intent, surface, context});
         if (result === false) return false;
         SpeechMenu.#index().clearSurfacePrimed(surface, context?.utteranceId);
-        const owner = SpeechMenu.#utterance?.id === context?.utteranceId
-            ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(context?.utteranceId);
         owner?.expectedSurfaces?.delete(surface);
         SpeechMenu.#index().flush();
         return true;
@@ -4001,6 +4003,7 @@ class SpeechMenu {
                         hasContinuation: () => utterance.digestSteps.indexOf(step) < utterance.digestSteps.length - 1,
                         nextCommand: () => utterance.digestSteps[utterance.digestSteps.indexOf(step) + 1]?.commandElement.getAttribute("speech-function"),
                         isFinal: () => utterance.digestCommitted,
+                        ownsProjectedSurface: () => !utterance.chainCanceled && utterance.expectedSurfaces?.has(step.surface),
                         canCommit: () => !utterance.chainCanceled && !utterance.digestExecutionFailed &&
                             !SpeechMenu.#stopped && utterance.sessionGeneration === SpeechMenu.#sessionGeneration &&
                             SpeechMenu.#commandStillAuthorized(step.commandElement)});
@@ -7102,6 +7105,8 @@ class SpeechMenu {
                                 context, frames, optimistic);
                             if (signal?.aborted) return undefined;
                             const root = later?.steps[0];
+                            if (SpeechMenu.#rejectsRecoveredPrefix(root?.commandElement,
+                                [remaining.slice(0, skip).join(" "), root?.ignoredBefore].filter(Boolean).join(" "))) continue;
                             if (later && !later.invalid && root &&
                                 SpeechMenu.#hasExplicitCommandAnchor(root.commandElement, root.segmentTranscript)) {
                                 tail = {...later, steps: [{...root,
@@ -7187,6 +7192,8 @@ class SpeechMenu {
                 if (signal?.aborted) return undefined;
                 const root = later?.steps[0];
                 if (!later || later.invalid || !root || !SpeechMenu.#hasExplicitCommandAnchor(root.commandElement, root.segmentTranscript)) continue;
+                if (SpeechMenu.#rejectsRecoveredPrefix(root.commandElement,
+                    [words.slice(0, skip).join(" "), root.ignoredBefore].filter(Boolean).join(" "))) continue;
                 best = {...later, steps: [{...root,
                     ignoredBefore: [words.slice(0, skip).join(" "), root.ignoredBefore].filter(Boolean).join(" ")}, ...later.steps.slice(1)],
                     consumedWords: skip + later.consumedWords};
@@ -7195,6 +7202,12 @@ class SpeechMenu {
         }
         memo.set(key, best);
         return best;
+    }
+
+    static #rejectsRecoveredPrefix(element, prefix) {
+        const normalized = SpeechMenu.#normalizeTranscript(prefix);
+        return (element?.getAttribute("speech-reject-prefix") || "").split("|").filter(Boolean)
+            .some(value => normalized === value || normalized.endsWith(" " + value));
     }
 
     static async #planCommandChain(utterance, transcript, signal) {
@@ -7229,6 +7242,8 @@ class SpeechMenu {
                 if (start > 0 && !candidate.steps.length && candidate.pending &&
                     !candidate.pending.hasCommandPrefix) continue;
                 const firstStep = candidate.steps[0];
+                if (SpeechMenu.#rejectsRecoveredPrefix(firstStep?.commandElement,
+                    [words.slice(0, start).join(" "), firstStep?.ignoredBefore].filter(Boolean).join(" "))) continue;
                 const collector = firstStep && (
                     firstStep.commandElement.hasAttribute("speech-collect") ||
                     firstStep.commandElement.hasAttribute("speech-open-ended"));
@@ -7308,7 +7323,8 @@ class SpeechMenu {
                     words.slice(start), utterance, signal, 0, new Map(),
                     utterance.digestContext, utterance.digestSurfaceStack, true);
                 if (signal?.aborted) return undefined;
-                if (attempted?.exact) { best = attempted; offset = start; break; }
+                if (attempted?.exact && !SpeechMenu.#rejectsRecoveredPrefix(attempted.steps[0]?.commandElement,
+                    [words.slice(0, start).join(" "), attempted.steps[0]?.ignoredBefore].filter(Boolean).join(" "))) { best = attempted; offset = start; break; }
             }
         }
         if (!best || (!best.steps.length && !utterance.chainActive)) return undefined;
@@ -9713,6 +9729,7 @@ class SpeechMenu {
                     hasContinuation: executionMetadata?.hasContinuation,
                     nextCommand: executionMetadata?.nextCommand,
                     isFinal: executionMetadata?.isFinal,
+                    ownsProjectedSurface: executionMetadata?.ownsProjectedSurface,
                     persist: element.hasAttribute("speech-persist") && element.getAttribute("speech-persist") !== "false"
                 });
 

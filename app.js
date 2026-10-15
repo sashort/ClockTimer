@@ -8277,6 +8277,7 @@
 
         context.allowOk =
             next;
+        if (context === breakDialog && $("#breakTypeOK")) $("#breakTypeOK").disabled = !next;
 
         emitUIEvent(
             context,
@@ -18743,7 +18744,7 @@
             startBreak: true,
             openBreakSelector: !paused,
             startDown: interval !== "down",
-            endBreak: kind === "break",
+            endBreak: ["break", "short-break", "lunch"].includes(kind),
             endShortBreak: kind === "short-break",
             endLunch: kind === "lunch",
             endInterval: kind !== null,
@@ -18827,6 +18828,7 @@
         tripActionRow.hidden = !controls.actionRowVisible;
         breakButton.hidden = !controls.breakVisible;
         breakButton.disabled = controls.busy || !actions.openBreakSelector;
+        if ($("#breakTypeOK")) $("#breakTypeOK").disabled = controls.busy || !breakDialog.allowOk;
         downButton.hidden = !controls.downVisible;
         downButton.disabled = controls.busy || !actions.startDown;
         endTripButton.hidden = !controls.primaryVisible;
@@ -20777,6 +20779,11 @@
                 "continueDownTime"
         });
 
+    globalThis.WMOFInteractionFunctions.bindAction({
+        element: $("#breakTypeOK"), event: "click", name: "confirmBreakTypeClick",
+        action: "confirmBreakType", preventDefault: true
+    });
+
     breakDialog
         .querySelectorAll(
             "[data-break-type]"
@@ -20809,7 +20816,7 @@
                                 ) +
                             "Click",
                         action:
-                            "startBreak",
+                            "chooseBreakType",
                         args:
                             () => [
                                 button.dataset
@@ -21156,6 +21163,8 @@
         }
         return openSpeechBreakPrompt("end", kind);
     }
+
+    let speechBreakSelection;
 
     function requestSpeechBreakStart(kind) {
         if (!['break', 'short-break', 'lunch'].includes(kind) || !readInteractionState().actions.startBreak) return false;
@@ -24262,6 +24271,10 @@
                         )
                 ].at(-1);
 
+            if (dialog === breakDialog && speechBreakSelection) {
+                speechBreakSelection.pending = false;
+                if (!dialog.open) return true;
+            }
             if (dialog?.id === "voicePadRecognitionDialog") return cancelVoicePadRecognition();
             if ([loginDialog,legacyLoginDialog].includes(dialog)) return cancelLoginEntry();
             if (dialog === tripTransitionOverlay && completedTripSummary) return dismissCompletedTripSummary();
@@ -25540,7 +25553,23 @@
                 );
             },
 
-            openBreakStartMenu() { return requestSpeechBreakStart("break"); },
+            openBreakStartMenu() {
+                if (!readInteractionState().actions.openBreakSelector) return false;
+                breakDialog.querySelectorAll(".speech-focused").forEach(item => item.classList.remove("speech-focused"));
+                setOkAllowed(breakDialog, false);
+                const session = speechBreakSelection = {pending: true};
+                const show = () => {
+                    if (speechBreakSelection !== session || !session.pending) return;
+                    openDialog("breakDialog", {reason: "break-start"});
+                    globalThis.WMOFAudio?.speak?.(announcementText("messages.voiceFeedback.breakChoices"));
+                };
+                if (globalThis.SpeechMenu?.executionContext?.chain) {
+                    globalThis.WMOFCoordinator.defer("break-type-selector", show, {delay: 0, afterCompletion: true,
+                        valid: () => speechBreakSelection === session && session.pending});
+                    return true;
+                }
+                show(); return true;
+            },
             openShortBreakStartMenu() { return requestSpeechBreakStart("short-break"); },
             openLunchStartMenu() { return requestSpeechBreakStart("lunch"); },
 
@@ -25561,6 +25590,8 @@
                             "short-break",
                         short:
                             "short-break",
+                        "short break": "short-break",
+                        "short-break": "short-break",
                         "15":
                             "break",
                         break:
@@ -25634,6 +25665,7 @@
                 const kind =
                     button.dataset
                         .breakType;
+                if (speechBreakSelection) speechBreakSelection.pending = false;
 
                 setOkAllowed(
                     breakDialog,
@@ -25724,7 +25756,7 @@
                 );
             },
 
-            openBreakEndMenu() { return requestSpeechBreakEnd("break"); },
+            openBreakEndMenu() { return requestSpeechBreakEnd(activeSpeechBreakKind()); },
             openShortBreakEndMenu() { return requestSpeechBreakEnd("short-break"); },
             openLunchEndMenu() { return requestSpeechBreakEnd("lunch"); },
 
@@ -29027,7 +29059,7 @@
             const speechChainNext = {
                 readyAt:
                     "scheduled-start",
-                startBreak: "break-start-confirm",
+                startBreak: "break-choice",
                 startShortBreak: "break-start-confirm",
                 startLunch: "break-start-confirm",
                 endBreak: "break-end-confirm",
@@ -29209,7 +29241,9 @@
                 element.dataset.speechSystemCommand = key;
                 element.dataset.speechOptionsCategory = 'system';
                 element.setAttribute('speech-chain-surface', 'pop');
-            } else if (key === 'showTripLog') element.setAttribute('speech-chain-surface', '#tripLogDialog');
+            } else if (key === 'startBreak') element.setAttribute('speech-chain-surface', '#breakDialog');
+            else if (key === 'endBreak') element.setAttribute('speech-reject-prefix', 'short');
+            else if (key === 'showTripLog') element.setAttribute('speech-chain-surface', '#tripLogDialog');
             else if (key === 'hideTripLog' || key === 'voiceEntryConfirm' || ['confirmBreakType', 'saveTripSettings', 'confirmNumberPad'].includes(actionName)) {
                 element.setAttribute('speech-chain-surface', 'pop');
             }
@@ -29256,7 +29290,7 @@
             }
             for (const [key, fn] of [
                 ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["startBreak","openBreakStartMenu"], ["startShortBreak","openShortBreakStartMenu"], ["startLunch","openLunchStartMenu"], ["down","startDownTime"],
-                ["endBreak","openBreakEndMenu"], ["endShortBreak","openShortBreakEndMenu"], ["endLunch","openLunchEndMenu"], ["resume","resumeTrip"],
+                ["endBreak","openBreakEndMenu"], ["resume","resumeTrip"],
                 ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
                 ["changeGoal","changeGoal"],
                 ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
@@ -29271,7 +29305,8 @@
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
             }
-            // Break Selector is pointer-only; voice uses the OK/Cancel prompt.
+            installSpeechCommand("breakChoice", "chooseBreakType", breakDialog, false);
+            installSpeechCommand("confirm", "confirmBreakType", breakDialog, false);
 
             const earlyStartStandardEditorCommand =
                 installSpeechCommand(
@@ -29379,6 +29414,7 @@
                     isOpen: () => surface.matches('dialog') ? surface.open : popoverIsOpen(surface),
                     acceptCommand: surface === loginDialog ? command =>
                         ['WMOFActions.enterLoginDigits','SpeechMenu.cancel'].includes(command.getAttribute('speech-function')) : undefined,
+                    canDismissProjected: surface === breakDialog ? () => speechBreakSelection?.pending === true : undefined,
                     close: dismiss, cancel: dismiss
                 });
             }
@@ -29697,7 +29733,8 @@
                 case "cancelBreakPrompt": cancelled(); break;
                 case "openBreakMenu":
                     if (after.surface === "speechBreakConfirmDialog") parts.push(after.question); else add("breakChoices"); break;
-                case "openBreakStartMenu": case "openShortBreakStartMenu": case "openLunchStartMenu": parts.push(after.question); break;
+                case "openBreakStartMenu": break;
+                case "openShortBreakStartMenu": case "openLunchStartMenu": parts.push(after.question); break;
                 case "chooseBreakType":
                     add("breakSelected", {choice: after.choice === "lunch" ? "Lunch" : after.choice === "short-break" ? "Short break" : "Break"}); break;
                 case "openBreakEndMenu": case "openShortBreakEndMenu": case "openLunchEndMenu": parts.push(after.question); break;

@@ -44,7 +44,7 @@ const bindings={announcementText:key=>key,EnglishSpeechValuePreprocessor:Values,
     scheduleScheduledStartSpeechPrompt(){},confirmSettingChange(){return true;},
     formatGoalFailureDuration(){return '';},tripSettingsDialog:{open:false,querySelector(){return null;}},
     tripSettingsSession:undefined,beginTripSettingsSession(){return undefined;},refreshTripSettingsValues(){},
-    breakDialog,speechTransactionDate:()=>boundary,setOkAllowed(dialog,value){dialog.allowOk=value;},
+    speechBreakSelection: {pending:true},breakDialog,speechTransactionDate:()=>boundary,setOkAllowed(dialog,value){dialog.allowOk=value;},
     closeDialog(){},startBreakInterval(kind,date){started.push({kind,date});return true;}
 };
 const field=(start,end)=>source.slice(source.indexOf(start),source.indexOf(end));
