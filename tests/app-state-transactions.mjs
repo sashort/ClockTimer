@@ -530,6 +530,52 @@ if(process.argv.includes('--voicepad-continuation')) {
  console.log('PASS contextual voicepad duration, clock and percent continuation, resumed speech, silence and scheduled-time control');
  await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--down-break')) {
+ await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');return u;};
+ for(const [choice,type] of [['break','break'],['short break','break'],['lunch','lunch']]) {
+   for(const mode of ['pointer','separate','chained','incremental']) {
+     window.__testTime+=60000;
+     assert.equal(await window.WMOFActions.startDownTime(),true);await settle();
+     const down=timer.getActiveIntervalState();assert.equal(down.intervalType,'down');
+     window.__testTime+=30000;
+     const starts=stored.filter(e=>e.event==='interval.started').length;
+     assert.equal(window.WMOFInteractionState.state.actions.openBreakSelector,true,'Down permits the break selector');
+     assert.equal(window.document.querySelector('#downBreakButton').disabled,false,'Down Break control is available');
+     if(mode==='pointer') {
+       window.document.querySelector('#downBreakButton').dispatchEvent(new window.Event('pointerup',{bubbles:true}));await settle();
+       assert(window.document.querySelector('#breakDialog').open,'Down Break pointer opens selector');
+       window.document.querySelector('#breakDialog [data-break-type="'+choice.replace(' ','-')+'"]').click();await settle();
+       assert.equal(timer.getActiveIntervalState().intervalKey,down.intervalKey,'choosing a type keeps Down until OK');
+       window.document.querySelector('#breakTypeOK').click();await settle();
+     } else if(mode==='separate') {
+       await say('break start');assert(window.document.querySelector('#breakDialog').open);
+       await say(choice);assert.equal(timer.getActiveIntervalState().intervalKey,down.intervalKey,'spoken type waits for OK');
+       await say('ok');
+     } else {
+       const u=window.SpeechMenu.testBegin();
+       const grammar=await window.SpeechMenu.testVoskContext(u.id,'break start');
+       assert(grammar.records.some(r=>r.pattern==='^(?<breakChoice>break|lunch|short break)$'),'Down projects the finite break choices');
+       if(mode==='incremental') {
+         await say('break start',false,u);await say('break start '+choice,false,u);
+         assert.equal(timer.getActiveIntervalState().intervalKey,down.intervalKey,'unfinished chain keeps Down');
+       }
+       await say('break start '+choice+' ok',true,u);
+     }
+     assert.equal(timer.getActiveIntervalState()?.intervalType,type,choice+' starts from Down via '+mode);
+     assert.equal(stored.filter(e=>e.event==='interval.started').length,starts+1,'break starts exactly once: '+JSON.stringify(stored));
+     assert.equal(stored.filter(e=>e.event==='interval.ended'&&e.value.intervalKey===down.intervalKey).length,1,'Down ends exactly once');
+     assert.equal(window.WMOFCoordinator.lockCount,0);
+     await say('break end ok');assert(!timer.getActiveIntervalState(),'ending the break resumes the trip');
+   }
+ }
+ await window.WMOFActions.startDownTime();await settle();const down=timer.getActiveIntervalState();
+ await say('break start');await say('cancel');
+ assert.equal(timer.getActiveIntervalState().intervalKey,down.intervalKey,'canceling the chooser preserves Down');
+ assert.equal(window.WMOFCoordinator.lockCount,0);assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS Down to Break/Short Break/Lunch via pointer, separate, chained and incremental commands; cancel preserves Down');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--interval-actions')) {
  await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
  window.__testTime+=60000;

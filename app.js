@@ -18745,7 +18745,7 @@
             // Explicit optimistic replacement commands remain available. A
             // duplicate break is validated asynchronously and can revert.
             startBreak: true,
-            openBreakSelector: !paused,
+            openBreakSelector: !paused || interval === "down",
             startDown: interval !== "down",
             endBreak: ["break", "short-break", "lunch"].includes(kind),
             endShortBreak: kind === "short-break",
@@ -18818,7 +18818,7 @@
         return interactionStateSnapshot;
     }
 
-    const orchestrationControlIds = new Set(["newTripButton", "breakButton", "breakTypeOK", "downButton", "endTripButton", "downCancelButton", "downResumeButton", "tripTransitionSummaryOk", "tripTransitionSummaryCancel"]);
+    const orchestrationControlIds = new Set(["newTripButton", "breakButton", "breakTypeOK", "downButton", "endTripButton", "downBreakButton", "downCancelButton", "downResumeButton", "tripTransitionSummaryOk", "tripTransitionSummaryCancel"]);
     function setInteractionDisabled(control, value) {
         const disabled = Boolean(value);
         if (control && control.disabled !== disabled) control.disabled = disabled;
@@ -18844,6 +18844,7 @@
         setInteractionDisabled(endTripButton, controls.busy || !actions[controls.primaryAction]);
         endTripButton.textContent = controls.primaryText;
         downTripControls.hidden = !controls.downVisiblePanel;
+        setInteractionDisabled(downBreakButton, controls.busy || !actions.openBreakSelector);
         setInteractionDisabled(downCancelButton, controls.busy || !actions.cancelDown);
         setInteractionDisabled(downResumeButton, controls.busy || !actions.resume);
         setInteractionDisabled($("#tripTransitionSummaryOk"), controls.busy);

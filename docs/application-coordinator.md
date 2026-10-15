@@ -78,6 +78,12 @@ buttons. `--interval-actions` covers pointer Break selection, voice confirmation
 Down/resume and one persisted event per accepted interval.
 "Break Start" opens the type chooser; a break type followed by OK starts it.
 "Break End" is the shared end command for every break type.
+Down also permits the break chooser through its Break button or Break Start.
+Choosing a type leaves Down active until OK; cancellation preserves Down.
+Acceptance ends Down and starts the selected break in the same operation.
+Event flushes run sequentially so the composite transition sends each event once.
+`--down-break` covers every type with pointer, separate spoken commands, complete
+chains and incremental chains, including finite grammar projection from Down.
 
 ## Verification
 

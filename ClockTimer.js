@@ -135,6 +135,7 @@
 
         #pendingTripEvents =
             [];
+        #tripEventSyncPromise;
 
         #completedTripQueue = [];
         #syncUserId;
@@ -3495,7 +3496,18 @@
             return queued;
         }
 
-        async #syncTripEvents() {
+        #syncTripEvents() {
+            // Composite transitions (Down -> Break) queue an end and a start.
+            // Flushes must read pending events after the preceding flush settles,
+            // otherwise both can send the same events concurrently.
+            const work = (this.#tripEventSyncPromise || Promise.resolve()).catch(() => {}).then(() => this.#flushTripEvents());
+            this.#tripEventSyncPromise = work;
+            return work.finally(() => {
+                if (this.#tripEventSyncPromise === work) this.#tripEventSyncPromise = undefined;
+            });
+        }
+
+        async #flushTripEvents() {
             await this.#syncCompletedTrips();
             const pending =
                 this.#pendingTripEvents.filter(
