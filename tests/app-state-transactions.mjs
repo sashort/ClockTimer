@@ -190,13 +190,6 @@ if(process.argv.includes('--voice-code-router')) {
 if(process.argv.includes('--voice-code')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
- const grammarUtterance=window.SpeechMenu.testBegin();
- const initialGrammar=await window.SpeechMenu.testVoskContext(grammarUtterance.id);
- assert(!initialGrammar.records.some(r=>r.id?.includes('breakChoice:breakDialog')),'closed type selector stays out of initial grammar');
- assert(!initialGrammar.records.some(r=>r.id?.includes('endLunch:')||r.id?.includes('endShortBreak:')),'removed end aliases are not in Vosk grammar');
- const projectedGrammar=await window.SpeechMenu.testVoskContext(grammarUtterance.id,'break start');
- assert(projectedGrammar.records.some(r=>r.pattern==='^(?<breakChoice>break|lunch|short break)$'),'Break Start projects finite type choices into Vosk');
- assert(!window.document.querySelector('#breakDialog').open,'grammar projection does not open the UI');
  const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();return u;};
  const posts=()=>requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length;
  const before=posts();
@@ -383,6 +376,13 @@ if(process.argv.includes('--interval-actions')) {
    assert.equal(timer.getActiveIntervalState()?.intervalType,kind==='lunch'?'lunch':'break',kind+' pointer OK starts');
    await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
  }
+ const grammarUtterance=window.SpeechMenu.testBegin();
+ const initialGrammar=await window.SpeechMenu.testVoskContext(grammarUtterance.id);
+ assert(!initialGrammar.records.some(r=>r.id?.includes('breakChoice:breakDialog')),'closed type selector stays out of initial grammar');
+ assert(!initialGrammar.records.some(r=>r.id?.includes('endLunch:')||r.id?.includes('endShortBreak:')),'removed end aliases are not in Vosk grammar');
+ const projectedGrammar=await window.SpeechMenu.testVoskContext(grammarUtterance.id,'break start');
+ assert(projectedGrammar.records.some(r=>r.pattern==='^(?<breakChoice>break|lunch|short break)$'),'Break Start projects finite type choices into Vosk');
+ assert(!window.document.querySelector('#breakDialog').open,'grammar projection does not open the UI');
  const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');return u;};
  await say('down');assert.equal(timer.getActiveIntervalState()?.intervalType,'down');
  await say('resume');assert(!timer.getActiveIntervalState());window.__testTime+=60000;
