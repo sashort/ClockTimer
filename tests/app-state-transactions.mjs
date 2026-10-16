@@ -762,6 +762,34 @@ if(process.argv.includes('--mic-feedback')) {
  console.log('PASS local and voice mic feedback: dedicated activation/deactivation chimes, announcements and duplicate suppression');
  await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--decoder-final-boundaries')) {
+ const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
+ const ready=window.SpeechMenu.testBegin();await say(ready,'ready',true);
+ let accepted;
+ await window.WMOFVoiceEntry.open({mode:'duration',source:'test-final-duration',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{accepted=value;return true;}});await settle();
+ const duration=window.SpeechMenu.testBegin();
+ let finalRequests=0;
+ window.SpeechMenu.testUseRecognizer({finishUtterance(){finalRequests++;setTimeout(()=>window.SpeechMenu.testDeliverFinal(duration,'twenty two fifty six'),20);},abortUtterance(){},setHotwords(){}});
+ await say(duration,'twenty two fifty');
+ window.SpeechMenu.testPause(duration);await new Promise(resolve=>setTimeout(resolve,450));await duration.digestQueue;await settle();
+ assert.equal(finalRequests,1,'silence requests the decoder final before committing a partial duration');
+ const ok=window.SpeechMenu.testBegin();await say(ok,'ok',true);
+ assert.equal(accepted,1376000,'the final word six survives silence settlement');
+ await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ for(const choice of ['break','short break','lunch']) {
+  const u=window.SpeechMenu.testBegin();let finishes=0;
+  window.SpeechMenu.testUseRecognizer({finishUtterance(){finishes++;setTimeout(()=>window.SpeechMenu.testDeliverFinal(u,'break start '+choice+' ok'),20);},abortUtterance(){},setHotwords(){}});
+  await say(u,'break start');await say(u,'break start '+choice);
+  window.SpeechMenu.testPause(u);await new Promise(resolve=>setTimeout(resolve,450));await u.digestQueue;await u.segmentBarrier;await settle();
+  assert.equal(finishes,1,'break confirmation waits for the decoder final: '+choice);
+  assert.equal(timer.getActiveIntervalState()?.intervalType,choice==='lunch'?'lunch':'break','the final OK starts '+choice);
+  assert.equal(window.WMOFCoordinator.lockCount,0,'confirmed break releases locks');
+  await timer.endInterval(new window.Date());await settle();window.__testTime+=60000;
+ }
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS decoder finals retain duration suffixes and break confirmations across silence');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--voicepad-continuation')) {
  const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
  const scheduled=window.SpeechMenu.testBegin();await say(scheduled,'ready at eleven fifty nine pm',true);
@@ -823,6 +851,7 @@ if(process.argv.includes('--voicepad-continuation')) {
  assert.equal((await window.SpeechMenu.testVoskContext(percent.id)).records.find(r=>r.id?.includes('keypadValue:voiceEntrySurface'))?.expect,'number','percentage context replaces clock grammar');
  await say(percent,'seventy');await say(percent,'seventy five percent');
  assert.equal(percent.completedStreams,undefined,'percent collector also waits for a speech boundary');
+ window.SpeechMenu.testUseRecognizer({finishUtterance(){setTimeout(()=>window.SpeechMenu.testDeliverFinal(percent,'seventy five percent'),0);},abortUtterance(){},setHotwords(){}});
  window.SpeechMenu.testPause(percent);await new Promise(resolve=>setTimeout(resolve,250));await percent.digestQueue;await settle();
  assert(percent.hadCommittedCommand,'actual silence completes a valid value');
  assert.equal(percentage,undefined,'silence alone cannot press OK');

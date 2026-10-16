@@ -45,6 +45,8 @@ try {
     assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four', 'processed command leaves the active display');
     emit('utteranceTranscriptChanged', {id: 41, transcript: 'show log ready at four twelve', isFinal: false});
     assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four twelve', 'cumulative results retain only the unfinished value');
+    emit('speechRecognitionStatusChanged', {status: 'grammar-switch'});
+    assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four twelve', 'decoder grammar switches cannot replace the recognized words');
     emit('speechCommandExecuted', {utteranceId: 41, transcript: 'show log'});
     emit('speechCommandMatched', {utteranceId:41, transcript:'show log', canonicalTranscript:'Log'});
     emit('speechArgumentsPrepared', {utteranceId:41, arguments:['stale']});

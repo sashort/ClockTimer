@@ -6084,9 +6084,10 @@ class SpeechMenu {
                         return;
                     }
 
-                    if (SpeechMenu.#executionEnabled) {
-                        void SpeechMenu.#handleLiveTranscript(utterance, utterance.transcript, true);
-                    } else SpeechMenu.#finishUtterance("candidate-silence", true);
+                    // Silence ends collection, but the last partial may still
+                    // omit the final word. Drain the recognizer before settling
+                    // the chain, including a pending value or confirmation.
+                    SpeechMenu.#finishUtterance("candidate-silence", true);
                 },
                 delay
             );

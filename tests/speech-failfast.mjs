@@ -16,7 +16,10 @@ if(process.env.SPEECH_INDEX_BASELINE) source=source.replace('static #indexedMatc
 source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testBegin() {
         SpeechMenu.#stopped=false;
-        SpeechMenu.#recognizer={beginUtterance(){},setHotwords(){},abortUtterance(id){globalThis.__testAborts.push(id);},finishUtterance(){}};
+        SpeechMenu.#recognizer={beginUtterance(){},setHotwords(){},abortUtterance(id){globalThis.__testAborts.push(id);},finishUtterance(id){
+            const u=SpeechMenu.#utterance;
+            setTimeout(()=>SpeechMenu.#onSherpaTranscript({detail:{utteranceId:id,transcript:u.transcript,isFinal:true}}),0);
+        }};
         SpeechMenu.#beginUtterance(performance.now());
         return SpeechMenu.#utterance;
     }
@@ -160,7 +163,7 @@ try {
  assert.equal(calls.length,2,'a duration collector can still extend with seconds');
  speech.testPause(u);await new Promise(resolve=>setTimeout(resolve,200));await u.digestQueue;
  assert.deepEqual(calls,[['ready','4:30'],['sync','on'],['standard','0:17:00']],'chain context survives intervening commands');
- assert.equal(errors.length,0,'silence completes a valid collector without waiting for decoder final');
+ assert.equal(errors.length,0,'silence completes a valid collector after the decoder final');
  u=fresh();await hear(u,'ready at bananas sync on standard time seventeen minutes',true);
  assert(!calls.some(call=>call[0]==='ready'||call[0]==='standard'),'malformed Ready At cannot authorize the dependent Standard Time');
  const protectedHead=make(document.body,'protected','^break end$','showLog',{'speech-modal':'top-level','speech-reject-prefix':'short'});
