@@ -46,6 +46,13 @@ window.fetch=async(url,options={})=>{
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
 window.document.write(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
+if(process.argv.includes('--range-permissions')) {
+ // Check shipped markup before the legacy installer can repair its attributes.
+ for(const action of ['changeGoalMode','changeGoal']) {
+  const commands=[...window.document.querySelectorAll('[speech-function="WMOFActions.'+action+'"]')];
+  assert(commands.length&&commands.every(command=>command.hasAttribute('speech-persist')),action+' ships with explicit server permission');
+ }
+}
 // PHP embeds the current resources; discard the static HTML export's snapshot.
 window.document.querySelector('#language-pack')?.remove();
 installEnglishPack(window);
