@@ -19126,6 +19126,7 @@
     }
 
     let speechBreakPromptState;
+    const announcedBreakEndQuestions = new WeakSet();
 
     function openSpeechBreakPrompt(
         mode, kind
@@ -19238,13 +19239,20 @@
         const active = clockTimer.getActiveIntervalState?.(date);
         if (!active || activeSpeechBreakKind(date) !== kind) return false;
         const context = globalThis.SpeechMenu?.executionContext;
-        if (context?.chain && (context.isFinal?.() !== true ||
-            context.nextCommand?.() === "WMOFActions.confirmBreakPromptYes")) {
+        // A fully recognized Break End opens its UI immediately. Only a
+        // confirmation already present in this plan can bypass that dialog;
+        // optional final speech feedback must not own UI execution.
+        if (context?.chain && context.nextCommand?.() === "WMOFActions.confirmBreakPromptYes") {
             speechBreakPromptState = {mode: "end", kind, hidden: true, intervalType: active.intervalType,
                 intervalKey: active.intervalKey, utteranceId: context.utteranceId};
             return true;
         }
-        return openSpeechBreakPrompt("end", kind);
+        const opened = openSpeechBreakPrompt("end", kind);
+        if (opened && context && globalThis.WMOFAudio?.speak) {
+            announcedBreakEndQuestions.add(context);
+            globalThis.WMOFAudio.speak($("#speechBreakConfirmMessage").textContent);
+        }
+        return opened;
     }
 
     let speechBreakSelection;
@@ -27827,7 +27835,8 @@
                 case "openShortBreakStartMenu": case "openLunchStartMenu": parts.push(after.question); break;
                 case "chooseBreakType":
                     add("breakSelected", {choice: after.choice === "lunch" ? "Lunch" : after.choice === "short-break" ? "Short break" : "Break"}); break;
-                case "openBreakEndMenu": case "openShortBreakEndMenu": case "openLunchEndMenu": parts.push(after.question); break;
+                case "openBreakEndMenu": case "openShortBreakEndMenu": case "openLunchEndMenu":
+                    if (!announcedBreakEndQuestions.has(context)) parts.push(after.question); break;
                 case "prepareReadyAction": case "prepareStartMenu": case "endTrip":
                     if (after.surface === "speechBreakConfirmDialog") parts.push(after.question); break;
                 case "confirmBreakPromptNo":

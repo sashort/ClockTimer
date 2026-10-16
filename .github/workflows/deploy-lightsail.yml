@@ -36,6 +36,7 @@ jobs:
           node tests/app-state-transactions.mjs --voicepad-continuation
           node tests/app-state-transactions.mjs --interval-actions
           node tests/app-state-transactions.mjs --break-boundaries --voice-feedback
+          node tests/app-state-transactions.mjs --break-end-stream --voice-feedback
           node tests/app-state-transactions.mjs --down-timing
           node tests/app-state-transactions.mjs --down-break
           node tests/app-state-transactions.mjs --voice-code

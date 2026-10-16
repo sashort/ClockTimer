@@ -68,6 +68,7 @@ window.eval(fs.readFileSync(new URL('../lang/en-US/SpokenTimeParser.js',import.m
 window.eval(fs.readFileSync(new URL('../lang/en-US/PercentParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',import.meta.url),'utf8'));
 let speechSource=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+if(process.argv.includes('--break-end-stream'))speechSource=speechSource.replace('static #pipeline = "raw";', 'static #pipeline = "silero";');
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testPause(u){u.continuationPauseStartedAt=performance.now()-220;SpeechMenu.#armContinuationPauseDeadline(u);}
     static testResume(){const pipeline=SpeechMenu.#pipeline;SpeechMenu.#pipeline="silero";try{SpeechMenu.#onVadSpeechStart({detail:{}});}finally{SpeechMenu.#pipeline=pipeline;}}
@@ -409,6 +410,40 @@ await timer.connect('test','test');
 window.document.querySelector('#loginDialog').close();
 await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true; // Happy DOM does not implement the Popover API.
 await settle();
+if(process.argv.includes('--break-end-stream')) {
+ window.SpeechMenu.testBackend('vosk');
+ await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ const tripId=timer.currentTripId;
+ const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text);};
+ for(const [kind,label] of [['break','break'],['short-break','short break'],['lunch','lunch']]) {
+  window.__testTime+=60000;await window.WMOFActions.startBreak(kind);await settle();spoken.length=0;
+  const intervalKey=timer.getActiveIntervalState().intervalKey,u=window.SpeechMenu.testBegin();
+  const question='Are you ready to end your '+label+'?';
+  await window.SpeechMenu.testTranscript(u,'break end',false);await u.digestQueue;await u.segmentBarrier;await settle();
+  assert(window.document.querySelector('#speechBreakConfirmDialog').open,'recognized '+kind+' End opens its confirmation without waiting for final feedback');
+  assert.equal(spoken.filter(text=>text===question).length,1,'question is announced immediately');
+  assert.equal(timer.getActiveIntervalState().intervalKey,intervalKey,'confirmation waits for OK');
+  window.SpeechMenu.testFinish();await settle();
+  window.SpeechMenu.testDeliverFinal(u,'break end');await u.digestQueue;await u.segmentBarrier;await settle();
+  assert.equal(spoken.filter(text=>text===question).length,1,'late final feedback cannot repeat the question');
+  assert.equal(window.WMOFCoordinator.lockCount,0);
+  if(kind==='lunch') {
+   await window.WMOFActions.cancelBreakPrompt();await settle();
+   window.SpeechMenu.testDeliverFinal(u,'break end');await settle();
+   assert(!window.document.querySelector('#speechBreakConfirmDialog').open,'late feedback cannot reopen a canceled dialog');
+   assert.equal(timer.getActiveIntervalState().intervalKey,intervalKey,'cancel preserves the break');
+   await say('break end');
+  } else assert(window.document.querySelector('#speechBreakConfirmDialog').open,'confirmation remains open after the final transcript');
+  await say('ok');assert(!timer.getActiveIntervalState());
+  assert.equal(timer.uiState.trip_active,true);assert.equal(timer.currentTripId,tripId);
+  assert(!window.document.querySelector('#tripTransitionOverlay').open);
+  window.__testTime+=60000;await window.WMOFActions.startBreak(kind);await settle();spoken.length=0;
+  await say('break end ok');assert(!timer.getActiveIntervalState());
+  assert(!spoken.includes(question),'a known OK chain skips the intermediate question');
+ }
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS interim Vosk Break End opens and announces all break confirmations immediately; final feedback, cancellation and direct OK chains remain safe');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--break-boundaries')) {
  await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
  const tripId=timer.currentTripId,tripEnds=[];
