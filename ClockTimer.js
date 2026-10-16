@@ -487,6 +487,8 @@
         #starting =
             false;
 
+        #projectingFittedTick = false;
+
         #spinAnimation;
 
         #spinScaleAnimation;
@@ -28426,7 +28428,8 @@
 
             if (
                 rangeType === "remaining" ||
-                rangeType === "wave"
+                rangeType === "wave" ||
+                this.#projectingFittedTick
             ) {
                 this.#releaseTimeRangeTimingAnimation(
                     range
@@ -32402,12 +32405,21 @@
             // change cadence; ticking before the final cadence can move time backwards.
             if (this.#replayingTripEvents || !this.#needsTick()) return;
             const nowDate = this.#normalizeTickDate(now);
-            this.#updateOpenEndedRange(nowDate);
-            this.#updateOpenOverwriteRange(nowDate);
-            const state = this.#started ? this.#getOperatingState(nowDate) : "inactive";
-            this.#processRangeModelTicks(nowDate);
-            this.#dispatch("tick", [state], { nowDate });
-            this.#emitCadenceTick(nowDate);
+            const previousProjection = this.#projectingFittedTick;
+            // Live growth and fitted compression must commit on the same
+            // scale. Per-range tweens would regrow Down/overtime against
+            // bounds that the other arcs have already adopted.
+            this.#projectingFittedTick = this.#getTimerType() === "radial-fitted";
+            try {
+                this.#updateOpenEndedRange(nowDate);
+                this.#updateOpenOverwriteRange(nowDate);
+                const state = this.#started ? this.#getOperatingState(nowDate) : "inactive";
+                this.#processRangeModelTicks(nowDate);
+                this.#dispatch("tick", [state], { nowDate });
+                this.#emitCadenceTick(nowDate);
+            } finally {
+                this.#projectingFittedTick = previousProjection;
+            }
         }
 
         #tick_inactive() {}
