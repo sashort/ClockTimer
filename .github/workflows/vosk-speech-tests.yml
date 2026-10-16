@@ -41,6 +41,7 @@ jobs:
           node tests/app-state-transactions.mjs --coordinator-end-trip
           node tests/app-state-transactions.mjs --commands-close
           node tests/app-state-transactions.mjs --sync-voice
+          node tests/app-state-transactions.mjs --range-permissions
           node tests/app-state-transactions.mjs --voicepad-continuation
           node tests/app-state-transactions.mjs --interval-actions
           node tests/app-state-transactions.mjs --down-break

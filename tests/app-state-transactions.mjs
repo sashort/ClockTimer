@@ -87,11 +87,51 @@ let appSource=fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../a
 // The fixture freezes Date.now for trip boundaries; eliminate audio pauses
 // so its frozen wall clock cannot accumulate an artificial playback backlog.
 if(process.argv.includes('--voice-feedback') || process.argv.includes('--interval-actions')) appSource=appSource.replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;', 'const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;');
-if(process.argv.includes('--pointer-mode'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
+if(process.argv.includes('--pointer-mode') || process.argv.includes('--range-permissions'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--range-permissions')) {
+ await timer.connect('test','password');await settle();
+ window.document.querySelector('#loginDialog').close();await settle();
+ const rangeErrors=[];
+ window.addEventListener('wmof:trip-log-error',event=>rangeErrors.push(event.detail));
+ const reads=()=>requests.filter(r=>r.path.endsWith('/trips/')&&(!r.options.method||r.options.method==='GET')).length;
+ const say=async(phrase,range)=>{
+  const before=reads(),u=window.SpeechMenu.testBegin();
+  await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await settle();
+  assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' executes: '+JSON.stringify({rangeErrors,login:window.document.querySelector('#loginDialog').open,mode:timer.percentMode,digest:u.digestSteps?.map(step=>step.commandElement?.getAttribute('speech-function')),status:window.document.querySelector('.persistence-status')?.textContent}));
+  assert.deepEqual(rangeErrors,[],phrase+' refreshes server data without a client-only permission error');
+  assert.equal(window.WMOFInteractionState.state.tripLogRange,range);
+  assert.equal(window.document.querySelector('#tripLogRangeError').hidden,true);
+  assert(reads()>before,phrase+' fetches totals for the selected range');
+  assert.equal(window.WMOFCoordinator.lockCount,0,phrase+' releases its UI locks');
+ };
+ for(const [phrase,range] of [['week','week'],['month','month'],['money','pay-period'],['year','year'],['day','day']])await say(phrase,range);
+ await window.WMOFActions.openTripLog('button');await settle();
+ for(const [phrase,range] of [['week','week'],['month','month'],['money','pay-period'],['year','year'],['day','day']])await say(phrase,range);
+ const select=window.document.querySelector('#tripLogRangeSelect');
+ for(const range of ['week','pay-period','month','year','custom','day']){
+  if(range==='custom'){
+   window.document.querySelector('#tripLogStartDate').value='2026-10-01';
+   window.document.querySelector('#tripLogEndDate').value='2026-10-06';
+  }
+  const before=reads();select.value=range;select.dispatchEvent(new window.Event('change',{bubbles:true}));await settle();
+  assert.equal(window.WMOFInteractionState.state.tripLogRange,range);
+  assert(reads()>before,range+' pointer selection fetches its totals');
+  assert.deepEqual(rangeErrors,[]);
+ }
+ for(const action of ['changeGoalMode','changeGoal']){
+  const command=window.document.querySelector('[speech-function="WMOFActions.'+action+'"]');
+  assert(command?.hasAttribute('speech-persist'),action+' declares its server access');
+ }
+ assert.equal(window.document.querySelector('[speech-function="WMOFActions.readGoalMode"]').hasAttribute('speech-persist'),false,'local mode readback stays client-only');
+ assert.equal(stored.length,0,'view changes do not write trip events');
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS voice and pointer Trip Log ranges refresh server data with explicit permissions, no trip writes, and no stranded locks');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--pointer-mode')){
  const button=window.document.querySelector('#scopeToggle');
  button.click();window.document.querySelector('#scopeToggleDropdown [data-mode=week]').click();await settle();

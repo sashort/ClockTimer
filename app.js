@@ -27262,8 +27262,11 @@
             }
 
             element.toggleAttribute("data-speech-state-command", !String(actionName).startsWith("read"));
+            // Range and goal selections also retrieve server totals; they need
+            // remote permission even when no trip data is being changed.
             const persistsSpeechAction = [
                 "cancelDownTime", "changeActualStart", "changeCreationTime", "changeScheduledStart",
+                "changeGoal", "changeGoalMode",
                 "changeStandardTime", "closeActiveSurface", "confirmNumberPad", "confirmBreakPromptNo",
                 "confirmBreakPromptYes", "confirmBreakType", "confirmCancelDownTime", "continueStartAt",
                 "deferTrip", "lockEndTime", "openTripLog", "prepareReadyAction", "prepareStartMenu",
