@@ -5260,6 +5260,7 @@
 
             const previousEventsReady =
                 this.#eventsReady;
+            let replayFailed = false;
 
             this.#eventsReady =
                 false;
@@ -5735,10 +5736,15 @@
                 }
             }
             catch (error) {
+                // Reconnect must reload the saved trip, never INSERT a partial
+                // replay that is still running after losing its database ID.
+                replayFailed = true;
+                this.#transitionLifecycle("stop");
                 this.#clearLocal();
-
-                this.#tripId =
-                    undefined;
+                this.#tripId = undefined;
+                this.#preparedTrip = undefined;
+                this.#pendingIntervalRecord = undefined;
+                this.#pendingTripEvents = [];
 
                 throw error;
             }
@@ -5748,6 +5754,7 @@
 
                 this.#eventsReady =
                     previousEventsReady;
+                if (replayFailed) this.#emitUIState("tripReplayFailed");
             }
 
             if (this.#started) {
@@ -13167,9 +13174,6 @@
                             boundary
                         )
                 });
-            if (!replacement) {
-                return false;
-            }
 
             const latencyRecord =
                 this.#openOverwriteRange;
@@ -13184,8 +13188,9 @@
             latencyRecord.clockTimerIntervalLatency =
                 record.id;
 
-            replacement.clockTimerIntervalLatency =
-                record.id;
+            // A zero-length overwrite may not have a rendered element yet.
+            // The model record owns the transition and its interval identity.
+            if (replacement) replacement.clockTimerIntervalLatency = record.id;
 
             this.#updateOpenOverwriteRangeTo(
                 now
