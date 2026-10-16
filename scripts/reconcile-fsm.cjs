@@ -37,7 +37,7 @@ model.implementation_audit = {
     last_working_reference_commit: baseline,
     last_approved_reference_update: git(['rev-parse', '1020a029']),
     through_commit: reviewedHead,
-    working_changes: ['Two-step PIN review, focus announcements and Cancel/failure rules requested 16 October 2026', 'Runtime login.phase and version 2 transition contracts'],
+    working_changes: ['Two-step PIN review, focus announcements and Cancel/failure rules requested 16 October 2026', 'Runtime login.phase and version 2 transition contracts', 'Root-owned command/value deferral, malformed section discard, adaptive silence settlement and response-column TTLs'],
     rule: 'Every intervening commit is inventoried, including tests, corrective commits and reversions. Requirements describe the resulting code, never an abandoned intermediate implementation.',
     commits
 };
@@ -66,16 +66,16 @@ contract('SPEECH', {
     scope: ['all voice transitions'],
     preconditions: {planner: 'SpeechMenu', grammar: 'only available commands and finite context-specific values'},
     inputs: ['one or several independent/chained commands', 'leading/intermediate junk', 'growing typed values', 'final or malformed segments'],
-    postconditions: {terminal_command: 'Execute once as soon as complete and not continuable; prune consumed text', typed_value: 'Hold viable time/duration continuations until a real boundary', junk: 'Skip recoverable junk and malformed middle segments', final_invalid: 'Discard invalid final/only segment; settle valid predecessors', dependency: 'A failed chain root invalidates dependent continuations even when other commands intervene'},
+    postconditions: {terminal_command: 'Execute once as soon as complete and not continuable; prune consumed text', typed_value: 'Hold viable time/duration continuations until a real boundary', decision: 'Commands and contexts report valid/incomplete/malformed/defer portions; the root arbitrates the combined chain', junk: 'Discard malformed context/command and its remainder through the next independent literal command head; never rescue a shorter valid value from the rejected section', final_invalid: 'Rollback the uncommitted dependent root; retain earlier independently completed roots', dependency: 'A failed chain root invalidates dependent continuations even when other commands intervene', silence: 'At the adaptive silence deadline settle valid chains, cancel incomplete roots, discard malformed sections, clear collectors/projections and release owned locks; speech resumption cancels the deadline', response: 'One horizontal row of response columns, newest on the left; incoming results travel from the right under existing results; each keeps its own TTL across utterances; expiry moves the whole chain right until the expired result exits; a single result uses the same mechanism'},
     controls: {speech: 'Availability comes from the active UI/modal and semantic state; pointer flags are outputs'},
     audio: {ordering: 'Suppress obsolete intermediate feedback when a known continuation owns it; UI execution cannot depend on optional feedback'},
     forbidden: ['Broaden unsupported regexes', 'Interpret recognizer name as a command boundary', 'Repeated execution of a consumed command', 'Truncate an extendable time/duration at an unstable partial'],
-    evidence: ['node tests/speech-failfast.mjs', 'node tests/app-state-transactions.mjs --voicepad-continuation', 'node tests/legacy-vosk-values.mjs', 'node tests/speech-value-preprocessor.mjs']
+    evidence: ['node tests/speech-failfast.mjs', 'node tests/adaptive-speech-timing.mjs', 'node tests/speech-command-digest.mjs', 'node tests/speech-response-chain.mjs', 'node tests/speech-response-chain-browser.mjs', 'node tests/app-state-transactions.mjs --speech-boundaries', 'node tests/app-state-transactions.mjs --voicepad-continuation', 'node tests/legacy-vosk-values.mjs', 'node tests/speech-value-preprocessor.mjs']
 });
 contract('RECOGNIZER', {
     scope: ['all recognized utterances'], preconditions: {available_commands: 'SpeechMenu active candidates'}, inputs: ['PCM worklet frames', 'context or finite grammar changes'],
     postconditions: {switch: 'Preserve utterance ID; retain and replay short rolling transition PCM; fence old decoder results', vocabulary: 'Finite time/duration/number/digits/date choices from registered patterns; omit/report unsupported regexes', backend: 'Vosk test deployment; PocketSphinx experiment remains intact'},
-    controls: {sleeping: 'Only wake; ordinary commands cannot execute'}, audio: {echo: 'Register and filter synthesized speech'},
+    controls: {sleeping: 'Only wake; ordinary commands cannot execute'}, audio: {echo: 'Register and filter synthesized speech', microphone: 'One dedicated activation/deactivation chime and announcement per actual runtime transition for voice, pointer and remote controls; duplicates are silent'},
     forbidden: ['Change application planner to a recognizer', 'Treat acoustic decoder stages as separate SpeechMenu utterances', 'Claim a custom in-place Vosk fork is implemented'],
     evidence: ['node tests/vosk-grammar-router.mjs', 'node tests/vosk-speechmenu-context.mjs', 'node tests/vosk-phrase-list-compiler.mjs', 'node tests/pocketsphinx-grammar-catalog.mjs']
 });

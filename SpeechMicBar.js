@@ -11,6 +11,8 @@ class SpeechMicBar extends HTMLElement {
         "utteranceTranscriptChanged",
         "utteranceTranscribed",
         "utteranceCommitted",
+        "speechCommandDigested",
+        "speechSegmentSkipped",
         "speechCommandMatched",
         "speechMenuMatched",
         "speechPreprocessed",
@@ -39,6 +41,8 @@ class SpeechMicBar extends HTMLElement {
     #currentUtteranceId;
     #currentTranscript = "";
     #currentTranscriptFinal = false;
+    #consumedTranscript = "";
+    #consumedSegments = [];
     #rejectedClearTimer;
     #loadingAnimationFrame;
     #loadingDisplayed = 0;
@@ -955,8 +959,9 @@ class SpeechMicBar extends HTMLElement {
                     height: 100%;
                     min-width: 0;
                     flex: 0 0 auto;
-                    display: grid;
-                    place-items: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-end;
                     overflow: hidden;
                     opacity: 0;
                     transform: translateX(16px);
@@ -976,9 +981,24 @@ class SpeechMicBar extends HTMLElement {
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
-                    display: grid;
-                    place-items: center;
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    justify-content: flex-start;
+                    gap: 8px;
+                    width: max-content;
+                    overflow: visible;
                 }
+
+                .response-result {
+                    position: relative;
+                    z-index: 1;
+                    flex: 0 0 auto;
+                    max-width: min(42vw, 360px);
+                    pointer-events: none;
+                }
+
+                #responseContent > .response-result { max-height: 50px; overflow: visible !important; }
 
                 #responseContent > * {
                     box-sizing: border-box !important;
@@ -5734,258 +5754,137 @@ class SpeechMicBar extends HTMLElement {
         return wasVisible;
     }
 
-    setResponse(value) {
+    #responseEntries = new Map();
+    #responseSequence = 0;
+    #responseExit = Promise.resolve();
+    #responseExitAnimation;
+    #responseGeneration = 0;
+
+    #appendResponse(visual, resultId) {
+        this.#responseExitAnimation?.cancel();
+        const previous = [...this.#responseEntries.values()].map(entry =>
+            ({entry, left: entry.getBoundingClientRect().left}));
+        for (const {entry} of previous) {
+            for (const animation of entry.getAnimations?.() || []) animation.cancel();
+            entry.style.left = "";
+            entry.style.zIndex = "1";
+        }
         this.#responseAnimation?.cancel();
         this.#responseAnimation = undefined;
-
-        const visual =
-            this.#responseVisual(
-                value
-            );
-
-        if (!visual) {
-            return this.clearResponse();
-        }
-
-        const wasVisible =
-            this.#showResponseLane();
-
-        this.#responseContent
-            .replaceChildren(
-                visual
-            );
-
-        if (wasVisible) {
-            this.#responseContent
-                .animate?.(
-                    [
-                        {
-                            opacity: .35,
-                            transform:
-                                "scale(.96)"
-                        },
-                        {
-                            opacity: 1,
-                            transform:
-                                "scale(1)"
-                        }
-                    ],
-                    {
-                        duration: 160,
-                        easing:
-                            "ease-out"
-                    }
-                );
-        }
-
-        if (this.trainingMode) {
-            this.#emitTrainingTelemetry(
-                "responseChanged",
-                {
-                    response:
-                        String(
-                            this.#responseContent
-                                ?.textContent ||
-                            ""
-                        ).trim()
-                }
-            );
-        }
-    }
-
-    presentResponseTransition(
-        fromValue,
-        toValue,
-        {
-            duration = 320
-        } = {}
-    ) {
-        this.#responseAnimation?.cancel();
-        this.#responseAnimation = undefined;
-
-        const from =
-            this.#responseVisual(
-                fromValue
-            );
-        const to =
-            this.#responseVisual(
-                toValue
-            );
-
-        if (!from && !to) {
-            return this.clearResponse();
-        }
-
-        if (!from || !to) {
-            return this.setResponse(
-                to ||
-                from
-            );
-        }
-
         this.#showResponseLane();
-
-        const stage =
-            document.createElement(
-                "div"
-            );
-
-        stage.className =
-            "response-transition-stage";
-
-        stage.append(
-            from,
-            to
-        );
-
-        this.#responseContent
-            .replaceChildren(
-                stage
-            );
-
-        to.style.opacity = "0";
-
-        if (
-            typeof from.animate !==
-                "function" ||
-            typeof to.animate !==
-                "function"
-        ) {
-            this.#responseContent
-                .replaceChildren(
-                    to
-                );
-            to.style.opacity = "";
-            return;
+        const entry = document.createElement("div");
+        entry.className = "response-result";
+        entry.dataset.responseId = String(resultId);
+        entry.append(visual);
+        this.#responseEntries.set(resultId, entry);
+        this.#responseContent.prepend(entry);
+        for (const item of previous) {
+            const offset = item.left - item.entry.getBoundingClientRect().left;
+            if (offset) item.entry.animate?.([
+                {transform: `translateX(${offset}px)`}, {transform: "translateX(0)"}
+            ], {duration: 320, easing: "cubic-bezier(.2,.8,.2,1)"});
         }
-
-        const options = {
-            duration:
-                Math.max(
-                    0,
-                    Number(duration) ||
-                    0
-                ),
-            easing:
-                "cubic-bezier(.2,.8,.2,1)",
-            fill:
-                "both"
-        };
-
-        const fromAnimation =
-            from.animate(
-                [
-                    {
-                        opacity: 1,
-                        transform:
-                            "scale(1)"
-                    },
-                    {
-                        opacity: 0,
-                        transform:
-                            "scale(.94)"
-                    }
-                ],
-                options
-            );
-
-        const toAnimation =
-            to.animate(
-                [
-                    {
-                        opacity: 0,
-                        transform:
-                            "scale(1.06)"
-                    },
-                    {
-                        opacity: 1,
-                        transform:
-                            "scale(1)"
-                    }
-                ],
-                options
-            );
-
-        const sharedStart =
-            document.timeline
-                ?.currentTime;
-
-        if (
-            sharedStart !==
-            null &&
-            sharedStart !==
-            undefined
-        ) {
-            try {
-                fromAnimation.startTime =
-                    sharedStart;
-                toAnimation.startTime =
-                    sharedStart;
-            }
-            catch {}
-        }
-
-        Promise
-            .allSettled([
-                fromAnimation.finished,
-                toAnimation.finished
-            ])
-            .then(
-                () => {
-                    if (
-                        stage.isConnected
-                    ) {
-                        this.#responseContent
-                            .replaceChildren(
-                                to
-                            );
-                        to.style.opacity =
-                            "";
-                    }
-                }
-            );
+        // Existing results paint above the incoming result as it travels left.
+        entry.style.zIndex = "0";
+        const distance = Math.max(entry.getBoundingClientRect().width,
+            this.#responseLane.getBoundingClientRect().right - entry.getBoundingClientRect().left);
+        const animation = entry.animate?.([
+            {transform: `translateX(${distance}px)`, opacity: 0},
+            {transform: "translateX(0)", opacity: 1}
+        ], {duration: 320, easing: "cubic-bezier(.2,.8,.2,1)"});
+        Promise.resolve(animation?.finished).catch(() => {}).then(() => {
+            entry.style.zIndex = "1";
+        });
+        return entry;
     }
 
-    async clearResponse(
-        {
-            duration = 190
-        } = {}
-    ) {
+    setResponse(value, {resultId = ++this.#responseSequence} = {}) {
+        const visual = this.#responseVisual(value);
+        if (!visual) return false;
+        this.#appendResponse(visual, resultId);
+        if (this.trainingMode) this.#emitTrainingTelemetry("responseChanged", {
+            response: String(this.#responseContent.textContent || "").trim()
+        });
+        return resultId;
+    }
+
+    presentResponseTransition(fromValue, toValue, {duration = 320,
+        resultId = ++this.#responseSequence} = {}) {
+        const from = this.#responseVisual(fromValue);
+        const to = this.#responseVisual(toValue);
+        if (!from && !to) return false;
+        if (!from || !to) return this.setResponse(to || from, {resultId});
+        const stage = document.createElement("div");
+        stage.className = "response-transition-stage";
+        stage.append(from, to);
+        this.#appendResponse(stage, resultId);
+        if (typeof from.animate !== "function" || typeof to.animate !== "function") {
+            stage.replaceChildren(to);
+            return resultId;
+        }
+        const options = {duration: Math.max(0, Number(duration) || 0),
+            easing: "cubic-bezier(.2,.8,.2,1)", fill: "both"};
+        const fromAnimation = from.animate([
+            {opacity: 1, transform: "scale(1)"},
+            {opacity: 0, transform: "scale(.94)"}
+        ], options);
+        const toAnimation = to.animate([
+            {opacity: 0, transform: "scale(1.06)"},
+            {opacity: 1, transform: "scale(1)"}
+        ], options);
+        const sharedStart = document.timeline?.currentTime;
+        if (sharedStart !== null && sharedStart !== undefined) {
+            try {fromAnimation.startTime = sharedStart; toAnimation.startTime = sharedStart;} catch {}
+        }
+        Promise.allSettled([fromAnimation.finished, toAnimation.finished]).then(() => {
+            // Finalize this item's visual, never replace the whole result chain.
+            if (stage.isConnected) stage.replaceChildren(to);
+            fromAnimation.cancel(); toAnimation.cancel();
+        });
+        return resultId;
+    }
+
+    clearResponse({duration = 190, resultId} = {}) {
+        const generation = this.#responseGeneration;
+        if (resultId !== undefined) {
+            // Serialize expirations so simultaneous TTLs cannot race over layout.
+            const expire = async () => {
+                const entry = this.#responseEntries.get(resultId);
+                if (!entry || generation !== this.#responseGeneration) return;
+                const distance = Math.max(0,
+                    this.#responseLane.getBoundingClientRect().right - entry.getBoundingClientRect().left);
+                const animation = this.#responseContent.animate?.([
+                    {transform: "translateX(0)"},
+                    {transform: `translateX(${distance}px)`}
+                ], {duration: Math.max(0, Number(duration) || 0), easing: "cubic-bezier(.4,0,.8,.2)", fill: "both"});
+                this.#responseExitAnimation = animation;
+                try {await animation?.finished;} catch {}
+                if (generation === this.#responseGeneration && this.#responseEntries.get(resultId) === entry) {
+                    const survivors = [...this.#responseEntries.values()].filter(item => item !== entry)
+                        .map(item => ({entry: item, left: item.getBoundingClientRect().left}));
+                    entry.remove();
+                    this.#responseEntries.delete(resultId);
+                    animation?.cancel();
+                    // Different TTLs may expire a middle/left column first.
+                    // Keep every survivor at the translated position instead
+                    // of snapping the chain back into view after flex reflow.
+                    for (const item of survivors) item.entry.style.left =
+                        `${(parseFloat(item.entry.style.left) || 0) + item.left - item.entry.getBoundingClientRect().left}px`;
+                    if (!this.#responseEntries.size) this.removeAttribute("has-response");
+                }
+                animation?.cancel();
+                if (this.#responseExitAnimation === animation) this.#responseExitAnimation = undefined;
+            };
+            return this.#responseExit = this.#responseExit.then(expire);
+        }
+        ++this.#responseGeneration;
+        this.#responseExitAnimation?.cancel();
         this.#responseAnimation?.cancel();
         this.#responseAnimation = undefined;
-        if (!this.hasAttribute("has-response")) {
-            this.#responseContent.replaceChildren();
-            return;
-        }
-
-        if (typeof this.#responseLane.animate === "function") {
-            const width = `${this.#responseLane.getBoundingClientRect().width}px`;
-            const animation = this.#responseLane.animate(
-                [
-                    {width, opacity: 1, transform: "translateX(0)"},
-                    {width: "0px", opacity: 0, transform: "translateX(16px)"}
-                ],
-                {
-                    duration:
-                        Math.max(
-                            0,
-                            Number(duration) ||
-                            0
-                        ),
-                    easing: "cubic-bezier(.4,0,.8,.2)",
-                    fill: "both"
-                }
-            );
-            this.#responseAnimation = animation;
-            try { await animation.finished; } catch {}
-            if (this.#responseAnimation === animation) {
-                animation.cancel();
-                this.#responseAnimation = undefined;
-            }
-        }
-
-        this.removeAttribute("has-response");
+        this.#responseEntries.clear();
         this.#responseContent.replaceChildren();
+        this.removeAttribute("has-response");
+        return Promise.resolve();
     }
 
     clear() {
@@ -6146,6 +6045,8 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "utteranceStarted":
+                this.#consumedTranscript = "";
+                this.#consumedSegments = [];
                 clearTimeout(
                     this.#rejectedClearTimer
                 );
@@ -6213,7 +6114,7 @@ class SpeechMicBar extends HTMLElement {
                             ?.muted
                     ) {
                         this.#showStreamingPhrase(
-                            this.#currentTranscript
+                            this.#pendingTranscript()
                         );
                     }
                 }
@@ -6229,7 +6130,7 @@ class SpeechMicBar extends HTMLElement {
                             ?.muted
                     ) {
                         this.#showStreamingPhrase(
-                            this.#currentTranscript
+                            this.#pendingTranscript()
                         );
                     }
                 }
@@ -6249,7 +6150,7 @@ class SpeechMicBar extends HTMLElement {
                         "preprocessed"
                     ) {
                         this.#showStreamingPhrase(
-                            this.#currentTranscript
+                            this.#pendingTranscript()
                         );
                     }
 
@@ -6263,7 +6164,20 @@ class SpeechMicBar extends HTMLElement {
                     );
                 }
                 break;
+            case "speechCommandDigested":
+            case "speechSegmentSkipped":
+                if (detail?.utteranceId === this.#currentUtteranceId && detail.consumedTranscript) {
+                    this.#consumedTranscript = detail.consumedTranscript;
+                    if (type === "speechCommandDigested") this.#consumedSegments.push(detail.transcript);
+                    this.removeAttribute("phase");
+                    this.#codes.replaceChildren();
+                    const pending = this.#pendingTranscript();
+                    if (pending) this.#showStreamingPhrase(pending);
+                    else this.#showWaveform();
+                }
+                break;
             case "speechPreprocessed":
+                if (this.#consumedTranscript) break;
                 if (
                     detail?.utteranceId ===
                         this.#currentUtteranceId &&
@@ -6276,6 +6190,7 @@ class SpeechMicBar extends HTMLElement {
                 break;
             case "speechCommandMatched":
             case "speechMenuMatched":
+                if (this.#consumedTranscript) break;
                 if (
                     detail?.utteranceId ===
                         this.#currentUtteranceId &&
@@ -6303,6 +6218,7 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "speechArgumentsPrepared":
+                if (this.#consumedTranscript) break;
                 if (
                     detail?.utteranceId === this.#currentUtteranceId &&
                     !detail?.provisional
@@ -6335,6 +6251,7 @@ class SpeechMicBar extends HTMLElement {
                 }
                 break;
             case "speechCommandExecuted":
+                if (this.#consumedTranscript) break;
                 if (
                     detail?.utteranceId ===
                     this.#currentUtteranceId
@@ -6734,7 +6651,6 @@ class SpeechMicBar extends HTMLElement {
                     );
                     this.#codes
                         .replaceChildren();
-                    void this.clearResponse();
                     this.#showIdleText();
                 },
                 Math.max(
@@ -6853,6 +6769,24 @@ class SpeechMicBar extends HTMLElement {
         }
 
         return undefined;
+    }
+
+    #pendingTranscript() {
+        const text = this.#currentTranscript.trim();
+        if (!this.#consumedTranscript) return text;
+        if (text === this.#consumedTranscript) return "";
+        if (text.startsWith(this.#consumedTranscript + " "))
+            return text.slice(this.#consumedTranscript.length).trimStart();
+        const words = text.split(/\s+/);
+        let offset = 0;
+        for (const segment of this.#consumedSegments) {
+            const parts = segment.split(/\s+/);
+            const start = words.findIndex((word, index) => index >= offset &&
+                parts.every((part, i) => words[index + i] === part));
+            if (start < 0) return "";
+            offset = start + parts.length;
+        }
+        return words.slice(offset).join(" ");
     }
 
     #showStreamingPhrase(

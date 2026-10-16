@@ -39,6 +39,8 @@ w.liveTripStream={broadcast(type,result){ack.push({type,...result});}};
 w.playSemanticSongThenSpeak=async(song,text,options)=>feedback.push({song,text,options});
 const english=JSON.parse(fs.readFileSync(new URL('../lang/en-US/announcements.json',import.meta.url),'utf8'));
 w.announcementText=path=>path.split('.').reduce((value,key)=>value[key],english);
+const micFeedbackStart=app.indexOf('    let microphoneFeedbackEnabled =');
+w.eval(app.slice(micFeedbackStart,app.indexOf('    let microphoneReminderTimer=',micFeedbackStart)));
 w.eval('globalThis.testRemoteMic=function(detail){'+app.slice(start,end)+'};');
 const send=async enabled=>{w.testRemoteMic({type:'trainer.microphone',payload:{enabled,commandId:'confirmed'}});for(let i=0;i<8;i++)await Promise.resolve();};
 await send(false);assert.equal(feedback[0].song,'setting-off');assert.equal(feedback[0].options.song,'microphone-deactivated');assert.equal(feedback[0].options.useSelectedInstrument,false);assert.equal(feedback[0].text,'Microphone deactivated.');assert.equal(ack[0].accepted,true);

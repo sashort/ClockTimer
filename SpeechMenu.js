@@ -741,6 +741,29 @@ class SpeechMenu {
             ?.resetTrip();
     }
 
+    static #valueContexts = new Map();
+
+    static registerValueContext(kind, classify) {
+        if (!kind || typeof classify !== "function") throw new TypeError("A value context requires a classifier.");
+        SpeechMenu.#valueContexts.set(kind, classify);
+    }
+
+    static #classifySpeechValue(element, transcript, final = false, boundary) {
+        const kind = element.getAttribute("speech-preproc-context");
+        const classify = SpeechMenu.#valueContexts.get(kind);
+        const field = element.getAttribute("speech-preproc-field");
+        if (!classify || !field) return undefined;
+        const pattern = new RegExp(element.getAttribute("speech-pattern"), "i");
+        const value = pattern.exec(transcript)?.groups?.[field];
+        if (value === undefined) return undefined;
+        const prefix = boundary && pattern.exec(boundary.transcript)?.groups?.[field];
+        const result = classify(value, {final, boundary: prefix === undefined ? undefined :
+            {value: prefix, remainder: boundary.remainder}});
+        if (!["valid", "incomplete", "malformed", "defer"].includes(result?.status))
+            throw new TypeError("A value context must classify input as valid, incomplete, malformed or defer.");
+        return {...result, element};
+    }
+
     static async wake({
         utteranceId,
         transcript,
@@ -1690,6 +1713,7 @@ class SpeechMenu {
         }
 
         return Object.freeze({
+            decision: Object.freeze({...candidate.decision}),
             exact:
                 Boolean(
                     candidate.exact
@@ -1725,6 +1749,7 @@ class SpeechMenu {
                         .map(
                             step =>
                                 Object.freeze({
+                                    decision: Object.freeze({...step.decision}),
                                     editorId:
                                         step
                                             .commandElement
@@ -2170,6 +2195,10 @@ class SpeechMenu {
         reason = "speech-context-change"
     ) {
         SpeechMenu.#contextGeneration++;
+        if (SpeechMenu.#utterance?.invalidatingChain && !SpeechMenu.#stopped) {
+            SpeechMenu.#utterance.contextGeneration = SpeechMenu.#contextGeneration;
+            return true;
+        }
         for (const buffered of SpeechMenu.#finishedUtterances.values()) {
             if (buffered.bargeInPending) buffered.contextGeneration = SpeechMenu.#contextGeneration;
         }
@@ -3582,7 +3611,8 @@ class SpeechMenu {
     static async #handleLiveTranscript(
         utterance,
         transcript,
-        isFinal
+        isFinal,
+        replan = false
     ) {
         if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
         if (utterance?.segmentBarrier) await utterance.segmentBarrier;
@@ -3611,7 +3641,7 @@ class SpeechMenu {
         if (
             transcript ===
             utterance.transcript &&
-            !isFinal
+            !isFinal && !replan
         ) {
             return;
         }
@@ -3701,10 +3731,27 @@ class SpeechMenu {
             SpeechMenu.#rejectDigest(utterance, "consumed-prefix-revised", transcript);
             return;
         }
-        if (!remainingTranscript && utterance.completedStreams) {
+        if (utterance.discardUntilCommandHead && remainingTranscript) {
+            const words = remainingTranscript.split(" ").filter(Boolean);
+            const candidates = SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack);
+            const start = words.findIndex((word, offset) => candidates.some(element =>
+                SpeechMenu.#hasExplicitCommandAnchor(element, words.slice(offset).join(" "))));
+            if (start < 0) {
+                const partialHead = !isFinal && words.some((word, offset) => candidates.some(element =>
+                    SpeechMenu.#hasExplicitCommandPrefix(element, words.slice(offset).join(" "))));
+                if (partialHead) {utterance.digestPending = remainingTranscript; return;}
+                SpeechMenu.#discardMalformedContinuation(utterance, remainingTranscript);
+                if (isFinal && SpeechMenu.#utterance === utterance) SpeechMenu.#finishUtterance("malformed-context", false);
+                return;
+            }
+            if (start) SpeechMenu.#discardMalformedContinuation(utterance, words.slice(0, start).join(" "));
+            utterance.discardUntilCommandHead = false;
+            remainingTranscript = words.slice(start).join(" ");
+        }
+        if (!remainingTranscript && (utterance.completedStreams || utterance.discardedStreams)) {
             if (isFinal) {
-                utterance.committed = true;
-                SpeechMenu.#finishUtterance("terminal-streams-complete", false);
+                utterance.committed = Boolean(utterance.completedStreams);
+                SpeechMenu.#finishUtterance(utterance.completedStreams ? "terminal-streams-complete" : "malformed-context", false);
             }
             return;
         }
@@ -3740,10 +3787,7 @@ class SpeechMenu {
 
         utterance.candidatePool =
             pool;
-        if (!isFinal && !pool.length && !utterance.digestSteps.length &&
-            SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack).some(element =>
-                SpeechMenu.#hasExplicitCommandAnchor(element, remainingTranscript) &&
-                SpeechMenu.#typedContinuationViable(element, remainingTranscript) === false)) {
+        if (!isFinal && !pool.length && !utterance.digestSteps.length && remainingTranscript) {
             SpeechMenu.#discardMalformedContinuation(utterance, remainingTranscript);
             return;
         }
@@ -3923,7 +3967,24 @@ class SpeechMenu {
         const consumed = utterance.digestTranscript || "";
         if (!consumed) return full;
         if (full === consumed) return "";
-        return full.startsWith(consumed + " ") ? full.slice(consumed.length + 1) : undefined;
+        if (full.startsWith(consumed + " ")) return full.slice(consumed.length + 1);
+        // Discarded noise can be revised by ASR. Only accepted command spans
+        // are immutable; never require rejected words to remain verbatim.
+        let offset = 0;
+        for (const segment of utterance.digestCommandSegments || []) {
+            const words = full.split(" ");
+            const command = segment.split(" ");
+            let found = -1;
+            for (let start = offset; start <= words.length - command.length; start++) {
+                if (command.every((word, index) => words[start + index] === word)) {found = start; break;}
+            }
+            if (found < 0) return undefined;
+            offset = found + command.length;
+        }
+        const tail = full.split(" ").slice(offset).join(" ");
+        const discarded = utterance.digestDiscardedTail;
+        return discarded && (tail === discarded || tail.startsWith(discarded + " "))
+            ? tail.slice(discarded.length).trimStart() : tail;
     }
 
     static #discardPlannedPrefix(utterance, candidate, transcript, isFinal) {
@@ -3941,7 +4002,7 @@ class SpeechMenu {
     }
 
     static #rejectDigest(utterance, reason, remainder) {
-        if (utterance.digestFailed) return;
+        if (utterance.digestFailed || utterance.invalidatingChain) return;
         utterance.digestFailed = true;
         utterance.releaseFinalResult?.();
         void (utterance.operation ? utterance.operation.cancel(new Error(reason)) :
@@ -3958,6 +4019,8 @@ class SpeechMenu {
     static #queueDigestStep(utterance, step) {
         const segment = step.segmentTranscript;
         utterance.digestTranscript = [utterance.digestTranscript, step.ignoredBefore, segment].filter(Boolean).join(" ");
+        (utterance.digestCommandSegments ??= []).push(segment);
+        utterance.digestDiscardedTail = "";
         if (step.ignoredBefore) SpeechMenu.#emit("speechSegmentSkipped", {
             utteranceId: utterance.id, transcript: step.ignoredBefore, reason: "malformed-segment"
         });
@@ -4045,6 +4108,7 @@ class SpeechMenu {
                 SpeechMenu.#rejectDigest(utterance, "state-change-reverted", utterance.transcript);
                 return false;
             }
+            SpeechMenu.#resolvePendingStreamsAsContinuation(utterance);
             SpeechMenu.#flushCommandFeedback(utterance, true);
             return true;
         })();
@@ -4083,19 +4147,78 @@ class SpeechMenu {
         utterance.chainActive = false;
         utterance.digestPending = "";
         utterance.digestTranscript = [utterance.digestTranscript, transcript].filter(Boolean).join(" ");
+        utterance.digestDiscardedTail = [utterance.digestDiscardedTail, transcript].filter(Boolean).join(" ");
         utterance.valueCollectors?.clear();
         SpeechMenu.#clearPrimed(utterance);
         SpeechMenu.#emit("speechSegmentSkipped", {utteranceId: utterance.id, transcript,
-            reason: "malformed-continuation", fast: true});
+            consumedTranscript: utterance.digestTranscript, reason: "malformed-continuation", fast: true});
+    }
+
+    static #invalidateDigestChain(utterance, transcript, isFinal) {
+        const operation = utterance.operation;
+        utterance.invalidatingChain = true;
+        utterance.releaseFinalResult?.();
+        for (const stream of utterance.streamStack || []) {
+            if (stream.status === "pending") stream.status = "discarded";
+        }
+        utterance.chainCanceled = true;
+        utterance.valueCollectors?.clear();
+        SpeechMenu.#clearPrimed(utterance);
+        SpeechMenu.#flushCommandFeedback(utterance, false);
+        utterance.segmentBarrier = (async () => {
+            await (operation ? operation.cancel(new Error("Malformed command chain.")) :
+                globalThis.WMOFStateTransactions?.rollback(`speech:${utterance.id}`, new Error("Malformed command chain.")));
+            await utterance.digestQueue;
+            utterance.releaseFinalResult?.();
+            utterance.operation = undefined;
+            utterance.digestCompletion = undefined;
+            utterance.releaseFinalResult = undefined;
+            utterance.digestSteps = [];
+            utterance.digestQueue = Promise.resolve();
+            utterance.chainActive = false;
+            utterance.chainCanceled = false;
+            utterance.invalidatingChain = false;
+            utterance.chainInvalidated = true;
+            utterance.discardUntilCommandHead = true;
+            utterance.digestExecutionFailed = false;
+            utterance.discardedStreams = (utterance.discardedStreams || 0) + 1;
+            utterance.digestTranscript = [utterance.digestTranscript, transcript].filter(Boolean).join(" ");
+            utterance.digestDiscardedTail = transcript;
+            utterance.digestPending = "";
+            // Rebuild from authoritative state after rollback, never from the
+            // failed root's projected surfaces or dependent command context.
+            utterance.digestContext = undefined;
+            utterance.digestSurfaceStack = SpeechMenu.#surfaceFrames();
+            utterance.contextGeneration = SpeechMenu.#contextGeneration;
+            utterance.expectedSurfaces = new Set(utterance.digestSurfaceStack.map(frame => frame.surface));
+            utterance.voskInitialCandidates = SpeechMenu.#availableCandidates();
+            utterance.voskInitialFrames = utterance.digestSurfaceStack;
+            SpeechMenu.#emit("speechSegmentSkipped", {utteranceId: utterance.id, transcript,
+                consumedTranscript: utterance.digestTranscript, reason: "malformed-chain", fast: true});
+            if (isFinal && SpeechMenu.#utterance === utterance) {
+                utterance.digestFailed = true;
+                SpeechMenu.#finishUtterance("malformed-context", false);
+                SpeechMenu.#emit("utteranceUnrecognized", {id: utterance.id, transcript,
+                    reason: "malformed-context", fast: true});
+            }
+            return true;
+        })();
     }
 
     static #digestCandidate(utterance, candidate, remainder, isFinal) {
         if (!SpeechMenu.#executionEnabled) return false;
+        // All child commands and value contexts defer their portion to this
+        // root. A dependent chain cannot earn partial effects by failing later.
+        if (candidate?.malformedContext || (isFinal && candidate?.invalid &&
+            candidate.chain?.some(step => step.commandElement.hasAttribute("speech-chain-next")))) {
+            SpeechMenu.#invalidateDigestChain(utterance, remainder, isFinal);
+            return true;
+        }
         if (candidate?.kind !== "chain" && !utterance.chainActive) return false;
         if (utterance.digestFailed || utterance.digestCommitted) return true;
         utterance.chainActive = true;
         if (!utterance.operation && globalThis.WMOFStateTransactions?.createOperation) {
-            utterance.operation = globalThis.WMOFStateTransactions.createOperation({group:`speech:${utterance.id}:${utterance.completedStreams || 0}`, source:"voice", parentId: utterance.orchestrationEvent?.id});
+            utterance.operation = globalThis.WMOFStateTransactions.createOperation({group:`speech:${utterance.id}:${(utterance.completedStreams || 0) + (utterance.discardedStreams || 0)}`, source:"voice", parentId: utterance.orchestrationEvent?.id});
             const operation = utterance.operation;
             operation.signal.addEventListener("abort", () => {
                 if (utterance.operation === operation && !utterance.digestFailed) {
@@ -4154,11 +4277,17 @@ class SpeechMenu {
                 });
             }
         }
-        else if (count && count === steps.length && !tail && candidate?.exact &&
-            !candidate.pending && !candidate.invalid && !last.canContinue &&
+        else if (count && count === steps.length && !last.canContinue &&
             !last.commandElement.hasAttribute("speech-chain-next") &&
             !last.commandElement.hasAttribute("speech-chain-surface")) {
             SpeechMenu.#commitTerminalStream(utterance);
+            if (tail) {
+                void utterance.segmentBarrier.then(accepted => {
+                    if (accepted && SpeechMenu.#utterance === utterance &&
+                        !utterance.digestFailed && !utterance.digestCommitted)
+                        return SpeechMenu.#handleLiveTranscript(utterance, utterance.transcript, false, true);
+                });
+            }
         }
         return true;
     }
@@ -5257,6 +5386,9 @@ class SpeechMenu {
                 .toISOString();
 
         const stream = {
+            timingKind: utterance.discardUntilCommandHead ? "discarded" :
+                utterance.completedStreams && !utterance.chainActive && !utterance.digestPending
+                    ? "separation" : "continuation",
             id:
                 ++utterance
                     .streamSequence,
@@ -5538,23 +5670,24 @@ class SpeechMenu {
                     "continuation" ||
                 stream.status ===
                     "separation" ||
+                stream.status === "discarded" ||
                 !stream
                     .pauseMilliseconds
             ) {
                 continue;
             }
 
-            stream.status =
-                "continuation";
+            stream.status = stream.timingKind || "continuation";
+            if (stream.status === "discarded") continue;
 
-            observed =
-                SpeechMenu
-                    .#observeContinuationPause(
+            observed = (stream.status === "separation"
+                ? SpeechMenu.#observeStreamSeparation(stream.pauseMilliseconds, stream.source)
+                : SpeechMenu.#observeContinuationPause(
                         stream
                             .pauseMilliseconds,
                         stream
                             .source
-                    ) ||
+                    )) ||
                 observed;
         }
 
@@ -5907,8 +6040,7 @@ class SpeechMenu {
                 ? 0
                 : SpeechMenu
                     .#continuationDispatchDelayMilliseconds();
-        const dispatchAtMilliseconds = Math.min(350,
-            pauseBoundaryMilliseconds + dispatchDelayMilliseconds);
+        const dispatchAtMilliseconds = pauseBoundaryMilliseconds + dispatchDelayMilliseconds;
         const delay =
             Math.max(
                 0,
@@ -6079,6 +6211,7 @@ class SpeechMenu {
     static #hasOpenContinuation(
         utterance
     ) {
+        if (utterance?.completedStreams || utterance?.discardedStreams || utterance?.digestDiscardedTail) return true;
         if (utterance?.chainActive && !utterance.digestFailed) return true;
         if (utterance?.digestPending || utterance?.candidatePool?.some(candidate => candidate.continuation || candidate.pending)) return true;
         const exactCandidate =
@@ -6789,12 +6922,8 @@ class SpeechMenu {
         const state = {status: accepted ? "valid" : "pending",
             transcript: words.join(" "), value: accepted?.result.transcript,
             acceptedTranscript: accepted?.segment, end: accepted?.end};
-        // Final decodes after VAD closure may collect locally, but must not
-        // recreate persistent state for an utterance whose capture ended.
-        if (!utterance.digestClosed && !utterance.digestFailed && !signal?.aborted) {
-            utterance.valueCollectors ??= new Map();
-            utterance.valueCollectors.set(element, state);
-        }
+        // Probes include competing tail splits of this same collector. Publish
+        // collector state only after the winning plan has been selected.
         return {state, accepted};
     }
 
@@ -6805,7 +6934,7 @@ class SpeechMenu {
         let candidates = SpeechMenu.#availableCandidates();
         utterance.voskInitialCandidates ??= candidates;
         utterance.voskInitialFrames ??= SpeechMenu.#surfaceFrames();
-        if (transcript && utterance.completedStreams) {
+        if (transcript && (utterance.completedStreams || utterance.discardedStreams)) {
             const remaining = SpeechMenu.#digestRemainder(utterance, transcript);
             if (remaining === undefined) return {records: []};
             transcript = remaining;
@@ -6894,7 +7023,14 @@ class SpeechMenu {
         // (for example, "standard" can be captured as the duration itself).
         // The expanded phrase's literal prefix below distinguishes that case.
         return phrases.some(phrase => {
-            const prefix = SpeechMenu.#normalizeTranscript(phrase).split(/\s+/).filter(Boolean);
+            // Keep capture markers intact: normalizing them as transcript text
+            // turns <timeValue> into a literal command word, so a decoder's
+            // unfinished "t" can incorrectly end the preceding clock value.
+            const prefix = String(phrase)
+                .replace(/<[^>]+>/g, token => ` ${token} `)
+                .toLocaleLowerCase()
+                .replace(/[^\p{L}\p{N}<>\s:]/gu, " ")
+                .split(/\s+/).filter(Boolean);
             const parameter = prefix.findIndex(token => /^<[^>]+>$/.test(token));
             const literal = parameter < 0 ? prefix : prefix.slice(0, parameter);
             const literalPrefixMatches = literal.length > 0 && words.length <= literal.length &&
@@ -6956,6 +7092,9 @@ class SpeechMenu {
     }
 
     static #typedContinuationViable(element, transcript, strictlyLonger = false) {
+        const classification = SpeechMenu.#classifySpeechValue(element, transcript);
+        if (classification?.status === "malformed") return false;
+        if (classification && !strictlyLonger) return true;
         const kind = SpeechMenu.#speechValueKind(element);
         const compiler = globalThis.VoskPhraseListCompiler;
         const router = globalThis.VoskGrammarRouter;
@@ -7032,6 +7171,10 @@ class SpeechMenu {
         for (const element of candidates) {
             if (signal?.aborted) return undefined;
             const full = words.join(" ");
+            const classification = SpeechMenu.#classifySpeechValue(element, full, utterance.digestIsFinal);
+            const malformedContext = classification?.status === "malformed" ? classification : undefined;
+            if (malformedContext) select({steps: [], exact: false, invalid: true,
+                malformedContext, consumedWords: 0, remainder: full});
             const partialDepth = SpeechMenu.#elementDirectContinuationDepth(element, full);
             if (partialDepth !== undefined && SpeechMenu.#typedContinuationViable(element, full) !== false) select({steps: [], exact: false, continuation: true,
                 terminal: false, pending: {element, transcript: full,
@@ -7083,13 +7226,15 @@ class SpeechMenu {
                 const contextKey = String(context || '') + ':' + (nextSurface ? memo.surfaces.get(nextSurface) : frames ? 'page' : 'actual');
                 if (!memo.contexts.has(contextKey)) memo.contexts.set(contextKey, optimistic ? SpeechMenu.#stateAttemptCandidates(context, frames) : SpeechMenu.#digestCandidates(context, frames));
                 const next = memo.contexts.get(contextKey);
-                const step = {...probe, segmentTranscript: segment, optimistic,
+                const step = {...probe, segmentTranscript: segment, optimistic, collector: collector?.state,
                     nextContext: context, nextSurfaceStack: frames, context: projectedContext,
                     surfaceStack: projectedFrames,
                     surface: projectedFrames?.at(-1)?.surface,
                     canContinue: (SpeechMenu.#typedContinuationViable(element, segment, true) ?? SpeechMenu.#isOpenEndedParameter(element)) ||
                         SpeechMenu.#digestCanContinue(element, segment, candidates)};
                 const remaining = words.slice(end);
+                step.decision = {status: remaining.length ? "defer" : step.canContinue ? "incomplete" : "valid",
+                    transcript: segment, remainder: remaining.join(" ")};
                 if (remaining.length) {
                     let tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context, frames, optimistic);
                     let skippedTailWords = 0;
@@ -7118,11 +7263,10 @@ class SpeechMenu {
                     }
                     const tailRoot = tail?.steps[0]?.commandElement || tail?.pending?.element;
                     const tailTranscript = tail?.steps[0]?.segmentTranscript || tail?.pending?.transcript || "";
-                    const tailCollector = SpeechMenu.#isOpenEndedParameter(tailRoot);
-                    const explicitTailBoundary = tail?.pending
-                        ? Boolean(tail.pending.hasCommandPrefix)
-                        : tailRoot && (!tailCollector ||
-                            SpeechMenu.#hasExplicitCommandAnchor(tailRoot, tailTranscript));
+                    const explicitTailBoundary = tailRoot &&
+                        (SpeechMenu.#hasExplicitCommandAnchor(tailRoot, tailTranscript) ||
+                            (utterance.digestIsFinal && tail.exact && !tail.pending &&
+                                SpeechMenu.#hasAdjacentTimeValueAmbiguity(element, tailRoot)));
 
                     // When adjacent time/duration values overlap, give the
                     // earlier value first refusal over the ambiguous words.
@@ -7157,15 +7301,23 @@ class SpeechMenu {
                     const skippedBoundary = tail?.steps[0]?.ignoredBefore;
                     const skippedCommand = skippedBoundary && next.some(candidate =>
                         SpeechMenu.#hasExplicitCommandAnchor(candidate, skippedBoundary));
+                    if (collectorStep && tail && !tail.invalid && explicitTailBoundary && !skippedBoundary) {
+                        const deferred = SpeechMenu.#classifySpeechValue(element, full, utterance.digestIsFinal,
+                            {transcript: segment, remainder: remaining.join(" ")});
+                        if (deferred?.status === "defer") step.collector = {...step.collector,
+                            status: "defer", value: deferred.value, acceptedTranscript: segment,
+                            remainder: deferred.remainder};
+                    }
                     if (collectorStep && (!tail || tail.invalid || !explicitTailBoundary || (skippedBoundary && !skippedCommand))) {
                         // Never split a growing free-form value at a bare
                         // parameter match. A real command literal can end it.
                         select({steps: [step], exact: false, continuation: false, terminal: false,
-                            invalid: true, consumedWords: end, remainder: remaining.join(" ")});
+                            invalid: true, malformedContext: tail?.malformedContext || malformedContext,
+                            consumedWords: end, remainder: remaining.join(" ")});
                     } else if (tail) select({...tail, steps: [step, ...tail.steps],
                         consumedWords: end + skippedTailWords + tail.consumedWords});
                     else select({steps: [step], exact: false, continuation: false, terminal: false,
-                        invalid: true, consumedWords: end, remainder: remaining.join(" ")});
+                        invalid: true, malformedContext, consumedWords: end, remainder: remaining.join(" ")});
                 } else {
                     const future = context ? SpeechMenu.#chainContextCandidates(context) : [];
                     // A valid time/duration prefix is not necessarily a complete
@@ -7184,7 +7336,8 @@ class SpeechMenu {
         }
         // A malformed collector does not earn its projected state transition.
         // Recover only at a literal command boundary in the original context.
-        if (!best || best.invalid || (utterance.digestIsFinal && best.pending)) {
+        if ((!best || best.invalid || (utterance.digestIsFinal && best.pending)) &&
+            !(projectedContext && best?.malformedContext)) {
             for (let skip = 1; skip < words.length; skip++) {
                 if (!candidates.some(element => SpeechMenu.#hasExplicitCommandAnchor(element, words.slice(skip).join(" ")))) continue;
                 const later = await SpeechMenu.#planDigest(candidates, words.slice(skip), utterance, signal,
@@ -7230,6 +7383,7 @@ class SpeechMenu {
             headViable = false;
             let collectorFallback;
             let invalidFallback;
+            let malformedHead = false;
             for (let start = 0; start < words.length; start++) {
                 const candidate = await SpeechMenu.#planDigest(
                     SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack),
@@ -7242,6 +7396,11 @@ class SpeechMenu {
                 if (start > 0 && !candidate.steps.length && candidate.pending &&
                     !candidate.pending.hasCommandPrefix) continue;
                 const firstStep = candidate.steps[0];
+                if (start === 0 && candidate.malformedContext && firstStep &&
+                    SpeechMenu.#hasExplicitCommandAnchor(firstStep.commandElement, firstStep.segmentTranscript))
+                    malformedHead = true;
+                if (start > 0 && malformedHead && (!firstStep ||
+                    !SpeechMenu.#hasExplicitCommandAnchor(firstStep.commandElement, firstStep.segmentTranscript))) continue;
                 if (SpeechMenu.#rejectsRecoveredPrefix(firstStep?.commandElement,
                     [words.slice(0, start).join(" "), firstStep?.ignoredBefore].filter(Boolean).join(" "))) continue;
                 const collector = firstStep && (
@@ -7327,7 +7486,9 @@ class SpeechMenu {
                     [words.slice(0, start).join(" "), attempted.steps[0]?.ignoredBefore].filter(Boolean).join(" "))) { best = attempted; offset = start; break; }
             }
         }
-        if (!best || (!best.steps.length && !utterance.chainActive)) return undefined;
+        // A pending longer command must also win before any step has executed.
+        // Otherwise fallback matching can dispatch its shorter exact form.
+        if (!best) return undefined;
         // Recovery at the first segment locates the utterance head. Leading
         // junk is not part of an executed command and may be revised by ASR.
         const recoveredPrefix = !utterance.digestTranscript && best.steps[0]?.ignoredBefore;
@@ -7337,12 +7498,27 @@ class SpeechMenu {
                 consumedWords: best.consumedWords - ignoredWords};
             offset += ignoredWords;
         }
-        const root = best.steps[0] || best.pending;
+        const root = best.steps[0] || best.pending || best.malformedContext;
         if (offset && root?.commandElement?.getAttribute("speech-atomic-input") === "digits") {
             const vocabulary = globalThis.WMOFLanguagePack?.language?.speech?.digits || {};
             if (globalThis.DigitSequence && globalThis.DigitSequence.parse(words[offset - 1], vocabulary) !== null) return undefined;
         }
+        if (!utterance.digestClosed && !utterance.digestFailed && !signal?.aborted) {
+            utterance.valueCollectors ??= new Map();
+            for (const step of best.steps) {
+                if (step.collector) utterance.valueCollectors.set(step.commandElement, step.collector);
+            }
+            if (best.pending?.element.hasAttribute("speech-collect") &&
+                !utterance.valueCollectors.has(best.pending.element)) {
+                utterance.valueCollectors.set(best.pending.element,
+                    {status: "pending", transcript: best.pending.transcript});
+            }
+        }
         return {kind: "chain", utteranceId: utterance.id,
+            decision: {status: best.invalid ? "malformed" : best.exact && !best.pending && !best.steps.at(-1)?.canContinue
+                ? "valid" : best.steps.length ? "defer" : "incomplete",
+                transcript: best.steps.map(step => step.segmentTranscript).join(" "),
+                remainder: best.remainder || best.pending?.transcript || ""},
             commandElement: root?.commandElement || root?.element,
             speechMenuElement: root?.speechMenuElement,
             transcript: words.slice(offset).join(" "),
@@ -7350,6 +7526,7 @@ class SpeechMenu {
             exact: Boolean(best.exact), continuation: Boolean(best.continuation),
             system: false, depth: best.depth ?? Number.MAX_SAFE_INTEGER, order: -1,
             chain: best.steps, pending: best.pending, headViable, terminal: Boolean(best.terminal),
+            malformedContext: best.malformedContext,
             invalid: Boolean(best.invalid), remainder: best.remainder || ""};
     }
 

@@ -45,7 +45,7 @@ globalThis.TestChain=window.TestChain={
     permitted(){return false;},
     sync(syncAction){calls.push(['sync',syncAction]);return true;},
     sleep(){calls.push(['sleep']);return true;},
-    collect(value){calls.push(['collect',value]);return true;}
+    collect(digits){calls.push(['collect',digits]);return true;}
 
 };
 const preprocessorCalls=[];
@@ -131,6 +131,8 @@ try {
         const collecting=fresh();
         for (const text of words) {
             await hear(collecting,text);await collecting.digestQueue;
+            if (!text.includes('standard') && !text.includes('eleven'))
+                assert.equal(calls.length,0,`An unfinished clock value must stay pending: ${text}`);
             assert(!calls.some(call=>call[0]==='standard' || call[0]==='log'),
                 `An unfinished scheduled parameter must not execute or open its editor: ${text}`);
         }
@@ -347,8 +349,8 @@ try {
     const bad=fresh();
     await hear(bad,'ready at four fifteen standard time one hour nonsense again',true);
     await bad.digestQueue;
-    assert.deepEqual(calls,[['ready','4:15'],['standard','1:00:00']],'valid prefix still executes before an invalid remainder');
-    assert.equal(errors.at(-1)?.transcript,'nonsense again');
+    assert.deepEqual(calls,[], 'a malformed dependent value invalidates the whole uncommitted Ready chain');
+    assert.equal(errors.at(-1)?.transcript,'ready at four fifteen standard time one hour nonsense again');
     assert.equal(standard.hasAttribute('primed'),false);
 
     readyOutcome=()=>Promise.resolve(false);

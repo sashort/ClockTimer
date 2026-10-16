@@ -14,6 +14,36 @@ Run `npm run test:speech-chain` from `tests` to verify incremental consumption, 
 
 Collector state belongs to the utterance. Unconsumed recognition revisions replace it, accepted commands release it, and completion or invalidation clears it. A following command releases a valid prefix; otherwise the trailing parameter waits for the final decode. Final decodes after VAD closure collect locally without recreating persistent state. Existing fail-fast rules continue to decide whether an invalid tail is stable enough to reject.
 
+Commands and value contexts share four planning outcomes: `valid`, `incomplete`,
+`malformed`, and `defer`. A child returns its recognized portion and remainder;
+the root decides whether the combined chain is valid. Contexts can register a
+classifier with `SpeechMenu.registerValueContext(kind, classify)`. A planner-proposed
+boundary lets a context return `defer` with its normalized value and untouched
+remainder. For "ready four twelve sync on", the duration yields `0:04:12` and
+`sync on`; only the root can authorize the following command and commit the chain.
+
+A malformed section owns its remainder. "Ready hundred seven seconds" invalidates
+Ready and discards "seven seconds" too. It cannot recover that suffix as a new bare
+value. Scanning resumes only at an independent literal command head. Rollback
+clears the failed root's projected context and owned locks while preserving earlier
+independently completed roots and the acoustic utterance for subsequent commands.
+
+Silence settles all collecting states: commit a complete valid chain, cancel an
+incomplete root, or discard malformed input. Speech resumption cancels the deadline.
+`AdaptiveSpeechTiming` combines current-trip pause statistics, a saved profile, and
+the speech-speed setting. Pause detection and extra continuation dispatch grace
+remain distinct; collection settlement respects their full adaptive window rather
+than clipping it to 350 ms. Successful digests feed continuation/separation learning.
+
+The Mic Bar removes consumed text from the active transcript without losing its
+internal execution history. Results use one horizontal row of columns, newest on
+the left. A new result travels left from the right, beneath existing results, and
+docks at the left edge. Each result retains its own `speech-response-timeout` TTL
+(two seconds by default, with existing persistent/manual overrides), including
+across new utterances. Expiry pushes the whole chain right until the expired column
+exits. A single result uses this same mechanism, including before/after control
+snapshots and coded dictation values.
+
 ## Command trees and surfaces
 
 Commands are indexed by safe literal prefixes, with separate trees for each modal or popover scope. Complex regexes retain a fallback path. MutationObserver updates attach, detach, and rebase nodes when commands or scopes change; pending mutations are flushed before matching. Branch accessibility is evaluated against current eligibility. `speech-noun` provides literal aliases, using the same modal and authorization rules as ordinary commands.

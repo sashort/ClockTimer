@@ -1305,9 +1305,7 @@
                         void WMOFMicrophoneControl.setEnabled(globalThis.SpeechMenu,detail.payload?.enabled).then(result=>{
                             liveTripStream.broadcast("microphone.result",{commandId:detail.payload.commandId,...result});
                             if(result.accepted&&result.changed){
-                                void playSemanticSongThenSpeak(result.muted?"setting-off":"setting-on",
-                                    announcementText(`messages.voiceFeedback.${result.muted?"microphoneDeactivated":"microphoneActivated"}`),
-                                    {song:result.muted?"microphone-deactivated":"microphone-activated",useSelectedInstrument:false});
+                                announceMicrophoneState(!result.muted);
                             }
                         });
                         return;
@@ -13629,6 +13627,7 @@
             command.dataset
                 .speechTarget =
                 "#voiceEntrySurface";
+            command.setAttribute("speech-chain-context", "voice-entry");
 
             if (valueCommand) {
                 command.setAttribute(
@@ -16207,6 +16206,9 @@
 
     function resetNumberPad() {
         numberPadState = undefined;
+        // A closed voicepad is the projected duration collector for Ready.
+        // Active clock/percent editors install their own context when opened.
+        installVoiceEntrySpeechCommands();
         if (numberPadDisplay) numberPadDisplay.textContent = "";
         if (numberPadContext) numberPadContext.textContent = globalThis.WMOFLanguagePack.text("048501aa-538c-5fcf-a827-2b93385ab99b");
         if (numberPadDate) numberPadDate.value = "";
@@ -22170,6 +22172,14 @@
         clockTimer.addEventListener(eventName, handler);
     }
 
+    for (const kind of ["clock", "clock-parts", "duration", "percent", "keypad"]) {
+        globalThis.SpeechMenu?.registerValueContext(kind, (text, options) => {
+            const resolved = kind !== "keypad" ? kind : numberPadState?.mode === "absolute"
+                ? "clock-parts" : numberPadState?.mode === "percent" ? "percent" : "duration";
+            return EnglishSpeechValuePreprocessor.classify(text, resolved, options);
+        });
+    }
+
     globalThis
         .WMOFSpeechProcessingFunctions
         .define(
@@ -23114,6 +23124,15 @@
             );
         };
 
+    let microphoneFeedbackEnabled = Boolean(globalThis.SpeechMenu?.started && !globalThis.SpeechMenu?.muted);
+    function announceMicrophoneState(enabled) {
+        if (microphoneFeedbackEnabled === enabled) return;
+        microphoneFeedbackEnabled = enabled;
+        void playSemanticSongThenSpeak(enabled ? "setting-on" : "setting-off",
+            announcementText(`messages.voiceFeedback.${enabled ? "microphoneActivated" : "microphoneDeactivated"}`),
+            {song: enabled ? "microphone-activated" : "microphone-deactivated", useSelectedInstrument: false});
+    }
+
     let microphoneReminderTimer=null,microphoneReminderGeneration=0;
     function updateMicrophoneReminder(muted) {
         if(!muted){if(microphoneReminderTimer!==null)clearInterval(microphoneReminderTimer);microphoneReminderTimer=null;microphoneReminderGeneration++;return;}
@@ -23441,6 +23460,7 @@
                 metadata: {transaction: false},
                 implementation: function() {
                     updateMicrophoneReminder(false);
+                    announceMicrophoneState(true);
                     queueMicrotask(()=>{syncLoginRecognition();announceLoginAfterModelReady();});
                     setSpeechButtonState(
                         true,
@@ -23458,6 +23478,8 @@
             handleSpeechRuntimeStopped: {
                 metadata: {transaction: false},
                 implementation: async function() {
+                    updateMicrophoneReminder(false);
+                    announceMicrophoneState(false);
                     queueMicrotask(syncLoginRecognition);
                     cancelPendingSpeechReady();
 
@@ -23490,6 +23512,7 @@
                     muted = true
                 ) {
                     updateMicrophoneReminder(Boolean(muted));
+                    announceMicrophoneState(!muted);
                     setSpeechButtonState(
                         true,
                         Boolean(
@@ -23505,13 +23528,7 @@
             },
 
             handleSpeechUtteranceStarted: {metadata: {transaction: false}, implementation() {
-                void globalThis
-                    .WMOFPresentationSetters
-                    ?.dismissSpeechResponse?.({
-                        fast:
-                            true
-                    });
-
+                // Response results retain their own TTL across utterances.
                 return true;
             }},
 
@@ -27234,6 +27251,7 @@
             };
 
             const speechChainNext = {
+                ready: "voice-entry",
                 readyAt:
                     "scheduled-start",
                 startBreak: "break-choice",
@@ -27423,7 +27441,8 @@
                 element.dataset.speechSystemCommand = key;
                 element.dataset.speechOptionsCategory = 'system';
                 element.setAttribute('speech-chain-surface', 'pop');
-            } else if (key === 'startBreak') element.setAttribute('speech-chain-surface', '#breakDialog');
+            } else if (key === 'ready') element.setAttribute('speech-chain-surface', '#voiceEntrySurface');
+            else if (key === 'startBreak') element.setAttribute('speech-chain-surface', '#breakDialog');
             else if (key === 'endBreak') element.setAttribute('speech-reject-prefix', 'short');
             else if (key === 'showTripLog') element.setAttribute('speech-chain-surface', '#tripLogDialog');
             else if (key === 'hideTripLog' || key === 'voiceEntryConfirm' || ['confirmBreakType', 'saveTripSettings', 'confirmNumberPad'].includes(actionName)) {
@@ -27879,6 +27898,8 @@
     function voiceCommandFeedback({element, context, snapshot: before, result}) {
         if (!before) return;
         const action = element.getAttribute("speech-function")?.split(".").at(-1);
+        // Runtime transitions announce once for voice, pointer and remote input.
+        if (["sleep", "wake", "disableSpeechRecognition"].includes(action)) return;
         const transcript = String(context.transcript || "").trim().toLowerCase();
         if (["openBreakEndMenu", "openShortBreakEndMenu", "openLunchEndMenu"].includes(action) && result !== false && speechBreakPromptState?.hidden &&
             speechBreakPromptState.utteranceId === context.utteranceId && context.isFinal?.() === true && !context.hasContinuation?.()) {

@@ -32,6 +32,12 @@ jobs:
           node tests/fsm-loopback-feedback.mjs
           node tests/application-coordinator.mjs
           node tests/speech-failfast.mjs
+          node tests/speech-command-digest.mjs
+          node tests/adaptive-speech-timing.mjs
+          node tests/speech-response-chain.mjs
+          node tests/observer-microphone.mjs
+          node tests/app-state-transactions.mjs --speech-boundaries
+          node tests/app-state-transactions.mjs --mic-feedback --voice-feedback
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip
           node tests/app-state-transactions.mjs --commands-close

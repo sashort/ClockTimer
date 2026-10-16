@@ -13958,7 +13958,8 @@
     "through_commit": "831745dbd2c3bfa0baf494ed6f12f6a8c069debc",
     "working_changes": [
       "Two-step PIN review, focus announcements and Cancel/failure rules requested 16 October 2026",
-      "Runtime login.phase and version 2 transition contracts"
+      "Runtime login.phase and version 2 transition contracts",
+      "Root-owned command/value deferral, malformed section discard, adaptive silence settlement and response-column TTLs"
     ],
     "rule": "Every intervening commit is inventoried, including tests, corrective commits and reversions. Requirements describe the resulting code, never an abandoned intermediate implementation.",
     "commits": [
@@ -17080,9 +17081,12 @@
       "postconditions": {
         "terminal_command": "Execute once as soon as complete and not continuable; prune consumed text",
         "typed_value": "Hold viable time/duration continuations until a real boundary",
-        "junk": "Skip recoverable junk and malformed middle segments",
-        "final_invalid": "Discard invalid final/only segment; settle valid predecessors",
-        "dependency": "A failed chain root invalidates dependent continuations even when other commands intervene"
+        "decision": "Commands and contexts report valid/incomplete/malformed/defer portions; the root arbitrates the combined chain",
+        "junk": "Discard malformed context/command and its remainder through the next independent literal command head; never rescue a shorter valid value from the rejected section",
+        "final_invalid": "Rollback the uncommitted dependent root; retain earlier independently completed roots",
+        "dependency": "A failed chain root invalidates dependent continuations even when other commands intervene",
+        "silence": "At the adaptive silence deadline settle valid chains, cancel incomplete roots, discard malformed sections, clear collectors/projections and release owned locks; speech resumption cancels the deadline",
+        "response": "One horizontal row of response columns, newest on the left; incoming results travel from the right under existing results; each keeps its own TTL across utterances; expiry moves the whole chain right until the expired result exits; a single result uses the same mechanism"
       },
       "controls": {
         "speech": "Availability comes from the active UI/modal and semantic state; pointer flags are outputs"
@@ -17098,6 +17102,11 @@
       ],
       "evidence": [
         "node tests/speech-failfast.mjs",
+        "node tests/adaptive-speech-timing.mjs",
+        "node tests/speech-command-digest.mjs",
+        "node tests/speech-response-chain.mjs",
+        "node tests/speech-response-chain-browser.mjs",
+        "node tests/app-state-transactions.mjs --speech-boundaries",
         "node tests/app-state-transactions.mjs --voicepad-continuation",
         "node tests/legacy-vosk-values.mjs",
         "node tests/speech-value-preprocessor.mjs"
@@ -17124,7 +17133,8 @@
         "sleeping": "Only wake; ordinary commands cannot execute"
       },
       "audio": {
-        "echo": "Register and filter synthesized speech"
+        "echo": "Register and filter synthesized speech",
+        "microphone": "One dedicated activation/deactivation chime and announcement per actual runtime transition for voice, pointer and remote controls; duplicates are silent"
       },
       "forbidden": [
         "Change application planner to a recognizer",
@@ -17933,6 +17943,121 @@
           "tripActive": true,
           "frameUnloadedAfterAcknowledgement": true,
           "parentFocusRestored": true
+        }
+      },
+      {
+        "id": "SPEECH-ROOT-DEFER",
+        "contract": "SPEECH",
+        "given": {
+          "tripActive": false,
+          "speechRecognition": "listening"
+        },
+        "when": {
+          "voice": "ready four twelve sync on",
+          "final": true
+        },
+        "expect": {
+          "durationMilliseconds": 252000,
+          "sync": true,
+          "tripEventWrites": 0,
+          "rootArbitratesCommandAndContextDeferral": true,
+          "lockCountAfterSettlement": 0
+        }
+      },
+      {
+        "id": "SPEECH-MALFORMED-REMAINDER",
+        "contract": "SPEECH",
+        "given": {
+          "tripActive": false
+        },
+        "when": {
+          "interims": [
+            "ready hundred",
+            "ready hundred seven seconds",
+            "ready hundred seven seconds sync on"
+          ]
+        },
+        "expect": {
+          "readyChainInvalidated": true,
+          "durationSuffixExecuted": false,
+          "sync": true,
+          "tripEventWrites": 0,
+          "failedRootContextRetained": false
+        }
+      },
+      {
+        "id": "SPEECH-SILENCE-SETTLEMENT",
+        "contract": "SPEECH",
+        "given": {
+          "collector": "root, command or value",
+          "timingProfile": "current trip pauses plus saved profile and speech settings"
+        },
+        "when": {
+          "silenceExceedsAdaptiveGrace": true,
+          "variants": [
+            "complete valid value",
+            "malformed section",
+            "incomplete continuation"
+          ]
+        },
+        "expect": {
+          "utteranceEnded": true,
+          "collectors": 0,
+          "primedCommands": 0,
+          "ownedLocks": 0,
+          "completeValidOnlyCommitted": true,
+          "fixed350msCap": false
+        }
+      },
+      {
+        "id": "SPEECH-RESPONSE-COLUMNS",
+        "contract": "SPEECH",
+        "given": {
+          "results": [
+            "A",
+            "B"
+          ],
+          "ttlA": 100,
+          "ttlB": 500
+        },
+        "when": {
+          "newResult": "C",
+          "newUtterance": true,
+          "elapsedMilliseconds": 100
+        },
+        "expect": {
+          "resultOrder": [
+            "C",
+            "B"
+          ],
+          "rows": 1,
+          "entryFromRightUnderExisting": true,
+          "expiryMovesWholeChainRight": true,
+          "newUtteranceClearsResults": false,
+          "remainingTtlsReset": false
+        }
+      },
+      {
+        "id": "MICROPHONE-FEEDBACK",
+        "contract": "RECOGNIZER",
+        "given": {
+          "speechRecognition": "listening"
+        },
+        "when": {
+          "mute": true,
+          "repeatMute": true,
+          "wake": true,
+          "variants": [
+            "voice",
+            "pointer",
+            "remote"
+          ]
+        },
+        "expect": {
+          "deactivationAnnouncements": 1,
+          "deactivationChimes": 1,
+          "activationAnnouncements": 1,
+          "activationChimes": 1
         }
       }
     ]

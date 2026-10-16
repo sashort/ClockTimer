@@ -70,7 +70,7 @@ window.eval(fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',i
 let speechSource=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 if(process.argv.includes('--break-end-stream'))speechSource=speechSource.replace('static #pipeline = "raw";', 'static #pipeline = "silero";');
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
-    static testPause(u){u.continuationPauseStartedAt=performance.now()-220;SpeechMenu.#armContinuationPauseDeadline(u);}
+    static testPause(u){u.continuationPauseStartedAt=performance.now()-(SpeechMenu.#continuationGraceMilliseconds()-150);SpeechMenu.#armContinuationPauseDeadline(u);}
     static testResume(){const pipeline=SpeechMenu.#pipeline;SpeechMenu.#pipeline="silero";try{SpeechMenu.#onVadSpeechStart({detail:{}});}finally{SpeechMenu.#pipeline=pipeline;}}
     static testBackend(name){SpeechMenu.#recognizerBackend=name;}
     static testModelReady(ready){SpeechMenu.#modelReady=ready;}
@@ -83,7 +83,7 @@ speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', 
     static testVoskContext(id,text){return SpeechMenu.#voskContext(id,text);}
     static testUseRecognizer(recognizer){SpeechMenu.#recognizerBackend='vosk';SpeechMenu.#recognizer=recognizer;}
     static testResult(u,text,final=false){SpeechMenu.#onSherpaTranscript({detail:{utteranceId:u.id,transcript:text,isFinal:final}});}
-    static async testSilence(u,text){u.transcript=text;u.candidatePool=await SpeechMenu.#refreshCandidatePool(u,text);return SpeechMenu.#commitUtterance(u);}
+    static async testSilence(u,text){await SpeechMenu.#handleLiveTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;return u.hadCommittedCommand && !u.digestFailed && !u.digestExecutionFailed;}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
 window.eval(speechSource+'\nwindow.SpeechMenu=SpeechMenu;');
 window.SpeechMenu.events.addEventListener('speechFeedbackError',e=>errors.push(e.detail.error?.stack||String(e.detail.error)));
@@ -703,6 +703,65 @@ if(process.argv.includes('--sync-voice')) {
  console.log('PASS Sync Off changes and persists the hidden menu setting without stopping Sherpa/Vosk; standalone Off still works');
  await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--speech-boundaries')) {
+ const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
+ const before=stored.length;
+ const bad=window.SpeechMenu.testBegin();await say(bad,'ready hundred');
+ assert(bad.chainInvalidated,'malformed context invalidates the actual Ready chain');
+ await say(bad,'ready hundred seven seconds');
+ assert.equal(window.WMOFInteractionState.state.editor.open,false,'a valid suffix cannot reopen the rejected Ready editor');
+ assert.equal(timer.status,'ready');assert.equal(stored.length,before,'malformed Ready cannot write trip events');
+ await say(bad,'ready hundred seven seconds sync on',true);
+ assert.equal(timer.autoSyncTripGoal,true,'an independent command head can follow the discarded section');
+ assert.equal(window.WMOFCoordinator.lockCount,0,'discarded chain releases its owned locks');
+ const ready=window.SpeechMenu.testBegin();await say(ready,'ready four twelve sync on',true);
+ assert(!ready.digestExecutionFailed && !ready.chainInvalidated,'root accepts duration followed by Sync');
+ assert(window.document.querySelector('#voiceEntrySurface').open,'valid Ready opens its editor');
+ assert.equal(window.WMOFInteractionState.state.editor.value,'412','deferred duration retains both number groups');
+ assert.equal(timer.autoSyncTripGoal,true);
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ assert.equal(stored.length,before,'Ready without OK does not start a trip');
+ const cancel=window.SpeechMenu.testBegin();await say(cancel,'cancel',true);
+ const provisional=window.SpeechMenu.testBegin();await say(provisional,'ready four twelve sync o');
+ assert(window.document.querySelector('#voiceEntrySurface').open,'the root may hold provisional Ready effects while its command continuation grows');
+ await say(provisional,'ready four twelve sync bananas',true);
+ assert.equal(window.WMOFInteractionState.state.editor.open,false,'malformed command continuation rolls back the entire provisional Ready root');
+ assert.equal(window.WMOFCoordinator.lockCount,0,'root rollback releases pending ownership');
+ assert.equal(stored.length,before,'failed dependent root cannot persist trip events');
+ const time=window.SpeechMenu.testBegin();
+ for(const text of ['ready at four','ready at four twenty','ready at four twenty t']) {
+   await say(time,text);assert(!window.document.querySelector('#scheduledStartDialog').open,text+' remains incomplete');
+ }
+ await say(time,'ready at four twenty two',true);
+ assert(window.document.querySelector('#scheduledStartDialog').open);
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ const cancelTime=window.SpeechMenu.testBegin();await say(cancelTime,'cancel',true);
+ await window.WMOFVoiceEntry.open({mode:'absolute',source:'test-prior-clock',initialValue:new window.Date(),confirmTarget:'home',cancelTarget:'home',onConfirm:()=>true});await settle();
+ const closeClock=window.SpeechMenu.testBegin();await say(closeClock,'cancel',true);
+ const afterClock=window.SpeechMenu.testBegin();await say(afterClock,'ready one hour sync on',true);
+ assert(!afterClock.chainInvalidated && !afterClock.digestFailed,'Ready projects a duration after a previous clock editor');
+ assert.equal(window.WMOFInteractionState.state.editor.value,'10000');
+ assert.equal(stored.length,before);
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS real Ready malformed-tail discard, root deferral to Sync, growing time capture, zero trip writes and released locks');
+ await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--mic-feedback')) {
+ spoken.length=0;chimes.length=0;
+ await window.SpeechMenu.sleep();await settle();
+ assert.deepEqual(spoken,['Microphone deactivated.']);assert.deepEqual(chimes,['microphone-deactivated']);
+ await window.SpeechMenu.sleep();await settle();assert.equal(spoken.length,1,'duplicate mute is silent');
+ await window.SpeechMenu.wake();await settle();
+ assert.deepEqual(spoken,['Microphone deactivated.','Microphone activated.']);
+ assert.deepEqual(chimes,['microphone-deactivated','microphone-activated']);
+ await window.SpeechMenu.wake();await settle();assert.equal(spoken.length,2,'duplicate wake is silent');
+ const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,'sleep',true);await u.digestQueue;await settle();
+ assert.equal(spoken.filter(s=>s==='Microphone deactivated.').length,2,'voice sleep announces once through the same runtime path');
+ assert.equal(chimes.filter(s=>s==='microphone-deactivated').length,2,'voice feedback cannot duplicate the runtime chime');
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS local and voice mic feedback: dedicated activation/deactivation chimes, announcements and duplicate suppression');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--voicepad-continuation')) {
  const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
  const scheduled=window.SpeechMenu.testBegin();await say(scheduled,'ready at eleven fifty nine pm',true);
@@ -1144,14 +1203,16 @@ const systemMenu=window.document.createElement('speech-menu');systemMenu.setAttr
 const off=window.document.createElement('speech-command');off.setAttribute('speech-pattern','^off$');off.setAttribute('speech-function','WMOFActions.disableSpeechRecognition');systemMenu.append(off);window.document.body.append(systemMenu);
 await window.WMOFActions.toggleSync(true);await settle();
 const syncAttempt=window.SpeechMenu.testBegin();
+const syncDigested=[];const recordSync=event=>{if(event.detail.utteranceId===syncAttempt.id)syncDigested.push(event.detail.commandElement.getAttribute('speech-function'));};
+window.SpeechMenu.events.addEventListener('speechCommandDigested',recordSync);
 await window.SpeechMenu.testTranscript(syncAttempt,'sync',false);await syncAttempt.digestQueue;
 await window.SpeechMenu.testTranscript(syncAttempt,'sync off',false);await syncAttempt.digestQueue;
 await window.SpeechMenu.testTranscript(syncAttempt,'sync off',true);await syncAttempt.digestQueue;await settle();
 assert.equal(window.SpeechMenu.started,true,'sync off must not stop speech recognition');
 assert.equal(window.SpeechMenu.listeningSuspended,false,'sync off must not suspend recognition');
 assert.equal(window.document.querySelector('#app').dataset.speechActive,'true','sync off must keep the mic bar visible');
-assert.equal(syncAttempt.digestSteps.length,1,'sync off is one command');
-assert.equal(syncAttempt.digestSteps[0].commandElement.getAttribute('speech-function'),'WMOFActions.toggleSync');
+window.SpeechMenu.events.removeEventListener('speechCommandDigested',recordSync);
+assert.deepEqual(syncDigested,['WMOFActions.toggleSync'],'sync off digests once even after its completed stream is pruned');
 assert.equal(timer.autoSyncTripGoal,false,'sync off explicitly disables synchronization');
 const repeatedOff=window.SpeechMenu.testBegin();
 await window.SpeechMenu.testTranscript(repeatedOff,'sync off',true);await repeatedOff.digestQueue;await settle();
@@ -1541,8 +1602,8 @@ if(process.argv.includes('--voice-feedback')) {
             assert.equal(spoken.length,1,'sync '+enabled+' speaks once');
         }
     }
-    await speakCommand('sleep');assert(spoken.includes('Voice recognition off.'));
-    await speakCommand('wake');assert(spoken.includes('Voice recognition on.'));
+    await speakCommand('sleep');assert(spoken.includes('Microphone deactivated.'));
+    await speakCommand('wake');assert(spoken.includes('Microphone activated.'));
     await speakCommand('off');assert(spoken.includes('Microphone deactivated.'));
     console.log('PASS replacement start commands, pointer-only selector, OK/Cancel confirmation, and incremental start/end dialog and speech suppression for all interval types');
 }

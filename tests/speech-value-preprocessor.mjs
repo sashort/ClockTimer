@@ -33,3 +33,12 @@ console.log("PASS context-aware speech value preprocessing");
 assert.equal(Preprocessor.parse("tutu percent", "percent"),22);
 assert.equal(Preprocessor.normalize("tutu minutes", "duration"),"0:22:00");
 assert.equal(Preprocessor.normalize("four tutu pm", "clock"),"4:22 pm");
+assert.equal(Preprocessor.classify('four tw', 'clock').status, 'incomplete');
+assert.equal(Preprocessor.classify('four twenty two', 'clock').status, 'valid');
+assert.equal(Preprocessor.classify('hundred', 'duration').status, 'malformed');
+assert.equal(Preprocessor.classify('four bananas', 'clock').status, 'malformed');
+assert.equal(Preprocessor.classify('twenty five minutes thirty s', 'duration').status, 'incomplete');
+assert.equal(Preprocessor.classify('quarter to', 'clock', {final:true}).status, 'malformed');
+assert.deepEqual(Preprocessor.classify('four twelve sync on', 'duration', {
+    boundary: {value: 'four twelve', remainder: 'sync on'}
+}), {status:'defer', value:'0:04:12', acceptedTranscript:'four twelve', remainder:'sync on'});

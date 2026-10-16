@@ -4,7 +4,8 @@
     const presentation =
         Object.create(null);
 
-    let responseTimer;
+    const responseTimers = new Map();
+    let responseSequence = 0;
 
     const define =
         (
@@ -765,62 +766,20 @@
                 : 2000;
         };
 
-    const dismissSpeechResponse =
-        (
-            {
-                fast = false
-            } = {}
-        ) => {
-            clearTimeout(
-                responseTimer
-            );
-            responseTimer =
-                undefined;
+    const dismissSpeechResponse = ({fast = false} = {}) => {
+        for (const timer of responseTimers.values()) clearTimeout(timer);
+        responseTimers.clear();
+        return responseBar()?.clearResponse?.({duration: fast ? 90 : 190});
+    };
 
-            return responseBar()
-                ?.clearResponse?.({
-                    duration:
-                        fast
-                            ? 90
-                            : 190
-                });
-        };
-
-    const scheduleDismissal =
-        (
-            commandElement,
-            utteranceId
-        ) => {
-            clearTimeout(
-                responseTimer
-            );
-            responseTimer =
-                undefined;
-
-            const delay =
-                responseTimeout(
-                    commandElement
-                );
-
-            if (delay === null) {
-                return;
-            }
-
-            responseTimer =
-                setTimeout(
-                    () => {
-                        responseTimer =
-                            undefined;
-                        void responseBar()
-                            ?.clearResponse?.({
-                                duration:
-                                    190,
-                                utteranceId
-                            });
-                    },
-                    delay
-                );
-        };
+    const scheduleDismissal = (commandElement, utteranceId, resultId) => {
+        const delay = responseTimeout(commandElement);
+        if (delay === null) return;
+        responseTimers.set(resultId, setTimeout(() => {
+            responseTimers.delete(resultId);
+            void responseBar()?.clearResponse?.({duration: 190, utteranceId, resultId});
+        }, delay));
+    };
 
     const beginSpeechResponse =
         (
@@ -898,12 +857,6 @@
                 return false;
             }
 
-            clearTimeout(
-                responseTimer
-            );
-            responseTimer =
-                undefined;
-
             const bar =
                 responseBar();
 
@@ -911,19 +864,20 @@
                 return false;
             }
 
+            const resultId = `response:${++responseSequence}`;
             bar.presentResponseTransition?.(
                 session.before ||
                     after,
                 after ||
                     session.before,
                 {
-                    duration: 320
+                    duration: 320, resultId
                 }
             );
 
             scheduleDismissal(
                 commandElement,
-                utteranceId
+                utteranceId, resultId
             );
 
             return true;
@@ -954,13 +908,6 @@
             if (!text) {
                 return false;
             }
-
-            clearTimeout(
-                responseTimer
-            );
-
-            responseTimer =
-                undefined;
 
             const bar =
                 responseBar();
@@ -1041,13 +988,12 @@
                     container;
             }
 
-            bar.setResponse?.(
-                visual
-            );
+            const resultId = `response:${++responseSequence}`;
+            bar.setResponse?.(visual, {resultId});
 
             scheduleDismissal(
                 commandElement,
-                utteranceId
+                utteranceId, resultId
             );
 
             return true;

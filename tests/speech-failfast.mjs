@@ -9,7 +9,7 @@ globalThis.ParameterParser=Function(fs.readFileSync(new URL('../ParameterParser.
 const parserSource=['DurationParser','SpokenTimeParser','PercentParser','SpeechValuePreprocessor'].map(name=>
     fs.readFileSync(new URL(`../lang/en-US/${name}.js`,import.meta.url),'utf8')).join('\n');
 const Values=Function(parserSource+'\nreturn EnglishSpeechValuePreprocessor;')();
-for(const name of ['SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter'])
+for(const name of ['SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter','AdaptiveSpeechTiming'])
     Function(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'))();
 let source=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 if(process.env.SPEECH_INDEX_BASELINE) source=source.replace('static #indexedMatching = true','static #indexedMatching = false');
@@ -29,7 +29,9 @@ source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testVoskContext(id,text){return SpeechMenu.#voskContext(id,text);}
     static testScope(text){return SpeechMenu.#scopeTranscriptToCommands(text);}
     static testBackend(name){SpeechMenu.#recognizerBackend=name;}
-    static testPause(u){u.continuationPauseStartedAt=performance.now()-220;return SpeechMenu.#armContinuationPauseDeadline(u);}
+    static testPause(u,remaining=100){u.continuationPauseStartedAt=performance.now()-(SpeechMenu.#continuationGraceMilliseconds()-remaining);return SpeechMenu.#armContinuationPauseDeadline(u);}
+    static testStartPause(u){u.continuationPauseStartedAt=performance.now();return SpeechMenu.#armContinuationPauseDeadline(u);}
+    static testPushPause(u,ms){return SpeechMenu.#pushRecognitionStream(u,ms,"raw");}
     static testResume(u){SpeechMenu.#cancelContinuationPause(u);}
     static testActive(){return SpeechMenu.#utterance;}
     static testReset(){SpeechMenu.#clearPrimed();SpeechMenu.#finishedUtterances.clear();SpeechMenu.#utterance=undefined;}
@@ -168,6 +170,55 @@ try {
  sync.remove();
  const short=make(document.body,'short-ready','^ready$','showLog',{'speech-modal':'top-level'});
  u=fresh();await hear(u,'ready');assert.deepEqual(calls,[],'Ready waits because Ready At can continue it');assert.equal(u.completedStreams,undefined);short.remove();
+ for(const kind of ['clock','duration']) speech.registerValueContext(kind,(value,options)=>Values.classify(value,kind,options));
+ const readyRoot=make(document.body,'ready-root','^ready$','showLog',{'speech-modal':'top-level','speech-chain-next':'ready-duration'});
+ const readyDuration=make(future,'ready-duration','^(?<timeValue>.+)$','standard',{
+   'speech-chain-context':'ready-duration','speech-collect':'','speech-preproc':'TestValues.normalize',
+   'speech-preproc-context':'duration','speech-preproc-field':'timeValue'});
+ const deferredSync=make(document.body,'deferred-sync','^sync (?<syncAction>on|off)$','sync',{'speech-modal':'top-level'});
+ const deferredPlan=await speech.planCommandChain('ready four twelve sync on');
+ assert.deepEqual(deferredPlan.steps.map(step=>step.decision.status),['defer','defer','valid'],
+   'commands and contexts defer their portions to the root');
+ assert.equal(deferredPlan.decision.status,'valid','root arbitrates the complete combined chain');
+ deferredSync.remove();
+ u=fresh();await hear(u,'ready');await hear(u,'ready hundred');
+ assert(u.chainInvalidated,'malformed duration invalidates its whole Ready chain immediately');
+ assert.deepEqual(calls,[],'the Ready root and dependent value never execute');
+ await hear(u,'ready hundred seven seconds');assert.deepEqual(calls,[],'later valid duration words cannot revive a malformed chain');
+ await hear(u,'ready hundred seven seconds show log',true);assert.deepEqual(calls,[['log']],'root resumes scanning for an independent command after discarding the rejected chain');
+ const temptingValue=make(document.body,'tempting-value','^(?<timeValue>.+)$','showLog',{
+   'speech-collect':'','speech-preproc':'TestValues.normalize','speech-preproc-context':'duration','speech-preproc-field':'timeValue'});
+ u=fresh();await hear(u,'ready hundred seven seconds',true);
+ assert.deepEqual(calls,[],'an invalid command head owns its malformed section; a bare valid suffix cannot rescue it');
+ temptingValue.remove();
+ u=fresh();await hear(u,'show log');await hear(u,'show log ready hundred');
+ assert.deepEqual(calls,[['log']],'a separately completed command survives later chain invalidation');
+ assert(u.chainInvalidated);
+ u=fresh();await hear(u,'ready at four tw');assert(!u.digestFailed,'context reports unfinished words separately from malformation');
+ await hear(u,'ready at four twenty two',true);assert.deepEqual(calls,[['ready','4:22']]);
+ for(const text of ['ready at four twenty two','ready at four tw','ready hundred seven seconds','show log','unrelated noise']) {
+   u=fresh();await hear(u,text);speech.testPause(u);await new Promise(resolve=>setTimeout(resolve,200));await u.segmentBarrier;await u.digestQueue;
+   assert.equal(speech.testActive(),undefined,text+' settles on the short silence deadline');
+   assert.equal(u.valueCollectors.size,0,text+' leaves no hanging collector');
+   assert.equal(document.querySelectorAll('[primed]').length,0,text+' clears projected command markers');
+   assert.deepEqual(calls,text==='ready at four twenty two'?[['ready','4:22']]:text==='show log'?[['log']]:[],text+' commits only a complete valid command');
+ }
+ readyRoot.remove();readyDuration.remove();
+ speech.configureSpeechTimingProfile({continuationPauseMeanMs:650,continuationPauseVarianceMs2:0,continuationPauseSamples:40});
+ speech.setSpeechTimingTtsRate(.5);speech.beginSpeechTimingTrip();
+ u=fresh();await hear(u,'ready at four');
+ const nativeTimeout=globalThis.setTimeout;let scheduledDelay;
+ globalThis.setTimeout=(callback,delay,...args)=>{scheduledDelay=delay;return nativeTimeout(callback,delay,...args);};
+ try {speech.testStartPause(u);} finally {globalThis.setTimeout=nativeTimeout;}
+ assert(scheduledDelay>350,'collection timeout honors a longer adaptive grace instead of truncating it to 350 ms');
+ assert(Math.abs(scheduledDelay-speech.speechTimingSnapshot.continuationGraceMs)<30);
+ speech.testResume(u);speech.testPushPause(u,600);
+ await hear(u,'ready at four twenty two',true);await u.digestCompletion;
+ assert.equal(speech.speechTimingSnapshot.trip.continuationPauseSamples,1,'successful digest feeds current-trip continuation learning');
+ u=fresh();await hear(u,'show log');speech.testPushPause(u,750);
+ await hear(u,'show log show log',true);await u.digestCompletion;
+ assert.equal(speech.speechTimingSnapshot.trip.streamSeparationSamples,1,'separate completed roots feed command-separation learning');
+ speech.finishSpeechTimingTrip();
  Function(fs.readFileSync(new URL('../StateTransactions.js',import.meta.url),'utf8'))();
  const coordinator=globalThis.WMOFCoordinator;let committed=0,release;
  coordinator.register('test-state',{capture:()=>committed,restore:value=>{committed=value;}});
