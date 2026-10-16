@@ -578,6 +578,25 @@ if(process.argv.includes('--voicepad-continuation')) {
  console.log('PASS contextual voicepad duration, clock and percent continuation, resumed speech, silence and scheduled-time control');
  await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--down-timing')) {
+ await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ for(const phrase of ['down time','down','down time','down']) {
+  window.__testTime+=60000;
+  const spokenAt=window.__testTime;
+  const u=window.SpeechMenu.testBegin();
+  window.__testTime+=2500;await new Promise(resolve=>setTimeout(resolve,1100));
+  await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await u.segmentBarrier;await settle();
+  assert(!u.digestExecutionFailed,phrase+' executes after cadence ticks: '+JSON.stringify({consoleErrors,errors,status:window.document.querySelector('.persistence-status')?.textContent}));
+  assert.equal(timer.getActiveIntervalState()?.intervalType,'down');
+  assert.equal(Date.parse(stored.findLast(event=>event.event==='interval.started').timestamp),spokenAt,'cadence correction preserves the spoken event time');
+  assert.equal(window.WMOFCoordinator.lockCount,0);
+  await window.WMOFActions.resumeTrip();await settle();
+  assert(!timer.getActiveIntervalState(),'resume ends Down without ending the trip');
+  assert.equal(timer.status,'running');
+ }
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS spoken Down commands tolerate cadence ticks during recognition');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--down-break')) {
  await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
  const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');return u;};

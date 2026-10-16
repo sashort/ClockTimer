@@ -30862,10 +30862,17 @@
                     1000
                 ) % 1000;
 
-            return new Date(
-                date.getTime() -
-                elapsedPastCadence
-            );
+            let projectedTime = date.getTime() - elapsedPastCadence;
+            // Starting or ending an interval changes the cadence alignment.
+            // Its newly rounded tick can precede a tick already processed by
+            // an existing arc. Keep presentation monotonic without changing
+            // the event timestamp used for interval accounting/persistence.
+            for (const range of this.#getManagedTimeRanges()) {
+                if (range.timeRangeExiting === true) continue;
+                const previous = range.model?.group.lastTickTime?.getTime();
+                if (Number.isFinite(previous)) projectedTime = Math.max(projectedTime, previous);
+            }
+            return new Date(projectedTime);
         }
 
         #buildPlannedRanges(
