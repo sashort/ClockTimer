@@ -3,6 +3,9 @@
     const $ = id => document.getElementById(id);
     const stream = new WMOFLiveTripStream({baseUrl: new URL('./', document.baseURI)});
     const view = new WMOFDropInView({root:$('liveStreamDialog'),stream,text:WMOFDropInText});
+    document.addEventListener('graphical-settings-saved', event => {
+        view.setGraphicalSettings(event.detail);
+    });
     const identities = new Map();
     const context = WMOFIdentityContext;
     let user, csrf, exiting=false, busy = false, messageBusy = false, revision = 0, settingsRevision=0;

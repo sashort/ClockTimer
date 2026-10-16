@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="{{locale}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clock/Timer Settings</title>
+<link rel="stylesheet" href="app.css">
+<style>
+html.settings-embedded, html.settings-embedded body { background:transparent; }
+.settings-embedded .graphical-dialog::backdrop { background:transparent; }
+#graphicalSettingsError:empty { display:none; }
+#graphicalSettingsError { margin:0; padding:.5rem; color:#b00020; background:white; }
+</style>
+</head>
+<body>
+{{include:shared/graphical-settings.html}}
+{{include:shared/settings-help.html}}
+{{language-pack}}
+<script src="LanguagePack.js"></script>
+<script src="TimerSummaryView.js"></script>
+<script src="TimerAppearance.js"></script>
+<script src="TemporalFormat.js"></script>
+<script src="RingContainer.js"></script>
+<script src="TimeRangeModel.js"></script>
+<script src="TimeRangeElement.js"></script>
+<script src="ClockTimer.js"></script>
+<script src="AsyncPersistence.js"></script>
+<script src="AccountSettings.js"></script>
+<script src="GraphicalSettings.js"></script>
+<script src="GraphicalSettingsPage.js"></script>
+</body>
+</html>

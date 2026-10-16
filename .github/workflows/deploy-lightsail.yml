@@ -22,6 +22,10 @@ jobs:
         working-directory: tests
       - run: |
           node tests/template-language-references.mjs
+          node tests/standalone-settings-page.mjs
+          node tests/graphical-settings-layout.mjs
+          node tests/shared-page-templates.mjs
+          python tests/build-version.py
           node tests/application-coordinator.mjs
           node tests/speech-failfast.mjs
           node tests/async-command-lifecycle.mjs
@@ -45,8 +49,22 @@ jobs:
           node tests/speech-grammar-context.mjs
           node tests/pocketsphinx-grammar-catalog.mjs
           node tests/speech-chain-actions.mjs
+  settings-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+        working-directory: tests
+      - run: npx playwright install --with-deps chromium
+        working-directory: tests
+      - run: node tests/graphical-settings-browser.cjs
+      - run: php -l graphical-settings.php
+      - run: php tests/graphical-settings-page.php
   deploy:
-    needs: speech-tests
+    needs: [speech-tests, settings-browser]
     runs-on: ubuntu-latest
 
     steps:

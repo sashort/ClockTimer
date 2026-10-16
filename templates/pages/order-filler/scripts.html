@@ -41,9 +41,11 @@
     <script src="LiveTripStream.js?build=E4GUFA"></script>
     <script src="PanePage.js?v=overflow-3&amp;build=E4GUFA"></script>
     <script src="HamburgerMenu.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
+    <script src="GraphicalSettings.js"></script>
     <script src="app.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
     <script src="SpeechEditorRuntime.js?build=E4GUFA"></script>
 
+<script src="GraphicalSettingsHost.js"></script>
 <script id="clockTimerSettingsFrameController">
 (() => {
   const dialog = document.getElementById("clockTimerSettingsFrameDialog");
@@ -62,7 +64,10 @@
       const requested = button.dataset.settingsSurface;
       const surface = surfaces.has(requested) ? requested : "graphicalSettingsDialog";
       frame.dataset.settingsSurface = surface;
-      frame.src = "settings.html?surface=" + encodeURIComponent(surface);
+      frame.dataset.settingsSession = crypto.randomUUID();
+      const page = surface === "graphicalSettingsDialog" ? "graphical-settings" : "settings";
+      const extension = location.pathname.endsWith(".php") && page === "graphical-settings" ? ".php" : ".html";
+      frame.src = page + extension + "?surface=" + encodeURIComponent(surface) + "&lang=" + encodeURIComponent(document.documentElement.lang) + "&session=" + frame.dataset.settingsSession;
       const menu = button.closest("hamburger-menu");
       if (menu && typeof menu.hidePopover === "function") {
         try { menu.hidePopover(); } catch {}
@@ -72,8 +77,10 @@
   });
   window.addEventListener("message", event => {
     if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
+    if (frame.dataset.settingsSurface === "graphicalSettingsDialog" && event.data?.session !== frame.dataset.settingsSession) return;
     if (event.data?.type === "clocktimer-settings-closed" && dialog.open) dialog.close();
   });
+  dialog.addEventListener("close", () => { frame.src = "about:blank"; });
   dialog.addEventListener("click", event => {
     if (event.target === dialog) dialog.close();
   });

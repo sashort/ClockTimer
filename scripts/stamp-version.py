@@ -12,14 +12,14 @@ from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 def stamp(root):
     version = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6))
     prepared = {}
-    paths = [root / name for name in ('index.html', 'drop-in.html', 'order-filler.html')]
+    paths = [root / name for name in ('index.html', 'drop-in.html', 'order-filler.html', 'graphical-settings.html', 'settings.html')]
     paths += sorted((root / 'templates').rglob('*.html'))
     for path in paths:
         name = str(path.relative_to(root))
         text = path.read_text(encoding='utf-8')
         text, count = re.subn(r'(<output id="appVersion"[^>]*>)[^<]*(</output>)',
                              lambda match: match[1] + version + match[2], text)
-        if (path.parent == root and count != 1) or count > 1:
+        if (path.parent == root and path.name in ('index.html', 'drop-in.html', 'order-filler.html') and count != 1) or count > 1:
             raise ValueError(f'{name} has an invalid Version output count')
         def asset(match):
             url = urlsplit(match[2].replace('&amp;', '&'))

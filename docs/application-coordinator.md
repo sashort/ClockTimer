@@ -33,6 +33,17 @@ Already settled transactions cannot be reused by late bound callbacks.
 
 ## UI lock ownership
 
+Graphical settings has an independent PHP/static entry point (`graphical-settings`)
+which uses `GraphicalSettings.js` and the original shared dialog/help templates.
+It loads no `app.js`, speech runtime, login or trip workflow. The host supplies
+the current appearance and accepts Save through `GraphicalSettingsHost.js`;
+Order Filler executes that save through its existing coordinator, while Drop-In
+uses its account settings store and updates its viewer. Cancel, Escape and Close
+discard the draft, dismiss the containing modal and unload its frame. They never
+navigate or initialize the parent. Failed saves remain open for retry.
+Desktop and mobile browser checks compare the original dialog geometry, styles,
+preview placement and controls against the extracted iframe, including reopening.
+
 Each queued mutation owns one entry in the coordinator's lock map. Nested and
 chained steps share their operation's entry. The first entry disables controls;
 the final removal enables them according to current application state. Completion,

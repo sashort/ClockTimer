@@ -1309,6 +1309,7 @@ html.settings-embedded-document { overflow:auto !important; background:transpare
     <script src="LiveTripStream.js?build=E4GUFA"></script>
     <script src="PanePage.js?v=overflow-3&amp;build=E4GUFA"></script>
     <script src="HamburgerMenu.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
+    <script src="GraphicalSettings.js"></script>
     <script src="app.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
     <script src="SpeechEditorRuntime.js?build=E4GUFA"></script>
 
@@ -1336,6 +1337,7 @@ html.settings-embedded-document { overflow:auto !important; background:transpare
     });
   }
 
+  const openSurface = () => {
   // Route through the original app trigger so its existing form-population,
   // validation, focus, and settings handlers run exactly as in Order-Filler.
   const originalTrigger = document.querySelector('[data-dialog="' + surfaceId + '"]');
@@ -1351,6 +1353,9 @@ html.settings-embedded-document { overflow:auto !important; background:transpare
   if (surface.dispatchEvent(opening)) {
     try { surface.showModal(); } catch { surface.setAttribute("open", ""); }
   }
+  };
+  if (document.documentElement.dataset.clocktimerAppReady === "true") openSurface();
+  else document.addEventListener("clocktimer-app-ready", openSurface, {once:true});
 })();
 </script>
 </body>

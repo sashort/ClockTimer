@@ -16,7 +16,10 @@ with tempfile.TemporaryDirectory() as directory:
     (root / 'templates/pages').mkdir()
     (root / 'templates/pages/head.html').write_text('<link href="MenuIcons.css">', encoding='utf-8')
     (root / 'app.js').write_text('const SPEECH_RUNTIME_REVISION = "old";', encoding='utf-8')
+    for name in ('graphical-settings.html', 'settings.html'):
+        (root / name).write_text('<script src="GraphicalSettings.js"></script>', encoding='utf-8')
     first = module.stamp(root)
+    assert f'build={first}' in (root / 'graphical-settings.html').read_text()
     assert re.fullmatch('[A-Z0-9]{6}', first)
     for name in ('index.html', 'templates/index.html', 'drop-in.html', 'templates/drop-in.html', 'order-filler.html', 'templates/order-filler.html'):
         text = (root / name).read_text(encoding='utf-8')

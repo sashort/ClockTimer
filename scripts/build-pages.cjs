@@ -52,7 +52,7 @@ function render(root, template, locale = 'en-US') {
     }).trimEnd() + '\n';
 }
 function build(root) {
-    for (const name of pages) fs.writeFileSync(path.join(root,name+'.html'),render(root,fs.readFileSync(path.join(root,'templates',name+'.html'),'utf8')));
+    for (const name of [...pages, "graphical-settings"]) fs.writeFileSync(path.join(root,name+'.html'),render(root,fs.readFileSync(path.join(root,'templates',name+'.html'),'utf8')));
 }
 module.exports = {compose, render, build, pages};
 if (require.main === module) {build(path.resolve(process.argv[2] || path.join(__dirname,'..')));console.log('Built landing, Order Filler and Drop-In from shared templates');}

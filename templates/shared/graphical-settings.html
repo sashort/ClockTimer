@@ -1,0 +1,216 @@
+<dialog id="graphicalSettingsDialog" class="app-dialog settings-dialog graphical-dialog">
+        <form id="graphicalSettingsForm" method="dialog">
+            <header class="dialog-header">
+                <button id="graphicalHelpToggle" class="dialog-header-help" type="button" aria-label="{{text:5056cc98-f100-57d5-82af-02190dab15bd:aria-label}}" aria-pressed="false" data-language-id="5056cc98-f100-57d5-82af-02190dab15bd">{{text:5056cc98-f100-57d5-82af-02190dab15bd:text0}}</button>
+                <h2 data-language-id="e1325c5d-1031-5316-b9d3-3685b366cf29">{{text:e1325c5d-1031-5316-b9d3-3685b366cf29:text0}}</h2>
+                <button class="dialog-close" type="button" data-close-dialog aria-label="{{text:93edeac8-a9ad-5689-8db2-f89d51bf0725:aria-label}}" data-language-id="93edeac8-a9ad-5689-8db2-f89d51bf0725">{{text:93edeac8-a9ad-5689-8db2-f89d51bf0725:text0}}</button>
+            </header>
+
+            <div class="dialog-actions three-actions graphical-settings-actions">
+                <button id="resetGraphicalSettings" type="button" data-language-id="4bf79679-72fd-570b-a3ab-7e53dac33db2">{{text:4bf79679-72fd-570b-a3ab-7e53dac33db2:text0}}</button>
+                <button type="button" data-close-dialog data-language-id="e867b61c-db5b-5ffa-81c2-f6062b878ece">{{text:e867b61c-db5b-5ffa-81c2-f6062b878ece:text0}}</button>
+                <button class="primary-action" type="submit" value="save" data-language-id="408dede0-3407-53c7-9f4c-cea455b0ef37">{{text:408dede0-3407-53c7-9f4c-cea455b0ef37:text0}}</button>
+            </div>
+
+            <div class="settings-grid graphical-settings-grid">
+
+                <div class="settings-groups">
+                    <details class="settings-category timer-settings-fieldset">
+                        <summary data-language-id="e3d5bd7e-0ea9-5d4e-85ab-155d6b62d92a">{{text:e3d5bd7e-0ea9-5d4e-85ab-155d6b62d92a:text0}}</summary>
+                        <div class="settings-category-content">
+                        <label data-language-id="432c4180-3b15-53e6-963f-050b90fc59b1">{{text:432c4180-3b15-53e6-963f-050b90fc59b1:text0}}<select name="timerMode" data-language-id="3a0b82c7-c5d3-5719-bd57-ae3469627cd2">{{options:3a0b82c7-c5d3-5719-bd57-ae3469627cd2}}</select>
+                        </label>
+                        <label data-language-id="2806b22d-d9f6-52ba-8572-fcada9270716">{{text:2806b22d-d9f6-52ba-8572-fcada9270716:text0}}<select name="timerType" data-language-id="8c7f8788-d228-5ac6-ab1e-a0576db068c9">{{options:8c7f8788-d228-5ac6-ab1e-a0576db068c9}}</select>
+                        </label>
+
+                        <hr class="timer-settings-divider">
+
+                        <div class="timer-color-grid">
+                            <section class="timer-color-category" aria-labelledby="normalRangeColors">
+                                <h3 id="normalRangeColors" data-language-id="bc242425-7e85-58a3-af7d-e63769897d63">{{text:bc242425-7e85-58a3-af7d-e63769897d63:text0}}</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="tripColor" aria-label="{{text:4f7b159b-6d7d-5fd9-ba7e-4c9da0f21469:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="4f7b159b-6d7d-5fd9-ba7e-4c9da0f21469">{{text:4f7b159b-6d7d-5fd9-ba7e-4c9da0f21469:text0}}</button>
+                                        <label class="settings-help-label" for="tripColor" data-help-key="tripColor" data-language-id="f4564246-be00-5df0-bac6-f2cb27f6400b">{{text:f4564246-be00-5df0-bac6-f2cb27f6400b:text0}}</label>
+                                        <input id="tripColor" name="tripColor" type="color" value="#0053e2">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="breakColor" aria-label="{{text:92f65050-6189-51ea-8739-394be04a36ee:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="92f65050-6189-51ea-8739-394be04a36ee">{{text:92f65050-6189-51ea-8739-394be04a36ee:text0}}</button>
+                                        <label class="settings-help-label" for="breakColor" data-help-key="breakColor" data-language-id="5459b5ca-40f6-561f-ad66-aec9c6710c00">{{text:5459b5ca-40f6-561f-ad66-aec9c6710c00:text0}}</label>
+                                        <input id="breakColor" name="breakColor" type="color" value="#001e60">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="lunchColor" aria-label="{{text:a72f6131-1bf5-5aee-b029-487f8f90b3ff:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="a72f6131-1bf5-5aee-b029-487f8f90b3ff">{{text:a72f6131-1bf5-5aee-b029-487f8f90b3ff:text0}}</button>
+                                        <label class="settings-help-label" for="lunchColor" data-help-key="lunchColor" data-language-id="9392dfb3-e03a-5acf-9157-91cbd0effa16">{{text:9392dfb3-e03a-5acf-9157-91cbd0effa16:text0}}</label>
+                                        <input id="lunchColor" name="lunchColor" type="color" value="#ffc220">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="breakBufferColor" aria-label="{{text:c76548aa-d777-5ce6-a0b7-d7016dd0a797:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="c76548aa-d777-5ce6-a0b7-d7016dd0a797">{{text:c76548aa-d777-5ce6-a0b7-d7016dd0a797:text0}}</button>
+                                        <label class="settings-help-label" for="breakBufferColor" data-help-key="breakBufferColor" data-language-id="ed088d21-aacd-5d37-8247-beae50633b5f">{{text:ed088d21-aacd-5d37-8247-beae50633b5f:text0}}</label>
+                                        <input name="showBreakBuffer" type="checkbox" checked aria-label="{{text:43f2bc62-2858-5ef7-a8f7-3a53e7cec5ac:aria-label}}" data-language-id="43f2bc62-2858-5ef7-a8f7-3a53e7cec5ac">
+                                        <input id="breakBufferColor" name="breakBufferColor" type="color" value="#6b7f99" aria-label="{{text:939e078a-f4e2-5439-a6c3-24f48e3ec109:aria-label}}" data-language-id="939e078a-f4e2-5439-a6c3-24f48e3ec109">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="performanceRangeColors">
+                                <h3 id="performanceRangeColors" data-language-id="c7b980aa-0520-5e91-8dca-c4959637cd8f">{{text:c7b980aa-0520-5e91-8dca-c4959637cd8f:text0}}</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="overtimeColor" aria-label="{{text:e0e3a611-cec5-58b5-9001-5ac1b646bcda:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="e0e3a611-cec5-58b5-9001-5ac1b646bcda">{{text:e0e3a611-cec5-58b5-9001-5ac1b646bcda:text0}}</button>
+                                        <label class="settings-help-label" for="overtimeColor" data-help-key="overtimeColor" data-language-id="f3446fcf-128b-598d-bf7f-5374316a4a3b">{{text:f3446fcf-128b-598d-bf7f-5374316a4a3b:text0}}</label>
+                                        <input name="showOvertime" type="checkbox" checked aria-label="{{text:6fe5a6c7-c043-5358-bbe9-2f2c2762f754:aria-label}}" data-language-id="6fe5a6c7-c043-5358-bbe9-2f2c2762f754">
+                                        <input id="overtimeColor" name="overtimeColor" type="color" value="#ff5c5c" aria-label="{{text:96193651-217c-5ed6-adda-7ed2f0fbb311:aria-label}}" data-language-id="96193651-217c-5ed6-adda-7ed2f0fbb311">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="toleranceColor" aria-label="{{text:790b0aea-44c5-5e57-bfbb-aa65fe06828b:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="790b0aea-44c5-5e57-bfbb-aa65fe06828b">{{text:790b0aea-44c5-5e57-bfbb-aa65fe06828b:text0}}</button>
+                                        <label class="settings-help-label" for="toleranceColor" data-help-key="toleranceColor" data-language-id="83840ac4-677a-5606-b53b-b611434af29f">{{text:83840ac4-677a-5606-b53b-b611434af29f:text0}}</label>
+                                        <input name="showTolerance" type="checkbox" checked data-tolerance-state="true" aria-label="{{text:a6be98a7-e4d7-5cb0-b407-5e004b8477d2:aria-label}}" data-language-id="a6be98a7-e4d7-5cb0-b407-5e004b8477d2">
+                                        <input id="toleranceColor" name="toleranceColor" type="color" value="#2e7d32" aria-label="{{text:12f70b7a-a486-5245-a903-a3dbc3eaa270:aria-label}}" data-language-id="12f70b7a-a486-5245-a903-a3dbc3eaa270">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="timeBasedRangeColors">
+                                <h3 id="timeBasedRangeColors" data-language-id="6b8a98c8-96f3-52f0-bcee-d9cc0cc17760">{{text:6b8a98c8-96f3-52f0-bcee-d9cc0cc17760:text0}}</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="earlyStartColor" aria-label="{{text:afe6495b-b140-58c2-9d21-074536283e60:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="afe6495b-b140-58c2-9d21-074536283e60">{{text:afe6495b-b140-58c2-9d21-074536283e60:text0}}</button>
+                                        <label class="settings-help-label" for="earlyStartColor" data-help-key="earlyStartColor" data-language-id="9651456a-4a19-5f31-8da6-18b3f76b32ca">{{text:9651456a-4a19-5f31-8da6-18b3f76b32ca:text0}}</label>
+                                        <input name="showEarlyStart" type="checkbox" checked aria-label="{{text:955b7474-379c-5672-b848-57974b2dffbe:aria-label}}" data-language-id="955b7474-379c-5672-b848-57974b2dffbe">
+                                        <input id="earlyStartColor" name="earlyStartColor" type="color" value="#4dbdf5" aria-label="{{text:d2256c71-1789-5cae-8454-4f632269b443:aria-label}}" data-language-id="d2256c71-1789-5cae-8454-4f632269b443">
+                                    </div>
+                                    <div class="timer-color-row with-toggle has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="latencyColor" aria-label="{{text:2669864d-ad8b-572c-8529-3db44779b7f7:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="2669864d-ad8b-572c-8529-3db44779b7f7">{{text:2669864d-ad8b-572c-8529-3db44779b7f7:text0}}</button>
+                                        <label class="settings-help-label" for="latencyColor" data-help-key="latencyColor" data-language-id="06916a5d-4a9d-5b77-84b9-3eb974687ce0">{{text:06916a5d-4a9d-5b77-84b9-3eb974687ce0:text0}}</label>
+                                        <input name="showLatency" type="checkbox" checked aria-label="{{text:b1922333-f112-522d-89a7-94553c8eb091:aria-label}}" data-language-id="b1922333-f112-522d-89a7-94553c8eb091">
+                                        <input id="latencyColor" name="latencyColor" type="color" value="#e1251b" aria-label="{{text:f7108e65-8deb-531e-9c5f-647c62d15d9f:aria-label}}" data-language-id="f7108e65-8deb-531e-9c5f-647c62d15d9f">
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="timer-color-category" aria-labelledby="downTimeRangeColors">
+                                <h3 id="downTimeRangeColors" data-language-id="a8ef07c1-a154-538a-a962-18f6bd703a09">{{text:a8ef07c1-a154-538a-a962-18f6bd703a09:text0}}</h3>
+                                <div class="timer-color-category-rows">
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="downColor" aria-label="{{text:ee4ee7c4-1f23-5792-8a1a-7ddc2648f487:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="ee4ee7c4-1f23-5792-8a1a-7ddc2648f487">{{text:ee4ee7c4-1f23-5792-8a1a-7ddc2648f487:text0}}</button>
+                                        <label class="settings-help-label" for="downColor" data-help-key="downColor" data-language-id="7fbb41f3-2b1b-52c3-9431-44a88c687225">{{text:7fbb41f3-2b1b-52c3-9431-44a88c687225:text0}}</label>
+                                        <input id="downColor" name="downColor" type="color" value="#5f6772">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="approvalSurplusColor" aria-label="{{text:5206566b-4c95-5071-be4c-7fd80dd6c2ea:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="5206566b-4c95-5071-be4c-7fd80dd6c2ea">{{text:5206566b-4c95-5071-be4c-7fd80dd6c2ea:text0}}</button>
+                                        <label class="settings-help-label" for="approvalSurplusColor" data-help-key="approvalSurplusColor" data-language-id="0e468cc4-cad7-53f1-9255-87de8e3b3894">{{text:0e468cc4-cad7-53f1-9255-87de8e3b3894:text0}}</label>
+                                        <input id="approvalSurplusColor" name="approvalSurplusColor" type="color" value="#9c6b30">
+                                    </div>
+                                    <div class="timer-color-row has-setting-help">
+                                        <button class="settings-help-button" type="button" data-help-key="approvalDeficitColor" aria-label="{{text:d024c165-6474-5030-9318-b983b1163208:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="d024c165-6474-5030-9318-b983b1163208">{{text:d024c165-6474-5030-9318-b983b1163208:text0}}</button>
+                                        <label class="settings-help-label" for="approvalDeficitColor" data-help-key="approvalDeficitColor" data-language-id="eb5b650a-696d-5ebc-accf-c99b566d5d5c">{{text:eb5b650a-696d-5ebc-accf-c99b566d5d5c:text0}}</label>
+                                        <input id="approvalDeficitColor" name="approvalDeficitColor" type="color" value="#7a1f3d">
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        </div>
+                    </details>
+
+                    <details class="settings-category">
+                        <summary data-language-id="41963fb4-2179-52ad-adb4-1ef48cb6c897">{{text:41963fb4-2179-52ad-adb4-1ef48cb6c897:text0}}</summary>
+                        <div class="settings-category-content">
+                        <label class="toggle-row" data-language-id="d9278d69-e096-513a-b0dd-4cd6fa6d69c7">{{text:d9278d69-e096-513a-b0dd-4cd6fa6d69c7:text0}}<input name="militaryTime" type="checkbox" checked></label>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="timeFormat" data-help-key="timeFormat" data-language-id="8c6010a7-ebb7-53b4-9828-475a7d2fb836">{{text:8c6010a7-ebb7-53b4-9828-475a7d2fb836:text0}}</label>
+                            <button class="settings-help-button" type="button" data-help-key="timeFormat" aria-label="{{text:e4808ff9-ca17-5ce6-8257-ffbf2db57852:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="e4808ff9-ca17-5ce6-8257-ffbf2db57852">{{text:e4808ff9-ca17-5ce6-8257-ffbf2db57852:text0}}</button>
+                            <input id="timeFormat" name="timeFormat" value="HHmm">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="dateFormat" data-help-key="dateFormat" data-language-id="9ef68918-c676-5bf2-8ed6-4d50228dc59e">{{text:9ef68918-c676-5bf2-8ed6-4d50228dc59e:text0}}</label>
+                            <button class="settings-help-button" type="button" data-help-key="dateFormat" aria-label="{{text:51ee48fd-c7fb-5686-9ec9-23bf43461d58:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="51ee48fd-c7fb-5686-9ec9-23bf43461d58">{{text:51ee48fd-c7fb-5686-9ec9-23bf43461d58:text0}}</button>
+                            <input id="dateFormat" name="dateFormat" placeholder="{{text:ba713d75-1b9d-5be9-a437-20cae859ac60:placeholder}}" data-language-id="ba713d75-1b9d-5be9-a437-20cae859ac60">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="visibleHours" data-help-key="visibleHours" data-language-id="ac9cdb82-e182-59cd-b0ef-d97e0312d41d">{{text:ac9cdb82-e182-59cd-b0ef-d97e0312d41d:text0}}</label>
+                            <button class="settings-help-button" type="button" data-help-key="visibleHours" aria-label="{{text:7d09945a-a5b6-5566-ac6c-73a0761edfd4:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="7d09945a-a5b6-5566-ac6c-73a0761edfd4">{{text:7d09945a-a5b6-5566-ac6c-73a0761edfd4:text0}}</button>
+                            <input id="visibleHours" name="visibleHours" value="12,3,6,9">
+                        </div>
+                        <div class="settings-help-row">
+                            <label class="settings-help-label" for="tickMarks" data-help-key="tickMarks" data-language-id="93183a8a-65c1-5127-966e-caa4c68f274f">{{text:93183a8a-65c1-5127-966e-caa4c68f274f:text0}}</label>
+                            <button class="settings-help-button" type="button" data-help-key="tickMarks" aria-label="{{text:02eca36c-13c7-58fd-af1b-57a24d188a0a:aria-label}}" aria-hidden="true" tabindex="-1" data-language-id="02eca36c-13c7-58fd-af1b-57a24d188a0a">{{text:02eca36c-13c7-58fd-af1b-57a24d188a0a:text0}}</button>
+                            <input id="tickMarks" name="tickMarks" value="[10]">
+                        </div>
+                        <label data-language-id="170c3180-75e1-58d8-a7c0-6ab392107802">{{text:170c3180-75e1-58d8-a7c0-6ab392107802:text0}}<input name="indicatorSymbol" value="▲"></label>
+
+                        </div>
+                    </details>
+
+                    <details class="settings-category">
+                        <summary data-language-id="80b10f89-a7ed-50be-a908-8206ff4956e5">{{text:80b10f89-a7ed-50be-a908-8206ff4956e5:text0}}</summary>
+                        <div class="settings-category-content">
+                            <div class="clock-font-setting">
+                                <span class="clock-font-label" data-language-id="21f1d899-6d13-5a2c-8e78-8581ba6dade0">{{text:21f1d899-6d13-5a2c-8e78-8581ba6dade0:text0}}</span>
+                                <div class="clock-font-picker" data-clock-font-picker>
+                                    <button class="clock-font-trigger" type="button" data-clock-font-trigger aria-haspopup="listbox" aria-expanded="false">
+                                        <span data-clock-font-active data-language-id="81a1b827-4904-5327-8ba1-eb6d165eecfd">{{text:81a1b827-4904-5327-8ba1-eb6d165eecfd:text0}}</span>
+                                        <span class="clock-font-chevron" aria-hidden="true" data-language-id="bc1f8bdf-a3ab-5934-8f52-7f60702bc835">{{text:bc1f8bdf-a3ab-5934-8f52-7f60702bc835:text0}}</span>
+                                    </button>
+                                    <div class="clock-font-menu" data-clock-font-menu hidden>
+                                        <button class="clock-font-add" type="button" data-clock-font-add data-language-id="6eee7ff0-3bed-55b2-8ffd-4569934e146b">{{text:6eee7ff0-3bed-55b2-8ffd-4569934e146b:text0}}</button>
+                                        <div class="clock-font-editor" data-clock-font-editor hidden>
+                                            <input type="text" data-clock-font-input aria-label="{{text:c555d3ef-f33d-580d-9358-da2ce6f578c3:aria-label}}" placeholder="{{text:c555d3ef-f33d-580d-9358-da2ce6f578c3:placeholder}}" data-language-id="c555d3ef-f33d-580d-9358-da2ce6f578c3">
+                                            <button class="clock-font-confirm" type="button" data-clock-font-confirm aria-label="{{text:b21a5465-3481-5e50-bf7e-cdf8189296d3:aria-label}}" data-language-id="b21a5465-3481-5e50-bf7e-cdf8189296d3">{{text:b21a5465-3481-5e50-bf7e-cdf8189296d3:text0}}</button>
+                                            <button class="clock-font-cancel" type="button" data-clock-font-cancel aria-label="{{text:9ebe878a-571f-5e10-840e-90726eedcf0f:aria-label}}" data-language-id="9ebe878a-571f-5e10-840e-90726eedcf0f">{{text:9ebe878a-571f-5e10-840e-90726eedcf0f:text0}}</button>
+                                        </div>
+                                        <div class="clock-font-options" data-clock-font-options role="listbox" aria-label="{{text:07750ffc-8a35-5bc8-bf9d-c1977713651c:aria-label}}" data-language-id="07750ffc-8a35-5bc8-bf9d-c1977713651c"></div>
+                                    </div>
+                                    <input name="clockFont" type="hidden" value="Helvetica, Arial, sans-serif">
+                                </div>
+                            </div>
+
+                            <div class="clock-hand-controls" aria-label="{{text:5d2bef74-064b-5a77-ac01-83208f919b4a:aria-label}}" data-language-id="5d2bef74-064b-5a77-ac01-83208f919b4a">
+                                <div class="clock-hand-row">
+                                    <span data-language-id="9bfbbb73-d1a1-5089-8ef5-ef81edc742b2">{{text:9bfbbb73-d1a1-5089-8ef5-ef81edc742b2:text0}}</span>
+                                    <input name="showHourHand" type="checkbox" checked aria-label="{{text:8a493ca5-1700-5627-8c7d-6fc67b06ac55:aria-label}}" data-language-id="8a493ca5-1700-5627-8c7d-6fc67b06ac55">
+                                    <input name="hourHandColor" type="color" value="#ffffff" aria-label="{{text:7a10d1c0-f326-59f0-9995-bf202740c672:aria-label}}" data-language-id="7a10d1c0-f326-59f0-9995-bf202740c672">
+                                </div>
+                                <div class="clock-hand-row">
+                                    <span data-language-id="ca1047c3-e974-584f-a908-e131690bc0de">{{text:ca1047c3-e974-584f-a908-e131690bc0de:text0}}</span>
+                                    <input name="showMinuteHand" type="checkbox" checked aria-label="{{text:b9483a2c-2b15-5682-9e28-ee45c4995fd9:aria-label}}" data-language-id="b9483a2c-2b15-5682-9e28-ee45c4995fd9">
+                                    <input name="minuteHandColor" type="color" value="#ffffff" aria-label="{{text:36ee3582-b011-5ab2-ab5d-15478887be4c:aria-label}}" data-language-id="36ee3582-b011-5ab2-ab5d-15478887be4c">
+                                </div>
+                                <div class="clock-hand-row">
+                                    <span data-language-id="e044ec83-3a8c-5d83-b144-c0cfed76b925">{{text:e044ec83-3a8c-5d83-b144-c0cfed76b925:text0}}</span>
+                                    <input name="showSecondHand" type="checkbox" checked aria-label="{{text:f79649df-af80-522a-8e18-c3ca1204420a:aria-label}}" data-language-id="f79649df-af80-522a-8e18-c3ca1204420a">
+                                    <input name="secondHandColor" type="color" value="#ffc220" aria-label="{{text:629dc841-f7e3-52e8-b2d5-5321e1c742bb:aria-label}}" data-language-id="629dc841-f7e3-52e8-b2d5-5321e1c742bb">
+                                </div>
+                            </div>
+
+                            <div class="clock-color-grid">
+                                <label data-language-id="5205fd77-1e37-5ce7-b63a-87bfcee8d1fc">{{text:5205fd77-1e37-5ce7-b63a-87bfcee8d1fc:text0}}<input name="hourColor" type="color" value="#ffffff"></label>
+                                <label data-language-id="f924d332-9641-5053-9cb7-03105ae6d229">{{text:f924d332-9641-5053-9cb7-03105ae6d229:text0}}<input name="timeColor" type="color" value="#ffffff"></label>
+                                <label data-language-id="a1e730b2-fdca-5385-953c-113ed9fd033a">{{text:a1e730b2-fdca-5385-953c-113ed9fd033a:text0}}<input name="borderColor" type="color" value="#001e60"></label>
+                            </div>
+                        </div>
+                    </details>
+
+                </div>
+
+            <aside class="clock-preview" aria-label="{{text:8f91b0e8-d060-57f2-a712-eeb0d7a7daf2:aria-label}}" data-language-id="8f91b0e8-d060-57f2-a712-eeb0d7a7daf2">
+                <clock-timer
+                    id="clockPreview"
+                    military-time="true"
+                    time-format="HHmm"
+                    visible-hours="12,3,6,9"
+                    tick-marks="[10]"
+                    indicator-symbol="▲"
+                ></clock-timer>
+            </aside>
+
+            </div>
+
+        </form>
+
+        <div id="graphicalHelpPopover" class="settings-help-popover" popover="manual" role="dialog" aria-labelledby="graphicalHelpTitle">
+            <header class="settings-help-header">
+                <h3 id="graphicalHelpTitle"></h3>
+                <button id="graphicalHelpClose" class="settings-help-close" type="button" aria-label="{{text:96c4e95a-efff-5c4c-bb48-0cc7dc6cb978:aria-label}}" data-language-id="96c4e95a-efff-5c4c-bb48-0cc7dc6cb978">{{text:96c4e95a-efff-5c4c-bb48-0cc7dc6cb978:text0}}</button>
+            </header>
+            <div id="graphicalHelpBody" class="settings-help-body"></div>
+        </div>
+    </dialog>
