@@ -13,7 +13,8 @@
         "trip-resumed-from-down": 11, "trip-ended": 12, "goal-failed": 13,
         "lunch-clock-out": 14, "lunch-clock-in": 15, "setting-change": 16,
         "goal-change": 17, "range-change": 18, "sync-state": 19, "sync-goal": 20,
-        "syncTry": 21, "setting-on": 22, "setting-off": 23, "setting-unchanged": 24, "observer-message": 25
+        "syncTry": 21, "setting-on": 22, "setting-off": 23, "setting-unchanged": 24, "observer-message": 25,
+        "speech-rejected": 26, "time-reference": 27
     });
 
     const titleFromKey =
@@ -279,6 +280,8 @@
     }
 
     register("observer-message", {label:globalThis.WMOFLanguagePack.text("0173c302-166a-55ae-b1e4-a476f61497e9"),group:"Drop-In",song:"observer-message",layers:["chime","summary"]});
+    register("time-reference", {label:"Time remaining",group:"Speech",song:"time-reference",layers:["summary","chime"]});
+    register("speech-rejected", {label:"Voice input rejected",group:"Speech",song:"speech-rejected",layers:["chime"]});
 
     const api = {
         id(key) { return typeIds[String(key || "").trim()]; },

@@ -86,6 +86,10 @@ for (const id of ['SPEECH', 'RECOGNIZER']) {
     model.v2_contracts[id].implementation_guide = 'docs/speech-recognition-v2.md';
     model.v2_contracts[id].evidence.push('node tests/app-state-transactions.mjs --decoder-final-boundaries --voice-feedback', 'node tests/app-state-transactions.mjs --ready-handoff --voice-feedback');
 }
+model.v2_contracts.SPEECH.class_guide = 'docs/class-architecture-v2.md';
+model.v2_contracts.SPEECH.time_guide = 'docs/time-reference-v2.md';
+model.v2_contracts.SPEECH.evidence.push('node tests/tone-referenced-announcement.mjs', 'node tests/scheduled-audio-cue.mjs', 'node tests/app-state-transactions.mjs --time-reference --voice-feedback');
+model.v2_contracts.SPEECH.evidence.push('node tests/owned-feedback-scope.mjs', 'node tests/speech-continuation-session.mjs');
 contract('OWNERSHIP', {
     scope: ['all gestures, utterances, UI effects and persistence operations'], preconditions: {authoritative_state: 'shared coordinator and ClockTimer'}, inputs: ['overlapping operations', 'acknowledgement', 'cancellation', 'rollback', 'surface close/reopen'],
     postconditions: {lock: 'Acquire an owned token; release only that token; unlock when count reaches zero', nested: 'Only the first owner locks and the final owner unlocks the UI', transient: 'Expose applicable controls as visible, disabled and non-functional', timing: 'Record start/end and parent operation; plan subsequent commands after state settles'},

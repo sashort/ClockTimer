@@ -3232,7 +3232,8 @@
                 useSelectedInstrument =
                     true,
                 startBeat = 0,
-                normalizeLoudness = true
+                normalizeLoudness = true,
+                startAtPerformanceMs
             } = {}
         ) {
             const catalog = await this.prepare();
@@ -3410,6 +3411,18 @@
                     }
                 );
 
+            let scheduledStart = context.currentTime + 0.015;
+            if (startAtPerformanceMs !== undefined) {
+                if (!Number.isFinite(startAtPerformanceMs)) throw new TypeError("Song deadline must be a performance timestamp.");
+                const now = performance.now();
+                if (startAtPerformanceMs - now < 35) return null;
+                const stamp = context.getOutputTimestamp?.();
+                scheduledStart = stamp?.performanceTime > 0
+                    ? stamp.contextTime + (startAtPerformanceMs - stamp.performanceTime) / 1000
+                    : context.currentTime + (startAtPerformanceMs - now) / 1000;
+                if (scheduledStart < context.currentTime + .015) return null;
+            }
+
             const entry = {
                 id: ++this.#sequence,
                 name,
@@ -3449,9 +3462,7 @@
                         "function"
                         ? speechGuard
                         : undefined,
-                startedAt:
-                    context.currentTime +
-                    0.015,
+                startedAt: scheduledStart,
                 released: false,
                 endTimer: undefined,
                 resolveFinished

@@ -6,6 +6,10 @@ replacement, alongside [command chains](speech-command-chains.md), the
 Requirements below are normative; the evidence section distinguishes tested
 behavior from live reports and future architecture.
 
+The [class contracts](class-architecture-v2.md) specify the extracted lifecycle,
+branch-policy and feedback classes, their APIs, dependency order, ownership rules,
+examples, tests, and remaining integration gaps.
+
 ## Separate capture, interpretation, effects, and display
 
 An acoustic utterance identifies captured audio. A logical speech session owns
@@ -139,6 +143,51 @@ voice, and remote actions, with the dedicated activation/deactivation chimes.
 
 ## Evidence and remaining verification
 
+### Class extraction (local implementation, 16 October)
+
+`SpeechContinuationSession.js` owns continuation phase, collectors, consumed spans,
+expected transitions and silence scheduling. `SpeechCommandBranchPolicy.js` owns
+plan preference. The reusable `OwnedFeedbackScope.js` owns deferred feedback and
+playback leases. SpeechMenu delegates to these classes; language parsers, the FSM,
+recognition adapters, and playback remain separate. Independent class tests and
+integration regressions exercise this local implementation; it is not deployed.
+The class guide records exact APIs, load order, and remaining adapter migration.
+
+Additional user-confirmed rules for the class implementation:
+
+- Any command with a viable continuation leading to a different state must stay
+  pending until input resolves that branch or silence plus final decoding settles
+  it. A shorter exact command must not execute before an unfinished longer head.
+- Opening a window is a provisional effect, not the end of a collector. In
+  `ready at five` -> scheduled dialog opens -> `thirty`, the logical session must
+  retain the time collector and produce five thirty across that state change.
+- Announcements declare a settlement boundary and an owner. Hold next-step prompts
+  while collecting; cancel queued feedback and stop owned playback on resumed or
+  superseding input. Accepted input can announce the next step. Malformed,
+  incomplete, or invalid settlement selects correction feedback instead.
+- Playback adapters must implement the stop/signal contract. The classes'
+  feedback leases do not yet establish that all existing audio paths can stop
+  active playback. Direct dialog prompts still need integration.
+
+The shared branch-priority change has reproduced and prevented the incorrect
+voice-pad opening on `ready a` before it grows into `ready at`. The current
+`--branch-boundaries --voice-feedback` scenario still fails for interim Ready
+during an active trip; its projected destination needs to follow the FSM state.
+Speech Off succeeds with supplied text in that fixture; the live recognition
+failure remains unverified. Do not mark either live report resolved prematurely.
+
+The partial-token fix is implemented now as a compatibility guard because the
+planned grammar-switching implementation is not yet in place. Reassess it when
+switching is implemented, retaining regression coverage. Malformed final
+continuations still invalidate already consumed but uncommitted root steps;
+pruning must not let a shorter terminal command escape dependent rollback.
+
+Further extraction candidates outside speech are AnnouncementScheduler (all input
+methods), ValueEntrySession (voice/keypad views), TripWorkflow, BreakWorkflow,
+LoginSession, SurfaceNavigator, and TripLogController. Reuse the existing
+ApplicationCoordinator, ClockTimer, AccountSettings, and TripLog responsibilities.
+Prioritize cohesive lifecycle/ownership boundaries over simply wrapping functions.
+
 | Behavior | Current regression evidence |
 | --- | --- |
 | Growing values, root decisions, malformed discard, pruning | `tests/speech-command-digest.mjs`, `tests/speech-failfast.mjs`, `tests/app-state-transactions.mjs --speech-boundaries` |
@@ -157,3 +206,10 @@ tests passed while the reported live Ready path was broken. Version 2 must add
 equivalent public-input coverage for every declared continuation transition,
 including delayed rendering, revisions, permission loss, cancellation, unrelated
 modal changes, final-decode delay, and zero writes before required confirmation.
+
+
+## Time readback and reference cue
+
+See [Time implementation contract](time-reference-v2.md) for the local class-based
+implementation: duration-only speech, effective voice/speed estimation, real speech
+completion, a scheduled D5 reference cue, retries/cancellation and test evidence.

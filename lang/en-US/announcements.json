@@ -2,6 +2,8 @@
   "version": 1,
   "locale": "en-US",
   "announcements": {
+    "time-reference": {"id": "6769e63d-62b7-56b7-8d57-e214caa3c30d"},
+    "speech-rejected": {"id": "67481bbf-8a04-5aac-a645-00b04dcf8990"},
     "lunch-clock-out": {
       "summary": "Start meal now",
       "speechOptions": {},

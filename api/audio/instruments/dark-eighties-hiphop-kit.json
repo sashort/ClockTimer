@@ -1,0 +1,50 @@
+{
+  "source": "Original Dark 80s Hip-Hop v12 isolated percussion stems",
+  "archive": "percussion-stems.npz",
+  "archiveSha256": "e6c7b0fd9445fb0aca4bc6f4a54132c5a2dea73cee8f39b4462416804b37958a",
+  "sampleRate": 48000,
+  "importer": "scripts/import-dark-eighties-kit.py",
+  "synthesisRecipe": "scripts/synthesize-dark-eighties-kit.py",
+  "samples": {
+    "kick": {
+      "url": "api/audio/samples/dark-eighties-hiphop-kick.wav",
+      "rootFrequency": 261.6255653005986,
+      "naturalDecay": true,
+      "durationSeconds": 0.43,
+      "peakAmplitude": 0.318634033203125,
+      "sha256": "c86b8a2caca94874871008c88d7997fbf9d169104a65926f1ed579ed72eb6ef6",
+      "sourceBeat": 32,
+      "sourceVelocity": 1
+    },
+    "snare": {
+      "url": "api/audio/samples/dark-eighties-hiphop-snare.wav",
+      "rootFrequency": 261.6255653005986,
+      "naturalDecay": true,
+      "durationSeconds": 0.24,
+      "peakAmplitude": 0.384674072265625,
+      "sha256": "7a538a6026e1d86aae86538a170081fc75c4a8cb19b1eca1ef29f62cc6b92007",
+      "sourceBeat": 34,
+      "sourceVelocity": 1
+    },
+    "clap": {
+      "url": "api/audio/samples/dark-eighties-hiphop-clap.wav",
+      "rootFrequency": 261.6255653005986,
+      "naturalDecay": true,
+      "durationSeconds": 0.18,
+      "peakAmplitude": 0.148040771484375,
+      "sha256": "068c53d0a907cc2ec18ee09bee71ff01d6792d4ccce028adb24fd25ed2168f24",
+      "sourceBeat": 34,
+      "sourceVelocity": 0.85
+    },
+    "hat": {
+      "url": "api/audio/samples/dark-eighties-hiphop-hat.wav",
+      "rootFrequency": 261.6255653005986,
+      "naturalDecay": true,
+      "durationSeconds": 0.072,
+      "peakAmplitude": 0.060211181640625,
+      "sha256": "5f8ed26ec444a3d914c69adfc47744c2935ab21ad77eaf19306b77b384df25da",
+      "sourceBeat": 32,
+      "sourceVelocity": 0.65
+    }
+  }
+}

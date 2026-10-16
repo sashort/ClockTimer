@@ -1,0 +1,407 @@
+{
+  "license": "CC0-1.0",
+  "libraries": {
+    "vsco": {
+      "repository": "https://github.com/sgossner/VSCO-2-CE",
+      "revision": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+      "licensePath": "api/audio/samples/orchestra-vsco-LICENSE.txt"
+    },
+    "vcsl": {
+      "repository": "https://github.com/sgossner/VCSL",
+      "revision": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "licensePath": "api/audio/samples/orchestra-vcsl-LICENSE.txt"
+    }
+  },
+  "groups": {
+    "violin-short": [
+      {
+        "url": "api/audio/samples/orchestra-violin-short-0.wav",
+        "rootFrequency": 293.6647679174076,
+        "note": "D4",
+        "durationSeconds": 1.7675963718820862,
+        "peakAmplitude": 0.27215576171875,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+        "library": "vsco",
+        "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650"
+      },
+      {
+        "url": "api/audio/samples/orchestra-violin-short-1.wav",
+        "rootFrequency": 440.0,
+        "note": "A4",
+        "durationSeconds": 1.2079365079365079,
+        "peakAmplitude": 0.22662353515625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+        "library": "vsco",
+        "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e"
+      },
+      {
+        "url": "api/audio/samples/orchestra-violin-short-2.wav",
+        "rootFrequency": 523.2511306011972,
+        "note": "C5",
+        "durationSeconds": 0.9490249433106576,
+        "peakAmplitude": 0.362060546875,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+        "library": "vsco",
+        "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56"
+      },
+      {
+        "url": "api/audio/samples/orchestra-violin-short-3.wav",
+        "rootFrequency": 783.9908719634985,
+        "note": "G5",
+        "durationSeconds": 0.9231972789115647,
+        "peakAmplitude": 0.34674072265625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+        "library": "vsco",
+        "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141"
+      }
+    ],
+    "violin-long": [
+      {
+        "url": "api/audio/samples/orchestra-violin-long-4.wav",
+        "rootFrequency": 440.0,
+        "note": "A4",
+        "durationSeconds": 9.476530612244899,
+        "peakAmplitude": 0.170379638671875,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_A3_v2.wav",
+        "library": "vsco",
+        "sha256": "3fc4a9e22037643fce11e755da72c61c664893f83e637c24a7b5c2d3824ab986"
+      },
+      {
+        "url": "api/audio/samples/orchestra-violin-long-5.wav",
+        "rootFrequency": 523.2511306011972,
+        "note": "C5",
+        "durationSeconds": 11.436893424036281,
+        "peakAmplitude": 0.2657470703125,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_C4_v2.wav",
+        "library": "vsco",
+        "sha256": "5857387b40c412f756ef281c1171247664432a4e5078c98142d595d15cd92ef9"
+      },
+      {
+        "url": "api/audio/samples/orchestra-violin-long-6.wav",
+        "rootFrequency": 783.9908719634985,
+        "note": "G5",
+        "durationSeconds": 12.18873015873016,
+        "peakAmplitude": 0.22662353515625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_G4_v2.wav",
+        "library": "vsco",
+        "sha256": "a1d6d5a0397541692e2f88a0cd9820eabe90407784ee631aa3bfa74772637a65"
+      },
+      {
+        "url": "api/audio/samples/orchestra-violin-long-7.wav",
+        "rootFrequency": 1174.6590716696303,
+        "note": "D6",
+        "durationSeconds": 11.20312925170068,
+        "peakAmplitude": 0.2459716796875,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D5_v2.wav",
+        "library": "vsco",
+        "sha256": "0c2ca9de723bed0a0968e32126b934f778cd678b367a29e7fde91004daf84daf"
+      },
+      {
+        "url": "api/audio/samples/orchestra-violin-long-29.wav",
+        "rootFrequency": 293.6647679174076,
+        "note": "D4",
+        "durationSeconds": 13.933469387755101,
+        "peakAmplitude": 0.129669189453125,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D3_v2.wav",
+        "library": "vsco",
+        "sha256": "77893dbf1ea1be8c40ad756d16b916298e6b1b0742495e9853e020375592357c"
+      }
+    ],
+    "violin-tremolo": [
+      {
+        "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+        "rootFrequency": 523.2511306011972,
+        "note": "C5",
+        "durationSeconds": 8.11795918367347,
+        "peakAmplitude": 0.634368896484375,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+        "library": "vsco",
+        "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+      },
+      {
+        "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+        "rootFrequency": 1174.6590716696303,
+        "note": "D6",
+        "durationSeconds": 9.358027210884353,
+        "peakAmplitude": 0.44110107421875,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+        "library": "vsco",
+        "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+      }
+    ],
+    "cello-short": [
+      {
+        "url": "api/audio/samples/orchestra-cello-short-10.wav",
+        "rootFrequency": 65.40639132514966,
+        "note": "C2",
+        "durationSeconds": 3.2272108843537417,
+        "peakAmplitude": 0.3993399143218994,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C1_v2_RR1.wav",
+        "library": "vsco",
+        "sha256": "92de035cdbfab6e41f94115b2c23716a9e93554a4c23c1cc4b946f7492d9c927"
+      },
+      {
+        "url": "api/audio/samples/orchestra-cello-short-11.wav",
+        "rootFrequency": 146.8323839587038,
+        "note": "D3",
+        "durationSeconds": 3.386485260770975,
+        "peakAmplitude": 0.38178324699401855,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_D2_v2_RR1.wav",
+        "library": "vsco",
+        "sha256": "c647723304b5f4b2d3af02739017e38bc4e85244c15355ebd6f8443c1445b5ab"
+      },
+      {
+        "url": "api/audio/samples/orchestra-cello-short-12.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 2.026893424036281,
+        "peakAmplitude": 0.314375638961792,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C3_v2_RR1.wav",
+        "library": "vsco",
+        "sha256": "278a14177cd3ffffc5418e403d9583af22778a8ce8fc548f88ea707e044a62d4"
+      }
+    ],
+    "horn": [
+      {
+        "url": "api/audio/samples/orchestra-horn-13.wav",
+        "rootFrequency": 146.8323839587038,
+        "note": "D3",
+        "durationSeconds": 14.644716553287981,
+        "peakAmplitude": 0.03826904296875,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_D2_v2_1.wav",
+        "library": "vsco",
+        "sha256": "9155ef0c33c06ebe55daeaaaca7dec4090578af6cf3d6a028fbfa7b7f2ec876e"
+      },
+      {
+        "url": "api/audio/samples/orchestra-horn-14.wav",
+        "rootFrequency": 174.61411571650194,
+        "note": "F3",
+        "durationSeconds": 14.502448979591836,
+        "peakAmplitude": 0.065521240234375,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_F2_v2_1.wav",
+        "library": "vsco",
+        "sha256": "2e487a49c834ff2d76aff1c9755875fc03013bf202b949a5c5fe354d0c2123c2"
+      },
+      {
+        "url": "api/audio/samples/orchestra-horn-15.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 12.703197278911565,
+        "peakAmplitude": 0.110565185546875,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_C3_v2_1.wav",
+        "library": "vsco",
+        "sha256": "c0c0b157dcde094c4417b7c165d645897cde9ea6d74247bbab0c0e75355e78c3"
+      }
+    ],
+    "trumpet": [
+      {
+        "url": "api/audio/samples/orchestra-trumpet-16.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 1.140453514739229,
+        "peakAmplitude": 0.0556640625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_C3_v2_rr1.wav",
+        "library": "vsco",
+        "sha256": "dcd3d370fe299ca76b222066d7facd0034a549a105051ed474f8dd1f478f1afa"
+      },
+      {
+        "url": "api/audio/samples/orchestra-trumpet-17.wav",
+        "rootFrequency": 587.3295358348151,
+        "note": "D5",
+        "durationSeconds": 1.337437641723356,
+        "peakAmplitude": 0.132171630859375,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_D4_v2_rr1.wav",
+        "library": "vsco",
+        "sha256": "a817b4b11b818e04cf73197a382b380c5dd8576f1e7f7d1ee359559d0542eb8a"
+      }
+    ],
+    "flute": [
+      {
+        "url": "api/audio/samples/orchestra-flute-18.wav",
+        "rootFrequency": 523.2511306011972,
+        "note": "C5",
+        "durationSeconds": 0.6005442176870748,
+        "peakAmplitude": 0.05548453330993652,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_C4_v2_rr1.wav",
+        "library": "vsco",
+        "sha256": "dc1938d6becee0d3c175b69899490cb7a24e1ad8d73a57668835afd2ae516838"
+      },
+      {
+        "url": "api/audio/samples/orchestra-flute-19.wav",
+        "rootFrequency": 1046.5022612023945,
+        "note": "C6",
+        "durationSeconds": 0.664421768707483,
+        "peakAmplitude": 0.19474661350250244,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_C5_v2_rr1.wav",
+        "library": "vsco",
+        "sha256": "11eefb155e4d6dced1059363a00915c3b606ab05e41c98bd83e19e57cd1ca9e7"
+      }
+    ],
+    "bass-drum": [
+      {
+        "url": "api/audio/samples/orchestra-bass-drum-20.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 2.080952380952381,
+        "peakAmplitude": 0.1412353515625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v3_rr1_Sum.wav",
+        "library": "vcsl",
+        "sha256": "a2d8829e8b2b59e8afb12fa396b01758827059339c2a84ad066d17b36c82d1ff"
+      },
+      {
+        "url": "api/audio/samples/orchestra-bass-drum-21.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 2.00984126984127,
+        "peakAmplitude": 0.118194580078125,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v3_rr2_Sum.wav",
+        "library": "vcsl",
+        "sha256": "036c6c5fcfbcca845d92dbcdcef075ee6e0ae01636374a2f7dd1a696a7ba33f8"
+      }
+    ],
+    "snare": [
+      {
+        "url": "api/audio/samples/orchestra-snare-22.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 1.730498866213152,
+        "peakAmplitude": 0.032928466796875,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Snare%20Drum%2C%20Modern%201/Snare2_HitSN_v3_rr1_Mid.wav",
+        "library": "vcsl",
+        "sha256": "3d71765aa0d1e13260abeb003720aef0841432df601883177bf70e97d9af6c99"
+      },
+      {
+        "url": "api/audio/samples/orchestra-snare-23.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 1.3107709750566894,
+        "peakAmplitude": 0.037200927734375,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Snare%20Drum%2C%20Modern%201/Snare2_HitSN_v3_rr2_Mid.wav",
+        "library": "vcsl",
+        "sha256": "770a0b6bfe95583c11014d5f9af9c94c425a15bd05234c86213aec356a2ffe29"
+      }
+    ],
+    "cymbal": [
+      {
+        "url": "api/audio/samples/orchestra-cymbal-24.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 8.478571428571428,
+        "peakAmplitude": 0.548431396484375,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Clash%20Cymbals%201/cymbal_crash1_mf1.wav",
+        "library": "vcsl",
+        "sha256": "3b4a6ed42627eedca39f6480e9825dedeaab538197fc734f85be13ba655aa6aa"
+      },
+      {
+        "url": "api/audio/samples/orchestra-cymbal-25.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 13.29079365079365,
+        "peakAmplitude": 0.70098876953125,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Clash%20Cymbals%201/cymbal_crash1_ff2.wav",
+        "library": "vcsl",
+        "sha256": "6f27c36fe2a829b667fd3372e1488437671534c0c719af9ae90128e5f99629d3"
+      }
+    ],
+    "pipe-organ": [
+      {
+        "url": "api/audio/samples/orchestra-pipe-organ-26.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 12.401746031746033,
+        "peakAmplitude": 0.087310791015625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_C4.wav",
+        "library": "vcsl",
+        "sha256": "9f3b80ef47d908b8acae4d6e7898a28e8179c3e090d6ee1ff4c326d35ea1d945"
+      },
+      {
+        "url": "api/audio/samples/orchestra-pipe-organ-27.wav",
+        "rootFrequency": 440.0,
+        "note": "A4",
+        "durationSeconds": 12.069909297052154,
+        "peakAmplitude": 0.04693603515625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_A4.wav",
+        "library": "vcsl",
+        "sha256": "5ac10b40fb5cb026e3e487e05e24a1b0aeda35fa8df956d48f8c9d9fd18bff38"
+      },
+      {
+        "url": "api/audio/samples/orchestra-pipe-organ-28.wav",
+        "rootFrequency": 523.2511306011972,
+        "note": "C5",
+        "durationSeconds": 12.106439909297052,
+        "peakAmplitude": 0.0595703125,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_C5.wav",
+        "library": "vcsl",
+        "sha256": "abcfa8821cd0ff1279f427b71cfad6467d39b0a56481fda4f164880df8f6ddcc"
+      }
+    ],
+    "tambourine": [
+      {
+        "url": "api/audio/samples/orchestra-tambourine-30.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 1.4673696145124717,
+        "peakAmplitude": 0.05816650390625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Shake_rr1_Mid.wav",
+        "library": "vcsl",
+        "sha256": "5876b66d1e8009b3ee884ff3bf52fbc420b44f9ddffffe830b4074d3dfc09924"
+      },
+      {
+        "url": "api/audio/samples/orchestra-tambourine-31.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 1.347437641723356,
+        "peakAmplitude": 0.05328369140625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Shake_rr2_Mid.wav",
+        "library": "vcsl",
+        "sha256": "5ab51f8cd9fba10ae7a7125b96a520c69e049687409532b745fddd5356c6d6f3"
+      }
+    ],
+    "cello-long": [
+      {
+        "url": "api/audio/samples/orchestra-cello-long-32.wav",
+        "rootFrequency": 146.8323839587038,
+        "note": "D3",
+        "durationSeconds": 12.438866213151927,
+        "peakAmplitude": 0.6602948904037476,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/susvib/susvib_D2_v3_1.wav",
+        "library": "vsco",
+        "sha256": "fc946615cd6550570c8f05d61c0d59b9079bf9daba8bf25be7943487fea5a7ae"
+      }
+    ],
+    "trumpet-long": [
+      {
+        "url": "api/audio/samples/orchestra-trumpet-long-33.wav",
+        "rootFrequency": 293.6647679174076,
+        "note": "D4",
+        "durationSeconds": 9.629115646258503,
+        "peakAmplitude": 0.083648681640625,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/straightM-sus/Sum_SHTrumpet_straightM-sus_D3_v3_rr1.wav",
+        "library": "vsco",
+        "sha256": "7846226f5e797f0b2fb5e170ca02d6bb8e279a9d2e818cc120679b5bb8d4c342"
+      }
+    ],
+    "maracas": [
+      {
+        "url": "api/audio/samples/orchestra-maracas-34.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 0.5295691609977324,
+        "peakAmplitude": 0.08716046810150146,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varWood/maraca1.wav",
+        "library": "vsco",
+        "sha256": "330d01743fa4069a4544b2665bd87f5d468d4d4c55572880b9c744cd1dc12fbc"
+      },
+      {
+        "url": "api/audio/samples/orchestra-maracas-35.wav",
+        "rootFrequency": 261.6255653005986,
+        "note": "C4",
+        "durationSeconds": 0.3738095238095238,
+        "peakAmplitude": 0.020217537879943848,
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varWood/maraca2.wav",
+        "library": "vsco",
+        "sha256": "119afc8f463f49e544f1ba98be5fd7c46030c87f1f4910136a97901711826bb2"
+      }
+    ]
+  }
+}

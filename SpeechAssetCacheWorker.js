@@ -18,6 +18,12 @@
         "/speech/",
         "/SherpaRecognizer.js",
         "/AdaptiveSpeechTiming.js",
+        "/OwnedFeedbackScope.js",
+        "/SpeechCommandBranchPolicy.js",
+        "/SpeechContinuationSession.js",
+        "/SpeechRejectionFeedback.js",
+        "/SpeechDurationEstimator.js",
+        "/ToneReferencedAnnouncement.js",
         "/SpeechMenu.js",
         "/SpeechMicBar.js",
         "/SileroVad.js"

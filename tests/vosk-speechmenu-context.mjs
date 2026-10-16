@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
+installSpeechLifecycle();
 import assert from 'node:assert/strict';
 import {Window} from 'happy-dom';
 const window=new Window({url:'https://clock.example/'});

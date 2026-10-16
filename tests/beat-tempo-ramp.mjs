@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const {BeatTempoRamp}=createRequire(import.meta.url)('../scripts/beat-tempo-ramp.cjs');
+const ramp=new BeatTempoRamp({startSeconds:240,startBpm:64,endBpm:144,beats:32});
+assert.equal(ramp.secondsAtBeat(0),240);
+assert(Math.abs(ramp.endSeconds-259.4623251891919)<1e-10);
+assert.equal(ramp.mapOriginalSeconds(270),ramp.endSeconds);
+assert(Math.abs(ramp.secondsAtBeat(33)-ramp.endSeconds-60/144)<1e-10,'144 BPM continues after the ramp without a jump');
+assert(Math.abs(ramp.secondsAtBeat(-1)-(240-60/64))<1e-10);
+const intervals=Array.from({length:32},(_,i)=>ramp.secondsAtBeat(i+1)-ramp.secondsAtBeat(i));
+assert(intervals.every((duration,i)=>duration>0&&(!i||duration<intervals[i-1])),'beats progressively shorten, never reverse or skip');
+const constant=new BeatTempoRamp({startSeconds:240,startBpm:64,endBpm:64,beats:32});
+assert.equal(constant.endSeconds,270,'zero-slope ramp remains constant tempo');
+assert.throws(()=>new BeatTempoRamp({startSeconds:0,startBpm:0,endBpm:144,beats:32}),RangeError);
+console.log('PASS tempo ramp duration, continuous boundaries, progressively shorter beats and constant-tempo fallback');

@@ -1,0 +1,178 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
+const read=name=>JSON.parse(fs.readFileSync(new URL('../'+name,import.meta.url),'utf8'));
+const catalog=read('api/audio/catalog.json'),song=catalog.songs['neon-countdown'];
+const mix=read(song.renderedMix.settings),score=read(song.renderedMix.score);
+const {compose}=createRequire(import.meta.url)('../scripts/compose-neon-countdown.cjs');
+assert.deepEqual(compose(catalog),score,'the composition source reproduces its saved arrangement');
+const wave=fs.readFileSync(new URL('../'+song.mediaUrl,import.meta.url));
+assert.equal(wave.toString('ascii',0,4),'RIFF');assert.equal(wave.readUInt32LE(24),48000);
+assert.equal(wave.readUInt16LE(22),2,'full stereo mix');assert.equal(wave.readUInt16LE(34),16);
+assert.equal((wave.length-44)/192000,372,'three sections with room for complete bell decays');
+assert.equal(createHash('sha256').update(wave).digest('hex'),song.renderedMix.sha256);
+assert.equal(mix.sha256,song.renderedMix.sha256);
+let peak=0;
+for(let second=0;second<score.durationSeconds;second++) {
+ let sum=0;
+ for(let offset=44+second*192000;offset<44+(second+1)*192000;offset+=2) {
+  const sample=wave.readInt16LE(offset)/32768;peak=Math.max(peak,Math.abs(sample));sum+=sample*sample;
+ }
+ assert(Math.sqrt(sum/96000)>.0001||(second+1>score.partThree.ending.startSeconds+score.partThree.ending.holdSeconds),'no unintended silent second '+second);
+}
+assert(peak<.86&&peak>.8,'mastered with headroom, without clipping');
+assert.equal(score.key,'D minor');assert(score.sections.length>=12);
+assert(new Set(score.song.events.map(e=>e.instrument)).size>=10,'multi-instrument arrangement');
+assert(score.song.events.some(e=>e.instrument==='neon-reference'&&e.tone==='D5'),'Time reference pitch anchors the theme');
+assert(!score.song.events.some(e=>e.instrument==='neon-reference'&&Number(e.offset)<16),'both standalone intro hits are removed');
+assert(score.song.events.some(e=>Number(e.offset)===0&&e.instrument==='neon-cinematic-pulse'),'original pulse begins the intro');
+assert(!('neon-pad' in score.instruments)&&!score.song.events.some(e=>e.instrument==='neon-pad'),'fantasy pad is removed entirely');
+assert.equal(score.partTwo.startSeconds,120);assert.equal(score.partTwo.bpm,64);assert.equal(score.partTwo.bars,40);
+assert.equal(score.partTwo.key,'C# minor');assert.deepEqual(score.partTwo.windTransition,[118.025,123.525]);
+assert.deepEqual(score.partTwo.tubularBells.strikeSeconds,score.song.events.filter(e=>e.instrument==='midnight-tubular-bells').map(e=>Number(e.offset)/2));
+assert.deepEqual(score.partTwo.tempoChange,{atSeconds:270,fromBpm:64,toBpm:120,mode:'immediate',sustainedHandoff:true});
+assert(!score.partTwo.tempoRamp);assert.equal(score.partThree.startSeconds,270);
+assert.equal(score.partTwo.ending.flowsIntoPartThree,true);assert.equal(score.partTwo.ending.closingWind,false);
+const dark=score.song.events.filter(e=>Number(e.offset)>=240&&Number(e.offset)<score.partThree.startSeconds*2);
+assert(dark.every(e=>!['neon-arp','neon-guitar','neon-hat','neon-lead','neon-guitar-lead'].includes(e.instrument)),'Part II leaves the bright plucked/high parts behind');
+const slowPulse=dark.filter(e=>e.instrument==='midnight-pulse');
+assert(slowPulse.length>60,'slower cinematic pulse continues through Part II');
+assert(Math.abs((Number(slowPulse[1].offset)-Number(slowPulse[0].offset))/2-4*60/64)<1e-8,'the slow pulse uses 64 BPM, not Part I tempo');
+assert(dark.some(e=>e.instrument==='midnight-pulse-chord'),'pulse includes upper-register chord voicings');
+assert(score.instruments['midnight-pulse-chord'].partials.every(p=>p.ratio>=1),'pulse chords leave the bass sub register clear');
+const windNotes=score.song.events.filter(e=>e.instrument==='midnight-wind');
+assert.equal(windNotes.length,1,'wind bridges the two parts only');
+const rest=score.partTwo.entranceRest;
+assert.equal(rest.endSeconds-rest.startSeconds,60/64,'one slow beat without new pitched attacks');
+assert(rest.windContinues,'the musical rest keeps the wind');
+assert(!score.song.events.some(e=>e.instrument!=='midnight-wind'&&Number(e.offset)/2>116&&Number(e.offset)/2<score.partTwo.startSeconds),'no pitched attacks interrupt the transition');
+assert.equal(Number(windNotes[0].length)/2,5.5,'wind lasts five and a half seconds');
+const overlap=score.partTwo.windOverlap;
+assert.equal(overlap.decayStartSeconds,overlap.firstNoteSeconds,'wind starts decaying exactly at the first slow note');
+assert(Math.abs(overlap.decayEndSeconds-overlap.decayStartSeconds-Number(slowPulse[0].length)/2)<1e-9,'wind fade lasts for the entire first note gate');
+assert(overlap.decayEndSeconds>overlap.firstNoteSeconds&&overlap.decayEndSeconds<overlap.secondNoteSeconds,'wind finishes decaying before the second slow note');
+assert(Math.abs(Number(windNotes[0].offset)/2-118.025)<1e-9,'wind starts later to preserve its five-and-a-half-second total');
+const wind=fs.readFileSync(new URL('../api/audio/samples/neon-wind.wav',import.meta.url));
+assert.equal(wind.readUInt16LE(22),2);assert.equal(wind.length,44+5.5*48000*4);
+assert.equal(createHash('sha256').update(wind).digest('hex'),mix.windSource.sha256);
+
+assert.equal(score.revision,46);
+assert.equal(song.renderedMix.revision,score.revision);
+assert.equal(mix.revision,score.revision);
+const bendVoice=score.instruments['neon-guitar-lead'];
+assert(bendVoice.volume<.64/4,'bend voice is substantially quieter than its first mix');
+assert(bendVoice.envelope.sustain>=.75&&bendVoice.envelope.release>=.7,'bend voice holds and fades instead of cutting off');
+assert(bendVoice.filter.frequency<2000&&bendVoice.distortion.amount<.2,'bend voice has a softer timbre');
+const bendNotes=score.song.events.filter(e=>e.instrument==='neon-guitar-lead');
+assert(bendNotes.every(e=>e.dynamic==='p'),'bend answers and fills avoid the old mf accents');
+assert(bendNotes.some(e=>e.tone.endsWith('...')&&e.length.includes(',')),'bend fills sustain the arrival pitch');
+assert.equal(score.leadAdvanceMs,25);
+const firstMainNote=score.song.events.find(e=>e.instrument==='neon-lead');
+assert.equal(Number(firstMainNote.offset),16-.05,'main melody attack begins 25 ms ahead of the beat');
+assert(!('neon-vocoder' in score.instruments)&&!('vocoder' in score),'vocoder is removed from the active composition');
+assert(!score.song.events.some(e=>e.instrument==='neon-vocoder'));
+assert(!('vocoderSource' in mix),'active mix has no vocoder source');
+for(const bar of [24,25,48,49])assert(score.song.events.some(e=>e.instrument==='neon-lead'&&Number(e.offset)>=bar*4-.05&&Number(e.offset)<(bar+1)*4-.05),'melody is restored in the former vocal passages');
+const bass=score.song.events.filter(e=>e.instrument==='neon-bass');
+assert(new Set(bass.map(e=>e.length)).size>=8,'pulse bass varies note lengths, including short accents and longer holds');
+assert(new Set(bass.map(e=>e.dynamic)).size>=4,'bass accents and section dynamics vary');
+assert.deepEqual(score.bassTripletPhrases,[],'conflicting long-triplet grouping is removed');
+for(const [start,end] of score.grooveRepair.phraseSeconds) {
+ const phrase=bass.filter(e=>Number(e.offset)>=start*2&&Number(e.offset)<end*2);
+ assert.equal(phrase.length,20,'the complete four-bar bass groove continues');
+ assert(phrase.every(e=>Number(e.offset)*4===Math.round(Number(e.offset)*4)),'bass stays on the sixteenth-note grid');
+}
+assert.equal(score.grooveRepair.bassReentrySeconds,72,'bass rejoins with the drums and arpeggio');
+assert.equal(score.fantasyPadRemoved,true);
+const backing=score.backingPad.instrument;
+assert.deepEqual(score.instruments[backing],{...catalog.instruments['warm-chorus-poly'],volume:.36},'original warm backing pad is raised, with fantasy removed');
+assert.equal(score.song.events.filter(e=>e.instrument===backing).length,236,'original four-note backing harmony is restored throughout Part I');
+assert(!dark.some(e=>e.instrument===backing),'restored backing belongs to Part I');
+assert.equal(score.partOnePulse.source,'cinematic-robot-pulse');
+assert.deepEqual(score.instruments['neon-bass'],{...catalog.instruments['cinematic-robot-pulse'],volume:.48},'current vocoder passages retain their instrument at a supporting level');
+assert.deepEqual(score.partOnePulse.originalPulseSeconds,[0,2,4,6,116],'original pulse retains the four-note opening and final held bass');
+assert.deepEqual(score.instruments['neon-cinematic-pulse'],{...catalog.instruments['cinematic-pulse-bass'],volume:.68});
+assert(score.song.events.some(e=>e.instrument==='neon-bass'&&Number(e.offset)===16),'vocoder still begins on fifth pulse note');
+for(const [name,source,volume] of [['neon-lead','jx3p-inspired-lead',.56],['neon-brass','synth-brass-stab',.27],['neon-backing-pad','warm-chorus-poly',.36]])
+ assert.deepEqual(score.instruments[name],{...catalog.instruments[source],volume},'pre-fantasy instrument and balance retained: '+name);
+assert(score.instruments['neon-picked-electric'].volume<=.25,'picked guitar is a quiet supporting layer');
+assert.deepEqual(score.instruments['neon-reference'].partials,catalog.instruments['cinematic-pulse-bass'].partials,'final held reference returns to the original pulse');
+assert.deepEqual(score.instruments['midnight-pulse'].partials,catalog.instruments['cinematic-pulse-bass'].partials,'Part II retains the original pulse');
+assert.equal(score.instruments['midnight-pulse'].volume,score.instruments['midnight-organ'].volume,'pulse is raised alongside the foreground organ');
+assert(score.instruments['midnight-pulse-chord'].volume>=1,'upper pulse chords also come forward');
+assert(score.instruments['midnight-pulse'].envelope.sustain>=.85,'pulse keeps its level while held');
+assert(slowPulse.filter(e=>Number(e.offset)/2<240).every(e=>Number(e.length)/2>.6),'ordinary pulse notes no longer have short gates');
+assert(score.instruments['midnight-organ'].volume>=2);
+assert(score.instruments['midnight-organ'].envelope.attack<=.04,'organ onset is distinct from the slow background pad');
+assert(dark.filter(e=>e.instrument==='midnight-organ').every(e=>['f','ff'].includes(e.dynamic)),'organ has foreground dynamics');
+assert(score.instruments['midnight-tubular-bells'].volume>=1.5);
+assert(dark.filter(e=>e.instrument==='midnight-tubular-bells').every(e=>['f','ff'].includes(e.dynamic)),'bells have foreground dynamics');
+const bellNotes=dark.filter(e=>e.instrument==='midnight-tubular-bells');
+assert.equal(bellNotes.length,39,'expanded melodic bell phrases replace the ten isolated strikes');
+assert(new Set(bellNotes.map(e=>e.tone)).size>=10,'bell melody travels across several pitches');
+assert(bellNotes.every(e=>Number(e.offset)/2>=128&&Number(e.offset)/2<258),'bell phrases yield to the final pulse/organ chord');
+const finale=dark.filter(e=>score.partTwo.ending.instruments.includes(e.instrument));
+assert.equal(finale.length,4,'pulse bass and open fifths sustain into Part III');
+assert(finale.every(e=>score.partTwo.ending.instruments.includes(e.instrument)&&Number(e.offset)===score.partTwo.ending.startSeconds*2&&Math.abs(Number(e.length)-score.partTwo.ending.holdSeconds*2)<1e-9));
+assert(finale.every(e=>score.instruments[e.instrument].envelope.release===.65),'the handoff notes carry over the immediate tempo change');
+assert(score.render.fadeOutSeconds<.05,'only a click guard remains on the master, not a musical fade');
+const recorded=score.instruments['midnight-tubular-bells'];
+assert(!recorded.partials,'recorded bells replace oscillator synthesis');
+assert(recorded.samples.every(s=>s.naturalDecay&&!s.loopEnd),'each recording plays once to its natural end');
+for(const sample of recorded.samples)assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+sample.url,import.meta.url))).digest('hex'),sample.sha256,'complete untrimmed recording');
+assert(score.partTwo.tubularBells.naturalEndSeconds>score.partThree.startSeconds);
+assert(score.durationSeconds>=score.partTwo.tubularBells.naturalEndSeconds+2.8,'all bell recordings and reverb tails fit before the end');
+assert(mix.partOneGain>mix.gain,'Part I retains its own headroom instead of being reduced by the louder organ');
+assert.deepEqual(mix.sectionGains.map(s=>[s.startSeconds,s.endSeconds]),[[0,score.partTwo.startSeconds],[score.partTwo.startSeconds,score.partThree.startSeconds],[score.partThree.startSeconds,score.durationSeconds]],'the new finale cannot pull down earlier parts');
+const third=score.song.events.filter(e=>Number(e.offset)>=score.partThree.startSeconds*2);
+assert.equal(score.partThree.bpm,120);assert.equal(score.partThree.key,'D minor');
+assert.equal(score.partThree.durationSeconds,102);
+for(const instrument of ['finale-pulse','finale-violins','finale-cellos','finale-horns','finale-flute','finale-bells','finale-horror-strings','finale-last-organ'])
+ assert(third.some(e=>e.instrument===instrument),'combined finale includes '+instrument);
+assert(score.instruments['finale-bells'].samples.every(s=>s.naturalDecay),'fast bell notes keep their full decays');
+assert(score.durationSeconds>=score.partThree.bells.naturalEndSeconds,'all finale bell decays and reverb fit before the end');
+assert.deepEqual(score.partThree.ending,{startSeconds:score.partThree.startSeconds+96,holdSeconds:2,releaseSeconds:3,dramaticFinalHit:true,organOnlySustained:false,ensembleHoldSeconds:1.5});
+assert.equal(score.partThree.horrorStrings.semitoneAccents,true);
+assert(third.filter(e=>e.instrument==='finale-horror-strings').some(e=>e.tone==='F6'),'high horror-string accents enter the finale');
+const picked=score.pickedElectricGuitar.instrument;
+assert.equal(score.pickedElectricGuitar.part,1);
+assert(score.song.events.filter(e=>e.instrument===picked).length>=200,'picked electric has a full Part I arrangement');
+assert(!dark.some(e=>e.instrument===picked),'picked electric is confined to Part I');
+assert(!score.instruments[picked].distortion,'clean picking offsets the sharper pulse');
+for(const sample of score.instruments[picked].samples) {
+ const wave=fs.readFileSync(new URL('../'+sample.url,import.meta.url));
+ assert.equal(wave.readUInt32LE(24),48000);
+ assert.equal(wave.length,44+4*48000*2,'original four-second mono electric string');
+ assert.equal(createHash('sha256').update(wave).digest('hex'),mix.pickedElectricSources.find(s=>s.path===sample.url).sha256);
+}
+assert(score.partTwo.organ.answerSeconds.every(at=>dark.some(e=>e.instrument==='midnight-organ'&&Number(e.offset)===at*2)),'organ answers follow selected bells');
+const guitar=score.song.events.filter(e=>e.instrument==='neon-guitar');
+assert(guitar.length>150,'rhythm guitar is part of the arrangement');
+assert(score.song.events.some(e=>e.instrument==='neon-guitar-lead'&&e.tone.includes('/')),'guitar fill contains a pitch bend');
+for(let bar=32;bar<40;bar++) {
+ const notes=score.song.events.filter(e=>{const beat=Number(e.offset)+(e.instrument==='neon-lead'?score.leadAdvanceMs/500:0);return beat>=bar*4&&beat<bar*4+4;});
+ assert.equal(notes.filter(e=>e.instrument===(bar%2?'neon-guitar-lead':'neon-lead')).length,3,'question and answer alternate in the middle eight');
+ assert.equal(notes.filter(e=>e.instrument===(bar%2?'neon-lead':'neon-guitar-lead')).length,0,'the answering voice leaves space for the question');
+}
+assert.deepEqual(score.transitionPickups,{bars:[15,39],beatStep:1/8,notesPerRun:4,noteLength:.07});
+for(const bar of score.transitionPickups.bars) {
+ const pickups=score.song.events.filter(e=>e.instrument==='neon-arp'&&Number(e.offset)>=bar*4+3.5&&Number(e.offset)<bar*4+4);
+ assert.equal(pickups.length,4,'brief four-note 32nd pickup');
+ pickups.forEach((event,index)=>{assert.equal(Number(event.offset),bar*4+3.5+index/8);assert.equal(Number(event.length),.07);assert(['p','pp'].includes(event.dynamic),'pickup stays soft');});
+}
+const pluck=fs.readFileSync(new URL('../api/audio/samples/neon-guitar-d3.wav',import.meta.url));
+assert.equal(createHash('sha256').update(pluck).digest('hex'),mix.guitarSource.sha256);
+assert.equal(pluck.toString('ascii',0,4),'RIFF');assert.equal(pluck.readUInt32LE(24),48000);
+assert.equal(pluck.length,44+3*48000*2,'original plucked-string source');
+assert.equal(score.instruments['neon-guitar'].samples[0].url,'api/audio/samples/neon-guitar-d3.wav');
+
+const context=vm.createContext({document:{addEventListener(){}},console,fetch:async()=>({ok:true,json:async()=>catalog})});
+vm.runInContext(fs.readFileSync(new URL('../api/audio/AudioEngine.js',import.meta.url),'utf8'),context);
+assert.equal(context.WMOFAudio.songTiming(song).durationMs,372000);
+const options=read('lang/en-US/associations.json').selects['af44f0e0-01a0-57a7-9b13-d56b283ac0b8'];
+const option=options.find(o=>o.value==='neon-countdown');assert(option);
+assert.equal(read('lang/en-US/ui-text.json').texts[option.textId].text,'Neon Countdown');
+assert.match(song.mediaUrl,/^api\/audio\/samples\/[a-z0-9-]+\.wav$/,'native Easter Egg player accepts the media path');
+console.log('PASS score reproducibility, stereo extended audio, checksum, headroom, continuous music, native registration, repaired groove, original Part I instruments plus picked electric, foreground recorded bells/organ in Part II and natural ending');

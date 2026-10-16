@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
+installSpeechLifecycle();
 import assert from 'node:assert/strict';
 import {Window} from 'happy-dom';
 const window=new Window({url:'https://clock.example/'});
@@ -210,9 +212,8 @@ try {
  speech.configureSpeechTimingProfile({continuationPauseMeanMs:650,continuationPauseVarianceMs2:0,continuationPauseSamples:40});
  speech.setSpeechTimingTtsRate(.5);speech.beginSpeechTimingTrip();
  u=fresh();await hear(u,'ready at four');
- const nativeTimeout=globalThis.setTimeout;let scheduledDelay;
- globalThis.setTimeout=(callback,delay,...args)=>{scheduledDelay=delay;return nativeTimeout(callback,delay,...args);};
- try {speech.testStartPause(u);} finally {globalThis.setTimeout=nativeTimeout;}
+ const beforeDeadline=performance.now();speech.testStartPause(u);
+ const scheduledDelay=u.continuation.deadline-beforeDeadline;
  assert(scheduledDelay>350,'collection timeout honors a longer adaptive grace instead of truncating it to 350 ms');
  assert(Math.abs(scheduledDelay-speech.speechTimingSnapshot.continuationGraceMs)<30);
  speech.testResume(u);speech.testPushPause(u,600);

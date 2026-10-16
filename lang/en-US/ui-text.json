@@ -2,7 +2,11 @@
   "version": 1,
   "locale": "en-US",
   "texts": {
-    "471577e1-2917-4f93-a164-d0e4c3050604": {"id": "471577e1-2917-4f93-a164-d0e4c3050604", "text": "Say/press break type then OK.", "default": "Say/press break type then OK."},
+    "471577e1-2917-4f93-a164-d0e4c3050604": {
+      "id": "471577e1-2917-4f93-a164-d0e4c3050604",
+      "text": "Say/press break type then OK.",
+      "default": "Say/press break type then OK."
+    },
     "dd6e2b62-620f-5182-a639-0df2c2e69c5b": {
       "id": "dd6e2b62-620f-5182-a639-0df2c2e69c5b",
       "text": "WMOF — Walmart Order Filler",
@@ -6859,6 +6863,11 @@
     "f90cc749-06cc-503c-9393-fb13fdd856c0": {
       "id": "f90cc749-06cc-503c-9393-fb13fdd856c0",
       "text": "Open Trip Log"
+    },
+    "ae4f313f-e62b-52bc-8435-f607f57a27b8": {
+      "id": "ae4f313f-e62b-52bc-8435-f607f57a27b8",
+      "text": "Neon Countdown",
+      "default": "Neon Countdown"
     }
   }
 }

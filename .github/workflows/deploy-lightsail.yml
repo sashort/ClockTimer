@@ -32,6 +32,17 @@ jobs:
           node tests/fsm-loopback-feedback.mjs
           node tests/application-coordinator.mjs
           node tests/speech-failfast.mjs
+          node tests/owned-feedback-scope.mjs
+          node tests/speech-continuation-session.mjs
+          node tests/speech-rejection-feedback.mjs
+          node tests/tone-referenced-announcement.mjs
+          node tests/scheduled-audio-cue.mjs
+          node tests/neon-countdown-song.mjs
+          node tests/cinematic-robot-pulse.mjs
+          node tests/beat-tempo-ramp.mjs
+          node tests/orchestral-finale.mjs
+          node tests/app-state-transactions.mjs --time-reference --voice-feedback
+          node tests/app-state-transactions.mjs --rejection-feedback --voice-feedback
           node tests/speech-command-digest.mjs
           node tests/adaptive-speech-timing.mjs
           node tests/speech-response-chain.mjs

@@ -1,0 +1,90 @@
+{
+  "library": "Versilian Community Sample Library",
+  "source": "https://github.com/sgossner/VCSL",
+  "revision": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+  "license": "CC0-1.0",
+  "licensePath": "api/audio/samples/vcsl-tubular-LICENSE.txt",
+  "samples": [
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_Asharp3_ff_rr1.wav",
+      "rootFrequency": 233.08188075904496,
+      "naturalDecay": true,
+      "durationSeconds": 12.56702947845805,
+      "note": "A#3",
+      "sha256": "55fcfdb825026629670e3486f47762e6a3c4a89e138990fbd0e65c3f0a1d6a79",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_A%233_ff_rr1.wav"
+    },
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_C3_f_rr1.wav",
+      "rootFrequency": 130.8127826502993,
+      "naturalDecay": true,
+      "durationSeconds": 11.355963718820862,
+      "note": "C3",
+      "sha256": "76d51955e61e70e7a6b46a05865cd0f06f4948aaab97b1925f0f06f193f717f5",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C3_f_rr1.wav"
+    },
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_C4_ff_rr2.wav",
+      "rootFrequency": 261.6255653005986,
+      "naturalDecay": true,
+      "durationSeconds": 18.43077097505669,
+      "note": "C4",
+      "sha256": "50d2c2bff54396a684ce9b29346bb8d43bb55d5d9adb9d736bdd5a713adc424a",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C4_ff_rr2.wav"
+    },
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_D3_ff_rr1.wav",
+      "rootFrequency": 146.8323839587038,
+      "naturalDecay": true,
+      "durationSeconds": 19.611541950113377,
+      "note": "D3",
+      "sha256": "ca1c64961ce8e96f6ea3ed3bf67bde09c0beb723b0fe346881b317695b1ce84f",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D3_ff_rr1.wav"
+    },
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_D4_ff_rr2.wav",
+      "rootFrequency": 293.6647679174076,
+      "naturalDecay": true,
+      "durationSeconds": 13.736190476190476,
+      "note": "D4",
+      "sha256": "2657add471fc1804a29c1261df45af13c700803cfa29bd11c134400a3fbc8700",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D4_ff_rr2.wav"
+    },
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_E3_ff_rr2.wav",
+      "rootFrequency": 164.81377845643496,
+      "naturalDecay": true,
+      "durationSeconds": 17.82390022675737,
+      "note": "E3",
+      "sha256": "086a46cb560dae926014c0494965034aeecdffade7a1d6f54feda13274775a11",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E3_ff_rr2.wav"
+    },
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_E4_ff_rr2.wav",
+      "rootFrequency": 329.6275569128699,
+      "naturalDecay": true,
+      "durationSeconds": 12.852947845804989,
+      "note": "E4",
+      "sha256": "1bec82ee61186bf12863842251b1ec726322a649bc90f50f7bca423d30b345ac",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E4_ff_rr2.wav"
+    },
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_Fsharp3_fff_rr1.wav",
+      "rootFrequency": 184.9972113558172,
+      "naturalDecay": true,
+      "durationSeconds": 13.189274376417234,
+      "note": "F#3",
+      "sha256": "4664366c705496c3dc5ba9de75ffcd6739610dc669391cadda34a63cbcfa1251",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_F%233_fff_rr1.wav"
+    },
+    {
+      "url": "api/audio/samples/vcsl-tubular-chimes_Gsharp3_ff_rr1.wav",
+      "rootFrequency": 207.65234878997256,
+      "naturalDecay": true,
+      "durationSeconds": 14.701269841269841,
+      "note": "G#3",
+      "sha256": "ec7743ccc27b4546f51852965e7d96e97cc14270f6051040c2890fd4d34c24c2",
+      "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_G%233_ff_rr1.wav"
+    }
+  ]
+}

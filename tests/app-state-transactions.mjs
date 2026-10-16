@@ -1,4 +1,5 @@
 import {installAsyncStorage} from './async-storage-fixture.mjs';
+import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
 import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from 'happy-dom';import {installEnglishPack} from './LanguageWindow.mjs';
 const window=new Window({url:process.argv.includes('--landing-session')?'https://clock.example/order-filler.php?session=existing':'https://clock.example/',settings:{disableJavaScriptEvaluation:true,disableCSSFileLoading:true}});
 const storage=installAsyncStorage(window);
@@ -67,6 +68,7 @@ window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.met
 window.eval(fs.readFileSync(new URL('../lang/en-US/SpokenTimeParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/PercentParser.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/SpeechValuePreprocessor.js',import.meta.url),'utf8'));
+installSpeechLifecycle(window);
 let speechSource=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 if(process.argv.includes('--break-end-stream'))speechSource=speechSource.replace('static #pipeline = "raw";', 'static #pipeline = "silero";');
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
@@ -723,9 +725,10 @@ if(process.argv.includes('--speech-boundaries')) {
  assert.equal(stored.length,before,'Ready without OK does not start a trip');
  const cancel=window.SpeechMenu.testBegin();await say(cancel,'cancel',true);
  const provisional=window.SpeechMenu.testBegin();await say(provisional,'ready four twelve sync o');
+ assert(!provisional.digestTranscript.endsWith('sync'),'partial on/off must not commit bare Sync inside a pending root');
  assert(window.document.querySelector('#voiceEntrySurface').open,'the root may hold provisional Ready effects while its command continuation grows');
  await say(provisional,'ready four twelve sync bananas',true);
- assert.equal(window.WMOFInteractionState.state.editor.open,false,'malformed command continuation rolls back the entire provisional Ready root');
+ assert.equal(window.WMOFInteractionState.state.editor.open,false,'malformed command continuation rolls back the entire provisional Ready root: '+JSON.stringify({consumed:provisional.digestTranscript,pending:provisional.digestPending,failed:provisional.digestFailed,invalidated:provisional.chainInvalidated,completed:provisional.completedStreams,operation:provisional.operation?.phase,context:provisional.digestContext}));
  assert.equal(window.WMOFCoordinator.lockCount,0,'root rollback releases pending ownership');
  assert.equal(stored.length,before,'failed dependent root cannot persist trip events');
  const time=window.SpeechMenu.testBegin();
@@ -762,11 +765,90 @@ if(process.argv.includes('--mic-feedback')) {
  console.log('PASS local and voice mic feedback: dedicated activation/deactivation chimes, announcements and duplicate suppression');
  await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--time-reference')) {
+ const say=async(text)=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;await settle();return u;};
+ await say('ready');await say('thirty minutes okay');assert.equal(timer.status,'running');
+ const calls=[];let speaking=false;
+ window.WMOFAudio.speak=(text,options={})=>{speaking=true;calls.push({type:'speech',text,options});queueMicrotask(()=>{speaking=false;options.onEnd?.();});return true;};
+ window.WMOFAudio.startSong=async(name,options={})=>{assert(!speaking,'reference chime must follow actual speech completion');calls.push({type:'chime',name,options});return {hasChime:true,finished:Promise.resolve({reason:'completed'})};};
+ const result=await window.WMOFActions.readTimeRemaining();await settle();
+ const utterance=calls.find(c=>c.type==='speech'),cue=calls.find(c=>c.name==='time-reference');
+ assert(utterance&&cue,JSON.stringify(calls));
+ assert(!/at the tone|minutes?|seconds?|hours?/i.test(utterance.text),'duration has no preamble or units');
+ assert.match(utterance.text,/^twenty[- ]nine /,'spoken duration accounts for time spent speaking');
+ assert.match(result.speechResponse.value,/^29:/);
+ assert(Number.isFinite(cue.options.startAtPerformanceMs),'tone is scheduled against the monotonic clock');
+ assert.equal(cue.options.useSelectedInstrument,false,'approved time instrument is retained');
+ assert(cue.options.startAtPerformanceMs>performance.now(),'deadline leaves a real gap after completed speech');
+ assert.equal(calls.filter(c=>c.type==='chime').length,1,'no setting-change chime precedes the readback');
+ assert.equal(window.WMOFCoordinator.lockCount,0,'informational readback releases command locks');
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS real Time action speaks future duration only, waits for speech, requests approved scheduled cue and releases controls');
+ await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--rejection-feedback')) {
+ const outcomes=[];window.SpeechMenu.events.addEventListener('speechAttemptRejected',event=>outcomes.push(event.detail));
+ const count=()=>chimes.filter(name=>name==='speech-rejected').length;
+ const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
+ const waitCount=async(expected)=>{for(let i=0;i<30&&count()<expected;i++)await new Promise(resolve=>setTimeout(resolve,50));assert.equal(count(),expected,JSON.stringify({outcomes,chimes,errors,consoleErrors}));};
+ const start=count();
+ const malformed=window.SpeechMenu.testBegin();await say(malformed,'ready hundred seven seconds');await waitCount(start+1);
+ await say(malformed,'ready hundred seven seconds',true);await waitCount(start+1);
+ assert.equal(outcomes.length,1,'malformed section and repeated final produce one rejection');
+ const incomplete=window.SpeechMenu.testBegin();await say(incomplete,'ready at');assert.equal(count(),start+1,'a viable continuation is silent');
+ window.SpeechMenu.testUseRecognizer({finishUtterance(){setTimeout(()=>window.SpeechMenu.testDeliverFinal(incomplete,'ready at'),10);},abortUtterance(){},setHotwords(){}});
+ window.SpeechMenu.testPause(incomplete);await new Promise(resolve=>setTimeout(resolve,450));await incomplete.digestQueue;await incomplete.segmentBarrier;await settle();await waitCount(start+2);
+ assert.equal(outcomes.at(-1).outcome,'incomplete','silence plus final decoding rejects incomplete input');
+ const emptyFinal=window.SpeechMenu.testBegin();await say(emptyFinal,'ready at');
+ window.SpeechMenu.testUseRecognizer({finishUtterance(){setTimeout(()=>window.SpeechMenu.testDeliverFinal(emptyFinal,''),10);},abortUtterance(){},setHotwords(){}});
+ window.SpeechMenu.testPause(emptyFinal);await waitCount(start+3);
+ assert.equal(outcomes.at(-1).outcome,'incomplete','an empty decoder final still rejects the previously collected attempt');
+ const invalid=window.SpeechMenu.testBegin();await say(invalid,'ready at hundred',true);await waitCount(start+4);
+ assert.equal(outcomes.at(-1).outcome,'invalid-value');
+ const unknown=window.SpeechMenu.testBegin();await say(unknown,'zebra quasar',true);await waitCount(start+5);
+ assert.equal(outcomes.at(-1).outcome,'unrecognized');
+ const noise=window.SpeechMenu.testBegin();await say(noise,'background unrelated words');await say(noise,'background unrelated words',true);await settle();assert.equal(count(),start+5,'discarded junk stays silent');
+ const ready=window.SpeechMenu.testBegin();await say(ready,'ready four');await say(ready,'ready four twelve');assert.equal(count(),start+5);
+ await say(ready,'ready four twelve',true);const cancel=window.SpeechMenu.testBegin();await say(cancel,'cancel',true);await settle();assert.equal(count(),start+5,'success and Cancel stay silent');
+ const muted=window.SpeechMenu.testBegin();await say(muted,'ready at');await window.SpeechMenu.sleep();await settle();assert.equal(count(),start+5,'muting an open attempt is not recognition rejection');
+ const restart=window.SpeechMenu.testBegin();await say(restart,'ready',true);
+ rejectTripStart=true;
+ const failed=window.SpeechMenu.testBegin();await say(failed,'five minutes okay',true);await settle();assert.equal(count(),start+5,'server rejection of recognized input is not a recognition chime');
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS real malformed/incomplete/invalid/unrecognized cues once, with silence for continuation, junk, success, Cancel, mute and server rejection');
+ await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--branch-boundaries')) {
+ const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
+ const off=window.SpeechMenu.testBegin();
+ const offGrammar=await window.SpeechMenu.testVoskContext(off.id);
+ assert(offGrammar.records.some(r=>r.action==='WMOFActions.setSpeechMaster'),'Speech Off is in the active grammar');
+ await say(off,'speech off',true);
+ assert(off.hadCommittedCommand&&!off.digestFailed&&!off.digestExecutionFailed,'Speech Off executes through its full command');
+ const on=window.SpeechMenu.testBegin();await say(on,'speech on',true);
+ const u=window.SpeechMenu.testBegin();
+ for(const text of ['ready','ready a','ready at','ready at four','ready at four twenty']) {
+  await say(u,text);
+  assert(!window.document.querySelector('#voiceEntrySurface').open,'branch resolution cannot flash the wrong editor: '+text);
+ }
+ await say(u,'ready at four twenty two',true);
+ assert(window.document.querySelector('#scheduledStartDialog').open,'Ready At resolves to scheduled-start state');
+ const cancel=window.SpeechMenu.testBegin();await say(cancel,'cancel',true);
+ await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();window.__testTime+=60000;
+ const end=window.SpeechMenu.testBegin();await say(end,'ready');await say(end,'ready',true);
+ assert(!end.digestExecutionFailed&&!end.digestFailed,'Ready executes its active-trip meaning: '+JSON.stringify({failed:end.digestFailed,execution:end.digestExecutionFailed,errors,consoleErrors}));
+ assert(window.document.querySelector('#tripTransitionOverlay').open,'Ready ends the trip and opens summary');
+ assert(!window.document.querySelector('#voiceEntrySurface').open,'end-trip Ready cannot claim a start-trip editor continuation');
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ console.log('PASS Speech Off, ambiguous branch settlement, Ready At and active-trip Ready');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--ready-handoff')) {
  const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
  const before=stored.length;
  const u=window.SpeechMenu.testBegin();
  await say(u,'ready');
+ assert(!window.document.querySelector('#voiceEntrySurface').open,'ambiguous Ready head cannot open an editor before a continuation or silence');
  for(const text of ['ready twenty','ready twenty two','ready twenty two fifty','ready twenty two fifty six']) {
   await say(u,text);
   const grammar=await window.SpeechMenu.testVoskContext(u.id,text);

@@ -267,10 +267,28 @@ class SpeechMenu {
 
     static setFeedbackAdapter(adapter) { SpeechMenu.#feedbackAdapter = adapter; }
 
+    static #continuationSession(utterance) {
+        if (!utterance) return undefined;
+        if (!utterance.continuation || utterance.continuation.phase === "cancelled") {
+            const session = new globalThis.SpeechContinuationSession({id: utterance.id,
+                onError: error => SpeechMenu.#emit("speechFeedbackError", {error, utteranceId: utterance.id})});
+            session.collectors = utterance.valueCollectors;
+            session.expectedSurfaces = utterance.expectedSurfaces;
+            session.acceptedSpans = utterance.digestCommandSegments ||= [];
+            utterance.continuation = session;
+        }
+        return utterance.continuation;
+    }
+
+    static deferFeedback(key, callback) {
+        const id = SpeechMenu.#executionContext?.utteranceId;
+        const owner = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
+        if (!owner || owner.digestCommitted) return undefined;
+        return SpeechMenu.#continuationSession(owner).deferFeedback(key, callback);
+    }
+
     static #flushCommandFeedback(utterance, accepted) {
-        const callbacks = utterance?.feedbackCallbacks || [];
-        if (utterance) utterance.feedbackCallbacks = [];
-        if (accepted) for (const callback of callbacks) callback();
+        utterance?.continuation?.settle(accepted);
     }
 
     static #commandFeedback(element, context, snapshot, result, utterance) {
@@ -282,7 +300,7 @@ class SpeechMenu {
         // Keep UI execution immediate. Only optional speech waits while an
         // interim transcript can still continue into another command.
         if (context.skippable && context.chain && utterance && !utterance.digestCommitted) {
-            (utterance.feedbackCallbacks ||= []).push(run);
+            SpeechMenu.#continuationSession(utterance).deferFeedback(context, run);
         } else if (!utterance?.chainCanceled && !utterance?.digestExecutionFailed) run();
     }
     static #synthesizedSpeech = new Map();
@@ -2227,6 +2245,9 @@ class SpeechMenu {
                     }
                 }
                 chain.contextGeneration = SpeechMenu.#contextGeneration;
+                const session = SpeechMenu.#continuationSession(chain);
+                session.expectedSurfaces = chain.expectedSurfaces;
+                session.transfer(chain.digestContext, activeSurface);
             }
             return true;
         }
@@ -3282,6 +3303,8 @@ class SpeechMenu {
 
         if (!transcript) {
             if (detail.isFinal && (rawTranscript || !SpeechMenu.synthesizedSpeechActive)) {
+                utterance.ignoredRecognition = Boolean(rawTranscript);
+                utterance.digestIsFinal = true;
                 SpeechMenu.#finishedUtterances.delete(id);
                 SpeechMenu.#rejectDigest(utterance, "invalid-final-segment", rawTranscript);
             }
@@ -3649,6 +3672,8 @@ class SpeechMenu {
         utterance.transcript =
             transcript;
 
+        SpeechMenu.#continuationSession(utterance).observe(transcript);
+
         const revision =
             ++utterance.transcriptRevision;
 
@@ -4001,8 +4026,26 @@ class SpeechMenu {
         return head;
     }
 
+    static #reportRecognitionRejection(utterance, outcome, reason, transcript) {
+        if (!utterance || !SpeechMenu.#executionEnabled || utterance.ignoredRecognition) return;
+        // Scope-pruned noise and junk after a settled independent command are
+        // not new command attempts. No acoustic/backend error is handled here.
+        if (!utterance.recognitionAttempt && (utterance.digestDiscardedTail ||
+            utterance.completedStreams || utterance.discardedStreams || !String(transcript || "").trim())) return;
+        const rootId = `${utterance.id}:${utterance.completedStreams || 0}:${utterance.discardedStreams || 0}`;
+        utterance.reportedRecognitionRoots ??= new Set();
+        if (utterance.reportedRecognitionRoots.has(rootId)) return;
+        utterance.reportedRecognitionRoots.add(rootId);
+        SpeechMenu.#emit("speechAttemptRejected", {id: utterance.id, rootId,
+            source: "recognition", confirmed: true, outcome, reason, transcript});
+    }
+
     static #rejectDigest(utterance, reason, remainder) {
         if (utterance.digestFailed || utterance.invalidatingChain) return;
+        if (["no-candidates", "invalid-final-segment"].includes(reason) && utterance.digestIsFinal) {
+            SpeechMenu.#reportRecognitionRejection(utterance,
+                utterance.recognitionFailureOutcome || "unrecognized", reason, remainder);
+        }
         utterance.digestFailed = true;
         utterance.releaseFinalResult?.();
         void (utterance.operation ? utterance.operation.cancel(new Error(reason)) :
@@ -4017,6 +4060,7 @@ class SpeechMenu {
     }
 
     static #queueDigestStep(utterance, step) {
+        SpeechMenu.#continuationSession(utterance);
         const segment = step.segmentTranscript;
         utterance.digestTranscript = [utterance.digestTranscript, step.ignoredBefore, segment].filter(Boolean).join(" ");
         (utterance.digestCommandSegments ??= []).push(segment);
@@ -4030,6 +4074,8 @@ class SpeechMenu {
         for (const frame of step.nextSurfaceStack || []) {
             utterance.expectedSurfaces ??= new Set(); utterance.expectedSurfaces.add(frame.surface);
         }
+        utterance.continuation.expectedSurfaces = utterance.expectedSurfaces;
+        utterance.continuation.transfer(step.nextContext, step.nextSurfaceStack?.at(-1)?.surface);
         utterance.valueCollectors?.delete(step.commandElement);
         SpeechMenu.#clearPrimed(utterance);
         SpeechMenu.#primeContext(utterance, step.nextContext);
@@ -4126,6 +4172,8 @@ class SpeechMenu {
             utterance.digestCompletion = undefined;
             utterance.releaseFinalResult = undefined;
             utterance.chainActive = false;
+            utterance.recognitionAttempt = false;
+            utterance.recognitionFailureOutcome = undefined;
             utterance.digestSteps = [];
             utterance.digestQueue = Promise.resolve();
             utterance.digestPending = "";
@@ -4155,6 +4203,8 @@ class SpeechMenu {
     }
 
     static #invalidateDigestChain(utterance, transcript, isFinal) {
+        SpeechMenu.#reportRecognitionRejection(utterance,
+            utterance.recognitionFailureOutcome || "malformed", "malformed-context", transcript);
         const operation = utterance.operation;
         utterance.invalidatingChain = true;
         utterance.releaseFinalResult?.();
@@ -4176,6 +4226,8 @@ class SpeechMenu {
             utterance.digestSteps = [];
             utterance.digestQueue = Promise.resolve();
             utterance.chainActive = false;
+            utterance.recognitionAttempt = false;
+            utterance.recognitionFailureOutcome = undefined;
             utterance.chainCanceled = false;
             utterance.invalidatingChain = false;
             utterance.chainInvalidated = true;
@@ -4207,10 +4259,14 @@ class SpeechMenu {
 
     static #digestCandidate(utterance, candidate, remainder, isFinal) {
         if (!SpeechMenu.#executionEnabled) return false;
+        if (candidate?.chain?.length || candidate?.pending || candidate?.malformedContext) utterance.recognitionAttempt = true;
+        utterance.recognitionFailureOutcome = candidate?.pending ? "incomplete" :
+            candidate?.malformedContext ? isFinal ? "invalid-value" : "malformed" : undefined;
         // All child commands and value contexts defer their portion to this
         // root. A dependent chain cannot earn partial effects by failing later.
         if (candidate?.malformedContext || (isFinal && candidate?.invalid &&
-            candidate.chain?.some(step => step.commandElement.hasAttribute("speech-chain-next")))) {
+            [...(utterance.digestSteps || []), ...(candidate.chain || [])]
+                .some(step => step.commandElement.hasAttribute("speech-chain-next")))) {
             SpeechMenu.#invalidateDigestChain(utterance, remainder, isFinal);
             return true;
         }
@@ -4713,6 +4769,7 @@ class SpeechMenu {
         }
 
         if (!matched) {
+            SpeechMenu.#reportRecognitionRejection(utterance, "unrecognized", "no-command", transcript);
             const recovery =
                 SpeechMenu
                     .#terminalPrefixRecovery(
@@ -5969,6 +6026,7 @@ class SpeechMenu {
         if (!utterance) {
             return false;
         }
+        utterance.continuation?.cancelSilence();
 
         if (
             utterance
@@ -6050,7 +6108,7 @@ class SpeechMenu {
 
         utterance
             .continuationPauseTimer =
-            setTimeout(
+            SpeechMenu.#continuationSession(utterance).armSilence(delay,
                 () => {
                     utterance
                         .continuationPauseTimer =
@@ -6088,8 +6146,7 @@ class SpeechMenu {
                     // omit the final word. Drain the recognizer before settling
                     // the chain, including a pending value or confirmation.
                     SpeechMenu.#finishUtterance("candidate-silence", true);
-                },
-                delay
+                }
             );
 
         return true;
@@ -7055,6 +7112,12 @@ class SpeechMenu {
     // True when the transcript begins with a command's literal introducer,
     // even when parameter words already follow it. Unlike #hasExplicitCommandPrefix,
     // this is for collector-boundary decisions, not partial-command detection.
+    static #hasStartedCommandHead(element, transcript) {
+        const first = SpeechMenu.#normalizeTranscript(transcript).split(" ")[0];
+        return Boolean(first && SpeechMenu.#expandRegexSource(element.getAttribute("speech-pattern") || "")
+            .some(phrase => SpeechMenu.#normalizeTranscript(phrase).split(" ")[0] === first));
+    }
+
     static #hasExplicitCommandAnchor(element, transcript) {
         const words = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
         if (!words.length) return false;
@@ -7171,11 +7234,7 @@ class SpeechMenu {
         // A longer command owns its words before shorter commands can split them.
         const select = plan => {
             if (!plan) return;
-            const score = candidate => (candidate.invalid || (utterance.digestIsFinal && candidate.pending) ? 0 : 1000000) +
-                (!utterance.digestIsFinal && candidate.pending?.hasCommandPrefix ? 2000000 : 0) +
-                (candidate.steps[0]?.segmentTranscript.split(" ").length || 0) * 10000 + (candidate.pending ? 4000 : 0) +
-                (candidate.exact ? 2000 : 0) + candidate.consumedWords;
-            if (!best || score(plan) > score(best)) best = plan;
+            if (globalThis.SpeechCommandBranchPolicy.compare(plan, best, {final: utterance.digestIsFinal}) > 0) best = plan;
         };
         for (const element of candidates) {
             if (signal?.aborted) return undefined;
@@ -7187,16 +7246,18 @@ class SpeechMenu {
             const partialDepth = SpeechMenu.#elementDirectContinuationDepth(element, full);
             if (partialDepth !== undefined && SpeechMenu.#typedContinuationViable(element, full) !== false) select({steps: [], exact: false, continuation: true,
                 terminal: false, pending: {element, transcript: full,
-                    hasCommandPrefix: SpeechMenu.#hasExplicitCommandPrefix(element, full)}, consumedWords: 0,
+                    hasCommandPrefix: SpeechMenu.#hasExplicitCommandPrefix(element, full),
+                    headStarted: SpeechMenu.#hasStartedCommandHead(element, full)}, consumedWords: 0,
                 remainder: full, depth: partialDepth});
-            else if (!utterance.digestIsFinal && SpeechMenu.#typedContinuationViable(element, full) !== false &&
+            else if (SpeechMenu.#typedContinuationViable(element, full) !== false &&
                 SpeechMenu.#hasExplicitCommandPrefix(element, full)) {
                 // Some patterns have a literal prefix followed by an optional
                 // word and a parameter; direct-continuation analysis can miss
                 // that prefix. Keep it pending instead of executing a shorter
                 // exact command that happens to match the same first word.
                 select({steps: [], exact: false, continuation: true, terminal: false,
-                    pending: {element, transcript: full, hasCommandPrefix: true},
+                    pending: {element, transcript: full, hasCommandPrefix: true,
+                        headStarted: SpeechMenu.#hasStartedCommandHead(element, full)},
                     consumedWords: 0, remainder: full, depth: 0});
             }
             if (!memo.probes.has(element)) memo.probes.set(element, new Map());

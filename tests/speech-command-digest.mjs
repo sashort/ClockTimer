@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
+installSpeechLifecycle();
 import assert from 'node:assert/strict';
 import {Window} from 'happy-dom';
 const window=new Window({url:'https://clock.example/'});
@@ -178,6 +180,8 @@ try {
     const competing=fresh();
     await hear(competing,'sync');
     assert.equal(calls.length,0,'sync yields while a valid continuation can form');
+    await hear(competing,'sync o');
+    assert.equal(calls.length,0,'an unfinished on/off token cannot toggle Sync or execute standalone Off');
     await hear(competing,'sync off');await competing.digestQueue;
     assert.deepEqual(calls,[['sync','off']],'completed continuation wins across groups immediately');
     await hear(competing,'sync off',true);await competing.digestQueue;

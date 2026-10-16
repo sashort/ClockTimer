@@ -17112,9 +17112,16 @@
         "node tests/legacy-vosk-values.mjs",
         "node tests/speech-value-preprocessor.mjs",
         "node tests/app-state-transactions.mjs --decoder-final-boundaries --voice-feedback",
-        "node tests/app-state-transactions.mjs --ready-handoff --voice-feedback"
+        "node tests/app-state-transactions.mjs --ready-handoff --voice-feedback",
+        "node tests/tone-referenced-announcement.mjs",
+        "node tests/scheduled-audio-cue.mjs",
+        "node tests/app-state-transactions.mjs --time-reference --voice-feedback",
+        "node tests/owned-feedback-scope.mjs",
+        "node tests/speech-continuation-session.mjs"
       ],
-      "implementation_guide": "docs/speech-recognition-v2.md"
+      "implementation_guide": "docs/speech-recognition-v2.md",
+      "class_guide": "docs/class-architecture-v2.md",
+      "time_guide": "docs/time-reference-v2.md"
     },
     "RECOGNIZER": {
       "id": "RECOGNIZER",
@@ -17797,6 +17804,69 @@
         "expect": {
           "activeTranscript": "twenty two fifty six",
           "diagnosticShownAsTranscript": false
+        }
+      },
+      {
+        "id": "SPEECH-PARTIAL-SYNC-BRANCH",
+        "contract": "SPEECH",
+        "given": {
+          "speechRecognition": "listening",
+          "sync": false
+        },
+        "when": {
+          "interims": [
+            "sync",
+            "sync o"
+          ],
+          "final": "sync off"
+        },
+        "expect": {
+          "interimActionCount": 0,
+          "sync": false,
+          "speechRecognition": "listening",
+          "offCommandCount": 0
+        }
+      },
+      {
+        "id": "SPEECH-EXPECTED-TRANSFER",
+        "contract": "SPEECH",
+        "given": {
+          "collector": "time",
+          "value": "five",
+          "expectedDestination": "scheduled-start",
+          "silenceDeadline": 500
+        },
+        "when": {
+          "open": "scheduled-start",
+          "continuation": "thirty"
+        },
+        "expect": {
+          "collector": "time",
+          "value": "five thirty",
+          "silenceDeadline": 500,
+          "nextStepAnnouncementsBeforeSettlement": 0
+        }
+      },
+      {
+        "id": "SPEECH-STALE-FEEDBACK-CANCEL",
+        "contract": "SPEECH",
+        "given": {
+          "pendingFeedback": {
+            "key": "next-step",
+            "entry": "old"
+          }
+        },
+        "when": {
+          "replaceFeedback": "new",
+          "cancelEntry": "old",
+          "acceptWorkflow": true
+        },
+        "expect": {
+          "announcedEntries": [
+            "new"
+          ],
+          "oldAnnouncementCount": 0,
+          "unrelatedFeedbackCancelled": false
         }
       },
       {

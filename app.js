@@ -502,6 +502,9 @@
                 Promise.resolve()
                     .then(async () => {
                         await speechAssetCacheReady;
+                        for (const name of ["OwnedFeedbackScope", "SpeechCommandBranchPolicy", "SpeechContinuationSession", "SpeechRejectionFeedback", "SpeechDurationEstimator", "ToneReferencedAnnouncement"]) {
+                            if (!globalThis[name]) await loadClassicScript(name + ".js");
+                        }
                         if (
                             !globalThis
                                 .AdaptiveSpeechTiming
@@ -22793,6 +22796,79 @@
             };
         };
 
+    let timeReadbackSequence = 0;
+    let timeReadbackCoordinator;
+
+    // Positional duration only; this readback intentionally ignores formal-time units.
+    function formatToneReadback(milliseconds) {
+        const seconds = Math.round(Math.abs(milliseconds) / 1000);
+        const hours = Math.floor(seconds / 3600), minutes = Math.floor(seconds / 60) % 60, remainder = seconds % 60;
+        const position = n => n === 0 ? "oh oh" : n < 10 ? "oh " + goalFailureNumberWords(n) : goalFailureNumberWords(n);
+        const words = hours ? [goalFailureNumberWords(hours), position(minutes), position(remainder)]
+            : minutes ? [goalFailureNumberWords(minutes), position(remainder)] : [goalFailureNumberWords(remainder)];
+        const code = (hours ? hours + ":" + String(minutes).padStart(2,"0") : String(minutes)) + ":" + String(remainder).padStart(2,"0");
+        return {text:(milliseconds < 0 ? "minus " : "") + words.join(" "), code:(milliseconds < 0 ? "-" : "") + code};
+    }
+
+    function readTimeAtTone() {
+        const sequence = ++timeReadbackSequence;
+        const wall = Date.now(), origin = performance.now();
+        const status = clockTimer.status;
+        const valueAt = at => {
+            const snapshot = clockTimer.getSummarySnapshot(new Date(wall + at - origin));
+            const selected = snapshot.selected;
+            if (!selected || !Number.isFinite(selected.standardTimeMilliseconds) ||
+                !Number.isFinite(selected.countedTimeElapsedMilliseconds) || !(selected.percentGoal > 0)) return NaN;
+            return selected.standardTimeMilliseconds / selected.percentGoal - selected.countedTimeElapsedMilliseconds;
+        };
+        const initial = valueAt(origin);
+        if (!Number.isFinite(initial)) return false;
+        const response = value => {
+            const {code} = formatToneReadback(value);
+            return {speechResponse:{type:"dictation",value:code,display:{code}}};
+        };
+        const audio = globalThis.WMOFAudio;
+        const summary = consumeAnnouncementAction("time-reference", "summary");
+        const chime = consumeAnnouncementAction("time-reference", "chime");
+        if (!audio || (!summary.perform && !chime.perform)) return response(initial);
+        let settleResponse;
+        const firstPlan = new Promise(resolve => {settleResponse=resolve;});
+        const output = audioAnnouncementOutput("time-reference");
+        const profile = {...audio.outputSettings, ...output};
+        const valid = () => sequence === timeReadbackSequence && clockTimer.status === status &&
+            (!summary.perform || audioCellUserEnabled("time-reference","summary")) &&
+            (!chime.perform || audioCellUserEnabled("time-reference","chime"));
+        const speak = text => new Promise(resolve => {
+            if (!valid() || !audio.speak) return resolve(false);
+            const started = audio.speak(text, {...output,onEnd:()=>resolve(true),onError:()=>resolve(false)});
+            if (!started) resolve(false);
+        });
+        // Keep speech, its gap and its tone in one queue component. Another semantic
+        // announcement cannot enter between them. Planning happens when this starts.
+        void runSemanticAnnouncement("time-reference", [{phase:"summary",delayMs:0,play:async()=>{
+            if (!valid()) return false;
+            if (!summary.perform || !chime.perform) {
+                const value=valueAt(performance.now()); settleResponse(response(value));
+                if (summary.perform) return speak(formatToneReadback(value).text);
+                const song=await audio.startSong("time-reference",{...output,includeSpeech:false,useSelectedInstrument:false});
+                await song?.finished; return Boolean(song?.hasChime);
+            }
+            timeReadbackCoordinator ??= new globalThis.ToneReferencedAnnouncement();
+            const result=await timeReadbackCoordinator.run({valueAt,profile,guard:valid,
+                format:value=>formatToneReadback(value).text,speak,
+                onPlan:plan=>settleResponse(response(plan.value)),
+                play:async plan=> {
+                    if (!valid()) return null;
+                    return audio.startSong("time-reference",{...output,includeSpeech:false,
+                        useSelectedInstrument:false,startAtPerformanceMs:plan.at});
+                }});
+            return result.performed;
+        }}], {id:nextSemanticAnnouncementId++})
+            .catch(error=>console.warn("Time readback failed:",error))
+            .finally(()=>settleResponse(response(initial)));
+        return firstPlan;
+    }
+
     const confirmSettingChange =
         (
             value,
@@ -24711,69 +24787,7 @@
             },
 
             readTimeRemaining() {
-                let rendered;
-
-                try {
-                    rendered =
-                        clockTimer
-                            .getRenderedTime?.(
-                                "remaining",
-                                new Date()
-                            );
-                }
-                catch {
-                    return false;
-                }
-
-                if (
-                    typeof rendered !==
-                        "string" ||
-                    !rendered
-                ) {
-                    return false;
-                }
-
-                const overBy =
-                    rendered
-                        .startsWith(
-                            "-"
-                        );
-                const absoluteRendered =
-                    overBy
-                        ? rendered.slice(1)
-                        : rendered;
-                const remainingMilliseconds =
-                    parseTimelineTime(
-                        absoluteRendered
-                    );
-
-                if (
-                    !Number.isFinite(
-                        remainingMilliseconds
-                    )
-                ) {
-                    return false;
-                }
-
-                const spokenDuration =
-                    formatGoalFailureDuration(
-                        remainingMilliseconds
-                    );
-                const spokenValue =
-                    overBy
-                        ? announcementText("messages.readback.overBy", { duration: spokenDuration })
-                        : spokenDuration;
-
-                return confirmSettingChange(
-                    rendered,
-                    {
-                        spokenValue,
-                        responseDisplay: {
-                            code:
-                                rendered
-                        }
-                    }
-                );
+                return readTimeAtTone();
             },
 
             readRenderedTime(
@@ -27997,7 +28011,20 @@
         }
     }
 
-    globalThis.SpeechMenu?.setFeedbackAdapter?.({capture: captureVoiceCommandFeedback, complete: voiceCommandFeedback});
+    let speechRejectionFeedback;
+    function bindSpeechFeedback() {
+        // SpeechMenu is loaded lazily. Bind after its runtime exists, once per app.
+        if (!globalThis.SpeechMenu || !globalThis.SpeechRejectionFeedback || speechRejectionFeedback) return;
+        globalThis.SpeechMenu.setFeedbackAdapter?.({capture: captureVoiceCommandFeedback, complete: voiceCommandFeedback});
+        speechRejectionFeedback = new globalThis.SpeechRejectionFeedback({
+            events: globalThis.SpeechMenu.events,
+            enabled: () => globalThis.SpeechMenu.started && !globalThis.SpeechMenu.muted && globalThis.SpeechMenu.executionEnabled,
+            play: () => playSemanticSong("speech-rejected"),
+            onError: error => console.error("Speech rejection chime failed:", error)
+        });
+    }
+    document.addEventListener("speech-runtime-ready", bindSpeechFeedback);
+    bindSpeechFeedback();
 
     const stateTransactions = globalThis.WMOFStateTransactions;
     if (stateTransactions) {

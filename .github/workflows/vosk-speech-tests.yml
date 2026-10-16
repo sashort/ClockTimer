@@ -6,6 +6,14 @@ on:
     paths:
       - 'Vosk*.js'
       - 'SpeechMenu.js'
+      - 'OwnedFeedbackScope.js'
+      - 'SpeechCommandBranchPolicy.js'
+      - 'SpeechContinuationSession.js'
+      - 'SpeechRejectionFeedback.js'
+      - 'SpeechDurationEstimator.js'
+      - 'ToneReferencedAnnouncement.js'
+      - 'api/audio/AudioEngine.js'
+      - 'api/audio/catalog.json'
       - 'SpeechMicBar.js'
       - 'PresentationSetters.js'
       - 'AdaptiveSpeechTiming.js'
@@ -21,6 +29,36 @@ on:
       - 'tests/trip-replay-identity.mjs'
       - 'tests/app-state-transactions.mjs'
       - 'tests/speech-failfast.mjs'
+      - 'tests/owned-feedback-scope.mjs'
+      - 'tests/speech-continuation-session.mjs'
+      - 'tests/speech-rejection-feedback.mjs'
+      - 'tests/tone-referenced-announcement.mjs'
+      - 'tests/scheduled-audio-cue.mjs'
+      - 'tests/neon-countdown-song.mjs'
+      - 'tests/cinematic-robot-pulse.mjs'
+      - 'scripts/synthesize-cinematic-robot.cjs'
+      - 'scripts/synthesize-neon-picked-electric.cjs'
+      - 'api/audio/samples/neon-picked-electric-*.wav'
+      - 'api/audio/instruments/vcsl-tubular-bells.json'
+      - 'api/audio/samples/vcsl-tubular-*'
+      - 'scripts/neon-countdown-part-two.cjs'
+      - 'scripts/neon-countdown-part-three.cjs'
+      - 'scripts/beat-tempo-ramp.cjs'
+      - 'tests/beat-tempo-ramp.mjs'
+      - 'tests/orchestral-finale.mjs'
+      - 'scripts/import-neon-orchestra.py'
+      - 'scripts/string-chord-approach.cjs'
+      - 'scripts/*dark-eighties-kit.py'
+      - 'api/audio/instruments/dark-eighties-hiphop-kit.json'
+      - 'api/audio/samples/dark-eighties-hiphop-*.wav'
+      - 'api/audio/instruments/neon-orchestra-samples.json'
+      - 'api/audio/samples/orchestra-*'
+      - 'api/audio/instruments/cinematic-robot*.json'
+      - 'api/audio/samples/cinematic-robot-*.wav'
+      - 'scripts/*neon-countdown.cjs'
+      - 'api/audio/instruments/neon-countdown*.json'
+      - 'api/audio/samples/neon-countdown.wav'
+      - 'tests/speech-lifecycle-fixture.mjs'
       - 'tests/speech-response-chain*.mjs'
       - 'tests/vosk-*.mjs'
       - '.github/workflows/vosk-speech-tests.yml'
@@ -46,6 +84,17 @@ jobs:
           node tests/fsm-loopback-feedback.mjs
           node tests/application-coordinator.mjs
           node tests/speech-failfast.mjs
+          node tests/owned-feedback-scope.mjs
+          node tests/speech-continuation-session.mjs
+          node tests/speech-rejection-feedback.mjs
+          node tests/tone-referenced-announcement.mjs
+          node tests/scheduled-audio-cue.mjs
+          node tests/neon-countdown-song.mjs
+          node tests/cinematic-robot-pulse.mjs
+          node tests/beat-tempo-ramp.mjs
+          node tests/orchestral-finale.mjs
+          node tests/app-state-transactions.mjs --time-reference --voice-feedback
+          node tests/app-state-transactions.mjs --rejection-feedback --voice-feedback
           node tests/speech-command-digest.mjs
           node tests/adaptive-speech-timing.mjs
           node tests/speech-response-chain.mjs

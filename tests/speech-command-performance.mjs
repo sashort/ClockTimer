@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
+installSpeechLifecycle();
 import assert from 'node:assert/strict';
 import {performance} from 'node:perf_hooks';
 import {Window} from 'happy-dom';

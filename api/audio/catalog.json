@@ -2492,6 +2492,95 @@
         "amount": 0.025,
         "decay": 0.012
       }
+    },
+    "neon-countdown-render": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Neon Countdown stereo mix",
+      "volume": 12.5,
+      "velocitySensitivity": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/neon-countdown.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "cinematic-robot-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.48,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "filter": {
+        "type": "lowpass",
+        "frequency": 4200,
+        "Q": 0.55,
+        "envelopeAmount": 300
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Robot Pulse",
+      "class": "expressive",
+      "derivedFrom": "cinematic-pulse-bass",
+      "chorus": {
+        "rate": 0.35,
+        "delay": 0.019,
+        "depth": 0.002,
+        "wet": 0.12
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/cinematic-robot-c2.wav",
+          "rootFrequency": 65.40639132514966,
+          "loopStart": 0.04,
+          "loopEnd": 2.04
+        },
+        {
+          "url": "api/audio/samples/cinematic-robot-c3.wav",
+          "rootFrequency": 130.8127826502993,
+          "loopStart": 0.04,
+          "loopEnd": 2.04
+        },
+        {
+          "url": "api/audio/samples/cinematic-robot-c4.wav",
+          "rootFrequency": 261.6255653005986,
+          "loopStart": 0.04,
+          "loopEnd": 2.04
+        }
+      ]
     }
   },
   "songs": {
@@ -16648,6 +16737,546 @@
           "dynamic": "f"
         }
       ]
+    },
+    "speech-rejected": {
+      "bpm": 300,
+      "instrument": "cinematic-pulse-bass",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "D#2",
+          "length": "1/2",
+          "dynamic": "pp"
+        }
+      ]
+    },
+    "time-reference": {
+      "bpm": 300,
+      "instrument": "cinematic-pulse-bass",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf"
+        }
+      ]
+    },
+    "neon-countdown": {
+      "title": "Neon Countdown / Midnight Passage",
+      "bpm": 120,
+      "instrument": "neon-countdown-render",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "744",
+          "dynamic": "ff",
+          "instrument": "neon-countdown-render"
+        }
+      ],
+      "mediaUrl": "api/audio/samples/neon-countdown.wav",
+      "renderedMix": {
+        "durationSeconds": 372,
+        "key": "D minor / C# minor / D minor",
+        "sha256": "0b9669323ebe96c01feee73c2397bb2f1aa56e254837bdc41500eb4a60774917",
+        "settings": "api/audio/instruments/neon-countdown-mix.json",
+        "score": "api/audio/instruments/neon-countdown-score.json",
+        "revision": 46,
+        "partTwo": {
+          "startSeconds": 120,
+          "durationSeconds": 150,
+          "bpm": 64,
+          "key": "C# minor",
+          "bars": 40,
+          "windTransition": [
+            118.025,
+            123.525
+          ],
+          "entranceRest": {
+            "startSeconds": 119.0625,
+            "endSeconds": 120,
+            "beats": 1,
+            "bpm": 64,
+            "windContinues": true
+          },
+          "windOverlap": {
+            "firstNoteSeconds": 120,
+            "secondNoteSeconds": 123.75,
+            "decayStartSeconds": 120,
+            "decayEndSeconds": 123.525,
+            "matchedNoteHoldSeconds": 3.525
+          },
+          "lastPartOneAttackSeconds": 116,
+          "noPluckedArpeggio": true,
+          "pulseChordVoicings": true,
+          "tubularBells": {
+            "strikeSeconds": [
+              128,
+              129.40625,
+              131.28125,
+              132.6875,
+              138.75,
+              140.625,
+              143.4375,
+              150,
+              151.40625,
+              153.28125,
+              154.6875,
+              165,
+              166.875,
+              168.28125,
+              170.15625,
+              180,
+              181.40625,
+              182.8125,
+              184.6875,
+              186.5625,
+              195,
+              196.875,
+              198.28125,
+              200.625,
+              210,
+              211.40625,
+              213.28125,
+              215.625,
+              225,
+              226.875,
+              228.75,
+              230.625,
+              240,
+              241.40625,
+              243.28125,
+              244.6875,
+              246.5625,
+              255,
+              256.875
+            ],
+            "longRingingTails": true,
+            "phraseStartSeconds": [
+              128,
+              138.75,
+              150,
+              165,
+              180,
+              195,
+              210,
+              225,
+              240,
+              255
+            ],
+            "sampleLibrary": "https://github.com/sgossner/VCSL",
+            "naturalDecay": true,
+            "naturalEndSeconds": 270.7511509669767
+          },
+          "organ": {
+            "foreground": true,
+            "answerSeconds": [
+              130.5,
+              152.5,
+              197.5,
+              242.5
+            ]
+          },
+          "tempoChange": {
+            "atSeconds": 270,
+            "fromBpm": 64,
+            "toBpm": 120,
+            "mode": "immediate",
+            "sustainedHandoff": true
+          },
+          "ending": {
+            "startSeconds": 269.0625,
+            "holdSeconds": 1.875,
+            "releaseSeconds": 0.65,
+            "key": "A/E sustained into D minor",
+            "instruments": [
+              "midnight-final-bass",
+              "midnight-final-pulse"
+            ],
+            "closingWind": false,
+            "flowsIntoPartThree": true
+          }
+        },
+        "partThree": {
+          "startSeconds": 270,
+          "durationSeconds": 102,
+          "bpm": 120,
+          "key": "D minor",
+          "bars": 48,
+          "balance": {
+            "orchestraRaised": true,
+            "pulseGain": 1.4,
+            "pulseArticulation": "original short pattern",
+            "pulseSustain": 0.76
+          },
+          "stringRuns": [
+            {
+              "bar": 4,
+              "startSeconds": 277.5,
+              "previousHeldNotes": [
+                "D4",
+                "F4",
+                "A4"
+              ],
+              "previous": "F4",
+              "target": "C4",
+              "direction": "fall",
+              "notes": [
+                "G4",
+                "F4",
+                "E4",
+                "D4"
+              ]
+            },
+            {
+              "bar": 8,
+              "startSeconds": 285.5,
+              "previousHeldNotes": [
+                "E4",
+                "G4",
+                "Bb4",
+                "E5",
+                "G5",
+                "Bb5"
+              ],
+              "previous": "G4",
+              "target": "F4",
+              "direction": "fall",
+              "notes": [
+                "C5",
+                "Bb4",
+                "A4",
+                "G4"
+              ]
+            },
+            {
+              "bar": 12,
+              "startSeconds": 293.5,
+              "previousHeldNotes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ],
+              "previous": "F4",
+              "target": "C4",
+              "direction": "fall",
+              "notes": [
+                "G4",
+                "F4",
+                "E4",
+                "D4"
+              ]
+            },
+            {
+              "bar": 16,
+              "startSeconds": 301.5,
+              "previousHeldNotes": [
+                "E4",
+                "G4",
+                "Bb4",
+                "E5",
+                "G5",
+                "Bb5"
+              ],
+              "previous": "C#5",
+              "target": "D5",
+              "direction": "rise",
+              "notes": [
+                "G4",
+                "A4",
+                "Bb4",
+                "C5"
+              ]
+            },
+            {
+              "bar": 20,
+              "startSeconds": 309.5,
+              "previousHeldNotes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ],
+              "previous": "F4",
+              "target": "C4",
+              "direction": "fall",
+              "notes": [
+                "G4",
+                "F4",
+                "E4",
+                "D4"
+              ]
+            },
+            {
+              "bar": 24,
+              "startSeconds": 317.5,
+              "previousHeldNotes": [
+                "E4",
+                "G4",
+                "Bb4",
+                "E5",
+                "G5",
+                "Bb5"
+              ],
+              "previous": "C#5",
+              "target": "D5",
+              "direction": "rise",
+              "notes": [
+                "G4",
+                "A4",
+                "Bb4",
+                "C5"
+              ]
+            },
+            {
+              "bar": 28,
+              "startSeconds": 325.5,
+              "previousHeldNotes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ],
+              "previous": "D4",
+              "target": "C4",
+              "direction": "fall",
+              "notes": [
+                "G4",
+                "F4",
+                "E4",
+                "D4"
+              ]
+            },
+            {
+              "bar": 32,
+              "startSeconds": 333.5,
+              "previousHeldNotes": [
+                "E4",
+                "G4",
+                "Bb4",
+                "E5",
+                "G5",
+                "Bb5"
+              ],
+              "previous": "D4",
+              "target": "D4",
+              "direction": "fall",
+              "notes": [
+                "A4",
+                "G4",
+                "F4",
+                "E4"
+              ]
+            },
+            {
+              "bar": 36,
+              "startSeconds": 341.5,
+              "previousHeldNotes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ],
+              "previous": "F4",
+              "target": "C4",
+              "direction": "fall",
+              "notes": [
+                "G4",
+                "F4",
+                "E4",
+                "D4"
+              ]
+            },
+            {
+              "bar": 40,
+              "startSeconds": 349.5,
+              "previousHeldNotes": [
+                "E4",
+                "G4",
+                "Bb4",
+                "E5",
+                "G5",
+                "Bb5"
+              ],
+              "previous": "C#5",
+              "target": "D5",
+              "direction": "rise",
+              "notes": [
+                "G4",
+                "A4",
+                "Bb4",
+                "C5"
+              ]
+            },
+            {
+              "bar": 44,
+              "startSeconds": 357.5,
+              "previousHeldNotes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ],
+              "previous": "F4",
+              "target": "C4",
+              "direction": "fall",
+              "notes": [
+                "G4",
+                "F4",
+                "E4",
+                "D4"
+              ]
+            },
+            {
+              "bar": 48,
+              "startSeconds": 365.5,
+              "previousHeldNotes": [
+                "C#4",
+                "E4",
+                "G4",
+                "C#5",
+                "E5",
+                "G5"
+              ],
+              "previous": "C#6",
+              "target": "D6",
+              "direction": "rise",
+              "notes": [
+                "G5",
+                "A5",
+                "Bb5",
+                "C#6"
+              ]
+            }
+          ],
+          "skippedRepeatedStringChords": [
+            {
+              "bar": 10,
+              "notes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ]
+            },
+            {
+              "bar": 18,
+              "notes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ]
+            },
+            {
+              "bar": 26,
+              "notes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ]
+            },
+            {
+              "bar": 34,
+              "notes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ]
+            },
+            {
+              "bar": 42,
+              "notes": [
+                "D4",
+                "F4",
+                "A4",
+                "D5",
+                "F5",
+                "A5"
+              ]
+            }
+          ],
+          "stringLeadInGain": 4.8,
+          "stringLeadInSampleStartSeconds": 0.12,
+          "percussion": {
+            "steady": true,
+            "samplePeakTarget": 0.75,
+            "recordingLevelsCompensated": true,
+            "foregroundBoostDb": 6.0206,
+            "kitSource": "Original Dark 80s Hip-Hop v12 isolated percussion stems",
+            "bassDrumBeats": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "snareBeats": [
+              1,
+              3
+            ],
+            "subdivisionBeats": 0.25,
+            "sixteenthNoteInstrument": "finale-hiphop-hat"
+          },
+          "orchestral": true,
+          "electronicExceptions": [
+            "cinematic-pulse-bass",
+            "Dark 80s hip-hop percussion"
+          ],
+          "sampleManifest": "api/audio/instruments/neon-orchestra-samples.json",
+          "horrorStrings": {
+            "instrument": "finale-horror-strings",
+            "entrySeconds": 270.25,
+            "semitoneAccents": true,
+            "recordedTremolo": true
+          },
+          "bells": {
+            "strikeCount": 4,
+            "foregroundGain": 6.6,
+            "dynamic": "ff",
+            "lastStrikeSeconds": 350,
+            "naturalEndSeconds": 360.0134730829079,
+            "naturalDecay": true,
+            "sparse": true
+          },
+          "naturalTailEndSeconds": 371.2204154916365,
+          "ending": {
+            "startSeconds": 366,
+            "holdSeconds": 2,
+            "releaseSeconds": 3,
+            "dramaticFinalHit": true,
+            "organOnlySustained": false,
+            "ensembleHoldSeconds": 1.5
+          }
+        }
+      }
     }
   }
 }

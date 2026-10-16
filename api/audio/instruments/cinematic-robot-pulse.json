@@ -1,0 +1,69 @@
+{
+  "type": "oscillator",
+  "waveform": "sawtooth",
+  "volume": 0.48,
+  "detune": 0,
+  "velocitySensitivity": 0.78,
+  "envelope": {
+    "attack": 0.018,
+    "decay": 0.42,
+    "sustain": 0.52,
+    "release": 0.28
+  },
+  "filter": {
+    "type": "lowpass",
+    "frequency": 4200,
+    "Q": 0.55,
+    "envelopeAmount": 300
+  },
+  "reverb": {
+    "wet": 0.055,
+    "decay": 1.15
+  },
+  "delay": {
+    "time": 0.17,
+    "feedback": 0.12,
+    "wet": 0.055
+  },
+  "tremolo": {
+    "rate": 0,
+    "depth": 0
+  },
+  "distortion": {
+    "amount": 0.055
+  },
+  "noise": {
+    "amount": 0,
+    "decay": 0.03
+  },
+  "trillStep": "1/8",
+  "displayName": "Cinematic Robot Pulse",
+  "class": "expressive",
+  "derivedFrom": "cinematic-pulse-bass",
+  "chorus": {
+    "rate": 0.35,
+    "delay": 0.019,
+    "depth": 0.002,
+    "wet": 0.12
+  },
+  "samples": [
+    {
+      "url": "api/audio/samples/cinematic-robot-c2.wav",
+      "rootFrequency": 65.40639132514966,
+      "loopStart": 0.04,
+      "loopEnd": 2.04
+    },
+    {
+      "url": "api/audio/samples/cinematic-robot-c3.wav",
+      "rootFrequency": 130.8127826502993,
+      "loopStart": 0.04,
+      "loopEnd": 2.04
+    },
+    {
+      "url": "api/audio/samples/cinematic-robot-c4.wav",
+      "rootFrequency": 261.6255653005986,
+      "loopStart": 0.04,
+      "loopEnd": 2.04
+    }
+  ]
+}

@@ -1,0 +1,1629 @@
+{
+  "title": "Neon Countdown / Midnight Passage",
+  "key": "D minor",
+  "durationSeconds": 372,
+  "sampleRate": 48000,
+  "channels": 2,
+  "peak": 0.8500000000000001,
+  "rawPeak": 1.2301708459854126,
+  "gain": 0.6909609366649544,
+  "partOneGain": 1.3104766945842776,
+  "sectionGains": [
+    {
+      "startSeconds": 0,
+      "endSeconds": 120,
+      "gain": 1.3104766945842776
+    },
+    {
+      "startSeconds": 120,
+      "endSeconds": 270,
+      "gain": 0.6909609366649544
+    },
+    {
+      "startSeconds": 270,
+      "endSeconds": 372,
+      "gain": 0.732308079104656
+    }
+  ],
+  "secondRms": [
+    0.09130719293422782,
+    0.0635662183092343,
+    0.09111125595062425,
+    0.06357572822430957,
+    0.1251267842313113,
+    0.1057344159404612,
+    0.1251932681146795,
+    0.10576562595883511,
+    0.1075887170300212,
+    0.10298905948403476,
+    0.10731489393787137,
+    0.10378021638198981,
+    0.10603832334997762,
+    0.10063568489798014,
+    0.10378845130717637,
+    0.10693339594289263,
+    0.10629788059155973,
+    0.10396047720988467,
+    0.10593439795121307,
+    0.10392600910542575,
+    0.10928674153825287,
+    0.10341932024778686,
+    0.1072625655479192,
+    0.10230514257104388,
+    0.10817284149604466,
+    0.1031188394768372,
+    0.10739935537980981,
+    0.10388381998591456,
+    0.10654358392519409,
+    0.10084568793487583,
+    0.10387675196884791,
+    0.1070450900504282,
+    0.10894552330353299,
+    0.10617524491196242,
+    0.10785439583279352,
+    0.10662057607228323,
+    0.11026451966733765,
+    0.10503526952334652,
+    0.10923420597301076,
+    0.10423452342200851,
+    0.11277018290194427,
+    0.10521685695617843,
+    0.11020204526605624,
+    0.10547755355688321,
+    0.10771789631730087,
+    0.10321820188085251,
+    0.10638715632648053,
+    0.11052181005274539,
+    0.1092234278061073,
+    0.10613544231679344,
+    0.10788366093871024,
+    0.10658982074732702,
+    0.11022315882411926,
+    0.1050138666778926,
+    0.1092387070958833,
+    0.10420723688921461,
+    0.11275023665963312,
+    0.10519302991604954,
+    0.11017822458832717,
+    0.10543659648898164,
+    0.10773841287352706,
+    0.10320773367805469,
+    0.10644287399626355,
+    0.1105063018499792,
+    0.09779768181768961,
+    0.07877195487680207,
+    0.09786021910898458,
+    0.07814634111634129,
+    0.10012920345750981,
+    0.07392310483427934,
+    0.10080221975080748,
+    0.07446446273423506,
+    0.11663858830675142,
+    0.11229837346754398,
+    0.1178935629847967,
+    0.11342631132624063,
+    0.11479298020845383,
+    0.1096783198433715,
+    0.11358728052374757,
+    0.11558969547090825,
+    0.1094471764981443,
+    0.10638237279597869,
+    0.10814403018265342,
+    0.1085703600684795,
+    0.11065666756014214,
+    0.10541012887795978,
+    0.1094958522837184,
+    0.10567773285310912,
+    0.1131674252982667,
+    0.10555714874105376,
+    0.11045748490632591,
+    0.1082068612746796,
+    0.10804782217641369,
+    0.10352951503580601,
+    0.10669229437892286,
+    0.11211908887490603,
+    0.10989664457891188,
+    0.10643764787403281,
+    0.1084761638683198,
+    0.10851857027251194,
+    0.11099352852644445,
+    0.105485170026234,
+    0.10981856355732875,
+    0.10570288923769647,
+    0.11362453072697894,
+    0.10558249331363011,
+    0.11076416196049363,
+    0.10830155252725414,
+    0.1083369527277483,
+    0.10355539230552194,
+    0.10707446699070203,
+    0.11208211979234278,
+    0.06928322670663256,
+    0.06341132746268065,
+    0.06512507091635995,
+    0.06104855172443665,
+    0.1095660802532388,
+    0.03590316347696702,
+    0.010589918751942666,
+    0.02144416738941068,
+    0.11953048482304167,
+    0.08515621309040354,
+    0.08037784153014498,
+    0.10111816199015003,
+    0.10549464590132412,
+    0.10015400041812976,
+    0.09853470688217503,
+    0.10716100384298259,
+    0.10155838043995319,
+    0.10107413497732913,
+    0.12491129118216797,
+    0.15894845215755976,
+    0.13854796761518132,
+    0.11155371537380757,
+    0.12239303256716068,
+    0.16632774953697474,
+    0.16985321353871843,
+    0.18210203286333107,
+    0.17094276149188972,
+    0.17214115119507412,
+    0.16905109134961496,
+    0.1564175064300329,
+    0.14814674597094513,
+    0.15365369282183391,
+    0.18793397918138116,
+    0.17858697310133995,
+    0.19426035278714943,
+    0.14023323817085714,
+    0.13854278899040645,
+    0.10787368852271302,
+    0.16019094932001743,
+    0.16527482988625636,
+    0.18879857720172097,
+    0.2044182358527605,
+    0.19594184615682875,
+    0.20124028422581708,
+    0.19366882557928458,
+    0.14803726645182508,
+    0.14656777221167974,
+    0.1873438726659369,
+    0.18003339849565678,
+    0.19177141922507715,
+    0.14425584248746454,
+    0.1386997298598193,
+    0.11359751167492053,
+    0.18203404698797168,
+    0.19312570087629935,
+    0.20976965242308637,
+    0.18661670634961325,
+    0.1810650712173602,
+    0.1819441864706396,
+    0.19243952034676856,
+    0.17475736875422693,
+    0.17369556750120374,
+    0.2164698672100325,
+    0.21155861565670658,
+    0.2280487015504489,
+    0.16100663175218508,
+    0.16213658511328094,
+    0.12874424865933654,
+    0.17749438940451914,
+    0.18643909666956388,
+    0.19314400120667094,
+    0.1809115914363877,
+    0.18031291213752038,
+    0.18482548154040426,
+    0.1742687149682826,
+    0.16946467408410962,
+    0.16899931158425557,
+    0.22524802145855502,
+    0.20483261190512003,
+    0.2230659432493456,
+    0.15876503055310895,
+    0.15020049232651547,
+    0.12051679711589663,
+    0.18463154902879209,
+    0.1979115430199886,
+    0.22600861405263972,
+    0.22241932956745075,
+    0.22850031784479108,
+    0.21213672166738584,
+    0.19327547822761962,
+    0.17369958015308834,
+    0.1793214525734715,
+    0.22103770740380674,
+    0.2119509378285682,
+    0.22904774259082608,
+    0.1655518158296868,
+    0.16149531231328282,
+    0.12672968645672486,
+    0.18572424894500456,
+    0.19146557548204352,
+    0.1932570178929317,
+    0.18966240967014225,
+    0.1854864256939333,
+    0.19310275335476917,
+    0.18690071092463503,
+    0.16600320029512358,
+    0.17221076902518234,
+    0.22019297963307258,
+    0.21342283941246595,
+    0.2259353389811966,
+    0.17039409118265988,
+    0.16216885880301632,
+    0.13359968732888128,
+    0.1565456843399727,
+    0.16583899808519162,
+    0.18140445942774033,
+    0.16119548404541967,
+    0.15535904632308623,
+    0.15725576354463955,
+    0.1653210101760126,
+    0.14994154430318127,
+    0.1485407937638367,
+    0.18391547184041918,
+    0.17842787753997183,
+    0.1932428357237872,
+    0.13640381409664268,
+    0.13899754256881858,
+    0.10943843584399349,
+    0.15288693854062824,
+    0.1608989270977431,
+    0.17623872153025014,
+    0.16735199999824726,
+    0.173829174801097,
+    0.16155905431904122,
+    0.16442167016090972,
+    0.14390712891842566,
+    0.14403117369582727,
+    0.19165012575738294,
+    0.17276551959262557,
+    0.18899543010695788,
+    0.13422924869270494,
+    0.12824158802399313,
+    0.10260316490582412,
+    0.174229225977803,
+    0.17772904068209822,
+    0.14713692063610803,
+    0.1769742074545559,
+    0.1982230254945896,
+    0.1721983001207223,
+    0.15555200888378004,
+    0.15089963616703433,
+    0.16267655343046028,
+    0.18772630692467931,
+    0.18270563474092016,
+    0.2073136150568589,
+    0.15174676265584797,
+    0.10311623092190338,
+    0.20133360166252653,
+    0.20616892965322933,
+    0.11692024529416419,
+    0.11679725294280803,
+    0.1193493556516843,
+    0.1281902106914819,
+    0.1204973508245955,
+    0.12037693193678645,
+    0.13091401026767457,
+    0.13753405071061764,
+    0.1190227800214976,
+    0.12224393466766549,
+    0.12587974013996706,
+    0.13075113809397115,
+    0.12366564280448566,
+    0.11973359446036369,
+    0.12408910249089007,
+    0.1618020346266857,
+    0.12452787634595718,
+    0.12199794150645127,
+    0.12034276030813165,
+    0.1334363463326745,
+    0.12366877907769697,
+    0.12324629897514502,
+    0.13116428675416034,
+    0.13774889655125558,
+    0.11923043232644277,
+    0.1222764263129859,
+    0.12594600714496293,
+    0.130279289546575,
+    0.12292247528489142,
+    0.12033160775768895,
+    0.12716124613863564,
+    0.13598284280631454,
+    0.11929619524425117,
+    0.11983815341252257,
+    0.11942034411005518,
+    0.13293070822089892,
+    0.12338679841846718,
+    0.12301052445368527,
+    0.130996076720205,
+    0.15903842662531034,
+    0.12335430524462293,
+    0.12393728790712125,
+    0.1267253248271894,
+    0.13066326778268939,
+    0.12324760870157359,
+    0.12001800104873048,
+    0.12724723787717007,
+    0.13594918063738815,
+    0.11924593148913991,
+    0.11973902410313246,
+    0.11979472889581447,
+    0.13290845007080185,
+    0.1234467164112523,
+    0.12306639386794971,
+    0.13118435028078404,
+    0.13753916305491148,
+    0.11924797779871323,
+    0.12235456390791725,
+    0.12617605190821568,
+    0.13020318765224895,
+    0.12291050340098243,
+    0.12036314861452688,
+    0.12713173390411997,
+    0.1539886834270416,
+    0.12208997193242721,
+    0.12091619300721738,
+    0.11987624947198175,
+    0.13304682755277664,
+    0.12345508800882547,
+    0.12304980070043002,
+    0.13102945725139134,
+    0.13767629188994854,
+    0.1191824440644557,
+    0.12224841997526532,
+    0.12592628741179215,
+    0.13083604972720897,
+    0.12381182396417083,
+    0.1199143385737065,
+    0.12721614495625744,
+    0.16918092376685723,
+    0.13812502335866958,
+    0.13457605656575955,
+    0.14148561336824172,
+    0.1539132049101362,
+    0.1414061014797818,
+    0.13781422916490105,
+    0.15597638183182083,
+    0.15867303869851135,
+    0.13689648737802532,
+    0.1370050111177228,
+    0.14832493670832086,
+    0.1617420125568782,
+    0.14200551997465216,
+    0.14144324187974794,
+    0.1590262163266206,
+    0.17765302157342713,
+    0.10297595850547936,
+    0.0041227260853656375,
+    0.0024487169679699226,
+    0.0009494041078366819,
+    0.0000027655592909427686
+  ],
+  "sections": [
+    [
+      "Intro",
+      0,
+      8
+    ],
+    [
+      "Verse",
+      8,
+      32
+    ],
+    [
+      "Chorus",
+      32,
+      64
+    ],
+    [
+      "Breakdown",
+      64,
+      80
+    ],
+    [
+      "Final chorus",
+      80,
+      112
+    ],
+    [
+      "Outro",
+      112,
+      120
+    ],
+    [
+      "Wind transition",
+      118.025,
+      123.525
+    ],
+    [
+      "Wind-only slow-tempo breath",
+      119.0625,
+      120
+    ],
+    [
+      "Part II: shadow pulse",
+      120,
+      135
+    ],
+    [
+      "Part II: midnight procession",
+      135,
+      165
+    ],
+    [
+      "Part II: haunted hall",
+      165,
+      195
+    ],
+    [
+      "Part II: deepening pulse",
+      195,
+      225
+    ],
+    [
+      "Part II: return",
+      225,
+      255
+    ],
+    [
+      "Part II: sustained handoff",
+      255,
+      270
+    ],
+    [
+      "Part III: orchestral entry",
+      270,
+      286
+    ],
+    [
+      "Part III: orchestral themes",
+      286,
+      318
+    ],
+    [
+      "Part III: woodwind and brass answers",
+      318,
+      334
+    ],
+    [
+      "Part III: full orchestra",
+      334,
+      350
+    ],
+    [
+      "Part III: final build",
+      350,
+      366
+    ],
+    [
+      "Part III: final organ chord",
+      366,
+      372
+    ]
+  ],
+  "revision": 46,
+  "partTwo": {
+    "startSeconds": 120,
+    "durationSeconds": 150,
+    "bpm": 64,
+    "key": "C# minor",
+    "bars": 40,
+    "windTransition": [
+      118.025,
+      123.525
+    ],
+    "entranceRest": {
+      "startSeconds": 119.0625,
+      "endSeconds": 120,
+      "beats": 1,
+      "bpm": 64,
+      "windContinues": true
+    },
+    "windOverlap": {
+      "firstNoteSeconds": 120,
+      "secondNoteSeconds": 123.75,
+      "decayStartSeconds": 120,
+      "decayEndSeconds": 123.525,
+      "matchedNoteHoldSeconds": 3.525
+    },
+    "lastPartOneAttackSeconds": 116,
+    "noPluckedArpeggio": true,
+    "pulseChordVoicings": true,
+    "tubularBells": {
+      "strikeSeconds": [
+        128,
+        129.40625,
+        131.28125,
+        132.6875,
+        138.75,
+        140.625,
+        143.4375,
+        150,
+        151.40625,
+        153.28125,
+        154.6875,
+        165,
+        166.875,
+        168.28125,
+        170.15625,
+        180,
+        181.40625,
+        182.8125,
+        184.6875,
+        186.5625,
+        195,
+        196.875,
+        198.28125,
+        200.625,
+        210,
+        211.40625,
+        213.28125,
+        215.625,
+        225,
+        226.875,
+        228.75,
+        230.625,
+        240,
+        241.40625,
+        243.28125,
+        244.6875,
+        246.5625,
+        255,
+        256.875
+      ],
+      "longRingingTails": true,
+      "phraseStartSeconds": [
+        128,
+        138.75,
+        150,
+        165,
+        180,
+        195,
+        210,
+        225,
+        240,
+        255
+      ],
+      "sampleLibrary": "https://github.com/sgossner/VCSL",
+      "naturalDecay": true,
+      "naturalEndSeconds": 270.7511509669767
+    },
+    "organ": {
+      "foreground": true,
+      "answerSeconds": [
+        130.5,
+        152.5,
+        197.5,
+        242.5
+      ]
+    },
+    "tempoChange": {
+      "atSeconds": 270,
+      "fromBpm": 64,
+      "toBpm": 120,
+      "mode": "immediate",
+      "sustainedHandoff": true
+    },
+    "ending": {
+      "startSeconds": 269.0625,
+      "holdSeconds": 1.875,
+      "releaseSeconds": 0.65,
+      "key": "A/E sustained into D minor",
+      "instruments": [
+        "midnight-final-bass",
+        "midnight-final-pulse"
+      ],
+      "closingWind": false,
+      "flowsIntoPartThree": true
+    }
+  },
+  "partThree": {
+    "startSeconds": 270,
+    "durationSeconds": 102,
+    "bpm": 120,
+    "key": "D minor",
+    "bars": 48,
+    "balance": {
+      "orchestraRaised": true,
+      "pulseGain": 1.4,
+      "pulseArticulation": "original short pattern",
+      "pulseSustain": 0.76
+    },
+    "stringRuns": [
+      {
+        "bar": 4,
+        "startSeconds": 277.5,
+        "previousHeldNotes": [
+          "D4",
+          "F4",
+          "A4"
+        ],
+        "previous": "F4",
+        "target": "C4",
+        "direction": "fall",
+        "notes": [
+          "G4",
+          "F4",
+          "E4",
+          "D4"
+        ]
+      },
+      {
+        "bar": 8,
+        "startSeconds": 285.5,
+        "previousHeldNotes": [
+          "E4",
+          "G4",
+          "Bb4",
+          "E5",
+          "G5",
+          "Bb5"
+        ],
+        "previous": "G4",
+        "target": "F4",
+        "direction": "fall",
+        "notes": [
+          "C5",
+          "Bb4",
+          "A4",
+          "G4"
+        ]
+      },
+      {
+        "bar": 12,
+        "startSeconds": 293.5,
+        "previousHeldNotes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ],
+        "previous": "F4",
+        "target": "C4",
+        "direction": "fall",
+        "notes": [
+          "G4",
+          "F4",
+          "E4",
+          "D4"
+        ]
+      },
+      {
+        "bar": 16,
+        "startSeconds": 301.5,
+        "previousHeldNotes": [
+          "E4",
+          "G4",
+          "Bb4",
+          "E5",
+          "G5",
+          "Bb5"
+        ],
+        "previous": "C#5",
+        "target": "D5",
+        "direction": "rise",
+        "notes": [
+          "G4",
+          "A4",
+          "Bb4",
+          "C5"
+        ]
+      },
+      {
+        "bar": 20,
+        "startSeconds": 309.5,
+        "previousHeldNotes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ],
+        "previous": "F4",
+        "target": "C4",
+        "direction": "fall",
+        "notes": [
+          "G4",
+          "F4",
+          "E4",
+          "D4"
+        ]
+      },
+      {
+        "bar": 24,
+        "startSeconds": 317.5,
+        "previousHeldNotes": [
+          "E4",
+          "G4",
+          "Bb4",
+          "E5",
+          "G5",
+          "Bb5"
+        ],
+        "previous": "C#5",
+        "target": "D5",
+        "direction": "rise",
+        "notes": [
+          "G4",
+          "A4",
+          "Bb4",
+          "C5"
+        ]
+      },
+      {
+        "bar": 28,
+        "startSeconds": 325.5,
+        "previousHeldNotes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ],
+        "previous": "D4",
+        "target": "C4",
+        "direction": "fall",
+        "notes": [
+          "G4",
+          "F4",
+          "E4",
+          "D4"
+        ]
+      },
+      {
+        "bar": 32,
+        "startSeconds": 333.5,
+        "previousHeldNotes": [
+          "E4",
+          "G4",
+          "Bb4",
+          "E5",
+          "G5",
+          "Bb5"
+        ],
+        "previous": "D4",
+        "target": "D4",
+        "direction": "fall",
+        "notes": [
+          "A4",
+          "G4",
+          "F4",
+          "E4"
+        ]
+      },
+      {
+        "bar": 36,
+        "startSeconds": 341.5,
+        "previousHeldNotes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ],
+        "previous": "F4",
+        "target": "C4",
+        "direction": "fall",
+        "notes": [
+          "G4",
+          "F4",
+          "E4",
+          "D4"
+        ]
+      },
+      {
+        "bar": 40,
+        "startSeconds": 349.5,
+        "previousHeldNotes": [
+          "E4",
+          "G4",
+          "Bb4",
+          "E5",
+          "G5",
+          "Bb5"
+        ],
+        "previous": "C#5",
+        "target": "D5",
+        "direction": "rise",
+        "notes": [
+          "G4",
+          "A4",
+          "Bb4",
+          "C5"
+        ]
+      },
+      {
+        "bar": 44,
+        "startSeconds": 357.5,
+        "previousHeldNotes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ],
+        "previous": "F4",
+        "target": "C4",
+        "direction": "fall",
+        "notes": [
+          "G4",
+          "F4",
+          "E4",
+          "D4"
+        ]
+      },
+      {
+        "bar": 48,
+        "startSeconds": 365.5,
+        "previousHeldNotes": [
+          "C#4",
+          "E4",
+          "G4",
+          "C#5",
+          "E5",
+          "G5"
+        ],
+        "previous": "C#6",
+        "target": "D6",
+        "direction": "rise",
+        "notes": [
+          "G5",
+          "A5",
+          "Bb5",
+          "C#6"
+        ]
+      }
+    ],
+    "skippedRepeatedStringChords": [
+      {
+        "bar": 10,
+        "notes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ]
+      },
+      {
+        "bar": 18,
+        "notes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ]
+      },
+      {
+        "bar": 26,
+        "notes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ]
+      },
+      {
+        "bar": 34,
+        "notes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ]
+      },
+      {
+        "bar": 42,
+        "notes": [
+          "D4",
+          "F4",
+          "A4",
+          "D5",
+          "F5",
+          "A5"
+        ]
+      }
+    ],
+    "stringLeadInGain": 4.8,
+    "stringLeadInSampleStartSeconds": 0.12,
+    "percussion": {
+      "steady": true,
+      "samplePeakTarget": 0.75,
+      "recordingLevelsCompensated": true,
+      "foregroundBoostDb": 6.0206,
+      "kitSource": "Original Dark 80s Hip-Hop v12 isolated percussion stems",
+      "bassDrumBeats": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "snareBeats": [
+        1,
+        3
+      ],
+      "subdivisionBeats": 0.25,
+      "sixteenthNoteInstrument": "finale-hiphop-hat"
+    },
+    "orchestral": true,
+    "electronicExceptions": [
+      "cinematic-pulse-bass",
+      "Dark 80s hip-hop percussion"
+    ],
+    "sampleManifest": "api/audio/instruments/neon-orchestra-samples.json",
+    "horrorStrings": {
+      "instrument": "finale-horror-strings",
+      "entrySeconds": 270.25,
+      "semitoneAccents": true,
+      "recordedTremolo": true
+    },
+    "bells": {
+      "strikeCount": 4,
+      "foregroundGain": 6.6,
+      "dynamic": "ff",
+      "lastStrikeSeconds": 350,
+      "naturalEndSeconds": 360.0134730829079,
+      "naturalDecay": true,
+      "sparse": true
+    },
+    "naturalTailEndSeconds": 371.2204154916365,
+    "ending": {
+      "startSeconds": 366,
+      "holdSeconds": 2,
+      "releaseSeconds": 3,
+      "dramaticFinalHit": true,
+      "organOnlySustained": false,
+      "ensembleHoldSeconds": 1.5
+    }
+  },
+  "sha256": "0b9669323ebe96c01feee73c2397bb2f1aa56e254837bdc41500eb4a60774917",
+  "score": "api/audio/instruments/neon-countdown-score.json",
+  "guitarSource": {
+    "path": "api/audio/samples/neon-guitar-d3.wav",
+    "sha256": "38133759e87e808e95d6e6c79998a237c061184a093fd30f2df4e8abbede10f7"
+  },
+  "windSource": {
+    "path": "api/audio/samples/neon-wind.wav",
+    "sha256": "d11213e09e85c7d851bba3fd5a959a67492a02f2b2bc4f748080571ef10623cb",
+    "durationSeconds": 5.5
+  },
+  "leadAdvanceMs": 25,
+  "bendLead": {
+    "gain": 0.12,
+    "sustain": 0.8,
+    "releaseSeconds": 0.8
+  },
+  "robotSources": [
+    {
+      "path": "api/audio/samples/cinematic-robot-c2.wav",
+      "sha256": "ddc8d548dffc9cdb979f860b7222ae64bb679978e8cbd8496a59045d2a589174"
+    },
+    {
+      "path": "api/audio/samples/cinematic-robot-c3.wav",
+      "sha256": "44188b192be6f0d68d6a2b07ca55b1d021e4d8d4200cc90b98cb5e9ed41d7c69"
+    },
+    {
+      "path": "api/audio/samples/cinematic-robot-c4.wav",
+      "sha256": "1fa2b8860967a3faeafaec9b44713f3700976c0c2f0d3e7df8bedef391a9cf72"
+    }
+  ],
+  "pickedElectricSources": [
+    {
+      "path": "api/audio/samples/neon-picked-electric-d3.wav",
+      "sha256": "eb68573964536454223e400e6dd7a30ee16690a06c13e626348d421c3baa4476"
+    },
+    {
+      "path": "api/audio/samples/neon-picked-electric-d4.wav",
+      "sha256": "a5551c595ded748c00553c0d230f8b067500659f25f3164ec57d047b94bc7045"
+    }
+  ],
+  "partOnePulse": {
+    "source": "cinematic-robot-pulse",
+    "instruments": [
+      "neon-bass"
+    ],
+    "originalPulseInstrument": "neon-cinematic-pulse",
+    "originalPulseSeconds": [
+      0,
+      2,
+      4,
+      6,
+      116
+    ],
+    "closingReferenceInstrument": "neon-reference"
+  },
+  "pickedElectricGuitar": {
+    "part": 1,
+    "instrument": "neon-picked-electric",
+    "sourceScript": "scripts/synthesize-neon-picked-electric.cjs"
+  },
+  "backingPad": {
+    "part": 1,
+    "instrument": "neon-backing-pad",
+    "source": "warm-chorus-poly"
+  },
+  "partOneBalance": {
+    "vocoderGain": 0.48,
+    "pickedElectricGain": 0.25,
+    "warmPadGain": 0.36,
+    "originalLayersPreserved": true
+  },
+  "partOneInstrumentation": "Pre-fantasy backing, melody, arp, brass, guitars and drums; retain current vocoder passages and add clean picked electric",
+  "fantasyPadRemoved": true,
+  "partTwoLevels": {
+    "pulseGain": 2,
+    "pulseChordGain": 1.1,
+    "pulseSustain": 0.86,
+    "pulseGateIntervalFraction": 0.94,
+    "organGain": 2,
+    "bellGain": 1.5,
+    "organDynamics": [
+      "f",
+      "ff"
+    ],
+    "bellDynamics": [
+      "f",
+      "ff"
+    ]
+  },
+  "bellLibrary": {
+    "library": "Versilian Community Sample Library",
+    "source": "https://github.com/sgossner/VCSL",
+    "revision": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "license": "CC0-1.0",
+    "licensePath": "api/audio/samples/vcsl-tubular-LICENSE.txt",
+    "samples": [
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_Asharp3_ff_rr1.wav",
+        "rootFrequency": 233.08188075904496,
+        "naturalDecay": true,
+        "durationSeconds": 12.56702947845805,
+        "note": "A#3",
+        "sha256": "55fcfdb825026629670e3486f47762e6a3c4a89e138990fbd0e65c3f0a1d6a79",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_A%233_ff_rr1.wav"
+      },
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_C3_f_rr1.wav",
+        "rootFrequency": 130.8127826502993,
+        "naturalDecay": true,
+        "durationSeconds": 11.355963718820862,
+        "note": "C3",
+        "sha256": "76d51955e61e70e7a6b46a05865cd0f06f4948aaab97b1925f0f06f193f717f5",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C3_f_rr1.wav"
+      },
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_C4_ff_rr2.wav",
+        "rootFrequency": 261.6255653005986,
+        "naturalDecay": true,
+        "durationSeconds": 18.43077097505669,
+        "note": "C4",
+        "sha256": "50d2c2bff54396a684ce9b29346bb8d43bb55d5d9adb9d736bdd5a713adc424a",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C4_ff_rr2.wav"
+      },
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_D3_ff_rr1.wav",
+        "rootFrequency": 146.8323839587038,
+        "naturalDecay": true,
+        "durationSeconds": 19.611541950113377,
+        "note": "D3",
+        "sha256": "ca1c64961ce8e96f6ea3ed3bf67bde09c0beb723b0fe346881b317695b1ce84f",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D3_ff_rr1.wav"
+      },
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_D4_ff_rr2.wav",
+        "rootFrequency": 293.6647679174076,
+        "naturalDecay": true,
+        "durationSeconds": 13.736190476190476,
+        "note": "D4",
+        "sha256": "2657add471fc1804a29c1261df45af13c700803cfa29bd11c134400a3fbc8700",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D4_ff_rr2.wav"
+      },
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_E3_ff_rr2.wav",
+        "rootFrequency": 164.81377845643496,
+        "naturalDecay": true,
+        "durationSeconds": 17.82390022675737,
+        "note": "E3",
+        "sha256": "086a46cb560dae926014c0494965034aeecdffade7a1d6f54feda13274775a11",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E3_ff_rr2.wav"
+      },
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_E4_ff_rr2.wav",
+        "rootFrequency": 329.6275569128699,
+        "naturalDecay": true,
+        "durationSeconds": 12.852947845804989,
+        "note": "E4",
+        "sha256": "1bec82ee61186bf12863842251b1ec726322a649bc90f50f7bca423d30b345ac",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E4_ff_rr2.wav"
+      },
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_Fsharp3_fff_rr1.wav",
+        "rootFrequency": 184.9972113558172,
+        "naturalDecay": true,
+        "durationSeconds": 13.189274376417234,
+        "note": "F#3",
+        "sha256": "4664366c705496c3dc5ba9de75ffcd6739610dc669391cadda34a63cbcfa1251",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_F%233_fff_rr1.wav"
+      },
+      {
+        "url": "api/audio/samples/vcsl-tubular-chimes_Gsharp3_ff_rr1.wav",
+        "rootFrequency": 207.65234878997256,
+        "naturalDecay": true,
+        "durationSeconds": 14.701269841269841,
+        "note": "G#3",
+        "sha256": "ec7743ccc27b4546f51852965e7d96e97cc14270f6051040c2890fd4d34c24c2",
+        "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_G%233_ff_rr1.wav"
+      }
+    ]
+  },
+  "orchestraLibrary": {
+    "license": "CC0-1.0",
+    "libraries": {
+      "vsco": {
+        "repository": "https://github.com/sgossner/VSCO-2-CE",
+        "revision": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+        "licensePath": "api/audio/samples/orchestra-vsco-LICENSE.txt"
+      },
+      "vcsl": {
+        "repository": "https://github.com/sgossner/VCSL",
+        "revision": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+        "licensePath": "api/audio/samples/orchestra-vcsl-LICENSE.txt"
+      }
+    },
+    "groups": {
+      "violin-short": [
+        {
+          "url": "api/audio/samples/orchestra-violin-short-0.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 1.7675963718820862,
+          "peakAmplitude": 0.27215576171875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-1.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 1.2079365079365079,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-2.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.9490249433106576,
+          "peakAmplitude": 0.362060546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-3.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 0.9231972789115647,
+          "peakAmplitude": 0.34674072265625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141"
+        }
+      ],
+      "violin-long": [
+        {
+          "url": "api/audio/samples/orchestra-violin-long-4.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 9.476530612244899,
+          "peakAmplitude": 0.170379638671875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_A3_v2.wav",
+          "library": "vsco",
+          "sha256": "3fc4a9e22037643fce11e755da72c61c664893f83e637c24a7b5c2d3824ab986"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-5.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 11.436893424036281,
+          "peakAmplitude": 0.2657470703125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "5857387b40c412f756ef281c1171247664432a4e5078c98142d595d15cd92ef9"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-6.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 12.18873015873016,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_G4_v2.wav",
+          "library": "vsco",
+          "sha256": "a1d6d5a0397541692e2f88a0cd9820eabe90407784ee631aa3bfa74772637a65"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-7.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 11.20312925170068,
+          "peakAmplitude": 0.2459716796875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "0c2ca9de723bed0a0968e32126b934f778cd678b367a29e7fde91004daf84daf"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-29.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 13.933469387755101,
+          "peakAmplitude": 0.129669189453125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D3_v2.wav",
+          "library": "vsco",
+          "sha256": "77893dbf1ea1be8c40ad756d16b916298e6b1b0742495e9853e020375592357c"
+        }
+      ],
+      "violin-tremolo": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "cello-short": [
+        {
+          "url": "api/audio/samples/orchestra-cello-short-10.wav",
+          "rootFrequency": 65.40639132514966,
+          "note": "C2",
+          "durationSeconds": 3.2272108843537417,
+          "peakAmplitude": 0.3993399143218994,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C1_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "92de035cdbfab6e41f94115b2c23716a9e93554a4c23c1cc4b946f7492d9c927"
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-11.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 3.386485260770975,
+          "peakAmplitude": 0.38178324699401855,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_D2_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "c647723304b5f4b2d3af02739017e38bc4e85244c15355ebd6f8443c1445b5ab"
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-12.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 2.026893424036281,
+          "peakAmplitude": 0.314375638961792,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C3_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "278a14177cd3ffffc5418e403d9583af22778a8ce8fc548f88ea707e044a62d4"
+        }
+      ],
+      "horn": [
+        {
+          "url": "api/audio/samples/orchestra-horn-13.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 14.644716553287981,
+          "peakAmplitude": 0.03826904296875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_D2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "9155ef0c33c06ebe55daeaaaca7dec4090578af6cf3d6a028fbfa7b7f2ec876e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-14.wav",
+          "rootFrequency": 174.61411571650194,
+          "note": "F3",
+          "durationSeconds": 14.502448979591836,
+          "peakAmplitude": 0.065521240234375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_F2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "2e487a49c834ff2d76aff1c9755875fc03013bf202b949a5c5fe354d0c2123c2"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-15.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 12.703197278911565,
+          "peakAmplitude": 0.110565185546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_C3_v2_1.wav",
+          "library": "vsco",
+          "sha256": "c0c0b157dcde094c4417b7c165d645897cde9ea6d74247bbab0c0e75355e78c3"
+        }
+      ],
+      "trumpet": [
+        {
+          "url": "api/audio/samples/orchestra-trumpet-16.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 1.140453514739229,
+          "peakAmplitude": 0.0556640625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_C3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "dcd3d370fe299ca76b222066d7facd0034a549a105051ed474f8dd1f478f1afa"
+        },
+        {
+          "url": "api/audio/samples/orchestra-trumpet-17.wav",
+          "rootFrequency": 587.3295358348151,
+          "note": "D5",
+          "durationSeconds": 1.337437641723356,
+          "peakAmplitude": 0.132171630859375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_D4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a817b4b11b818e04cf73197a382b380c5dd8576f1e7f7d1ee359559d0542eb8a"
+        }
+      ],
+      "flute": [
+        {
+          "url": "api/audio/samples/orchestra-flute-18.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.6005442176870748,
+          "peakAmplitude": 0.05548453330993652,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "dc1938d6becee0d3c175b69899490cb7a24e1ad8d73a57668835afd2ae516838"
+        },
+        {
+          "url": "api/audio/samples/orchestra-flute-19.wav",
+          "rootFrequency": 1046.5022612023945,
+          "note": "C6",
+          "durationSeconds": 0.664421768707483,
+          "peakAmplitude": 0.19474661350250244,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_C5_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "11eefb155e4d6dced1059363a00915c3b606ab05e41c98bd83e19e57cd1ca9e7"
+        }
+      ],
+      "bass-drum": [
+        {
+          "url": "api/audio/samples/orchestra-bass-drum-20.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 2.080952380952381,
+          "peakAmplitude": 0.1412353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v3_rr1_Sum.wav",
+          "library": "vcsl",
+          "sha256": "a2d8829e8b2b59e8afb12fa396b01758827059339c2a84ad066d17b36c82d1ff"
+        },
+        {
+          "url": "api/audio/samples/orchestra-bass-drum-21.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 2.00984126984127,
+          "peakAmplitude": 0.118194580078125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v3_rr2_Sum.wav",
+          "library": "vcsl",
+          "sha256": "036c6c5fcfbcca845d92dbcdcef075ee6e0ae01636374a2f7dd1a696a7ba33f8"
+        }
+      ],
+      "snare": [
+        {
+          "url": "api/audio/samples/orchestra-snare-22.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 1.730498866213152,
+          "peakAmplitude": 0.032928466796875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Snare%20Drum%2C%20Modern%201/Snare2_HitSN_v3_rr1_Mid.wav",
+          "library": "vcsl",
+          "sha256": "3d71765aa0d1e13260abeb003720aef0841432df601883177bf70e97d9af6c99"
+        },
+        {
+          "url": "api/audio/samples/orchestra-snare-23.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 1.3107709750566894,
+          "peakAmplitude": 0.037200927734375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Snare%20Drum%2C%20Modern%201/Snare2_HitSN_v3_rr2_Mid.wav",
+          "library": "vcsl",
+          "sha256": "770a0b6bfe95583c11014d5f9af9c94c425a15bd05234c86213aec356a2ffe29"
+        }
+      ],
+      "cymbal": [
+        {
+          "url": "api/audio/samples/orchestra-cymbal-24.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 8.478571428571428,
+          "peakAmplitude": 0.548431396484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Clash%20Cymbals%201/cymbal_crash1_mf1.wav",
+          "library": "vcsl",
+          "sha256": "3b4a6ed42627eedca39f6480e9825dedeaab538197fc734f85be13ba655aa6aa"
+        },
+        {
+          "url": "api/audio/samples/orchestra-cymbal-25.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 13.29079365079365,
+          "peakAmplitude": 0.70098876953125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Clash%20Cymbals%201/cymbal_crash1_ff2.wav",
+          "library": "vcsl",
+          "sha256": "6f27c36fe2a829b667fd3372e1488437671534c0c719af9ae90128e5f99629d3"
+        }
+      ],
+      "pipe-organ": [
+        {
+          "url": "api/audio/samples/orchestra-pipe-organ-26.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 12.401746031746033,
+          "peakAmplitude": 0.087310791015625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_C4.wav",
+          "library": "vcsl",
+          "sha256": "9f3b80ef47d908b8acae4d6e7898a28e8179c3e090d6ee1ff4c326d35ea1d945"
+        },
+        {
+          "url": "api/audio/samples/orchestra-pipe-organ-27.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 12.069909297052154,
+          "peakAmplitude": 0.04693603515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_A4.wav",
+          "library": "vcsl",
+          "sha256": "5ac10b40fb5cb026e3e487e05e24a1b0aeda35fa8df956d48f8c9d9fd18bff38"
+        },
+        {
+          "url": "api/audio/samples/orchestra-pipe-organ-28.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 12.106439909297052,
+          "peakAmplitude": 0.0595703125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_C5.wav",
+          "library": "vcsl",
+          "sha256": "abcfa8821cd0ff1279f427b71cfad6467d39b0a56481fda4f164880df8f6ddcc"
+        }
+      ],
+      "tambourine": [
+        {
+          "url": "api/audio/samples/orchestra-tambourine-30.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 1.4673696145124717,
+          "peakAmplitude": 0.05816650390625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Shake_rr1_Mid.wav",
+          "library": "vcsl",
+          "sha256": "5876b66d1e8009b3ee884ff3bf52fbc420b44f9ddffffe830b4074d3dfc09924"
+        },
+        {
+          "url": "api/audio/samples/orchestra-tambourine-31.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 1.347437641723356,
+          "peakAmplitude": 0.05328369140625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Shake_rr2_Mid.wav",
+          "library": "vcsl",
+          "sha256": "5ab51f8cd9fba10ae7a7125b96a520c69e049687409532b745fddd5356c6d6f3"
+        }
+      ],
+      "cello-long": [
+        {
+          "url": "api/audio/samples/orchestra-cello-long-32.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 12.438866213151927,
+          "peakAmplitude": 0.6602948904037476,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/susvib/susvib_D2_v3_1.wav",
+          "library": "vsco",
+          "sha256": "fc946615cd6550570c8f05d61c0d59b9079bf9daba8bf25be7943487fea5a7ae"
+        }
+      ],
+      "trumpet-long": [
+        {
+          "url": "api/audio/samples/orchestra-trumpet-long-33.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 9.629115646258503,
+          "peakAmplitude": 0.083648681640625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/straightM-sus/Sum_SHTrumpet_straightM-sus_D3_v3_rr1.wav",
+          "library": "vsco",
+          "sha256": "7846226f5e797f0b2fb5e170ca02d6bb8e279a9d2e818cc120679b5bb8d4c342"
+        }
+      ],
+      "maracas": [
+        {
+          "url": "api/audio/samples/orchestra-maracas-34.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 0.5295691609977324,
+          "peakAmplitude": 0.08716046810150146,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varWood/maraca1.wav",
+          "library": "vsco",
+          "sha256": "330d01743fa4069a4544b2665bd87f5d468d4d4c55572880b9c744cd1dc12fbc"
+        },
+        {
+          "url": "api/audio/samples/orchestra-maracas-35.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 0.3738095238095238,
+          "peakAmplitude": 0.020217537879943848,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/VSCO%201%20Percussion/varWood/maraca2.wav",
+          "library": "vsco",
+          "sha256": "119afc8f463f49e544f1ba98be5fd7c46030c87f1f4910136a97901711826bb2"
+        }
+      ]
+    }
+  },
+  "hiphopKit": {
+    "source": "Original Dark 80s Hip-Hop v12 isolated percussion stems",
+    "archive": "percussion-stems.npz",
+    "archiveSha256": "e6c7b0fd9445fb0aca4bc6f4a54132c5a2dea73cee8f39b4462416804b37958a",
+    "sampleRate": 48000,
+    "importer": "scripts/import-dark-eighties-kit.py",
+    "synthesisRecipe": "scripts/synthesize-dark-eighties-kit.py",
+    "samples": {
+      "kick": {
+        "url": "api/audio/samples/dark-eighties-hiphop-kick.wav",
+        "rootFrequency": 261.6255653005986,
+        "naturalDecay": true,
+        "durationSeconds": 0.43,
+        "peakAmplitude": 0.318634033203125,
+        "sha256": "c86b8a2caca94874871008c88d7997fbf9d169104a65926f1ed579ed72eb6ef6",
+        "sourceBeat": 32,
+        "sourceVelocity": 1
+      },
+      "snare": {
+        "url": "api/audio/samples/dark-eighties-hiphop-snare.wav",
+        "rootFrequency": 261.6255653005986,
+        "naturalDecay": true,
+        "durationSeconds": 0.24,
+        "peakAmplitude": 0.384674072265625,
+        "sha256": "7a538a6026e1d86aae86538a170081fc75c4a8cb19b1eca1ef29f62cc6b92007",
+        "sourceBeat": 34,
+        "sourceVelocity": 1
+      },
+      "clap": {
+        "url": "api/audio/samples/dark-eighties-hiphop-clap.wav",
+        "rootFrequency": 261.6255653005986,
+        "naturalDecay": true,
+        "durationSeconds": 0.18,
+        "peakAmplitude": 0.148040771484375,
+        "sha256": "068c53d0a907cc2ec18ee09bee71ff01d6792d4ccce028adb24fd25ed2168f24",
+        "sourceBeat": 34,
+        "sourceVelocity": 0.85
+      },
+      "hat": {
+        "url": "api/audio/samples/dark-eighties-hiphop-hat.wav",
+        "rootFrequency": 261.6255653005986,
+        "naturalDecay": true,
+        "durationSeconds": 0.072,
+        "peakAmplitude": 0.060211181640625,
+        "sha256": "5f8ed26ec444a3d914c69adfc47744c2935ab21ad77eaf19306b77b384df25da",
+        "sourceBeat": 32,
+        "sourceVelocity": 0.65
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
+installSpeechLifecycle();
+const Session=globalThis.SpeechContinuationSession, Policy=globalThis.SpeechCommandBranchPolicy;
+let now=100, sequence=0;
+const scheduled=new Map(), cancelled=[];
+const session=new Session({id:'root-1',surfaces:['scheduled'],now:()=>now,
+ schedule:(callback,delay)=>{const id=++sequence;scheduled.set(id,{callback,delay});return id;},
+ unschedule:id=>{cancelled.push(id);}});
+session.observe('ready at five');
+session.collectors.set('time',{value:'5:00',transcript:'five'});
+session.acceptedSpans.push('ready at');
+let expirations=0;
+const first=session.armSilence(400,()=>expirations++);
+assert.equal(session.deadline,500);
+assert.equal(session.transfer('scheduled-time','scheduled'),true);
+assert.equal(session.deadline,500,'opening an expected window does not restart the deadline');
+assert.equal(session.collectors.get('time').value,'5:00');
+assert.equal(session.transfer('other','unrelated'),false,'unrelated windows do not acquire the continuation');
+assert.equal(session.context,'scheduled-time');
+session.cancelSilence();scheduled.get(first).callback();
+assert.equal(expirations,0,'a cancelled or late timer callback cannot settle a resumed collector');
+session.observe('ready at five thirty');session.collectors.set('time',{value:'5:30',transcript:'five thirty'});
+let prompts=0;
+session.deferFeedback('next-step',()=>prompts++);
+now=250;const second=session.armSilence(300,()=>expirations++);
+assert.equal(prompts,0,'the next-step prompt waits through the continuation');
+scheduled.get(second).callback();
+assert.equal(session.phase,'settling');assert.equal(expirations,1);assert.equal(prompts,0,'silence requests final decoding; it does not accept a partial');
+session.settle(true);session.settle(true);
+assert.equal(session.phase,'accepted');assert.equal(prompts,1);
+assert.equal(session.collectors.get('time').value,'5:30');assert.deepEqual(session.acceptedSpans,['ready at']);
+
+const invalid=new Session();invalid.deferFeedback('prompt',()=>assert.fail('invalid input cannot announce a next step'));
+invalid.collectors.set('time',{});invalid.settle(false);
+assert.equal(invalid.phase,'cancelled');assert.equal(invalid.collectors.size,0);
+assert.equal(invalid.observe('late result'),false);assert.equal(invalid.transfer('late'),false);
+assert.equal(invalid.armSilence(0,()=>assert.fail('cancelled root cannot settle again')),undefined);
+
+const plan=(steps,pending,extra={})=>({steps:steps.map(segmentTranscript=>({segmentTranscript})),pending,consumedWords:steps.join(' ').split(' ').length,...extra});
+const pendingHead=plan([],{hasCommandPrefix:true,headStarted:true});
+const premature=plan(['ready'],{hasCommandPrefix:true});
+assert(Policy.compare(pendingHead,premature)>0,'whole unresolved command head wins before a shorter action changes state');
+const accepted=plan(['ready at five thirty'],undefined,{exact:true});
+assert(Policy.compare(accepted,pendingHead,{final:true})>0,'final input settles a complete branch rather than waiting forever');
+assert(Policy.compare(accepted,{...accepted,invalid:true},{final:true})>0);
+assert(Policy.compare(pendingHead,{...premature,invalid:true},{final:true})>0,'final incomplete longer head rejects instead of executing a shorter split');
+assert(Policy.compare(pendingHead,premature,{final:true})>0,'final incomplete whole head retains ownership over shorter pending split');
+assert.equal(Policy.compare(accepted,accepted),0,'stable ordering on equivalent plans');
+assert(Policy.compare(accepted,undefined)>0);
+console.log('PASS continuation transfer, retained collectors/deadlines, stale silence fencing, settlement and command branch policy');
