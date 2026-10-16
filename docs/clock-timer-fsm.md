@@ -1,5 +1,64 @@
 # ClockTimer state dispatch
 
+## Version 2 behavioral test reference, 16 October 2026
+
+Use the [reconciled working FSM](mainline-fsm-draft.html) and its
+[machine-readable model](mainline-fsm-draft.json) for current implementation work.
+The separately approved October chart below is preserved as a historical baseline;
+its approval is not evidence that later behavior was tested.
+
+The reconciliation inventories every one of the 281 intervening commits from
+`25608199497d995d1cf4b04eeef53e5984d26bc1` (last working-model update) through
+`831745dbd2c3bfa0baf494ed6f12f6a8c069debc`, including merges, corrective commits,
+reversions and tests. The current login changes are identified as working changes.
+The latest separate approved-model update, `1020a029`, is recorded independently.
+
+Eight structured `v2_contracts` cover speech planning, recognizer routing,
+operation ownership and UI lockouts, breaks and Down, range/Sync reads,
+replay/rendering, standalone settings, and authentication. Stable state and edge
+IDs are retained; superseded inputs are retired rather than silently reused.
+The interactive HTML embeds the exact JSON model. Its exported SVG is the updated
+mainline overview; use the interactive Login group for authentication details.
+
+Input type and outcome are independent: touch, mouse and keyboard use single
+lines; speech uses double lines. Valid paths are solid and invalid paths dashed.
+System events use dash-dot lines, and persistence rollback uses dotted lines.
+Separate labeled badges show passed, failed or untested status. Invalid paths
+specify the retained/destination state, discarded input and prohibited effects;
+an invalid input path can itself have a passing test.
+
+[Version 2 scenarios](fsm-v2-cases.json) are independent of the replacement's
+internal classes. A test driver must reach each **Given** state through public
+inputs, deliver the **When** event, settle the specified effect boundary, and
+compare **Expect**: phase, focus, control availability, ordered speech, API/event
+counts, owner locks and preserved state. Zero requests and zero repeated commands
+are required assertions. Never derive expected results from the implementation
+under test or insert private state to bypass a transition.
+
+The runtime login oracle uses `login.phase`: `id-entry`, `pin-entry`,
+`pin-review`, `submitting`, `password-entry`, or `closed`. ID and PIN speech input
+both require exactly four digits plus OK. ID group OK focuses the first PIN cell
+and speaks the individual ID digits, a sentence pause, then Password. PIN group
+OK reads back individual PIN digits and performs **no** authentication. Only the
+following independent OK/Enter authenticates. Editing invalidates review. A failed
+login retains ID, clears PIN/review and focuses the first PIN cell. Cancel on an
+empty PIN returns to empty ID; Cancel on entered/reviewed PIN clears PIN, and a
+second Cancel returns to ID. Backspace on an empty first PIN cell also restarts ID.
+Public snapshots and trace evidence must never contain raw PIN digits.
+
+Listed automated scenarios are evidence sources, not a claim that every chart
+edge or physical microphone path passed. Unverified user reports and unresolved
+older contracts remain explicit coverage gaps. Structured `v2_contracts` and
+`v2_test_vectors` take precedence over historical prose in reconciled areas.
+Custom in-place Vosk switching is deferred and requires a new branch.
+
+Run `node tests/fsm-reference.mjs` for model/HTML parity, stable edge references,
+complete commit inventory, scenario structure and two-step login invariants.
+Run `node tests/app-state-transactions.mjs --pin-review --voice-feedback` to compare
+the real login runtime against the model's bindings and speech/persistence rules.
+`scripts/reconcile-fsm.cjs` rebuilds this reconciliation at its pinned reviewed
+head; changing `FSM_REVIEWED_HEAD` requires reviewing the newly inventoried changes.
+
 ## Approved mainline interaction chart
 
 The [interactive mainline FSM](mainline-fsm.html) is the approved reference for

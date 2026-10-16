@@ -199,9 +199,9 @@ if(process.argv.includes('--startup-speech')) {
  assert.deepEqual(startupAudioCalls,['speak','unlock'],'startup speaks while loading; first interaction unlocks audio exactly once');
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();
  await window.WMOFActions.switchToVoiceLogin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
- assert.equal(spoken.filter(t=>t==='Please login using voice').length,0,'ready model must not overtake startup announcement');
+ assert.equal(spoken.filter(t=>t==='Please login via voice').length,0,'ready model must not overtake startup announcement');
  assert(window.WMOFInteractionState.state,'UI initialized while startup audio is pending');
- finishStartup();await settle();assert.equal(spoken.filter(t=>t==='Please login using voice').length,1,'release latest prompt after startup speech completes');
+ finishStartup();await settle();assert.equal(spoken.filter(t=>t==='Please login via voice').length,1,'release latest prompt after startup speech completes');
  console.log('PASS startup speech completion barrier without blocking UI/model initialization');
  if(!process.argv.includes('--voice-login')){window.happyDOM.abort();process.exit(0);}
 }
@@ -224,7 +224,11 @@ if(process.argv.includes('--voice-code-adapter')) {
  assert(!observed.at(-1).endsWith('day'),'unsupported pre-switch confirmation is re-decoded rather than carried into the narrow grammar');
  assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,0,'day is never accepted as OK');
  await emit('okay');
- assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'adapter confirms PIN after ID');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,0,'adapter reviews PIN before final OK');
+ await emit('okay');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,0,'duplicate partial confirmation cannot submit login');
+ await emit('okay okay');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'adapter submits only after final OK: '+JSON.stringify({observed,phrases:decoders.at(-1).phrases,state:window.WMOFInteractionState.state.login,failed:u.digestFailed,steps:u.digestSteps?.map(step=>step.commandElement.getAttribute('speech-function'))}));
  assert.deepEqual(adapterErrors,[]);assert(!u.digestFailed);recognizer.close();
  console.log('PASS Vosk adapter consecutive ID and PIN confirmation');await window.happyDOM.close();process.exit(0);
 }
@@ -237,9 +241,51 @@ if(process.argv.includes('--voice-code-router')) {
  await route('zero zero four two');await route('okay');
  assert.equal(window.WMOFInteractionState.state.login.stage,'pin','routed ID confirms');
  await route('okay one two three four');await route('okay');
- assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'routed PIN confirms after the ID in one acoustic utterance');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,0,'routed PIN is reviewed first');
+ await route('okay okay');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'final routed OK submits after PIN review');
  assert.equal(u.digestExecutionFailed,undefined);assert(!u.digestFailed);
  console.log('PASS Vosk routing of consecutive ID and PIN confirmations');await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--pin-review')) {
+ const reference=JSON.parse(fs.readFileSync(new URL('../docs/mainline-fsm-draft.json',import.meta.url),'utf8'));
+ const assertPhase=id=>{
+  const binding=reference.states[id].binding;
+  for(const key of ['phase','pending','reviewReady'])if(binding['login.'+key]!==undefined)assert.equal(window.WMOFInteractionState.state.login[key],binding['login.'+key],id+' runtime satisfies the version 2 FSM binding for '+key);
+ };
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();await settle();
+ const slot=(stage,index)=>dialog.querySelector('[data-login-digit="'+stage+'"][data-digit-index="'+index+'"]');
+ const posts=()=>requests.filter(request=>request.path.endsWith('/users/')&&request.options.method==='POST').length;
+ const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');return u;};
+ slot('id',0).blur();spoken.length=0;slot('id',0).focus();await settle();
+ assert.deepEqual(spoken,['Please login via voice'],'empty first ID focus speaks while recognition is on');
+ assertPhase('LOGIN-ID');
+ const before=posts();await say('zero zero four two okay');
+ assert.equal(window.document.activeElement,slot('pin',0));assert(spoken.includes('zero zero four two. Password'),'ID readback precedes Password with a sentence pause');
+ assertPhase('LOGIN-PIN');
+ await say('cancel');assert.equal(window.WMOFInteractionState.state.login.stage,'id','Cancel before PIN entry returns to ID');assert.equal(window.document.querySelector('#loginUsername').value,'');
+ await say('zero zero four two okay');
+ spoken.length=0;await say('one two three four okay');
+ assert.equal(posts(),before,'first PIN OK reads back without authenticating');
+ assert.equal(window.WMOFInteractionState.state.login.reviewReady,true);assert(spoken.includes('one two three four'));
+ assertPhase('LOGIN-REVIEW');
+ assert(window.WMOFSpeechAvailability.canConfirmLoginReview());assert(!window.WMOFSpeechAvailability.canUseLogin(),'review grammar no longer accepts digit groups');
+ await say('cancel');assert.equal(window.WMOFInteractionState.state.login.reviewReady,false);assert.equal(window.document.querySelector('#loginPassword').value,'');
+ await say('cancel');assert.equal(window.WMOFInteractionState.state.login.stage,'id','two Cancels clear PIN and then ID');
+ await say('zero zero four two okay');
+ await say('five six seven eight okay');assert.equal(posts(),before);assert.equal(window.WMOFInteractionState.state.login.reviewReady,true);
+ slot('pin',3).dispatchEvent(new window.KeyboardEvent('keydown',{key:'9',bubbles:true,cancelable:true}));
+ assert.equal(window.WMOFInteractionState.state.login.reviewReady,false,'editing revokes the previous readback confirmation');
+ await window.WMOFActions.confirmLoginDigits();assert.equal(posts(),before);assert(spoken.includes('five six seven nine'));
+ rejectLogin=true;await say('okay');rejectLogin=false;assert.equal(posts(),before+1,'only the separate final OK submits login');
+ assert.equal(window.document.querySelector('#loginPassword').value,'');assert.equal(window.document.activeElement,slot('pin',0),'failed login focuses the first empty PIN digit');
+ assert.equal(window.document.querySelector('#loginUsername').value,'0042');assert.equal(window.WMOFInteractionState.state.login.reviewReady,false);
+ assertPhase('LOGIN-PIN');
+ await say('one two three four okay');assert.equal(posts(),before+1);await say('okay');assert.equal(posts(),before+2,'retry requires PIN OK followed by final OK');
+ assert.equal(window.document.querySelector('#loginPassword').value,'');
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS focus announcements, spoken ID/Password, PIN readback before final OK, cancellation, edits and review-only speech grammar');await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--pin-return')) {
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
@@ -256,16 +302,18 @@ if(process.argv.includes('--pin-return')) {
   assert.equal(window.WMOFInteractionState.state.login.stage,'pin');assert.equal(window.document.activeElement,slot('pin',0));assert.equal(posts(),before);
   for(const [index,digit] of [...'567'].entries())press('pin',index,digit);
   confirm('pin',2);await settle();assert.equal(posts(),before,'incomplete PIN is not submitted');
-  press('pin',3,'8');holdLogin=true;confirm('pin',3);await settle();
+  press('pin',3,'8');confirm('pin',3);await settle();assert.equal(posts(),before,'first PIN Return requests readback only');
+  assert.equal(window.WMOFInteractionState.state.login.reviewReady,true,JSON.stringify({path,login:window.WMOFInteractionState.state.login,id:window.document.querySelector('#loginUsername').value,pin:window.document.querySelector('#loginPassword').value,error:window.document.querySelector('#loginError').textContent,consoleErrors}));
+  holdLogin=true;confirm('pin',3);await settle();
   assert.equal(posts(),before+1,'four digits plus Return uses the OK login path');
   assert(slot('pin',3).disabled,'input is disabled while the login is pending');
   press('pin',3,'Enter',{repeat:true});newline('pin',3);await settle();assert.equal(posts(),before+1,'repeated Return cannot submit twice');
-  holdLogin=false;releaseLogin();await settle();await settle();
+  holdLogin=false;releaseLogin();await settle();await settle();await new Promise(resolve=>setTimeout(resolve,1100));
   if(!dialog.open)dialog.showModal();
  }
  assert.equal(slot('id',0).getAttribute('enterkeyhint'),'next');assert.equal(slot('pin',0).getAttribute('enterkeyhint'),'go');
  assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
- console.log('PASS keyboard/mobile Return advances a complete ID to PIN and submits a complete PIN once, with incomplete input rejected');await window.happyDOM.close();process.exit(0);
+ console.log('PASS keyboard/mobile Return advances ID, reviews PIN, then submits once on final confirmation; incomplete input is rejected');await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--pin-editing')) {
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
@@ -327,8 +375,10 @@ if(process.argv.includes('--voice-code')) {
  assert.equal(window.WMOFInteractionState.state.login.stage,'pin','four digits plus OK executes before final recognition');
  assert.equal(window.document.querySelector('#loginUsername').value,'0042');assert.equal(window.WMOFCoordinator.pending.length,0);
  await say('okay');await say('one two three four five okay');assert.equal(posts(),before,'standalone OK and five digits cannot authenticate');
- await say('cancel');assert.equal(window.document.querySelector('#loginPassword').value,'');
- await say('background chatter one two three four okay');assert.equal(posts(),before+1,'valid PIN head authenticates exactly once');
+ await say('cancel');assert.equal(window.WMOFInteractionState.state.login.stage,'id');
+ await say('zero zero four two okay');
+ await say('background chatter one two three four okay');assert.equal(posts(),before,'valid PIN head requests review');
+ await say('okay');assert.equal(posts(),before+1,'final OK authenticates exactly once');
  assert.equal(window.document.querySelector('#loginPassword').value,'','confirmed PIN is cleared');
  assert.equal(errors.length,0,errors.join('\n'));assert.deepEqual(consoleErrors,[]);
  console.log('PASS atomic four-digit voice codes plus OK, early confirmation, Cancel and malformed-code rejection');
@@ -340,9 +390,9 @@ if(process.argv.includes('--voice-login')) {
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
  assert.equal(window.WMOFInteractionState.state.login.stage,'id');
  assert(spoken.includes('Application is loading'),'startup announces Application is loading');
- window.SpeechMenu.testModelReady(false);const promptsBefore=spoken.filter(t=>t==='Please login using voice').length;
- await window.WMOFActions.switchToVoiceLogin();assert.equal(spoken.filter(t=>t==='Please login using voice').length,promptsBefore,'login prompt waits for model readiness');assert(!window.WMOFSpeechAvailability.canUseLogin());
- window.SpeechMenu.testModelReady(true);await window.WMOFActions.handleSpeechRuntimeStarted();await settle();assert.equal(spoken.filter(t=>t==='Please login using voice').length,promptsBefore+1,'model-ready event releases the pending login prompt');
+ window.SpeechMenu.testModelReady(false);const promptsBefore=spoken.filter(t=>t==='Please login via voice').length;
+ await window.WMOFActions.switchToVoiceLogin();assert.equal(spoken.filter(t=>t==='Please login via voice').length,promptsBefore,'login prompt waits for model readiness');assert(!window.WMOFSpeechAvailability.canUseLogin());
+ window.SpeechMenu.testModelReady(true);await window.WMOFActions.handleSpeechRuntimeStarted();await settle();assert.equal(spoken.filter(t=>t==='Please login via voice').length,promptsBefore+1,'model-ready event releases the pending login prompt');
  const speak=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await settle();return u;};
  const id=await speak('zero zero four two okay');assert(!id.digestExecutionFailed,'ID sequence plus OK must execute: '+JSON.stringify({errors,consoleErrors,stage:window.WMOFInteractionState.state.login,value:window.document.querySelector('#loginUsername').value}));
  assert.equal(window.WMOFInteractionState.state.login.stage,'pin');assert.equal(window.document.querySelector('#loginUsername').value,'0042');
@@ -391,13 +441,13 @@ if(process.argv.includes('--voice-login')) {
  assert.equal(window.WMOFInteractionState.state.login.method,'pin');assert(dialog.open && !legacyDialog.open,'Voice returns to the separate numeric modal');
  assert.equal(window.document.querySelector('#loginLegacyPassword').value,'','switch clears password');
  assert(!legacyDialog.open,'voice switch belongs to the closed password modal');
- assert(spoken.includes('Please login using voice'));
+ assert(spoken.includes('Please login via voice'));
  await speak('username');assert.equal(window.WMOFInteractionState.state.login.method,'password');
  window.document.querySelector('#loginVoiceSwitch').click();await settle();assert.equal(window.WMOFInteractionState.state.login.method,'pin');
  const spacedUser=await speak('user name');assert.equal(window.WMOFInteractionState.state.login.method,'password',JSON.stringify({failed:spacedUser.digestFailed,canceled:spacedUser.chainCanceled,pending:spacedUser.digestPending,errors,consoleErrors,available:window.SpeechMenu.testAvailable().map(e=>e.dataset.speechEditorId)}));await speak('voice');
 
- await window.WMOFActions.enterLoginDigits('one two');const voiceAnnouncements=spoken.filter(t=>t==='Please login using voice').length;await speak('voice');
- assert.equal(window.document.querySelector('#loginUsername').value,'');assert.equal(spoken.filter(t=>t==='Please login using voice').length,voiceAnnouncements+1,'Voice loop repeats its prompt');
+ await window.WMOFActions.enterLoginDigits('one two');const voiceAnnouncements=spoken.filter(t=>t==='Please login via voice').length;await speak('voice');
+ assert.equal(window.document.querySelector('#loginUsername').value,'');assert.equal(spoken.filter(t=>t==='Please login via voice').length,voiceAnnouncements+1,'Voice loop repeats its prompt');
  await speak('user');window.document.querySelector('#loginLegacyUsername').value='stale-user';window.document.querySelector('#loginLegacyPassword').value='stale-password';
  const passwordAnnouncements=spoken.filter(t=>t==='Login with username and password.').length;await speak('username');
  assert.equal(window.document.querySelector('#loginLegacyUsername').value,'');assert.equal(window.document.querySelector('#loginLegacyPassword').value,'');

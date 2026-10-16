@@ -226,10 +226,12 @@
       "over": "{duration} over the range goal."
     },
     "voiceLogin": {
-      "idPrompt": "Please login using voice",
+      "idPrompt": "Please login via voice",
+      "digitNames": "zero one two three four five six seven eight nine",
+      "confirmPrompt": "Say or press OK to login, or Cancel to re-enter your PIN.",
       "pinPrompt": "Password",
       "invalid": "Enter exactly four digits, then say OK.",
-      "failed": "Login failed. Password",
+      "failed": "Login failed.",
       "userIdLabel": "User ID",
       "pinLabel": "PIN",
       "adminTitle": "Assign main-page login",

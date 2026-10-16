@@ -3028,6 +3028,7 @@
     let loginDialogFullyOpen = false;
     let voiceLoginStage = "id", voiceLoginBusy = false, loginInputMode="pin";
     let pinCancelPrimed=false, pendingLoginAnnouncement, pendingVoiceLoginSwitch=false;
+    let reviewedLoginPin, loginFocusAnnouncementKey;
     let loginDigitSlots = {id:["","","",""],pin:["","","",""]};
     function syncLoginDigits() {
         for(const stage of ["id","pin"]){
@@ -3062,13 +3063,21 @@
         }
     }
     function voiceLoginText(key) {return announcementText("messages.voiceLogin." + key);}
+    function spokenLoginDigits(value) {
+        const names = voiceLoginText("digitNames").split(" ");
+        return [...value].map(digit => names[Number(digit)]).join(" ");
+    }
+    function announceEmptyLoginFocus() {
+        const first = loginDialog.querySelector('[data-login-digit="'+voiceLoginStage+'"][data-digit-index="0"]');
+        if (loginInputMode !== "pin" || voiceLoginBusy || document.activeElement !== first ||
+            loginDigitSlots[voiceLoginStage].some(Boolean)) return;
+        const text = voiceLoginStage === "id" ? voiceLoginText("idPrompt")
+            : spokenLoginDigits($("#loginUsername").value) + ". " + voiceLoginText("pinPrompt");
+        if (loginFocusAnnouncementKey === text) return;
+        loginFocusAnnouncementKey = text;
+        announceVoiceLogin(text);
+    }
     function announceVoiceLogin(text) {
-        // Voice recognition may hear its own login prompt. Suppress this prompt
-        // while recognition is active so it cannot re-trigger the login flow.
-        if (speechRecognitionEnabled()) {
-            pendingLoginAnnouncement = undefined;
-            return false;
-        }
         if(!loginIsOpen())return;
         if(startupAnnouncementPending){
             pendingLoginAnnouncement=text;
@@ -3092,6 +3101,7 @@
         loginInputMode="pin";$("#voiceLoginPrompt").hidden=false;$("#loginRecognitionStatus").hidden=false;$("#loginLegacySwitch").hidden=false;
         for(const id of ["loginLegacyUsername","loginLegacyPassword"]){$("#"+id).value="";$("#"+id).disabled=true;$("#"+id).required=false;}
         pinCancelPrimed=false;pendingLoginAnnouncement=undefined;pendingVoiceLoginSwitch=false;
+        reviewedLoginPin=undefined;loginFocusAnnouncementKey=undefined;
         loginDigitSlots={id:["","","",""],pin:["","","",""]};
         voiceLoginStage = "id";$("#loginUsername").value = "";$("#loginPassword").value = "";
         $("#loginIdRow").hidden = false;$("#loginPinRow").hidden = true;
@@ -3099,15 +3109,20 @@
         $("#voiceLoginPrompt").textContent = voiceLoginText("idPrompt");
         $("#loginError").textContent = "";
         syncLoginDigits();syncLoginRecognition();
-        if(announce) announceVoiceLogin(voiceLoginText("idPrompt"));
+        if(announce) {
+            loginDialog.querySelector('[data-login-digit="id"][data-digit-index="0"]').focus({preventScroll:true});
+            announceEmptyLoginFocus();
+        }
         renderInteractionControls();return true;
     }
     function enterLoginDigits(digits, confirmation) {
         if(!readInteractionState().actions.loginDigits) return false;
+        if(reviewedLoginPin !== undefined && globalThis.SpeechMenu?.executionContext)return false;
         const value = DigitSequence.parse(digits, globalThis.WMOFLanguagePack.language.speech.digits);
         if(value === null || !value.length){$("#loginError").textContent=voiceLoginText("invalid");return false;}
         if (globalThis.SpeechMenu?.executionContext && (value.length !== 4 || !confirmation)) return false;
         pinCancelPrimed=false;
+        reviewedLoginPin=undefined;
         // A new complete sequence replaces the selected credential. Streaming
         // another digit after a complete group starts the next group.
         if(value.length >= 4)loginDigitSlots[voiceLoginStage]=["","","",""];
@@ -3130,18 +3145,36 @@
             voiceLoginStage="pin";$("#loginUsername").disabled=true;$("#loginIdRow").hidden=true;
             $("#loginPassword").disabled=false;$("#loginPinRow").hidden=false;
             $("#voiceLoginPrompt").textContent=voiceLoginText("pinPrompt");syncLoginDigits();loginDialog.querySelector('[data-login-digit="pin"]').focus({preventScroll:true});
-            announceVoiceLogin(voiceLoginText("pinPrompt"));renderInteractionControls();return true;
+            announceEmptyLoginFocus();renderInteractionControls();return true;
         }
+        if (reviewedLoginPin !== input.value) {
+            reviewedLoginPin = input.value;
+            $("#voiceLoginPrompt").textContent = voiceLoginText("confirmPrompt");
+            announceVoiceLogin(spokenLoginDigits(input.value));
+            renderInteractionControls();
+            globalThis.SpeechMenu?.refresh?.();
+            return true;
+        }
+        reviewedLoginPin=undefined;
+        let failed=false;
         voiceLoginBusy=true;syncLoginDigits();$("#loginButton").disabled=true;renderInteractionControls();
         try {if(await actions.connectUser($("#loginUsername").value,$("#loginPassword").value,{credentialType:"pin"}) === false)throw new Error(voiceLoginText("failed"));void globalThis.WMOFAudio?.speak?.(voiceLoginText("success"));return true;}
         catch(error){
+            failed=true;
             voiceLoginStage="pin";pinCancelPrimed=false;loginDigitSlots.pin=["","","",""];
             $("#loginError").textContent=voiceLoginText("failed");syncLoginDigits();
             announceVoiceLogin(voiceLoginText("failed"));
             // The rejection is handled by the login UI; do not roll back to entered PIN digits.
             return true;
         }
-        finally{voiceLoginBusy=false;loginDigitSlots.pin=["","","",""];syncLoginDigits();$("#loginPassword").value="";$("#loginButton").disabled=false;renderInteractionControls();}
+        finally{
+            voiceLoginBusy=false;loginDigitSlots.pin=["","","",""];syncLoginDigits();$("#loginPassword").value="";$("#loginButton").disabled=false;renderInteractionControls();
+            if(failed){
+                loginFocusAnnouncementKey=undefined;$("#voiceLoginPrompt").textContent=voiceLoginText("pinPrompt");
+                loginDialog.querySelector('[data-login-digit="pin"][data-digit-index="0"]').focus({preventScroll:true});
+                announceEmptyLoginFocus();
+            }
+        }
     }
 
     let clockTimerTapTimer;
@@ -8535,7 +8568,7 @@
 
     loginDialog.addEventListener("opened", event => {
         loginDialogFullyOpen = true;
-        if(event.detail?.reason !== "login-method-switch")announceVoiceLogin(voiceLoginText("idPrompt"));
+        if(event.detail?.reason !== "login-method-switch")announceEmptyLoginFocus();
         syncLoginRecognition();
 
         if (
@@ -12368,6 +12401,8 @@
     for(const input of loginDialog.querySelectorAll('[data-login-digit]')){
         input.setAttribute('aria-label',announcementText('messages.voiceLogin.'+(input.dataset.loginDigit==='pin'?'pinDigit':'idDigit'),{index:Number(input.dataset.digitIndex)+1}));
         input.setAttribute('enterkeyhint',input.dataset.loginDigit==='id'?'next':'go');
+        input.addEventListener('focus',()=>{loginFocusAnnouncementKey=undefined;announceEmptyLoginFocus();});
+        input.addEventListener('blur',()=>{loginFocusAnnouncementKey=undefined;});
         const confirmDigits = () => {
             if (voiceLoginBusy || input.disabled || input.dataset.loginDigit !== voiceLoginStage) return;
             $("#loginForm").requestSubmit($("#loginButton"));
@@ -12375,6 +12410,7 @@
         const setDigits=(text)=>{
             if(voiceLoginBusy||input.dataset.loginDigit!==voiceLoginStage)return;
             pinCancelPrimed=false;
+            reviewedLoginPin=undefined;loginFocusAnnouncementKey=undefined;
             const digits=DigitSequence.parse(text,{});if(digits===null)return;
             let index=Number(input.dataset.digitIndex);if(digits.length>4-index)return;
             for(const digit of digits)loginDigitSlots[voiceLoginStage][index++]=digit;
@@ -12384,6 +12420,7 @@
         const deleteDigit = backward => {
             if (voiceLoginBusy || input.disabled || input.dataset.loginDigit !== voiceLoginStage) return;
             pinCancelPrimed = false;
+            reviewedLoginPin=undefined;loginFocusAnnouncementKey=undefined;
             const slots = loginDigitSlots[voiceLoginStage];
             const index = Number(input.dataset.digitIndex);
             if (backward && voiceLoginStage === "pin" && index === 0 && !slots[0]) {
@@ -12459,12 +12496,13 @@
         if(voiceLoginBusy)return false;
         if(legacyLoginDialog.open)return switchToVoiceLogin();
         if(voiceLoginStage === "pin"){
-            if(pinCancelPrimed)return resetVoiceLogin();
+            reviewedLoginPin=undefined;loginFocusAnnouncementKey=undefined;
+            if(!loginDigitSlots.pin.some(Boolean))return resetVoiceLogin();
             pinCancelPrimed=true;
             loginDigitSlots.pin=["","","",""];$("#loginError").textContent="";
             syncLoginDigits();renderInteractionControls();
             loginDialog.querySelector('[data-login-digit="pin"]')?.focus({preventScroll:true});
-            announceVoiceLogin(voiceLoginText("pinPrompt"));return true;
+            $("#voiceLoginPrompt").textContent=voiceLoginText("pinPrompt");announceEmptyLoginFocus();return true;
         }
         return resetVoiceLogin();
     }
@@ -16844,6 +16882,9 @@
                 !speechMicBar || speechMicBar.hidden || !popoverIsOpen(speechMicBar) ? "suspended"
             : globalThis.SpeechMenu?.muted ? "sleeping" : "listening";
         const login = Object.freeze({open:loginIsOpen(), method:loginInputMode, stage:voiceLoginStage, pending:voiceLoginBusy, cancelPrimed:pinCancelPrimed, voiceRequested:pendingVoiceLoginSwitch,
+            phase: !loginIsOpen() ? "closed" : voiceLoginBusy ? "submitting" : loginInputMode === "password" ? "password-entry"
+                : voiceLoginStage === "id" ? "id-entry" : reviewedLoginPin !== undefined && reviewedLoginPin === $("#loginPassword").value ? "pin-review" : "pin-entry",
+            reviewReady: voiceLoginStage === "pin" && reviewedLoginPin !== undefined && reviewedLoginPin === $("#loginPassword").value,
             digitCount:loginInputMode === "pin" ? loginDigitSlots[voiceLoginStage].filter(Boolean).length : 0});
         const actions = Object.freeze({
             editProfile: Boolean(userLookup?.state.canSave),
@@ -16939,6 +16980,7 @@
     }
     function renderInteractionControls(state = readInteractionState()) {
         const {actions, controls} = state;
+        setOkAllowed(loginDialog, Boolean(actions.loginDigits && state.login.reviewReady));
         app.dataset.tripTransition = controls.transient ? "pending" : "settled";
         app.dataset.operationPending = controls.busy ? "true" : "false";
         for(const id of ["loginButton","loginDigitsCancel","legacyLoginButton","legacyLoginCancel"])$("#"+id).disabled=!actions.loginInput;
@@ -22468,7 +22510,8 @@
     globalThis.WMOFSpeechAvailability = Object.freeze({
         canSwitchToPasswordLogin: () => {const state=readInteractionState();return state.actions.loginSwitch && state.speechRecognition === "listening";},
         canSwitchToVoiceLogin: () => {const state=readInteractionState();return state.actions.loginSwitch && state.speechRecognition === "listening";},
-        canUseLogin: () => {const state=readInteractionState();return state.actions.loginDigits && state.speechRecognition === "listening";},
+        canUseLogin: () => {const state=readInteractionState();return state.actions.loginDigits && !state.login.reviewReady && state.speechRecognition === "listening";},
+        canConfirmLoginReview: () => {const state=readInteractionState();return state.actions.loginDigits && state.login.reviewReady && state.speechRecognition === "listening";},
         canConfirmTripSummary: () => readInteractionState().actions.confirmSummary,
         canStartTrip: () => readInteractionState().actions.startTrip,
         canUseReady: () => readInteractionState().actions.ready,
@@ -22515,7 +22558,7 @@
             audio:audioSettings, logSettings:tripLogSettingsVisible,
             editor:numberPadState ? [numberPadState.source,numberPadState.pending,numberPadState.mode,numberPadState.pendingDate,numberPadState.meridiem] : null,
             prompt:speechBreakPromptState ? [speechBreakPromptState.mode,speechBreakPromptState.kind,speechBreakPromptState.hidden] : null,
-            login:[loginInputMode,voiceLoginStage,loginDigitSlots.id,loginDigitSlots.pin,pinCancelPrimed,voiceLoginBusy,pendingVoiceLoginSwitch,$('#loginUsername').value,$('#loginPassword').value],
+            login:[loginInputMode,voiceLoginStage,loginDigitSlots.id,loginDigitSlots.pin,pinCancelPrimed,voiceLoginBusy,pendingVoiceLoginSwitch,reviewedLoginPin,$('#loginUsername').value,$('#loginPassword').value],
             summary:completedTripSummary?.invocation || null, log:getTripListState(),
             volume:audioSettings.volume, speechRate:audioSettings.speechVelocity, chimeRate:audioSettings.toneVelocity};
         return {key:JSON.stringify(values), switches};
@@ -27553,7 +27596,7 @@
                     priority: 100,
                     isOpen: () => surface.matches('dialog') ? surface.open : popoverIsOpen(surface),
                     acceptCommand: surface === loginDialog ? command =>
-                        ['WMOFActions.enterLoginDigits','SpeechMenu.cancel'].includes(command.getAttribute('speech-function')) : undefined,
+                        ['WMOFActions.enterLoginDigits','WMOFActions.confirmLoginDigits','SpeechMenu.cancel'].includes(command.getAttribute('speech-function')) : undefined,
                     canDismissProjected: surface === breakDialog ? () => speechBreakSelection?.pending === true : undefined,
                     close: dismiss, cancel: dismiss
                 });
@@ -27566,6 +27609,14 @@
             }
             const loginDigitsCommand = installSpeechCommand("loginDigits", "enterLoginDigits", loginDialog, false);
             if(loginDigitsCommand){loginDigitsCommand.setAttribute("speech-persist", "");loginDigitsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");loginDigitsCommand.setAttribute("speech-atomic-input", "digits");}
+            const loginReviewCommand = installSpeechCommand("confirm", "confirmLoginDigits", loginDialog, false);
+            if(loginReviewCommand){
+                loginReviewCommand.setAttribute("speech-persist", "");
+                loginReviewCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canConfirmLoginReview");
+                loginReviewCommand.dataset.speechTarget="#loginButton";
+                loginReviewCommand.removeAttribute("data-speech-state-command");
+                for(const name of ["speech-chain-context","speech-chain-next","speech-chain-surface"])loginReviewCommand.removeAttribute(name);
+            }
             installSpeechCommand("tripSummary", "readTripSummary", document.body, true);
             const summaryConfirm = installSpeechCommand("confirm", "confirmTripSummary", tripTransitionOverlay, false);
             summaryConfirm?.setAttribute("speech-available", "WMOFSpeechAvailability.canConfirmTripSummary");

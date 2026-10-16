@@ -1,0 +1,23 @@
+// Apply the shared path legend and renderer to the working FSM reference.
+const fs=require('node:fs'),path=require('node:path');
+const file=path.join(__dirname,'../docs/mainline-fsm-draft.html');
+let html=fs.readFileSync(file,'utf8');
+html=html.replace(/const positions=(\{[^\n]+\});/,(_,json)=>{const positions=JSON.parse(json);positions['STARTUP-AUDIO']=[-1500,-650,-3350];return 'const positions='+JSON.stringify(positions)+';';});
+const legend='<span><i class="line"></i>Valid touch / keyboard</span><span><i class="line invalid"></i>Invalid touch / keyboard</span><span><i class="line voice"></i>Valid speech</span><span><i class="line voice invalid"></i>Invalid speech</span><span><i class="line auto"></i>System event</span><span><i class="line fail"></i>Persistence rollback</span>';
+html=html.replace(/<div class="legend" style="margin:0 0 6px">[\s\S]*?<\/div>/,'<div class="legend" style="margin:0 0 6px">'+legend+'</div>');
+html=html.replace(/<div class="legend"><span><i class="line"><\/i>[\s\S]*?<\/div>/,'<div class="legend">'+legend+'<span>◇ Optional component</span><span>† Queue / suppression rules</span></div>');
+html=html.replace(/\.line\.auto\{[^}]*\}/,'.line.auto{height:2px;border:0;background:repeating-linear-gradient(to right,#7b8794 0 10px,transparent 10px 14px,#7b8794 14px 16px,transparent 16px 20px)}');
+if(!html.includes('.line.invalid{'))html=html.replace('.line.fail{','.line.invalid{border-top-style:dashed}.line.voice.invalid{border-bottom-style:dashed}.line.fail{');
+html=html.replace("function edgeColor(e){return testColors[testStatus(e)];}","function edgeColor(e){return '#426780';}");
+const line=`function line(points,color,mode='pointer',extra='',outcome='valid'){const d=points.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' '),dash=mode==='failure'?'stroke-dasharray="2 7"':outcome==='invalid'?'stroke-dasharray="10 6"':mode==='automatic'?'stroke-dasharray="10 4 2 4"':'';if(mode==='voice')return \`<path d="\${d}" fill="none" stroke="\${color}" stroke-width="6" stroke-linecap="butt" \${dash} \${extra}/><path d="\${d}" fill="none" stroke="#fbfdff" stroke-width="2" stroke-linecap="butt" \${dash} pointer-events="none"/><path d="\${d}" fill="none" stroke="transparent" stroke-width="18" \${extra}/>\`;return \`<path d="\${d}" fill="none" stroke="\${color}" stroke-width="2.2" \${dash} \${extra}/><path d="\${d}" fill="none" stroke="transparent" stroke-width="18" \${extra}/>\`;}`;
+html=html.replace(/^function line\(.*$/m,line);
+html=html.replace('line(piece.points,color,e.mode,attrs)','line(piece.points,color,e.mode,attrs,e.outcome)');
+html=html.replace('const attrs=`data-transition-id="${e.id}" opacity=', 'const attrs=`data-transition-id="${e.id}" data-path-outcome="${e.outcome}" opacity=');
+const badge=`scene.push({kind:'test-status',depth:geo.mid.depth,owner:e.id,html:\`<g data-test-status="\${testStatus(e)}" data-test-edge="\${e.id}" pointer-events="none"><title>\${esc(e.id+' · Test: '+testStatus(e))}</title><rect x="\${geo.mid.x+18}" y="\${geo.mid.y+12}" width="58" height="18" rx="4" fill="white" stroke="\${testColors[testStatus(e)]}"/>\${text(geo.mid.x+47,geo.mid.y+25,testStatus(e),9,testColors[testStatus(e)],'text-anchor="middle"')}</g>\`});`;
+if(!html.includes("kind:'test-status'"))html=html.replace("if(e.mode==='voice'){const expanded=",badge+"if(e.mode==='voice'){const expanded=");
+html=html.replace('${modeLabel(e.mode)}</span> <span class="badge">Skippable:', '${modeLabel(e.mode)}</span> <span class="badge">Path: ${esc(e.outcome)}</span> <span class="badge">Skippable:');
+html=html.replace('Transition colors report individual test results.','Line patterns describe valid and invalid paths independently of input type. Separate labeled badges report test results.');
+html=html.replace('Approved mainline reference, based on T83GIF + local changes. Approval of the chart does not establish test coverage for its transitions.','Working implementation reference reconciled through 831745d, plus the current login changes. Historical chart approval does not establish coverage of these updates.');
+html=html.replace('Approval recorded on 6 October 2026.','The separately approved chart remains available as a historical reference.');
+html=html.replace('Single pointer edges, double voice edges, dashed system automatic edges, dotted rollback edges. Edges curve around state cards. Color denotes passed, failed or untested.','Single touch/keyboard edges; double speech edges. Solid means valid, dashed means invalid. Dash-dot system events and dotted rollback paths are separate. Labeled badges report test status.');
+fs.writeFileSync(file,html);
