@@ -19202,6 +19202,7 @@
 
             speechBreakPromptState = {
                 mode: "end", kind,
+                intervalKey: active.intervalKey,
                 intervalType:
                     type
             };
@@ -24949,11 +24950,20 @@
                     clearSpeechBreakPrompt();
                     return startBreakInterval(state.kind, transactionTime);
                 }
-                if (virtual) {
-                    const active = clockTimer.getActiveIntervalState?.(transactionTime);
-                    if (active?.intervalKey !== state.intervalKey || active.intervalType !== state.intervalType) return false;
+                if (state.mode === "end") {
+                    // Confirm only the break that opened this prompt. It may
+                    // have ended or been replaced while the user was speaking.
+                    // The generic End action can also stop trips, so it must
+                    // never be used to confirm a break-specific request.
+                    const active = clockTimer.getActiveIntervalState?.();
+                    if (!state.intervalKey || active?.intervalKey !== state.intervalKey ||
+                        active.intervalType !== state.intervalType) return false;
+                    if (!virtual) closeDialog(dialog, {reason: "speech-break-yes"});
                     clearSpeechBreakPrompt();
-                    return await clockTimer.endInterval(transactionTime) !== false;
+                    const ended = await clockTimer.endInterval(transactionTime);
+                    updateSummaryValues();
+                    renderTripActionState();
+                    return ended !== false;
                 }
                 closeDialog(
                     dialog,
@@ -24973,16 +24983,6 @@
                         "lunch",
                         transactionTime
                     );
-                }
-
-                if (
-                    state.mode ===
-                    "end"
-                ) {
-                    await endCurrentIntervalOrTrip(
-                        transactionTime
-                    );
-                    return true;
                 }
 
                 return false;

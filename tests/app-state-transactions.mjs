@@ -12,6 +12,57 @@ window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abor
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
 const capturedShadows=new WeakMap();
+if(process.argv.includes('--break-boundaries')) {
+ await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ const tripId=timer.currentTripId,tripEnds=[];
+ timer.addEventListener('tripEnded',event=>tripEnds.push(event.detail));
+ const say=async text=>{
+   const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);
+   await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');
+ };
+ const assertResumed=()=>{
+   assert.equal(timer.uiState.trip_active,true,'the original trip stays active');
+   assert(['running','open'].includes(timer.status),'trip is running or in its open Down interval');
+   assert.equal(timer.currentTripId,tripId);
+   assert.deepEqual(tripEnds,[],'ending a break never emits Trip Ended');
+   assert.equal(stored.filter(event=>event.event==='trip.stopped').length,0);
+   assert.equal(window.document.querySelector('#tripTransitionOverlay').open,false,'no trip summary');
+   assert.equal(window.WMOFCoordinator.lockCount,0);
+ };
+ for(const kind of ['break','short-break','lunch']) {
+   for(const path of ['separate','chained','pointer']) {
+     window.__testTime+=60000;assert.equal(await window.WMOFActions.startBreak(kind),true);await settle();
+     const interval=timer.getActiveIntervalState();
+     if(path==='chained')await say('break end ok');
+     else {
+       spoken.length=0;await say('break end');
+       assert(window.document.querySelector('#speechBreakConfirmDialog').open);
+       assert.equal(timer.getActiveIntervalState().intervalKey,interval.intervalKey,'break end waits for OK');
+       if(process.argv.includes('--voice-feedback'))assert(spoken.some(text=>text.startsWith('Are you ready to end your ')),JSON.stringify(spoken));
+       if(path==='pointer') {window.document.querySelector('#speechBreakConfirmYes').click();await settle();}
+       else await say('ok');
+     }
+     assert(!timer.getActiveIntervalState(),kind+' ends through '+path);assertResumed();
+     assert.equal(stored.filter(event=>event.event==='interval.ended'&&event.value.intervalKey===interval.intervalKey).length,1);
+   }
+   for(const replacement of [undefined,kind,'down']) {
+     window.__testTime+=60000;assert.equal(await window.WMOFActions.startBreak(kind),true);await settle();
+     assert.equal(await window.WMOFActions.openBreakEndMenu(),true);await settle();
+     await timer.endInterval(new window.Date());await settle();
+     if(replacement) {
+       window.__testTime+=1000;
+       assert.equal(await (replacement==='down'?window.WMOFActions.startDownTime():window.WMOFActions.startBreak(replacement)),true);await settle();
+     }
+     const active=timer.getActiveIntervalState();
+     assert.equal(await window.WMOFActions.confirmBreakPromptYes(),false,'stale '+kind+' confirmation is rejected after '+(replacement||'resume'));await settle();
+     assert.equal(timer.getActiveIntervalState()?.intervalKey,active?.intervalKey,'replacement interval is untouched');assertResumed();
+     await window.WMOFActions.cancelBreakPrompt();await settle();
+     if(active) {await timer.endInterval(new window.Date());await settle();}
+   }
+ }
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS spoken and pointer break endings preserve the trip without a summary; stale prompts cannot end a trip or replacement interval');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--commands-close')) {const attach=window.Element.prototype.attachShadow;window.Element.prototype.attachShadow=function(...args){const root=attach.apply(this,args);capturedShadows.set(this,root);return root;};}
 const animationCalls=[];window.Element.prototype.animate=function(keyframes,options){animationCalls.push({target:this,keyframes,options});return{finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}}};
 const consoleErrors=[];window.console.error=(...args)=>consoleErrors.push(args.map(a=>a?.stack||String(a)).join(' '));
