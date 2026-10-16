@@ -12376,9 +12376,34 @@
             syncLoginDigits();renderInteractionControls();
             loginDialog.querySelector('[data-login-digit="'+voiceLoginStage+'"][data-digit-index="'+Math.min(3,index)+'"]')?.focus({preventScroll:true});
         };
-        input.addEventListener('beforeinput',event=>{event.preventDefault();if(event.inputType.startsWith('delete')){loginDigitSlots[input.dataset.loginDigit][Number(input.dataset.digitIndex)]="";syncLoginDigits();}else if(event.data)setDigits(event.data);});
+        const deleteDigit = backward => {
+            if (voiceLoginBusy || input.disabled || input.dataset.loginDigit !== voiceLoginStage) return;
+            pinCancelPrimed = false;
+            const slots = loginDigitSlots[voiceLoginStage];
+            const index = Number(input.dataset.digitIndex);
+            // An empty slot has no character to erase. Backspace acts on
+            // the previous slot instead, for keyboards and mobile input.
+            const target = backward && !slots[index] && index > 0 ? index - 1 : index;
+            slots[target] = "";
+            syncLoginDigits();
+            renderInteractionControls();
+            const focusIndex = backward ? Math.max(0, index - 1) : index;
+            const focus = loginDialog.querySelector('[data-login-digit="'+voiceLoginStage+'"][data-digit-index="'+focusIndex+'"]');
+            focus?.focus({preventScroll:true});
+            focus?.select();
+        };
+        input.addEventListener('beforeinput',event=>{
+            event.preventDefault();
+            if(event.inputType.startsWith('delete'))deleteDigit(event.inputType==='deleteContentBackward');
+            else if(event.data)setDigits(event.data);
+        });
         input.addEventListener('paste',event=>{event.preventDefault();setDigits(event.clipboardData.getData('text'));});
-        input.addEventListener('keydown',event=>{if(event.key==='Backspace'||event.key==='Delete')pinCancelPrimed=false;if(/^[0-9]$/.test(event.key)){event.preventDefault();setDigits(event.key);}else if(event.key==='Backspace'||event.key==='Delete'){event.preventDefault();const index=Number(input.dataset.digitIndex);loginDigitSlots[input.dataset.loginDigit][index]="";syncLoginDigits();if(event.key==='Backspace'&&index)loginDialog.querySelector('[data-login-digit="'+voiceLoginStage+'"][data-digit-index="'+(index-1)+'"]')?.focus();}});
+        input.addEventListener('keydown',event=>{
+            if(/^[0-9]$/.test(event.key)){event.preventDefault();setDigits(event.key);}
+            else if(event.key==='Backspace'||event.key==='Delete'){
+                event.preventDefault();deleteDigit(event.key==='Backspace');
+            }
+        });
     }
     $("#loginEnableRecognition").textContent=voiceLoginText("enableRecognition");
     async function enableLoginRecognition(){

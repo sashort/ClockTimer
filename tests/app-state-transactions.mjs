@@ -241,6 +241,38 @@ if(process.argv.includes('--voice-code-router')) {
  assert.equal(u.digestExecutionFailed,undefined);assert(!u.digestFailed);
  console.log('PASS Vosk routing of consecutive ID and PIN confirmations');await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--pin-editing')) {
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
+ const slot=(stage,index)=>dialog.querySelector('[data-login-digit="'+stage+'"][data-digit-index="'+index+'"]');
+ const press=(element,key)=>element.dispatchEvent(new window.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
+ press(slot('id',0),'1');press(slot('id',1),'2');slot('id',2).focus();press(slot('id',2),'Backspace');
+ assert.equal(window.document.querySelector('#loginUsername').value,'1','Backspace on an empty slot deletes the previous digit');
+ assert.equal(window.document.activeElement,slot('id',1));
+ press(slot('id',1),'2');slot('id',2).focus();
+ slot('id',2).dispatchEvent(new window.InputEvent('beforeinput',{inputType:'deleteContentBackward',bubbles:true,cancelable:true}));
+ assert.equal(window.document.querySelector('#loginUsername').value,'1','mobile backward deletion follows the same rule');
+ assert.equal(window.document.activeElement,slot('id',1));
+ press(slot('id',0),'Delete');assert.equal(window.document.querySelector('#loginUsername').value,'');
+ for(const stage of ['id','pin']) {
+  if(stage==='pin') {await window.WMOFActions.enterLoginDigits('1234');await window.WMOFActions.confirmLoginDigits();}
+  const value=()=>window.document.querySelector(stage==='id'?'#loginUsername':'#loginPassword').value;
+  press(slot(stage,0),'1');press(slot(stage,1),'2');
+  slot(stage,2).focus();press(slot(stage,2),'Delete');assert.equal(value(),'12','Delete in an empty slot leaves previous digits alone');
+  press(slot(stage,2),'3');press(slot(stage,2),'Backspace');
+  assert.equal(value(),'12','Backspace in a filled slot deletes only its own digit');assert.equal(window.document.activeElement,slot(stage,1));
+  slot(stage,2).focus();slot(stage,2).dispatchEvent(new window.InputEvent('beforeinput',{inputType:'deleteContentBackward',bubbles:true,cancelable:true}));
+  assert.equal(value(),'1');assert.equal(window.document.activeElement,slot(stage,1));
+  press(slot(stage,0),'Backspace');assert.equal(value(),'');assert.equal(window.document.activeElement,slot(stage,0));
+  press(slot(stage,0),'Backspace');assert.equal(value(),'','Backspace at the first empty slot is safe');
+  if(stage==='pin') {
+   press(slot(stage,0),'5');press(slot(stage,1),'6');assert.equal(slot(stage,0).value,'*','PIN editing remains masked');
+   press(slot('id',0),'Backspace');assert.equal(window.document.querySelector('#loginUsername').value,'1234','inactive credential cannot be deleted');
+  }
+ }
+ assert.equal(requests.filter(request=>request.path.endsWith('/users/')&&request.options.method==='POST').length,0,'editing and confirming ID never submits credentials');
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS empty login slot Backspace deletes the previous digit for keyboard and mobile input');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--voice-code')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
