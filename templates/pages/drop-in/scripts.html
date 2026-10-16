@@ -58,7 +58,10 @@
   window.addEventListener("message", event => {
     if (event.source !== frame.contentWindow || event.origin !== window.location.origin) return;
     if (frame.dataset.settingsSurface === "graphicalSettingsDialog" && event.data?.session !== frame.dataset.settingsSession) return;
-    if (event.data?.type === "clocktimer-settings-closed" && dialog.open) dialog.close();
+    if (event.data?.type === "clocktimer-settings-closed" && dialog.open) {
+      dialog.close();
+      frame.src = "about:blank";
+    }
   });
   dialog.addEventListener("close", () => { if (!dialog.open) frame.src = "about:blank"; });
   dialog.addEventListener("click", event => {
