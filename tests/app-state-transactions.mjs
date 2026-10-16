@@ -762,6 +762,35 @@ if(process.argv.includes('--mic-feedback')) {
  console.log('PASS local and voice mic feedback: dedicated activation/deactivation chimes, announcements and duplicate suppression');
  await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--ready-handoff')) {
+ const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
+ const before=stored.length;
+ const u=window.SpeechMenu.testBegin();
+ await say(u,'ready');
+ for(const text of ['ready twenty','ready twenty two','ready twenty two fifty','ready twenty two fifty six']) {
+  await say(u,text);
+  const grammar=await window.SpeechMenu.testVoskContext(u.id,text);
+  assert(grammar.records.some(r=>r.expect==='duration'),'open duration stays in the decoder grammar after Ready changes state: '+JSON.stringify({text,grammar,consumed:u.digestTranscript,context:u.digestContext}));
+ }
+ await say(u,'ready twenty two fifty six',true);
+ assert(!u.digestExecutionFailed&&!u.digestFailed,'Ready retains duration collection after opening its surface: '+JSON.stringify({failed:u.digestFailed,execution:u.digestExecutionFailed,pending:u.digestPending,consumed:u.digestTranscript}));
+ assert.equal(window.WMOFInteractionState.state.editor.value,'2256','duration carries into the Ready voice pad');
+ assert.equal(stored.length,before,'duration alone never starts the trip');
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ const cancel=window.SpeechMenu.testBegin();await say(cancel,'cancel',true);
+ await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ const b=window.SpeechMenu.testBegin();await say(b,'break start');
+ const choices=await window.SpeechMenu.testVoskContext(b.id,'break start');
+ assert(choices.records.some(r=>r.pattern.includes('breakChoice')),'consumed break opener hands grammar ownership to its choices: '+JSON.stringify(choices));
+ await say(b,'break start lunch');
+ const confirmation=await window.SpeechMenu.testVoskContext(b.id,'break start lunch');
+ assert(confirmation.records.some(r=>/ok/.test(r.pattern)),'consumed break choice hands grammar ownership to confirmation');
+ assert(!timer.getActiveIntervalState(),'handoff does not manufacture confirmation');
+ await say(b,'break start lunch ok',true);
+ assert.equal(timer.getActiveIntervalState()?.intervalType,'lunch');
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ console.log('PASS shared Ready value and Break choice/confirmation grammar handoffs through state changes');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--decoder-final-boundaries')) {
  const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
  const ready=window.SpeechMenu.testBegin();await say(ready,'ready',true);

@@ -6932,10 +6932,17 @@ class SpeechMenu {
         const utterance = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
         if (utterance?.segmentBarrier) await utterance.segmentBarrier;
         if (!utterance || utterance.chainCanceled || utterance.digestFailed) return {records: []};
-        let candidates = SpeechMenu.#availableCandidates();
-        utterance.voskInitialCandidates ??= candidates;
+        const available = SpeechMenu.#availableCandidates();
+        utterance.voskInitialCandidates ??= available;
         utterance.voskInitialFrames ??= SpeechMenu.#surfaceFrames();
-        if (transcript && (utterance.completedStreams || utterance.discardedStreams)) {
+        // The command queue owns the continuation across its declared state
+        // transitions. A consumed opener may now be unavailable in the UI;
+        // neither the decoder nor the planner should attempt that opener again.
+        const continuing = Boolean(utterance.digestTranscript);
+        const context = continuing ? utterance.digestContext : undefined;
+        const frames = continuing ? utterance.digestSurfaceStack : utterance.voskInitialFrames;
+        let candidates = continuing ? SpeechMenu.#digestCandidates(context, frames) : utterance.voskInitialCandidates;
+        if (transcript && continuing) {
             const remaining = SpeechMenu.#digestRemainder(utterance, transcript);
             if (remaining === undefined) return {records: []};
             transcript = remaining;
@@ -6944,14 +6951,15 @@ class SpeechMenu {
             // Use the real planner's projected surfaces/context, with isolated
             // collector state and no execution or persistent utterance changes.
             const probe = {...utterance, digestClosed: true, digestIsFinal: false,
-                chainActive: false, digestContext: utterance.completedStreams ? utterance.digestContext : undefined,
-                digestSurfaceStack: utterance.voskInitialFrames,
+                chainActive: false, digestContext: context,
+                digestSurfaceStack: frames,
                 valueCollectors: new Map()};
-            const plan = await SpeechMenu.#planDigest(utterance.voskInitialCandidates,
+            const plan = await SpeechMenu.#planDigest(candidates,
                 SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean), probe);
-            if (!plan || plan.invalid || !plan.steps?.length) return {records: []};
-            const last = plan.steps.at(-1);
-            candidates = SpeechMenu.#digestCandidates(last.nextContext, last.nextSurfaceStack);
+            if (!plan || plan.invalid) return {records: []};
+            const last = plan.steps?.at(-1);
+            if (last) candidates = SpeechMenu.#digestCandidates(last.nextContext, last.nextSurfaceStack);
+            else if (!plan.pending) return {records: []};
         }
         return {records: candidates.map(element => {
             const kind = SpeechMenu.#speechValueKind(element) || element.getAttribute("speech-preproc-context");

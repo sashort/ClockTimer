@@ -52,6 +52,7 @@ jobs:
           node tests/observer-microphone.mjs
           node tests/app-state-transactions.mjs --speech-boundaries
           node tests/app-state-transactions.mjs --decoder-final-boundaries --voice-feedback
+          node tests/app-state-transactions.mjs --ready-handoff --voice-feedback
           node tests/app-state-transactions.mjs --mic-feedback --voice-feedback
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip

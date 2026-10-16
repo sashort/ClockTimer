@@ -1,5 +1,9 @@
 # Speech command chains
 
+The [Version 2 speech recognition contract](speech-recognition-v2.md) records the
+shared lifecycle, continuation handoff, final-decode rules, display requirements,
+and regression evidence for a clean replacement implementation.
+
 SpeechMenu consumes utterances from left to right. `#planDigest` probes prefixes against eligible DOM speech items, then follows `speech-chain-next` to items with matching `speech-chain-context`. `#queueDigestStep` serializes accepted actions; `#processElement` invokes the resolved `speech-function` with parsed arguments.
 
 For example, “ready at four fifteen standard time one hour” schedules Ready before applying Standard Time. Follow-up items receive temporary `primed` attributes while their projected workflow is valid, allowing recognition before the associated dialog renders. Disabled actions and authorization checks remain enforced. Priming is cleared when the utterance finishes, fails, or is canceled.
@@ -30,6 +34,9 @@ independently completed roots and the acoustic utterance for subsequent commands
 
 Silence settles all collecting states: commit a complete valid chain, cancel an
 incomplete root, or discard malformed input. Speech resumption cancels the deadline.
+Silence requests the recognizer final before settling; the last partial is not
+promoted to final. Decoder grammar follows the owned unconsumed continuation after
+an expected UI transition, rather than rechecking the consumed opener's new UI state.
 `AdaptiveSpeechTiming` combines current-trip pause statistics, a saved profile, and
 the speech-speed setting. Pause detection and extra continuation dispatch grace
 remain distinct; collection settlement respects their full adaptive window rather

@@ -79,6 +79,13 @@ contract('RECOGNIZER', {
     forbidden: ['Change application planner to a recognizer', 'Treat acoustic decoder stages as separate SpeechMenu utterances', 'Claim a custom in-place Vosk fork is implemented'],
     evidence: ['node tests/vosk-grammar-router.mjs', 'node tests/vosk-speechmenu-context.mjs', 'node tests/vosk-phrase-list-compiler.mjs', 'node tests/pocketsphinx-grammar-catalog.mjs']
 });
+model.v2_contracts.SPEECH.postconditions.continuation = 'Logical session owns the unconsumed transcript, collector, projected destination and adaptive deadline across declared UI/FSM transitions; decoder grammar and execution use that same context without replaying consumed openers. Unexpected transitions or revoked authorization cancel ownership.';
+model.v2_contracts.SPEECH.postconditions.silence = 'At the adaptive silence deadline request/drain the decoder final before settling valid, incomplete or malformed collections; do not promote the last partial to final. Release owned collectors, projections and locks; speech resumption before expiry cancels the deadline.';
+model.v2_contracts.RECOGNIZER.postconditions.final = 'Final decoding may append or revise an unconsumed suffix; keep logical ownership until final delivery or bounded recognizer failure. Grammar-switch diagnostics cannot replace the active Mic Bar transcript.';
+for (const id of ['SPEECH', 'RECOGNIZER']) {
+    model.v2_contracts[id].implementation_guide = 'docs/speech-recognition-v2.md';
+    model.v2_contracts[id].evidence.push('node tests/app-state-transactions.mjs --decoder-final-boundaries --voice-feedback', 'node tests/app-state-transactions.mjs --ready-handoff --voice-feedback');
+}
 contract('OWNERSHIP', {
     scope: ['all gestures, utterances, UI effects and persistence operations'], preconditions: {authoritative_state: 'shared coordinator and ClockTimer'}, inputs: ['overlapping operations', 'acknowledgement', 'cancellation', 'rollback', 'surface close/reopen'],
     postconditions: {lock: 'Acquire an owned token; release only that token; unlock when count reaches zero', nested: 'Only the first owner locks and the final owner unlocks the UI', transient: 'Expose applicable controls as visible, disabled and non-functional', timing: 'Record start/end and parent operation; plan subsequent commands after state settles'},

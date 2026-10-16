@@ -17085,8 +17085,9 @@
         "junk": "Discard malformed context/command and its remainder through the next independent literal command head; never rescue a shorter valid value from the rejected section",
         "final_invalid": "Rollback the uncommitted dependent root; retain earlier independently completed roots",
         "dependency": "A failed chain root invalidates dependent continuations even when other commands intervene",
-        "silence": "At the adaptive silence deadline settle valid chains, cancel incomplete roots, discard malformed sections, clear collectors/projections and release owned locks; speech resumption cancels the deadline",
-        "response": "One horizontal row of response columns, newest on the left; incoming results travel from the right under existing results; each keeps its own TTL across utterances; expiry moves the whole chain right until the expired result exits; a single result uses the same mechanism"
+        "silence": "At the adaptive silence deadline request/drain the decoder final before settling valid, incomplete or malformed collections; do not promote the last partial to final. Release owned collectors, projections and locks; speech resumption before expiry cancels the deadline.",
+        "response": "One horizontal row of response columns, newest on the left; incoming results travel from the right under existing results; each keeps its own TTL across utterances; expiry moves the whole chain right until the expired result exits; a single result uses the same mechanism",
+        "continuation": "Logical session owns the unconsumed transcript, collector, projected destination and adaptive deadline across declared UI/FSM transitions; decoder grammar and execution use that same context without replaying consumed openers. Unexpected transitions or revoked authorization cancel ownership."
       },
       "controls": {
         "speech": "Availability comes from the active UI/modal and semantic state; pointer flags are outputs"
@@ -17109,8 +17110,11 @@
         "node tests/app-state-transactions.mjs --speech-boundaries",
         "node tests/app-state-transactions.mjs --voicepad-continuation",
         "node tests/legacy-vosk-values.mjs",
-        "node tests/speech-value-preprocessor.mjs"
-      ]
+        "node tests/speech-value-preprocessor.mjs",
+        "node tests/app-state-transactions.mjs --decoder-final-boundaries --voice-feedback",
+        "node tests/app-state-transactions.mjs --ready-handoff --voice-feedback"
+      ],
+      "implementation_guide": "docs/speech-recognition-v2.md"
     },
     "RECOGNIZER": {
       "id": "RECOGNIZER",
@@ -17127,7 +17131,8 @@
       "postconditions": {
         "switch": "Preserve utterance ID; retain and replay short rolling transition PCM; fence old decoder results",
         "vocabulary": "Finite time/duration/number/digits/date choices from registered patterns; omit/report unsupported regexes",
-        "backend": "Vosk test deployment; PocketSphinx experiment remains intact"
+        "backend": "Vosk test deployment; PocketSphinx experiment remains intact",
+        "final": "Final decoding may append or revise an unconsumed suffix; keep logical ownership until final delivery or bounded recognizer failure. Grammar-switch diagnostics cannot replace the active Mic Bar transcript."
       },
       "controls": {
         "sleeping": "Only wake; ordinary commands cannot execute"
@@ -17145,8 +17150,11 @@
         "node tests/vosk-grammar-router.mjs",
         "node tests/vosk-speechmenu-context.mjs",
         "node tests/vosk-phrase-list-compiler.mjs",
-        "node tests/pocketsphinx-grammar-catalog.mjs"
-      ]
+        "node tests/pocketsphinx-grammar-catalog.mjs",
+        "node tests/app-state-transactions.mjs --decoder-final-boundaries --voice-feedback",
+        "node tests/app-state-transactions.mjs --ready-handoff --voice-feedback"
+      ],
+      "implementation_guide": "docs/speech-recognition-v2.md"
     },
     "OWNERSHIP": {
       "id": "OWNERSHIP",
@@ -17711,6 +17719,84 @@
           "utteranceId": "case-17",
           "transitionAudioReplayed": true,
           "staleDecoderResultsAccepted": false
+        }
+      },
+      {
+        "id": "SPEECH-READY-STATE-HANDOFF",
+        "contract": "SPEECH",
+        "given": {
+          "tripActive": false,
+          "editorOpen": false
+        },
+        "when": {
+          "interims": [
+            "ready",
+            "ready twenty",
+            "ready twenty two",
+            "ready twenty two fifty",
+            "ready twenty two fifty six"
+          ],
+          "final": "ready twenty two fifty six"
+        },
+        "expect": {
+          "editor": "voicepad",
+          "valueMilliseconds": 1376000,
+          "grammarContainsDurationAfterEachTransition": true,
+          "rootExecutionCount": 1,
+          "tripWrites": 0,
+          "lockCountAfterSettlement": 0
+        }
+      },
+      {
+        "id": "SPEECH-DURATION-DELAYED-FINAL",
+        "contract": "RECOGNIZER",
+        "given": {
+          "surface": "voicepad",
+          "kind": "duration",
+          "partial": "twenty two fifty"
+        },
+        "when": {
+          "silenceDeadline": true,
+          "delayedDecoderFinal": "twenty two fifty six"
+        },
+        "expect": {
+          "finalRequestedCount": 1,
+          "valueMilliseconds": 1376000,
+          "partialCommittedBeforeFinal": false,
+          "tripWrites": 0
+        }
+      },
+      {
+        "id": "SPEECH-BREAK-DELAYED-OK",
+        "contract": "RECOGNIZER",
+        "given": {
+          "tripActive": true,
+          "partial": "break start lunch"
+        },
+        "when": {
+          "silenceDeadline": true,
+          "delayedDecoderFinal": "break start lunch ok"
+        },
+        "expect": {
+          "finalRequestedCount": 1,
+          "activeInterval": "lunch",
+          "intervalStartedCount": 1,
+          "tripStoppedCount": 0,
+          "lockCountAfterSettlement": 0
+        }
+      },
+      {
+        "id": "SPEECH-GRAMMAR-STATUS-DISPLAY",
+        "contract": "RECOGNIZER",
+        "given": {
+          "activeTranscript": "twenty two fifty six"
+        },
+        "when": {
+          "recognizerStatus": "grammar-switch"
+        },
+        "expect": {
+          "activeTranscript": "twenty two fifty six",
+          "diagnosticShownAsTranscript": false
         }
       },
       {

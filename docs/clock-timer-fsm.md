@@ -2,6 +2,11 @@
 
 ## Version 2 behavioral test reference, 16 October 2026
 
+The [speech recognition contract](speech-recognition-v2.md) specifies generic
+continuation ownership through FSM/UI changes, final decoding, adaptive silence,
+pruning, root validity, and response presentation. Use its evidence matrix with
+the state-transition scenarios below.
+
 Use the [reconciled working FSM](mainline-fsm-draft.html) and its
 [machine-readable model](mainline-fsm-draft.json) for current implementation work.
 The separately approved October chart below is preserved as a historical baseline;
