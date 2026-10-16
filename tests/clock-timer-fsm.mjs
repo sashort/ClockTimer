@@ -121,11 +121,17 @@ async function exercise(core, checkFSM) {
             timers.push(phases);window.document.body.append(phases);
             assert.equal(phases.getDispatchState(new window.Date()).state,'ready');
             phases.configure({goal_type:'trip',trip_goal:'100%'});
-            await phases.start({standardTime:'0:30:00',startTime:'11:59:00'});
+            // Start times are local clock values; the fixture epoch is UTC.
+            const clockAt=instant=>{
+                const date=new window.Date(instant);
+                return [date.getHours(),date.getMinutes(),date.getSeconds()]
+                    .map(part=>String(part).padStart(2,'0')).join(':');
+            };
+            await phases.start({standardTime:'0:30:00',startTime:clockAt(epoch-60000)});
             assert.equal(phases.getDispatchState(new window.Date()).startRelation,'early');
-            phases.startTime='12:01:00';
+            phases.startTime=clockAt(epoch+60000);
             assert.equal(phases.getDispatchState(new window.Date()).startRelation,'late');
-            phases.startTime='12:00:00';
+            phases.startTime=clockAt(epoch);
             await phases.startInterval('break',60000,{breakType:'short'},15000,15000);
             assert.equal(phases.getDispatchState(new window.Date()).state,'buffer');
             window.__testTime+=20000;
