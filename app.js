@@ -12386,6 +12386,13 @@
             pinCancelPrimed = false;
             const slots = loginDigitSlots[voiceLoginStage];
             const index = Number(input.dataset.digitIndex);
+            if (backward && voiceLoginStage === "pin" && index === 0 && !slots[0]) {
+                resetVoiceLogin();
+                const firstId = loginDialog.querySelector('[data-login-digit="id"][data-digit-index="0"]');
+                firstId.focus({preventScroll:true});
+                firstId.select();
+                return;
+            }
             // An empty slot has no character to erase. Backspace acts on
             // the previous slot instead, for keyboards and mobile input.
             const target = backward && !slots[index] && index > 0 ? index - 1 : index;

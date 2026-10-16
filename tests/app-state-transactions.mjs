@@ -289,11 +289,24 @@ if(process.argv.includes('--pin-editing')) {
   slot(stage,2).focus();slot(stage,2).dispatchEvent(new window.InputEvent('beforeinput',{inputType:'deleteContentBackward',bubbles:true,cancelable:true}));
   assert.equal(value(),'1');assert.equal(window.document.activeElement,slot(stage,1));
   press(slot(stage,0),'Backspace');assert.equal(value(),'');assert.equal(window.document.activeElement,slot(stage,0));
-  press(slot(stage,0),'Backspace');assert.equal(value(),'','Backspace at the first empty slot is safe');
+  if(stage==='id') {press(slot(stage,0),'Backspace');assert.equal(value(),'','Backspace at the first empty ID slot is safe');}
   if(stage==='pin') {
    press(slot(stage,0),'5');press(slot(stage,1),'6');assert.equal(slot(stage,0).value,'*','PIN editing remains masked');
    press(slot('id',0),'Backspace');assert.equal(window.document.querySelector('#loginUsername').value,'1234','inactive credential cannot be deleted');
   }
+ }
+ for(const method of ['keyboard','mobile']) {
+  await window.WMOFActions.cancelLoginDigits();await window.WMOFActions.cancelLoginDigits();
+  await window.WMOFActions.enterLoginDigits('1234');await window.WMOFActions.confirmLoginDigits();
+  press(slot('pin',0),'Delete');assert.equal(window.WMOFInteractionState.state.login.stage,'pin','forward Delete cannot restart ID entry');
+  press(slot('pin',1),'9');slot('pin',0).focus();
+  if(method==='keyboard')press(slot('pin',0),'Backspace');
+  else slot('pin',0).dispatchEvent(new window.InputEvent('beforeinput',{inputType:'deleteContentBackward',bubbles:true,cancelable:true}));
+  assert.equal(window.WMOFInteractionState.state.login.stage,'id',method+' Backspace on empty first PIN returns to ID');
+  assert.equal(window.document.querySelector('#loginUsername').value,'','previous four-digit ID is cleared');
+  assert.equal(window.document.querySelector('#loginPassword').value,'','partial PIN is discarded');
+  assert.equal(window.document.activeElement,slot('id',0));
+  assert.equal(slot('id',0).disabled,false);assert.equal(slot('pin',0).disabled,true);
  }
  assert.equal(requests.filter(request=>request.path.endsWith('/users/')&&request.options.method==='POST').length,0,'editing and confirming ID never submits credentials');
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
