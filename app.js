@@ -12367,6 +12367,11 @@
 
     for(const input of loginDialog.querySelectorAll('[data-login-digit]')){
         input.setAttribute('aria-label',announcementText('messages.voiceLogin.'+(input.dataset.loginDigit==='pin'?'pinDigit':'idDigit'),{index:Number(input.dataset.digitIndex)+1}));
+        input.setAttribute('enterkeyhint',input.dataset.loginDigit==='id'?'next':'go');
+        const confirmDigits = () => {
+            if (voiceLoginBusy || input.disabled || input.dataset.loginDigit !== voiceLoginStage) return;
+            $("#loginForm").requestSubmit($("#loginButton"));
+        };
         const setDigits=(text)=>{
             if(voiceLoginBusy||input.dataset.loginDigit!==voiceLoginStage)return;
             pinCancelPrimed=false;
@@ -12394,12 +12399,17 @@
         };
         input.addEventListener('beforeinput',event=>{
             event.preventDefault();
-            if(event.inputType.startsWith('delete'))deleteDigit(event.inputType==='deleteContentBackward');
+            if(event.isComposing)return;
+            if(event.inputType==='insertLineBreak'||event.inputType==='insertParagraph')confirmDigits();
+            else if(event.inputType.startsWith('delete'))deleteDigit(event.inputType==='deleteContentBackward');
             else if(event.data)setDigits(event.data);
         });
         input.addEventListener('paste',event=>{event.preventDefault();setDigits(event.clipboardData.getData('text'));});
         input.addEventListener('keydown',event=>{
-            if(/^[0-9]$/.test(event.key)){event.preventDefault();setDigits(event.key);}
+            if(event.key==='Enter'){
+                event.preventDefault();if(!event.repeat&&!event.isComposing)confirmDigits();
+            }
+            else if(/^[0-9]$/.test(event.key)){event.preventDefault();setDigits(event.key);}
             else if(event.key==='Backspace'||event.key==='Delete'){
                 event.preventDefault();deleteDigit(event.key==='Backspace');
             }

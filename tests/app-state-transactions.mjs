@@ -241,6 +241,32 @@ if(process.argv.includes('--voice-code-router')) {
  assert.equal(u.digestExecutionFailed,undefined);assert(!u.digestFailed);
  console.log('PASS Vosk routing of consecutive ID and PIN confirmations');await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--pin-return')) {
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
+ const slot=(stage,index)=>dialog.querySelector('[data-login-digit="'+stage+'"][data-digit-index="'+index+'"]');
+ const press=(stage,index,key,extra={})=>slot(stage,index).dispatchEvent(new window.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true,...extra}));
+ const newline=(stage,index)=>slot(stage,index).dispatchEvent(new window.InputEvent('beforeinput',{inputType:'insertLineBreak',bubbles:true,cancelable:true}));
+ const posts=()=>requests.filter(request=>request.path.endsWith('/users/')&&request.options.method==='POST').length;
+ for(const path of ['keyboard','mobile']) {
+  await window.WMOFActions.cancelLoginDigits();await window.WMOFActions.cancelLoginDigits();
+  const before=posts(),confirm=(stage,index)=>path==='keyboard'?press(stage,index,'Enter'):newline(stage,index);
+  for(const [index,digit] of [...'123'].entries())press('id',index,digit);
+  confirm('id',2);await settle();assert.equal(window.WMOFInteractionState.state.login.stage,'id');assert.equal(posts(),before);
+  press('id',3,'4');confirm('id',3);await settle();
+  assert.equal(window.WMOFInteractionState.state.login.stage,'pin');assert.equal(window.document.activeElement,slot('pin',0));assert.equal(posts(),before);
+  for(const [index,digit] of [...'567'].entries())press('pin',index,digit);
+  confirm('pin',2);await settle();assert.equal(posts(),before,'incomplete PIN is not submitted');
+  press('pin',3,'8');holdLogin=true;confirm('pin',3);await settle();
+  assert.equal(posts(),before+1,'four digits plus Return uses the OK login path');
+  assert(slot('pin',3).disabled,'input is disabled while the login is pending');
+  press('pin',3,'Enter',{repeat:true});newline('pin',3);await settle();assert.equal(posts(),before+1,'repeated Return cannot submit twice');
+  holdLogin=false;releaseLogin();await settle();await settle();
+  if(!dialog.open)dialog.showModal();
+ }
+ assert.equal(slot('id',0).getAttribute('enterkeyhint'),'next');assert.equal(slot('pin',0).getAttribute('enterkeyhint'),'go');
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS keyboard/mobile Return advances a complete ID to PIN and submits a complete PIN once, with incomplete input rejected');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--pin-editing')) {
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
  const slot=(stage,index)=>dialog.querySelector('[data-login-digit="'+stage+'"][data-digit-index="'+index+'"]');
