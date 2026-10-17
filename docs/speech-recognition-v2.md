@@ -86,7 +86,7 @@ Complete, incomplete, and malformed collections all have a bounded silence
 settlement. Speech resumption before the deadline cancels it. Expected state
 changes neither restart that deadline nor remove the continuation.
 
-Use current-trip speaking/continuation pauses, a saved timing profile, and speech
+Use active-trip speaking/continuation pauses, a saved timing profile, and speech
 settings. The existing implementation separates pause detection from extra
 dispatch grace. Continuation observations are bounded to 220–900 ms; command
 separation observations to 420–1800 ms. Speech velocity controls dispatch grace.

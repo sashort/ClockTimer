@@ -8376,6 +8376,11 @@ class SpeechMenu {
 
             append(defaults);
             append(primed);
+            if(SpeechMenu.#surfaceHandlers.get(dialog)?.inheritCommands){
+                const frames=SpeechMenu.#surfaceFrames(),index=frames.findIndex(frame=>frame.surface===dialog);
+                const underlying=(index<0?frames.at(-1):frames[index-1])?.surface || null;
+                append(SpeechMenu.#availableCandidates(underlying));
+            }
             return result;
         }
 
@@ -9932,6 +9937,11 @@ class SpeechMenu {
 
         // Preparation may have awaited while this attempt lost its right to act.
         if (signal?.aborted || executionMetadata?.canCommit?.() === false) return false;
+
+        const beforeCommand=SpeechMenu.#surfaceHandlers.get(SpeechMenu.activeSurface)?.beforeCommand;
+        if(beforeCommand && SpeechMenu.#candidateStateAvailable(element,true))
+            await beforeCommand(element);
+        if(signal?.aborted || executionMetadata?.canCommit?.() === false)return false;
 
         const responseSession =
             globalThis

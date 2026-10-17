@@ -7,6 +7,7 @@ const server=http.createServer((req,res)=>{
  res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/json');
  let source=fs.readFileSync(file);
  if(pathname==='/api/audio/AudioEngine.js')source=source.toString()+`\nWMOFAudio.speak=(text,options={})=>{(globalThis.handoffAudio ||= []).push('speech:'+text);queueMicrotask(()=>options.onEnd?.());return true;};WMOFAudio.startSong=async name=>{(globalThis.handoffAudio ||= []).push('chime:'+name);return {hasChime:true,finished:Promise.resolve()};};`;
+ if(pathname==='/app.js')source=source.toString().replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;','const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;').replace('    document.dispatchEvent(new Event("clocktimer-app-ready"));','    globalThis.testWaitForFeedback=async()=>{await microphoneFeedbackCompletion;while(semanticAnnouncementDraining || semanticAnnouncementQueue.pointer<semanticAnnouncementQueue.length)await new Promise(resolve=>setTimeout(resolve,10));};\n    document.dispatchEvent(new Event("clocktimer-app-ready"));');
  if(pathname==='/SharedModal.js'&&process.env.DISABLE_SHARED_MODAL)source='';
  if(pathname==='/SpeechMenu.js')source=source.toString().replace(/\r\n/g,'\n').replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;',()=>`\nstatic testActivate(){SpeechMenu.#modelReady=true;SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={beginUtterance(){},abortUtterance(){},finishUtterance(id){const u=SpeechMenu.#utterance?.id===id?SpeechMenu.#utterance:SpeechMenu.#finishedUtterances.get(id);setTimeout(()=>SpeechMenu.#onSherpaTranscript({detail:{utteranceId:id,transcript:u?.transcript||"",isFinal:true}}),10);}};}\nstatic async testSayAfterSilence(text){SpeechMenu.#beginUtterance(performance.now());const u=SpeechMenu.#utterance;await SpeechMenu.#handleLiveTranscript(u,text,false);await u.digestQueue;u.continuationPauseStartedAt=performance.now()-SpeechMenu.#continuationGraceMilliseconds();SpeechMenu.#armContinuationPauseDeadline(u);await new Promise(resolve=>setTimeout(resolve,250));await u.digestQueue;await u.segmentBarrier;return !u.digestExecutionFailed&&!u.digestFailed;}\nstatic async testSay(text){SpeechMenu.#beginUtterance(performance.now());const u=SpeechMenu.#utterance;await SpeechMenu.#handleLiveTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;return !u.digestExecutionFailed;}\n}\n\nglobalThis.SpeechMenu = SpeechMenu;\nSpeechMenu.start=async()=>{SpeechMenu.testActivate();SpeechMenu.events.dispatchEvent(new Event('started'));return true;};`);
  res.end(source);
@@ -17,7 +18,7 @@ const server=http.createServer((req,res)=>{
  try{
   const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{window.testShadows=new WeakMap();const attach=Element.prototype.attachShadow;Element.prototype.attachShadow=function(options){const result=attach.call(this,options);testShadows.set(this,result);return result;};});
-  await page.route('**/api/**',r=>new URL(r.request().url()).pathname.endsWith('.js')?r.continue():r.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[],trips:[],instruments:[],voices:[],accepted:true,tripId:41,eventId:1,events:[]}}));
+  await page.route('**/api/**',r=>new URL(r.request().url()).pathname.endsWith('.js')?r.continue():r.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules:{weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'}}],trips:[],instruments:[],voices:[],accepted:true,tripId:41,eventId:1,events:[]}}));
   await page.goto(`http://127.0.0.1:${server.address().port}/order-filler.php`);
   await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));
   await page.waitForTimeout(1000);
@@ -34,9 +35,16 @@ const server=http.createServer((req,res)=>{
   assert(await page.evaluate(()=>SpeechMenu.testSayAfterSilence('ready')),'Ready after silence ends the running trip');
   await page.waitForFunction(()=>document.querySelector('#tripTransitionOverlay').open);
   assert(await page.evaluate(()=>document.querySelector('#clockTimer').status==='ready'&&WMOFCoordinator.lockCount===0&&WMOFStateTransactions.pending.length===0),'trip summary is an owned Ready transition with no cancellation or stranded locks');
+  await page.waitForFunction(()=>document.querySelector('#tripTransitionOverlay .trip-summary-table'));
+  assert.equal(await page.locator('#tripTransitionOverlay [data-trip-summary-row="active"]').count(),0);
+  assert(await page.locator('#tripTransitionSummaryOk').isVisible());
+  assert(!await page.locator('#tripTransitionSummaryCancel').isVisible());
+  const summaryBounds=await page.evaluate(()=>{const panel=document.querySelector('.trip-transition-overlay-panel');return {inner:panel.clientWidth,scroll:panel.scrollWidth};});
+  assert(summaryBounds.scroll<=summaryBounds.inner+1,'summary table fits mobile panel '+JSON.stringify(summaryBounds));
+  if(process.env.SUMMARY_SCREENSHOT_DIR){fs.mkdirSync(process.env.SUMMARY_SCREENSHOT_DIR,{recursive:true});await page.locator('.trip-transition-overlay-panel').screenshot({path:path.join(process.env.SUMMARY_SCREENSHOT_DIR,'trip-summary-mobile.png'),animations:'disabled'});}
   await say('cancel');
 
-  for(const id of ['loginDialog','voiceEntrySurface','tripLogDialog']){
+  for(const id of ['tripTransitionOverlay','loginDialog','voiceEntrySurface','tripLogDialog']){
    await page.evaluate(id=>{for(const d of document.querySelectorAll('dialog[open]'))if(d.id!==id)d.close();const d=document.getElementById(id);d.hidden=false;if(!d.open)d.showModal();},id);
    await page.waitForTimeout(300);
    for(const expected of [true,false]){
@@ -49,6 +57,7 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(()=>document.querySelector('#speechMicBar').parentElement.id),'app');
   assert(await page.evaluate(()=>document.querySelector('#speechMicBar') instanceof SharedModal),'mic inherits the shared UI base');
   assert(await page.evaluate(()=>document.querySelector('trip-log-modal') instanceof SharedModal),'Trip Log UI inherits the shared base');
+  await page.evaluate(()=>testWaitForFeedback());
   await page.evaluate(async()=>{
    window.handoffAudio=[];window.handoffConfirmed=[];
    window.WMOFAudio={speak(text,options={}){handoffAudio.push('speech:'+text);if(window.holdMicFeedback&&text==='Microphone activated.')window.finishMicSpeech=()=>options.onEnd?.();else queueMicrotask(()=>options.onEnd?.());return true;},async startSong(name){handoffAudio.push('chime:'+name);return {hasChime:true,finished:window.holdMicFeedback&&name==='microphone-activated'?new Promise(resolve=>window.finishMicChime=resolve):Promise.resolve()};}};
@@ -60,7 +69,7 @@ const server=http.createServer((req,res)=>{
   await tapMic();await page.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open&&!WMOFVoiceEntry.active);
   assert.deepEqual(await page.evaluate(()=>({value:WMOFInteractionState.state.editor.value,source:WMOFInteractionState.state.editor.source,mode:WMOFInteractionState.state.editor.mode})),{value:'2256',source:'handoff-test',mode:'duration'});
   await page.waitForFunction(()=>handoffAudio.some(s=>s==='speech:Switched to number pad.'));
-  const off=await page.evaluate(()=>handoffAudio.slice());assert(off.indexOf('chime:microphone-deactivated')<off.indexOf('speech:Microphone deactivated.'));assert(off.indexOf('speech:Microphone deactivated.')<off.indexOf('speech:Switched to number pad.'));
+  const off=await page.evaluate(()=>handoffAudio.slice());assert(off.indexOf('chime:microphone-deactivated')<off.indexOf('speech:Microphone deactivated.'),JSON.stringify(off));assert(off.indexOf('speech:Microphone deactivated.')<off.indexOf('speech:Switched to number pad.'));
   const reset=await page.locator('#numberPadReset').boundingBox();await page.touchscreen.tap(reset.x+reset.width*.75,reset.y+reset.height*.75);assert.equal(await page.evaluate(()=>WMOFInteractionState.state.editor.value),'1000','original value survives the switch');
   await page.evaluate(()=>{handoffAudio.length=0;window.holdMicFeedback=true;});await tapMic();await page.waitForFunction(()=>document.querySelector('#voiceInputSwitchDialog').open);
   await page.waitForFunction(()=>typeof finishMicChime==='function');

@@ -81,6 +81,8 @@ jobs:
           TZ=UTC node tests/counted-time-accounting.mjs
           node tests/trip-log.mjs
           node tests/trip-summary.mjs
+          node tests/trip-summary-presentation.mjs
+          node tests/app-state-transactions.mjs --summary-dialog --voice-feedback
           node tests/trip-replay-identity.mjs
           node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs

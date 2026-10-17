@@ -37,7 +37,7 @@ incomplete root, or discard malformed input. Speech resumption cancels the deadl
 Silence requests the recognizer final before settling; the last partial is not
 promoted to final. Decoder grammar follows the owned unconsumed continuation after
 an expected UI transition, rather than rechecking the consumed opener's new UI state.
-`AdaptiveSpeechTiming` combines current-trip pause statistics, a saved profile, and
+`AdaptiveSpeechTiming` combines active-trip pause statistics, a saved profile, and
 the speech-speed setting. Pause detection and extra continuation dispatch grace
 remain distinct; collection settlement respects their full adaptive window rather
 than clipping it to 350 ms. Successful digests feed continuation/separation learning.

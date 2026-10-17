@@ -6057,7 +6057,7 @@
                 this.#standardDuration;
             const aggregateCountedTime =
                 this.#getCountedTimeElapsed(
-                    stopTimeline
+                    stopTimeline, {completedAt: stopTimeline}
                 );
             const aggregateNonProduction =
                 this.#nonProduction;
@@ -8638,6 +8638,11 @@
                 this.#openOverwriteLastTick =
                     undefined;
             }
+
+            // Freeze final counted elapsed after completion establishes
+            // the before-scheduled-start exception and all intervals are closed.
+            if (this.#renderedTimeMode === "elapsed")
+                this.#renderedTime = this.#renderTime_elapsed({timelineNow: stopTime});
 
             this.#scheduleIndicatorSymbolUpdate();
 
@@ -32660,6 +32665,15 @@
                 : scheduled;
         }
 
+        #getCountedStartTimeMilliseconds(completedAt = this.#countedStopTime) {
+            const scheduled = this.#scheduledStartMilliseconds;
+            const actual = this.#getStartTimeMilliseconds();
+            if (!Number.isFinite(scheduled)) return actual;
+            return Number.isFinite(actual) && actual < scheduled &&
+                Number.isFinite(completedAt) && completedAt < scheduled
+                ? actual : scheduled;
+        }
+
         #mergeAccountingSegments(segments) {
             segments.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
             const merged = [];
@@ -32746,14 +32760,17 @@
             return segments;
         }
 
-        #getCountedTimeElapsed(timelineNow) {
-            return Math.max(0, this.#getCountedTimeBalance(timelineNow));
+        #getCountedTimeElapsed(timelineNow, options) {
+            return Math.max(0, this.#getCountedTimeBalance(timelineNow, options));
         }
 
         // Keep an unused allowance even when it exceeds productive time so
         // remaining time can carry the full gain; persisted durations stay >= 0.
-        #getCountedTimeBalance(timelineNow) {
-            const start = this.#getElapsedStartTimeMilliseconds();
+        #getCountedTimeBalance(timelineNow, {completedAt = this.#countedStopTime} = {}) {
+            return this.#getProductiveTimeBalance(timelineNow, this.#getCountedStartTimeMilliseconds(completedAt));
+        }
+
+        #getProductiveTimeBalance(timelineNow, start) {
             if (!Number.isFinite(start) || !Number.isFinite(timelineNow)) return 0;
             const end = Number.isFinite(this.#countedStopTime)
                 ? Math.min(timelineNow, this.#countedStopTime) : timelineNow;
@@ -32904,7 +32921,7 @@
             let actualTimeMilliseconds = Number(base?.actualTimeMilliseconds ?? 0);
             let countedTimeMilliseconds = Number(base?.countedTimeMilliseconds ?? 0);
             let allowanceCreditMilliseconds = 0;
-            let unappliedAllowanceCreditMilliseconds = 0;
+            let remainingCountedTimeMilliseconds;
 
             if (Number.isFinite(this.#externalStandardTime)) {
                 standardTimeMilliseconds = this.#externalStandardTime;
@@ -32914,16 +32931,17 @@
                 actualTimeMilliseconds = this.#externalCountedTime;
             }
 
+            remainingCountedTimeMilliseconds = countedTimeMilliseconds;
             if (this.#hasStartProperties() && this.#tripAddedToAggregate !== true) {
                 standardTimeMilliseconds += Number(this.#standardDuration ?? 0);
                 actualTimeMilliseconds += this.#getTripActualTimeElapsed(timelineNow);
                 const balance = this.#getCountedTimeBalance(timelineNow);
                 countedTimeMilliseconds += balance;
+                remainingCountedTimeMilliseconds += this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds());
                 allowanceCreditMilliseconds +=
                     this.#getEarlyStartAllowanceCredit();
             }
 
-            unappliedAllowanceCreditMilliseconds = Math.max(0, -countedTimeMilliseconds);
             countedTimeMilliseconds = Math.max(0, countedTimeMilliseconds);
             const countedPercent = countedTimeMilliseconds > 0
                 ? standardTimeMilliseconds / countedTimeMilliseconds
@@ -32957,7 +32975,7 @@
                 )
                     ? (
                         targetTotalCountedMilliseconds -
-                        countedTimeMilliseconds + unappliedAllowanceCreditMilliseconds
+                        remainingCountedTimeMilliseconds
                     )
                     : undefined;
             const completedNetMilliseconds =
@@ -33902,7 +33920,7 @@
                 ? this.#standardDuration / goal : undefined;
             if (!Number.isFinite(required)) return this.#formatRemainingRenderedDuration(undefined);
             return this.#formatRemainingRenderedDuration(
-                required - this.#getCountedTimeBalance(timelineNow));
+                required - this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds()));
         }
 
         #renderTime_end({ now, timelineNow }) {

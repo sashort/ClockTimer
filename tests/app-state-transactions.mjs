@@ -18,11 +18,12 @@ const animationCalls=[];window.Element.prototype.animate=function(keyframes,opti
 const consoleErrors=[];window.console.error=(...args)=>consoleErrors.push(args.map(a=>a?.stack||String(a)).join(' '));
 const errors=[];window.addEventListener('error',e=>{errors.push(e.message);});
 const rules={weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'};
-let summaryTrips=[];let holdStopResponse=false,releaseStopResponse;let rejectTripStop=false;let holdTripCheck=false;let releaseTripCheck;let rejectTripStart=false;let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];let holdLogin=false,releaseLogin,rejectLogin=false;
+let holdSummaryRead=false,releaseSummaryRead;let summaryAssignedTrip;let summaryTrips=[];let holdStopResponse=false,releaseStopResponse;let rejectTripStop=false;let holdTripCheck=false;let releaseTripCheck;let rejectTripStart=false;let releaseCheck;let holdCheck=false;let eventId=1,tripId=41;const requests=[],stored=[];let holdLogin=false,releaseLogin,rejectLogin=false;
 const accountBlob={version:1,orderFiller:{'wmof.clock.graphicalSettings':JSON.stringify({tripColor:'#123456'}),'wmof.clock.percentMode':'auto'}};
 window.fetch=async(url,options={})=>{
  const path=new URL(url,'https://clock.example/').pathname;requests.push({path,options});
  const input=options.body?JSON.parse(options.body):null;
+ if(holdSummaryRead&&path.endsWith('/trips/')&&new URL(url,'https://clock.example/').searchParams.get('result')==='list')await new Promise(resolve=>releaseSummaryRead=resolve);
  if(rejectLogin&&path.endsWith('/users/')&&input?.action==='connect-pin'){const data={error:'invalid_credentials',message:'Incorrect credentials.'};return {ok:false,status:401,json:async()=>data,text:async()=>JSON.stringify(data),clone(){return this;}};}
  if(holdLogin&&path.endsWith('/users/')&&options.method==='POST')await new Promise(resolve=>releaseLogin=resolve);
  if(path.endsWith('/trip-events/')&&options.method==='POST') stored.push({...input,id:eventId++});
@@ -43,7 +44,7 @@ window.fetch=async(url,options={})=>{
  path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
  path.endsWith('/trips/')&&new URL(url,'https://clock.example/').searchParams.get('result')==='active'
     ? {activeTripId: stored.findLast(e=>['trip.started','trip.stopped'].includes(e.event))?.event==='trip.started' ? tripId : null} :
- {tripId, trips:summaryTrips,aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
+ {tripId, trips:summaryTrips,activeTrip:summaryAssignedTrip,aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
 window.document.write(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
@@ -61,7 +62,7 @@ if(process.argv.includes('--account-settings')){
  window.WMOFPersistence={ready:Promise.resolve(),initializeLegacy:async()=>{},peek:()=>null,getItem:async()=>null,setItem:async()=>{},commit:async()=>{},flush:async()=>{}};
  window.eval(fs.readFileSync(new URL('../AccountSettings.js',import.meta.url),'utf8'));
 }
-for(const name of ['TemporalFormat','TimerAppearance','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripAggregates','TripLog','StateTransactions','SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(name==='StateTransactions' && process.env.CLOCKTIMER_STATE_SOURCE || name==='ActionFunctions' && process.env.CLOCKTIMER_ACTION_SOURCE || new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','TimerAppearance','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer','CalendarRange','DigitSequence','TripSummary','TripAggregates','TripLog','StateTransactions','SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter','SpeechFunctionRoles','SpeechFunctionRegistry','UtilityFunctions','SpeechProcessingFunctions','ActionFunctions','InteractionFunctions','PresentationSetters'])window.eval(fs.readFileSync(name==='StateTransactions' && process.env.CLOCKTIMER_STATE_SOURCE || name==='ActionFunctions' && process.env.CLOCKTIMER_ACTION_SOURCE || new URL('../'+name+'.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nwindow.ParameterParser=ParameterParser;');
 window.eval(fs.readFileSync(new URL('../lang/en-US.js',import.meta.url),'utf8'));
 window.eval(fs.readFileSync(new URL('../lang/en-US/DurationParser.js',import.meta.url),'utf8')+'\nwindow.EnglishDurationParser=EnglishDurationParser;');
@@ -104,6 +105,50 @@ window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--summary-dialog')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ await window.WMOFCoordinator.run('summary-test',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ window.__testTime+=120000;
+ summaryTrips=[{id:901,startTime:'2026-10-06T10:00:00Z',endTime:'2026-10-06T10:10:00Z',standardTimeMilliseconds:600000,countedTimeMilliseconds:400000,actualTimeMilliseconds:500000},
+  {id:902,startTime:'2026-10-06T11:00:00Z',endTime:'2026-10-06T11:05:00Z',standardTimeMilliseconds:300000,countedTimeMilliseconds:200000,actualTimeMilliseconds:250000}];
+ const dialog=window.document.querySelector('#tripTransitionOverlay');
+ const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await settle();await u.segmentBarrier;return u;};
+ const rows=()=>[...dialog.querySelectorAll('[data-trip-summary-row]')];
+ spoken.length=0;await say('trip summary');
+ assert(dialog.open);assert.deepEqual(rows().map(r=>r.dataset.tripSummaryRow),['total','last','active']);
+ assert.deepEqual([...dialog.querySelectorAll('thead th')].map(c=>c.textContent),['','Standard','Actual','Percent']);
+ assert.equal(rows()[1].children[2].textContent,'0:03:20','Actual column uses counted time, never wall duration');
+ assert.equal(rows()[1].children[3].textContent,'150.00%');
+ assert(spoken.some(s=>s.startsWith('Actual time for your last trip was ')&&s.includes('Your performance was ')&&s.includes(', and your day performance is ')&&s.includes('Standard time for this trip is ')),spoken.join('|'));
+ assert(window.document.querySelector('#tripTransitionSummaryCancel').hidden,'no visible Cancel button');
+ await say('unrelated nonsense');assert(dialog.open,'junk does not dismiss summary');
+ const command=await say('auto mode');assert(!command.digestExecutionFailed&&command.hadCommittedCommand);
+ assert(!dialog.open);assert.equal(timer.percentMode,'auto','another valid command dismisses and executes normally');
+ holdSummaryRead=true;await say('trip summary');
+ assert(dialog.open&&window.document.querySelector('#tripTransitionSummaryOk').disabled,'OK waits for assignment lookup');
+ assert.equal(await window.WMOFActions.confirmTripSummary(),false,'pending lookup cannot be treated as an absent assignment');
+ assert(releaseSummaryRead);await say('close');holdSummaryRead=false;releaseSummaryRead();await settle();
+ assert(!dialog.open,'late lookup cannot reopen a dismissed summary');
+ await say('trip summary');await say('okay');assert(!dialog.open&&timer.status==='running'&&!window.WMOFVoiceEntry.active,'OK during an active trip only dismisses');
+ for(const word of ['close','cancel']){await say('trip summary');await say(word);assert(!dialog.open&&timer.status==='running',word+' dismisses without ending the trip');}
+ await window.WMOFActions.endTrip();await settle();assert(dialog.open,'ending a trip opens the same summary');
+ assert.deepEqual(rows().map(r=>r.dataset.tripSummaryRow),['total','last'],'no active row after trip completion');
+ await say('ready');assert(!dialog.open&&window.WMOFVoiceEntry.active,'Ready dismisses the summary and executes the valid next-trip command');await say('cancel');
+ await say('trip summary');await say('okay');assert(window.WMOFVoiceEntry.active,'OK opens manual entry when no server assignment exists');
+ await say('trip summary');assert(dialog.open);const valueCommand=await say('eleven minutes');
+ assert(valueCommand.hadCommittedCommand&&!valueCommand.digestExecutionFailed&&!dialog.open,'valid underlying Voicepad command dismisses the informational summary and executes');
+ assert.equal(window.WMOFInteractionState.state.editor.value,'1100');await say('cancel');
+ summaryAssignedTrip={id:999,standardTimeMilliseconds:600000};
+ spoken.length=0;await say('trip summary');assert.equal(rows()[2].children[1].textContent,'0:10:00');
+ assert.equal(rows()[2].children[2].textContent,'---');assert.equal(rows()[2].children[3].textContent,'---');
+ const writes=requests.filter(r=>r.path.endsWith('/trips/')&&r.options.method==='POST').length;
+ await say('okay');assert(!dialog.open&&!window.WMOFVoiceEntry.active,'server assignment suppresses manual entry');
+ assert.equal(requests.filter(r=>r.path.endsWith('/trips/')&&r.options.method==='POST').length,writes,'OK never creates a duplicate assignment');
+ assert.equal(window.WMOFCoordinator.lockCount,0);assert.equal(window.WMOFStateTransactions.pending.length,0);
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS trip summary table, counted Actual, requested/automatic announcement, valid-command/OK/close/cancel dismissal and server-assignment fallback');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--announcement-layers')) {
  await timer.connect('test','test');await settle();await window.WMOFActions.toggleSync('on');await settle();await window.WMOFActions.toggleSync('off');await settle();
  assert(!chimes.includes('sync-state')&&!chimes.includes('sync-goal'),'summary-only definitions cannot request invented chime songs');
@@ -1311,14 +1356,15 @@ if(process.argv.includes('--trip-summary')) {
     const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,'trip summary',true);await u.digestQueue;await settle();
     assert(u.hadCommittedCommand && !u.digestExecutionFailed,'Trip Summary is available with no active trip');
     const dialog=window.document.querySelector('#tripTransitionOverlay');
-    assert(dialog.open && dialog.textContent.includes('No trip data available.'),'empty selected range renders no data');
+    assert(dialog.open && dialog.querySelectorAll('[data-trip-summary-row]').length===2&&[...dialog.querySelectorAll('tbody td')].every(cell=>cell.textContent==='---'),'empty range renders Total/Last rows with unavailable values');
     assert.equal(window.document.querySelector('#tripTransitionOverlayTitle').textContent,'Trip Summary');
     assert.equal(window.WMOFInteractionState.state.tripSummary.invocation.reason,'requested');
     assert.equal(window.WMOFInteractionState.state.tripSummary.invocation.method,'voice');
     assert(!spoken.includes('Say OK to start a new trip.'),'requested summary suppresses new-trip prompt');
     if(process.argv.includes('--voice-feedback'))assert(spoken.includes('No trip data available.'));
     window.document.querySelector('#tripTransitionSummaryOk').click();await settle();
-    assert(!dialog.open && !window.WMOFVoiceEntry.active,'requested summary OK only dismisses');
+    assert(!dialog.open && window.document.querySelector('#numberPadDialog').open,'requested summary OK falls back to manual entry with no assignment');
+    await window.WMOFActions.closeActiveSurface();await settle();
 }
 if(process.argv.includes('--range-voice')) {
     for(const [phrase,range,label] of [['year','year','Year'],['money','pay-period','Money'],['money mode','pay-period','Money'],['week','week','Week'],['day','day','Day']]) {
@@ -1590,7 +1636,7 @@ const acceptSummary = async () => {
     assert(window.document.querySelector('#voiceEntrySurface').open, 'spoken summary OK opens voicepad when mic is active');
 };
 if(process.argv.includes('--voice-feedback')) {
-    assert.equal(spoken.at(-1),'Say OK to start a new trip.','summary prompt is spoken last');
+    assert(spoken.some(text=>text.startsWith('Actual time for your last trip was ')),'end-of-trip summary speaks counted actual and performance');
 }
 await acceptSummary();
 const nextValue=window.SpeechMenu.testBegin();

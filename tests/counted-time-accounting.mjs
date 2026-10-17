@@ -71,11 +71,52 @@ try {
     cancel.remove();
 
     const early = await fresh({startTime:'11:59:00'});
-    assert.equal(counted(early),60000,'early start is counted from actual start');
+    assert.equal(counted(early),0,'early work does not count before the scheduled boundary');
     advance(10000);
     early.startTime='12:00:00';
     assert.equal(counted(early),10000,'editing actual start rebuilds the accumulated value');
     early.remove();
+
+    const scheduled=await fresh({scheduledStart:'12:10:00',startTime:'12:00:00'});
+    assert.equal(counted(scheduled),0,'running trip counts nothing before scheduled start');
+    scheduled.configure({rendered_time_type:'calculated_end_time'});
+    const scheduledExpectedEnd=scheduled.getSummarySnapshot().trip.renderedTime;
+    scheduled.configure({rendered_time_type:'calculated_start_time'});
+    assert.equal(scheduled.uiState.time_component.value,0,'Time Elapsed is zero before scheduled start');
+    assert.equal(scheduled.getSummarySnapshot().trip.renderedTime,'0:00:00');
+    scheduled.configure({rendered_time_type:'time_remaining'});
+    advance(5*60000);assert.equal(counted(scheduled),0);
+    advance(5*60000);assert.equal(counted(scheduled),0,'scheduled start itself has zero elapsed counted time');
+    advance(60000);assert.equal(counted(scheduled),60000,'only work after scheduled start is counted');
+    scheduled.configure({rendered_time_type:'calculated_end_time'});
+    assert.equal(scheduled.getSummarySnapshot().trip.renderedTime,scheduledExpectedEnd,'expected end stays unchanged as counted elapsed crosses scheduled start');
+    scheduled.configure({rendered_time_type:'calculated_start_time'});
+    assert.equal(scheduled.uiState.time_component.value,60000,'Time Elapsed counts only the minute after scheduled start');
+    assert.equal(scheduled.getSummarySnapshot().trip.renderedTime,'0:01:00');
+    scheduled.configure({rendered_time_type:'time_remaining'});
+    assert.equal(scheduled.getSummarySnapshot().trip.actualTimeElapsedMilliseconds,11*60000,'actual elapsed still includes the early start');
+    await scheduled.stop();assert.equal(counted(scheduled),60000,'completed trip crossing scheduled start excludes its early portion');
+    const scheduledSnapshot=scheduled.captureState();scheduled.restoreState(scheduledSnapshot);
+    assert.equal(counted(scheduled),60000,'scheduled boundary survives replay');scheduled.remove();
+
+    const allEarly=await fresh({scheduledStart:'12:10:00',startTime:'12:00:00'});
+    allEarly.configure({rendered_time_type:'calculated_start_time'});
+    advance(5*60000);assert.equal(counted(allEarly),0,'running early trip remains uncounted');
+    assert.equal(allEarly.getSummarySnapshot().trip.renderedTime,'0:00:00');
+    await allEarly.stop();assert.equal(counted(allEarly),5*60000,'trip completed before scheduled start falls back to actual start');
+    assert.equal(allEarly.getSummarySnapshot().trip.renderedTime,'0:05:00','completed-early Time Elapsed uses actual-start fallback');
+    const earlySnapshot=allEarly.captureState();allEarly.restoreState(earlySnapshot);
+    assert.equal(counted(allEarly),5*60000,'completed-early exception survives replay');allEarly.remove();
+
+    const earlyWithExclusions=await fresh({scheduledStart:'12:30:00',startTime:'12:00:00'});
+    advance(10*60000);await earlyWithExclusions.startInterval('break',15*60000,{breakType:'break'});
+    advance(5*60000);await earlyWithExclusions.endInterval();advance(5*60000);await earlyWithExclusions.stop();
+    assert.equal(counted(earlyWithExclusions),5*60000,'completed-early fallback still applies factual exclusions and full unused-break credit');
+    earlyWithExclusions.remove();
+
+    const boundary=await fresh({scheduledStart:'12:10:00',startTime:'12:00:00'});
+    advance(10*60000);await boundary.stop();
+    assert.equal(counted(boundary),0,'ending exactly at scheduled start does not use the before-start exception');boundary.remove();
 
     const late = await fresh({startTime:'12:01:00'});
     advance(90000);
@@ -101,7 +142,7 @@ try {
     const creditedRemaining=breakTimer.getSummarySnapshot().trip.renderedTime;
     advance(1000);
     assert.equal(counted(breakTimer),0,'unused credit carries forward until productive time consumes it');
-    assert.notEqual(breakTimer.getSummarySnapshot().trip.renderedTime,creditedRemaining,'productive work consumes credit immediately rather than pausing the timer');
+    assert.notEqual(breakTimer.getSummarySnapshot().trip.renderedTime,creditedRemaining,'Time Remaining retains its independent existing countdown after early break');
     breakTimer.remove();
 
     const gained = await fresh();

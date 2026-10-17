@@ -7505,3 +7505,12 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 
 /* Fullscreen editors reserve the persistent microphone region. */
 shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 100dvh);}
+
+/* Trip summary: three measurements, last/active rows share one column grid. */
+.trip-summary-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:clamp(12px,3.3vw,20px)}
+.trip-summary-table th,.trip-summary-table td{padding:12px 8px;border-bottom:1px solid rgb(255 255 255 / 18%);text-align:right;white-space:nowrap}
+.trip-summary-table th:first-child{text-align:left;white-space:normal}
+.trip-summary-table thead th{color:var(--wm-blue-light)}
+.trip-summary-table [data-trip-summary-row="active"]{background:rgb(37 116 183 / 20%)}
+#tripTransitionSummaryActions{justify-content:center}
+#tripTransitionSummaryCancel[hidden]{display:none}

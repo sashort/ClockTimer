@@ -1344,13 +1344,13 @@
     },
     "f6694f46-174f-5807-bde5-8d2bab312899": {
       "id": "f6694f46-174f-5807-bde5-8d2bab312899",
-      "text": "Sync Goals helps your current trip compensate for earlier trips so you reach your overall percent target.",
-      "default": "Sync Goals helps your current trip compensate for earlier trips so you reach your overall percent target."
+      "text": "Sync Goals helps your active trip compensate for earlier trips so you reach your overall percent target.",
+      "default": "Sync Goals helps your active trip compensate for earlier trips so you reach your overall percent target."
     },
     "d53bb4f8-d5be-5d42-bcd3-be5e47ded6ac": {
       "id": "d53bb4f8-d5be-5d42-bcd3-be5e47ded6ac",
-      "text": "For example, if previous trips took ",
-      "default": "For example, if previous trips took "
+      "text": "For example, if earlier trips took ",
+      "default": "For example, if earlier trips took "
     },
     "cf904a7e-fe60-5f02-b9a0-52da2717d98f": {
       "id": "cf904a7e-fe60-5f02-b9a0-52da2717d98f",
@@ -1359,8 +1359,8 @@
     },
     "9e29429f-d601-5727-b7fa-d9f7c5ffc96e": {
       "id": "9e29429f-d601-5727-b7fa-d9f7c5ffc96e",
-      "text": ", Sync Goals aims to finish the current trip ",
-      "default": ", Sync Goals aims to finish the current trip "
+      "text": ", Sync Goals aims to finish the active trip ",
+      "default": ", Sync Goals aims to finish the active trip "
     },
     "7b69cd9a-3b7e-5520-88b9-0aab882e4367": {
       "id": "7b69cd9a-3b7e-5520-88b9-0aab882e4367",
@@ -1424,8 +1424,8 @@
     },
     "f5cf8059-9ca7-58b6-af57-288662f83229": {
       "id": "f5cf8059-9ca7-58b6-af57-288662f83229",
-      "text": "Previous Totals",
-      "default": "Previous Totals"
+      "text": "Last Totals",
+      "default": "Last Totals"
     },
     "5998d8da-b99e-55cb-95d9-3ef6b43620ed": {
       "id": "5998d8da-b99e-55cb-95d9-3ef6b43620ed",
@@ -2794,8 +2794,8 @@
     },
     "823017cb-464a-572d-844b-b6dfea3b130b": {
       "id": "823017cb-464a-572d-844b-b6dfea3b130b",
-      "text": "Current Trip Confidence",
-      "default": "Current Trip Confidence"
+      "text": "Active Trip Confidence",
+      "default": "Active Trip Confidence"
     },
     "c750f1a0-70fa-5e7f-8433-2f2c215246db": {
       "id": "c750f1a0-70fa-5e7f-8433-2f2c215246db",
@@ -4531,9 +4531,9 @@
     },
     "8e375427-ff4f-5db1-ac39-427cc551f40f": {
       "id": "8e375427-ff4f-5db1-ac39-427cc551f40f",
-      "text": "keep the current Trip goal",
+      "text": "keep the active Trip goal",
       "source": "app.js:479870",
-      "default": "keep the current Trip goal"
+      "default": "keep the active Trip goal"
     },
     "501e9e3f-c786-5d42-add7-3cf3818bb3a1": {
       "id": "501e9e3f-c786-5d42-add7-3cf3818bb3a1",
@@ -5311,9 +5311,9 @@
     },
     "d3df5443-5f50-4a22-b8e6-bdd43caf0d89": {
       "id": "d3df5443-5f50-4a22-b8e6-bdd43caf0d89",
-      "text": "Include current trip",
+      "text": "Include active trip",
       "source": "TripLog.js:10296",
-      "default": "Include current trip"
+      "default": "Include active trip"
     },
     "e467a304-0e63-42cf-8668-861ce62a7200": {
       "id": "e467a304-0e63-42cf-8668-861ce62a7200",

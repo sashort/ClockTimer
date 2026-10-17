@@ -16922,10 +16922,10 @@
             loginPassword: login.open && !login.pending && login.method === "password",
             loginSwitch: login.open && !login.pending,
             openVoicePad: speechRecognition === "listening",
-            confirmSummary: Boolean(completedTripSummary),
-            startTrip: !live && !newTripWorkflowLocked && !completedTripSummary,
+            confirmSummary: Boolean(completedTripSummary && !completedTripSummary.loading),
+            startTrip: !live && !newTripWorkflowLocked,
             endTrip: live && !paused,
-            ready: live ? !paused : !newTripWorkflowLocked && !completedTripSummary,
+            ready: live ? !paused : !newTripWorkflowLocked,
             // Explicit optimistic replacement commands remain available. A
             // duplicate break is validated asynchronously and can revert.
             startBreak: true,
@@ -17032,7 +17032,7 @@
         setInteractionDisabled(downBreakButton, controls.busy || !actions.openBreakSelector);
         setInteractionDisabled(downCancelButton, controls.busy || !actions.cancelDown);
         setInteractionDisabled(downResumeButton, controls.busy || !actions.resume);
-        setInteractionDisabled($("#tripTransitionSummaryOk"), controls.busy);
+        setInteractionDisabled($("#tripTransitionSummaryOk"), controls.busy || !actions.confirmSummary);
         setInteractionDisabled($("#tripTransitionSummaryCancel"), controls.busy);
         setEndTripButtonIntervalPalette(state.interval);
     }
@@ -19230,8 +19230,8 @@
     let completedTripEndMoment;
 
     async function confirmCompletedTripSummary() {
-        if (!completedTripSummary) return false;
-        if (completedTripSummary.invocation.reason !== "trip-ended") return dismissCompletedTripSummary();
+        if (!completedTripSummary || completedTripSummary.loading) return false;
+        if (completedTripSummary.error || tripIsLive() || completedTripSummary.calculation?.presentation?.activeTrip) return dismissCompletedTripSummary();
         // Decide before opening/closing surfaces: a pointer confirmation never
         // inherits the enabled microphone's preference for speech entry.
         const speechPath = Boolean(globalThis.SpeechMenu?.executionContext);
@@ -21022,6 +21022,9 @@
                     )
             );
 
+        if(item.presentation)tripTransitionOverlayDetails.replaceChildren(
+            TripSummary.render(document,item.presentation,tripSummaryText));
+
         tripTransitionOverlay.hidden =
             false;
 
@@ -21155,34 +21158,28 @@
         return announcementText("messages.tripSummary." + key, values);
     }
 
-    function renderCalculatedTripSummary(summary, request) {
-        const rows = [], speech = [tripSummaryText("title"), tripSummaryText("range", {scope: request.scope})];
-        if (!summary.tripCount) {
-            rows.push({label: "", value: tripSummaryText("noData")});
-            speech.push(tripSummaryText("noData"));
-        } else {
-            rows.push({label: tripSummaryText("tripCountLabel"), value: String(summary.tripCount)});
-            speech.push(tripSummaryText("tripCount", {count: summary.tripCount}));
-            for (const [key, value] of [["standard", summary.standardTimeMilliseconds], ["actual", summary.actualTimeMilliseconds], ["counted", summary.countedTimeMilliseconds]]) {
-                rows.push({label: tripSummaryText(key + "Label"), value: formatDuration(value)});
-                speech.push(tripSummaryText(key, {duration: formatGoalFailureDuration(value)}));
-            }
-            rows.push({label: tripSummaryText("percentLabel"), value: summary.percent === null ? "—" : formatActualPercent(summary.percent)});
-            if (summary.percent !== null) speech.push(tripSummaryText("percent", {percent: formatSpokenPercent(summary.percent)}));
-            const key = summary.bankedTimeMilliseconds >= 0 ? "banked" : "over";
-            const duration = Math.abs(summary.bankedTimeMilliseconds);
-            rows.push({label: tripSummaryText(key + "Label"), value: formatDuration(duration)});
-            speech.push(tripSummaryText(key, {duration: formatGoalFailureDuration(duration)}));
-        }
-        // Only automatic end-of-trip summaries offer the next trip.
-        if (request.invocation.reason === "trip-ended") speech.push(announcementText("announcements.trip-ended.newTripPrompt"));
-        completedTripSummary = Object.freeze({...request, calculation: summary, loading: false});
-        renderTripTransitionOverlayItem({title: tripSummaryText("title"), rows, awaitConfirmation: true});
-        const audio = globalThis.WMOFAudio;
-        const guard = () => completedTripSummary?.requestId === request.requestId;
-        const output = audioAnnouncementOutput(request.invocation.reason === "trip-ended" ? "trip-ended" : "range-change");
-        void runSemanticAnnouncement("trip-summary", announcementComponents(audio, undefined, false,
-            speech.map((text, index) => ({phase: index === 0 ? "summary" : "details", text})), output, guard)).catch(console.error);
+    function activeTripSummaryProjection() {
+        if (!tripIsLive()) return null;
+        const trip=clockTimer.getSummarySnapshot().trip;
+        return {id:clockTimer.currentTripId, running:true, standardTimeMilliseconds:trip.standardTimeMilliseconds,
+            countedTimeMilliseconds:trip.countedTimeElapsedMilliseconds};
+    }
+
+    function tripSummaryRange() {
+        return ['auto','trip'].includes(clockTimer.percentMode) ? 'day' : getTripLogRange();
+    }
+
+    function renderCalculatedTripSummary(summary, request, trips, assignedTrip) {
+        const presentation=TripSummary.build({totals:summary,trips,
+            activeTrip:activeTripSummaryProjection() || assignedTrip || null,
+            scope:request.scope.toLocaleLowerCase(),text:tripSummaryText,duration:TripLog.duration,percent:formatActualPercent,
+            spokenDuration:formatGoalFailureDuration,spokenPercent:formatSpokenPercent});
+        completedTripSummary=Object.freeze({...request,calculation:Object.freeze({...summary,presentation}),loading:false});
+        renderTripTransitionOverlayItem({title:tripSummaryText('title'),rows:[],awaitConfirmation:true,presentation});
+        const guard=()=>completedTripSummary?.requestId===request.requestId;
+        const output=audioAnnouncementOutput(request.invocation.reason==='trip-ended'?'trip-ended':'range-change');
+        if(presentation.speech)void runSemanticAnnouncement('trip-summary',announcementComponents(globalThis.WMOFAudio,undefined,false,
+            [{phase:'summary',text:presentation.speech}],output,guard)).catch(console.error);
     }
 
     async function loadTripSummary(request, localTrips, signal) {
@@ -21192,6 +21189,7 @@
         let cached;
         try {const value = safeStorageGet("wmof.tripLogCache"); cached = typeof value === "string" ? JSON.parse(value) : value;} catch {}
         let trips = cached?.userId === signedInProfile?.id ? cached.trips || [] : [];
+        let assignedTrip;
         if (!deliberatelyLoggedOut && clockTimer.networkStatus !== "offline") {
             const url = new URL("api/trips/", API_BASE);
             url.search = new URLSearchParams({result: "list", minDateTime: rangeWindow.startTime, maxDateTime: rangeWindow.endTime,
@@ -21204,13 +21202,16 @@
                 page = await response.json();
                 if (!response.ok) throw new Error(page.message || tripSummaryText("loadFailed"));
                 loaded.push(...(page.trips || []));
+                if(Object.hasOwn(page,"activeTrip"))assignedTrip=page.activeTrip;
             } while (page.trips?.length === 1000);
             trips = loaded;
         }
-        if (signal.aborted || completedTripSummary?.requestId !== request.requestId || request.range !== getTripLogRange()) return;
-        const summary = TripAggregates.calculate({trips: [...trips, ...localTrips], rangeWindow,
-            currentTripId: request.currentTripId, includeActiveTrip: false, goalPercent: request.goalPercent});
-        renderCalculatedTripSummary(summary, request);
+        if (signal.aborted || completedTripSummary?.requestId !== request.requestId || request.range !== tripSummaryRange()) return;
+        const allTrips=[...trips,...localTrips];
+        const activeTrip=activeTripSummaryProjection() || assignedTrip;
+        const summary = TripAggregates.calculate({trips:allTrips,rangeWindow,
+            currentTripId:activeTrip?.id ?? request.currentTripId,includeActiveTrip:false,goalPercent:request.goalPercent});
+        renderCalculatedTripSummary(summary,request,allTrips,assignedTrip);
     }
 
     function showTripSummary({automatic = false, invocation} = {}) {
@@ -21221,7 +21222,7 @@
             reason: automatic ? "trip-ended" : "requested",
             method: automatic ? "system" : globalThis.SpeechMenu?.executionContext ? "voice" : "pointer"
         }), requestId: ++tripSummaryRequestSequence,
-            range: getTripLogRange(), scope: totalScopeLabel(),
+            range: tripSummaryRange(), scope: announcementText(`messages.scope.${tripSummaryRange()}`),
             currentTripId: tripIsLive() ? clockTimer.currentTripId ?? null : null,
             goalPercent: clockTimer.getSummarySnapshot().total?.percentGoal || 1, loading: true});
         const localTrips = clockTimer.getLocalTripLog().map(trip => ({...trip}));
@@ -27677,6 +27678,12 @@
                     isOpen: () => surface.matches('dialog') ? surface.open : popoverIsOpen(surface),
                     acceptCommand: surface === loginDialog ? command =>
                         ['WMOFActions.enterLoginDigits','WMOFActions.confirmLoginDigits','SpeechMenu.cancel'].includes(command.getAttribute('speech-function')) : undefined,
+                    inheritCommands: surface === tripTransitionOverlay,
+                    beforeCommand: surface === tripTransitionOverlay ? command => {
+                        const fn=command.getAttribute('speech-function');
+                        if(!surface.contains(command) && !['SpeechMenu.close','SpeechMenu.cancel'].includes(fn))
+                            dismissCompletedTripSummary();
+                    } : undefined,
                     canDismissProjected: surface === breakDialog ? () => speechBreakSelection?.pending === true : undefined,
                     close: dismiss, cancel: dismiss
                 });
@@ -27702,6 +27709,7 @@
             summaryConfirm?.setAttribute("speech-available", "WMOFSpeechAvailability.canConfirmTripSummary");
             summaryConfirm?.removeAttribute("speech-chain-context");
             summaryConfirm?.removeAttribute("speech-chain-next");
+            summaryConfirm?.setAttribute("speech-chain-surface","pop");
             for (const [id, action] of [["tripTransitionSummaryOk", "confirmTripSummary"], ["tripTransitionSummaryCancel", "cancelTripSummary"]]) {
                 globalThis.WMOFInteractionFunctions.bindAction({element: $("#" + id), event: "click", name: id + "Click", action});
             }

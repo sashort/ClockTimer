@@ -2,8 +2,12 @@
   "version": 1,
   "locale": "en-US",
   "announcements": {
-    "time-reference": {"id": "6769e63d-62b7-56b7-8d57-e214caa3c30d"},
-    "speech-rejected": {"id": "67481bbf-8a04-5aac-a645-00b04dcf8990"},
+    "time-reference": {
+      "id": "6769e63d-62b7-56b7-8d57-e214caa3c30d"
+    },
+    "speech-rejected": {
+      "id": "67481bbf-8a04-5aac-a645-00b04dcf8990"
+    },
     "lunch-clock-out": {
       "summary": "Start meal now",
       "speechOptions": {},
@@ -225,7 +229,18 @@
       "bankedLabel": "Banked toward range goal",
       "banked": "{duration} banked toward the range goal.",
       "overLabel": "Over range goal",
-      "over": "{duration} over the range goal."
+      "over": "{duration} over the range goal.",
+      "totalLabel": "Total",
+      "lastLabel": "Last trip",
+      "activeLabel": "Active trip",
+      "standardColumn": "Standard",
+      "actualColumn": "Actual",
+      "percentColumn": "Percent",
+      "lastActual": "Actual time for your last trip was {duration}.",
+      "performances": "Your performance was {lastPercent}, and your {scope} performance is {totalPercent}.",
+      "lastPerformance": "Your performance was {percent}.",
+      "totalPerformance": "Your {scope} performance is {percent}.",
+      "activeStandard": "Standard time for this trip is {duration}."
     },
     "voiceLogin": {
       "idPrompt": "Please login via voice",

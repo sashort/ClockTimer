@@ -212,3 +212,32 @@ Example: 30 minutes standard, 20 minutes work, then a 15-minute break ended afte
 without changing factual events. tests/counted-time-accounting.mjs covers this,
 credit carry, buffers, lunch, percent goals and full-length breaks; Trip Log tests
 cover active projection and completed-row protection against double credit.
+
+
+## Counted-time start boundary
+
+Counted time normally begins at scheduled start, including when actual work
+begins early. Early working time stays outside the counted balance while the
+trip is running and after a trip that reaches scheduled start is completed.
+Late starts retain scheduled-start accounting. Actual elapsed and factual start
+records remain separate from this counted boundary.
+
+Exception: if actual start and final completion are both strictly before the
+scheduled start, calculate the completed trip from actual start using the same
+exclusions and earned-credit rules. Completion exactly at scheduled start does
+not qualify. Until completion establishes this exception, a running early trip
+still counts from scheduled start.
+
+ClockTimer.#getCountedStartTimeMilliseconds selects this boundary. The stop path
+passes its known final time before computing cached totals and the trip.stopped
+payload; later reads and replay use the stored completion boundary. Tests cover
+before/at/after scheduled start, completed-early fallback, replay, and exclusions
+and early-break credit in the fallback. Break insertion may defer scheduled
+start; counted time must respect that updated schedule too.
+
+
+The scheduled-start boundary changes counted Time Elapsed and performance only.
+Time Remaining and Expected End Time retain their independent existing calculations.
+The final elapsed display is refreshed at completion to apply the completed-early
+exception before freezing. Regression coverage verifies Expected End Time remains
+stable across the scheduled boundary and final elapsed reflects the exception.

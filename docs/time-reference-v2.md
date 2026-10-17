@@ -52,7 +52,7 @@ For performance timestamp `p`, project the timer at
 avoids calculating elapsed audio time from repeated wall-clock reads.
 
 The adapter reads `ClockTimer.getSummarySnapshot(projectedDate).selected`, so
-the current trip/standard/total scope and counted-time accounting remain with
+the active trip/standard/total scope and counted-time accounting remain with
 ClockTimer. The signed remaining duration in milliseconds is:
 
 ```text

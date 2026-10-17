@@ -106,7 +106,7 @@ new phase when a boundary is crossed. Rendered rings never determine these state
 | --- | --- | --- |
 | `selectGoal` | Configured mode; percentage ordering for Auto | `selectGoal_trip`, `selectGoal_auto_total_trip_standard` |
 | `requirements` | Goal being calculated | `requirements_trip`, `requirements_total`, `requirements_standard` |
-| `syncGoal` | Whether Sync can run for the current trip | `syncGoal_on`, `syncGoal_off` |
+| `syncGoal` | Whether Sync can run for the active trip | `syncGoal_on`, `syncGoal_off` |
 | `tick` | Operating state | `tick_running`, `tick_down`, `tick_buffer` |
 | `renderTime` | Time display or idle clock | `renderTime_elapsed`, `renderTime_remaining`, `renderTime_end`, `renderTime_clock` |
 | `ringOrder` | Active trip or inactive | `ringOrder_running`, `ringOrder_inactive` |
