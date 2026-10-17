@@ -33,7 +33,7 @@
             });
             this.#observer.observe(this.ownerDocument.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open']});
             this.ownerDocument.addEventListener('keydown',this.#keyDown,true);
-            this.ownerDocument.addEventListener('fullscreenchange',this.#promote);
+            this.ownerDocument.addEventListener('fullscreenchange',this.#fullscreenChange);
             this.#scan();
         }
         #scan(){for(const dialog of this.ownerDocument.querySelectorAll('dialog'))this.register(dialog);}
@@ -133,6 +133,13 @@
             this.style.setProperty('--shared-modal-safe-height',Math.max(0,bottom-top)+'px');
         }
         #promote=()=>{this.#measure();if(this.#open.length && !this.matches(':popover-open'))this.showPopover();};
+        #fullscreenChange=()=>{
+            // Entering fullscreen puts its element above existing popovers.
+            // Reinsert the shared region, then its mic, in top-layer order.
+            if(this.#open.length && this.matches(':popover-open'))this.hidePopover();
+            this.#promote();
+            for(const control of this.#controls.keys())if(!control.hidden)control.promoteTopLayer?.();
+        };
         #keyDown=event=>{
             if(event.key!=='Escape'||!this.#open.length)return;
             const focused=event.target.closest?.('dialog[open]');

@@ -24,7 +24,10 @@ The persistent mic moves into the shared host and returns to its app parent
 when the last modal closes. Its layout always measures the original app host,
 including when speech starts after Login has opened. Moving it preserves its
 subscriptions, Commands panel, response columns and independent result TTLs.
-Fullscreen numberpad height reserves the mic's safe region.
+Fullscreen numberpad height reserves the mic's safe region. On fullscreen
+changes, reinsert the open host into the browser top layer, then promote the
+mic. Fullscreen can cover an already-open popover even when it still reports
+`:popover-open`; layout refresh alone cannot restore pointer access.
 
 ## Input session transfer and announcement ordering
 
