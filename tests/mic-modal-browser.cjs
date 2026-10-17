@@ -50,7 +50,8 @@ const server=http.createServer((req,res)=>{
    await WMOFVoiceEntry.open({mode:'duration',source:'handoff-test',initialValue:600000,confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{handoffConfirmed.push(value);return true;}});
    await WMOFActions.handleVoiceEntrySpeech('00:22:56');
   });
-  const tapMic=async()=>{const p=await page.evaluate(()=>{const r=testShadows.get(document.querySelector('#speechMicBar')).querySelector('#mic').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};});await page.touchscreen.tap(p.x,p.y);};
+  // Use a real touch action after layout settles; wake may await AudioContext.resume().
+  const tapMic=async()=>{const handle=await page.evaluateHandle(()=>testShadows.get(document.querySelector('#speechMicBar')).querySelector('#mic'));try{await handle.asElement().tap();}finally{await handle.dispose();}};
   await tapMic();await page.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open&&!WMOFVoiceEntry.active);
   assert.deepEqual(await page.evaluate(()=>({value:WMOFInteractionState.state.editor.value,source:WMOFInteractionState.state.editor.source,mode:WMOFInteractionState.state.editor.mode})),{value:'2256',source:'handoff-test',mode:'duration'});
   await page.waitForFunction(()=>handoffAudio.some(s=>s==='speech:Switched to number pad.'));
@@ -87,7 +88,7 @@ const server=http.createServer((req,res)=>{
    assert(Math.abs(m.height-m.viewport)<1,JSON.stringify(m));
    assert(m.bottom<=m.safe-7,JSON.stringify(m));
    assert(m.micWidth>=m.width-24,JSON.stringify(m));
-   await tapMic();assert(await page.evaluate(()=>SpeechMenu.muted),'fullscreen mic can deactivate');await tapMic();assert(!await page.evaluate(()=>SpeechMenu.muted),'fullscreen mic can wake');
+   await tapMic();await page.waitForFunction(()=>SpeechMenu.muted,{},{timeout:5000});await tapMic();await page.waitForFunction(()=>!SpeechMenu.muted,{},{timeout:5000});
   }
   await page.evaluate(()=>document.exitFullscreen());await page.waitForTimeout(100);
   assert.deepEqual(errors,[]);console.log('PASS first Ready after login, separate duration, mobile modal mic taps, preserved editor session, spoken/button choices, feedback completion barriers and fullscreen resizing');
