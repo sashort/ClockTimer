@@ -17,7 +17,7 @@ const server=http.createServer((req,res)=>{
  try{
   const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{window.testShadows=new WeakMap();const attach=Element.prototype.attachShadow;Element.prototype.attachShadow=function(options){const result=attach.call(this,options);testShadows.set(this,result);return result;};});
-  await page.route('**/api/**',r=>new URL(r.request().url()).pathname.endsWith('.js')?r.continue():r.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[],trips:[],instruments:[],voices:[]}}));
+  await page.route('**/api/**',r=>new URL(r.request().url()).pathname.endsWith('.js')?r.continue():r.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[],trips:[],instruments:[],voices:[],accepted:true,tripId:41,eventId:1,events:[]}}));
   await page.goto(`http://127.0.0.1:${server.address().port}/order-filler.php`);
   await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));
   await page.waitForTimeout(1000);
@@ -29,6 +29,11 @@ const server=http.createServer((req,res)=>{
   assert(await page.evaluate(()=>SpeechMenu.testSayAfterSilence('ready')));assert(await page.evaluate(()=>WMOFVoiceEntry.active&&WMOFCoordinator.lockCount===0&&WMOFStateTransactions.pending.length===0),'first Ready after login opens and settles');
   await say('twenty two fifty six');assert.equal(await page.evaluate(()=>WMOFInteractionState.state.editor.value),'2256');
   assert(await page.evaluate(()=>WMOFVoiceEntry.active&&WMOFCoordinator.lockCount===0),'separate duration remains accepted without a lock');
+  await say('okay');
+  await page.waitForFunction(()=>document.querySelector('#clockTimer').status==='running');
+  assert(await page.evaluate(()=>SpeechMenu.testSayAfterSilence('ready')),'Ready after silence ends the running trip');
+  await page.waitForFunction(()=>document.querySelector('#tripTransitionOverlay').open);
+  assert(await page.evaluate(()=>document.querySelector('#clockTimer').status==='ready'&&WMOFCoordinator.lockCount===0&&WMOFStateTransactions.pending.length===0),'trip summary is an owned Ready transition with no cancellation or stranded locks');
   await say('cancel');
 
   for(const id of ['loginDialog','voiceEntrySurface','tripLogDialog']){

@@ -13,7 +13,7 @@ class SpeechCommandIndex {
         if (typeof Observer === 'function') {
             this.#observer = new Observer(records => this.#reconcile(records));
             this.#observer.observe(root, {subtree: true, childList: true, attributes: true,
-                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-skippable', 'speech-chain-context', 'speech-chain-next', 'speech-chain-surface', 'speech-available',
+                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-skippable', 'speech-chain-context', 'speech-chain-next', 'speech-chain-surface', 'speech-chain-transition', 'speech-available',
                     'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
                     'speech-preproc-field', 'speech-collect', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
         }
@@ -442,6 +442,7 @@ class SpeechMenu {
                             "speech-chain-context",
                             "speech-chain-next",
                             "speech-chain-surface",
+                            "speech-chain-transition",
                             "speech-scope",
                             "speech-authorized",
                             "speech-collect",
@@ -4330,7 +4331,8 @@ class SpeechMenu {
         }
         else if (count && count === steps.length && !last.canContinue &&
             !last.commandElement.hasAttribute("speech-chain-next") &&
-            !last.commandElement.hasAttribute("speech-chain-surface")) {
+            !last.commandElement.hasAttribute("speech-chain-surface") &&
+            !last.commandElement.hasAttribute("speech-chain-transition")) {
             SpeechMenu.#commitTerminalStream(utterance);
             if (tail) {
                 void utterance.segmentBarrier.then(accepted => {
@@ -6833,18 +6835,22 @@ class SpeechMenu {
         return depth;
     }
 
-    static #chainNextContext(
-        element
-    ) {
-        return String(
-            element
-                ?.getAttribute?.(
-                    "speech-chain-next"
-                ) ||
-            ""
-        )
-            .trim() ||
-            undefined;
+    static #chainTransition(element) {
+        const provider = element?.getAttribute("speech-chain-transition");
+        if (provider) {
+            const resolved = SpeechMenu.#resolve(provider);
+            if (!resolved) return undefined;
+            try {
+                const value = resolved.fn.call(resolved.owner, element);
+                if (!value || typeof value !== "object" || Array.isArray(value) || typeof value.then === "function" ||
+                    (value.context != null && typeof value.context !== "string") ||
+                    (value.surface != null && typeof value.surface !== "string")) return undefined;
+                return {context: String(value.context || "").trim() || undefined,
+                    surface: String(value.surface || "").trim() || undefined};
+            } catch {return undefined;}
+        }
+        return {context: String(element?.getAttribute("speech-chain-next") || "").trim() || undefined,
+            surface: element?.getAttribute("speech-chain-surface") || undefined};
     }
 
     static #chainContextTokens(
@@ -7268,8 +7274,10 @@ class SpeechMenu {
                 const segment = words.slice(0, end).join(" ");
                 const probe = await probeSegment(segment);
                 if (!probe || signal?.aborted) continue;
-                const declaredContext = SpeechMenu.#chainNextContext(element);
-                const transition = element.getAttribute('speech-chain-surface');
+                const projection = SpeechMenu.#chainTransition(element);
+                if (!projection) continue;
+                const declaredContext = projection.context;
+                const transition = projection.surface;
                 let frames = projectedFrames?.map(frame => ({...frame}));
                 if (transition || declaredContext) {
                     frames ??= SpeechMenu.#surfaceFrames();

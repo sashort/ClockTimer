@@ -17036,6 +17036,15 @@
         setEndTripButtonIntervalPalette(state.interval);
     }
 
+    // Planning and execution must select the same branch before the action
+    // changes state. A running trip opens its summary, not a duration collector.
+    globalThis.WMOFSpeechTransitions = Object.freeze({
+        ready: () => globalThis.WMOFSpeechAvailability.canOpenBreakEndMenu()
+            ? {surface: "#speechBreakConfirmDialog"}
+            : tripIsLive() ? {surface: "#tripTransitionOverlay"}
+            : {surface: "#voiceEntrySurface", context: "voice-entry"}
+    });
+
     // Both names are persisted in speech-editor configurations. Keep their
     // behavior identical so a saved legacy name still follows the trip state.
     async function prepareReadyWorkflow() {
@@ -27489,7 +27498,10 @@
                 element.dataset.speechSystemCommand = key;
                 element.dataset.speechOptionsCategory = 'system';
                 element.setAttribute('speech-chain-surface', 'pop');
-            } else if (key === 'ready') element.setAttribute('speech-chain-surface', '#voiceEntrySurface');
+            } else if (key === 'ready') {
+                element.setAttribute('speech-chain-surface', '#voiceEntrySurface');
+                element.setAttribute('speech-chain-transition', 'WMOFSpeechTransitions.ready');
+            }
             else if (key === 'startBreak') element.setAttribute('speech-chain-surface', '#breakDialog');
             else if (key === 'endBreak') element.setAttribute('speech-reject-prefix', 'short');
             else if (key === 'showTripLog') element.setAttribute('speech-chain-surface', '#tripLogDialog');

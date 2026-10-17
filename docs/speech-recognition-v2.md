@@ -294,3 +294,29 @@ Time uses this protocol so queued audio cannot hold a recognition root open.
 Announcement layers come from the catalog definition. A summary-only definition
 cannot implicitly enable a chime layer or fall back to an invented same-named
 song. This prevents the separate `Unknown song: sync-state` console error.
+
+
+## State-dependent command transitions (Ready ending a trip)
+
+A command's predicted continuation must follow the same state branch as its
+execution. Ready opens Voicepad when no trip is running, but ends a running
+trip and opens its summary. Projecting Voicepad unconditionally caused the
+summary to be classified as an unexpected modal and cancelled/rolled back the
+command. Direct-final transcript tests missed this; interim Ready followed by
+silence reproduces the cancellation.
+
+`speech-chain-transition="WMOFSpeechTransitions.ready"` names a synchronous,
+side-effect-free provider returning `{surface, context}`. SpeechMenu resolves
+it during planning, before execution changes state, and stores that projection
+on the step. The provider overrides both static `speech-chain-surface` and
+`speech-chain-next` defaults, including clearing a context by omitting it.
+Missing, invalid or throwing providers reject that plan; static contracts keep
+their existing behavior when no provider is declared. The Vosk context provider
+uses the same planner, so grammar and execution share the branch decision.
+
+Keep state-specific decisions in the application's transition provider; the
+recognizer must not special-case Ready. Preserve the unexpected-modal guard
+for unrelated windows. Tests cover partial Ready, silence and delayed finals
+for first Ready after login, ending a running trip, and Ready after its summary.
+The native mobile browser test starts a trip with voice, ends it through the
+silence boundary, and checks the summary opens with no pending locks/transactions.

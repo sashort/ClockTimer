@@ -155,7 +155,11 @@ if(process.argv.includes('--post-login-ready')) {
   await say('cancel');
   if(source==='after-login') {
    await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();window.__testTime+=60000;
-   await say('ready');assert.equal(timer.status,'ready','Ready ends the active trip without holding Applying');assert.equal(window.WMOFCoordinator.lockCount,0);await window.WMOFActions.confirmTripSummary();await settle();
+   const ending=window.SpeechMenu.testBegin();
+   window.SpeechMenu.testUseRecognizer({setHotwords(){},abortUtterance(){},finishUtterance(){setTimeout(()=>window.SpeechMenu.testDeliverFinal(ending,'ready'),20);}});
+   window.SpeechMenu.testResult(ending,'ready',false);await settle();window.SpeechMenu.testPause(ending);await new Promise(r=>setTimeout(r,450));await ending.digestQueue;await ending.segmentBarrier;await settle();
+   assert(ending.hadCommittedCommand&&!ending.digestExecutionFailed,'partial Ready settles after silence during the active trip');
+   assert.equal(timer.status,'ready','Ready ends the active trip without holding Applying');assert.equal(window.WMOFCoordinator.lockCount,0);await window.WMOFActions.confirmTripSummary();await settle();
   }
  }
  assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
