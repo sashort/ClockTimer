@@ -16776,29 +16776,34 @@
         {
           "offset": "0",
           "tone": "C4",
-          "length": "744",
+          "length": "762",
           "dynamic": "ff",
           "instrument": "neon-countdown-render"
         }
       ],
       "mediaUrl": "api/audio/samples/neon-countdown.wav",
       "renderedMix": {
-        "durationSeconds": 372,
+        "durationSeconds": 381,
         "key": "D minor / C# minor / D minor",
-        "sha256": "0b9669323ebe96c01feee73c2397bb2f1aa56e254837bdc41500eb4a60774917",
+        "sha256": "70f353f24d90f4e70a4a91f73cca201e33f0f90f97315f1425dc714b5f117774",
         "settings": "api/audio/instruments/neon-countdown-mix.json",
         "score": "api/audio/instruments/neon-countdown-score.json",
-        "revision": 46,
+        "revision": 52,
         "partTwo": {
           "startSeconds": 120,
-          "durationSeconds": 150,
+          "durationSeconds": 155,
           "bpm": 64,
           "key": "C# minor",
           "bars": 40,
           "windTransition": [
-            118.025,
+            116,
             123.525
           ],
+          "windCrescendo": {
+            "startSeconds": 116,
+            "fullLevelSeconds": 117.5,
+            "matchedPartOneHoldSeconds": 1.5
+          },
           "entranceRest": {
             "startSeconds": 119.0625,
             "endSeconds": 120,
@@ -16818,49 +16823,49 @@
           "pulseChordVoicings": true,
           "tubularBells": {
             "strikeSeconds": [
-              128,
-              129.40625,
-              131.28125,
-              132.6875,
+              127.96875,
+              129.375,
+              131.25,
+              132.65625,
               138.75,
-              140.625,
-              143.4375,
+              140.390625,
+              143.671875,
               150,
               151.40625,
               153.28125,
               154.6875,
               165,
-              166.875,
+              167.109375,
               168.28125,
-              170.15625,
+              170.390625,
               180,
               181.40625,
               182.8125,
               184.6875,
-              186.5625,
+              186.328125,
               195,
-              196.875,
+              197.109375,
               198.28125,
-              200.625,
+              200.390625,
               210,
               211.40625,
               213.28125,
-              215.625,
+              215.390625,
               225,
-              226.875,
+              227.109375,
               228.75,
-              230.625,
+              230.390625,
               240,
               241.40625,
               243.28125,
               244.6875,
-              246.5625,
+              246.328125,
               255,
               256.875
             ],
             "longRingingTails": true,
             "phraseStartSeconds": [
-              128,
+              127.96875,
               138.75,
               150,
               165,
@@ -16878,14 +16883,14 @@
           "organ": {
             "foreground": true,
             "answerSeconds": [
-              130.5,
-              152.5,
-              197.5,
-              242.5
+              130.546875,
+              152.578125,
+              197.578125,
+              242.578125
             ]
           },
           "tempoChange": {
-            "atSeconds": 270,
+            "atSeconds": 275,
             "fromBpm": 64,
             "toBpm": 120,
             "mode": "immediate",
@@ -16893,7 +16898,7 @@
           },
           "ending": {
             "startSeconds": 269.0625,
-            "holdSeconds": 1.875,
+            "holdSeconds": 5.625,
             "releaseSeconds": 0.65,
             "key": "A/E sustained into D minor",
             "instruments": [
@@ -16905,43 +16910,283 @@
           }
         },
         "partThree": {
-          "startSeconds": 270,
-          "durationSeconds": 102,
+          "startSeconds": 275,
+          "durationSeconds": 106,
           "bpm": 120,
           "key": "D minor",
           "bars": 48,
           "balance": {
             "orchestraRaised": true,
-            "pulseGain": 1.4,
+            "pulseGain": 1.1,
             "pulseArticulation": "original short pattern",
             "pulseSustain": 0.76
           },
-          "stringRuns": [
+          "quarterLeadIns": [
             {
-              "bar": 4,
-              "startSeconds": 277.5,
-              "previousHeldNotes": [
+              "bar": 6,
+              "startSeconds": 286.5,
+              "target": "Bb5",
+              "pickup": "A5"
+            },
+            {
+              "bar": 10,
+              "startSeconds": 294.5,
+              "target": "Bb5",
+              "pickup": "A5"
+            },
+            {
+              "bar": 14,
+              "startSeconds": 302.5,
+              "target": "E6",
+              "pickup": "D6"
+            },
+            {
+              "bar": 18,
+              "startSeconds": 310.5,
+              "target": "D6",
+              "pickup": "C6"
+            },
+            {
+              "bar": 22,
+              "startSeconds": 318.5,
+              "target": "G6",
+              "pickup": "F6"
+            },
+            {
+              "bar": 26,
+              "startSeconds": 326.5,
+              "target": "F5",
+              "pickup": "E5"
+            },
+            {
+              "bar": 30,
+              "startSeconds": 334.5,
+              "target": "Bb5",
+              "pickup": "A5"
+            },
+            {
+              "bar": 34,
+              "startSeconds": 342.5,
+              "target": "Bb5",
+              "pickup": "A5"
+            },
+            {
+              "bar": 38,
+              "startSeconds": 350.5,
+              "target": "E6",
+              "pickup": "D6"
+            },
+            {
+              "bar": 42,
+              "startSeconds": 358.5,
+              "target": "D6",
+              "pickup": "C6"
+            },
+            {
+              "bar": 46,
+              "startSeconds": 366.5,
+              "target": "G5",
+              "pickup": "F5"
+            }
+          ],
+          "bellPhrases": [
+            {
+              "bar": 8,
+              "atSeconds": 291,
+              "count": 2
+            },
+            {
+              "bar": 10,
+              "atSeconds": 295,
+              "count": 1
+            },
+            {
+              "bar": 12,
+              "atSeconds": 299,
+              "count": 2
+            },
+            {
+              "bar": 14,
+              "atSeconds": 303,
+              "count": 1
+            },
+            {
+              "bar": 18,
+              "atSeconds": 311,
+              "count": 1
+            },
+            {
+              "bar": 20,
+              "atSeconds": 315,
+              "count": 2
+            },
+            {
+              "bar": 22,
+              "atSeconds": 319,
+              "count": 1
+            },
+            {
+              "bar": 24,
+              "atSeconds": 323,
+              "count": 2
+            },
+            {
+              "bar": 26,
+              "atSeconds": 327,
+              "count": 1
+            },
+            {
+              "bar": 28,
+              "atSeconds": 331,
+              "count": 2
+            },
+            {
+              "bar": 30,
+              "atSeconds": 335,
+              "count": 1
+            },
+            {
+              "bar": 32,
+              "atSeconds": 339,
+              "count": 2
+            },
+            {
+              "bar": 34,
+              "atSeconds": 343,
+              "count": 1
+            },
+            {
+              "bar": 36,
+              "atSeconds": 347,
+              "count": 2
+            },
+            {
+              "bar": 38,
+              "atSeconds": 351,
+              "count": 1
+            },
+            {
+              "bar": 40,
+              "atSeconds": 355,
+              "count": 2
+            },
+            {
+              "bar": 42,
+              "atSeconds": 359,
+              "count": 1
+            },
+            {
+              "bar": 44,
+              "atSeconds": 363,
+              "count": 2
+            },
+            {
+              "bar": 46,
+              "atSeconds": 367,
+              "count": 1
+            },
+            {
+              "bar": 48,
+              "atSeconds": 371,
+              "count": 2
+            }
+          ],
+          "heldVoicings": [
+            [
+              [
                 "D4",
                 "F4",
                 "A4"
               ],
-              "previous": "F4",
-              "target": "C4",
-              "direction": "fall",
-              "notes": [
-                "G4",
+              [
                 "F4",
+                "A4",
+                "D5"
+              ],
+              [
+                "A4",
+                "D5",
+                "F5"
+              ]
+            ],
+            [
+              [
+                "Bb3",
+                "D4",
+                "F4"
+              ],
+              [
+                "D4",
+                "F4",
+                "Bb4"
+              ],
+              [
+                "F4",
+                "Bb4",
+                "D5"
+              ]
+            ],
+            [
+              [
+                "C4",
+                "F4",
+                "A4"
+              ],
+              [
+                "F4",
+                "A4",
+                "C5"
+              ],
+              [
+                "A4",
+                "C5",
+                "F5"
+              ]
+            ],
+            [
+              [
                 "E4",
-                "D4"
+                "G4",
+                "Bb4"
+              ],
+              [
+                "G4",
+                "Bb4",
+                "E5"
+              ],
+              [
+                "Bb4",
+                "E5",
+                "G5"
+              ]
+            ]
+          ],
+          "stringRuns": [
+            {
+              "bar": 4,
+              "startSeconds": 282.5,
+              "previousHeldNotes": [
+                "D4",
+                "F4",
+                "Bb4"
+              ],
+              "previous": "F4",
+              "target": "A4",
+              "direction": "rise",
+              "notes": [
+                "D4",
+                "E4",
+                "F4",
+                "G4"
               ]
             },
             {
               "bar": 8,
-              "startSeconds": 285.5,
+              "startSeconds": 290.5,
               "previousHeldNotes": [
-                "E4",
                 "G4",
                 "Bb4",
+                "E5",
                 "E5",
                 "G5",
                 "Bb5"
@@ -16958,35 +17203,35 @@
             },
             {
               "bar": 12,
-              "startSeconds": 293.5,
+              "startSeconds": 298.5,
               "previousHeldNotes": [
-                "D4",
                 "F4",
-                "A4",
+                "Bb4",
+                "D5",
                 "D5",
                 "F5",
-                "A5"
+                "Bb5"
               ],
               "previous": "F4",
-              "target": "C4",
-              "direction": "fall",
+              "target": "A4",
+              "direction": "rise",
               "notes": [
-                "G4",
-                "F4",
+                "D4",
                 "E4",
-                "D4"
+                "F4",
+                "G4"
               ]
             },
             {
               "bar": 16,
-              "startSeconds": 301.5,
+              "startSeconds": 306.5,
               "previousHeldNotes": [
-                "E4",
-                "G4",
                 "Bb4",
                 "E5",
                 "G5",
-                "Bb5"
+                "G5",
+                "Bb5",
+                "E6"
               ],
               "previous": "C#5",
               "target": "D5",
@@ -17000,35 +17245,35 @@
             },
             {
               "bar": 20,
-              "startSeconds": 309.5,
+              "startSeconds": 314.5,
               "previousHeldNotes": [
+                "Bb3",
                 "D4",
                 "F4",
-                "A4",
-                "D5",
                 "F5",
-                "A5"
+                "Bb5",
+                "D6"
               ],
               "previous": "F4",
-              "target": "C4",
-              "direction": "fall",
+              "target": "A4",
+              "direction": "rise",
               "notes": [
-                "G4",
-                "F4",
+                "D4",
                 "E4",
-                "D4"
+                "F4",
+                "G4"
               ]
             },
             {
               "bar": 24,
-              "startSeconds": 317.5,
+              "startSeconds": 322.5,
               "previousHeldNotes": [
                 "E4",
                 "G4",
                 "Bb4",
-                "E5",
-                "G5",
-                "Bb5"
+                "Bb5",
+                "E6",
+                "G6"
               ],
               "previous": "C#5",
               "target": "D5",
@@ -17042,14 +17287,14 @@
             },
             {
               "bar": 28,
-              "startSeconds": 325.5,
+              "startSeconds": 330.5,
               "previousHeldNotes": [
                 "D4",
                 "F4",
-                "A4",
+                "Bb4",
+                "Bb4",
                 "D5",
-                "F5",
-                "A5"
+                "F5"
               ],
               "previous": "D4",
               "target": "C4",
@@ -17063,56 +17308,56 @@
             },
             {
               "bar": 32,
-              "startSeconds": 333.5,
+              "startSeconds": 338.5,
               "previousHeldNotes": [
-                "E4",
                 "G4",
                 "Bb4",
+                "E5",
                 "E5",
                 "G5",
                 "Bb5"
               ],
               "previous": "D4",
-              "target": "D4",
-              "direction": "fall",
+              "target": "F4",
+              "direction": "rise",
               "notes": [
-                "A4",
-                "G4",
-                "F4",
+                "Bb3",
+                "C4",
+                "D4",
                 "E4"
               ]
             },
             {
               "bar": 36,
-              "startSeconds": 341.5,
+              "startSeconds": 346.5,
               "previousHeldNotes": [
-                "D4",
                 "F4",
-                "A4",
+                "Bb4",
+                "D5",
                 "D5",
                 "F5",
-                "A5"
+                "Bb5"
               ],
               "previous": "F4",
-              "target": "C4",
-              "direction": "fall",
+              "target": "A4",
+              "direction": "rise",
               "notes": [
-                "G4",
-                "F4",
+                "D4",
                 "E4",
-                "D4"
+                "F4",
+                "G4"
               ]
             },
             {
               "bar": 40,
-              "startSeconds": 349.5,
+              "startSeconds": 354.5,
               "previousHeldNotes": [
-                "E4",
-                "G4",
                 "Bb4",
                 "E5",
                 "G5",
-                "Bb5"
+                "G5",
+                "Bb5",
+                "E6"
               ],
               "previous": "C#5",
               "target": "D5",
@@ -17126,28 +17371,28 @@
             },
             {
               "bar": 44,
-              "startSeconds": 357.5,
+              "startSeconds": 362.5,
               "previousHeldNotes": [
+                "Bb3",
                 "D4",
                 "F4",
-                "A4",
-                "D5",
                 "F5",
-                "A5"
+                "Bb5",
+                "D6"
               ],
               "previous": "F4",
-              "target": "C4",
-              "direction": "fall",
+              "target": "A4",
+              "direction": "rise",
               "notes": [
-                "G4",
-                "F4",
+                "D4",
                 "E4",
-                "D4"
+                "F4",
+                "G4"
               ]
             },
             {
               "bar": 48,
-              "startSeconds": 365.5,
+              "startSeconds": 370.5,
               "previousHeldNotes": [
                 "C#4",
                 "E4",
@@ -17253,22 +17498,32 @@
           "sampleManifest": "api/audio/instruments/neon-orchestra-samples.json",
           "horrorStrings": {
             "instrument": "finale-horror-strings",
-            "entrySeconds": 270.25,
+            "entrySeconds": 275.25,
+            "openingInstrument": "finale-opening-horror-strings",
+            "openingHoldSeconds": 0.75,
+            "openingReleaseSeconds": 1.75,
             "semitoneAccents": true,
             "recordedTremolo": true
           },
           "bells": {
-            "strikeCount": 4,
-            "foregroundGain": 6.6,
+            "strikeCount": 30,
+            "contourPositions": [
+              "run-start",
+              "held-chord"
+            ],
+            "contourGateBeats": 1,
+            "contourStrikeCount": 20,
+            "exactContourOctaves": true,
+            "foregroundGain": 5.2,
             "dynamic": "ff",
-            "lastStrikeSeconds": 350,
-            "naturalEndSeconds": 360.0134730829079,
+            "lastStrikeSeconds": 371,
+            "naturalEndSeconds": 380.6079977689804,
             "naturalDecay": true,
-            "sparse": true
+            "sparse": false
           },
-          "naturalTailEndSeconds": 371.2204154916365,
+          "naturalTailEndSeconds": 380.6079977689804,
           "ending": {
-            "startSeconds": 366,
+            "startSeconds": 371,
             "holdSeconds": 2,
             "releaseSeconds": 3,
             "dramaticFinalHit": true,

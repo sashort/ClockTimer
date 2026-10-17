@@ -3,6 +3,7 @@
 const orchestra=require('../api/audio/instruments/neon-orchestra-samples.json');
 const hiphop=require('../api/audio/instruments/dark-eighties-hiphop-kit.json');
 const {approach,midi}=require('./string-chord-approach.cjs');
+const {arrangeFinale}=require('./neon-countdown-phrasing.cjs');
 function extendFinale(score,catalog) {
     const {instruments,song}=score,events=song.events,firstEvent=events.length;
     const start=score.durationSeconds,bpm=120,beat=60/bpm,barSeconds=4*beat,bars=48;
@@ -16,7 +17,7 @@ function extendFinale(score,catalog) {
             samples:orchestra.groups[group].map(sample=>({...structuredClone(sample),...(naturalDecay?{naturalDecay:true}:{})})),
             reverb:{wet:.12,decay:1.2},...changes};return name;
     };
-    const pulse=clone('finale-pulse','cinematic-pulse-bass',1.4,{
+    const pulse=clone('finale-pulse','cinematic-pulse-bass',1.1,{
         envelope:{attack:.018,decay:.22,sustain:.76,release:.16}});
     const cellos=sampled('finale-cellos','cello-short',1.9,{naturalDecay:true});
     const spiccato=sampled('finale-spiccato','violin-short',1.9,{naturalDecay:true});
@@ -24,6 +25,9 @@ function extendFinale(score,catalog) {
     const runStrings=sampled('finale-string-runs','violin-short',4.8,{envelope:{attack:.003,decay:.02,sustain:.96,release:.012},reverb:{wet:.025,decay:.35}});
     const strings=sampled('finale-horror-strings','violin-tremolo',2.6,{
         envelope:{attack:.025,decay:.15,sustain:.95,release:.5},reverb:{wet:.08,decay:1.2}});
+    const openingStringHold=.75,openingStringRelease=1.75;
+    const openingStrings=clone('finale-opening-horror-strings',strings,2.6,{
+        envelope:{...instruments[strings].envelope,release:openingStringRelease}});
     const horns=sampled('finale-horns','horn',2.6,{envelope:{attack:.012,decay:.15,sustain:.9,release:.35}});
     const trumpets=sampled('finale-trumpets','trumpet',1.9,{naturalDecay:true});
     const flute=sampled('finale-flute','flute',2.6,{naturalDecay:true});
@@ -40,7 +44,7 @@ function extendFinale(score,catalog) {
     const softCymbal=sampled('finale-cymbal-soft','cymbal',1.4,{naturalDecay:true});
     instruments[cymbal].samples=instruments[cymbal].samples.slice(1);
     instruments[softCymbal].samples=instruments[softCymbal].samples.slice(0,1);
-    const bells=clone('finale-bells','midnight-tubular-bells',6.6);
+    const bells=clone('finale-bells','midnight-tubular-bells',5.2);
     const melodicEvents=[];
     const add=(at,tone,length,instrument,dynamic='mf')=>{
         const event={offset:String(at*2),tone,length:String(length*2),instrument,dynamic};events.push(event);return event;
@@ -62,7 +66,7 @@ function extendFinale(score,catalog) {
         [[0,'A4',.75],[1,'C5',.5],[2,'E5',.5],[2.75,'C#5',.25],[3,'D5',.25],[3.5,'A4',.25]]
     ];
     // Announce the horror-string color immediately, rather than burying it late.
-    for(const note of ['E6','F6'])add(start+.25,note,.75,strings,'mf');
+    for(const note of ['E6','F6'])add(start+.25,note,openingStringHold,openingStrings,'mf');
     for(let bar=0;bar<bars;bar++) {
         const at=start+bar*barSeconds,building=bar>=40;
         const chord=bar>=46?{root:'A1',fifth:'E2',notes:['A2','C#3','E3','G3'],high:['C#4','E4','G4','A4']}:chords[Math.floor(bar/2)%4];
@@ -133,13 +137,16 @@ function extendFinale(score,catalog) {
             event.sampleStartSeconds=.12; // bypass the quiet pre-attack on rapid bow strokes
         });
         if(bar===48)add(at,'D6',1.5,violins,'f');
+        // Quarter-note strikes mark the run entrance and its held-chord arrival.
+        add(leadAt,run.notes[0],beat,bells,'ff');
+        add(at,run.target,beat,bells,'ff');
         stringRuns.push(run);
     }
     // Sparse callbacks to Part II, with enough space for complete recorded tails.
     const bellEvents=[[8,'D4'],[20,'F4'],[32,'A4'],[40,'D5']].map(([bar,note])=>({at:start+bar*barSeconds,note}));
     for(const {at,note} of bellEvents)add(at,note,.6,bells,'ff');
     const finalAt=start+bars*barSeconds,hold=2,release=3,ensembleHold=1.5;
-    const finalPulse=clone('finale-last-pulse',pulse,1.6,{envelope:{attack:.018,decay:.2,sustain:.8,release:.35}});
+    const finalPulse=clone('finale-last-pulse',pulse,1.25,{envelope:{attack:.018,decay:.2,sustain:.8,release:.35}});
     const finalOrgan=sampled('finale-last-organ','pipe-organ',1.6,{
         envelope:{attack:.015,decay:.2,sustain:.95,release},reverb:{wet:.1,decay:1}});
     const finalCellos=sampled('finale-last-cellos','cello-long',1.9);
@@ -154,6 +161,7 @@ function extendFinale(score,catalog) {
     add(finalAt,'D3',ensembleHold,finalCellos,'f');
     for(const note of ['A5','D6'])add(finalAt,note,ensembleHold,strings,'f');
     add(finalAt,'C4',.2,bassDrum,'ff');add(finalAt,'C4',.15,snare,'f');add(finalAt,'C4',.15,clap,'f');
+    const phrasing=arrangeFinale({events,instruments,start,stringRuns,violins,strings,runStrings,bells});
     const frequency=note=>{const m=/^([A-G])(#|b)?(\d)$/.exec(note);return 440*2**((((Number(m[3])+1)*12+{C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]+(m[2]==='#'?1:m[2]==='b'?-1:0))-69)/12);};
     const naturalEnd=event=>{
         const definition=instruments[event.instrument],samples=definition.samples,hz=frequency(event.tone);
@@ -165,20 +173,20 @@ function extendFinale(score,catalog) {
     const bellNaturalEnd=Math.max(...events.slice(firstEvent).filter(event=>event.instrument===bells).map(naturalEnd));
     const durationSeconds=Math.ceil(Math.max(finalAt+hold+release+1,naturalTailEnd,score.partTwo.tubularBells.naturalEndSeconds+2.8));
     events.sort((a,b)=>Number(a.offset)-Number(b.offset));
-    return {...score,revision:46,durationSeconds,
+    return {...score,revision:52,durationSeconds,
         sections:[...score.sections,['Part III: orchestral entry',start,start+8*barSeconds],
             ['Part III: orchestral themes',start+8*barSeconds,start+24*barSeconds],
             ['Part III: woodwind and brass answers',start+24*barSeconds,start+32*barSeconds],
             ['Part III: full orchestra',start+32*barSeconds,start+40*barSeconds],
             ['Part III: final build',start+40*barSeconds,finalAt],['Part III: final organ chord',finalAt,durationSeconds]],
         partThree:{startSeconds:start,durationSeconds:durationSeconds-start,bpm,key:'D minor',bars,
-            balance:{orchestraRaised:true,pulseGain:1.4,pulseArticulation:'original short pattern',pulseSustain:.76},
-            stringRuns,skippedRepeatedStringChords,stringLeadInGain:4.8,stringLeadInSampleStartSeconds:.12,
+            balance:{orchestraRaised:true,pulseGain:1.1,pulseArticulation:'original short pattern',pulseSustain:.76},
+            ...phrasing,stringRuns,skippedRepeatedStringChords,stringLeadInGain:4.8,stringLeadInSampleStartSeconds:.12,
             percussion:{steady:true,samplePeakTarget:.75,recordingLevelsCompensated:true,foregroundBoostDb:6.0206,kitSource:hiphop.source,bassDrumBeats:[0,1,2,3],snareBeats:[1,3],subdivisionBeats:.25,sixteenthNoteInstrument:hat},
             orchestral:true,electronicExceptions:['cinematic-pulse-bass','Dark 80s hip-hop percussion'],
             sampleManifest:'api/audio/instruments/neon-orchestra-samples.json',
-            horrorStrings:{instrument:strings,entrySeconds:start+.25,semitoneAccents:true,recordedTremolo:true},
-            bells:{strikeCount:bellEvents.length,foregroundGain:6.6,dynamic:'ff',lastStrikeSeconds:bellEvents.at(-1).at,naturalEndSeconds:bellNaturalEnd,naturalDecay:true,sparse:true},
+            horrorStrings:{instrument:strings,entrySeconds:start+.25,openingInstrument:openingStrings,openingHoldSeconds:openingStringHold,openingReleaseSeconds:openingStringRelease,semitoneAccents:true,recordedTremolo:true},
+            bells:{strikeCount:events.filter(e=>e.instrument===bells).length,contourPositions:['run-start','held-chord'],contourGateBeats:1,contourStrikeCount:phrasing.bellPhrases.filter(p=>p.count===2).length*2,exactContourOctaves:true,foregroundGain:5.2,dynamic:'ff',lastStrikeSeconds:Math.max(...events.filter(e=>e.instrument===bells).map(e=>Number(e.offset)/2)),naturalEndSeconds:bellNaturalEnd,naturalDecay:true,sparse:false},
             naturalTailEndSeconds:naturalTailEnd,
             ending:{startSeconds:finalAt,holdSeconds:hold,releaseSeconds:release,dramaticFinalHit:true,organOnlySustained:false,ensembleHoldSeconds:ensembleHold}},
         render:{...score.render,seconds:durationSeconds}};

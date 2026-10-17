@@ -4,18 +4,18 @@ function extend(score,catalog) {
     const {instruments,song}=score,events=song.events;
     const tempo=64,beat=60/tempo,barSeconds=beat*4,bars=40;
     const start=120,shift=start-120,firstNoteHold=barSeconds*.94;
-    const windDuration=5.5,windStart=start+firstNoteHold-windDuration,quietBeats=1;
+    const windStart=116,windAttack=1.5,windDuration=Number((start+firstNoteHold-windStart).toFixed(6)),quietBeats=1;
     // Let the closing ensemble finish before the longer, unpitched transition.
     for(let i=events.length-1;i>=0;i--)if(Number(events[i].offset)/2>116)events.splice(i,1);
     for(const event of events)if(Number(event.offset)/2===116)event.length=String(Math.min(Number(event.length),event.instrument===score.backingPad.instrument?2:3));
     const clone=(name,source,volume,changes={})=>{
         instruments[name]={...structuredClone(catalog.instruments[source]),volume,...changes};return name;
     };
-    const pulse=clone('midnight-pulse','cinematic-pulse-bass',2,{
+    const pulse=clone('midnight-pulse','cinematic-pulse-bass',1.6,{
         envelope:{attack:.025,decay:.5,sustain:.86,release:.5},
         filter:{type:'lowpass',frequency:650,Q:.65,envelopeAmount:850},
         distortion:{amount:.045},delay:{time:.46875,feedback:.12,wet:.055},reverb:{wet:.08,decay:2.2}});
-    const pulseChord=clone('midnight-pulse-chord','cinematic-pulse-bass',1.1,{
+    const pulseChord=clone('midnight-pulse-chord','cinematic-pulse-bass',.88,{
         partials:structuredClone(catalog.instruments['cinematic-pulse-bass'].partials.filter(partial=>partial.ratio>=1)),
         envelope:{attack:.065,decay:.55,sustain:.84,release:1.05},
         filter:{type:'lowpass',frequency:1250,Q:.6,envelopeAmount:650},
@@ -50,8 +50,10 @@ function extend(score,catalog) {
     const bells='midnight-tubular-bells';
     // Recorded strikes own their full decay; written gates never stop them.
     instruments[bells]={class:'expressive',type:'oscillator',displayName:'Recorded Tubular Bells (VCSL)',
-        volume:1.5,velocitySensitivity:.7,envelope:{attack:0,decay:0,sustain:1,release:0},
+        volume:1.2,velocitySensitivity:.7,envelope:{attack:0,decay:0,sustain:1,release:0},
         samples:structuredClone(bellLibrary.samples),reverb:{wet:.1,decay:2.8}};
+    const gridSeconds=beat/4;
+    const snap=seconds=>start+Math.round((seconds-start)/gridSeconds)*gridSeconds;
     const add=(seconds,tone,secondsLength,instrument,dynamic='mp')=>events.push({
         offset:String(seconds*2),tone,
         length:String(secondsLength*2),instrument,dynamic});
@@ -87,9 +89,9 @@ function extend(score,catalog) {
         }
         if(bar>=4&&bar%4===2) {
             // Voice chords above the single-note bass; remove the sub partial to keep space.
-            for(const [index,note] of chord.notes.slice(0,3).entries()) {
+            for(const note of chord.notes.slice(0,3)) {
                 const upper=note.replace(/\d$/,octave=>String(Number(octave)+1));
-                add(at+beat*1.5+index*.012,upper,beat*3.5,pulseChord,central?'f':'mf');
+                add(at+beat*(ending?1.5:1.25),upper,beat*3.5,pulseChord,central?'f':'mf');
             }
         }
         if(!intro&&!ending) {
@@ -124,14 +126,17 @@ function extend(score,catalog) {
     ];
     const bellStrikes=[];
     for(const [start,phrase] of bellPhrases)for(const [index,[position,note]] of phrase.entries()) {
-        const at=start+shift+position*beat;
+        const onGrid=snap(start+shift+position*beat);
+        const pulseTimes=events.filter(event=>event.instrument===pulse).map(event=>Number(event.offset)/2);
+        const nearest=pulseTimes.reduce((best,time)=>Math.abs(time-onGrid)<Math.abs(best-onGrid)?time:best);
+        const at=Math.abs(nearest-onGrid)<=gridSeconds+1e-8?nearest:onGrid;
         bellStrikes.push([at,note]);
         add(at,note,3.5,bells,index===0?'ff':'f');
     }
     // Spacious organ responses after selected bell strikes; leave the pulse clear.
     const organAnswers=[[130.5,['C#3','E3','G#3']],[152.5,['F#3','A3','C#4']],
         [197.5,['A2','C#3','E3']],[242.5,['C#3','E3','G#3']]];
-    for(const [at,notes] of organAnswers)for(const note of notes)add(at+shift,note,4,organ,'ff');
+    for(const [at,notes] of organAnswers)for(const note of notes)add(snap(at+shift),note,4,organ,'ff');
     const frequency=note=>{
         const match=/^([A-G])(#|b)?(\d)$/.exec(note);
         const semitone={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[match[1]]+(match[2]==='#'?1:match[2]==='b'?-1:0);
@@ -144,8 +149,9 @@ function extend(score,catalog) {
         return at+Math.max(...candidates.map(sample=>sample.durationSeconds/(hz/sample.rootFrequency)));
     }));
     // Recorded tails overlap the next part without delaying its downbeat.
-    const durationSeconds=start+bars*barSeconds;
-    const finalStart=durationSeconds-beat,finalHold=beat*2,finalRelease=.65;
+    const musicEnd=start+bars*barSeconds;
+    const durationSeconds=musicEnd+5;
+    const finalStart=musicEnd-beat,finalHold=beat*6,finalRelease=.65;
     const finalBass='midnight-final-bass',finalPulse='midnight-final-pulse';
     instruments[finalBass]={...structuredClone(instruments[pulse]),envelope:{attack:.025,decay:.5,sustain:.75,release:finalRelease}};
     instruments[finalPulse]={...structuredClone(instruments[pulseChord]),envelope:{attack:.065,decay:.55,sustain:.8,release:finalRelease}};
@@ -154,18 +160,19 @@ function extend(score,catalog) {
         add(finalStart,note,finalHold,finalPulse,'f');
     }
     events.sort((a,b)=>Number(a.offset)-Number(b.offset));
-    return {...score,title:'Neon Countdown / Midnight Passage',revision:46,durationSeconds,
+    return {...score,title:'Neon Countdown / Midnight Passage',revision:52,durationSeconds,
         sections:[...score.sections,['Wind transition',windStart,windStart+windDuration],['Wind-only slow-tempo breath',start-quietBeats*beat,start],['Part II: shadow pulse',start,135+shift],
             ['Part II: midnight procession',135+shift,165+shift],['Part II: haunted hall',165+shift,195+shift],
             ['Part II: deepening pulse',195+shift,225+shift],['Part II: return',225+shift,255+shift],['Part II: sustained handoff',255+shift,durationSeconds]],
         partTwo:{startSeconds:start,durationSeconds:durationSeconds-start,bpm:tempo,key:'C# minor',bars,
             windTransition:[windStart,windStart+windDuration],
+            windCrescendo:{startSeconds:windStart,fullLevelSeconds:windStart+windAttack,matchedPartOneHoldSeconds:windAttack},
             entranceRest:{startSeconds:start-quietBeats*beat,endSeconds:start,beats:quietBeats,bpm:tempo,windContinues:true},
             windOverlap:{firstNoteSeconds:start,secondNoteSeconds:start+barSeconds,decayStartSeconds:start,decayEndSeconds:windStart+windDuration,matchedNoteHoldSeconds:firstNoteHold},lastPartOneAttackSeconds:116,noPluckedArpeggio:true,pulseChordVoicings:true,
             tubularBells:{strikeSeconds:bellStrikes.map(([at])=>at),longRingingTails:true,
-                phraseStartSeconds:bellPhrases.map(([at])=>at+shift),sampleLibrary:bellLibrary.source,
+                phraseStartSeconds:bellPhrases.map(([at])=>snap(at+shift)),sampleLibrary:bellLibrary.source,
                 naturalDecay:true,naturalEndSeconds:naturalBellEnd},
-            organ:{foreground:true,answerSeconds:organAnswers.map(([at])=>at+shift)},
+            organ:{foreground:true,answerSeconds:organAnswers.map(([at])=>snap(at+shift))},
             tempoChange:{atSeconds:durationSeconds,fromBpm:64,toBpm:120,mode:'immediate',sustainedHandoff:true},
             ending:{startSeconds:finalStart,holdSeconds:finalHold,releaseSeconds:finalRelease,key:'A/E sustained into D minor',
                 instruments:[finalBass,finalPulse],closingWind:false,flowsIntoPartThree:true}},

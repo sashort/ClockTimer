@@ -1,0 +1,7004 @@
+[
+  {
+    "offset": "0",
+    "tone": "D2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "D4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "0",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "0",
+    "tone": "D4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "F4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "A4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-cymbal",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "0.5",
+    "tone": "E6",
+    "length": "1.5",
+    "instrument": "finale-opening-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0.5",
+    "tone": "F6",
+    "length": "1.5",
+    "instrument": "finale-opening-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "0.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0.75",
+    "tone": "D2",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0.75",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "1",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "1",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "1",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "1",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "1",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "1.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "1.5",
+    "tone": "A2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "1.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "1.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "1.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "1.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "2",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "2.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "2.5",
+    "tone": "D2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "2.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "3",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "3",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "3",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "3",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "3",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "3.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "3.5",
+    "tone": "A2",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "3.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "3.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "3.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "3.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "4",
+    "tone": "D2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4",
+    "tone": "D5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "4",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "4.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "4.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "4.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "5",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "5.25",
+    "tone": "A2",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5.25",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "5.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "5.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "6",
+    "tone": "D2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "6",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "6",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "6",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "6",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "6.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "6.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "6.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "6.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "7",
+    "tone": "D2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "7",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "7",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "7.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "7.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "7.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "8",
+    "tone": "Bb1",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "Bb3",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "D4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "8",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "8.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "8.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "8.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8.75",
+    "tone": "Bb1",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8.75",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "9",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "9",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "9",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "9",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "9",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "9.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "9.5",
+    "tone": "F2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "9.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "9.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "9.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "9.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "10",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "10.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "10.5",
+    "tone": "Bb1",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10.5",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "10.5",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "11",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "11",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "11",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "11",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "11",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "11.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "11.5",
+    "tone": "F2",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "11.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "11.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "11.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "11.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "12",
+    "tone": "Bb1",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12",
+    "tone": "D4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12",
+    "tone": "Bb4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "12",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "12.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "12.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "12.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "13",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "13",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "13",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "13.25",
+    "tone": "F2",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13.25",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "13.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "13.5",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "14",
+    "tone": "Bb1",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "14",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "14",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "14",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "14",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "14.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "14.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "14.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "14.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "15",
+    "tone": "Bb1",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "15",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "15",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "15",
+    "tone": "D4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "15.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "15.25",
+    "tone": "E4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "15.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "15.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15.5",
+    "tone": "F4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "15.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "15.75",
+    "tone": "G4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "16",
+    "tone": "F2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "C4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "C4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "C5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "F5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "A5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "16",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "16",
+    "tone": "C4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "F4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "A4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "16.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "16.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16.75",
+    "tone": "F2",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16.75",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "17",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "17",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "17",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "17",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "17",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "17.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "17.5",
+    "tone": "C3",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "17.5",
+    "tone": "C4",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "17.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "17.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "17.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "18",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "18.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "18.5",
+    "tone": "F2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "18.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "19",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "19",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "19",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "19",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "19",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "19.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "19.5",
+    "tone": "C3",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "19.5",
+    "tone": "C4",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "19.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "19.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "19.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "20",
+    "tone": "F2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20",
+    "tone": "C4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20",
+    "tone": "C5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "20",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "20.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "20.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "20.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "21",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "21",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "21",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "21.25",
+    "tone": "C3",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21.25",
+    "tone": "C4",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "21.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "21.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "22",
+    "tone": "F2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "22",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "22",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "22",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "22",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "22.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "22.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "22.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "22.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "23",
+    "tone": "F2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "23",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "23",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "23",
+    "tone": "A5",
+    "length": "0.91",
+    "instrument": "finale-quarter-string-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "23.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "23.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "24",
+    "tone": "C2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "E4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "E4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "G4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "Bb4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "E3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "E5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "G5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "Bb5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "24",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "24.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "24.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "24.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24.75",
+    "tone": "C2",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24.75",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "25",
+    "tone": "G4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "25",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "25",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "25",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "25.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "25.5",
+    "tone": "G2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "25.5",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "25.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "25.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "25.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "26",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "26.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "26.5",
+    "tone": "C2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26.5",
+    "tone": "G4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "26.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26.5",
+    "tone": "E3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26.5",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "27",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "27",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "27",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "27",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "27",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "27.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "27.5",
+    "tone": "G2",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "27.5",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "27.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "27.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "27.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "28",
+    "tone": "C2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28",
+    "tone": "E4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28",
+    "tone": "G4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28",
+    "tone": "Bb4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28",
+    "tone": "E5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "28",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "28.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "28.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "28.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "29",
+    "tone": "G4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "29",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "29",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "29.25",
+    "tone": "G2",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29.25",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "29.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "29.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29.5",
+    "tone": "E3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29.5",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "30",
+    "tone": "C2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "30",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "30",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "30",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "30",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "30.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "30.5",
+    "tone": "G4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "30.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "30.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "31",
+    "tone": "C2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31",
+    "tone": "E3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "31",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "31",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "31",
+    "tone": "C5",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "31",
+    "tone": "C5",
+    "length": "1",
+    "instrument": "finale-bells",
+    "dynamic": "ff"
+  },
+  {
+    "offset": "31.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "31.25",
+    "tone": "Bb4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "31.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "31.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31.5",
+    "tone": "A4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "31.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "31.75",
+    "tone": "G4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "32",
+    "tone": "D2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "D5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "D5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "F5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "A5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "D6",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "32",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "32",
+    "tone": "D4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "F4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "A4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-cymbal",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "F4",
+    "length": "1",
+    "instrument": "finale-bells",
+    "dynamic": "ff"
+  },
+  {
+    "offset": "32.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "32.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "32.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32.75",
+    "tone": "D2",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32.75",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "33",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "33",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "33",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "33.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "33.5",
+    "tone": "A2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "33.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33.75",
+    "tone": "C5",
+    "length": "0.25",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "34",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34",
+    "tone": "D5",
+    "length": "1",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "34.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "34.5",
+    "tone": "D2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "34.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "35",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "35",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "35",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "35.25",
+    "tone": "F5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "35.5",
+    "tone": "A2",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "35.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "36",
+    "tone": "D2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36",
+    "tone": "D5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36",
+    "tone": "F5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36",
+    "tone": "E5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "36",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "36.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "36.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "36.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "37",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "37",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "37",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "37.25",
+    "tone": "A2",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37.25",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "37.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "37.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "38",
+    "tone": "D2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "38",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "38",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "38",
+    "tone": "A4",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "38",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "38",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "38.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "38.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "38.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "38.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "39",
+    "tone": "D2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "F4",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "39",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "39",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "39",
+    "tone": "A5",
+    "length": "0.91",
+    "instrument": "finale-quarter-string-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "39.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "39.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "40",
+    "tone": "Bb1",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "D4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "Bb4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "F5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "D5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "F5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "Bb5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "40",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "40",
+    "tone": "Bb4",
+    "length": "1",
+    "instrument": "finale-bells",
+    "dynamic": "ff"
+  },
+  {
+    "offset": "40.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "40.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "40.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40.75",
+    "tone": "Bb1",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40.75",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "41",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "41",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "41",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "41",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "41",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "41",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "41.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "41.5",
+    "tone": "F2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "41.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "41.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "41.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "41.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "42",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42",
+    "tone": "C5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "42.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "42.5",
+    "tone": "Bb1",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42.5",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "42.5",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42.75",
+    "tone": "A4",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "43",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "43",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "43",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "43",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "43",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "43.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "43.5",
+    "tone": "F2",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "43.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "43.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "43.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "43.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "44",
+    "tone": "Bb1",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "Bb4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "D5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "Bb4",
+    "length": "1",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "44",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "44.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "44.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "44.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "45",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "45",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "45",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "45.25",
+    "tone": "F2",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45.25",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "45.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "45.5",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45.5",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "46",
+    "tone": "Bb1",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "46",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "46",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "46",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "46",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "46.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "46.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "46.5",
+    "tone": "F4",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "46.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "46.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "47",
+    "tone": "Bb1",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "47",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "47",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "47",
+    "tone": "D4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "47",
+    "tone": "D4",
+    "length": "1",
+    "instrument": "finale-bells",
+    "dynamic": "ff"
+  },
+  {
+    "offset": "47.25",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "47.25",
+    "tone": "E4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "47.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "47.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47.5",
+    "tone": "F4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "47.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "47.75",
+    "tone": "G4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "48",
+    "tone": "F2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "C4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "C5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "C5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "F5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "A5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "C6",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "48",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "48",
+    "tone": "C4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "F4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "A4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "F4",
+    "length": "1",
+    "instrument": "finale-bells",
+    "dynamic": "ff"
+  },
+  {
+    "offset": "48.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48.75",
+    "tone": "F2",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48.75",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "49",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "49",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "49",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "49.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.5",
+    "tone": "C3",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49.5",
+    "tone": "C4",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49.75",
+    "tone": "C5",
+    "length": "0.25",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "50",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50",
+    "tone": "F5",
+    "length": "1.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "50.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50.5",
+    "tone": "F2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "51",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "51",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "51",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "51",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "51",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "51.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51.5",
+    "tone": "C3",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "51.5",
+    "tone": "C4",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "51.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "51.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "52",
+    "tone": "F2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "C4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "C5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "F5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "E5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "52",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "52.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "52.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "52.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52.75",
+    "tone": "F5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "53",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "53",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "53",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "53.25",
+    "tone": "C3",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53.25",
+    "tone": "C4",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53.5",
+    "tone": "A5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "54",
+    "tone": "F2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "54.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "54.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "54.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54.75",
+    "tone": "G5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "55",
+    "tone": "F2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "55",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "55",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "55",
+    "tone": "D6",
+    "length": "0.91",
+    "instrument": "finale-quarter-string-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.5",
+    "tone": "F5",
+    "length": "0.25",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "56",
+    "tone": "C2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "E4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "G4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "Bb4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "E5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "E3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "E5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "G5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "Bb5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "E6",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "56",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "56",
+    "tone": "C4",
+    "length": "1",
+    "instrument": "finale-bells",
+    "dynamic": "ff"
+  },
+  {
+    "offset": "56.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "56.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "56.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56.75",
+    "tone": "C2",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56.75",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "57",
+    "tone": "G4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "57",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "57",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "57",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "57",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "57",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "57.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.5",
+    "tone": "G2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "57.5",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "57.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "57.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "58",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58",
+    "tone": "C5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "58.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58.5",
+    "tone": "C2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58.5",
+    "tone": "G4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58.5",
+    "tone": "E3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58.5",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "59",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "59",
+    "tone": "G4",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "59",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "59",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "59",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "59",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "59.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59.5",
+    "tone": "G2",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "59.5",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "59.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "59.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "60",
+    "tone": "C2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "E4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "Bb4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "E5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "G5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "A4",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "60",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "60.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "60.5",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "60.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "61",
+    "tone": "G4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61",
+    "tone": "C5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "61",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "61",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "61.25",
+    "tone": "G2",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61.25",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.5",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61.5",
+    "tone": "E3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61.5",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "62",
+    "tone": "C2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62",
+    "tone": "E5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "62.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "62.5",
+    "tone": "G4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "62.5",
+    "tone": "E6",
+    "length": "1.3",
+    "instrument": "finale-horror-strings",
+    "dynamic": "f"
+  },
+  {
+    "offset": "62.5",
+    "tone": "F6",
+    "length": "1.3",
+    "instrument": "finale-horror-strings",
+    "dynamic": "f"
+  },
+  {
+    "offset": "62.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62.75",
+    "tone": "C#5",
+    "length": "0.25",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "63",
+    "tone": "C2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "Bb4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "C3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "E3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "D5",
+    "length": "0.25",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "63",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "63",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "63",
+    "tone": "G4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "63.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.25",
+    "tone": "A4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "63.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.5",
+    "tone": "A4",
+    "length": "0.25",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63.5",
+    "tone": "Bb4",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "63.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "63.75",
+    "tone": "C5",
+    "length": "0.21",
+    "instrument": "finale-string-runs",
+    "dynamic": "mf",
+    "sampleStartSeconds": 0.12
+  },
+  {
+    "offset": "64",
+    "tone": "D2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "D5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "F5",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "D5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "A5",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "D6",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "F6",
+    "length": "5.5",
+    "instrument": "finale-horror-strings",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "64",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "64",
+    "tone": "D4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "F4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "A4",
+    "length": "0.8",
+    "instrument": "finale-trumpets",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-cymbal",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "64.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "64.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64.75",
+    "tone": "D2",
+    "length": "0.45",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64.75",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "64.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "65",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "65",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "65",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "65",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "65",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "65",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "65.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "65.5",
+    "tone": "A2",
+    "length": "0.65",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "65.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "65.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "65.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "65.75",
+    "tone": "C5",
+    "length": "0.25",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "65.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "66",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66",
+    "tone": "D5",
+    "length": "1",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "66.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "66.5",
+    "tone": "D2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "66.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "66.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "67",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "67",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "67",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "67",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "67",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "67.25",
+    "tone": "F5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "67.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "67.5",
+    "tone": "A2",
+    "length": "0.38",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "67.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "67.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "67.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "67.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "68",
+    "tone": "D2",
+    "length": "0.8",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "68",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "68",
+    "tone": "D4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "68",
+    "tone": "D4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "68",
+    "tone": "F4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "68",
+    "tone": "A4",
+    "length": "3.2",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "68",
+    "tone": "E5",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "68",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "68",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "68.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "68.5",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "68.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "68.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "69",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "69",
+    "tone": "C4",
+    "length": "0.3",
+    "instrument": "finale-hiphop-clap",
+    "dynamic": "f"
+  },
+  {
+    "offset": "69",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "69.25",
+    "tone": "A2",
+    "length": "0.5",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69.25",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "69.5",
+    "tone": "C5",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "69.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69.5",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69.5",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "finale-horns",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "69.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "70",
+    "tone": "D2",
+    "length": "0.75",
+    "instrument": "finale-pulse",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "70",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "finale-cellos",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "70",
+    "tone": "A4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "70",
+    "tone": "A4",
+    "length": "0.75",
+    "instrument": "finale-violins",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "70",
+    "tone": "C4",
+    "length": "0.4",
+    "instrument": "finale-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "70",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "70.25",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "70.5",
+    "tone": "F4",
+    "length": "0.32",
+    "instrument": "finale-spiccato",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "70.5",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "70.75",
+    "tone": "C4",
+    "length": "0.2",
+    "instrument": "finale-hiphop-hat",
+    "dynamic": "p"
+  }
+]
