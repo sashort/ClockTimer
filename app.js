@@ -6086,7 +6086,7 @@
             allotted >= 0
         )
             ? Math.max(
-                allotted,
+                Math.max(0, allotted - (trip.allowanceCreditMilliseconds || 0)),
                 counted
             )
             : counted;
@@ -6210,6 +6210,7 @@
                     includeInParentPercent:getTripLogIncludeCurrent()||tripGoalMissed||totalGoalMissed,startTime:start,endTime:new Date().toISOString(),
                     standardTimeMilliseconds:summary.standardTimeMilliseconds,
                     allottedTimeMilliseconds:summary.allottedTimeMilliseconds,
+                    allowanceCreditMilliseconds:summary.allowanceCreditMilliseconds,
                     actualTimeMilliseconds:summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds:summary.countedTimeElapsedMilliseconds,nonProduction:clockTimer.nonProduction};
             }

@@ -3667,6 +3667,7 @@
                     actualTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     allottedTimeMilliseconds: summary.allottedTimeMilliseconds,
+                    allowanceCreditMilliseconds: summary.allowanceCreditMilliseconds,
                     events: this.#stateEvents().filter(event => event.event !== "trip.stopped")});
             }
             return trips;
@@ -32746,6 +32747,12 @@
         }
 
         #getCountedTimeElapsed(timelineNow) {
+            return Math.max(0, this.#getCountedTimeBalance(timelineNow));
+        }
+
+        // Keep an unused allowance even when it exceeds productive time so
+        // remaining time can carry the full gain; persisted durations stay >= 0.
+        #getCountedTimeBalance(timelineNow) {
             const start = this.#getElapsedStartTimeMilliseconds();
             if (!Number.isFinite(start) || !Number.isFinite(timelineNow)) return 0;
             const end = Number.isFinite(this.#countedStopTime)
@@ -32755,7 +32762,7 @@
                 ? this.#standardDuration / goal : 0;
             this.#timeRangeGroup.updateAccounting(start, end,
                 this.#getAccountingExclusions(), required);
-            return this.#timeRangeGroup.elapsedCountedTime;
+            return this.#timeRangeGroup.elapsedCountedTime - this.#getEarlyStartAllowanceCredit();
         }
 
         #getSummaryTimelineNow(nowDate = new Date()) {
@@ -32897,6 +32904,7 @@
             let actualTimeMilliseconds = Number(base?.actualTimeMilliseconds ?? 0);
             let countedTimeMilliseconds = Number(base?.countedTimeMilliseconds ?? 0);
             let allowanceCreditMilliseconds = 0;
+            let unappliedAllowanceCreditMilliseconds = 0;
 
             if (Number.isFinite(this.#externalStandardTime)) {
                 standardTimeMilliseconds = this.#externalStandardTime;
@@ -32909,11 +32917,14 @@
             if (this.#hasStartProperties() && this.#tripAddedToAggregate !== true) {
                 standardTimeMilliseconds += Number(this.#standardDuration ?? 0);
                 actualTimeMilliseconds += this.#getTripActualTimeElapsed(timelineNow);
-                countedTimeMilliseconds += this.#getCountedTimeElapsed(timelineNow);
+                const balance = this.#getCountedTimeBalance(timelineNow);
+                countedTimeMilliseconds += balance;
                 allowanceCreditMilliseconds +=
                     this.#getEarlyStartAllowanceCredit();
             }
 
+            unappliedAllowanceCreditMilliseconds = Math.max(0, -countedTimeMilliseconds);
+            countedTimeMilliseconds = Math.max(0, countedTimeMilliseconds);
             const countedPercent = countedTimeMilliseconds > 0
                 ? standardTimeMilliseconds / countedTimeMilliseconds
                 : undefined;
@@ -32946,7 +32957,7 @@
                 )
                     ? (
                         targetTotalCountedMilliseconds -
-                        countedTimeMilliseconds
+                        countedTimeMilliseconds + unappliedAllowanceCreditMilliseconds
                     )
                     : undefined;
             const completedNetMilliseconds =
@@ -33071,6 +33082,7 @@
                 actualTimeElapsedMilliseconds: tripActualTimeElapsedMilliseconds,
                 countedTimeElapsedMilliseconds: tripCountedTimeElapsedMilliseconds,
                 allottedTimeMilliseconds,
+                allowanceCreditMilliseconds: hasTrip ? this.#getEarlyStartAllowanceCredit() : 0,
                 countedPercent: tripCountedPercent,
                 percentGoal: this.#getScopePercentGoal("trip"),
                 renderedTime: hasTrip
@@ -33889,10 +33901,8 @@
             const required = Number.isFinite(goal) && goal > 0 && Number.isFinite(this.#standardDuration)
                 ? this.#standardDuration / goal : undefined;
             if (!Number.isFinite(required)) return this.#formatRemainingRenderedDuration(undefined);
-            this.#getCountedTimeElapsed(timelineNow);
             return this.#formatRemainingRenderedDuration(
-                this.#timeRangeGroup.remainingCountedTime -
-                Math.max(0, this.#timeRangeGroup.totalCountedTime - required));
+                required - this.#getCountedTimeBalance(timelineNow));
         }
 
         #renderTime_end({ now, timelineNow }) {

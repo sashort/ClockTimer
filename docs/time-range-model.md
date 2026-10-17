@@ -186,3 +186,29 @@ collection visits points that intersect each interval rather than scanning every
 point against every range. Removed members retain their original tick snapshots
 without causing repeated full-group scans. Both event families share the same
 transition and batch-delivery helpers.
+
+
+## Early-break allowance credit (Version 2)
+
+Ending Break or Lunch early earns the entire unused scheduled allowance
+immediately, including unused configured buffers. Keep factual start/end events
+unchanged. Compute gross productive elapsed time from the interval model, then
+subtract the early-return allowance once. ClockTimer's internal counted-time
+balance may be negative; public/persisted counted durations remain nonnegative.
+Remaining time uses the signed balance so a credit larger than productive time
+is retained and then consumed normally as work continues. Trip and Total use
+the same balance. Percent goals change the target budget, not the earned credit.
+
+Expose allowanceCreditMilliseconds in active summary/local-log projections.
+TripAggregates reduces the active allotted-time floor by this credit; completed
+rows already contain credited countedTimeMilliseconds and must not be credited
+a second time. Previously stored completed counted durations remain authoritative;
+this fix does not rewrite old trip records.
+
+Example: 30 minutes standard, 20 minutes work, then a 15-minute break ended after
+5 minutes earns 10 minutes. Counted elapsed becomes 10 minutes; at 100% goal,
+20 minutes remain. After 15 more working minutes, completed counted elapsed is
+25 minutes and the trip percent is 120%. Replay must reconstruct the same credit
+without changing factual events. tests/counted-time-accounting.mjs covers this,
+credit carry, buffers, lunch, percent goals and full-length breaks; Trip Log tests
+cover active projection and completed-row protection against double credit.

@@ -2,11 +2,11 @@
     "use strict";
     const instant = value => Date.parse(/(?:Z|[+-]\d\d:\d\d)$/.test(String(value)) ? value : String(value).replace(" ", "T") + "Z");
     const duration = value => Number.isSafeInteger(value) && value >= 0 ? value : 0;
-    // Persisted counted time is authoritative; active trips use the allotted floor.
+    // Persisted counted time is authoritative; active trips use the allotted floor after unused break credit.
     const countedTime = trip => {
         const stored = Number.isSafeInteger(trip?.countedTimeMilliseconds) && trip.countedTimeMilliseconds >= 0
             ? trip.countedTimeMilliseconds : duration(trip?.actualTimeMilliseconds);
-        return trip?.running ? Math.max(duration(trip.allottedTimeMilliseconds), stored) : stored;
+        return trip?.running ? Math.max(0, duration(trip.allottedTimeMilliseconds) - duration(trip.allowanceCreditMilliseconds), stored) : stored;
     };
     globalThis.TripAggregates = Object.freeze({
         counted: countedTime,

@@ -78,6 +78,9 @@ jobs:
           node tests/clock-state-transactions.mjs
           TZ=UTC node tests/clock-timer-fsm.mjs
           TZ=America/New_York node tests/clock-timer-fsm.mjs
+          TZ=UTC node tests/counted-time-accounting.mjs
+          node tests/trip-log.mjs
+          node tests/trip-summary.mjs
           node tests/trip-replay-identity.mjs
           node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs

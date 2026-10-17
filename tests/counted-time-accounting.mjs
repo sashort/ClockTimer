@@ -12,6 +12,7 @@ window.eval(`const AccountingDate=Date; window.Date=class extends AccountingDate
 const css=window.CSS; css.registerProperty=()=>{}; Object.defineProperty(window,"CSS",{value:css});
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});
 Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
+window.structuredClone=globalThis.structuredClone;
 window.Element.prototype.animate = () => ({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
 for (const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer']) {
     window.eval(fs.readFileSync(new URL(`../${name}.js`,import.meta.url),'utf8'));
@@ -97,9 +98,61 @@ try {
     advance(12000);
     await breakTimer.endInterval();
     assert.equal(counted(breakTimer),0,'early-ended break is not retroactively counted');
+    const creditedRemaining=breakTimer.getSummarySnapshot().trip.renderedTime;
     advance(1000);
-    assert.equal(counted(breakTimer),1000,'Early Start overwrite counts productive time after the break ends');
+    assert.equal(counted(breakTimer),0,'unused credit carries forward until productive time consumes it');
+    assert.notEqual(breakTimer.getSummarySnapshot().trip.renderedTime,creditedRemaining,'productive work consumes credit immediately rather than pausing the timer');
     breakTimer.remove();
+
+    const gained = await fresh();
+    gained.configure({trip_goal:'100%'});
+    advance(20*60000);
+    await gained.startInterval('break',15*60000,{breakType:'break'});
+    advance(5*60000);
+    await gained.endInterval();
+    const gainSummary=gained.getSummarySnapshot();
+    assert.equal(gainSummary.trip.renderedTime,'0:20:00','unused ten minutes immediately extend remaining time');
+    assert.equal(gainSummary.trip.countedTimeElapsedMilliseconds,10*60000,'full unused allowance reduces counted time immediately');
+    assert.equal(gainSummary.trip.countedPercent,3);
+    assert.equal(gainSummary.total.renderedTime,'0:20:00','Total receives the same early-break credit');
+    assert.equal(gainSummary.trip.allowanceCreditMilliseconds,10*60000);
+    const snapshot=gained.captureState();const factualEvents=JSON.stringify(snapshot.events);
+    gained.restoreState(snapshot);
+    assert.equal(gained.getSummarySnapshot().trip.renderedTime,'0:20:00','restored event model retains full early-break credit');
+    assert.equal(counted(gained),10*60000);
+    assert.equal(JSON.stringify(gained.captureState().events),factualEvents,'accounting credit never rewrites factual break events');
+    const activeLog=gained.getLocalTripLog().find(trip=>trip.running);
+    assert.equal(activeLog.allowanceCreditMilliseconds,10*60000,'offline active Trip Log receives the credit');
+    advance(15*60000);await gained.stop();
+    assert.equal(counted(gained),25*60000,'completed counted time retains the full unused allowance');
+    assert.equal(gained.getSummarySnapshot().trip.countedPercent,1.2);
+    gained.remove();
+
+    const creditFirst=await fresh();creditFirst.configure({trip_goal:'100%'});
+    await creditFirst.startInterval('break',15*60000,{breakType:'break'});advance(5*60000);await creditFirst.endInterval();
+    assert.equal(creditFirst.getSummarySnapshot().trip.renderedTime,'0:40:00','credit larger than prior productive time is carried without losing remaining time');
+    assert.equal(counted(creditFirst),0,'persisted counted time remains nonnegative');
+    assert.equal(creditFirst.getSummarySnapshot().total.renderedTime,'0:40:00');
+    creditFirst.configure({external_standard_time:3600000,external_counted_time:3600000,total_goal:'100%'});
+    assert.equal(creditFirst.getSummarySnapshot().total.countedTimeElapsedMilliseconds,50*60000,'Total applies surplus credit against counted history');
+    assert.equal(creditFirst.getSummarySnapshot().total.countedPercent,1.8);
+    assert.equal(creditFirst.getSummarySnapshot().total.renderedTime,'0:40:00');
+    creditFirst.remove();
+
+    const bufferedCredit=await fresh();
+    bufferedCredit.configure({trip_goal:'125%'});advance(20*60000);
+    await bufferedCredit.startInterval('lunch',15*60000,{breakType:'lunch'},150000,150000);
+    advance(5*60000);await bufferedCredit.endInterval();
+    assert.equal(bufferedCredit.getSummarySnapshot().trip.allowanceCreditMilliseconds,15*60000,'unused scheduled buffers and lunch allowance are credited once');
+    assert.equal(counted(bufferedCredit),5*60000);
+    assert.equal(bufferedCredit.getSummarySnapshot().trip.renderedTime,'0:19:00','credit is milliseconds, independent of the percent goal');
+    bufferedCredit.remove();
+
+    const onTimeBreak=await fresh();onTimeBreak.configure({trip_goal:'100%'});advance(20*60000);
+    await onTimeBreak.startInterval('break',15*60000,{breakType:'break'});advance(15*60000);await onTimeBreak.endInterval();
+    assert.equal(onTimeBreak.getSummarySnapshot().trip.allowanceCreditMilliseconds,0);
+    assert.equal(counted(onTimeBreak),20*60000,'full-length breaks do not receive an early-ending credit');
+    onTimeBreak.remove();
 
     const overnight = await fresh({testEpoch:Date.parse('2026-09-19T23:59:00Z')});
     advance(10000);
