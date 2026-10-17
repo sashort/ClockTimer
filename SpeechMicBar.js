@@ -1,4 +1,4 @@
-class SpeechMicBar extends HTMLElement {
+class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     static #forwardedEvents = [
         "started",
         "stopped",
@@ -53,6 +53,7 @@ class SpeechMicBar extends HTMLElement {
     #optionsGrid;
     #optionsAnimation;
     #layoutResizeObserver;
+    #layoutHost;
     #layoutResizeHandler =
         () =>
             this
@@ -1993,6 +1994,7 @@ class SpeechMicBar extends HTMLElement {
     }
 
     connectedCallback() {
+        this.#layoutHost ||= this.ownerDocument.getElementById(this.dataset.layoutHost) || this.parentElement;
         this.#ensureSystemSpeechMenu();
         this.#subscribe();
         this.#observeHostBounds();
@@ -2140,7 +2142,7 @@ class SpeechMicBar extends HTMLElement {
                 document
                     .documentElement,
                 document.body,
-                this.parentElement
+                this.#layoutHost
             ]
                 .filter(
                     (
@@ -2254,7 +2256,7 @@ class SpeechMicBar extends HTMLElement {
                     document
                         ?.documentElement,
                     document?.body,
-                    this.parentElement
+                    this.#layoutHost
                 ]
             ) {
                 if (element) {
@@ -2284,6 +2286,12 @@ class SpeechMicBar extends HTMLElement {
 
     get state() {
         return this.getAttribute("state") || "stopped";
+    }
+
+    refreshLayout() {
+        this.#syncHostBounds();
+        this.#fitOptions();
+        this.#dispatchSurfaceBoundaryChange();
     }
 
     get optionsOpen() {
@@ -6171,7 +6179,9 @@ class SpeechMicBar extends HTMLElement {
             case "speechSegmentSkipped":
                 if (detail?.utteranceId === this.#currentUtteranceId && detail.consumedTranscript) {
                     this.#consumedTranscript = detail.consumedTranscript;
-                    if (type === "speechCommandDigested") this.#consumedSegments.push(detail.transcript);
+                    // Discarded spans are consumed too. If ASR revises that
+                    // noise later, it must not reappear as pending dictation.
+                    if (detail.transcript) this.#consumedSegments.push(detail.transcript);
                     this.removeAttribute("phase");
                     this.#codes.replaceChildren();
                     const pending = this.#pendingTranscript();

@@ -45,8 +45,8 @@ button {
     --trip-log-layout-duration: 1000ms;
     --trip-log-shell-radius: 14px;
 
-    width: 100vw;
-    height: 100dvh;
+    width: var(--app-viewport-width, 100vw);
+    height: var(--app-viewport-height, 100dvh);
     margin: 0;
     padding: 0;
     display: grid;
@@ -133,7 +133,9 @@ speech-mic-bar:not(:defined) {
 }
 
 .app[data-speech-active="true"] speech-mic-bar,
-.app[data-speech-active="true"] speech-mic-bar[popover]:popover-open {
+.app[data-speech-active="true"] speech-mic-bar[popover]:popover-open,
+speech-mic-bar[data-speech-active="true"],
+speech-mic-bar[data-speech-active="true"][popover]:popover-open {
     transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
@@ -897,6 +899,33 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
 .app-dialog[open] {
     opacity: 1;
 }
+
+/* Match native :modal geometry for the shared region's nonmodal children.
+   Zero specificity lets each dialog retain its explicit size/position rules. */
+:where(shared-modal-host > dialog) {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    max-width: calc(100% - 2em - 6px);
+    max-height: calc(100% - 2em - 6px);
+}
+shared-modal, trip-log-modal {display: contents;}
+shared-modal-host {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgb(0 0 0 / 48%);
+    overflow: visible;
+    pointer-events: none;
+}
+shared-modal-host::backdrop {display: none;}
+shared-modal-host > dialog {pointer-events: auto;z-index: var(--shared-modal-order, 1);}
 
 .app-dialog::backdrop {
     background: rgb(0 0 0 / 48%);
@@ -7473,3 +7502,6 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 .profile-permission-options label { display: flex; align-items: center; gap: 8px; }
 .profile-permission-options input[type="checkbox"] { width: auto; min-width: 18px; margin: 0; }
 .profile-permission-options label:has(input:disabled) { opacity: .5; }
+
+/* Fullscreen editors reserve the persistent microphone region. */
+shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 100dvh);}

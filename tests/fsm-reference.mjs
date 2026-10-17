@@ -25,8 +25,8 @@ const audit=model.implementation_audit;
 const expected=execFileSync('git',['rev-list','--reverse',audit.last_working_reference_commit+'..'+audit.through_commit],{cwd:root,encoding:'utf8'}).trim().split('\n');
 assert.deepEqual(audit.commits.map(change=>change.commit),expected,'Every commit since the last working FSM is inventoried, including reversions and test-only changes');
 for(const change of audit.commits){assert(change.areas.length,change.commit+' has an explicit review area');if(!change.files.length)assert(change.areas.includes('history-integration'),'A merge/history-only commit is identified explicitly');}
-assert.equal(model.states['LOGIN-REVIEW'].binding['login.phase'],'pin-review');
-for(const id of ['LOGIN-CHECK','LOGIN-CHECK-P']){const edge=model.transitions.find(edge=>edge.id===id);assert.equal(edge.target,'LOGIN-REVIEW');assert.equal(edge.persist,false,'PIN group OK never authenticates');}
+assert.equal(model.states['LOGIN-REVIEW'].binding['login.phase'],'pin-entry');
+for(const id of ['LOGIN-CHECK','LOGIN-CHECK-P']){const edge=model.transitions.find(edge=>edge.id===id);assert.equal(edge.target,'LOGIN-WAIT');assert.equal(edge.persist,true,'first PIN OK authenticates');}
 for(const id of ['LOGIN-FINAL-OK','LOGIN-FINAL-POK']){const edge=model.transitions.find(edge=>edge.id===id);assert.equal(edge.source,'LOGIN-REVIEW');assert.equal(edge.target,'LOGIN-WAIT');assert.equal(edge.persist,true);}
 assert(model.known_issues.some(issue=>issue.id==='KNOWN-V2-PENDING'),'Unverified user reports remain distinct from verified implementation changes');
 for(const state of ['LOGIN-ID','LOGIN-PIN'])for(const mode of ['pointer','voice']){
@@ -42,4 +42,4 @@ assert.deepEqual(model.v2_test_vectors,JSON.parse(read('docs/fsm-v2-cases.json')
 const cases=new Set();
 for(const scenario of model.v2_test_vectors.cases){assert(!cases.has(scenario.id));cases.add(scenario.id);assert(model.v2_contracts[scenario.contract]);for(const key of ['given','when','expect'])assert(Object.keys(scenario[key]||{}).length,scenario.id+' requires '+key);}
 for(const id of Object.keys(model.v2_contracts))assert(model.v2_test_vectors.cases.some(scenario=>scenario.contract===id),id+' needs an implementation-independent scenario');
-console.log('PASS FSM reference parity, stable edges, '+audit.commits.length+' audited commits, structured version 2 contracts and two-step login oracle');
+console.log('PASS FSM reference parity, stable edges, '+audit.commits.length+' audited commits, structured version 2 contracts and single-confirmation login oracle');

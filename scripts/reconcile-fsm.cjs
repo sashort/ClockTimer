@@ -232,6 +232,7 @@ model.known_issues.push({id:'KNOWN-VOSK-FORK',status:'deferred',title:'Custom Vo
 model.contracts['version-2-reference']={purpose:'Executable behavioral oracle for a replacement implementation, independent of its internal classes.',case_format:{given:'Public state, focused surface, allowed controls, owner locks and persisted baseline',when:'Physical gesture or recognized transcript/final/silence event with timestamps and utterance ID',then:'Exact public state, focused control, enabled/disabled controls, ordered announcements, API/event effects, and released owners',negative:'Malformed/ambiguous/revised input, stale operation/result, denial/failure and replay variants'},evidence_rule:'A listed test is a scenario source, not proof that every chart edge passed. Preserve status and test/version evidence; unresolved baseline contracts remain explicit gaps.'};
 model.v2_test_vectors=JSON.parse(read('docs/fsm-v2-cases.json'));
 model.contracts['version-2-reference'].precedence='Structured v2_contracts and v2_test_vectors specify the reconciled areas. Earlier explanatory prose is historical where it conflicts. Retired edges are not valid version 2 inputs. Unresolved baseline contracts outside the reconciled areas remain explicit test-coverage gaps.';
+require('./login-confirmation-contract.cjs')(model);
 const serialized=JSON.stringify(model,null,2)+'\n';
 write('docs/mainline-fsm-draft.json',serialized);
 let html=read('docs/mainline-fsm-draft.html');

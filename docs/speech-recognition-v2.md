@@ -208,8 +208,89 @@ including delayed rendering, revisions, permission loss, cancellation, unrelated
 modal changes, final-decode delay, and zero writes before required confirmation.
 
 
+## Modal controls and typed value ownership
+
+See [Modal interaction and viewport ownership](modal-interaction-v2.md) for the
+implemented SharedModal/SharedModalHost classes, viewport ownership, input-session
+transfer and announcement completion ordering. Every open registered dialog and
+the persistent microphone belong to one interactive region; the background is inert.
+
+Typed value commands pass the captured value directly to their action. The
+voice editor must not depend solely on a temporary global recognizer execution
+context that may have unwound before a queued action runs. Non-value commands
+retain their explicit transcript routing. Duration entry does not start a trip;
+the separate OK confirmation still owns validation and persistence.
+
+Mic off preserves the current value-entry session while switching Voicepad to
+numberpad. Mic on offers “Switch to voice input?”; its announcement waits for the
+mic chime and announcement to finish. Spoken Sleep uses its own command queue.
+Discarded spans count as consumed display input, so a revised ASR hypothesis
+cannot paint that rejected noise again. Result columns keep their independent
+TTLs throughout these operations.
+
+The unwanted command aliases and direct starts removed on October 16, 2026 must
+remain absent from decoder vocabulary and Commands: rudy/rudd/ruddy, sin/sink on/off,
+sin/sink/sync status, castle, start break, start lunch and start short break.
+The retained break-start route is `break start` followed by a type and OK.
+
 ## Time readback and reference cue
 
 See [Time implementation contract](time-reference-v2.md) for the local class-based
 implementation: duration-only speech, effective voice/speed estimation, real speech
 completion, a scheduled D5 reference cue, retries/cancellation and test evidence.
+
+## Login confirmation and initial Ready
+
+ID entry still needs four digits plus OK. Four PIN digits plus one OK now
+authenticates once; the separate PIN readback/review confirmation is removed.
+Failure retains the ID, clears the PIN and focuses its first slot. Keyboard
+Return, mobile Return and button OK follow the same path. Decoder partial
+repetition must not submit twice.
+
+`--post-login-ready --voice-feedback` covers the first Ready with no active trip
+and repeats it between trips. It delivers partials, silence and delayed decoder
+finals through the recognizer callback, then speaks a separate duration. Ready
+must settle with zero pending transactions/locks while leaving Voicepad open.
+Duration entry alone must not start a trip. These supplied-hypothesis tests do
+not establish that the reported physical Android lockout has been eliminated.
+
+## Mute/wake decoder lifecycle
+
+Hotword refresh is an optional backend capability. Vosk uses its finite grammar
+context provider and has no `setHotwords` method; command registration must not
+throw when that method is absent. Tests must include the real adapter shape,
+not just a mock that supplies methods absent from production.
+
+A pointer/remote wake retires an idle capture that may have been created with a
+wake-only grammar, clears pre-roll and resets VAD. The next voiced frame builds
+a new utterance using current UI commands. An owned command continuation and
+spoken Wake keep their command queue. A suspended/interrupted AudioContext is
+resumed before announcing the unmuted state. This preserves editor session data.
+`--mic-wake-grammar --voice-feedback` uses the actual Vosk adapter with a controlled
+decoder to check three mute/wake cycles and the resulting phrase lists. Physical
+Android audio capture remains a live verification step.
+
+## Browser silence timer regression and deferred presentation
+
+The TG01JO console report showed repeated `Illegal invocation` exceptions from
+`SpeechContinuationSession.armSilence`. Native Window timers had been stored as
+private instance fields and invoked with the session as their receiver. Node and
+injected-timer tests did not expose the browser receiver requirement. Default
+scheduler/canceller adapters now call `globalThis.setTimeout/clearTimeout` through
+closures. Injected schedulers remain supported. Real browser coverage reproduces
+the old exception and checks arm/cancel/rearm and settlement after the fix.
+
+A failed silence callback leaves a root collecting, preventing final recognition
+and transaction settlement. This accounts for the common Ready/Down/Break Start
+Applying pattern and accumulated transcript junk. Browser integration now also
+settles initial Ready using the actual native silence timer and delayed final.
+Physical Android confirmation remains separate from supplied-hypothesis evidence.
+
+Action results may return a deferred `speechResponse` promise. Logical command
+completion never waits for optional presentation; only response rendering awaits
+it. An invalidated response resolves undefined and cancels its pending presentation.
+Time uses this protocol so queued audio cannot hold a recognition root open.
+
+Announcement layers come from the catalog definition. A summary-only definition
+cannot implicitly enable a chime layer or fall back to an invented same-named
+song. This prevents the separate `Unknown song: sync-state` console error.

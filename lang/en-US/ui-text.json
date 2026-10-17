@@ -6868,6 +6868,11 @@
       "id": "ae4f313f-e62b-52bc-8435-f607f57a27b8",
       "text": "Neon Countdown",
       "default": "Neon Countdown"
+    },
+    "3bc86f3a-84cd-43f4-9fe8-721661c99ac7": {
+      "id": "3bc86f3a-84cd-43f4-9fe8-721661c99ac7",
+      "text": "Switch to voice input?",
+      "default": "Switch to voice input?"
     }
   }
 }

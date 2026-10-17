@@ -8,7 +8,8 @@
         #phase = "collecting"; #transcript = "";
 
         constructor({id, surfaces = [], now = () => performance.now(),
-            schedule = setTimeout, unschedule = clearTimeout, onError = () => {}, feedback} = {}) {
+            schedule = (callback, delay) => globalThis.setTimeout(callback, delay),
+            unschedule = timer => globalThis.clearTimeout(timer), onError = () => {}, feedback} = {}) {
             this.id = id;
             this.collectors = new Map();
             this.expectedSurfaces = new Set(surfaces);

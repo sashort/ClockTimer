@@ -42,15 +42,23 @@ jobs:
           node tests/beat-tempo-ramp.mjs
           node tests/orchestral-finale.mjs
           node tests/app-state-transactions.mjs --time-reference --voice-feedback
+          node tests/app-state-transactions.mjs --time-reference-voice --voice-feedback
+          node tests/app-state-transactions.mjs --time-reference-paused --voice-feedback
+          node tests/app-state-transactions.mjs --deferred-readback --voice-feedback
+          node tests/app-state-transactions.mjs --announcement-layers --voice-feedback
           node tests/app-state-transactions.mjs --rejection-feedback --voice-feedback
           node tests/speech-command-digest.mjs
           node tests/adaptive-speech-timing.mjs
+          node tests/command-vocabulary.mjs
           node tests/speech-response-chain.mjs
           node tests/observer-microphone.mjs
           node tests/app-state-transactions.mjs --speech-boundaries
           node tests/app-state-transactions.mjs --decoder-final-boundaries --voice-feedback
           node tests/app-state-transactions.mjs --ready-handoff --voice-feedback
+          node tests/app-state-transactions.mjs --post-login-ready --voice-feedback
+          node tests/app-state-transactions.mjs --voicepad-value-argument --voice-feedback
           node tests/app-state-transactions.mjs --mic-feedback --voice-feedback
+          node tests/app-state-transactions.mjs --mic-wake-grammar --voice-feedback
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip
           node tests/app-state-transactions.mjs --commands-close
@@ -93,6 +101,9 @@ jobs:
         working-directory: tests
       - run: npx playwright install --with-deps chromium
         working-directory: tests
+      - run: node tests/speech-continuation-browser.cjs
+      - run: node tests/shared-modal-browser.cjs
+      - run: node tests/mic-modal-browser.cjs
       - run: node tests/graphical-settings-browser.cjs
       - run: node tests/radial-fitted-tick-browser.cjs
       - run: php -l graphical-settings.php

@@ -15,9 +15,30 @@
             const target = slope < 0 ? Math.floor(value / 1000) * 1000 : Math.ceil(value / 1000) * 1000;
             return at + Math.max(0, (target - value) / slope);
         }
-        async run({valueAt, format, speak, play, profile = {}, guard = () => true,
+        async #completeSong(song, valid) {
+            if (!song) return false;
+            let finished = false;
+            const completion = Promise.resolve(song.finished).then(result => {finished=true; return result;});
+            while (!finished) {
+                if (!valid()) {song.stop?.(); return false;}
+                await Promise.race([completion, this.#wait(40)]);
+            }
+            const result = await completion;
+            return valid() && result?.reason !== "stopped" && result?.reason !== "error";
+        }
+        async run({valueAt, format, speak, play, profile = {}, guard = () => true, reference = "after",
             onPlan = () => {}, gapMs = 180, marginMs = 400, maxAttempts = 3}) {
             const valid = () => guard() !== false;
+            if (reference === "before") {
+                const value = valueAt(this.#now()), text = Number.isFinite(value) && format(value);
+                if (!text || !valid()) return {performed:false, reason:"unavailable"};
+                const plan = {value, text, reference}; onPlan(plan);
+                if (!await this.#completeSong(await play(plan), valid)) return {performed:false, reason:"cancelled"};
+                const started = this.#now(), completed = await speak(text);
+                if (completed !== true || !valid()) return {performed:false, reason:"speech-cancelled"};
+                this.#estimator.observe(text, this.#now()-started, profile);
+                return {performed:true, value, text};
+            }
             for (let attempt=0; attempt<maxAttempts && valid(); attempt++) {
                 const started = this.#now();
                 let at = started + gapMs + marginMs;
@@ -45,17 +66,9 @@
                 const song = await play({at, value, text});
                 if (!song) continue; // Audio setup missed the scheduling deadline.
                 // Guard remains live through the scheduled attack and audible tail.
-                let finished = false;
-                const completion = Promise.resolve(song.finished).then(result => {finished=true; return result;});
-                while (!finished) {
-                    if (!valid() || (this.#now()<at && Math.abs(valueAt(at)-value)>2)) {
-                        song.stop?.();
-                        return {performed:false, reason:"cancelled"};
-                    }
-                    await Promise.race([completion, this.#wait(40)]);
-                }
-                const result = await completion;
-                return {performed:result?.reason !== "stopped" && result?.reason !== "error", at, value, text};
+                const performed = await this.#completeSong(song, () => valid() &&
+                    !(this.#now()<at && Math.abs(valueAt(at)-value)>2));
+                return {performed, at, value, text};
             }
             return {performed:false, reason:valid()?"deadline-missed":"cancelled"};
         }

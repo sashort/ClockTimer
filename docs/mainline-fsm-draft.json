@@ -989,11 +989,9 @@
       "trip": "Previous trip/clock state preserved until authenticated restore",
       "facet": "Four separate cells; typed and spoken entry share digits",
       "commands": [
-        "Exactly four spoken digits + OK: readback only",
-        "Type four digits then OK/Enter: readback only",
-        "Cancel empty PIN: ID entry",
-        "Cancel entered PIN: clear PIN",
-        "Backspace empty first PIN: clear ID and PIN"
+        "Four spoken PIN digits + OK: submit",
+        "Type four PIN digits then OK/Enter: submit",
+        "Cancel: clear PIN or return to ID"
       ],
       "family": "login",
       "binding": {
@@ -1004,8 +1002,7 @@
         "login.method": "pin",
         "focus": "loginDialog",
         "login.cancelPrimed": false,
-        "login.phase": "pin-entry",
-        "login.reviewReady": false
+        "login.phase": "pin-entry"
       }
     },
     "LOGIN-WAIT": {
@@ -1368,19 +1365,19 @@
     },
     "LOGIN-REVIEW": {
       "id": "LOGIN-REVIEW",
-      "title": "Login: PIN readback / final OK",
+      "title": "Login: typed PIN complete",
       "focus": "Login dialog",
       "trip": "Previous trip unchanged",
-      "facet": "Four PIN digits reviewed; no authentication request yet",
+      "facet": "Four typed PIN digits; first OK submits",
       "family": "login",
       "commands": [
         "OK/Enter: submit once",
         "Cancel: clear PIN",
-        "Edit a digit: revoke review"
+        "Edit a digit"
       ],
       "binding": {
         "login.open": true,
-        "login.phase": "pin-review",
+        "login.phase": "pin-entry",
         "login.pending": false,
         "login.reviewReady": true
       }
@@ -6689,7 +6686,7 @@
       "label": "Login appears",
       "mode": "automatic",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -6700,9 +6697,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Login appears",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -6717,7 +6714,7 @@
       "label": "<number sequence>: populate ID cells",
       "mode": "voice",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -6728,9 +6725,9 @@
       "skippable": false,
       "contract": {
         "trigger": "<number sequence>: populate ID cells",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -6751,7 +6748,7 @@
       "label": "Type digits",
       "mode": "pointer",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -6762,9 +6759,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Type digits",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -6783,7 +6780,7 @@
       "label": "OK after four ID digits",
       "mode": "voice",
       "audio": "login-pin",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -6794,9 +6791,9 @@
       "skippable": false,
       "contract": {
         "trigger": "OK after four ID digits",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -6811,7 +6808,7 @@
       "label": "Press OK",
       "mode": "pointer",
       "audio": "login-pin",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -6822,9 +6819,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Press OK",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -6835,12 +6832,12 @@
     {
       "id": "LOGIN-PIN-VOICE",
       "source": "LOGIN-PIN",
-      "target": "LOGIN-REVIEW",
-      "label": "Exactly four PIN digits plus OK/Enter: readback only",
+      "target": "LOGIN-WAIT",
+      "label": "Four PIN digits plus first OK/Enter: submit once",
       "mode": "voice",
-      "audio": "login-review",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
-      "persist": false,
+      "audio": null,
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
+      "persist": true,
       "restore": null,
       "test": {
         "status": "untested",
@@ -6849,11 +6846,11 @@
       },
       "skippable": false,
       "contract": {
-        "trigger": "Exactly four PIN digits plus OK/Enter: readback only",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "trigger": "Four PIN digits plus first OK/Enter: submit once",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
-        "persistence": "No credential request; no trip mutation.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
         "loopback_feedback": {
@@ -6871,7 +6868,7 @@
       "label": "Type PIN digits",
       "mode": "pointer",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -6882,9 +6879,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Type PIN digits",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -6899,12 +6896,12 @@
     {
       "id": "LOGIN-CHECK",
       "source": "LOGIN-PIN",
-      "target": "LOGIN-REVIEW",
-      "label": "Exactly four PIN digits plus OK/Enter: readback only",
+      "target": "LOGIN-WAIT",
+      "label": "Four PIN digits plus first OK/Enter: submit once",
       "mode": "voice",
-      "audio": "login-review",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
-      "persist": false,
+      "audio": null,
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
+      "persist": true,
       "restore": null,
       "test": {
         "status": "untested",
@@ -6913,11 +6910,11 @@
       },
       "skippable": false,
       "contract": {
-        "trigger": "Exactly four PIN digits plus OK/Enter: readback only",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "trigger": "Four PIN digits plus first OK/Enter: submit once",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
-        "persistence": "No credential request; no trip mutation.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -6927,12 +6924,12 @@
     {
       "id": "LOGIN-CHECK-P",
       "source": "LOGIN-PIN",
-      "target": "LOGIN-REVIEW",
-      "label": "Exactly four PIN digits plus OK/Enter: readback only",
+      "target": "LOGIN-WAIT",
+      "label": "Four PIN digits plus first OK/Enter: submit once",
       "mode": "pointer",
-      "audio": "login-review",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
-      "persist": false,
+      "audio": null,
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
+      "persist": true,
       "restore": null,
       "test": {
         "status": "untested",
@@ -6941,11 +6938,11 @@
       },
       "skippable": false,
       "contract": {
-        "trigger": "Exactly four PIN digits plus OK/Enter: readback only",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "trigger": "Four PIN digits plus first OK/Enter: submit once",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
-        "persistence": "No credential request; no trip mutation.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -6959,7 +6956,7 @@
       "label": "Matching ID/PIN; close login and restore session",
       "mode": "automatic",
       "audio": "login-success",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -6970,9 +6967,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Matching ID/PIN; close login and restore session",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -6987,7 +6984,7 @@
       "label": "Mismatch / failure",
       "mode": "failure",
       "audio": "login-failed",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -6998,9 +6995,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Mismatch / failure",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7015,7 +7012,7 @@
       "label": "Cancel: clear both sequences",
       "mode": "voice",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7026,9 +7023,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Cancel: clear both sequences",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7047,7 +7044,7 @@
       "label": "Press Cancel",
       "mode": "pointer",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7058,9 +7055,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Press Cancel",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7079,7 +7076,7 @@
       "label": "Cancel: clear PIN and repeat Password",
       "mode": "voice",
       "audio": "login-pin",
-      "guard": "At least one PIN digit entered; empty PIN Cancel uses LOGIN-EMPTY-PIN-CANCEL.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7090,9 +7087,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Cancel: clear PIN and repeat Password",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7107,7 +7104,7 @@
       "label": "Press Cancel: clear PIN and repeat Password",
       "mode": "pointer",
       "audio": "login-pin",
-      "guard": "At least one PIN digit entered; empty PIN Cancel uses LOGIN-EMPTY-PIN-CANCEL.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7118,9 +7115,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Press Cancel: clear PIN and repeat Password",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7135,7 +7132,7 @@
       "label": "Authenticated session restores an active trip",
       "mode": "automatic",
       "audio": "login-success",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7146,9 +7143,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Authenticated session restores an active trip",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7163,7 +7160,7 @@
       "label": "Voice: clear and restart ID",
       "mode": "voice",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7174,9 +7171,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Voice: clear and restart ID",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7197,7 +7194,7 @@
       "label": "User[name]: clear and use username/password",
       "mode": "voice",
       "audio": "login-user",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7208,9 +7205,9 @@
       "skippable": false,
       "contract": {
         "trigger": "User[name]: clear and use username/password",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7231,7 +7228,7 @@
       "label": "Press Login with username and password",
       "mode": "pointer",
       "audio": "login-user",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7242,9 +7239,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Press Login with username and password",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7259,7 +7256,7 @@
       "label": "Voice: clear and restart ID",
       "mode": "voice",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7270,9 +7267,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Voice: clear and restart ID",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7293,7 +7290,7 @@
       "label": "User[name]: clear and use username/password",
       "mode": "voice",
       "audio": "login-user",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7304,9 +7301,9 @@
       "skippable": false,
       "contract": {
         "trigger": "User[name]: clear and use username/password",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7327,7 +7324,7 @@
       "label": "Press Login with username and password",
       "mode": "pointer",
       "audio": "login-user",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7338,9 +7335,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Press Login with username and password",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7355,7 +7352,7 @@
       "label": "Voice: clear and restart ID",
       "mode": "voice",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7366,9 +7363,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Voice: clear and restart ID",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7383,7 +7380,7 @@
       "label": "User[name]: clear and use username/password",
       "mode": "voice",
       "audio": "login-user",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7394,9 +7391,9 @@
       "skippable": false,
       "contract": {
         "trigger": "User[name]: clear and use username/password",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7415,7 +7412,7 @@
       "label": "Press Login via voice",
       "mode": "pointer",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7426,9 +7423,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Press Login via voice",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7443,7 +7440,7 @@
       "label": "Cancel: clear and restart ID",
       "mode": "voice",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7454,9 +7451,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Cancel: clear and restart ID",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7471,7 +7468,7 @@
       "label": "Press Cancel",
       "mode": "pointer",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7482,9 +7479,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Press Cancel",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7499,7 +7496,7 @@
       "label": "Pointer OK: submit username/password",
       "mode": "pointer",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": true,
       "restore": null,
       "test": {
@@ -7510,9 +7507,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Pointer OK: submit username/password",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7527,7 +7524,7 @@
       "label": "Mismatch / failure",
       "mode": "failure",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7538,9 +7535,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Mismatch / failure",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -7555,7 +7552,7 @@
       "label": "Recognition sleeping / muted",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7566,9 +7563,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition sleeping / muted",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7587,7 +7584,7 @@
       "label": "Recognition wakes",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7598,9 +7595,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition wakes",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7619,7 +7616,7 @@
       "label": "Recognition off",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7630,9 +7627,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition off",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7651,7 +7648,7 @@
       "label": "Recognition enabled",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7662,9 +7659,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition enabled",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7683,7 +7680,7 @@
       "label": "Recognition sleeping / muted",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7694,9 +7691,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition sleeping / muted",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7715,7 +7712,7 @@
       "label": "Recognition wakes",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7726,9 +7723,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition wakes",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7747,7 +7744,7 @@
       "label": "Recognition off",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7758,9 +7755,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition off",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7779,7 +7776,7 @@
       "label": "Recognition enabled",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7790,9 +7787,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition enabled",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7811,7 +7808,7 @@
       "label": "Recognition sleeping / muted",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7822,9 +7819,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition sleeping / muted",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7843,7 +7840,7 @@
       "label": "Recognition wakes",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7854,9 +7851,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition wakes",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7875,7 +7872,7 @@
       "label": "Recognition off",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7886,9 +7883,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition off",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7907,7 +7904,7 @@
       "label": "Recognition enabled",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7918,9 +7915,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition enabled",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7939,7 +7936,7 @@
       "label": "Recognition sleeping / muted",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7950,9 +7947,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition sleeping / muted",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -7971,7 +7968,7 @@
       "label": "Recognition wakes",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -7982,9 +7979,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition wakes",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8003,7 +8000,7 @@
       "label": "Recognition off",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8014,9 +8011,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition off",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8035,7 +8032,7 @@
       "label": "Recognition enabled",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8046,9 +8043,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition enabled",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8067,7 +8064,7 @@
       "label": "Second consecutive Cancel: clear ID too",
       "mode": "voice",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8078,9 +8075,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Second consecutive Cancel: clear ID too",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -8095,7 +8092,7 @@
       "label": "Second consecutive Cancel: clear ID too",
       "mode": "pointer",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8106,9 +8103,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Second consecutive Cancel: clear ID too",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -8123,7 +8120,7 @@
       "label": "Fresh <number sequence> replaces PIN",
       "mode": "voice",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8134,9 +8131,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Fresh <number sequence> replaces PIN",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8157,7 +8154,7 @@
       "label": "Fresh <number sequence> replaces User ID",
       "mode": "voice",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8168,9 +8165,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Fresh <number sequence> replaces User ID",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8191,7 +8188,7 @@
       "label": "Enter fresh PIN digits",
       "mode": "voice",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8202,9 +8199,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Enter fresh PIN digits",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -8219,7 +8216,7 @@
       "label": "Type fresh PIN digits",
       "mode": "pointer",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8230,9 +8227,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Type fresh PIN digits",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -8247,7 +8244,7 @@
       "label": "Voice: reset ID",
       "mode": "voice",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8258,9 +8255,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Voice: reset ID",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8281,7 +8278,7 @@
       "label": "User[name]: username/password modal",
       "mode": "voice",
       "audio": "login-user",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8292,9 +8289,9 @@
       "skippable": false,
       "contract": {
         "trigger": "User[name]: username/password modal",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8315,7 +8312,7 @@
       "label": "Recognition sleeping / muted",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8326,9 +8323,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition sleeping / muted",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8347,7 +8344,7 @@
       "label": "Recognition wakes",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8358,9 +8355,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition wakes",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8379,7 +8376,7 @@
       "label": "Recognition off",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8390,9 +8387,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition off",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8411,7 +8408,7 @@
       "label": "Recognition enabled",
       "mode": "automatic",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8422,9 +8419,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Recognition enabled",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8443,7 +8440,7 @@
       "label": "Login via voice: wait for model",
       "mode": "pointer",
       "audio": "silent",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8454,9 +8451,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Login via voice: wait for model",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
@@ -8475,7 +8472,7 @@
       "label": "Model ready: fulfill voice-login request",
       "mode": "automatic",
       "audio": "login-id",
-      "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "test": {
@@ -8486,9 +8483,9 @@
       "skippable": false,
       "contract": {
         "trigger": "Model ready: fulfill voice-login request",
-        "guard": "See structured LOGIN preconditions, phase, four-digit validation and reviewReady gates.",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN postconditions; preserve trip/recognition regions.",
-        "timing": "Immediate local input; authentication only on final OK, server acknowledgement controls success.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
         "persistence": "No credential request; no trip mutation.",
         "rollback": "Authentication failure retains ID, clears PIN/review, focuses first PIN.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
@@ -10174,10 +10171,10 @@
       "id": "LOGIN-FINAL-OK",
       "source": "LOGIN-REVIEW",
       "target": "LOGIN-WAIT",
-      "label": "Final spoken OK after PIN readback",
+      "label": "First OK/Enter on a complete typed PIN: submit once",
       "mode": "voice",
       "audio": null,
-      "guard": "reviewReady; exactly four unchanged PIN digits; listening; not pending",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": true,
       "restore": null,
       "skippable": false,
@@ -10188,11 +10185,11 @@
         "evidence": "Automated contract scenarios are listed in v2_contracts.LOGIN; no physical microphone claim."
       },
       "contract": {
-        "trigger": "Final spoken OK after PIN readback",
-        "guard": "reviewReady; exactly four unchanged PIN digits; listening; not pending",
+        "trigger": "First OK/Enter on a complete typed PIN: submit once",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "One credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -10202,10 +10199,10 @@
       "id": "LOGIN-FINAL-POK",
       "source": "LOGIN-REVIEW",
       "target": "LOGIN-WAIT",
-      "label": "Final button OK or keyboard Return",
+      "label": "First OK/Enter on a complete typed PIN: submit once",
       "mode": "pointer",
       "audio": null,
-      "guard": "reviewReady; exactly four unchanged PIN digits; not pending",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": true,
       "restore": null,
       "skippable": false,
@@ -10216,11 +10213,11 @@
         "evidence": "Automated contract scenarios are listed in v2_contracts.LOGIN; no physical microphone claim."
       },
       "contract": {
-        "trigger": "Final button OK or keyboard Return",
-        "guard": "reviewReady; exactly four unchanged PIN digits; not pending",
+        "trigger": "First OK/Enter on a complete typed PIN: submit once",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "One credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "One credential request; no trip-persistence transaction.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -10233,7 +10230,7 @@
       "label": "Cancel before final OK",
       "mode": "voice",
       "audio": "login-pin",
-      "guard": "Reviewed PIN present; retain ID",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10245,10 +10242,10 @@
       },
       "contract": {
         "trigger": "Cancel before final OK",
-        "guard": "Reviewed PIN present; retain ID",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "No credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -10261,7 +10258,7 @@
       "label": "Cancel button before final OK",
       "mode": "pointer",
       "audio": "login-pin",
-      "guard": "Reviewed PIN present; retain ID",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10273,10 +10270,10 @@
       },
       "contract": {
         "trigger": "Cancel button before final OK",
-        "guard": "Reviewed PIN present; retain ID",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "No credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -10289,7 +10286,7 @@
       "label": "Cancel between confirmed ID and PIN input",
       "mode": "voice",
       "audio": "login-id",
-      "guard": "All PIN cells empty; clear both groups",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10301,10 +10298,10 @@
       },
       "contract": {
         "trigger": "Cancel between confirmed ID and PIN input",
-        "guard": "All PIN cells empty; clear both groups",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "No credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -10317,7 +10314,7 @@
       "label": "Physical/mobile Backspace in empty first PIN cell",
       "mode": "pointer",
       "audio": "login-id",
-      "guard": "Backward deletion, cell index 0, empty cell; not pending",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10329,10 +10326,10 @@
       },
       "contract": {
         "trigger": "Physical/mobile Backspace in empty first PIN cell",
-        "guard": "Backward deletion, cell index 0, empty cell; not pending",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "No credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -10345,7 +10342,7 @@
       "label": "Edit PIN; revoke previous review",
       "mode": "pointer",
       "audio": null,
-      "guard": "Active editable PIN cell; next OK must read back again",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10357,10 +10354,10 @@
       },
       "contract": {
         "trigger": "Edit PIN; revoke previous review",
-        "guard": "Active editable PIN cell; next OK must read back again",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "No credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
@@ -10373,7 +10370,7 @@
       "label": "Focus first ID cell with every ID cell empty",
       "mode": "pointer",
       "audio": "login-id",
-      "guard": "Active first ID cell; not pending",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10385,10 +10382,10 @@
       },
       "contract": {
         "trigger": "Focus first ID cell with every ID cell empty",
-        "guard": "Active first ID cell; not pending",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "No credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
         "loopback_feedback": {
@@ -10405,7 +10402,7 @@
       "label": "Focus first PIN cell with every PIN cell empty",
       "mode": "pointer",
       "audio": "login-pin",
-      "guard": "Active first PIN cell; retained four-digit ID; not pending",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10417,10 +10414,10 @@
       },
       "contract": {
         "trigger": "Focus first PIN cell with every PIN cell empty",
-        "guard": "Active first PIN cell; retained four-digit ID; not pending",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Apply structured LOGIN contract.",
-        "timing": "Immediate; await server only in LOGIN-WAIT.",
-        "persistence": "No credential request.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "rollback": "Preserve ID; clear PIN/review on authentication failure.",
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter",
         "loopback_feedback": {
@@ -10717,7 +10714,7 @@
       "label": "OK/Return with fewer than four digits",
       "mode": "pointer",
       "audio": null,
-      "guard": "No valid four-digit group confirmation; never authenticate",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10729,11 +10726,11 @@
       },
       "contract": {
         "trigger": "OK/Return with fewer than four digits",
-        "guard": "No valid four-digit group confirmation; never authenticate",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Remain in the current entry phase; do not accept a partial credential group or enter review.",
         "discard": "Discard the rejected speech segment; preserve previously accepted group and trip state. Pointer input remains editable.",
-        "timing": "Reject the invalid confirmation immediately.",
-        "persistence": "Zero credential requests; zero trip writes.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "audio": "No success announcement; show input validation feedback.",
         "loopback_feedback": {
           "classification": "rejection",
@@ -10750,7 +10747,7 @@
       "label": "Incomplete/malformed digit group or bare OK before review",
       "mode": "voice",
       "audio": null,
-      "guard": "No valid four-digit group confirmation; never authenticate",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10762,11 +10759,11 @@
       },
       "contract": {
         "trigger": "Incomplete/malformed digit group or bare OK before review",
-        "guard": "No valid four-digit group confirmation; never authenticate",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Remain in the current entry phase; do not accept a partial credential group or enter review.",
         "discard": "Discard the rejected speech segment; preserve previously accepted group and trip state. Pointer input remains editable.",
-        "timing": "Reject the invalid confirmation immediately.",
-        "persistence": "Zero credential requests; zero trip writes.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "audio": "No success announcement or digit readback.",
         "loopback_feedback": {
           "classification": "rejection",
@@ -10783,7 +10780,7 @@
       "label": "OK/Return with fewer than four digits",
       "mode": "pointer",
       "audio": null,
-      "guard": "No valid four-digit group confirmation; never authenticate",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10795,11 +10792,11 @@
       },
       "contract": {
         "trigger": "OK/Return with fewer than four digits",
-        "guard": "No valid four-digit group confirmation; never authenticate",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Remain in the current entry phase; do not accept a partial credential group or enter review.",
         "discard": "Discard the rejected speech segment; preserve previously accepted group and trip state. Pointer input remains editable.",
-        "timing": "Reject the invalid confirmation immediately.",
-        "persistence": "Zero credential requests; zero trip writes.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "audio": "No success announcement; show input validation feedback.",
         "loopback_feedback": {
           "classification": "rejection",
@@ -10816,7 +10813,7 @@
       "label": "Incomplete/malformed digit group or bare OK before review",
       "mode": "voice",
       "audio": null,
-      "guard": "No valid four-digit group confirmation; never authenticate",
+      "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
       "persist": false,
       "restore": null,
       "skippable": false,
@@ -10828,11 +10825,11 @@
       },
       "contract": {
         "trigger": "Incomplete/malformed digit group or bare OK before review",
-        "guard": "No valid four-digit group confirmation; never authenticate",
+        "guard": "Login open, not submitting, exactly four digits for the credential being confirmed.",
         "state_changes": "Remain in the current entry phase; do not accept a partial credential group or enter review.",
         "discard": "Discard the rejected speech segment; preserve previously accepted group and trip state. Pointer input remains editable.",
-        "timing": "Reject the invalid confirmation immediately.",
-        "persistence": "Zero credential requests; zero trip writes.",
+        "timing": "ID OK advances; the first PIN OK submits. Success waits for server acceptance.",
+        "persistence": "No credential request; no trip mutation.",
         "audio": "No success announcement or digit readback.",
         "loopback_feedback": {
           "classification": "rejection",
@@ -12605,18 +12602,10 @@
       "id": "login-review",
       "chime": "None",
       "notes": "",
-      "summary": "<individual PIN digits>",
+      "summary": "None",
       "details": "None",
-      "sequence": [
-        {
-          "id": "login-review-speech",
-          "kind": "Summary",
-          "text": "<individual PIN digits>",
-          "optional": false,
-          "skippable": false
-        }
-      ],
-      "footer": "English language resource; state/focus guards apply.",
+      "sequence": [],
+      "footer": "Retired PIN readback; no playback in the current login workflow.",
       "order_note": "Required playback order."
     }
   },
@@ -12713,12 +12702,11 @@
     },
     "login": {
       "region": "Authentication",
-      "meaning": "Authentication phase id-entry/pin-entry/pin-review/submitting/password-entry/closed, input stage, reviewReady, digitCount, pending, and method. Raw ID/PIN digits are not exposed in global FSM snapshots. Four digits plus OK are atomic spoken input for both ID and PIN; PIN OK reviews, the following independent OK authenticates.",
+      "meaning": "Four-digit ID plus OK advances to PIN. Four-digit PIN plus one OK submits exactly once. Server acceptance controls success; failure retains ID and clears PIN. reviewReady is a compatibility field for a complete, typed PIN awaiting its first OK.",
       "values": [
         "closed",
         "id-entry",
         "pin-entry",
-        "pin-review",
         "submitting",
         "password-entry"
       ]
@@ -12896,8 +12884,8 @@
     "settings": "Settings focus coexists with trip/clock/range regions. Closing settings restores prior focus; persistence rejection restores state and dependent changes.",
     "locale": "Semantic state/range IDs remain stable. UI text, spoken command vocabulary, recognition patterns and announcement templates belong to the selected language pack.",
     "aggregation": "TripAggregates shared calculations: latest row wins per String(id); anonymous rows remain distinct. Range bounds inclusive from CalendarRange.tripWindow. Counted time uses persisted counted milliseconds, fallback actual; active trip counted=max(allotted,counted). percent=standard/counted (null at zero); banked=round(standard/goalPercent-counted). Summary includes both production/nonproduction, excludes running/current ID. Log keeps its production filter and existing active-trip inclusion rule. Results are immutable state.tripAggregates children, UI invocation stays state.tripSummary.",
-    "login": "Four ASCII digits plus group OK/Enter for both ID and PIN. ID group OK focuses PIN. PIN group OK speaks digits only and enters review; a separate final OK/Enter alone submits. Cancel on an empty PIN returns to empty ID. Cancel on a populated/reviewed PIN clears PIN and retains ID; the next Cancel clears ID. Failure retains ID, clears PIN and review, focuses first PIN. Never expose raw PIN in public state.",
-    "login-input": "Focus first empty ID: Please login via voice. Focus first empty PIN: individual ID digits, a sentence pause, Password. First PIN group OK: individual PIN digits; zero authentication requests. Final OK: one request. Editing revokes review. Backspace on an empty slot erases and selects the previous digit; on empty first PIN it clears both credentials and focuses first ID. Forward Delete remains local. Keyboard Enter and mobile line-break use OK and reject incomplete groups. Review-only speech accepts OK/Cancel; duplicate decoder partials do not count as a final OK.",
+    "login": "ID group OK advances to PIN. PIN group OK submits once, without a second OK or PIN readback. Failure retains ID and clears PIN. Raw PIN is never public state.",
+    "login-input": "Keyboard/mobile Return and button OK share the voice confirmation path. Incomplete groups cannot submit. Repeated decoder partials cannot submit twice. Cancel and Backspace preserve their existing credential-entry rules.",
     "startup": "Request the localized loading announcement once during page initialization, without a startup dialog or OK gate. First ordinary pointer/keyboard gesture unlocks audio where required by browser policy. Login speech waits for startup onEnd/onError and recognition model readiness; UI initialization remains responsive. Only the current login prompt is released.",
     "login-authentication": "Authentication is not optimistic. Keep modal open and disable credential controls while a single request is pending. Only after acceptance may success be spoken or session/profile populated. Failure returns to first empty PIN with confirmed ID retained and a fresh PIN-group OK then final OK required.",
     "profile-editor": "Admin Edit Profile searches through account lookup; a single match selects and loads authoritative profile details automatically, multiple matches require selecting one. No match renders an error and clears the editor. Autogenerated account ID is readonly and excluded from writes; names, preferred name, username, replacement password, four-digit login ID, replacement PIN and permissions are editable subject to server authorization. Existing password/PIN are never returned or populated. Empty replacement secrets retain credentials; initial voice credentials require ID and PIN together, later independent edits preserve the other credential. Loading and saving disable editing; success is shown only after server confirmation. Rejected saves retain editable non-secret input and show the server error. Stale detail responses cannot populate a different selected account. Actor permissions are rechecked at the server.",
@@ -17001,7 +16989,7 @@
       "inputs": {
         "voice_group": "exactly four digits followed by OK/Okay/O K",
         "pointer_group": "exactly four typed digits then OK/Enter",
-        "final_confirmation": "a separate OK/Enter after PIN review"
+        "final_confirmation": "The first OK/Enter after PIN entry submits; no second confirmation."
       },
       "postconditions": {
         "id_ok": {
@@ -17010,8 +16998,8 @@
           "requests": 0
         },
         "pin_ok": {
-          "phase": "pin-review",
-          "requests": 0
+          "phase": "submitting",
+          "requests": 1
         },
         "final_ok": {
           "phase": "submitting",
@@ -17033,10 +17021,8 @@
           "sentence pause",
           "Password"
         ],
-        "pin_ok": [
-          "PIN digits spoken individually"
-        ],
-        "final_ok": "Success only after server acceptance"
+        "pin_ok": [],
+        "final_ok": "Success only after server acceptance; no PIN readback."
       },
       "cancellation": {
         "empty_pin": "Clear ID and PIN; return to first ID cell",
@@ -17045,15 +17031,16 @@
       },
       "controls": {
         "entry": "Active credential cells and OK/Cancel enabled; inactive credential disabled",
-        "review": "Only reviewed PIN may be confirmed by bare spoken OK; editing revokes review",
+        "review": "A complete typed PIN awaits its first OK. Editing does not create a separate review phase.",
         "submitting": "Credential input, submit, cancel and method switches disabled"
       },
       "forbidden": [
-        "Authentication on the first PIN OK",
         "Authentication from digits without group OK",
         "Authentication from a repeated decoder partial",
         "Success before server acknowledgement",
-        "Raw PIN in global state or transition evidence"
+        "Raw PIN in global state or transition evidence",
+        "A second confirmation requirement after PIN OK",
+        "PIN readback"
       ],
       "evidence": [
         "node tests/app-state-transactions.mjs --pin-review --voice-feedback",
@@ -17465,19 +17452,17 @@
           "final": true
         },
         "expect": {
-          "phase": "pin-review",
-          "reviewReady": true,
-          "audio": [
-            "one two three four"
-          ],
-          "credentialRequests": 0
+          "phase": "submitting",
+          "pending": true,
+          "credentialRequests": 1,
+          "successAnnouncementCount": 0
         }
       },
       {
         "id": "LOGIN-FINAL-OK",
         "contract": "LOGIN",
         "given": {
-          "phase": "pin-review",
+          "phase": "pin-entry",
           "reviewReady": true,
           "digitCount": 4
         },
@@ -17498,7 +17483,7 @@
         "id": "LOGIN-REPEATED-PARTIAL",
         "contract": "LOGIN",
         "given": {
-          "phase": "pin-review",
+          "phase": "submitting",
           "consumedTranscript": "one two three four okay"
         },
         "when": {
@@ -17506,15 +17491,15 @@
           "repeat": 2
         },
         "expect": {
-          "phase": "pin-review",
-          "credentialRequests": 0
+          "phase": "submitting",
+          "credentialRequests": 1
         }
       },
       {
         "id": "LOGIN-PIN-EDIT",
         "contract": "LOGIN",
         "given": {
-          "phase": "pin-review",
+          "phase": "pin-entry",
           "digitCount": 4
         },
         "when": {
@@ -17525,7 +17510,7 @@
         },
         "expect": {
           "phase": "pin-entry",
-          "reviewReady": false,
+          "reviewReady": true,
           "credentialRequests": 0
         }
       },
@@ -17555,7 +17540,7 @@
         "id": "LOGIN-CANCEL-REVIEW",
         "contract": "LOGIN",
         "given": {
-          "phase": "pin-review",
+          "phase": "pin-entry",
           "id": "0042",
           "digitCount": 4
         },
@@ -17578,7 +17563,7 @@
         "id": "LOGIN-CANCEL-TWICE",
         "contract": "LOGIN",
         "given": {
-          "phase": "pin-review",
+          "phase": "pin-entry",
           "digitCount": 4
         },
         "when": {
@@ -17655,9 +17640,10 @@
           ]
         },
         "expect": {
-          "phase": "pin-review",
-          "reviewReady": true,
-          "credentialRequests": 0
+          "phase": "submitting",
+          "pending": true,
+          "credentialRequests": 1,
+          "successAnnouncementCount": 0
         }
       },
       {

@@ -4,7 +4,7 @@
   "patterns": {
     "978255d5-aa06-506d-a272-a01539ee1587": {
       "id": "978255d5-aa06-506d-a272-a01539ee1587",
-      "pattern": "^(?:ready|ruddy|rudd) at (?<spokenTime>.+)$"
+      "pattern": "^ready at (?<spokenTime>.+)$"
     },
     "69c663ba-52cf-52f2-b173-9c20e3199b32": {
       "id": "69c663ba-52cf-52f2-b173-9c20e3199b32",
@@ -12,7 +12,7 @@
     },
     "6552c89a-5807-5ccf-8755-8e411b5c3de5": {
       "id": "6552c89a-5807-5ccf-8755-8e411b5c3de5",
-      "pattern": "^(?:ready|ruddy|rudd)$"
+      "pattern": "^ready$"
     },
     "fa9fc390-ba88-5ee6-8702-1fb6e7b81947": {
       "id": "fa9fc390-ba88-5ee6-8702-1fb6e7b81947",
@@ -155,7 +155,7 @@
     },
     "7cfc2b56-03bc-56ea-a11c-3cb3679456cc": {
       "id": "7cfc2b56-03bc-56ea-a11c-3cb3679456cc",
-      "pattern": "^(?:ready|ruddy|rudd) at (?<spokenTime>.+)$",
+      "pattern": "^ready at (?<spokenTime>.+)$",
       "command": "readyAt",
       "preprocessorId": "204da7f1-f1f5-5f6b-951a-f9a1cd05155f"
     },
@@ -167,7 +167,7 @@
     },
     "af3af6f3-1e52-544f-bf23-a914078c78b7": {
       "id": "af3af6f3-1e52-544f-bf23-a914078c78b7",
-      "pattern": "^(?:ready|ruddy|rudd)$",
+      "pattern": "^ready$",
       "command": "ready"
     },
     "fd26842e-d902-537c-b813-3f94de48dad0": {
@@ -192,7 +192,7 @@
     },
     "1d84b59d-4078-5b53-a748-02489f86c0d1": {
       "id": "1d84b59d-4078-5b53-a748-02489f86c0d1",
-      "pattern": "^(?:cancel|castle)$",
+      "pattern": "^cancel$",
       "command": "cancel"
     },
     "b636c62b-ddd1-5619-93ef-685659516e71": {
@@ -212,7 +212,7 @@
     },
     "9e012b55-1e73-51a3-b8c4-e90181485523": {
       "id": "9e012b55-1e73-51a3-b8c4-e90181485523",
-      "pattern": "^(?:cancel|castle|close)$",
+      "pattern": "^(?:cancel|close)$",
       "command": "voiceEntryCancel"
     },
     "956ded15-a3b9-5d29-bf13-50c65e7c8a66": {
@@ -263,13 +263,8 @@
     },
     "e8af9836-0b68-572f-a3e2-5a80249855d0": {
       "id": "e8af9836-0b68-572f-a3e2-5a80249855d0",
-      "pattern": "^(?:sync|sink|sin)(?: (?<syncAction>on|off))?$",
+      "pattern": "^sync(?: (?<syncAction>on|off))?$",
       "command": "sync"
-    },
-    "4e2a400e-d148-50f5-95dc-dbd960bc8335": {
-      "id": "4e2a400e-d148-50f5-95dc-dbd960bc8335",
-      "pattern": "^(?:sync|sink|sin) status$",
-      "command": "syncStatus"
     },
     "a087b64a-a17c-5570-9677-35fa29a71963": {
       "id": "a087b64a-a17c-5570-9677-35fa29a71963",
@@ -396,18 +391,8 @@
     },
     "9d72dea6-abb5-5476-bcf7-49a962c21ac3": {
       "id": "9d72dea6-abb5-5476-bcf7-49a962c21ac3",
-      "pattern": "^(?:start break|break start)$",
+      "pattern": "^break start$",
       "command": "startBreak"
-    },
-    "ba5b6e70-3dee-5b8b-be9e-52e619e9ad84": {
-      "id": "ba5b6e70-3dee-5b8b-be9e-52e619e9ad84",
-      "pattern": "^start short break$",
-      "command": "startShortBreak"
-    },
-    "8ab48bb3-86dd-57cf-901c-6f5e58041c22": {
-      "id": "8ab48bb3-86dd-57cf-901c-6f5e58041c22",
-      "pattern": "^start lunch$",
-      "command": "startLunch"
     },
     "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c": {
       "id": "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c",
@@ -650,7 +635,6 @@
         "readGoalMode": "e97c639b-bda8-57f4-91d8-3da60b1e0bf8",
         "goalMode": "79d635a9-c4f4-5646-be1c-3d4b9596d241",
         "sync": "e8af9836-0b68-572f-a3e2-5a80249855d0",
-        "syncStatus": "4e2a400e-d148-50f5-95dc-dbd960bc8335",
         "howLong": "a087b64a-a17c-5570-9677-35fa29a71963",
         "when": "2ab112df-fdbe-5b21-87ea-7234ec548aa1",
         "lockEndTime": "5274c32f-7ccc-562d-971b-6f3dcade100c",
@@ -661,8 +645,6 @@
         "renderedTimeMode": "348676a8-1088-56aa-9c44-b247f2dc9d1b",
         "keypadValue": "d1fc965f-6fdb-551a-a7e0-60079b90fb3e",
         "startBreak": "9d72dea6-abb5-5476-bcf7-49a962c21ac3",
-        "startShortBreak": "ba5b6e70-3dee-5b8b-be9e-52e619e9ad84",
-        "startLunch": "8ab48bb3-86dd-57cf-901c-6f5e58041c22",
         "endBreak": "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c",
         "endShortBreak": "afa08a22-a3f1-5ce0-b917-b50e240dbb5c",
         "endLunch": "06d3cd12-727e-5e36-8163-d78ccde03b44",

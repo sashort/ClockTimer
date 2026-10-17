@@ -32,6 +32,18 @@ result=await timing.run({valueAt,format,speak,play,profile,onPlan:p=>plans.push(
 assert(result.performed);assert.equal(cues.length,1);assert.equal(plans.length,2);
 assert(result.at>plans[0].at,'overrun recalculates the future value and speaks it again');
 
+// The app selects one attempt: an overrun learns timing without repeating speech.
+now=0;cues=[];plans=[];durations=[60000];let speechCount=0;
+result=await timing.run({valueAt,format,speak:async()=>{speechCount++;return speak();},play,profile,maxAttempts:1});
+assert.equal(result.performed,false);assert.equal(result.reason,'deadline-missed');assert.equal(speechCount,1);assert.equal(cues.length,0,'a missed deadline never produces a misleading late cue');
+
+// A fixed amount uses a completed cue before speaking, with no future projection.
+now=0;const order=[];
+result=await timing.run({reference:'before',valueAt:()=>1376000,format,profile,
+ play:async plan=>{assert.equal(plan.at,undefined);order.push('chime');return {finished:Promise.resolve({reason:'completed'})};},
+ speak:async text=>{order.push('speech');assert.equal(text,'1376');return true;}});
+assert(result.performed);assert.deepEqual(order,['chime','speech']);
+
 // A rate change alters the available lead time without reusing the slower profile.
 const scheduleAt=async velocity=>{
  let clock=0,deadline;

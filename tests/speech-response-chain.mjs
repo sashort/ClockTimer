@@ -53,6 +53,13 @@ try {
     assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four twelve', 'late execution feedback cannot restore processed words');
     assert.equal(shadow.querySelector('#codes').textContent, '', 'processed argument badges cannot return after pruning');
 
+    emit('utteranceStarted', {id: 44});
+    emit('utteranceTranscriptChanged', {id:44,transcript:'background noise'});
+    emit('speechSegmentSkipped', {utteranceId:44,transcript:'background noise',consumedTranscript:'background noise'});
+    emit('utteranceTranscriptChanged', {id:44,transcript:'background noisy words'});
+    assert.equal(shadow.querySelector('#activity').textContent,'','revised discarded noise cannot return as accumulated dictation');
+    assert.deepEqual(texts(),['second','first'],'discarding noise retains unrelated result columns');
+
     hold = true;
     bar.presentResponseTransition(snapshot('before'), snapshot('after'), {resultId: 'transition'});
     bar.setResponse(snapshot('newest'), {resultId: 'newest'});

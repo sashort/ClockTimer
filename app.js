@@ -672,6 +672,8 @@
         PERMISSION_DEVELOPER;
 
     const app = $("#app");
+    const sharedModal = globalThis.SharedModalHost ? document.createElement("shared-modal-host") : undefined;
+    if (sharedModal) document.body.append(sharedModal);
     const loginDialog = $("#loginDialog");
     const legacyLoginDialog = $("#legacyLoginDialog");
     const loginIsOpen = () => loginDialog.open || legacyLoginDialog.open;
@@ -2130,6 +2132,7 @@
         $("#easterEggRewindButton");
     const speechRecognitionButton = $("#speechRecognitionButton");
     const speechMicBar = $("#speechMicBar");
+    sharedModal?.registerControl(speechMicBar);
     const speechTrainingButton = $("#speechTrainingButton");
     const speechTrainingChoiceDialog = $("#speechTrainingChoiceDialog");
     const speechTrainingPendingDialog = $("#speechTrainingPendingDialog");
@@ -2671,6 +2674,7 @@
             .define(
                 "setSpeechLayoutState",
                 enabled => {
+                    if (speechMicBar) speechMicBar.dataset.speechActive = String(Boolean(enabled));
                     app.dataset
                         .speechActive =
                         String(
@@ -3029,7 +3033,7 @@
     let loginDialogFullyOpen = false;
     let voiceLoginStage = "id", voiceLoginBusy = false, loginInputMode="pin";
     let pinCancelPrimed=false, pendingLoginAnnouncement, pendingVoiceLoginSwitch=false;
-    let reviewedLoginPin, loginFocusAnnouncementKey;
+    let loginFocusAnnouncementKey;
     let loginDigitSlots = {id:["","","",""],pin:["","","",""]};
     function syncLoginDigits() {
         for(const stage of ["id","pin"]){
@@ -3102,7 +3106,7 @@
         loginInputMode="pin";$("#voiceLoginPrompt").hidden=false;$("#loginRecognitionStatus").hidden=false;$("#loginLegacySwitch").hidden=false;
         for(const id of ["loginLegacyUsername","loginLegacyPassword"]){$("#"+id).value="";$("#"+id).disabled=true;$("#"+id).required=false;}
         pinCancelPrimed=false;pendingLoginAnnouncement=undefined;pendingVoiceLoginSwitch=false;
-        reviewedLoginPin=undefined;loginFocusAnnouncementKey=undefined;
+        loginFocusAnnouncementKey=undefined;
         loginDigitSlots={id:["","","",""],pin:["","","",""]};
         voiceLoginStage = "id";$("#loginUsername").value = "";$("#loginPassword").value = "";
         $("#loginIdRow").hidden = false;$("#loginPinRow").hidden = true;
@@ -3118,12 +3122,11 @@
     }
     function enterLoginDigits(digits, confirmation) {
         if(!readInteractionState().actions.loginDigits) return false;
-        if(reviewedLoginPin !== undefined && globalThis.SpeechMenu?.executionContext)return false;
         const value = DigitSequence.parse(digits, globalThis.WMOFLanguagePack.language.speech.digits);
         if(value === null || !value.length){$("#loginError").textContent=voiceLoginText("invalid");return false;}
         if (globalThis.SpeechMenu?.executionContext && (value.length !== 4 || !confirmation)) return false;
         pinCancelPrimed=false;
-        reviewedLoginPin=undefined;
+
         // A new complete sequence replaces the selected credential. Streaming
         // another digit after a complete group starts the next group.
         if(value.length >= 4)loginDigitSlots[voiceLoginStage]=["","","",""];
@@ -3148,15 +3151,7 @@
             $("#voiceLoginPrompt").textContent=voiceLoginText("pinPrompt");syncLoginDigits();loginDialog.querySelector('[data-login-digit="pin"]').focus({preventScroll:true});
             announceEmptyLoginFocus();renderInteractionControls();return true;
         }
-        if (reviewedLoginPin !== input.value) {
-            reviewedLoginPin = input.value;
-            $("#voiceLoginPrompt").textContent = voiceLoginText("confirmPrompt");
-            announceVoiceLogin(spokenLoginDigits(input.value));
-            renderInteractionControls();
-            globalThis.SpeechMenu?.refresh?.();
-            return true;
-        }
-        reviewedLoginPin=undefined;
+
         let failed=false;
         voiceLoginBusy=true;syncLoginDigits();$("#loginButton").disabled=true;renderInteractionControls();
         try {if(await actions.connectUser($("#loginUsername").value,$("#loginPassword").value,{credentialType:"pin"}) === false)throw new Error(voiceLoginText("failed"));void globalThis.WMOFAudio?.speak?.(voiceLoginText("success"));return true;}
@@ -3602,6 +3597,10 @@
             ignoreMaster = false
         } = {}
     ) {
+        // Missing layers are unsupported, not implicitly enabled. Summary-only
+        // definitions must not try to play an invented song named after them.
+        const layers = announcementDefinition(announcement)?.layers;
+        if (layers && !layers.includes(layer)) return false;
         const row =
             audioSettings.rows[
                 announcement
@@ -12411,7 +12410,7 @@
         const setDigits=(text)=>{
             if(voiceLoginBusy||input.dataset.loginDigit!==voiceLoginStage)return;
             pinCancelPrimed=false;
-            reviewedLoginPin=undefined;loginFocusAnnouncementKey=undefined;
+            loginFocusAnnouncementKey=undefined;
             const digits=DigitSequence.parse(text,{});if(digits===null)return;
             let index=Number(input.dataset.digitIndex);if(digits.length>4-index)return;
             for(const digit of digits)loginDigitSlots[voiceLoginStage][index++]=digit;
@@ -12421,7 +12420,7 @@
         const deleteDigit = backward => {
             if (voiceLoginBusy || input.disabled || input.dataset.loginDigit !== voiceLoginStage) return;
             pinCancelPrimed = false;
-            reviewedLoginPin=undefined;loginFocusAnnouncementKey=undefined;
+            loginFocusAnnouncementKey=undefined;
             const slots = loginDigitSlots[voiceLoginStage];
             const index = Number(input.dataset.digitIndex);
             if (backward && voiceLoginStage === "pin" && index === 0 && !slots[0]) {
@@ -12497,7 +12496,7 @@
         if(voiceLoginBusy)return false;
         if(legacyLoginDialog.open)return switchToVoiceLogin();
         if(voiceLoginStage === "pin"){
-            reviewedLoginPin=undefined;loginFocusAnnouncementKey=undefined;
+            loginFocusAnnouncementKey=undefined;
             if(!loginDigitSlots.pin.some(Boolean))return resetVoiceLogin();
             pinCancelPrimed=true;
             loginDigitSlots.pin=["","","",""];$("#loginError").textContent="";
@@ -14465,6 +14464,28 @@
     }
 
     let voicePadEnableRequest;
+    let voiceInputSwitchRequest;
+    function cancelVoiceInputSwitch(){
+        voiceInputSwitchRequest?.cancelAnnouncement?.();voiceInputSwitchRequest=undefined;
+        const dialog=$("#voiceInputSwitchDialog");if(dialog?.open)dialog.close();
+        return true;
+    }
+    function requestVoiceInputSwitch(){
+        if(!numberPadDialog?.open || !numberPadState || voiceEntryState || !voicePadAvailable() || voicePadEnableRequest)return false;
+        const dialog=$("#voiceInputSwitchDialog");if(!dialog || dialog.open)return false;
+        const request=voiceInputSwitchRequest={state:numberPadState};
+        setOkAllowed(dialog,true);dialog.showModal();
+        const text=$("#voiceInputSwitchQuestion").textContent;
+        const owner=sharedModal?.ownerOf(dialog);
+        if(owner)request.cancelAnnouncement=owner.announce(text,{after:microphoneFeedbackCompletion});
+        else void microphoneFeedbackCompletion.then(()=>{if(voiceInputSwitchRequest===request && dialog.open)globalThis.WMOFAudio?.speak?.(text);});
+        return true;
+    }
+    async function confirmVoiceInputSwitch(){
+        const request=voiceInputSwitchRequest;
+        if(!request || request.state!==numberPadState || !numberPadDialog?.open || !voicePadAvailable())return cancelVoiceInputSwitch();
+        cancelVoiceInputSwitch();return switchNumberPadToVoice();
+    }
     function requestVoicePadRecognition(continueOpening) {
         const dialog = $("#voicePadRecognitionDialog");
         voicePadEnableRequest = {continueOpening};
@@ -15480,12 +15501,14 @@
 
     let voicePadFallback;
     function reconcileVoicePadRecognition() {
+        if(!voicePadAvailable())cancelVoiceInputSwitch();
         if (!voiceEntryState || voicePadAvailable()) return voicePadFallback || Promise.resolve(false);
         if (voicePadFallback) return voicePadFallback;
-        const status = readInteractionState().speechRecognition === "sleeping" ? "sleeping" : "off";
-        const recognitionAnnouncement = announcementText(`messages.voiceFeedback.${status}`);
-        voicePadFallback = switchVoiceEntryToTouch().then(() => {
-            void globalThis.WMOFAudio?.speak?.(recognitionAnnouncement + " " + announcementText("announcements.voice-pad-number-pad.summary"));
+        const token=numberPadState?.connectionStatusToken;
+        voicePadFallback = switchVoiceEntryToTouch().then(async () => {
+            await microphoneFeedbackCompletion;
+            if(numberPadDialog?.open && numberPadState?.connectionStatusToken===token && !voicePadAvailable())
+                globalThis.WMOFAudio?.speak?.(announcementText("announcements.voice-pad-number-pad.summary"));
             return true;
         }).finally(() => {voicePadFallback = undefined;});
         return voicePadFallback;
@@ -15543,7 +15566,7 @@
             text.toLowerCase();
 
         if (
-            /^(?:cancel|castle|close)$/
+            /^(?:cancel|close)$/
                 .test(command)
         ) {
             return closeVoiceEntry({
@@ -16888,8 +16911,8 @@
             : globalThis.SpeechMenu?.muted ? "sleeping" : "listening";
         const login = Object.freeze({open:loginIsOpen(), method:loginInputMode, stage:voiceLoginStage, pending:voiceLoginBusy, cancelPrimed:pinCancelPrimed, voiceRequested:pendingVoiceLoginSwitch,
             phase: !loginIsOpen() ? "closed" : voiceLoginBusy ? "submitting" : loginInputMode === "password" ? "password-entry"
-                : voiceLoginStage === "id" ? "id-entry" : reviewedLoginPin !== undefined && reviewedLoginPin === $("#loginPassword").value ? "pin-review" : "pin-entry",
-            reviewReady: voiceLoginStage === "pin" && reviewedLoginPin !== undefined && reviewedLoginPin === $("#loginPassword").value,
+                : voiceLoginStage === "id" ? "id-entry" : "pin-entry",
+            reviewReady: voiceLoginStage === "pin" && /^[0-9]{4}$/.test($("#loginPassword").value),
             digitCount:loginInputMode === "pin" ? loginDigitSlots[voiceLoginStage].filter(Boolean).length : 0});
         const actions = Object.freeze({
             editProfile: Boolean(userLookup?.state.canSave),
@@ -18466,6 +18489,7 @@
             syncTripTransitionEditorLayout(false);
 
             resetNumberPad();
+            cancelVoiceInputSwitch();
         });
 
 
@@ -22571,7 +22595,7 @@
             audio:audioSettings, logSettings:tripLogSettingsVisible,
             editor:numberPadState ? [numberPadState.source,numberPadState.pending,numberPadState.mode,numberPadState.pendingDate,numberPadState.meridiem] : null,
             prompt:speechBreakPromptState ? [speechBreakPromptState.mode,speechBreakPromptState.kind,speechBreakPromptState.hidden] : null,
-            login:[loginInputMode,voiceLoginStage,loginDigitSlots.id,loginDigitSlots.pin,pinCancelPrimed,voiceLoginBusy,pendingVoiceLoginSwitch,reviewedLoginPin,$('#loginUsername').value,$('#loginPassword').value],
+            login:[loginInputMode,voiceLoginStage,loginDigitSlots.id,loginDigitSlots.pin,pinCancelPrimed,voiceLoginBusy,pendingVoiceLoginSwitch,$('#loginUsername').value,$('#loginPassword').value],
             summary:completedTripSummary?.invocation || null, log:getTripListState(),
             volume:audioSettings.volume, speechRate:audioSettings.speechVelocity, chimeRate:audioSettings.toneVelocity};
         return {key:JSON.stringify(values), switches};
@@ -22798,6 +22822,8 @@
 
     let timeReadbackSequence = 0;
     let timeReadbackCoordinator;
+    let timeReadbackRequest;
+    const timeReadbackScope=()=>{const interval=clockTimer.getActiveIntervalState();return JSON.stringify([clockTimer.status,clockTimer.percentMode,interval?.intervalKey,interval?.intervalType]);};
 
     // Positional duration only; this readback intentionally ignores formal-time units.
     function formatToneReadback(milliseconds) {
@@ -22811,6 +22837,10 @@
     }
 
     function readTimeAtTone() {
+        const scope=timeReadbackScope();
+        // Repeated recognition/user requests share one in-flight readback.
+        if(timeReadbackRequest?.scope===scope)return {speechResponse:timeReadbackRequest.response};
+        const fixed=Boolean(clockTimer.getActiveIntervalState());
         const sequence = ++timeReadbackSequence;
         const wall = Date.now(), origin = performance.now();
         const status = clockTimer.status;
@@ -22833,9 +22863,10 @@
         if (!audio || (!summary.perform && !chime.perform)) return response(initial);
         let settleResponse;
         const firstPlan = new Promise(resolve => {settleResponse=resolve;});
+        const request=timeReadbackRequest={scope,response:firstPlan};
         const output = audioAnnouncementOutput("time-reference");
         const profile = {...audio.outputSettings, ...output};
-        const valid = () => sequence === timeReadbackSequence && clockTimer.status === status &&
+        const valid = () => sequence === timeReadbackSequence && clockTimer.status === status && timeReadbackScope() === scope &&
             (!summary.perform || audioCellUserEnabled("time-reference","summary")) &&
             (!chime.perform || audioCellUserEnabled("time-reference","chime"));
         const speak = text => new Promise(resolve => {
@@ -22848,15 +22879,16 @@
         void runSemanticAnnouncement("time-reference", [{phase:"summary",delayMs:0,play:async()=>{
             if (!valid()) return false;
             if (!summary.perform || !chime.perform) {
-                const value=valueAt(performance.now()); settleResponse(response(value));
+                const value=valueAt(performance.now()); settleResponse(response(value).speechResponse);
                 if (summary.perform) return speak(formatToneReadback(value).text);
                 const song=await audio.startSong("time-reference",{...output,includeSpeech:false,useSelectedInstrument:false});
                 await song?.finished; return Boolean(song?.hasChime);
             }
             timeReadbackCoordinator ??= new globalThis.ToneReferencedAnnouncement();
             const result=await timeReadbackCoordinator.run({valueAt,profile,guard:valid,
+                reference:fixed?"before":"after", maxAttempts:1, marginMs:1500,
                 format:value=>formatToneReadback(value).text,speak,
-                onPlan:plan=>settleResponse(response(plan.value)),
+                onPlan:plan=>settleResponse(response(plan.value).speechResponse),
                 play:async plan=> {
                     if (!valid()) return null;
                     return audio.startSong("time-reference",{...output,includeSpeech:false,
@@ -22865,8 +22897,8 @@
             return result.performed;
         }}], {id:nextSemanticAnnouncementId++})
             .catch(error=>console.warn("Time readback failed:",error))
-            .finally(()=>settleResponse(response(initial)));
-        return firstPlan;
+            .finally(()=>{settleResponse(undefined);if(timeReadbackRequest===request)timeReadbackRequest=undefined;});
+        return {speechResponse:firstPlan};
     }
 
     const confirmSettingChange =
@@ -23201,12 +23233,14 @@
         };
 
     let microphoneFeedbackEnabled = Boolean(globalThis.SpeechMenu?.started && !globalThis.SpeechMenu?.muted);
+    let microphoneFeedbackCompletion=Promise.resolve();
     function announceMicrophoneState(enabled) {
-        if (microphoneFeedbackEnabled === enabled) return;
+        if (microphoneFeedbackEnabled === enabled) return microphoneFeedbackCompletion;
         microphoneFeedbackEnabled = enabled;
-        void playSemanticSongThenSpeak(enabled ? "setting-on" : "setting-off",
+        microphoneFeedbackCompletion=microphoneFeedbackCompletion.catch(()=>{}).then(()=>playSemanticSongThenSpeak(enabled ? "setting-on" : "setting-off",
             announcementText(`messages.voiceFeedback.${enabled ? "microphoneActivated" : "microphoneDeactivated"}`),
-            {song: enabled ? "microphone-activated" : "microphone-deactivated", useSelectedInstrument: false});
+            {song: enabled ? "microphone-activated" : "microphone-deactivated", useSelectedInstrument: false}));
+        return microphoneFeedbackCompletion;
     }
 
     let microphoneReminderTimer=null,microphoneReminderGeneration=0;
@@ -23364,9 +23398,9 @@
                 return false;
             },
 
-            handleVoiceEntrySpeech() {
+            handleVoiceEntrySpeech(spokenValue) {
                 return parseVoiceEntryTranscript(
-                    globalThis
+                    spokenValue ?? globalThis
                         .SpeechMenu
                         ?.executionContext
                         ?.transcript,
@@ -24057,6 +24091,8 @@
             readTripSummary() { return showTripSummary(); },
             confirmVoicePadRecognition() { return confirmVoicePadRecognition(); },
             cancelVoicePadRecognition() { return cancelVoicePadRecognition(); },
+            confirmVoiceInputSwitch: {metadata:{transaction:false},implementation(){return confirmVoiceInputSwitch();}},
+            cancelVoiceInputSwitch: {metadata:{transaction:false},implementation(){return cancelVoiceInputSwitch();}},
             confirmTripSummary() { return confirmCompletedTripSummary(); },
             cancelTripSummary() { return completedTripSummary ? dismissCompletedTripSummary() : false; },
 
@@ -27226,7 +27262,7 @@
                 startBreak:"#breakButton", startShortBreak:"#breakButton", startLunch:"#breakButton", down:"#downButton", endBreak:"#breakButton", endShortBreak:"#breakButton", endLunch:"#breakButton",
                 resume:"#downResumeButton",
                 changeGoal:"#goalPercentValue",
-                sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", syncStatus:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
+                sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
                 hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
                 yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:globalThis.WMOFLanguagePack.text("fc22edac-745f-58af-bb71-5ad273c14a68"),
@@ -27297,7 +27333,6 @@
                 goalMode: "settings",
                 readRenderedTime: "informational",
                 sync: "settings",
-                syncStatus: "informational",
                 howLong: "informational",
                 when: "informational",
                 lockEndTime: "settings",
@@ -27330,7 +27365,6 @@
 
             const speechAvailability = {
                 sync: "WMOFSpeechAvailability.canUseSyncSettings",
-                syncStatus: "WMOFSpeechAvailability.canUseSyncSettings",
                 readyAt:
                     "WMOFSpeechAvailability.canStartTrip",
                 ready:
@@ -27504,13 +27538,13 @@
                 element.setAttribute("speech-preproc-field", "timeValue");
             }
             for (const [key, fn] of [
-                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["startBreak","openBreakStartMenu"], ["startShortBreak","openShortBreakStartMenu"], ["startLunch","openLunchStartMenu"], ["down","startDownTime"],
+                ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["startBreak","openBreakStartMenu"], ["down","startDownTime"],
                 ["endBreak","openBreakEndMenu"], ["resume","resumeTrip"],
                 ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
                 ["changeGoal","changeGoal"],
                 ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
                 ["readRenderedTime","readRenderedTime"],
-                ["sync","toggleSync"], ["syncStatus","readSyncStatus"], ["howLong","readTimeRemaining"], ["when","readEndTime"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
+                ["sync","toggleSync"], ["howLong","readTimeRemaining"], ["when","readEndTime"], ["lockEndTime","lockEndTime"], ["showTripLog","openTripLog"],
                 ["hideTripLog","closeTripLog"], ["deferTrip","deferTrip"], ["renderedTimeMode","toggleRenderedTime"]
             ]) {
                 const typedValues = {
@@ -27607,7 +27641,7 @@
                     ? actions.cancelDownTime() : actions.closeActiveSurface()
             });
             for (const surface of document.querySelectorAll('dialog, [popover]')) {
-                if (surface === speechMicBar || surface.getAttribute('role') === 'status') continue;
+                if (surface === speechMicBar || surface === sharedModal || surface.getAttribute('role') === 'status') continue;
                 const dismiss = async () => {
                     if (speechMicBar?.optionsOpen) return actions.closeSpeechOptions();
                     const result = surface === voiceEntrySurface ? await closeVoiceEntry({cancel: true})
@@ -27667,6 +27701,14 @@
                 globalThis.WMOFInteractionFunctions.bindAction({element: $("#" + id), event: "click", name: id + "Click", action});
             }
             $("#voicePadRecognitionDialog").addEventListener("cancel", event => {event.preventDefault(); actions.cancelVoicePadRecognition();});
+            const switchVoiceInput=installSpeechCommand("confirm","confirmVoiceInputSwitch",$("#voiceInputSwitchDialog"),false);
+            switchVoiceInput?.removeAttribute("speech-chain-context");
+            for(const [id,action] of [["voiceInputSwitchOk","confirmVoiceInputSwitch"],["voiceInputSwitchCancel","cancelVoiceInputSwitch"]]){
+                globalThis.WMOFInteractionFunctions.bindAction({element:$("#"+id),event:"click",name:id+"Click",action});
+            }
+            $("#voiceInputSwitchDialog").addEventListener("cancel",event=>{event.preventDefault();cancelVoiceInputSwitch();});
+            $("#voiceInputSwitchDialog").addEventListener("close",()=>{if(!$("#voiceInputSwitchDialog").open){voiceInputSwitchRequest?.cancelAnnouncement?.();voiceInputSwitchRequest=undefined;}});
+            SpeechMenu.events.addEventListener("unmuted",event=>{if(event.detail?.changed!==false)queueMicrotask(requestVoiceInputSwitch);});
             SpeechMenu.events.addEventListener("muted", () => {void reconcileVoicePadRecognition().catch(console.error);});
             SpeechMenu.events.addEventListener("listeningSuspended", event => {
                 if (event.detail?.reason === "speech-recognition-disabled") void reconcileVoicePadRecognition().catch(console.error);
@@ -27695,35 +27737,35 @@
 
         syncSpeechTrainingControls();
 
-        speechMicBar?.addEventListener(
+        SpeechMenu.events.addEventListener(
             "started",
             () =>
                 actions
                     .handleSpeechRuntimeStarted()
         );
 
-        speechMicBar?.addEventListener(
+        SpeechMenu.events.addEventListener(
             "utteranceStarted",
             () =>
                 actions
                     .handleSpeechUtteranceStarted()
         );
 
-        speechMicBar?.addEventListener(
+        SpeechMenu.events.addEventListener(
             "stopped",
             () =>
                 actions
                     .handleSpeechRuntimeStopped()
         );
 
-        speechMicBar?.addEventListener(
+        SpeechMenu.events.addEventListener(
             "speechCaptureEnded",
             () =>
                 actions
                     .handleSpeechRuntimeStopped()
         );
 
-        speechMicBar?.addEventListener(
+        SpeechMenu.events.addEventListener(
             "muted",
             () =>
                 actions
@@ -27732,7 +27774,7 @@
                     )
         );
 
-        speechMicBar?.addEventListener(
+        SpeechMenu.events.addEventListener(
             "unmuted",
             () =>
                 actions
@@ -27988,7 +28030,7 @@
                     if (!before.startsTrip) {add("fieldSaved", {field: before.field, value: before.value}); returnedPrompt();} break;
                 case "handleVoiceEntrySpeech":
                     if (/^(?:touch|keypad|number pad)$/.test(transcript)) add("numberPad");
-                    else if (/^(?:cancel|castle|close)$/.test(transcript)) cancelled();
+                    else if (/^(?:cancel|close)$/.test(transcript)) cancelled();
                     else if (transcript === "defer trip") add("deferred");
                     else if (/^(?:ok(?:ay)?|o\s+k)$/.test(transcript) && !before.startsTrip) {
                         add("fieldSaved", {field: before.field, value: before.value}); returnedPrompt();
@@ -28210,6 +28252,14 @@
             refreshTripLogSelection();
         } catch (error) { showTripRangeError(error.message || "Calendar lookup failed."); }
     })();
+
+    if (globalThis.ViewportLayout) new globalThis.ViewportLayout({refresh: () => {
+        speechMicBar?.refreshLayout?.();
+        refreshLoginBoundary();
+        refreshAudioSettingsBoundary();
+        refreshTripLogBoundaryLayout();
+        refreshVoiceEntrySummaryLayout();
+    }});
 
     // Settings iframe bootstrap waits for this event before invoking the same
     // pointerup entry point as Order-Filler, avoiding a race with async startup.

@@ -335,37 +335,7 @@ class SpeechMenu {
                             occurrences:
                                 1
                         })
-                ),
-            Object.freeze({
-                id: -104,
-                observed:
-                    "sinkon",
-                observedCompact:
-                    "sinkon",
-                canonical:
-                    "sync on",
-                canonicalCompact:
-                    "syncon",
-                matchType:
-                    "exact",
-                occurrences:
-                    1
-            }),
-            Object.freeze({
-                id: -105,
-                observed:
-                    "sinoff",
-                observedCompact:
-                    "sinoff",
-                canonical:
-                    "sync off",
-                canonicalCompact:
-                    "syncoff",
-                matchType:
-                    "exact",
-                occurrences:
-                    1
-            })
+                )
         ]);
 
     static {
@@ -800,14 +770,36 @@ class SpeechMenu {
                 .#executionContext
                 ?.transcript;
 
+        const changed = SpeechMenu.#sleeping;
+        if (changed && utteranceId === undefined &&
+            ["suspended", "interrupted"].includes(SpeechMenu.#audioContext?.state))
+            await SpeechMenu.#audioContext.resume();
         SpeechMenu.#sleeping =
             false;
         SpeechMenu
             .#schedulePhraseRefresh();
 
+        if (changed && utteranceId === undefined) {
+            // A muted decoder may still hold its wake-only grammar. An idle
+            // capture has no command ownership to transfer: retire it and let
+            // the next voiced frame build the current UI grammar from scratch.
+            // Spoken Wake stays on its existing command/continuation queue.
+            const idle = SpeechMenu.#utterance;
+            if (!idle?.chainActive) {
+                if (idle) {
+                    SpeechMenu.#finishUtterance("microphone-wake", false);
+                    SpeechMenu.#finishedUtterances.delete(idle.id);
+                }
+                SpeechMenu.#preRollFrames = [];
+                SpeechMenu.#preRollSamples = 0;
+                SpeechMenu.#vad?.reset?.();
+            }
+        }
+
         SpeechMenu.#emit(
             "unmuted",
             {
+                changed,
                 utteranceId,
                 transcript
             }
@@ -2181,6 +2173,9 @@ class SpeechMenu {
     }
 
     static #refreshRecognizerHotwords() {
+        // Finite-grammar adapters such as Vosk obtain vocabulary from their
+        // context provider. Only hotword-based adapters expose this method.
+        if (typeof SpeechMenu.#recognizer?.setHotwords !== "function") return false;
         const values =
             SpeechMenu
                 .#hotwords();
@@ -9304,16 +9299,16 @@ class SpeechMenu {
                 return false;
             }
 
-            const dictatedResponse =
-                outcome &&
-                typeof outcome ===
-                    "object" &&
-                outcome.speechResponse
-                    ?.type ===
-                    "dictation"
-                    ? outcome
-                        .speechResponse
-                    : undefined;
+            // Deferred presentation must never hold command execution/locks.
+            // The accepted action returns immediately; its owned result can
+            // arrive after queued speech is ready to plan the displayed value.
+            const deferredResponse = outcome?.speechResponse;
+            const response = await deferredResponse;
+            if (deferredResponse?.then && !response) {
+                globalThis.WMOFPresentationSetters?.cancelSpeechResponse?.(responseSession);
+                return true;
+            }
+            const dictatedResponse = response?.type === "dictation" ? response : undefined;
             const dictatedText =
                 String(
                     dictatedResponse
