@@ -1,0 +1,41 @@
+{
+  "keyboard": {
+    "class": "expressive",
+    "type": "oscillator",
+    "displayName": "FM and analogue layered keys",
+    "volume": 0.95,
+    "velocitySensitivity": 0.7,
+    "envelope": {
+      "attack": 0,
+      "decay": 0.25,
+      "sustain": 0.65,
+      "release": 0.3
+    },
+    "samples": [
+      {
+        "url": "api/audio/samples/neon-layered-keys-d3.wav",
+        "rootFrequency": 146.8323839587038
+      },
+      {
+        "url": "api/audio/samples/neon-layered-keys-d4.wav",
+        "rootFrequency": 293.6647679174076
+      }
+    ],
+    "chorus": {
+      "rate": 0.4,
+      "delay": 0.018,
+      "depth": 0.002,
+      "wet": 0.14
+    },
+    "reverb": {
+      "wet": 0.1,
+      "decay": 1.2
+    },
+    "reference": {
+      "url": "https://www.muzines.co.uk/articles/improbability-factor-42/9084",
+      "basis": "Original approximation inspired by documented FM/analogue layering, not verified song-specific patch"
+    }
+  },
+  "sourceScript": "scripts/synthesize-neon-layered-keys.cjs",
+  "reference": "Original approximation guided by documented FM/analogue layering; no song-specific factory patch claimed"
+}

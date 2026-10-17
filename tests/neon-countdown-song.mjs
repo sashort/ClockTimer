@@ -61,7 +61,7 @@ assert.equal(wind.readInt16LE(46),0,'both wind channels begin from silence');
 assert.equal(wind.readUInt16LE(22),2);assert.equal(wind.length,44+7.525*48000*4);
 assert.equal(createHash('sha256').update(wind).digest('hex'),mix.windSource.sha256);
 
-assert.equal(score.revision,52);
+assert.equal(score.revision,53);
 assert.equal(song.renderedMix.revision,score.revision);
 assert.equal(mix.revision,score.revision);
 const bendVoice=score.instruments['neon-guitar-lead'];
@@ -79,26 +79,27 @@ assert(!score.song.events.some(e=>e.instrument==='neon-vocoder'));
 assert(!('vocoderSource' in mix),'active mix has no vocoder source');
 for(const bar of [24,25,48,49])assert(score.song.events.some(e=>e.instrument==='neon-lead'&&Number(e.offset)>=bar*4-.05&&Number(e.offset)<(bar+1)*4-.05),'melody is restored in the former vocal passages');
 const bass=score.song.events.filter(e=>e.instrument==='neon-bass');
-assert(new Set(bass.map(e=>e.length)).size>=8,'pulse bass varies note lengths, including short accents and longer holds');
-assert(new Set(bass.map(e=>e.dynamic)).size>=4,'bass accents and section dynamics vary');
+assert.deepEqual([...new Set(bass.map(e=>e.length))].sort(),['4','8'],'whole notes with occasional two-bar holds');
+assert.equal(score.instruments['neon-bass'].volume,.6,'approved held bass level');
 assert.deepEqual(score.bassTripletPhrases,[],'conflicting long-triplet grouping is removed');
 for(const [start,end] of score.grooveRepair.phraseSeconds) {
  const phrase=bass.filter(e=>Number(e.offset)>=start*2&&Number(e.offset)<end*2);
- assert.equal(phrase.length,20,'the complete four-bar bass groove continues');
+ assert(phrase.length>=2&&phrase.length<=4,'held roots follow the four-bar harmony');
  assert(phrase.every(e=>Number(e.offset)*4===Math.round(Number(e.offset)*4)),'bass stays on the sixteenth-note grid');
 }
 assert.equal(score.grooveRepair.bassReentrySeconds,72,'bass rejoins with the drums and arpeggio');
 assert.equal(score.fantasyPadRemoved,true);
 const backing=score.backingPad.instrument;
-assert.deepEqual(score.instruments[backing],{...catalog.instruments['warm-chorus-poly'],volume:.36},'original warm backing pad is raised, with fantasy removed');
+assert.deepEqual(score.instruments[backing],{...catalog.instruments['warm-chorus-poly'],volume:.9},'original warm backing pad is raised, with fantasy removed');
 assert.equal(score.song.events.filter(e=>e.instrument===backing).length,236,'original four-note backing harmony is restored throughout Part I');
 assert(!dark.some(e=>e.instrument===backing),'restored backing belongs to Part I');
-assert.equal(score.partOnePulse.source,'cinematic-robot-pulse');
-assert.deepEqual(score.instruments['neon-bass'],{...catalog.instruments['cinematic-robot-pulse'],volume:.48},'current vocoder passages retain their instrument at a supporting level');
+assert.equal(score.partOnePulse.source,'cinematic-pulse-bass');
+assert.deepEqual(score.instruments['neon-bass'].partials,catalog.instruments['cinematic-pulse-bass'].partials,'original cinematic pulse replaces vocoder');
+assert(!score.instruments['neon-bass'].samples,'pulse uses original oscillator voice');
 assert.deepEqual(score.partOnePulse.originalPulseSeconds,[0,2,4,6,116],'original pulse retains the four-note opening and final held bass');
 assert.deepEqual(score.instruments['neon-cinematic-pulse'],{...catalog.instruments['cinematic-pulse-bass'],volume:.68});
-assert(score.song.events.some(e=>e.instrument==='neon-bass'&&Number(e.offset)===16),'vocoder still begins on fifth pulse note');
-for(const [name,source,volume] of [['neon-lead','jx3p-inspired-lead',.56],['neon-brass','synth-brass-stab',.27],['neon-backing-pad','warm-chorus-poly',.36]])
+assert(score.song.events.some(e=>e.instrument==='neon-bass'&&Number(e.offset)===16),'held original pulse starts after the four-note intro');
+for(const [name,source,volume] of [['neon-lead','jx3p-inspired-lead',.56],['neon-brass','synth-brass-stab',.27],['neon-backing-pad','warm-chorus-poly',.9]])
  assert.deepEqual(score.instruments[name],{...catalog.instruments[source],volume},'pre-fantasy instrument and balance retained: '+name);
 assert(score.instruments['neon-picked-electric'].volume<=.25,'picked guitar is a quiet supporting layer');
 assert.deepEqual(score.instruments['neon-reference'].partials,catalog.instruments['cinematic-pulse-bass'].partials,'final held reference returns to the original pulse');
@@ -143,7 +144,7 @@ const picked=score.pickedElectricGuitar.instrument;
 assert.equal(score.pickedElectricGuitar.part,1);
 assert(score.song.events.filter(e=>e.instrument===picked).length>=200,'picked electric has a full Part I arrangement');
 assert(!dark.some(e=>e.instrument===picked),'picked electric is confined to Part I');
-assert(!score.instruments[picked].distortion,'clean picking offsets the sharper pulse');
+assert.equal(score.instruments[picked].envelope.sustain,.82,'electric guitar has a fuller sustained body');
 for(const sample of score.instruments[picked].samples) {
  const wave=fs.readFileSync(new URL('../'+sample.url,import.meta.url));
  assert.equal(wave.readUInt32LE(24),48000);
@@ -162,8 +163,8 @@ for(let bar=32;bar<40;bar++) {
 assert.deepEqual(score.transitionPickups,{bars:[15,39],beatStep:1/8,notesPerRun:4,noteLength:.07});
 for(const bar of score.transitionPickups.bars) {
  const pickups=score.song.events.filter(e=>e.instrument==='neon-arp'&&Number(e.offset)>=bar*4+3.5&&Number(e.offset)<bar*4+4);
- assert.equal(pickups.length,4,'brief four-note 32nd pickup');
- pickups.forEach((event,index)=>{assert.equal(Number(event.offset),bar*4+3.5+index/8);assert.equal(Number(event.length),.07);assert(['p','pp'].includes(event.dynamic),'pickup stays soft');});
+ assert.equal(pickups.length,bar===15?2:4,'approved thinner verse pickup; full later pickup');
+ pickups.forEach((event,index)=>{assert.equal(Number(event.offset),bar*4+3.5+(index+(bar===15?2:0))/8);assert.equal(Number(event.length),.07);assert(['p','pp'].includes(event.dynamic),'pickup stays soft');});
 }
 const pluck=fs.readFileSync(new URL('../api/audio/samples/neon-guitar-d3.wav',import.meta.url));
 assert.equal(createHash('sha256').update(pluck).digest('hex'),mix.guitarSource.sha256);
@@ -179,3 +180,9 @@ const option=options.find(o=>o.value==='neon-countdown');assert(option);
 assert.equal(read('lang/en-US/ui-text.json').texts[option.textId].text,'Neon Countdown');
 assert.match(song.mediaUrl,/^api\/audio\/samples\/[a-z0-9-]+\.wav$/,'native Easter Egg player accepts the media path');
 console.log('PASS score reproducibility, stereo extended audio, checksum, headroom, continuous music, native registration, repaired groove, original Part I instruments plus picked electric, foreground recorded bells/organ in Part II and natural ending');
+
+const approvedFirst=read('tests/fixtures/neon-approved-part-one.json');
+const firstAudition=score.song.events.filter(e=>Number(e.offset)/2>=7.975-1e-8&&Number(e.offset)/2<40).map(e=>({...e,offset:String(Math.max(0,Number(e.offset)-16))}));
+const canonicalFirst=es=>es.map(e=>({...e,offset:+Number(e.offset).toFixed(9)})).map(e=>JSON.stringify(e,Object.keys(e).sort())).sort();
+assert.deepEqual(canonicalFirst(firstAudition),canonicalFirst(approvedFirst),'approved Part I audition preserved');
+assert(!score.song.events.some(e=>e.instrument.includes('tambourine')),'tambourine rejected');

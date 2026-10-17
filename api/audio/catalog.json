@@ -16785,10 +16785,10 @@
       "renderedMix": {
         "durationSeconds": 381,
         "key": "D minor / C# minor / D minor",
-        "sha256": "70f353f24d90f4e70a4a91f73cca201e33f0f90f97315f1425dc714b5f117774",
+        "sha256": "335fe6d32c9b01ce44a6277266d68fb30c47d12ce5a37b1b0996ebb95b9de89a",
         "settings": "api/audio/instruments/neon-countdown-mix.json",
         "score": "api/audio/instruments/neon-countdown-score.json",
-        "revision": 52,
+        "revision": 53,
         "partTwo": {
           "startSeconds": 120,
           "durationSeconds": 155,

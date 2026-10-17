@@ -1,0 +1,5525 @@
+[
+  {
+    "offset": "0",
+    "tone": "D5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "0",
+    "tone": "C3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "0",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "0",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "0",
+    "tone": "C4",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "0",
+    "tone": "C4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "0",
+    "tone": "F2",
+    "length": "8",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "0",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "0.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "0.5",
+    "tone": "C3",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "0.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "0.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "0.9499999999999993",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "1",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "1",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "1",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "1",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "1.25",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "1.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "1.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "1.5",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "1.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "1.5120000000000005",
+    "tone": "C4",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "1.6999999999999993",
+    "tone": "C5",
+    "length": "0.25",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "1.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "1.9499999999999993",
+    "tone": "D5",
+    "length": "1",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "2",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "2",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "2.25",
+    "tone": "F3",
+    "length": "0.85",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "2.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "2.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "2.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "2.75",
+    "tone": "C5",
+    "length": "0.45",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "2.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "3",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "3",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "3",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "3",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "3.1999999999999993",
+    "tone": "F5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "3.25",
+    "tone": "C4",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "3.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "3.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "3.5",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "3.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "3.5120000000000005",
+    "tone": "C4",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "3.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "4",
+    "tone": "C3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "4",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "4",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "4",
+    "tone": "C4",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "4",
+    "tone": "C4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "4",
+    "tone": "A4",
+    "length": "0.9",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "4",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "4.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "4.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "4.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "5.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "5.5",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "5.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "5.5120000000000005",
+    "tone": "C4",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "5.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "6",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "6",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "6",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "6.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "6.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "6.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "7",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "7",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "7",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "7.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "7.5",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "7.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "7.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "7.5120000000000005",
+    "tone": "C4",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "7.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "7.949999999999999",
+    "tone": "F5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "8",
+    "tone": "C3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "8",
+    "tone": "E3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "8",
+    "tone": "G3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "8",
+    "tone": "Bb3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "8",
+    "tone": "E4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "8",
+    "tone": "C2",
+    "length": "4",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "8",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "8.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "8.5",
+    "tone": "C3",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8.5",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "8.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "8.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "8.95",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "9",
+    "tone": "G4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "9",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "9",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "9",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "9.25",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "9.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "9.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "9.5",
+    "tone": "C3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "9.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "9.512",
+    "tone": "G3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "9.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "9.95",
+    "tone": "C5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "10",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "10",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "10.25",
+    "tone": "E3",
+    "length": "0.85",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "10.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "10.5",
+    "tone": "G4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "10.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "10.7",
+    "tone": "A4",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "p"
+  },
+  {
+    "offset": "10.75",
+    "tone": "Bb4",
+    "length": "0.45",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "10.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "11",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "11",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "11",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "11",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "11.25",
+    "tone": "Bb3",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "11.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "11.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "11.5",
+    "tone": "C3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "11.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "11.512",
+    "tone": "G3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "11.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "12",
+    "tone": "C3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "12",
+    "tone": "E3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "12",
+    "tone": "G3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "12",
+    "tone": "Bb3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "12",
+    "tone": "E4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "12",
+    "tone": "G4",
+    "length": "0.9",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12",
+    "tone": "C2",
+    "length": "4",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "12",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "12.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "12.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "12.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "13",
+    "tone": "G4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "13",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "13",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "13.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "13.5",
+    "tone": "C3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "13.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "13.512",
+    "tone": "G3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "13.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "14",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "14",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "14",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "14.125",
+    "tone": "E4",
+    "length": "0.4",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "14.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "14.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "14.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "15",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "15",
+    "tone": "A3",
+    "length": "0.18",
+    "instrument": "neon-tom",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "15",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "15",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "15.25",
+    "tone": "G3",
+    "length": "0.18",
+    "instrument": "neon-tom",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "15.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "15.5",
+    "tone": "F3",
+    "length": "0.18",
+    "instrument": "neon-tom",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "15.5",
+    "tone": "C3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "15.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "15.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "15.512",
+    "tone": "G3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "15.75",
+    "tone": "D3",
+    "length": "0.18",
+    "instrument": "neon-tom",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "15.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "15.95",
+    "tone": "C5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "16",
+    "tone": "D3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "16",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "16",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "16",
+    "tone": "C4",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "16",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "16",
+    "tone": "D2",
+    "length": "8",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "16",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "16.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "16.5",
+    "tone": "D3",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "16.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "16.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "16.950000000000003",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "17",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "17",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "17",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "17",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "17.25",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "17.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "17.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "17.5",
+    "tone": "D3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "17.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "17.512",
+    "tone": "A3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "17.700000000000003",
+    "tone": "C5",
+    "length": "0.25",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "17.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "17.950000000000003",
+    "tone": "F5",
+    "length": "1.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "18",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "18",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "18.25",
+    "tone": "F3",
+    "length": "0.85",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "18.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "18.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "18.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "18.75",
+    "tone": "A4",
+    "length": "0.45",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "18.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "19",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "19",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "19",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "19",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "19.25",
+    "tone": "C4",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "19.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "19.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "19.5",
+    "tone": "D3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "19.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "19.512",
+    "tone": "A3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "19.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "20",
+    "tone": "D3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "20",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "20",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "20",
+    "tone": "C4",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "20",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "20",
+    "tone": "D5",
+    "length": "0.9",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "20",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "20.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "20.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "20.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "21",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "21",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "21",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "21.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "21.5",
+    "tone": "D3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "21.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "21.512",
+    "tone": "A3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "21.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "22",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "22",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "22",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "22.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "22.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "22.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "23",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "23",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "23",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "23.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "23.5",
+    "tone": "D3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "23.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "23.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "23.512",
+    "tone": "A3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "23.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "23.950000000000003",
+    "tone": "E5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "24",
+    "tone": "Bb2",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "24",
+    "tone": "D3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "24",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "24",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "24",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "24",
+    "tone": "Bb1",
+    "length": "4",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "24",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "24.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "24.5",
+    "tone": "Bb2",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "24.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "24.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "24.950000000000003",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "25.25",
+    "tone": "F3",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "25.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "25.5",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "25.5",
+    "tone": "Bb2",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "25.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "25.512",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "25.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "25.950000000000003",
+    "tone": "C5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "26",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "26",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "26.25",
+    "tone": "D3",
+    "length": "0.85",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "26.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "26.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "26.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "26.75",
+    "tone": "F4",
+    "length": "0.45",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "26.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "26.950000000000003",
+    "tone": "G4",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "27",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "27",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "27",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "27",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "27.25",
+    "tone": "A3",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "27.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "27.5",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "27.5",
+    "tone": "Bb2",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "27.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "27.512",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "27.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "28",
+    "tone": "Bb2",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "28",
+    "tone": "D3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "28",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "28",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "28",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "28",
+    "tone": "Bb4",
+    "length": "0.9",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28",
+    "tone": "Bb1",
+    "length": "4",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "28",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "28.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "28.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "28.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "29",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "29",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "29",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "29.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "29.5",
+    "tone": "Bb2",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "29.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "29.512",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "29.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "30",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "30",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "30",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "30.125",
+    "tone": "A4",
+    "length": "0.4",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "30.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "30.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "30.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "31",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "31",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "31",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "31.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "31.5",
+    "tone": "Bb2",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "31.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "31.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "31.512",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "31.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "31.950000000000003",
+    "tone": "D5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "32",
+    "tone": "C3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "32",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "32",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "32",
+    "tone": "C4",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "32",
+    "tone": "C4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "32",
+    "tone": "F2",
+    "length": "8",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "32",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "32.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "32.5",
+    "tone": "C3",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "32.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "32.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "32.95",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "33",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "33",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "33",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "33.25",
+    "tone": "A3",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "33.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "33.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "33.5",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "33.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "33.512",
+    "tone": "C4",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "33.7",
+    "tone": "C5",
+    "length": "0.25",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "33.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "33.95",
+    "tone": "D5",
+    "length": "1",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "34",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "34",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "34.25",
+    "tone": "F3",
+    "length": "0.85",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "34.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "34.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "34.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "34.75",
+    "tone": "C5",
+    "length": "0.45",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "34.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "35",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "35",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "35",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "35.2",
+    "tone": "F5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "35.25",
+    "tone": "C4",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "35.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "35.5",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "35.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "35.512",
+    "tone": "C4",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "35.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "36",
+    "tone": "C3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "36",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "36",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "36",
+    "tone": "C4",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "36",
+    "tone": "C4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "36",
+    "tone": "A4",
+    "length": "0.9",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "36",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "36.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "36.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "36.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "37",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "37",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "37",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "37.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "37.5",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "37.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "37.512",
+    "tone": "C4",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "37.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "38",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "38",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "38",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "38.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "38.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "38.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "39",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "39",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "39",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "39.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "39.5",
+    "tone": "F3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "39.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "39.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "39.512",
+    "tone": "C4",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "39.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "39.95",
+    "tone": "F5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "40",
+    "tone": "C3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "40",
+    "tone": "E3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "40",
+    "tone": "G3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "40",
+    "tone": "Bb3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "40",
+    "tone": "E4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "40",
+    "tone": "C2",
+    "length": "4",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "40",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "40.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "40.5",
+    "tone": "C3",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40.5",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "40.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "40.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "40.95",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "41",
+    "tone": "G4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "41",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "41",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "41",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "41.25",
+    "tone": "G3",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "41.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "41.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "41.5",
+    "tone": "C3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "41.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "41.512",
+    "tone": "G3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "41.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "41.95",
+    "tone": "C5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "42",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "42",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "42.25",
+    "tone": "E3",
+    "length": "0.85",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "42.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "42.5",
+    "tone": "G4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "42.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "42.7",
+    "tone": "A4",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "42.75",
+    "tone": "Bb4",
+    "length": "0.45",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "42.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "43",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "43",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "43",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "43",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "43.25",
+    "tone": "Bb3",
+    "length": "1",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "43.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "43.5",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "43.5",
+    "tone": "C3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "43.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "43.512",
+    "tone": "G3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "43.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "44",
+    "tone": "C3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "44",
+    "tone": "E3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "44",
+    "tone": "G3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "44",
+    "tone": "Bb3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "44",
+    "tone": "E4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "44",
+    "tone": "G4",
+    "length": "0.9",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "C2",
+    "length": "4",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "44",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "44.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "44.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "44.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "45",
+    "tone": "G4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "45",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "45",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "45.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "45.5",
+    "tone": "C3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "45.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "45.512",
+    "tone": "G3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "45.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "46",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "46",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "46",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "46.125",
+    "tone": "E4",
+    "length": "0.4",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "46.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "46.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "46.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "47",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "47",
+    "tone": "A3",
+    "length": "0.18",
+    "instrument": "neon-tom",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "47",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "47",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "47.25",
+    "tone": "G3",
+    "length": "0.18",
+    "instrument": "neon-tom",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "47.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "47.5",
+    "tone": "F3",
+    "length": "0.18",
+    "instrument": "neon-tom",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "47.5",
+    "tone": "C3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "47.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "47.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "47.512",
+    "tone": "G3",
+    "length": "0.27",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "47.75",
+    "tone": "D3",
+    "length": "0.18",
+    "instrument": "neon-tom",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "47.75",
+    "tone": "C5",
+    "length": "0.07",
+    "instrument": "neon-arp",
+    "dynamic": "p"
+  },
+  {
+    "offset": "47.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "47.875",
+    "tone": "D5",
+    "length": "0.07",
+    "instrument": "neon-arp",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "47.95",
+    "tone": "D5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "D3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "48",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "48",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "48",
+    "tone": "C4",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "48",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48",
+    "tone": "D4",
+    "length": "0.55",
+    "instrument": "neon-brass",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48",
+    "tone": "F4",
+    "length": "0.55",
+    "instrument": "neon-brass",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48",
+    "tone": "A4",
+    "length": "0.55",
+    "instrument": "neon-brass",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48",
+    "tone": "D3",
+    "length": "0.6",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "48",
+    "tone": "D2",
+    "length": "8",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "48",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "48.012",
+    "tone": "A3",
+    "length": "0.6",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "48.25",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "48.75",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "48.75",
+    "tone": "D3",
+    "length": "0.18",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "48.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "48.762",
+    "tone": "A3",
+    "length": "0.18",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "48.95",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "49",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "49.025000000000006",
+    "tone": "D3",
+    "length": "0.12",
+    "instrument": "neon-clap",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.25",
+    "tone": "A3",
+    "length": "0.65",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.5",
+    "tone": "D3",
+    "length": "0.35",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "49.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49.512",
+    "tone": "A3",
+    "length": "0.35",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "49.7",
+    "tone": "C5",
+    "length": "0.25",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "49.75",
+    "tone": "F3",
+    "length": "0.6",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.75",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "49.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "49.95",
+    "tone": "D5",
+    "length": "1",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "50.25",
+    "tone": "C4",
+    "length": "0.7",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50.25",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50.5",
+    "tone": "D3",
+    "length": "0.5",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "50.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "50.512",
+    "tone": "A3",
+    "length": "0.5",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "50.75",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50.75",
+    "tone": "A4",
+    "length": "0.45",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "50.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "51",
+    "tone": "A3",
+    "length": "0.6",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "51",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "51",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "51.025000000000006",
+    "tone": "D3",
+    "length": "0.12",
+    "instrument": "neon-clap",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51.2",
+    "tone": "F5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "51.25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51.5",
+    "tone": "F3",
+    "length": "0.75",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51.5",
+    "tone": "D3",
+    "length": "0.22",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "51.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "51.512",
+    "tone": "A3",
+    "length": "0.22",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "51.75",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "51.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "51.95",
+    "tone": "E5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "D3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "52",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "52",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "52",
+    "tone": "C4",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "52",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "52",
+    "tone": "D3",
+    "length": "0.55",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "52",
+    "tone": "D5",
+    "length": "0.9",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "52",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "52.012",
+    "tone": "A3",
+    "length": "0.55",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "52.25",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "52.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "52.5",
+    "tone": "D3",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "52.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "52.75",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "52.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "52.95",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "53",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "53.025000000000006",
+    "tone": "D3",
+    "length": "0.12",
+    "instrument": "neon-clap",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.25",
+    "tone": "A3",
+    "length": "0.65",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.5",
+    "tone": "D3",
+    "length": "0.2",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "53.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "53.512",
+    "tone": "A3",
+    "length": "0.2",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "53.75",
+    "tone": "F3",
+    "length": "0.6",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.75",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "53.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "53.95",
+    "tone": "A4",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "54",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "54.25",
+    "tone": "C4",
+    "length": "0.7",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54.25",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "54.25",
+    "tone": "D3",
+    "length": "0.65",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "54.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "54.262",
+    "tone": "A3",
+    "length": "0.65",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "54.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "54.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "54.75",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "54.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "54.95",
+    "tone": "F4",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55",
+    "tone": "A3",
+    "length": "0.6",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "55",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "55.025000000000006",
+    "tone": "D3",
+    "length": "0.12",
+    "instrument": "neon-clap",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.25",
+    "tone": "D3",
+    "length": "0.25",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "55.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.262",
+    "tone": "A3",
+    "length": "0.25",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "55.5",
+    "tone": "F3",
+    "length": "0.75",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "55.75",
+    "tone": "C5",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "55.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "55.95",
+    "tone": "F5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "Bb2",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "56",
+    "tone": "D3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "56",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "56",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "56",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "56",
+    "tone": "Bb2",
+    "length": "0.6",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "56",
+    "tone": "Bb1",
+    "length": "4",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "56",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "56.012",
+    "tone": "F3",
+    "length": "0.6",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "56.25",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "56.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "56.5",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "56.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "56.75",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "56.75",
+    "tone": "Bb2",
+    "length": "0.18",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "56.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "56.762",
+    "tone": "F3",
+    "length": "0.18",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "56.95",
+    "tone": "D5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "57",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "57",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "57.025000000000006",
+    "tone": "D3",
+    "length": "0.12",
+    "instrument": "neon-clap",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.25",
+    "tone": "F3",
+    "length": "0.65",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.5",
+    "tone": "Bb2",
+    "length": "0.35",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "57.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "57.512",
+    "tone": "F3",
+    "length": "0.35",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "57.75",
+    "tone": "D3",
+    "length": "0.6",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.75",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "57.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "57.95",
+    "tone": "C5",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "58.25",
+    "tone": "A3",
+    "length": "0.7",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58.25",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58.5",
+    "tone": "Bb2",
+    "length": "0.5",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "58.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "58.512",
+    "tone": "F3",
+    "length": "0.5",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "58.7",
+    "tone": "A4",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58.75",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58.75",
+    "tone": "F4",
+    "length": "0.45",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "58.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "59",
+    "tone": "F3",
+    "length": "0.6",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "59",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "59",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "59.025000000000006",
+    "tone": "D3",
+    "length": "0.12",
+    "instrument": "neon-clap",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59.25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59.5",
+    "tone": "D3",
+    "length": "0.75",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59.5",
+    "tone": "Bb2",
+    "length": "0.22",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "59.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "59.512",
+    "tone": "F3",
+    "length": "0.22",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "59.75",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "59.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "59.95",
+    "tone": "Bb4",
+    "length": "1",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "Bb2",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "60",
+    "tone": "D3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "60",
+    "tone": "F3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "60",
+    "tone": "A3",
+    "length": "3.8",
+    "instrument": "neon-backing-pad",
+    "dynamic": "pp"
+  },
+  {
+    "offset": "60",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "60",
+    "tone": "Bb2",
+    "length": "0.55",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "60",
+    "tone": "Bb4",
+    "length": "0.9",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "Bb1",
+    "length": "4",
+    "instrument": "neon-bass",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "f"
+  },
+  {
+    "offset": "60",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "60.012",
+    "tone": "F3",
+    "length": "0.55",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "60.25",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "60.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "60.5",
+    "tone": "Bb2",
+    "length": "0.8",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "60.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "60.75",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "60.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "61",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "61",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "61.025000000000006",
+    "tone": "D3",
+    "length": "0.12",
+    "instrument": "neon-clap",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.25",
+    "tone": "F3",
+    "length": "0.65",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.45",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.5",
+    "tone": "Bb2",
+    "length": "0.2",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "61.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "61.512",
+    "tone": "F3",
+    "length": "0.2",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "61.75",
+    "tone": "D3",
+    "length": "0.6",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.75",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "61.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "62",
+    "tone": "D4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "62",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "62.125",
+    "tone": "A4",
+    "length": "0.4",
+    "instrument": "neon-heavy-keys",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "62.25",
+    "tone": "A3",
+    "length": "0.7",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62.25",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "62.25",
+    "tone": "Bb2",
+    "length": "0.65",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "62.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "62.262",
+    "tone": "F3",
+    "length": "0.65",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "62.45",
+    "tone": "F4",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62.5",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "62.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "62.75",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "62.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "63",
+    "tone": "F3",
+    "length": "0.6",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-snare",
+    "dynamic": "f"
+  },
+  {
+    "offset": "63",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "f"
+  },
+  {
+    "offset": "63.025000000000006",
+    "tone": "D3",
+    "length": "0.12",
+    "instrument": "neon-clap",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.2",
+    "tone": "A4",
+    "length": "0.5",
+    "instrument": "neon-lead",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.25",
+    "tone": "F4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.25",
+    "tone": "Bb2",
+    "length": "0.25",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "63.25",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.262",
+    "tone": "F3",
+    "length": "0.25",
+    "instrument": "neon-guitar",
+    "dynamic": "p"
+  },
+  {
+    "offset": "63.5",
+    "tone": "D3",
+    "length": "0.75",
+    "instrument": "neon-picked-electric",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.5",
+    "tone": "A4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-kick",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.5",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "mf"
+  },
+  {
+    "offset": "63.75",
+    "tone": "Bb4",
+    "length": "0.14",
+    "instrument": "neon-arp",
+    "dynamic": "mp"
+  },
+  {
+    "offset": "63.75",
+    "tone": "C4",
+    "length": ".2",
+    "instrument": "neon-hiphop-hat",
+    "dynamic": "p"
+  },
+  {
+    "offset": "63.95",
+    "tone": "C5",
+    "length": "0.75",
+    "instrument": "neon-lead",
+    "dynamic": "mf"
+  }
+]

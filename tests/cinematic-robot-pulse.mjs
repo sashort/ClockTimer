@@ -22,6 +22,6 @@ const demo=read('api/audio/instruments/cinematic-robot-demo.json');
 assert(demo.song.events.filter(e=>Number(e.offset)<8).every(e=>e.instrument==='cinematic-pulse-bass'));
 assert(demo.song.events.filter(e=>Number(e.offset)>=8).every(e=>e.instrument==='cinematic-robot-pulse'));
 const score=read('api/audio/instruments/neon-countdown-score.json');
-assert.equal(score.partOnePulse.source,'cinematic-robot-pulse');
+assert.equal(score.partOnePulse.source,'cinematic-pulse-bass');
 assert(score.song.events.filter(e=>Number(e.offset)>=240).every(e=>!score.partOnePulse.instruments.includes(e.instrument)),'robot preset stays in Part I');
 console.log('PASS robot preset identity, pulse envelope, multisample bounds/headroom, loop joins and isolated A/B audition');

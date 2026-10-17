@@ -2,17 +2,21 @@
 
 There is no fixed runtime target. The user removed the length constraint; durations below describe the current render. Future changes should follow musical structure and complete instrument decays.
 
-Arrangement revision 52: **6:21**, 48 kHz stereo. The score has three parts; all event times are stored on the engine's 120-BPM grid, with explicit timing conversion for the other tempos.
+Arrangement revision 53: **6:21**, 48 kHz stereo. The score has three parts; all event times are stored on the engine's 120-BPM grid, with explicit timing conversion for the other tempos.
 
 ## Part I: original themes, 0:00-2:00
 
-D minor, 120 BPM. Keep the original lead, arpeggio, brass, warm backing, rhythm guitar, soft bending lead and drums. The fantasy pad is removed. The original warm-chorus-poly backing is present under its own name, neon-backing-pad, with 236 harmony events; the final ensemble attack is at 1:56; its gain is now .36, up from .18 at the user's request.
+D minor, 120 BPM. Revision 53 installs the approved Part I arrangement while retaining the approved wind and all Part II/III events and instruments. scripts/neon-countdown-part-one.cjs develops the original Part I theme; Part III remains derived from Parts I and II.
 
-The first four pulse notes at 0/2/4/6 seconds use the original cinematic pulse. The moving-vowel instrument starts on the fifth at 0:08, at gain .48. The final held bass/reference at 1:56 returns to the original pulse. The rejected spoken vocoder phrase and two standalone intro hits remain removed.
+The original cinematic pulse replaces the moving-vowel/vocoder voice. Gain is .6, in its original register, with four-beat whole notes and selected eight-beat holds across unchanged roots. Sustain .8, decay .3 and release .18 carry those written notes. The original four opening cinematic notes and final reference remain.
 
-The additional clean picked electric guitar is a supporting layer at .25 gain, about 10 dB below the prior .8 setting. It uses two original D3/D4 plucked-string samples, with no distortion and light chorus. Its picking follows the harmony, with sparse figures in quieter sections and fuller chorus figures. Preserve the existing rhythm guitar and bending lead.
+The original warm-chorus-poly backing is .9, increased from .36; flute and fantasy pad trials were rejected. The original lead/arp/brass and chorus rhythm guitar remain. The verse develops Part I's existing chorus hook and leaves more space in the answering arpeggio. The clean picked layer is replaced with sustained electric guitar at the same gain: original D3/D4 strings through RMS sustain compensation, gentle saturation and a 75 Hz/3.2 kHz amp/cab filter; .82 sustain and .35 release. scripts/synthesize-neon-electric-guitar.cjs reproduces the two original processed samples.
 
-Other retained details: main lead starts 25 ms early to align its attack; bend gain .12, sustained arrival pitches and .8-second release; synth/guitar call-and-answer at 1:04-1:20; soft four-note 32nd pickups before two transitions. Repaired bass phrases at 0:24-0:32 and 1:12-1:20 use the established syncopated grid, with bass returning alongside the drums at 1:12.
+An original FM/analogue-layered keyboard line adds weight in a lower register. Its sound and source script are recorded in api/audio/instruments/neon-approved-part-one-sounds.json. scripts/synthesize-neon-layered-keys.cjs generates two four-second D3/D4 samples: decaying FM index for attack, detuned warm harmonics for body and a short tine transient. The reference was a 1985 Mike Lindup interview documenting DX7/Prophet-600 layering, not an identified patch from Something About You. No audio from that song was sampled.
+
+The Dark 80s kick, snare and closed hat replace Part I's corresponding drums. Kick plays each beat with an alternate-bar pickup, snare on two/four and accented sixteenth hats. Gains 2.6/2.2/1.4 with .75/source-peak compensation use the same original samples as Part III. Original clap/tom fills remain. Tambourine trials were rejected. The drums enter with the existing intro build and stop before the ending transition.
+
+The approved 32-second audition is protected by tests/fixtures/neon-approved-part-one.json; the same instrumental and phrasing policies continue through Part I. Late melodic source material, closing reference and wind remain intact.
 
 ## Transition: wind starts decaying on the first slow downbeat
 

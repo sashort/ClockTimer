@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..');
 const {extend}=require('./neon-countdown-part-two.cjs');
 const {extendFinale}=require('./neon-countdown-part-three.cjs');
 
-function compose(catalog) {
+function composeBase(catalog) {
     const instruments = {};
     function voice(name, source, volume, changes = {}) {
         instruments[name] = {...structuredClone(catalog.instruments[source]), volume, ...changes};
@@ -189,6 +189,7 @@ function compose(catalog) {
         instruments, song:{bpm:120,instrument:bass,events},
         render:{sampleRate:48000,channels:2,seconds:120,fadeOutSeconds:2,peakTarget:.85}},catalog),catalog);
 }
+function compose(catalog) {return require('./neon-countdown-part-one.cjs').arrangePartOne(composeBase(catalog),catalog);}
 module.exports={compose};
 if(require.main===module) {
     const score=compose(JSON.parse(fs.readFileSync(path.join(root,'api/audio/catalog.json'),'utf8')));
