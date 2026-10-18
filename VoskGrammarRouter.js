@@ -178,7 +178,9 @@
             const aliases = ["oh", "o", "naught", "nought", "tutu"];
             const duration = ["twenty minutes", ...numbers, "a", "an", "and", "double", "triple", "to", "too", ...aliases];
             for (const unit of ["hour", "hours", "hr", "hrs", "minute", "minutes", "min", "mins", "second", "seconds", "sec", "secs"]) {
-                duration.push("a " + unit, "an " + unit);
+                // Articles introduce singular units; plural forms such as
+                // "an hours" bias recognition away from "an hour".
+                if (["hour", "minute", "second"].includes(unit)) duration.push("a " + unit, "an " + unit);
                 for (let n = 0; n < 60; n++) duration.push(number(n) + " " + unit);
             }
             for (let n = 0; n < 60; n++) duration.push("and " + number(n));
@@ -188,7 +190,12 @@
             for (let hour = 1; hour <= 12; hour++) for (let minute = 0; minute < 60; minute++) {
                 duration.push(number(hour) + " hours " + number(minute), number(hour) + " hours and " + number(minute));
             }
+            // Include unitless minutes/seconds as complete decoder phrases, just
+            // as clock time includes hour/minute pairs. Individual number words
+            // alone do not describe the transitions between spoken groups.
             for (let minute = 0; minute < 60; minute++) for (let second = 0; second < 60; second++) {
+                duration.push(number(minute) + " " + number(second));
+                if (second < 10) duration.push(number(minute) + " oh " + number(second));
                 duration.push(number(minute) + " minutes " + number(second), number(minute) + " minutes and " + number(second));
             }
             // Clock idioms and 24-hour/digit-alias forms accepted before Vosk.

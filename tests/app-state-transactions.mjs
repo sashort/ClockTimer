@@ -117,6 +117,7 @@ if(process.argv.includes('--summary-dialog')) {
  const rows=()=>[...dialog.querySelectorAll('[data-trip-summary-row]')];
  spoken.length=0;await say('trip summary');
  assert(dialog.open);assert.deepEqual(rows().map(r=>r.dataset.tripSummaryRow),['total','last','active']);
+ assert.equal(rows()[0].children[0].textContent,'Day','Auto/Trip totals identify their day scope');
  assert.deepEqual([...dialog.querySelectorAll('thead th')].map(c=>c.textContent),['','Standard','Actual','Percent']);
  assert.equal(rows()[1].children[2].textContent,'0:03:20','Actual column uses counted time, never wall duration');
  assert.equal(rows()[1].children[3].textContent,'150.00%');
@@ -125,6 +126,9 @@ if(process.argv.includes('--summary-dialog')) {
  await say('unrelated nonsense');assert(dialog.open,'junk does not dismiss summary');
  const command=await say('auto mode');assert(!command.digestExecutionFailed&&command.hadCommittedCommand);
  assert(!dialog.open);assert.equal(timer.percentMode,'auto','another valid command dismisses and executes normally');
+ for(const [phrase,label] of [['week mode','Week'],['money mode','Money'],['year mode','Year'],['trip mode','Day'],['auto mode','Day']]) {
+  await say(phrase);await say('trip summary');assert.equal(rows()[0].children[0].textContent,label,phrase+' summary scope');await say('close');
+ }
  holdSummaryRead=true;await say('trip summary');
  assert(dialog.open&&window.document.querySelector('#tripTransitionSummaryOk').disabled,'OK waits for assignment lookup');
  assert.equal(await window.WMOFActions.confirmTripSummary(),false,'pending lookup cannot be treated as an absent assignment');
@@ -1054,6 +1058,7 @@ if(process.argv.includes('--voicepad-continuation')) {
  const compiled=window.VoskPhraseListCompiler.compileStages([durationRecord],{valuePhrases:window.VoskGrammarRouter.valuePhrases()});
  assert.equal(compiled.unsupported.length,0);
  assert(compiled.paths.some(p=>p.stages.some(stage=>stage.grammar==='duration'&&stage.phrases.includes('twenty five minutes'))),'decoder grammar includes duration units');
+ assert(compiled.paths.some(p=>p.stages.some(stage=>stage.grammar==='duration'&&stage.phrases.includes('twenty two seventeen'))),'Voicepad decoder includes the complete unitless minutes/seconds phrase');
  for(const phrase of ['twenty five','twenty five minutes','twenty five minutes thirty','twenty five minutes thirty seconds']) {
    await say(u,phrase);
    assert.equal(u.digestSteps.length,0,phrase+' remains extendable until a speech boundary');
@@ -1103,7 +1108,7 @@ if(process.argv.includes('--voicepad-continuation')) {
  await window.WMOFVoiceEntry.open({mode:'duration',source:'test-duration',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{combinedDuration=value;return true;}});await settle();
  const combined=window.SpeechMenu.testBegin();await say(combined,'thirty five minutes seventeen seconds okay',true);
  assert(!combined.digestExecutionFailed);assert.equal(combinedDuration,2117000,'complete duration plus OK preserves both units and commits once');
- for(const [phrase,expected] of [['an hour and five',3900000],['an hour one and twelve',3672000],['two hours thirty five and forty five',9345000],['twenty three minutes and twenty four',1404000],['one seventeen oh nine',4629000],['a minute and five',65000]]) {
+ for(const [phrase,expected] of [['twenty two seventeen',1337000],['twenty-two seventeen',1337000],['twenty two oh six',1326000],['twenty two fifty six',1376000],['an hour and five',3900000],['an hour one and twelve',3672000],['two hours thirty five and forty five',9345000],['twenty three minutes and twenty four',1404000],['one seventeen oh nine',4629000],['a minute and five',65000]]) {
    let accepted;
    await window.WMOFVoiceEntry.open({mode:'duration',source:'test-legacy-duration',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{accepted=value;return true;}});await settle();
    const legacy=window.SpeechMenu.testBegin();

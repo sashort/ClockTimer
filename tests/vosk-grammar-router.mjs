@@ -58,6 +58,11 @@ const defaults = Router.valuePhrases();
 assert.ok(defaults.time.includes('four thirteen'));
 assert.ok(defaults.number.includes('nineteen'));
 assert.ok(defaults.duration.includes('thirteen minutes'));
+assert.ok(defaults.duration.includes('an hour and five'));
+for(const phrase of ['an hours','a minutes','an seconds']) assert(!defaults.duration.includes(phrase),'articles use singular units: '+phrase);
+for (const phrase of ['twenty two seventeen', 'twenty two fifty six', 'twenty two oh six', 'fifty nine fifty nine'])
+    assert.ok(defaults.duration.includes(phrase), 'duration decoder must include positional phrase: '+phrase);
+
 assert.ok(defaults.digits.includes('one one two three'));
 assert.ok(defaults.date.includes('october fourteen'));
 assert.ok(defaults.number.includes('one hundred twenty three'));
@@ -134,6 +139,35 @@ await recognizer.finishUtterance(45);
 assert.equal(transcripts.filter(event => event.utteranceId === 45 && event.isFinal).length, 1,
     'pending audio endpoints cannot prematurely finalize the utterance');
 recognizer.close();
+
+// Replayed prefixes can end midway through carried speech. Endpoint storage
+// must remain decoder-local, while genuinely repeated groups stay intact.
+const durationRecord={id:'duration',pattern:'^(?<duration>.+)$'};
+for (const [seed,replayHead,tail,full,repeatedTail,repeatedFull] of [
+    ['twenty two','twenty','two seventeen','twenty two seventeen','twenty two seventeen','twenty two twenty two seventeen'],
+    ['an hour','an','hour and five','an hour and five','an hour and five','an hour an hour and five'],
+    ['one one','one','one two three','one one two three','one one two three','one one one one two three']
+]) {
+ const replayRecognizer=new Recognizer({model:{KaldiRecognizer:Decoder},valuePhrases:defaults,
+    contextProvider:async(id,text)=>({records:text?[durationRecord,{id:'ok',pattern:'^okay$'}]:[durationRecord]})});
+ const replayTranscripts=[];replayRecognizer.addEventListener('transcript',event=>replayTranscripts.push(event.detail.transcript));
+ await replayRecognizer.beginUtterance(90);
+ decoders.at(-1).emit(seed);await flush();
+ const replayDecoder=decoders.at(-1);
+ replayDecoder.emit(replayHead,true);await flush();
+ assert.equal(replayTranscripts.at(-1),seed,'short replay endpoint preserves carried phrase: '+seed);
+ replayDecoder.emit(tail);await flush();
+ assert.equal(replayTranscripts.at(-1),full,'endpoint continuation never duplicates the seed: '+seed);
+ replayDecoder.emit(tail,true);await flush();
+ assert.equal(replayTranscripts.at(-1),full,'complete endpoint keeps the same value: '+seed);
+ replayDecoder.emit(repeatedTail);await flush();
+ assert.equal(replayTranscripts.at(-1),full+' '+repeatedTail,'genuinely repeated speech after an endpoint is preserved');
+ // Start again: repeating a whole seed inside one decoder segment is also valid.
+ await replayRecognizer.beginUtterance(91);decoders.at(-1).emit(seed);await flush();
+ decoders.at(-1).emit(repeatedFull);await flush();
+ assert.equal(replayTranscripts.at(-1),repeatedFull,'never deduplicate genuine repeated number groups');
+ replayRecognizer.close();
+}
 
 // An upstream worker model-load error must reject startup rather than leave
 // the browser microphone UI indefinitely waiting for a "load" event.

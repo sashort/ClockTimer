@@ -320,3 +320,37 @@ for unrelated windows. Tests cover partial Ready, silence and delayed finals
 for first Ready after login, ending a running trip, and Ready after its summary.
 The native mobile browser test starts a trip with voice, ends it through the
 silence boundary, and checks the summary opens with no pending locks/transactions.
+
+
+## English number interpretation and readback inherited from Sherpa
+
+Preserve the Sherpa contracts recorded in commits 6185ac55 (grouped duration
+input), 86d64e07 (shared Formal Time output), 6a3a27c4/d6c08ca1 (positional
+readback and zero fields), and e107d299 (hour/minute conjunction). These are
+language rules, independent of acoustic backend or decoder grammar stages.
+
+- Unitless numeric groups are positional: two groups are minutes/seconds;
+  three groups are hours/minutes/seconds. Individual spoken digits retain
+  keypad semantics, anchored from seconds at the right.
+- An explicit first unit establishes the position of following omitted units:
+  an hour and five is 1:05:00; an hour one and twelve is 1:01:12;
+  twenty-three minutes and twenty-four is 0:23:24. Explicit seconds remain
+  seconds: an hour twelve seconds is 1:00:12. Preserve zero-thirty and the
+  other documented parser exceptions; do not reinterpret them in the decoder.
+- Formal Time controls output, not accepted input. Informal readback includes
+  twenty-two seventeen (0:22:17), twenty-two oh six (0:22:06),
+  one oh one oh six (1:01:06), an hour and five (1:05:00), and
+  an hour twenty (1:20:00). Formal output states the units with agreement,
+  e.g. twenty-two minutes and seventeen seconds. Voicepad, Standard Time and
+  informational readbacks share the formatter. The current parser matches
+  the Sherpa branch; vocabulary generation must preserve all supported forms.
+
+Vosk replay ownership: decoder endpoint accumulation contains only decoder-local
+text. Merge the carried next-stage seed for published transcripts, keeping it
+separate from raw endpoints; otherwise a short replay endpoint followed by its
+continuation can turn twenty two seventeen into twenty two twenty two seventeen.
+A shorter replay prefix must not append itself to a longer carried prefix. Do
+not globally deduplicate numeric words: repeated digits and three-group durations
+remain legitimate. tests/vosk-grammar-router.mjs covers split replay endpoints,
+article/hour continuation and genuinely repeated speech. These deterministic
+tests verify adapter behavior; they do not substitute for acoustic/device tests.

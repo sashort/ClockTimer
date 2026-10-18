@@ -2,7 +2,7 @@
     'use strict';
     // Presentation contract only; fetching, assignment and persistence stay outside.
     class TripSummary {
-        static build({trips = [], totals, activeTrip, scope, text, duration, percent, spokenDuration, spokenPercent}) {
+        static build({trips = [], totals, activeTrip, scope, scopeLabel = scope, text, duration, percent, spokenDuration, spokenPercent}) {
             const known = value => Number.isFinite(value) && value >= 0;
             const unique = new Map();
             for (const trip of trips) unique.set(trip.id == null ? trip : String(trip.id), trip);
@@ -19,7 +19,7 @@
             const activeActual = counted(activeTrip);
             const activePercent = known(activeTrip?.standardTimeMilliseconds) && activeActual > 0
                 ? activeTrip.standardTimeMilliseconds / activeActual : undefined;
-            const row = (key, standard, actual, performance) => Object.freeze({key, label:text(key+'Label'),
+            const row = (key, standard, actual, performance) => Object.freeze({key, label:key==='total'?scopeLabel:text(key+'Label'),
                 standard:known(standard)?duration(standard):'---', actual:known(actual)?duration(actual):'---',
                 percent:known(performance)?percent(performance):'---'});
             const rows = [row('total',totals.tripCount?totals.standardTimeMilliseconds:undefined,

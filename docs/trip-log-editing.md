@@ -18,7 +18,7 @@ Verification uses PHP calendar/editor/migration tests and JavaScript calendar, T
 ## English trip terminology and summary presentation
 
 Use **Active trip** for the assigned/active trip and **Last trip** for the most
-recently completed trip. The requested summary has rows Total, Last trip, and
+recently completed trip. The summary has rows named for the selected scope (Day, Week, Money, Month or Year), Last trip, and
 Active trip, with Standard, Actual, and Percent columns. Unavailable values show
 `---` and are omitted from announcements. Auto/Trip mode implies day totals.
 When automatic database assignment is implemented, the end-of-trip summary can
@@ -33,6 +33,7 @@ TripSummary.js owns pure row/announcement construction and accessible table
 rendering. app.js owns cancellable lookups, modal lifetime and workflow actions.
 Both the Trip Summary command and trip completion use the same renderer.
 Auto/Trip summary totals use day; other modes use the selected total range.
+The aggregate row displays that localized scope label instead of Total.
 Actual means counted elapsed, never raw wall duration. Total excludes the active
 assignment; Last is the most recent completed trip, with IDs deduplicated and
 UTC timestamps normalized. Missing values display --- and are omitted from speech.

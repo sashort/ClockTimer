@@ -24,6 +24,9 @@ const parse =
             )
         );
 
+assert.equal(parse("twenty-two seventeen"), "22:17");
+assert.equal(parse("twenty two seventeen"), "22:17");
+assert.equal(parse("an hour and five"), "1:05:00");
 assert.equal(
     parse("forty five minutes"),
     "45:00"

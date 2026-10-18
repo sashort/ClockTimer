@@ -179,8 +179,11 @@
                         // the router consumes it; never deduplicate digit runs.
                         this.#seed = stageText;
                     } else if (event === "result" && this.#router.prefix === prefix) {
-                        this.#segment = stageText;
-                        this.#seed = "";
+                        // Keep endpoint accumulation decoder-local. The carried seed
+                        // may include words that this replay has not reached yet;
+                        // storing the merged text here would count those words
+                        // again when the next endpoint completes them.
+                        this.#segment = [this.#segment, text].filter(Boolean).join(" ");
                     }
                 }).catch(() => {});
             });
@@ -199,6 +202,10 @@
             if (!this.#seed) return text;
             const seed = this.#seed.split(" ").filter(Boolean);
             const words = text.split(" ").filter(Boolean);
+            // A replay partial/endpoint can stop partway through the seed.
+            // Preserve the known prefix until replay catches up to it.
+            if (words.length < seed.length && words.every((word, index) => word === seed[index]))
+                return this.#seed;
             // This overlap is only the carried, uncommitted next-stage text,
             // never the committed prefix (which can contain repeated digits).
             for (let count = Math.min(seed.length, words.length); count > 0; count--) {
