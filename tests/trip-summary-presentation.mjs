@@ -5,14 +5,14 @@ import {englishLanguage} from './announcement-language-fixture.mjs';
 const language=await englishLanguage(),context=vm.createContext({});
 vm.runInContext(fs.readFileSync(new URL('../TripSummary.js',import.meta.url),'utf8'),context);
 const build=options=>context.TripSummary.build({scope:'day',scopeLabel:'Day',text:(key,args)=>language.text('messages.tripSummary.'+key,args),
- duration:ms=>ms+' ms',percent:value=>(value*100).toFixed(2)+'%',spokenDuration:ms=>ms+' milliseconds',spokenPercent:value=>(value*100)+' percent',...options});
+ duration:ms=>ms+' ms',percent:(_value,formatted)=>formatted+'%',spokenDuration:ms=>ms+' milliseconds',spokenPercent:(_value,formatted)=>formatted+' percent',...options});
 const totals={tripCount:2,standardTimeMilliseconds:900000,countedTimeMilliseconds:600000,percent:1.5};
 const trips=[{id:1,startTime:'2026-10-17T10:00:00Z',standardTimeMilliseconds:600000,countedTimeMilliseconds:400000},
  {id:2,startTime:'2026-10-17T11:00:00Z',standardTimeMilliseconds:300000,countedTimeMilliseconds:200000,actualTimeMilliseconds:999999}];
 const result=build({trips,totals});
 assert.deepEqual(Array.from(result.rows,r=>r.label),['Day','Last trip']);
 assert.equal(result.rows[1].actual,'200000 ms');
-assert.equal(result.speech,'Actual time for your last trip was 200000 milliseconds. Your performance was 150 percent, and your day performance is 150 percent.');
+assert.equal(result.speech,'Actual time for your last trip was 200000 milliseconds. Your performance was 150.0 percent, and your day performance is 150.0 percent.');
 const assigned=build({trips,totals,activeTrip:{id:3,standardTimeMilliseconds:600000}});
 assert.deepEqual(Array.from(assigned.rows,r=>r.label),['Day','Last trip','Active trip']);
 assert.equal(assigned.rows[2].actual,'---');assert.equal(assigned.rows[2].percent,'---');
@@ -32,4 +32,11 @@ console.log('PASS exact trip-summary announcement, last/active selection, counte
 for(const [scope,scopeLabel] of [['day','Day'],['week','Week'],['pay-period','Money'],['month','Month'],['year','Year']]) {
  const scoped=build({trips,totals,scope,scopeLabel});
  assert.equal(scoped.rows[0].label,scopeLabel,'summary labels its selected aggregate scope');
+}
+
+for(const [ratio,expected] of [[1.23499,"123.4"],[1.001,"100.1"],[1.999999,"199.9"],[0,"0.0"]]) {
+ const truncated=build({totals:{tripCount:1,standardTimeMilliseconds:ratio*100000,countedTimeMilliseconds:100000,percent:ratio},
+  trips:[{id:1,standardTimeMilliseconds:ratio*100000,countedTimeMilliseconds:100000}],activeTrip:{id:2,standardTimeMilliseconds:ratio*100000,countedTimeMilliseconds:100000}});
+ assert(truncated.rows.every(row=>row.percent===expected+"%"),"every summary row truncates: "+ratio);
+ assert(truncated.speech.includes("Your performance was "+expected+" percent, and your day performance is "+expected+" percent."),"speech matches displayed precision");
 }

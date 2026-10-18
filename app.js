@@ -21172,8 +21172,8 @@
     function renderCalculatedTripSummary(summary, request, trips, assignedTrip) {
         const presentation=TripSummary.build({totals:summary,trips,
             activeTrip:activeTripSummaryProjection() || assignedTrip || null,
-            scope:request.scope.toLocaleLowerCase(),scopeLabel:request.scope,text:tripSummaryText,duration:TripLog.duration,percent:formatActualPercent,
-            spokenDuration:formatGoalFailureDuration,spokenPercent:formatSpokenPercent});
+            scope:request.scope.toLocaleLowerCase(),scopeLabel:request.scope,text:tripSummaryText,duration:TripLog.duration,percent:(_value,formatted)=>formatted+"%",
+            spokenDuration:formatGoalFailureDuration,spokenPercent:(_value,formatted)=>announcementText("messages.speech.percent",{value:formatted})});
         completedTripSummary=Object.freeze({...request,calculation:Object.freeze({...summary,presentation}),loading:false});
         renderTripTransitionOverlayItem({title:tripSummaryText('title'),rows:[],awaitConfirmation:true,presentation});
         const guard=()=>completedTripSummary?.requestId===request.requestId;

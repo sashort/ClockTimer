@@ -120,7 +120,7 @@ if(process.argv.includes('--summary-dialog')) {
  assert.equal(rows()[0].children[0].textContent,'Day','Auto/Trip totals identify their day scope');
  assert.deepEqual([...dialog.querySelectorAll('thead th')].map(c=>c.textContent),['','Standard','Actual','Percent']);
  assert.equal(rows()[1].children[2].textContent,'0:03:20','Actual column uses counted time, never wall duration');
- assert.equal(rows()[1].children[3].textContent,'150.00%');
+ assert.equal(rows()[1].children[3].textContent,'150.0%');
  assert(spoken.some(s=>s.startsWith('Actual time for your last trip was ')&&s.includes('Your performance was ')&&s.includes(', and your day performance is ')&&s.includes('Standard time for this trip is ')),spoken.join('|'));
  assert(window.document.querySelector('#tripTransitionSummaryCancel').hidden,'no visible Cancel button');
  await say('unrelated nonsense');assert(dialog.open,'junk does not dismiss summary');

@@ -68,3 +68,8 @@ execution authorization, never during provisional grammar probes. This keeps
 noise from dismissing informational windows and avoids consuming the command
 that follows them. Tests cover exact English wording, missing/assigned rows,
 root/Voicepad command continuation, both triggers, dismissal and manual fallback.
+
+Summary percentages display exactly one decimal place, truncating further
+digits (123.49% becomes 123.4%). Spoken summary percentages use the same
+truncated value. This presentation rule does not change stored precision or
+percent formatting elsewhere.
