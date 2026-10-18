@@ -95,6 +95,7 @@
       "off": "Sync Off",
       "offline": "Cannot sync offline",
       "blocked": "Not enough time to sync",
+      "dataUnavailable": "Cannot sync: trip totals are unavailable",
       "failed": "Sync Fail",
       "goal": "Sync Goal {percent}",
       "id": "33c1ed3d-ea40-5598-85b8-ec94020472c2"

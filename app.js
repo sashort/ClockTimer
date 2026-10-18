@@ -6898,6 +6898,9 @@
             return "ready";
         }
 
+        // A valid empty aggregate is usable; unknown totals are not zero.
+        if (!clockTimer.hasAggregateData) return "data-unavailable";
+
         const requirements =
             syncGoalRequirements();
 
@@ -7078,6 +7081,11 @@
             );
         }
 
+        if (state === "data-unavailable") {
+            return confirmInformationalChange("sync-state",
+                announcementText("announcements.syncTry.dataUnavailable"), {eventName:"syncTry"});
+        }
+
         if (
             state ===
                 "time-blocked"
@@ -7092,8 +7100,7 @@
         if (state === "active") {
             if (
                 preferCalculatedGoal ||
-                previous ===
-                    "time-blocked"
+                ["time-blocked", "data-unavailable"].includes(previous)
             ) {
                 return announceCalculatedSyncGoal({
                     force:
@@ -7178,6 +7185,12 @@
                 enabled
                     ? globalThis.WMOFLanguagePack.text("e9188539-e5ac-5acf-881d-afae34f7edb6")
                     : globalThis.WMOFLanguagePack.text("1113f92b-19ca-5428-8797-47d0ef87c532");
+            if (enabled && ["data-unavailable", "time-blocked"].includes(runtimeState)) {
+                const message=announcementText(runtimeState==="data-unavailable"
+                    ? "announcements.syncTry.dataUnavailable" : "announcements.syncTry.blocked");
+                button.title=message;
+                button.setAttribute("aria-label",message);
+            }
         }
 
         if (syncGoalsMenuIcon) {

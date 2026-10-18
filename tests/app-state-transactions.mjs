@@ -105,6 +105,38 @@ window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--sync-availability')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await window.WMOFActions.toggleSync('on');await settle();
+ const menu=window.document.querySelector('#toggleSyncMenuButton');
+ timer.configure({total_goal:'100%'});
+ await window.WMOFCoordinator.run('sync-empty-test',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ assert(timer.hasAggregateData,'successfully loaded zero-trip aggregate is usable');
+ assert.equal(timer.calculateTotalGoalRequirements().tripGoal,1,'zero other trips sync to the total goal');
+ assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncRuntimeState,'active');
+ Object.defineProperty(timer,'hasAggregateData',{configurable:true,get:()=>false});
+ const reportSync=async()=>{timer.dispatchEvent(new window.CustomEvent('syncTry',{detail:{source:'test',operation:'sync'}}));await settle();};
+ spoken.length=0;await reportSync();
+ assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncRuntimeState,'data-unavailable');
+ assert.equal(menu.title,'Cannot sync: trip totals are unavailable');
+ assert.equal(menu.getAttribute('aria-label'),menu.title);
+ assert(spoken.includes('Cannot sync: trip totals are unavailable'));
+ assert(!spoken.includes('Not enough time to sync'));
+ delete timer.hasAggregateData;spoken.length=0;await reportSync();
+ assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncRuntimeState,'active','recovery clears the missing-data state');
+ timer.calculateTotalGoalRequirements=()=>({tripGoal:null,adjustedTimeElapsed:null});
+ spoken.length=0;await reportSync();
+ assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncRuntimeState,'time-blocked');
+ assert.equal(menu.title,'Not enough time to sync');
+ assert(spoken.includes('Not enough time to sync'));delete timer.calculateTotalGoalRequirements;
+ Object.defineProperty(timer,'networkStatus',{configurable:true,get:()=> 'offline'});
+ timer.dispatchEvent(new window.CustomEvent('networkStatusChanged'));await settle();
+ assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncRuntimeState,'offline','offline retains its distinct cloud state');
+ delete timer.networkStatus;timer.dispatchEvent(new window.CustomEvent('networkStatusChanged'));await settle();
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS Sync empty totals, unavailable totals, impossible target, offline cloud state and recovery feedback');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--summary-dialog')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();

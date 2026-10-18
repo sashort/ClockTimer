@@ -4342,8 +4342,8 @@ clock-timer[hide-latency] time-range[type="latency"] {
 
 /* sync-runtime-state-v1 */
 /* Sync Off keeps the sync glyph but uses a neutral gray top-left -> bottom-right
-   slash. The red X is reserved for an online active trip that cannot meet a
-   valid Sync goal. */
+   slash. The red X marks an online active trip unable to Sync; its message
+   distinguishes unavailable totals from an impossible target. */
 .sync-goals-menu-icon[data-sync-runtime-state="off"]::after,
 .goal-sync-button[data-sync-runtime-state="off"]::after {
     background: rgb(255 255 255 / 58%);
@@ -4351,19 +4351,23 @@ clock-timer[hide-latency] time-range[type="latency"] {
     transition: none;
 }
 
+.sync-goals-menu-icon[data-sync-runtime-state="data-unavailable"] .sync-offline-x,
+.goal-sync-button[data-sync-runtime-state="data-unavailable"] .sync-offline-x,
 .sync-goals-menu-icon[data-sync-runtime-state="time-blocked"] .sync-offline-x,
 .goal-sync-button[data-sync-runtime-state="time-blocked"] .sync-offline-x {
     opacity: 1;
     transition: opacity 250ms linear;
 }
 
+.sync-goals-menu-icon[data-sync-runtime-state="data-unavailable"]::after,
+.goal-sync-button[data-sync-runtime-state="data-unavailable"]::after,
 .sync-goals-menu-icon[data-sync-runtime-state="time-blocked"]::after,
 .goal-sync-button[data-sync-runtime-state="time-blocked"]::after {
     opacity: 0;
 }
 
 /* Offline keeps the circular Sync arrows and adds a small cloud badge in the
-   lower-right. The red X uses that same corner only for TIME_BLOCKED. */
+   lower-right. The red X uses that corner for blocked or unavailable totals. */
 .sync-goals-menu-icon[data-sync-runtime-state="offline"],
 .goal-sync-button[data-sync-runtime-state="offline"] {
     color: rgb(255 255 255 / 78%);

@@ -354,3 +354,18 @@ not globally deduplicate numeric words: repeated digits and three-group duration
 remain legitimate. tests/vosk-grammar-router.mjs covers split replay endpoints,
 article/hour continuation and genuinely repeated speech. These deterministic
 tests verify adapter behavior; they do not substitute for acoustic/device tests.
+
+
+## Sync availability feedback
+
+Do not confuse a valid empty aggregate with unavailable totals. Zero completed
+trips in the selected scope are usable: Sync then computes the active trip goal
+from the total goal alone. Unknown totals must never be treated as zero.
+For an online active trip, data-unavailable and time-blocked both show the
+existing red X, with distinct announcement, tooltip and accessible label:
+Cannot sync: trip totals are unavailable / Not enough time to sync.
+Offline retains the existing cloud badge and Cannot sync offline message.
+Turning Sync off retains its neutral slash. Restoring usable totals clears
+the unavailable state and announces the calculable goal.
+The sync-availability app test covers zero history, unavailable data, recovery,
+impossible targets and offline state; it runs independently of command tests.
