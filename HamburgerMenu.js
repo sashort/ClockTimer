@@ -5027,7 +5027,10 @@
                     parent,
                     nested: !!parent,
                     hasMenu: !!owner,
-                    rect: this.#visiblePaintBounds(element)
+                    // An expanded container is several painted rows, not
+                    // one tall row. Measure its header and children separately.
+                    rowElement: children.length ? owner : element,
+                    rect: this.#visiblePaintBounds(children.length ? owner : element)
                 });
                 for (const child of children) collect(child, element);
             };
@@ -5105,22 +5108,13 @@
                     .map(
                         item => ({
                             ...item,
-                            coverageState:
-                                this
-                                    .#hasVisibleChild(
-                                        item.element,
-                                        group,
-                                        panelItems
-                                    )
+                            element: item.rowElement || item.element,
+                            // Visible headers participate even while their
+                            // children occupy independent vertical positions.
+                            coverageState: item.rowElement !== item.element
+                                ? undefined
+                                : this.#hasVisibleChild(item.element, group, panelItems)
                         })
-                    )
-                    .filter(
-                        item =>
-                            item.coverageState !== true &&
-                            (
-                                item.nested ||
-                                !item.hasMenu
-                            )
                     )
                 : this.#visibleRows(sourceRoot, group).map(element => ({
                     element,

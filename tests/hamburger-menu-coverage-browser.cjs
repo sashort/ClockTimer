@@ -1,0 +1,24 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {chromium}=require('playwright'),root=path.resolve(__dirname,'..');
+(async()=>{const browser=await chromium.launch({headless:true,...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});
+try{for(const flow of ['start','end'])for(const layout of ['flat','nested']){
+ const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const rows=Array.from({length:6},(_,i)=>i%2?'<div class="parent" id="row'+i+'"><button id="row'+i+'Header" aria-controls="sub'+i+'" aria-expanded="'+(layout==="nested"&&i===1?'true':'false')+'">Parent '+i+'</button><div id="sub'+i+'" '+(layout==="nested"&&i===1?'':'hidden')+'><button id="child'+i+'">Child</button>'+(layout==="nested"&&i===1?'<div class="parent"><button id="nestedHeader" aria-controls="nestedSub" aria-expanded="true">Nested</button><div id="nestedSub"><button id="nestedChild">Deep child</button></div></div>':'')+'</div></div>':'<button class="row" id="row'+i+'">Action '+i+'</button>').join('');
+ const rowIds=Array.from({length:6},(_,i)=>i%2?'row'+i+'Header':'row'+i);if(layout==='nested')rowIds.push('child1','nestedHeader','nestedChild');
+ const selected='<div class="parent" id="selected"><button id="choose" aria-controls="children" aria-expanded="false">Selected</button><div id="children" hidden><button>Selected child</button></div></div>';
+ await page.setContent('<style>body{margin:0}hamburger-menu{position:fixed;left:20px;'+(flow==='start'?'top:10px':'bottom:10px')+'} .hamburger-menu-popover{width:280px;background:#001e60;color:white} button{display:block;box-sizing:border-box;height:48px;width:100%;margin:0;border:0} .parent{margin:0;padding:0} </style><hamburger-menu id="menu"><button slot="trigger">Menu</button>'+(flow==='start'?rows+selected:selected+rows)+'</hamburger-menu>');
+ await page.evaluate(()=>globalThis.WMOFLanguagePack={text:id=>id});
+ for(const file of ['PanePage.js','HamburgerMenu.js'])await page.addScriptTag({content:fs.readFileSync(path.join(root,file),'utf8')});
+ assert.deepEqual(errors,[]);await page.evaluate(()=>document.getElementById('menu').showPopover());await page.waitForTimeout(650);
+ const before=await page.evaluate(ids=>Object.fromEntries(ids.map(id=>{const r=document.getElementById(id).getBoundingClientRect();return [id,{top:r.top,bottom:r.bottom}];})),rowIds);
+ await page.locator('#choose').click();
+ await page.waitForFunction(()=>document.getAnimations().some(a=>a.effect?.target?.id==='selected'));
+ const sample=await page.evaluate(async({before,flow})=>{for(const a of document.getAnimations()){a.pause();a.currentTime=420;}await new Promise(requestAnimationFrame);const r=document.getElementById('selected').getBoundingClientRect();return {parent:{top:r.top,bottom:r.bottom},rows:Object.entries(before).map(([id,rect])=>({id,passed:flow==='start'?r.bottom<rect.top:r.top>rect.bottom,opacity:(()=>{let value=1;for(let e=document.getElementById(id);e;e=e.parentElement){const style=getComputedStyle(e);if(style.display==='none'||style.visibility==='hidden')return '0';value*=Number(style.opacity);}return String(value);})(),display:getComputedStyle(document.getElementById(id)).display,threshold:document.getElementById(id).style.getPropertyValue('--hamburger-menu-row-switch-time')}))};},{before,flow});
+ const passed=sample.rows.filter(r=>r.passed);assert(passed.length>=4,'exercise several fully passed rows: '+JSON.stringify(sample));
+ assert(passed.every(r=>Number(r.opacity)===0||r.display==='none'),'every eclipsed row disappears ('+flow+'/'+layout+'): '+JSON.stringify(sample));
+ await page.evaluate(()=>{for(const a of document.getAnimations())a.finish();});await page.waitForTimeout(1000);
+ await page.evaluate(()=>document.getElementById('menu').back());await page.waitForTimeout(1600);
+ assert.equal(await page.evaluate(()=>document.getElementById('menu').promotionDepth),0);
+ const restored=await page.evaluate(ids=>ids.map(id=>{const e=document.getElementById(id);let opacity=1;for(let parent=e;parent;parent=parent.parentElement){const style=getComputedStyle(parent);if(style.display==='none'||style.visibility==='hidden'){opacity=0;break;}opacity*=Number(style.opacity);}return {opacity:String(opacity),display:getComputedStyle(e).display,animation:e.style.animation};}),rowIds);
+ assert(restored.every(r=>r.opacity==='1'&&r.display!=='none'&&!r.animation),'all rows restore after Back');assert.deepEqual(errors,[]);await page.close();
+}console.log('PASS visible actions, collapsed/expanded headers and nested children disappear by vertical geometry in both directions and restore on Back');}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
