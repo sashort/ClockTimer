@@ -712,14 +712,16 @@
       "source": "builtin:tripGoal:page",
       "texts": {},
       "attributes": {},
-      "patternId": "74c28b6f-1b4e-542d-888a-fa1a8c861e34"
+      "patternId": "74c28b6f-1b4e-542d-888a-fa1a8c861e34",
+      "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
     "b83de74a-5c68-510a-9f82-6a563ceb8313": {
       "elementId": "b83de74a-5c68-510a-9f82-6a563ceb8313",
-      "source": "builtin:totalGoal:page",
+      "source": "builtin:scopeGoal:page",
       "texts": {},
       "attributes": {},
-      "patternId": "96c8476f-2dc6-5eca-9d83-824d69cb8bd8"
+      "patternId": "96c8476f-2dc6-5eca-9d83-824d69cb8bd8",
+      "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
     "999a8ba4-49df-5b4a-8b70-b82bf72fab95": {
       "elementId": "999a8ba4-49df-5b4a-8b70-b82bf72fab95",

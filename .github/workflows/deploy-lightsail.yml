@@ -36,6 +36,10 @@ jobs:
           node tests/speech-failfast.mjs
           node tests/owned-feedback-scope.mjs
           node tests/speech-continuation-session.mjs
+          node tests/goal-feedback.mjs
+          node tests/app-state-transactions.mjs --goal-failure-batch --voice-feedback
+          node tests/app-state-transactions.mjs --goal-cascade --voice-feedback
+          node tests/app-state-transactions.mjs --startup-speech --startup-no-focus --voice-feedback
           node tests/speech-rejection-feedback.mjs
           node tests/tone-referenced-announcement.mjs
           node tests/scheduled-audio-cue.mjs

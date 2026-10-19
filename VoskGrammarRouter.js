@@ -41,6 +41,10 @@
                 ? this.continuations.filter(path => path.record.action === "SpeechMenu.cancel")
                 : this.continuations;
             return unique([...this.paths.flatMap(path => path.stages[0]?.phrases || []),
+                // A value-first command can finish without a pause before its
+                // literal suffix (for example "one hundred ten percent trip").
+                ...this.paths.flatMap(path => path.record.atomic !== "digits" && path.stages[0]?.grammar !== "commands" &&
+                    path.stages[1]?.grammar === "commands" ? path.stages[1].phrases : []),
                 ...continuations.flatMap(path => path.stages[0]?.phrases || [])]).sort();
         }
 
@@ -75,8 +79,7 @@
                 // Locate a literal head before vocabulary routing. This does
                 // not grant a command context or reinterpret a value fragment;
                 // SpeechMenu still validates every resulting segment.
-                const heads = this.paths.filter(path => path.stages[0]?.grammar === "commands")
-                    .flatMap(path => path.stages[0].phrases);
+                const heads = this.paths.flatMap(path => path.stages[0]?.phrases || []);
                 const words = text.split(" ").filter(Boolean);
                 const start = words.findIndex((word, offset) => {
                     const tail = words.slice(offset).join(" ");
@@ -89,6 +92,16 @@
             for (let iteration = 0; iteration < 16; iteration++) {
                 this.text = text;
                 if (this.grammar === "commands") {
+                    const valuePaths = this.paths.filter(path => path.record.atomic !== "digits" && path.stages[0]?.grammar !== "commands" &&
+                        path.stages[0]?.phrases.some(phrase => begins(text, phrase) || begins(phrase, text)));
+                    const valueTypes = unique(valuePaths.map(path => path.stages[0].grammar));
+                    const literalMatch = this.paths.some(path => path.stages[0]?.grammar === "commands" &&
+                        path.stages[0].phrases.some(phrase => begins(text, phrase) || begins(phrase, text)));
+                    if (!literalMatch && valueTypes.length === 1) {
+                        this.paths = valuePaths;
+                        this.grammar = valueTypes[0];
+                        continue;
+                    }
                     const matching = this.paths.filter(path => path.stages[0]?.phrases.some(phrase =>
                         begins(text, phrase) || begins(phrase, text)));
                     const completed = matching.filter(path => path.stages[0].phrases.some(phrase => begins(text, phrase)));

@@ -91,6 +91,11 @@ speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', 
     static async testSilence(u,text){await SpeechMenu.#handleLiveTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;return u.hadCommittedCommand && !u.digestFailed && !u.digestExecutionFailed;}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
 window.eval(speechSource+'\nwindow.SpeechMenu=SpeechMenu;');
+if(process.argv.includes('--startup-no-focus')) {
+ window.SpeechMenu.testModelReady(false);
+ const focus=window.HTMLElement.prototype.focus;
+ window.HTMLElement.prototype.focus=function(...args){if(!this.matches('[data-login-digit]'))return focus.apply(this,args);};
+}
 window.SpeechMenu.events.addEventListener('speechFeedbackError',e=>errors.push(e.detail.error?.stack||String(e.detail.error)));
 window.eval(fs.readFileSync(new URL('../SpeechMicBar.js',import.meta.url),'utf8'));
 window.SpeechMenu.testBegin();
@@ -229,6 +234,44 @@ if(process.argv.includes('--sleep-wake-only')) {
  assert(window.SpeechMenu.muted,'rejecting a stale command preserves sleep');commandsElement.removeAttribute('speech-preproc');delete window.SleepTest;await window.SpeechMenu.wake();await settle();
  assert.equal(window.WMOFCoordinator.lockCount,0);assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
  console.log('PASS sleeping mic restricts voice/grammar to Wake, preserves manual Commands access and restores spoken Commands after wake');await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--goal-failure-batch')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ await window.WMOFCoordinator.run('failure-batch-trip',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ await window.WMOFActions.changeGoalMode('auto');await settle();
+ let releaseFailure;
+ const startSong=window.WMOFAudio.startSong;
+ window.WMOFAudio.startSong=async(name,options)=>name==='goal-failed'
+  ? (chimes.push(name),{hasChime:true,finished:new Promise(resolve=>releaseFailure=resolve)}) : startSong(name,options);
+ spoken.length=0;chimes.length=0;
+ const fail=goals=>timer.dispatchEvent(new window.CustomEvent('goalFail',{detail:{goals}}));
+ fail([{type:'trip',percent:1.1}]);await settle();assert(releaseFailure,'failure chime is pending');
+ fail([{type:'total',percent:1.05}]);fail([{type:'trip',percent:1.1}]);
+ releaseFailure();for(let i=0;i<20&&!spoken.includes('Trip and total goal failed.');i++)await settle();
+ assert.deepEqual(chimes,['goal-failed']);assert.deepEqual(spoken,['Trip and total goal failed.']);
+ assert.equal(window.WMOFCoordinator.lockCount,0);assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS real failure events merge during the held chime with one combined summary and no control lock');
+ await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--goal-cascade')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+ await window.WMOFCoordinator.run('goal-cascade-trip',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ await window.WMOFActions.toggleSync('on');await window.WMOFActions.changeGoalMode('auto');await settle();
+ spoken.length=0;chimes.length=0;
+ const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;await settle();assert(u.hadCommittedCommand&&!u.digestExecutionFailed,text+' commits');};
+ await say('week goal one hundred five percent');
+ assert.equal(timer.percentMode,'auto');assert.equal(timer.autoSyncTripGoal,true);
+ assert.equal(timer.calculatedTripGoal,1.05);
+ assert(spoken.includes('Week goal set to 105 percent. Auto goal recalculated. New trip goal 105 percent.'),JSON.stringify(spoken));
+ await window.WMOFActions.changeGoalMode('trip');await settle();spoken.length=0;
+ await say('day goal one hundred ten percent');
+ assert.equal(timer.calculatedTripGoal,1.1);assert.equal(timer.autoSyncTripGoal,true);
+ assert(spoken.includes('Day goal set to 110 percent. Sync value changed. New trip goal 110 percent.'),JSON.stringify(spoken));
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS real scope-first goal updates retain Auto/Sync and announce only the final dependent trip goal');
+ await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--sync-availability')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
@@ -406,6 +449,53 @@ if(process.argv.includes('--range-permissions')) {
   assert.equal(window.WMOFCoordinator.lockCount,0,phrase+' releases its UI locks');
  };
  for(const [phrase,range] of [['week','week'],['month','month'],['money','pay-period'],['year','year'],['day','day']])await say(phrase,range);
+ for(const [phrase,scope,expected,range] of [
+  ['one hundred ten percent trip','trip',1.1,'day'],
+  ['one hundred five percent day','total',1.05,'day'],
+  ['one hundred percent week','total',1,'week'],
+  ['ninety five money','total',.95,'pay-period'],
+  ['trip goal one hundred twelve percent','trip',1.12,'pay-period'],
+  ['day goal one hundred six','total',1.06,'day'],
+  ['week goal one hundred seven percent','total',1.07,'week'],
+  ['money goal one hundred eight','total',1.08,'pay-period'],
+  ['month goal one hundred nine percent','total',1.09,'month'],
+  ['year goal one hundred ten','total',1.1,'year']]) {
+  const u=window.SpeechMenu.testBegin();
+  assert(window.SpeechMenu.testAvailable().some(element=>element.getAttribute('speech-function')==='WMOFActions.changeGoal'),'goal setter is available: '+window.document.querySelector('#goalPercentValue').outerHTML);
+  const router=new window.VoskGrammarRouter({...await window.SpeechMenu.testVoskContext(u.id),
+   valuePhrases:window.VoskGrammarRouter.valuePhrases(),
+   nextRecords:async text=>(await window.SpeechMenu.testVoskContext(u.id,text)).records});
+  await router.update(phrase.split(' ').slice(0,2).join(' '));
+  const routed=await router.update(phrase);
+  assert.equal(routed.transcript,phrase,phrase+' retains its leading percentage');
+  window.SpeechMenu.testResult(u,routed.transcript,true);await settle();await u.digestQueue;await u.segmentBarrier;await settle();
+  assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' commits through the raw recognition path');
+  assert.equal(timer.getSummarySnapshot()[scope].percentGoal,expected,phrase+' sets the requested goal: '+JSON.stringify({attribute:timer.getAttribute(scope+'-goal'),steps:u.digestSteps?.map(step=>({action:step.commandElement?.getAttribute('speech-function'),transcript:step.transcript})),scope:timer.percentMode}));
+  assert.equal(window.WMOFInteractionState.state.tripLogRange,range);
+  assert.equal(window.WMOFCoordinator.lockCount,0,phrase+' releases its locks');
+ }
+ const goalCommands=window.SpeechMenu.testAvailable().map(element=>element.getAttribute('speech-pattern'));
+ assert(!goalCommands.some(pattern=>new RegExp(pattern,'i').test('total goal')),'Total goal is removed from actionable vocabulary');
+ const continuation=window.SpeechMenu.testBegin(),priorTripGoal=timer.getAttribute('trip-goal');
+ for(const partial of ['trip goal','trip goal one hundred']) {
+  await window.SpeechMenu.testTranscript(continuation,partial,false);await continuation.digestQueue;await settle();
+  assert.equal(timer.getAttribute('trip-goal'),priorTripGoal,'goal setting waits for the completed percentage');
+  assert(!continuation.hadCommittedCommand,'bare readback waits for possible extension');
+ }
+ await window.SpeechMenu.testTranscript(continuation,'trip goal one hundred fifteen percent',true);await continuation.digestQueue;await settle();
+ assert.equal(timer.getSummarySnapshot().trip.percentGoal,1.15);
+ for(const phrase of ['trip goal','day goal','week goal','money goal','month goal','year goal']) {
+  const before=[timer.getAttribute('trip-goal'),timer.getAttribute('total-goal')];
+  const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await settle();
+  assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' reads back');
+  assert.deepEqual([timer.getAttribute('trip-goal'),timer.getAttribute('total-goal')],before,'readback does not set a percentage');
+ }
+ await window.WMOFActions.changeGoalMode('auto');await settle();
+ const auto=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(auto,'week goal one hundred five percent',true);await auto.digestQueue;await settle();
+ assert(auto.hadCommittedCommand&&!auto.digestExecutionFailed);
+ assert.equal(timer.percentMode,'auto','scope-specific goal preserves Auto');
+ assert.equal(window.WMOFInteractionState.state.tripLogRange,'week');
+ assert.equal(timer.getSummarySnapshot().total.percentGoal,1.05);
  await window.WMOFActions.openTripLog('button');await settle();
  for(const [phrase,range] of [['week','week'],['month','month'],['money','pay-period'],['year','year'],['day','day']])await say(phrase,range);
  const select=window.document.querySelector('#tripLogRangeSelect');
@@ -487,7 +577,9 @@ if(process.argv.includes('--startup-speech')) {
  window.document.dispatchEvent(new window.Event('pointerdown'));
  assert.deepEqual(startupAudioCalls,['speak','unlock'],'startup speaks while loading; first interaction unlocks audio exactly once');
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();
- await window.WMOFActions.switchToVoiceLogin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+ if(process.argv.includes('--startup-no-focus'))dialog.dispatchEvent(new window.CustomEvent('opened',{detail:{reason:'initial-login'}}));
+ if(!process.argv.includes('--startup-no-focus'))await window.WMOFActions.switchToVoiceLogin();
+ window.SpeechMenu.testModelReady(true);await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
  assert.equal(spoken.filter(t=>t==='Please login via voice').length,0,'ready model must not overtake startup announcement');
  assert(window.WMOFInteractionState.state,'UI initialized while startup audio is pending');
  finishStartup();await settle();assert.equal(spoken.filter(t=>t==='Please login via voice').length,1,'release latest prompt after startup speech completes');

@@ -28,15 +28,15 @@
     },
     "74c28b6f-1b4e-542d-888a-fa1a8c861e34": {
       "id": "74c28b6f-1b4e-542d-888a-fa1a8c861e34",
-      "pattern": "^trip goal$"
+      "pattern": "^trip goal(?: (?<percent>.+?)(?: percent)?)?$"
     },
     "96c8476f-2dc6-5eca-9d83-824d69cb8bd8": {
       "id": "96c8476f-2dc6-5eca-9d83-824d69cb8bd8",
-      "pattern": "^total goal$"
+      "pattern": "^(?<goalScope>day|week|money|month|year) goal(?: (?<percent>.+?)(?: percent)?)?$"
     },
     "17bb8ab5-2caa-5ec3-915d-5c6978e62143": {
       "id": "17bb8ab5-2caa-5ec3-915d-5c6978e62143",
-      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|money|month|year)$"
+      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|week|money|month|year)$"
     },
     "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8": {
       "id": "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8",
@@ -237,17 +237,19 @@
     },
     "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f": {
       "id": "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f",
-      "pattern": "^trip goal$",
-      "command": "tripGoal"
+      "pattern": "^trip goal(?: (?<percent>.+?)(?: percent)?)?$",
+      "command": "tripGoal",
+      "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
     "32cacf3a-7da9-59a1-8944-857bce67d349": {
       "id": "32cacf3a-7da9-59a1-8944-857bce67d349",
-      "pattern": "^total goal$",
-      "command": "totalGoal"
+      "pattern": "^(?<goalScope>day|week|money|month|year) goal(?: (?<percent>.+?)(?: percent)?)?$",
+      "command": "scopeGoal",
+      "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
     "a195f1e5-4693-5f11-80e8-ad6bcff662fd": {
       "id": "a195f1e5-4693-5f11-80e8-ad6bcff662fd",
-      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|money|month|year)$",
+      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|week|money|month|year)$",
       "command": "changeGoal",
       "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
@@ -630,7 +632,7 @@
         "down": "a80f3b5d-027e-5d10-a44a-abefefddcece",
         "resume": "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39",
         "tripGoal": "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f",
-        "totalGoal": "32cacf3a-7da9-59a1-8944-857bce67d349",
+        "scopeGoal": "32cacf3a-7da9-59a1-8944-857bce67d349",
         "changeGoal": "a195f1e5-4693-5f11-80e8-ad6bcff662fd",
         "readGoalMode": "e97c639b-bda8-57f4-91d8-3da60b1e0bf8",
         "goalMode": "79d635a9-c4f4-5646-be1c-3d4b9596d241",

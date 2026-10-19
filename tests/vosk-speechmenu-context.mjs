@@ -137,6 +137,25 @@ try {
             'SpeechMenu validates and executes the routed command chain');
     }
     speech.testReset();
+    TestChain.goal=(percent,goalScope)=>{calls.push(['goal',percent,goalScope]);return true;};
+    const goal=make(document.body,'goal','^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|total|week|money|month|year)$','goal',{
+        'speech-modal':'top-level','speech-preproc':'TestValues.normalize',
+        'speech-preproc-context':'percent','speech-preproc-field':'percent'});
+    const u=fresh();
+    assert.equal(speech.testScope('one hundred ten percent trip'),'one hundred ten percent trip',
+        'root pruning preserves a declared value-first command');
+    assert.equal(speech.testScope('background chatter one hundred ten percent trip'),'one hundred ten percent trip',
+        'leading junk is still removed before a value-first command');
+    const goalRouter=new globalThis.VoskGrammarRouter({...await speech.testVoskContext(u.id),
+        valuePhrases:globalThis.VoskGrammarRouter.valuePhrases(),
+        nextRecords:async text=>(await speech.testVoskContext(u.id,text)).records});
+    assert(goalRouter.phrases.includes('percent trip'),'initial vocabulary includes the value-first command suffix');
+    await goalRouter.update('one hundred');
+    const routedGoal=await goalRouter.update('one hundred ten percent trip');
+    assert.equal(routedGoal.transcript,'one hundred ten percent trip');
+    await hear(u,routedGoal.transcript,true);await u.digestQueue;
+    assert.deepEqual(calls,[['goal','110','trip']]);
+    goal.remove();speech.testReset();
 
-    console.log('PASS Vosk SpeechMenu availability, projection, planner execution and teen values');
+    console.log('PASS Vosk SpeechMenu availability, projection, planner execution, teen values and value-first goals');
 } finally {speech.testReset();await window.happyDOM.close();}

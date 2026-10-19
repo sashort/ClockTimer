@@ -471,3 +471,57 @@ available, but the current browser wrapper exposes text-only partials, so live
 switches require exposing partial-word timing or a documented provisional path
 that cannot commit replayed text twice. Avoid promising timestamps alone cure
 acoustic recognition errors or two independently captured microphone streams.
+
+## Goal commands, dependent feedback and login startup
+
+English goal commands now use a readback head with an optional percentage:
+`trip goal [<percent> [percent]]`, and
+`day|week|money|month|year goal [<percent> [percent]]`.
+Bare heads read back; extensions set. The spoken `total goal` command is removed.
+The percentage-first form remains available for named scopes and Trip. Internal
+`total` model fields still represent the selected aggregate; this does not add
+separate persisted goal percentages for every range.
+
+A scoped command selects its aggregate range before applying the percentage and
+waits for that range's totals. Auto stays Auto; Sync stays enabled if already on.
+Existing ClockTimer algorithms own recalculation. These changes do not introduce
+a second goal calculator. A partial `trip goal` must wait for a continuation or
+the normal silence/final boundary before readback. Partial numeric extensions
+must not set an intermediate goal.
+
+Value-first commands require support at all three layers: transcript pruning
+preserves declared typed starts; Vosk offers the following literal suffix and
+routes the typed prefix; the planner treats a fully valid typed value plus an
+explicit suffix as anchored. Otherwise a trailing `trip`/`week` mode command can
+steal the value. Atomic ID/PIN confirmation grammars retain their stricter routing.
+
+`GoalChangeAnnouncement` (app-scoped in `app.js`) snapshots the prior scope and
+goals. Its `run` method suppresses intermediate Sync responses, then restores the
+Sync feedback baseline even on failure. Its `message` method compares settled
+values and produces one response, for example:
+`Week goal set to 105 percent. Auto goal recalculated. New trip goal 112 percent.`
+Outside Auto, a Sync-caused change uses `Sync value changed.` instead. A dependent
+Trip sentence is omitted when the displayed Trip goal did not change. Version 2
+should inject model snapshots and language formatting into this policy class and
+retain a single operation owner for asynchronous totals and feedback.
+
+`GoalFailureAnnouncementBatch` owns one trip's pending/playing failure period. It
+deduplicates goals, retains the latest fallback, and captures mode/scope. Speech
+is built at its actual playback boundary, allowing failures arriving in the
+queue or during the chime to consolidate as `Trip and total goal failed.` The
+period plays one failure chime. If another goal fails after speech has already
+started, announce only the newly failed goal without another chime; spoken audio
+cannot be retroactively combined. A replacement trip invalidates stale output.
+Summary/details enablement and existing fallback/overtime details remain in force.
+
+The initial voice-login prompt must follow dialog lifecycle, not successful
+focus of the first digit field. `opened` queues the empty-stage prompt even if
+mobile focus is elsewhere. Startup speech and model readiness gate its release;
+the model-start path also respects completion of microphone activation feedback.
+Explicit later digit-focus prompts retain their focus checks.
+
+Regression coverage: `tests/goal-feedback.mjs`,
+`tests/app-state-transactions.mjs --range-permissions`,
+`--goal-cascade --voice-feedback`, `--goal-failure-batch --voice-feedback`,
+`--startup-speech --startup-no-focus --voice-feedback`,
+`--voice-code-adapter`, and `tests/vosk-speechmenu-context.mjs`.

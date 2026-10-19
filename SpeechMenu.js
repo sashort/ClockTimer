@@ -3236,6 +3236,15 @@ class SpeechMenu {
             const phrases = SpeechMenu.#expandRegexSource(pattern);
             if (!phrases.length) continue;
             for (const phrase of phrases) {
+                const leadingCapture = /^<([A-Za-z][A-Za-z0-9_]*)>/.exec(String(phrase));
+                if (leadingCapture && globalThis.VoskGrammarRouter && globalThis.SpeechGrammarContext) {
+                    const grammar = SpeechGrammarContext.VALUE_CAPTURE_TYPES[leadingCapture[1]];
+                    SpeechMenu.#finiteSpeechValues ??= VoskGrammarRouter.valuePhrases();
+                    // Value-first commands have numeric/date/etc. starts too.
+                    // Preserve those starts without exempting arbitrary junk.
+                    for (const value of SpeechMenu.#finiteSpeechValues[grammar] || [])
+                        starts.add(value.split(" ")[0]);
+                }
                 const normalized = SpeechMenu.#normalizeTranscript(
                     String(phrase).replace(/<[^>]+>/g, " ")
                 );
@@ -7136,6 +7145,9 @@ class SpeechMenu {
                 .split(/\s+/).filter(Boolean);
             const parameter = prefix.findIndex(token => /^<[^>]+>$/.test(token));
             const literal = parameter < 0 ? prefix : prefix.slice(0, parameter);
+            if (parameter === 0 && prefix.slice(1).some(token => !/^<[^>]+>$/.test(token)) &&
+                SpeechMenu.#classifySpeechValue(element, transcript)?.status === "valid" &&
+                new RegExp(element.getAttribute("speech-pattern"), "i").test(transcript)) return true;
             return literal.length > 0 && words.length >= literal.length &&
                 literal.every((word, index) => words[index] === word);
         });

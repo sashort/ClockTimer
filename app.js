@@ -2813,6 +2813,7 @@
     const tripLogEndDate = $("#tripLogEndDate");
     const tripLogRangeError = $("#tripLogRangeError");
     let tripRangeRevision = 0;
+    let tripRangeRefreshCompletion = Promise.resolve();
     let selectedTripLogRange;
     const toggleSyncMenuButton = $("#toggleSyncMenuButton");
     const syncGoalsMenuIcon = toggleSyncMenuButton?.querySelector(".sync-goals-menu-icon");
@@ -3087,9 +3088,9 @@
         const names = voiceLoginText("digitNames").split(" ");
         return [...value].map(digit => names[Number(digit)]).join(" ");
     }
-    function announceEmptyLoginFocus() {
+    function announceEmptyLoginFocus({requireFocus = true} = {}) {
         const first = loginDialog.querySelector('[data-login-digit="'+voiceLoginStage+'"][data-digit-index="0"]');
-        if (loginInputMode !== "pin" || voiceLoginBusy || document.activeElement !== first ||
+        if (loginInputMode !== "pin" || voiceLoginBusy || (requireFocus && document.activeElement !== first) ||
             loginDigitSlots[voiceLoginStage].some(Boolean)) return;
         const text = voiceLoginStage === "id" ? voiceLoginText("idPrompt")
             : spokenLoginDigits($("#loginUsername").value) + ". " + voiceLoginText("pinPrompt");
@@ -3099,9 +3100,9 @@
     }
     function announceVoiceLogin(text) {
         if(!loginIsOpen())return;
-        if(startupAnnouncementPending){
+        if(startupAnnouncementPending || (loginInputMode === "pin" && !globalThis.SpeechMenu?.modelReady)){
             pendingLoginAnnouncement=text;
-            void startupAnnouncementFinished.then(announceLoginAfterModelReady);
+            if(startupAnnouncementPending)void startupAnnouncementFinished.then(announceLoginAfterModelReady);
             return;
         }
         pendingLoginAnnouncement=undefined;
@@ -3198,6 +3199,7 @@
     let syncOfflineTransitionSequence = 0;
     let syncAnnouncementState;
     let syncAnnouncementGoal;
+    let goalChangeFeedbackDepth = 0;
     let syncPreferenceChangeInProgress =
         false;
 
@@ -5551,8 +5553,8 @@
             clockTimer.uiState
         );
         refreshAutoGoalDialog();
-        if (getTripListState() === "open") void dispatchTripListRequest("range");
-        else void refreshGoalTotalsForRange(range).catch(error => {
+        tripRangeRefreshCompletion = (getTripListState() === "open"
+            ? dispatchTripListRequest("range") : refreshGoalTotalsForRange(range)).catch(error => {
             if (!error.clockTimerOffline) {
                 showTripRangeError(error.message);
                 window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {detail: {range, message: error.message}}));
@@ -7009,6 +7011,7 @@
             force = false
         } = {}
     ) {
+        if (goalChangeFeedbackDepth) {setSyncAnnouncementBaseline(); return false;}
         const goal =
             currentCalculatedSyncGoal();
 
@@ -7048,6 +7051,7 @@
                 false
         } = {}
     ) {
+        if (goalChangeFeedbackDepth) {setSyncAnnouncementBaseline(); return false;}
         const state =
             getSyncRuntimeState();
 
@@ -8597,7 +8601,7 @@
 
     loginDialog.addEventListener("opened", event => {
         loginDialogFullyOpen = true;
-        if(event.detail?.reason !== "login-method-switch")announceEmptyLoginFocus();
+        if(event.detail?.reason !== "login-method-switch")announceEmptyLoginFocus({requireFocus: false});
         syncLoginRecognition();
 
         if (
@@ -21894,10 +21898,7 @@
                 ? detail.goals
                 : [];
 
-        const percentMode =
-            normalizePercentMode(
-                clockTimer.percentMode
-            );
+        const percentMode = normalizePercentMode(detail.percentMode ?? clockTimer.percentMode);
 
         const announcedGoals =
             percentMode === "trip"
@@ -21966,7 +21967,11 @@
                 );
             }
 
+            const both = announcedGoals.some(goal => goal?.type === "trip") &&
+                announcedGoals.some(goal => goal?.type === "total");
+            if (both) summarySentences.push(announcementText("announcements.goal-failed.combined"));
             for (const goal of announcedGoals) {
+                if (both && (goal?.type === "trip" || goal?.type === "total")) continue;
                 if (
                     goal?.type ===
                         "trip"
@@ -21980,7 +21985,7 @@
                         "total"
                 ) {
                     summarySentences.push(
-                        announcementText("announcements.goal-failed.total", { scope: totalScopeLabel() })
+                        announcementText("announcements.goal-failed.total", { scope: detail.totalScope || totalScopeLabel() })
                     );
                 }
             }
@@ -22074,40 +22079,70 @@
         return spoken;
     }
 
-    async function speakGoalFailure(
-        detail
-    ) {
-        const audio =
-            globalThis
-                .WMOFAudio;
-
-        const speech =
-            buildGoalFailureSpeech(
-                detail
-            );
-        const chime =
-            consumeAnnouncementAction(
-                "goal-failed",
-                "chime"
-            );
-
-        const output = audioAnnouncementOutput("goal-failed");
-
-        return runSemanticAnnouncement(
-            "goal-failed",
-            announcementComponents(audio, "goal-failed", chime.perform, speech, output)
-        );
+    class GoalFailureAnnouncementBatch {
+        constructor(tripId, percentMode, totalScope) {
+            Object.assign(this, {tripId, percentMode, totalScope});
+            this.pending = new Map(); this.seen = new Set(); this.latest = {}; this.takes = 0;
+        }
+        add(detail = {}) {
+            this.latest = {...this.latest, ...detail};
+            for (const goal of detail.goals || []) {
+                const key = goal.type;
+                if (!this.seen.has(key)) this.pending.set(key, {...goal});
+            }
+        }
+        take() {
+            this.takes++;
+            const goals = [...this.pending.values()];
+            for (const key of this.pending.keys()) this.seen.add(key);
+            this.pending.clear();
+            return {...this.latest, goals, percentMode: this.percentMode, totalScope: this.totalScope};
+        }
     }
 
-    function onGoalFail(event) {
-        reserveSemanticEvent(
-            event,
-            "One or more goals failed"
-        );
+    async function speakGoalFailure(batch, withChime = true) {
+        const audio = globalThis.WMOFAudio, output = audioAnnouncementOutput("goal-failed");
+        const chime = withChime && consumeAnnouncementAction("goal-failed", "chime").perform;
+        const valid = () => batch.tripId === clockTimer.currentTripId;
+        const components = announcementComponents(audio, "goal-failed", chime, [], output, valid);
+        if (components.length) {
+            const play = components[0].play;
+            components[0].play = function () {return valid() ? play.call(this) : false;};
+        }
+        let speech;
+        // Collect arrivals during the queue/chime; freeze only at speech start.
+        components.push({phase: "summary", delayMs: output.speechDelayMs, play: () => {
+            if (!valid()) return false;
+            speech = buildGoalFailureSpeech(batch.take());
+            return speakSemanticAndWait(audio, speech[0], output, valid);
+        }});
+        components.push({phase: "details", delayMs: output.speechDelayMs,
+            play: () => speakSemanticAndWait(audio, speech?.[1], output, valid)});
+        return runSemanticAnnouncement("goal-failed", components, {id: nextSemanticAnnouncementId++});
+    }
 
-        void speakGoalFailure(
-            event.detail
-        );
+    let activeGoalFailureBatch;
+    function onGoalFail(event) {
+        reserveSemanticEvent(event, "One or more goals failed");
+        if (activeGoalFailureBatch && activeGoalFailureBatch.tripId === clockTimer.currentTripId) {
+            activeGoalFailureBatch.add(event.detail);
+            return;
+        }
+        const batch = new GoalFailureAnnouncementBatch(clockTimer.currentTripId,
+            normalizePercentMode(clockTimer.percentMode), totalScopeLabel());
+        activeGoalFailureBatch = batch; batch.add(event.detail);
+        void (async () => {
+            let first = true;
+            try {
+                do {
+                    const before = batch.takes;
+                    await speakGoalFailure(batch, first); first = false;
+                    if (batch.takes === before) break; // Canceled output must not spin on unconsumed goals.
+                } while (batch.pending.size && batch.tripId === clockTimer.currentTripId);
+            } finally {
+                if (activeGoalFailureBatch === batch) activeGoalFailureBatch = undefined;
+            }
+        })().catch(console.error);
     }
 
     function onPercentModeChanged(event) {
@@ -23176,101 +23211,61 @@
                 : undefined;
         };
 
-    const setGoalPercentValue =
-        async (
-            scope,
-            percent
-        ) => {
-            const normalizedScope =
-                String(
-                    scope ||
-                    ""
-                )
-                    .trim()
-                    .toLowerCase();
-
-            const value =
-                EnglishSpeechValuePreprocessor
-                    .parse(
-                        percent,
-                        "percent"
-                    );
-
-            if (
-                ![
-                    "trip",
-                    "total"
-                ].includes(
-                    normalizedScope
-                ) ||
-                !Number.isFinite(
-                    value
-                ) ||
-                value <= 0
-            ) {
-                return false;
+    // One requested change can recalculate Auto/Sync. Compare the final state
+    // with the state before scope selection and emit one ordered response.
+    class GoalChangeAnnouncement {
+        constructor() {
+            this.mode = normalizePercentMode(clockTimer.percentMode);
+            this.tripGoal = goalPercentForScope("trip");
+            this.goals = {trip: this.tripGoal, total: goalPercentForScope("total")};
+            this.range = getTripLogRange();
+        }
+        async run(action) {
+            goalChangeFeedbackDepth++;
+            try {return await action();}
+            finally {
+                goalChangeFeedbackDepth--;
+                if (!goalChangeFeedbackDepth) setSyncAnnouncementBaseline();
             }
-
-            if (
-                (
-                    endTimeGoalOverride
-                        ?.scopes ||
-                    []
-                ).includes(
-                    normalizedScope
-                )
-            ) {
-                flashEndTimeGoalLock();
-
-                return false;
+        }
+        message(scope, after) {
+            const sentences = [];
+            if (after !== this.goals[scope] || (scope === "total" && this.range !== getTripLogRange()))
+                sentences.push(announcementText("messages.settings.goalChanged", {
+                    scope: scope === "total" ? totalScopeLabel() : "Trip", percent: after.replace(/%$/, "")
+                }));
+            const tripGoal = goalPercentForScope("trip");
+            if (scope !== "trip" && tripGoal && tripGoal !== this.tripGoal && clockTimer.calculatedTripGoal > 0) {
+                const cause = this.mode === "auto" ? "autoGoalRecalculated"
+                    : clockTimer.calculatedGoalSource === "sync" ? "syncValueChanged" : undefined;
+                if (cause) sentences.push(announcementText("messages.settings." + cause));
+                sentences.push(announcementText("messages.settings.newTripGoal", {percent: tripGoal.replace(/%$/, "")}));
             }
+            return sentences.join(" ");
+        }
+    }
 
-            const before =
-                goalPercentForScope(
-                    normalizedScope
-                );
-
-            const state =
-                clockTimer.configure({
-                    [
-                        normalizedScope ===
-                            "total"
-                            ? "total_goal"
-                            : "trip_goal"
-                    ]:
-                        `${value}%`
-                });
-
-            renderClockTimerUIState(
-                state
-            );
+    const setGoalPercentValue = async (scope, percent, feedback = new GoalChangeAnnouncement()) => {
+        const normalizedScope = String(scope || "").trim().toLowerCase();
+        const value = EnglishSpeechValuePreprocessor.parse(percent, "percent");
+        if (!["trip", "total"].includes(normalizedScope) || !Number.isFinite(value) || value <= 0) return false;
+        if ((endTimeGoalOverride?.scopes || []).includes(normalizedScope)) {
+            flashEndTimeGoalLock();
+            return false;
+        }
+        return feedback.run(async () => {
+            const state = clockTimer.configure({
+                [normalizedScope === "total" ? "total_goal" : "trip_goal"]: `${value}%`
+            });
+            renderClockTimerUIState(state);
             refreshAutoGoalDialog();
             queueSummaryRefresh();
-
-            const after =
-                goalPercentForScope(
-                    normalizedScope
-                );
-
-            if (
-                !after ||
-                before ===
-                    after
-            ) {
-                return true;
-            }
-
-            const label =
-                normalizedScope ===
-                    "total"
-                    ? totalScopeLabel()
-                    : "Trip";
-
-            return confirmInformationalChange(
-                "goal-change",
-                announcementText("messages.settings.goalSet", { scope: label, percent: after })
-            );
-        };
+            await Promise.resolve();
+            const after = goalPercentForScope(normalizedScope);
+            const message = after && feedback.message(normalizedScope, after);
+            return message ? confirmInformationalChange("goal-change", message) : true;
+        });
+    };
 
     let microphoneFeedbackEnabled = Boolean(globalThis.SpeechMenu?.started && !globalThis.SpeechMenu?.muted);
     let microphoneFeedbackCompletion=Promise.resolve();
@@ -23611,7 +23606,8 @@
                 implementation: function() {
                     updateMicrophoneReminder(false);
                     announceMicrophoneState(true);
-                    queueMicrotask(()=>{syncLoginRecognition();announceLoginAfterModelReady();});
+                    queueMicrotask(syncLoginRecognition);
+                    void microphoneFeedbackCompletion.then(announceLoginAfterModelReady);
                     setSpeechButtonState(
                         true,
                         false
@@ -24314,13 +24310,34 @@
                 return true;
             },
 
-            readTripGoal() {
+            readTripGoal(percent) {
+                if (percent !== undefined && String(percent).trim() !== "")
+                    return setGoalPercentValue("trip", percent);
                 return dictateSpeechMetric(
                     announcementText("messages.readback.tripGoal"),
                     goalPercentForScope(
                         "trip"
                     )
                 );
+            },
+
+            async readScopeGoal(goalScope, percent) {
+                const range = globalThis.WMOFLanguagePack.language.speech.ranges?.[goalScope];
+                if (!range) return false;
+                const feedback = new GoalChangeAnnouncement();
+                return feedback.run(async () => {
+                    if (getTripLogRange() !== range) {
+                        setTripLogRange(range, {announce: false});
+                        await tripRangeRefreshCompletion;
+                    }
+                    applyScope(feedback.mode === "auto" ? "auto" : "total");
+                    if (percent !== undefined && String(percent).trim() !== "")
+                        return setGoalPercentValue("total", percent, feedback);
+                    return dictateSpeechMetric(
+                        announcementText("messages.goal.label", {scope: totalScopeLabel()}),
+                        goalPercentForScope("total")
+                    );
+                });
             },
 
             readTotalGoal() {
@@ -24350,7 +24367,7 @@
                 );
             },
 
-            changeGoal(
+            async changeGoal(
                 percent,
                 goalScope
             ) {
@@ -24368,9 +24385,7 @@
                     normalizedScope ===
                         "trip"
                 ) {
-                    applyScope(
-                        "trip"
-                    );
+                    if (normalizePercentMode(clockTimer.percentMode) !== "auto") applyScope("trip");
 
                     return setGoalPercentValue(
                         "trip",
@@ -24392,26 +24407,8 @@
                     );
                 }
 
-                const range =
-                    rangeByScope[
-                        normalizedScope
-                    ];
-
-                if (!range) {
-                    return false;
-                }
-
-                setTripLogRange(
-                    range
-                );
-                applyScope(
-                    "total"
-                );
-
-                return setGoalPercentValue(
-                    "total",
-                    percent
-                );
+                if (!rangeByScope[normalizedScope]) return false;
+                return globalThis.WMOFActions.readScopeGoal(normalizedScope, percent);
             },
 
             readGoalMode() {
@@ -27318,7 +27315,7 @@
 
             const speechOptionGroups = {
                 tripGoal: "goals",
-                totalGoal: "goals",
+                scopeGoal: "goals",
                 changeGoal: "goals",
                 readGoalMode: "mode",
                 goalMode: "mode",
@@ -27367,7 +27364,7 @@
                 endLunch: "trip-actions",
                 resume: "trip-actions",
                 tripGoal: "goals",
-                totalGoal: "goals",
+                scopeGoal: "goals",
                 changeGoal: "goals",
                 readGoalMode: "informational",
                 goalMode: "settings",
@@ -27469,7 +27466,7 @@
                 "changeStandardTime", "closeActiveSurface", "confirmNumberPad", "confirmBreakPromptNo",
                 "confirmBreakPromptYes", "confirmBreakType", "confirmCancelDownTime", "continueStartAt",
                 "deferTrip", "lockEndTime", "openTripLog", "prepareReadyAction", "prepareStartMenu",
-                "readTotalGoal", "readTripGoal", "readTripSummary", "resumeTrip", "saveDownDetails", "saveTripSettings",
+                "readTotalGoal", "readScopeGoal", "readTripGoal", "readTripSummary", "resumeTrip", "saveDownDetails", "saveTripSettings",
                 "scheduleStartAt", "startDownTime", "startScheduledTripEarly", "toggleSync"
             ].includes(String(actionName));
             // Voice entry uses one action for values and controls; only its
@@ -27583,7 +27580,7 @@
             for (const [key, fn] of [
                 ["readyAt","scheduleStartAt"], ["readyAtContinuation","continueStartAt"], ["ready","prepareReadyAction"], ["startBreak","openBreakStartMenu"], ["down","startDownTime"],
                 ["endBreak","openBreakEndMenu"], ["resume","resumeTrip"],
-                ["tripGoal","readTripGoal"], ["totalGoal","readTotalGoal"],
+                ["tripGoal","readTripGoal"], ["scopeGoal","readScopeGoal"],
                 ["changeGoal","changeGoal"],
                 ["readGoalMode","readGoalMode"], ["goalMode","changeGoalMode"],
                 ["readRenderedTime","readRenderedTime"],
@@ -27592,7 +27589,7 @@
             ]) {
                 const typedValues = {
                     readyAt:["clock","spokenTime"], readyAtContinuation:["clock","spokenTime"],
-                    changeGoal:["percent","percent"],
+                    changeGoal:["percent","percent"], tripGoal:["percent","percent"], scopeGoal:["percent","percent"],
                     lockEndTime:["clock","spokenTime"]
                 };
                 installSpeechCommand(key, fn, document.body, true, ...(typedValues[key] || []));
