@@ -6027,7 +6027,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
             case "speechRecognitionStatusChanged":
                 // Decoder routing is diagnostic information. Keep the live
                 // transcript visible while its constrained grammar changes.
-                if (detail?.status === "grammar-switch") break;
+                if (["grammar-switch", "grammar-omissions"].includes(detail?.status)) break;
                 if (
                     this.#showLoadingProgress(
                         detail?.status

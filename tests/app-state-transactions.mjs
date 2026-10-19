@@ -202,7 +202,7 @@ if(process.argv.includes('--sleep-wake-only')) {
  const cachedGrammar=await window.SpeechMenu.testVoskContext(cached.id);
  assert(cachedGrammar.records.length&&cachedGrammar.records.every(r=>r.action==='SpeechMenu.wake'),'cached awake grammar is restricted after sleep');
  const writes=requests.filter(r=>r.options.method==='POST').length;
- for(const text of ['commands','ready','trip summary','time','log','speech off','cancel']) {
+ for(const text of ['microphone','commands','ready','trip summary','time','log','speech off','cancel']) {
   const u=window.SpeechMenu.testCapture();await settle();
   const grammar=await window.SpeechMenu.testVoskContext(u.id);assert(grammar.records.length&&grammar.records.every(r=>r.action==='SpeechMenu.wake'),'sleep grammar only allows Wake');
   await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await settle();

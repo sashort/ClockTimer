@@ -429,3 +429,35 @@ Keep debugging on the existing branch. After Debug is stable, create the
 focus, collector, validity, operation and audio dimensions that replacement must
 expose, including current observability gaps. It does not replace runtime logic
 or equate the existing 39 transition tests with a complete state enumeration.
+
+
+## Open investigation: unexpected wake and replay duplication
+
+Live report: saying “microphone” while sleeping wakes recognition. The deployed
+English `system:wake` pattern is `^wake$`, and no built-in microphone alias was
+found. Vocabulary/decoder-phrase and sleeping-runtime regression checks now
+explicitly reject the literal transcript “microphone”; these pass locally.
+This does not prove the acoustic decoder cannot misrecognize it as “wake”.
+`SpeechEditorRuntime.js` also loads `api/speech-editor-config/`, whose saved
+entries can replace an existing command's pattern. No local
+`database/speech-editor.json` exists; the live overlay GET requires authentication
+(401 without a session), so a saved alias has not yet been ruled out.
+Do not claim an alias was found or removed. The Mic Bar's diagnostic status
+`grammar-omissions` was masking useful text; locally it now stays out of the
+transcript display like `grammar-switch`. This display correction does not
+resolve the unexpected acoustic wake or implement timestamp splicing.
+
+A separate continuing report concerns overlapping decoder results. Current
+`VoskRecognizer.#mergeSeed` performs lexical suffix/prefix merging. The adapter
+enables word timing with `setWords(true)` but does not use timing records when
+merging. Proposed next design (not implemented): an AudioTranscriptTimeline
+class with an utterance-relative PCM sample clock; each replacement decoder
+records the exact global sample offset of replay's first sample. Convert local
+word times onto that clock, reconcile words describing the same audio interval,
+preserve identical words at separate intervals, and fence stale generations.
+Boundary words need timing tolerance and an explicit ownership rule. Sample
+positions are exact; ASR word boundaries remain estimates. Final word timing is
+available, but the current browser wrapper exposes text-only partials, so live
+switches require exposing partial-word timing or a documented provisional path
+that cannot commit replayed text twice. Avoid promising timestamps alone cure
+acoustic recognition errors or two independently captured microphone streams.
