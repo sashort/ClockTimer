@@ -95,6 +95,7 @@ decoders.at(-1).emit('ready at');
 await flush();
 assert.equal(decoders.length, 2);
 assert.equal(decoders[0].removed, true);
+assert.ok(!decoders[1].phrases.includes('microphone'), 'dummy does not expand the time collector');
 assert.deepEqual(decoders[1].audio[0].pcm, Array.from({length: 16}, (_, i) => (i + 16) / 100).map(Math.fround), 'only bounded rolling PCM tail is replayed');
 decoders[0].emit('stale old result');
 await flush();
@@ -111,7 +112,7 @@ assert.ok(transcripts.every(event => event.utteranceId === 42));
 assert.ok(switches.every(event => event.utteranceId === 42));
 assert.equal(errors.length, 0);
 await recognizer.beginUtterance(43);
-assert.deepEqual(decoders.at(-1).phrases, ['ready', 'ready at']);
+assert.deepEqual(decoders.at(-1).phrases, ['microphone', 'ready', 'ready at']);
 assert.equal(decoders.at(-1).audio.length, 0, 'overlap never leaks between utterances');
 await recognizer.abortUtterance(43);
 await recognizer.beginUtterance(44);
@@ -139,6 +140,19 @@ await recognizer.finishUtterance(45);
 assert.equal(transcripts.filter(event => event.utteranceId === 45 && event.isFinal).length, 1,
     'pending audio endpoints cannot prematurely finalize the utterance');
 recognizer.close();
+
+// Sleeping vocabulary can recognize the dummy without translating it to Wake.
+const sleeping = new Recognizer({model:{KaldiRecognizer:Decoder},
+    contextProvider:async()=>({records:[{pattern:'^wake$',action:'SpeechMenu.wake'}]})});
+const sleepingText=[];
+sleeping.addEventListener('transcript',event=>sleepingText.push(event.detail.transcript));
+await sleeping.beginUtterance(46);
+assert.deepEqual(decoders.at(-1).phrases,['microphone','wake']);
+decoders.at(-1).emit('microphone');await flush();
+assert.equal(sleepingText.at(-1),'microphone','dummy stays literal for the command layer to discard');
+decoders.at(-1).emit('wake');await flush();
+assert.equal(sleepingText.at(-1),'wake','Wake remains available');
+sleeping.close();
 
 // Replayed prefixes can end midway through carried speech. Endpoint storage
 // must remain decoder-local, while genuinely repeated groups stay intact.

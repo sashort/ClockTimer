@@ -126,8 +126,14 @@
         }
 
         #replace(replay) {
-            const phrases = this.#router.phrases;
-            if (!phrases.length) throw new Error("No supported active Vosk command grammar.");
+            const routedPhrases = this.#router.phrases;
+            if (!routedPhrases.length) throw new Error("No supported active Vosk command grammar.");
+            // Recognition-only dummy: give spoken "microphone" its own acoustic
+            // target, including in the sleeping wake grammar. It has no action
+            // or routing record, and never expands a numeric/value collector.
+            const phrases = this.#router.grammar === "commands"
+                ? [...new Set([...routedPhrases, "microphone"])].sort()
+                : routedPhrases;
             if (this.#router.unsupported.length > this.#reportedOmissions) {
                 this.dispatchEvent(new CustomEvent("status", {detail: {
                     status: "grammar-omissions", utteranceId: this.#id,
@@ -139,7 +145,7 @@
             // Preserve any next-stage words already recognized by the old
             // decoder. They may lie before the short replay window.
             this.#seed = replay ? this.#router.text : "";
-            this.#signature = JSON.stringify([this.#router.prefix, phrases]);
+            this.#signature = JSON.stringify([this.#router.prefix, routedPhrases]);
             const generation = this.#generation;
             const decoder = this.#decoder = new this.#model.KaldiRecognizer(this.sampleRate, JSON.stringify(phrases));
             this.#segment = "";

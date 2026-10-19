@@ -440,12 +440,22 @@ explicitly reject the literal transcript “microphone”; these pass locally.
 This does not prove the acoustic decoder cannot misrecognize it as “wake”.
 `SpeechEditorRuntime.js` also loads `api/speech-editor-config/`, whose saved
 entries can replace an existing command's pattern. No local
-`database/speech-editor.json` exists; the live overlay GET requires authentication
-(401 without a session), so a saved alias has not yet been ruled out.
+`database/speech-editor.json` exists. An authorized live GET using the
+`access_token` query parameter returned zero saved entries and no matching macros,
+ruling out a saved server-side microphone alias at the time of inspection.
 Do not claim an alias was found or removed. The Mic Bar's diagnostic status
 `grammar-omissions` was masking useful text; locally it now stays out of the
 transcript display like `grammar-switch`. This display correction does not
 resolve the unexpected acoustic wake or implement timestamp splicing.
+
+At the user's request, the Vosk adapter now adds `microphone` as a recognition-only
+dummy in command grammars, including the sleeping Wake grammar. It has no
+SpeechMenu action or routing record, does not wake/sleep/toggle the mic, and is
+absent from the Commands list. Root command parsing discards it as unmatched
+speech. Time/duration/digit collector grammars are unchanged. Keep decoder
+vocabulary separate from actionable commands in Version 2. Adapter tests prove
+the word is offered to the decoder and remains literal; they do not prove an
+acoustic false-wake has been cured. Live verification is still required.
 
 A separate continuing report concerns overlapping decoder results. Current
 `VoskRecognizer.#mergeSeed` performs lexical suffix/prefix merging. The adapter
