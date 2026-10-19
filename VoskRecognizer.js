@@ -131,7 +131,7 @@
             // Recognition-only dummy: give spoken "microphone" its own acoustic
             // target, including in the sleeping wake grammar. It has no action
             // or routing record, and never expands a numeric/value collector.
-            const phrases = this.#router.grammar === "commands"
+            const phrases = this.#router.grammar === "commands" && !this.#router.confirmationLocked
                 ? [...new Set([...routedPhrases, "microphone"])].sort()
                 : routedPhrases;
             if (this.#router.unsupported.length > this.#reportedOmissions) {
