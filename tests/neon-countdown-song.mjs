@@ -32,7 +32,7 @@ assert(!('neon-pad' in score.instruments)&&!score.song.events.some(e=>e.instrume
 assert.equal(score.partTwo.startSeconds,120);assert.equal(score.partTwo.bpm,64);assert.equal(score.partTwo.bars,40);
 assert.equal(score.partTwo.key,'C# minor');assert.deepEqual(score.partTwo.windTransition,[116,123.525]);
 assert.deepEqual(score.partTwo.tubularBells.strikeSeconds,score.song.events.filter(e=>e.instrument==='midnight-tubular-bells').map(e=>Number(e.offset)/2));
-assert.deepEqual(score.partTwo.tempoChange,{atSeconds:275,fromBpm:64,toBpm:120,mode:'immediate',sustainedHandoff:true});
+assert.deepEqual(score.partTwo.tempoChange,{atSeconds:275,fromBpm:64,toBpm:114,mode:'immediate',sustainedHandoff:true});
 assert(!score.partTwo.tempoRamp);assert.equal(score.partThree.startSeconds,275);
 assert.equal(score.partTwo.ending.flowsIntoPartThree,true);assert.equal(score.partTwo.ending.closingWind,false);
 const dark=score.song.events.filter(e=>Number(e.offset)>=240&&Number(e.offset)<score.partThree.startSeconds*2);
@@ -61,7 +61,7 @@ assert.equal(wind.readInt16LE(46),0,'both wind channels begin from silence');
 assert.equal(wind.readUInt16LE(22),2);assert.equal(wind.length,44+7.525*48000*4);
 assert.equal(createHash('sha256').update(wind).digest('hex'),mix.windSource.sha256);
 
-assert.equal(score.revision,53);
+assert.equal(score.revision,58);
 assert.equal(song.renderedMix.revision,score.revision);
 assert.equal(mix.revision,score.revision);
 const bendVoice=score.instruments['neon-guitar-lead'];
@@ -131,13 +131,13 @@ assert(score.durationSeconds>=score.partTwo.tubularBells.naturalEndSeconds+2.8,'
 assert(mix.partOneGain>mix.gain,'Part I retains its own headroom instead of being reduced by the louder organ');
 assert.deepEqual(mix.sectionGains.map(s=>[s.startSeconds,s.endSeconds]),[[0,score.partTwo.startSeconds],[score.partTwo.startSeconds,score.partThree.startSeconds],[score.partThree.startSeconds,score.durationSeconds]],'the new finale cannot pull down earlier parts');
 const third=score.song.events.filter(e=>Number(e.offset)>=score.partThree.startSeconds*2);
-assert.equal(score.partThree.bpm,120);assert.equal(score.partThree.key,'D minor');
-assert.equal(score.partThree.durationSeconds,106);
+assert.equal(score.partThree.bpm,114);assert.equal(score.partThree.key,'D minor');
+assert.equal(score.partThree.durationSeconds,112);
 for(const instrument of ['finale-pulse','finale-violins','finale-cellos','finale-horns','finale-flute','finale-bells','finale-horror-strings','finale-last-organ'])
  assert(third.some(e=>e.instrument===instrument),'combined finale includes '+instrument);
 assert(score.instruments['finale-bells'].samples.every(s=>s.naturalDecay),'fast bell notes keep their full decays');
 assert(score.durationSeconds>=score.partThree.bells.naturalEndSeconds,'all finale bell decays and reverb fit before the end');
-assert.deepEqual(score.partThree.ending,{startSeconds:score.partThree.startSeconds+96,holdSeconds:2,releaseSeconds:3,dramaticFinalHit:true,organOnlySustained:false,ensembleHoldSeconds:1.5});
+assert.deepEqual(score.partThree.ending,{startSeconds:score.partThree.startSeconds+96*120/114,holdSeconds:2*120/114,releaseSeconds:3,dramaticFinalHit:true,organOnlySustained:false,ensembleHoldSeconds:1.5*120/114});
 assert.equal(score.partThree.horrorStrings.semitoneAccents,true);
 assert(third.filter(e=>e.instrument==='finale-horror-strings').some(e=>e.tone==='F6'),'high horror-string accents enter the finale');
 const picked=score.pickedElectricGuitar.instrument;
@@ -186,3 +186,19 @@ const firstAudition=score.song.events.filter(e=>Number(e.offset)/2>=7.975-1e-8&&
 const canonicalFirst=es=>es.map(e=>({...e,offset:+Number(e.offset).toFixed(9)})).map(e=>JSON.stringify(e,Object.keys(e).sort())).sort();
 assert.deepEqual(canonicalFirst(firstAudition),canonicalFirst(approvedFirst),'approved Part I audition preserved');
 assert(!score.song.events.some(e=>e.instrument.includes('tambourine')),'tambourine rejected');
+
+// The approved rendered solo overlays the base score without moving other music.
+const insert=read(score.render.postprocess.settings),solo=fs.readFileSync(new URL('../'+insert.preview,import.meta.url));
+assert.equal(createHash('sha256').update(solo).digest('hex'),insert.previewSha256);
+assert.equal(mix.approvedSolo.previewSha256,insert.previewSha256);
+assert.equal(createHash('sha256').update(wave.subarray(44,44+mix.approvedSolo.firstFrame*4)).digest('hex'),mix.approvedSolo.unchangedPrefixSha256);
+assert.equal(createHash('sha256').update(wave.subarray(44+mix.approvedSolo.lastFrame*4)).digest('hex'),mix.approvedSolo.unchangedSuffixSha256);
+for(let frame=mix.approvedSolo.firstFrame+24000;frame<mix.approvedSolo.lastFrame-24000;frame+=1237){
+ const local=frame/48000-insert.sourceStartSeconds,position=local*48000,left=Math.floor(position),fraction=position-left;
+ for(let c=0;c<2;c++){
+  const at=44+left*4+c*2,expected=Math.round((solo.readInt16LE(at)*(1-fraction)+solo.readInt16LE(at+4)*fraction)*mix.approvedSolo.gain);
+  assert.equal(wave.readInt16LE(44+frame*4+c*2),expected,'approved mix is present at the correct musical time and level');
+ }
+}
+assert(!catalog.songs['midnight-signal'],'aborted separate song is not shipped');
+console.log('PASS approved solo audio, placement, level, unchanged outside passage and aborted-song removal');

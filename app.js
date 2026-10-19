@@ -672,6 +672,21 @@
         PERMISSION_DEVELOPER;
 
     const app = $("#app");
+    // Explicit application capability; independent of Trip/Total/Auto and timer
+    // presentation modes. Missing or unknown modes never select a fallback.
+    class ApplicationMode {
+        constructor(name) {
+            if (!['debug', 'production', 'simulation'].includes(name)) throw new RangeError('An explicit app-mode of debug, production, or simulation is required.');
+            this.name = name;
+            Object.freeze(this);
+        }
+        get manualStandardTimeEntry() { return this.name === 'debug'; }
+        get serverTripAssignment() { return this.name === 'production'; }
+    }
+    const applicationMode = new ApplicationMode(app?.getAttribute('app-mode'));
+    if (applicationMode.name !== 'debug') throw new Error(applicationMode.name + ' app-mode is not implemented yet.');
+    globalThis.WMOFApplicationMode = applicationMode;
+
     const sharedModal = globalThis.SharedModalHost ? document.createElement("shared-modal-host") : undefined;
     if (sharedModal) document.body.append(sharedModal);
     const loginDialog = $("#loginDialog");
@@ -16972,6 +16987,7 @@
         const value = {
             profileEditor: userLookup?.state,
             clock: timerState,
+            appMode: applicationMode.name,
             pending: pendingOperations, locks: lockouts,
             speechRecognition,
             session: Object.freeze({userId: signedInProfile?.id || null, permissions: Number(signedInProfile?.permissions) || 0,
@@ -21215,7 +21231,7 @@
                 page = await response.json();
                 if (!response.ok) throw new Error(page.message || tripSummaryText("loadFailed"));
                 loaded.push(...(page.trips || []));
-                if(Object.hasOwn(page,"activeTrip"))assignedTrip=page.activeTrip;
+                if(applicationMode.serverTripAssignment && Object.hasOwn(page,"activeTrip"))assignedTrip=page.activeTrip;
             } while (page.trips?.length === 1000);
             trips = loaded;
         }

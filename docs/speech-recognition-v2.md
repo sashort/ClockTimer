@@ -369,3 +369,63 @@ Turning Sync off retains its neutral slash. Restoring usable totals clears
 the unavailable state and announces the calculable goal.
 The sync-availability app test covers zero history, unavailable data, recovery,
 impossible targets and offline state; it runs independently of command tests.
+
+
+## Sleeping microphone: voice policy versus pointer access
+
+Sleeping recognition accepts only the configured Wake command and its aliases.
+Use one runtime policy at candidate selection, projected-context planning,
+optimistic state-command attempts, cached decoder vocabulary and immediately
+before speech dispatch. Cached awake commands and primed contexts cannot
+override sleep. Recheck after asynchronous preprocessing/surface hooks so an
+attempt prepared while awake cannot execute after the user puts the mic to sleep.
+
+This restriction is for voice execution. The Commands list remains manually
+accessible by pointer/touch at any time, including while sleeping; opening it
+manually must not wake recognition or authorize spoken Commands. After Wake,
+normal spoken commands become available again. Tests: --sleep-wake-only checks
+cached/fresh grammar, rejected normal commands, unchanged server writes and voice
+wake; mic-modal-browser.cjs verifies a real touch opens the list during sleep,
+spoken Commands cannot open it, and spoken Wake restores voice access.
+
+
+## Application mode and between-trip entry
+
+Application mode is separate from recognition mode and Trip/Total/Auto. The
+current Order Filler template explicitly sets `app-mode="debug"`; missing or
+unknown values do not choose a default. `ApplicationMode` in `app.js` owns the
+immutable `manualStandardTimeEntry` and `serverTripAssignment` capabilities;
+`WMOFInteractionState.state.appMode` exposes the selected mode. Production and Simulation are
+reserved modes and cannot yet be activated by this entry point. Simulation
+behavior is unspecified and must not inherit assumed Debug/Production semantics.
+
+Debug summary OK opens manual standard-time entry: Voicepad for a spoken OK when
+available, Numberpad for a button press even when the microphone is listening.
+Cancel dismisses without starting entry. The summary is retained between trips;
+it does not use the transient notification timeout. Future assignment hints are
+ignored in Debug. An actual unfinished Debug trip can still be restored normally.
+Production will obtain the next trip and standard time from the server; it must
+not fall back to Debug entry when an assignment is missing. Those future paths
+are explicitly not implemented or claimed as passing mode-specific coverage.
+
+The combined-state contract in `docs/order-filler-state-contract.json` separates
+**transitional announcements** from **user-activated announcements**. A voice
+command that changes state still produces transitional feedback; an explicit Time
+or Trip Summary request produces user-activated feedback. Both retain ownership,
+completion, continuation and stale-cancellation rules.
+
+
+## State mapping and the future test branch
+
+The current [state inventory](application-state-inventory.html) enumerates shared
+behavioral regions, modal lifecycles and explicitly Debug-only manual trip-entry
+workflows. Its JSON source is `application-state-inventory.json`. App-mode is
+execution-policy metadata, not a duplicate set of running/overtime/input states.
+Server-assigned trips are excluded from this mapping; future mode transitions
+are not being designed here.
+
+Keep debugging on the existing branch. After Debug is stable, create the
+`test` branch for runtime enumeration/FSM changes. The map records the owner,
+focus, collector, validity, operation and audio dimensions that replacement must
+expose, including current observability gaps. It does not replace runtime logic
+or equate the existing 39 transition tests with a complete state enumeration.

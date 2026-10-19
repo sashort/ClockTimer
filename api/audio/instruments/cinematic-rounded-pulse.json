@@ -1,0 +1,72 @@
+{
+  "type": "oscillator",
+  "waveform": "triangle",
+  "volume": 1.05,
+  "detune": 0,
+  "velocitySensitivity": 0.78,
+  "envelope": {
+    "attack": 0.018,
+    "decay": 0.42,
+    "sustain": 0.52,
+    "release": 0.28
+  },
+  "partials": [
+    {
+      "ratio": 1,
+      "gain": 0.55,
+      "detune": -2,
+      "waveform": "triangle"
+    },
+    {
+      "ratio": 1,
+      "gain": 0.3,
+      "detune": 2,
+      "waveform": "sine"
+    },
+    {
+      "ratio": 0.5,
+      "gain": 0.22,
+      "detune": 0,
+      "waveform": "sine"
+    },
+    {
+      "ratio": 2,
+      "gain": 0.08,
+      "detune": 0,
+      "waveform": "sine"
+    }
+  ],
+  "filter": {
+    "type": "lowpass",
+    "frequency": 850,
+    "Q": 0.65,
+    "envelopeAmount": 850
+  },
+  "pitchEnvelope": {
+    "amount": 5,
+    "attack": 0,
+    "decay": 0.08
+  },
+  "reverb": {
+    "wet": 0.055,
+    "decay": 1.15
+  },
+  "delay": {
+    "time": 0.17,
+    "feedback": 0.12,
+    "wet": 0.055
+  },
+  "tremolo": {
+    "rate": 0,
+    "depth": 0
+  },
+  "distortion": {
+    "amount": 0.012
+  },
+  "noise": {
+    "amount": 0,
+    "decay": 0.03
+  },
+  "trillStep": "1/8",
+  "displayName": "Rounded Cinematic Pulse"
+}

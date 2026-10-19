@@ -17,7 +17,7 @@ function extendFinale(score,catalog) {
             samples:orchestra.groups[group].map(sample=>({...structuredClone(sample),...(naturalDecay?{naturalDecay:true}:{})})),
             reverb:{wet:.12,decay:1.2},...changes};return name;
     };
-    const pulse=clone('finale-pulse','cinematic-pulse-bass',1.1,{
+    const pulse=clone('finale-pulse','cinematic-pulse-softened',1.1,{
         envelope:{attack:.018,decay:.22,sustain:.76,release:.16}});
     const cellos=sampled('finale-cellos','cello-short',1.9,{naturalDecay:true});
     const spiccato=sampled('finale-spiccato','violin-short',1.9,{naturalDecay:true});
@@ -143,8 +143,6 @@ function extendFinale(score,catalog) {
         stringRuns.push(run);
     }
     // Sparse callbacks to Part II, with enough space for complete recorded tails.
-    const bellEvents=[[8,'D4'],[20,'F4'],[32,'A4'],[40,'D5']].map(([bar,note])=>({at:start+bar*barSeconds,note}));
-    for(const {at,note} of bellEvents)add(at,note,.6,bells,'ff');
     const finalAt=start+bars*barSeconds,hold=2,release=3,ensembleHold=1.5;
     const finalPulse=clone('finale-last-pulse',pulse,1.25,{envelope:{attack:.018,decay:.2,sustain:.8,release:.35}});
     const finalOrgan=sampled('finale-last-organ','pipe-organ',1.6,{
@@ -180,13 +178,13 @@ function extendFinale(score,catalog) {
             ['Part III: full orchestra',start+32*barSeconds,start+40*barSeconds],
             ['Part III: final build',start+40*barSeconds,finalAt],['Part III: final organ chord',finalAt,durationSeconds]],
         partThree:{startSeconds:start,durationSeconds:durationSeconds-start,bpm,key:'D minor',bars,
-            balance:{orchestraRaised:true,pulseGain:1.1,pulseArticulation:'original short pattern',pulseSustain:.76},
+            balance:{orchestraRaised:true,pulseSource:'cinematic-pulse-softened',pulseGain:1.1,pulseArticulation:'original short pattern',pulseSustain:.76},
             ...phrasing,stringRuns,skippedRepeatedStringChords,stringLeadInGain:4.8,stringLeadInSampleStartSeconds:.12,
             percussion:{steady:true,samplePeakTarget:.75,recordingLevelsCompensated:true,foregroundBoostDb:6.0206,kitSource:hiphop.source,bassDrumBeats:[0,1,2,3],snareBeats:[1,3],subdivisionBeats:.25,sixteenthNoteInstrument:hat},
-            orchestral:true,electronicExceptions:['cinematic-pulse-bass','Dark 80s hip-hop percussion'],
+            orchestral:true,electronicExceptions:['cinematic-pulse-softened','Dark 80s hip-hop percussion'],
             sampleManifest:'api/audio/instruments/neon-orchestra-samples.json',
             horrorStrings:{instrument:strings,entrySeconds:start+.25,openingInstrument:openingStrings,openingHoldSeconds:openingStringHold,openingReleaseSeconds:openingStringRelease,semitoneAccents:true,recordedTremolo:true},
-            bells:{strikeCount:events.filter(e=>e.instrument===bells).length,contourPositions:['run-start','held-chord'],contourGateBeats:1,contourStrikeCount:phrasing.bellPhrases.filter(p=>p.count===2).length*2,exactContourOctaves:true,foregroundGain:5.2,dynamic:'ff',lastStrikeSeconds:Math.max(...events.filter(e=>e.instrument===bells).map(e=>Number(e.offset)/2)),naturalEndSeconds:bellNaturalEnd,naturalDecay:true,sparse:false},
+            bells:{strikeCount:events.filter(e=>e.instrument===bells).length,role:'section-accents',accentBars:phrasing.bellPhrases.map(p=>p.bar),contourPositions:[],accentGateBeats:1,contourStrikeCount:0,foregroundGain:5.2,dynamic:'ff',lastStrikeSeconds:Math.max(...events.filter(e=>e.instrument===bells).map(e=>Number(e.offset)/2)),naturalEndSeconds:bellNaturalEnd,naturalDecay:true,sparse:true},
             naturalTailEndSeconds:naturalTailEnd,
             ending:{startSeconds:finalAt,holdSeconds:hold,releaseSeconds:release,dramaticFinalHit:true,organOnlySustained:false,ensembleHoldSeconds:ensembleHold}},
         render:{...score.render,seconds:durationSeconds}};

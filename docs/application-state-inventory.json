@@ -1,0 +1,5017 @@
+{
+  "schemaVersion": 1,
+  "stateSet": "shared",
+  "appModes": [
+    "debug",
+    "simulation",
+    "production"
+  ],
+  "modeIsPartOfStateIdentity": false,
+  "scope": [
+    "Current Order Filler + ClockTimer",
+    "Debug-only manual trip workflows",
+    "embedded settings/profile/training surfaces",
+    "publisher stream connection"
+  ],
+  "representation": "A combined behavioral state is the tuple of these regions, per-owner/per-surface state and ordered origin/return/continuation relationships. Raw numerical values and unique identities are payload; relevant return paths remain part of behavior, expressed through registered surface/state references rather than discarded.",
+  "status": {
+    "vocabulary": "current source inventory",
+    "reachability": "Factored domains and explicit constraints; exhaustive combined-state reachability is not proven",
+    "tests": "State vocabulary audit is separate from the runtime transition suite"
+  },
+  "regions": [
+    {
+      "id": "startup",
+      "source": {
+        "file": "app.js",
+        "owner": "startupAnnouncementPending / startupAnnouncementStarted"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "STARTUP__NOT_STARTED",
+          "value": "not-started",
+          "meaning": "not started"
+        },
+        {
+          "id": "STARTUP__ANNOUNCING",
+          "value": "announcing",
+          "meaning": "announcing"
+        },
+        {
+          "id": "STARTUP__SETTLED",
+          "value": "settled",
+          "meaning": "settled"
+        }
+      ],
+      "notes": "Autoplay unlock and recognizer readiness are separate regions."
+    },
+    {
+      "id": "audioUnlock",
+      "source": {
+        "file": "app.js",
+        "owner": "audioActivated"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "AUDIO-UNLOCK__LOCKED",
+          "value": "locked",
+          "meaning": "locked"
+        },
+        {
+          "id": "AUDIO-UNLOCK__UNLOCKED",
+          "value": "unlocked",
+          "meaning": "unlocked"
+        }
+      ]
+    },
+    {
+      "id": "session",
+      "source": {
+        "file": "app.js",
+        "owner": "signedInProfile / landingSessionPending / loginPending / deliberatelyLoggedOut"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SESSION__SIGNED_OUT",
+          "value": "signed-out",
+          "meaning": "signed out"
+        },
+        {
+          "id": "SESSION__RESTORING",
+          "value": "restoring",
+          "meaning": "restoring"
+        },
+        {
+          "id": "SESSION__AUTHENTICATING",
+          "value": "authenticating",
+          "meaning": "authenticating"
+        },
+        {
+          "id": "SESSION__AUTHENTICATED",
+          "value": "authenticated",
+          "meaning": "authenticated"
+        },
+        {
+          "id": "SESSION__SIGNING_OUT",
+          "value": "signing-out",
+          "meaning": "signing out"
+        },
+        {
+          "id": "SESSION__FAILED",
+          "value": "failed",
+          "meaning": "failed"
+        }
+      ],
+      "notes": "Canonical session abstractions, not a new runtime enum."
+    },
+    {
+      "id": "connection",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "#connectionState"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "CONNECTION__OFFLINE",
+          "value": "offline",
+          "meaning": "offline"
+        },
+        {
+          "id": "CONNECTION__CONNECTED",
+          "value": "connected",
+          "meaning": "connected"
+        }
+      ]
+    },
+    {
+      "id": "connectionActivity",
+      "source": {
+        "file": "app.js",
+        "owner": "connectionCloudPhase"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "CONNECTION-ACTIVITY__SETTLED",
+          "value": "settled",
+          "meaning": "settled"
+        },
+        {
+          "id": "CONNECTION-ACTIVITY__SETTLING",
+          "value": "settling",
+          "meaning": "settling"
+        },
+        {
+          "id": "CONNECTION-ACTIVITY__RETRY",
+          "value": "retry",
+          "meaning": "retry"
+        },
+        {
+          "id": "CONNECTION-ACTIVITY__AWAITING_LOGIN",
+          "value": "awaiting-login",
+          "meaning": "awaiting login"
+        }
+      ]
+    },
+    {
+      "id": "login",
+      "source": {
+        "file": "app.js",
+        "owner": "login.phase"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "LOGIN__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "LOGIN__ID_ENTRY",
+          "value": "id-entry",
+          "meaning": "id entry"
+        },
+        {
+          "id": "LOGIN__PIN_ENTRY",
+          "value": "pin-entry",
+          "meaning": "pin entry"
+        },
+        {
+          "id": "LOGIN__PASSWORD_ENTRY",
+          "value": "password-entry",
+          "meaning": "password entry"
+        },
+        {
+          "id": "LOGIN__SUBMITTING",
+          "value": "submitting",
+          "meaning": "submitting"
+        }
+      ]
+    },
+    {
+      "id": "credentialGroup",
+      "source": {
+        "file": "app.js",
+        "owner": "loginDigitSlots"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "CREDENTIAL-GROUP__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "CREDENTIAL-GROUP__EMPTY",
+          "value": "empty",
+          "meaning": "empty"
+        },
+        {
+          "id": "CREDENTIAL-GROUP__PARTIAL",
+          "value": "partial",
+          "meaning": "partial"
+        },
+        {
+          "id": "CREDENTIAL-GROUP__COMPLETE",
+          "value": "complete",
+          "meaning": "complete"
+        }
+      ],
+      "notes": "Per ID/PIN group. Never include credential digits in state identities or traces."
+    },
+    {
+      "id": "credentialFocus",
+      "source": {
+        "file": "app.js",
+        "owner": "data-digit-index"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "CREDENTIAL-FOCUS__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "CREDENTIAL-FOCUS__0",
+          "value": "0",
+          "meaning": "0"
+        },
+        {
+          "id": "CREDENTIAL-FOCUS__1",
+          "value": "1",
+          "meaning": "1"
+        },
+        {
+          "id": "CREDENTIAL-FOCUS__2",
+          "value": "2",
+          "meaning": "2"
+        },
+        {
+          "id": "CREDENTIAL-FOCUS__3",
+          "value": "3",
+          "meaning": "3"
+        }
+      ],
+      "notes": "Per focused group; index changes Backspace behavior."
+    },
+    {
+      "id": "pinCancel",
+      "source": {
+        "file": "app.js",
+        "owner": "pinCancelPrimed"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "PIN-CANCEL__UNPRIMED",
+          "value": "unprimed",
+          "meaning": "unprimed"
+        },
+        {
+          "id": "PIN-CANCEL__PRIMED",
+          "value": "primed",
+          "meaning": "primed"
+        }
+      ]
+    },
+    {
+      "id": "accountSettings",
+      "source": {
+        "file": "AccountSettings.js",
+        "owner": "owner / loaded / requests / queue"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "ACCOUNT-SETTINGS__GUEST",
+          "value": "guest",
+          "meaning": "guest"
+        },
+        {
+          "id": "ACCOUNT-SETTINGS__LOADING",
+          "value": "loading",
+          "meaning": "loading"
+        },
+        {
+          "id": "ACCOUNT-SETTINGS__LOADED",
+          "value": "loaded",
+          "meaning": "loaded"
+        },
+        {
+          "id": "ACCOUNT-SETTINGS__SAVING",
+          "value": "saving",
+          "meaning": "saving"
+        },
+        {
+          "id": "ACCOUNT-SETTINGS__FAILED",
+          "value": "failed",
+          "meaning": "failed"
+        }
+      ]
+    },
+    {
+      "id": "profileMode",
+      "source": {
+        "file": "UserLookup.js",
+        "owner": "#mode"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "PROFILE-MODE__EDIT",
+          "value": "edit",
+          "meaning": "edit"
+        },
+        {
+          "id": "PROFILE-MODE__LOOKUP",
+          "value": "lookup",
+          "meaning": "lookup"
+        }
+      ]
+    },
+    {
+      "id": "profilePhase",
+      "source": {
+        "file": "UserLookup.js",
+        "owner": "#profilePhase"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "PROFILE-PHASE__SEARCH",
+          "value": "search",
+          "meaning": "search"
+        },
+        {
+          "id": "PROFILE-PHASE__LOADING",
+          "value": "loading",
+          "meaning": "loading"
+        },
+        {
+          "id": "PROFILE-PHASE__EDITING",
+          "value": "editing",
+          "meaning": "editing"
+        },
+        {
+          "id": "PROFILE-PHASE__SAVING",
+          "value": "saving",
+          "meaning": "saving"
+        },
+        {
+          "id": "PROFILE-PHASE__ERROR",
+          "value": "error",
+          "meaning": "error"
+        }
+      ]
+    },
+    {
+      "id": "profileSelection",
+      "source": {
+        "file": "UserLookup.js",
+        "owner": "#profile"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "PROFILE-SELECTION__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "PROFILE-SELECTION__SELECTED",
+          "value": "selected",
+          "meaning": "selected"
+        }
+      ]
+    },
+    {
+      "id": "lifecycle",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "#lifecycle"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "LIFECYCLE__READY",
+          "value": "ready",
+          "meaning": "ready"
+        },
+        {
+          "id": "LIFECYCLE__RUNNING",
+          "value": "running",
+          "meaning": "running"
+        },
+        {
+          "id": "LIFECYCLE__STOPPED",
+          "value": "stopped",
+          "meaning": "stopped"
+        }
+      ]
+    },
+    {
+      "id": "operating",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "#getOperatingState()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "OPERATING__READY",
+          "value": "ready",
+          "meaning": "ready"
+        },
+        {
+          "id": "OPERATING__DEFERRED",
+          "value": "deferred",
+          "meaning": "deferred"
+        },
+        {
+          "id": "OPERATING__RUNNING",
+          "value": "running",
+          "meaning": "running"
+        },
+        {
+          "id": "OPERATING__BREAK",
+          "value": "break",
+          "meaning": "break"
+        },
+        {
+          "id": "OPERATING__LUNCH",
+          "value": "lunch",
+          "meaning": "lunch"
+        },
+        {
+          "id": "OPERATING__DOWN",
+          "value": "down",
+          "meaning": "down"
+        },
+        {
+          "id": "OPERATING__BUFFER",
+          "value": "buffer",
+          "meaning": "buffer"
+        },
+        {
+          "id": "OPERATING__OTHER",
+          "value": "other",
+          "meaning": "other"
+        },
+        {
+          "id": "OPERATING__STOPPED",
+          "value": "stopped",
+          "meaning": "stopped"
+        }
+      ]
+    },
+    {
+      "id": "tripPreparation",
+      "source": {
+        "file": "app.js",
+        "owner": "tripDraft / stagedStandardTimeMilliseconds"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TRIP-PREPARATION__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "TRIP-PREPARATION__COLLECTING_DETAILS",
+          "value": "collecting-details",
+          "meaning": "collecting details"
+        },
+        {
+          "id": "TRIP-PREPARATION__DETAILS_READY",
+          "value": "details-ready",
+          "meaning": "details ready"
+        },
+        {
+          "id": "TRIP-PREPARATION__DEFERRED",
+          "value": "deferred",
+          "meaning": "deferred"
+        }
+      ],
+      "notes": "All modes use the same states; adapters differ in how details arrive."
+    },
+    {
+      "id": "scheduledStart",
+      "source": {
+        "file": "app.js",
+        "owner": "scheduledStartAutoArmed / scheduledStartNeedsResolution / tripStartsNowState"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SCHEDULED-START__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "SCHEDULED-START__FUTURE_NEEDS_DURATION",
+          "value": "future-needs-duration",
+          "meaning": "future needs duration"
+        },
+        {
+          "id": "SCHEDULED-START__FUTURE_READY",
+          "value": "future-ready",
+          "meaning": "future ready"
+        },
+        {
+          "id": "SCHEDULED-START__DUE_NEEDS_DURATION",
+          "value": "due-needs-duration",
+          "meaning": "due needs duration"
+        },
+        {
+          "id": "SCHEDULED-START__DUE_READY",
+          "value": "due-ready",
+          "meaning": "due ready"
+        },
+        {
+          "id": "SCHEDULED-START__LATE_NEEDS_RESOLUTION",
+          "value": "late-needs-resolution",
+          "meaning": "late needs resolution"
+        }
+      ],
+      "notes": "Scheduled trip availability and ClockTimer start relation are distinct."
+    },
+    {
+      "id": "startRelation",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getDispatchState().startRelation"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "START-RELATION__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "START-RELATION__EARLY",
+          "value": "early",
+          "meaning": "early"
+        },
+        {
+          "id": "START-RELATION__ON_TIME",
+          "value": "on_time",
+          "meaning": "on_time"
+        },
+        {
+          "id": "START-RELATION__LATE",
+          "value": "late",
+          "meaning": "late"
+        }
+      ],
+      "notes": "Historical actual-versus-scheduled relation, not a live early-start flag."
+    },
+    {
+      "id": "scheduledBoundary",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "scheduledStart / current timeline"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SCHEDULED-BOUNDARY__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "SCHEDULED-BOUNDARY__BEFORE",
+          "value": "before",
+          "meaning": "before"
+        },
+        {
+          "id": "SCHEDULED-BOUNDARY__AT",
+          "value": "at",
+          "meaning": "at"
+        },
+        {
+          "id": "SCHEDULED-BOUNDARY__AFTER",
+          "value": "after",
+          "meaning": "after"
+        }
+      ],
+      "notes": "Classify timestamps; numeric values remain payload."
+    },
+    {
+      "id": "goalBoundary",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getDispatchState().goalProgress"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "GOAL-BOUNDARY__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "GOAL-BOUNDARY__BEFORE",
+          "value": "before",
+          "meaning": "before"
+        },
+        {
+          "id": "GOAL-BOUNDARY__AT",
+          "value": "at",
+          "meaning": "at"
+        },
+        {
+          "id": "GOAL-BOUNDARY__PAST",
+          "value": "past",
+          "meaning": "past"
+        }
+      ]
+    },
+    {
+      "id": "standardBoundary",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "#standardEnd / current timeline"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "STANDARD-BOUNDARY__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "STANDARD-BOUNDARY__BEFORE",
+          "value": "before",
+          "meaning": "before"
+        },
+        {
+          "id": "STANDARD-BOUNDARY__AT",
+          "value": "at",
+          "meaning": "at"
+        },
+        {
+          "id": "STANDARD-BOUNDARY__AFTER",
+          "value": "after",
+          "meaning": "after"
+        }
+      ]
+    },
+    {
+      "id": "bankBalance",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "counted-time balance / allowance credit"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "BANK-BALANCE__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "BANK-BALANCE__BANKED",
+          "value": "banked",
+          "meaning": "banked"
+        },
+        {
+          "id": "BANK-BALANCE__ON_TARGET",
+          "value": "on-target",
+          "meaning": "on target"
+        },
+        {
+          "id": "BANK-BALANCE__OVER",
+          "value": "over",
+          "meaning": "over"
+        }
+      ]
+    },
+    {
+      "id": "intervalKind",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getActiveIntervalState().intervalType / breakType"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "INTERVAL-KIND__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "INTERVAL-KIND__BREAK",
+          "value": "break",
+          "meaning": "break"
+        },
+        {
+          "id": "INTERVAL-KIND__SHORT_BREAK",
+          "value": "short-break",
+          "meaning": "short break"
+        },
+        {
+          "id": "INTERVAL-KIND__LUNCH",
+          "value": "lunch",
+          "meaning": "lunch"
+        },
+        {
+          "id": "INTERVAL-KIND__DOWN",
+          "value": "down",
+          "meaning": "down"
+        },
+        {
+          "id": "INTERVAL-KIND__OTHER",
+          "value": "other",
+          "meaning": "other"
+        }
+      ]
+    },
+    {
+      "id": "intervalPhase",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getActiveIntervalState().phase"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "INTERVAL-PHASE__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "INTERVAL-PHASE__START_BUFFER",
+          "value": "start-buffer",
+          "meaning": "start buffer"
+        },
+        {
+          "id": "INTERVAL-PHASE__ACTIVE",
+          "value": "active",
+          "meaning": "active"
+        },
+        {
+          "id": "INTERVAL-PHASE__END_BUFFER",
+          "value": "end-buffer",
+          "meaning": "end buffer"
+        },
+        {
+          "id": "INTERVAL-PHASE__PENDING",
+          "value": "pending",
+          "meaning": "pending"
+        },
+        {
+          "id": "INTERVAL-PHASE__LATENCY",
+          "value": "latency",
+          "meaning": "latency"
+        }
+      ],
+      "notes": "active retains owning intervalKind; buffer/pending/latency never erase its owner."
+    },
+    {
+      "id": "intervalExtent",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getDispatchState().intervalStatus"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "INTERVAL-EXTENT__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "INTERVAL-EXTENT__OPEN",
+          "value": "open",
+          "meaning": "open"
+        },
+        {
+          "id": "INTERVAL-EXTENT__SCHEDULED",
+          "value": "scheduled",
+          "meaning": "scheduled"
+        }
+      ]
+    },
+    {
+      "id": "intervalAllowance",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getActiveIntervalState().remainingMilliseconds"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "INTERVAL-ALLOWANCE__NOT_TIMED",
+          "value": "not-timed",
+          "meaning": "not timed"
+        },
+        {
+          "id": "INTERVAL-ALLOWANCE__REMAINING",
+          "value": "remaining",
+          "meaning": "remaining"
+        },
+        {
+          "id": "INTERVAL-ALLOWANCE__AT_EXPIRY",
+          "value": "at-expiry",
+          "meaning": "at expiry"
+        },
+        {
+          "id": "INTERVAL-ALLOWANCE__EXPIRED",
+          "value": "expired",
+          "meaning": "expired"
+        }
+      ]
+    },
+    {
+      "id": "intervalApproval",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "#setIntervalApprovalAttributes()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "INTERVAL-APPROVAL__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "INTERVAL-APPROVAL__APPROVED",
+          "value": "approved",
+          "meaning": "approved"
+        },
+        {
+          "id": "INTERVAL-APPROVAL__UNAPPROVED",
+          "value": "unapproved",
+          "meaning": "unapproved"
+        }
+      ],
+      "notes": "Per interval; request/validation progress lives in operation regions."
+    },
+    {
+      "id": "breakSelection",
+      "source": {
+        "file": "app.js",
+        "owner": "speechBreakSelection / breakDialog.allowOk"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "BREAK-SELECTION__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "BREAK-SELECTION__UNSELECTED",
+          "value": "unselected",
+          "meaning": "unselected"
+        },
+        {
+          "id": "BREAK-SELECTION__BREAK",
+          "value": "break",
+          "meaning": "break"
+        },
+        {
+          "id": "BREAK-SELECTION__SHORT_BREAK",
+          "value": "short-break",
+          "meaning": "short break"
+        },
+        {
+          "id": "BREAK-SELECTION__LUNCH",
+          "value": "lunch",
+          "meaning": "lunch"
+        }
+      ]
+    },
+    {
+      "id": "breakPrompt",
+      "source": {
+        "file": "app.js",
+        "owner": "speechBreakPromptState.mode"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "BREAK-PROMPT__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "BREAK-PROMPT__START",
+          "value": "start",
+          "meaning": "start"
+        },
+        {
+          "id": "BREAK-PROMPT__START_SELECTED",
+          "value": "start-selected",
+          "meaning": "start selected"
+        },
+        {
+          "id": "BREAK-PROMPT__END",
+          "value": "end",
+          "meaning": "end"
+        }
+      ],
+      "notes": "start is retained compatibility code; graph legacy question is not assumed reachable."
+    },
+    {
+      "id": "goalMode",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "percentMode"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "GOAL-MODE__TRIP",
+          "value": "trip",
+          "meaning": "trip"
+        },
+        {
+          "id": "GOAL-MODE__TOTAL",
+          "value": "total",
+          "meaning": "total"
+        },
+        {
+          "id": "GOAL-MODE__AUTO",
+          "value": "auto",
+          "meaning": "auto"
+        }
+      ]
+    },
+    {
+      "id": "goalScope",
+      "source": {
+        "file": "app.js",
+        "owner": "getTripLogRange()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "GOAL-SCOPE__DAY",
+          "value": "day",
+          "meaning": "day"
+        },
+        {
+          "id": "GOAL-SCOPE__WEEK",
+          "value": "week",
+          "meaning": "week"
+        },
+        {
+          "id": "GOAL-SCOPE__PAY_PERIOD",
+          "value": "pay-period",
+          "meaning": "pay period"
+        },
+        {
+          "id": "GOAL-SCOPE__MONTH",
+          "value": "month",
+          "meaning": "month"
+        },
+        {
+          "id": "GOAL-SCOPE__YEAR",
+          "value": "year",
+          "meaning": "year"
+        },
+        {
+          "id": "GOAL-SCOPE__CUSTOM",
+          "value": "custom",
+          "meaning": "custom"
+        }
+      ]
+    },
+    {
+      "id": "effectiveGoal",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getDispatchState().currentGoal"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EFFECTIVE-GOAL__TRIP",
+          "value": "trip",
+          "meaning": "trip"
+        },
+        {
+          "id": "EFFECTIVE-GOAL__TOTAL",
+          "value": "total",
+          "meaning": "total"
+        },
+        {
+          "id": "EFFECTIVE-GOAL__STANDARD",
+          "value": "standard",
+          "meaning": "standard"
+        }
+      ]
+    },
+    {
+      "id": "goalOrder",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "#getPercentageOrder()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "GOAL-ORDER__TRIP_TOTAL_STANDARD",
+          "value": "trip_total_standard",
+          "meaning": "trip_total_standard"
+        },
+        {
+          "id": "GOAL-ORDER__TRIP_STANDARD_TOTAL",
+          "value": "trip_standard_total",
+          "meaning": "trip_standard_total"
+        },
+        {
+          "id": "GOAL-ORDER__TOTAL_TRIP_STANDARD",
+          "value": "total_trip_standard",
+          "meaning": "total_trip_standard"
+        },
+        {
+          "id": "GOAL-ORDER__TOTAL_STANDARD_TRIP",
+          "value": "total_standard_trip",
+          "meaning": "total_standard_trip"
+        },
+        {
+          "id": "GOAL-ORDER__STANDARD_TRIP_TOTAL",
+          "value": "standard_trip_total",
+          "meaning": "standard_trip_total"
+        },
+        {
+          "id": "GOAL-ORDER__STANDARD_TOTAL_TRIP",
+          "value": "standard_total_trip",
+          "meaning": "standard_total_trip"
+        }
+      ]
+    },
+    {
+      "id": "goalValueBand",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "configured goal ratio"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "GOAL-VALUE-BAND__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "GOAL-VALUE-BAND__BELOW_STANDARD",
+          "value": "below-standard",
+          "meaning": "below standard"
+        },
+        {
+          "id": "GOAL-VALUE-BAND__STANDARD",
+          "value": "standard",
+          "meaning": "standard"
+        },
+        {
+          "id": "GOAL-VALUE-BAND__ABOVE_STANDARD",
+          "value": "above-standard",
+          "meaning": "above standard"
+        }
+      ],
+      "notes": "Per configured Trip/Total goal and effective selected goal; arbitrary percentages remain payload."
+    },
+    {
+      "id": "syncPreference",
+      "source": {
+        "file": "app.js",
+        "owner": "getSyncGoalsState()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SYNC-PREFERENCE__OFF",
+          "value": "off",
+          "meaning": "off"
+        },
+        {
+          "id": "SYNC-PREFERENCE__ON",
+          "value": "on",
+          "meaning": "on"
+        }
+      ]
+    },
+    {
+      "id": "syncRuntime",
+      "source": {
+        "file": "app.js",
+        "owner": "getSyncRuntimeState()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SYNC-RUNTIME__OFFLINE",
+          "value": "offline",
+          "meaning": "offline"
+        },
+        {
+          "id": "SYNC-RUNTIME__OFF",
+          "value": "off",
+          "meaning": "off"
+        },
+        {
+          "id": "SYNC-RUNTIME__READY",
+          "value": "ready",
+          "meaning": "ready"
+        },
+        {
+          "id": "SYNC-RUNTIME__DATA_UNAVAILABLE",
+          "value": "data-unavailable",
+          "meaning": "data unavailable"
+        },
+        {
+          "id": "SYNC-RUNTIME__ACTIVE",
+          "value": "active",
+          "meaning": "active"
+        },
+        {
+          "id": "SYNC-RUNTIME__TIME_BLOCKED",
+          "value": "time-blocked",
+          "meaning": "time blocked"
+        }
+      ]
+    },
+    {
+      "id": "endTimeOverride",
+      "source": {
+        "file": "app.js",
+        "owner": "endTimeGoalOverride"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "END-TIME-OVERRIDE__UNLOCKED",
+          "value": "unlocked",
+          "meaning": "unlocked"
+        },
+        {
+          "id": "END-TIME-OVERRIDE__LOCKED",
+          "value": "locked",
+          "meaning": "locked"
+        }
+      ]
+    },
+    {
+      "id": "aggregateData",
+      "source": {
+        "file": "app.js",
+        "owner": "range/summary read request and TripAggregates"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "AGGREGATE-DATA__UNREQUESTED",
+          "value": "unrequested",
+          "meaning": "unrequested"
+        },
+        {
+          "id": "AGGREGATE-DATA__LOADING",
+          "value": "loading",
+          "meaning": "loading"
+        },
+        {
+          "id": "AGGREGATE-DATA__AVAILABLE_EMPTY",
+          "value": "available-empty",
+          "meaning": "available empty"
+        },
+        {
+          "id": "AGGREGATE-DATA__AVAILABLE",
+          "value": "available",
+          "meaning": "available"
+        },
+        {
+          "id": "AGGREGATE-DATA__ERROR",
+          "value": "error",
+          "meaning": "error"
+        }
+      ],
+      "notes": "Per request target/range; do not treat unknown totals as zero."
+    },
+    {
+      "id": "summary",
+      "source": {
+        "file": "app.js",
+        "owner": "completedTripSummary"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SUMMARY__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "SUMMARY__LOADING",
+          "value": "loading",
+          "meaning": "loading"
+        },
+        {
+          "id": "SUMMARY__READY",
+          "value": "ready",
+          "meaning": "ready"
+        },
+        {
+          "id": "SUMMARY__ERROR",
+          "value": "error",
+          "meaning": "error"
+        }
+      ]
+    },
+    {
+      "id": "summaryInvocation",
+      "source": {
+        "file": "app.js",
+        "owner": "tripSummary.invocation.reason"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SUMMARY-INVOCATION__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "SUMMARY-INVOCATION__REQUESTED",
+          "value": "requested",
+          "meaning": "requested"
+        },
+        {
+          "id": "SUMMARY-INVOCATION__TRIP_ENDED",
+          "value": "trip-ended",
+          "meaning": "trip ended"
+        }
+      ]
+    },
+    {
+      "id": "summaryLastRow",
+      "source": {
+        "file": "TripSummary.js",
+        "owner": "last completed trip"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SUMMARY-LAST-ROW__ABSENT",
+          "value": "absent",
+          "meaning": "absent"
+        },
+        {
+          "id": "SUMMARY-LAST-ROW__PRESENT",
+          "value": "present",
+          "meaning": "present"
+        }
+      ]
+    },
+    {
+      "id": "summaryActiveRow",
+      "source": {
+        "file": "TripSummary.js",
+        "owner": "activeTrip projection"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SUMMARY-ACTIVE-ROW__ABSENT",
+          "value": "absent",
+          "meaning": "absent"
+        },
+        {
+          "id": "SUMMARY-ACTIVE-ROW__PRESENT",
+          "value": "present",
+          "meaning": "present"
+        }
+      ],
+      "notes": "Whether details arrive manually or from an adapter does not create a mode-specific state."
+    },
+    {
+      "id": "summaryCell",
+      "source": {
+        "file": "TripSummary.js",
+        "owner": "known() / row()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SUMMARY-CELL__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "SUMMARY-CELL__AVAILABLE",
+          "value": "available",
+          "meaning": "available"
+        }
+      ],
+      "notes": "Per Standard/Actual/Percent cell; unavailable renders ---."
+    },
+    {
+      "id": "editorSurface",
+      "source": {
+        "file": "app.js",
+        "owner": "numberPadState / voiceEntryState"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EDITOR-SURFACE__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "EDITOR-SURFACE__VOICE",
+          "value": "voice",
+          "meaning": "voice"
+        },
+        {
+          "id": "EDITOR-SURFACE__KEYPAD",
+          "value": "keypad",
+          "meaning": "keypad"
+        }
+      ]
+    },
+    {
+      "id": "editorKind",
+      "source": {
+        "file": "app.js",
+        "owner": "numberPadState.mode"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EDITOR-KIND__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "EDITOR-KIND__DURATION",
+          "value": "duration",
+          "meaning": "duration"
+        },
+        {
+          "id": "EDITOR-KIND__ABSOLUTE",
+          "value": "absolute",
+          "meaning": "absolute"
+        },
+        {
+          "id": "EDITOR-KIND__PERCENT",
+          "value": "percent",
+          "meaning": "percent"
+        }
+      ]
+    },
+    {
+      "id": "editorField",
+      "source": {
+        "file": "app.js",
+        "owner": "numberPadState.source"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EDITOR-FIELD__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "EDITOR-FIELD__NEW_TRIP",
+          "value": "new-trip",
+          "meaning": "new trip"
+        },
+        {
+          "id": "EDITOR-FIELD__STANDARD_TIME",
+          "value": "standard-time",
+          "meaning": "standard time"
+        },
+        {
+          "id": "EDITOR-FIELD__CREATION_TIME",
+          "value": "creation-time",
+          "meaning": "creation time"
+        },
+        {
+          "id": "EDITOR-FIELD__SCHEDULED_START",
+          "value": "scheduled-start",
+          "meaning": "scheduled start"
+        },
+        {
+          "id": "EDITOR-FIELD__ACTUAL_START",
+          "value": "actual-start",
+          "meaning": "actual start"
+        },
+        {
+          "id": "EDITOR-FIELD__END_TIME",
+          "value": "end-time",
+          "meaning": "end time"
+        },
+        {
+          "id": "EDITOR-FIELD__END_TIME_GOAL",
+          "value": "end-time-goal",
+          "meaning": "end time goal"
+        },
+        {
+          "id": "EDITOR-FIELD__TRIP_GOAL",
+          "value": "trip-goal",
+          "meaning": "trip goal"
+        },
+        {
+          "id": "EDITOR-FIELD__TOTAL_GOAL",
+          "value": "total-goal",
+          "meaning": "total goal"
+        }
+      ],
+      "notes": "Custom callback editors retain a named source in payload and must register it before claiming exhaustive adapter coverage."
+    },
+    {
+      "id": "editorRole",
+      "source": {
+        "file": "app.js",
+        "owner": "numberPadState.role"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EDITOR-ROLE__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "EDITOR-ROLE__ROOT",
+          "value": "root",
+          "meaning": "root"
+        },
+        {
+          "id": "EDITOR-ROLE__TRIP_SETTINGS_FIELD",
+          "value": "trip-settings-field",
+          "meaning": "trip settings field"
+        }
+      ]
+    },
+    {
+      "id": "editorWorkflow",
+      "source": {
+        "file": "app.js",
+        "owner": "numberPadState.workflow"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EDITOR-WORKFLOW__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "EDITOR-WORKFLOW__NEW_TRIP",
+          "value": "new-trip",
+          "meaning": "new trip"
+        },
+        {
+          "id": "EDITOR-WORKFLOW__EDIT_TRIP",
+          "value": "edit-trip",
+          "meaning": "edit trip"
+        }
+      ]
+    },
+    {
+      "id": "editorValidity",
+      "source": {
+        "file": "app.js",
+        "owner": "numberPadValueValid() / speech collector result"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EDITOR-VALIDITY__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "EDITOR-VALIDITY__EMPTY",
+          "value": "empty",
+          "meaning": "empty"
+        },
+        {
+          "id": "EDITOR-VALIDITY__INCOMPLETE",
+          "value": "incomplete",
+          "meaning": "incomplete"
+        },
+        {
+          "id": "EDITOR-VALIDITY__VALID",
+          "value": "valid",
+          "meaning": "valid"
+        },
+        {
+          "id": "EDITOR-VALIDITY__INVALID",
+          "value": "invalid",
+          "meaning": "invalid"
+        },
+        {
+          "id": "EDITOR-VALIDITY__MALFORMED",
+          "value": "malformed",
+          "meaning": "malformed"
+        },
+        {
+          "id": "EDITOR-VALIDITY__DEFERRED",
+          "value": "deferred",
+          "meaning": "deferred"
+        }
+      ],
+      "notes": "Recognition malformed/deferred classifications belong to the collector until committed to an editor."
+    },
+    {
+      "id": "editorDirty",
+      "source": {
+        "file": "app.js",
+        "owner": "numberPadHasChanges()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EDITOR-DIRTY__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "EDITOR-DIRTY__UNCHANGED",
+          "value": "unchanged",
+          "meaning": "unchanged"
+        },
+        {
+          "id": "EDITOR-DIRTY__CHANGED",
+          "value": "changed",
+          "meaning": "changed"
+        }
+      ]
+    },
+    {
+      "id": "editorMeridiem",
+      "source": {
+        "file": "app.js",
+        "owner": "numberPadState.meridiem"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EDITOR-MERIDIEM__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "EDITOR-MERIDIEM__AM",
+          "value": "AM",
+          "meaning": "AM"
+        },
+        {
+          "id": "EDITOR-MERIDIEM__PM",
+          "value": "PM",
+          "meaning": "PM"
+        }
+      ]
+    },
+    {
+      "id": "newTripLock",
+      "source": {
+        "file": "app.js",
+        "owner": "newTripWorkflowLocked"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "NEW-TRIP-LOCK__UNLOCKED",
+          "value": "unlocked",
+          "meaning": "unlocked"
+        },
+        {
+          "id": "NEW-TRIP-LOCK__LOCKED",
+          "value": "locked",
+          "meaning": "locked"
+        }
+      ]
+    },
+    {
+      "id": "tripSettings",
+      "source": {
+        "file": "app.js",
+        "owner": "tripSettingsSession"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TRIP-SETTINGS__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "TRIP-SETTINGS__DRAFT",
+          "value": "draft",
+          "meaning": "draft"
+        },
+        {
+          "id": "TRIP-SETTINGS__ACTIVE_TRIP",
+          "value": "active-trip",
+          "meaning": "active trip"
+        }
+      ]
+    },
+    {
+      "id": "inputSwitch",
+      "source": {
+        "file": "app.js",
+        "owner": "voiceInputSwitchDialog / voicePadRecognitionDialog"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "INPUT-SWITCH__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "INPUT-SWITCH__ENABLE_RECOGNITION_QUESTION",
+          "value": "enable-recognition-question",
+          "meaning": "enable recognition question"
+        },
+        {
+          "id": "INPUT-SWITCH__SWITCH_TO_VOICE_QUESTION",
+          "value": "switch-to-voice-question",
+          "meaning": "switch to voice question"
+        }
+      ]
+    },
+    {
+      "id": "tripLog",
+      "source": {
+        "file": "app.js",
+        "owner": "data-trip-list-state"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TRIP-LOG__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "TRIP-LOG__OPENING",
+          "value": "opening",
+          "meaning": "opening"
+        },
+        {
+          "id": "TRIP-LOG__OPEN",
+          "value": "open",
+          "meaning": "open"
+        },
+        {
+          "id": "TRIP-LOG__CLOSING",
+          "value": "closing",
+          "meaning": "closing"
+        }
+      ]
+    },
+    {
+      "id": "tripLogPinned",
+      "source": {
+        "file": "app.js",
+        "owner": "trip log pinned preference"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TRIP-LOG-PINNED__UNPINNED",
+          "value": "unpinned",
+          "meaning": "unpinned"
+        },
+        {
+          "id": "TRIP-LOG-PINNED__PINNED",
+          "value": "pinned",
+          "meaning": "pinned"
+        }
+      ]
+    },
+    {
+      "id": "tripFilter",
+      "source": {
+        "file": "TripLog.js",
+        "owner": "production / nonProduction filters"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TRIP-FILTER__ALL",
+          "value": "all",
+          "meaning": "all"
+        },
+        {
+          "id": "TRIP-FILTER__PRODUCTIVE",
+          "value": "productive",
+          "meaning": "productive"
+        },
+        {
+          "id": "TRIP-FILTER__NON_PRODUCTIVE",
+          "value": "non-productive",
+          "meaning": "non productive"
+        }
+      ],
+      "notes": "Canonical UI classifications; server filter parameters are payload mappings."
+    },
+    {
+      "id": "recognition",
+      "source": {
+        "file": "app.js",
+        "owner": "speechRecognition"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "RECOGNITION__OFF",
+          "value": "off",
+          "meaning": "off"
+        },
+        {
+          "id": "RECOGNITION__STARTING",
+          "value": "starting",
+          "meaning": "starting"
+        },
+        {
+          "id": "RECOGNITION__LISTENING",
+          "value": "listening",
+          "meaning": "listening"
+        },
+        {
+          "id": "RECOGNITION__SLEEPING",
+          "value": "sleeping",
+          "meaning": "sleeping"
+        },
+        {
+          "id": "RECOGNITION__SUSPENDED",
+          "value": "suspended",
+          "meaning": "suspended"
+        }
+      ]
+    },
+    {
+      "id": "capture",
+      "source": {
+        "file": "SpeechMenu.js",
+        "owner": "utterance / recognizer final barrier"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "CAPTURE__IDLE",
+          "value": "idle",
+          "meaning": "idle"
+        },
+        {
+          "id": "CAPTURE__CAPTURING",
+          "value": "capturing",
+          "meaning": "capturing"
+        },
+        {
+          "id": "CAPTURE__AWAITING_FINAL",
+          "value": "awaiting-final",
+          "meaning": "awaiting final"
+        },
+        {
+          "id": "CAPTURE__FINALIZED",
+          "value": "finalized",
+          "meaning": "finalized"
+        },
+        {
+          "id": "CAPTURE__ABORTED",
+          "value": "aborted",
+          "meaning": "aborted"
+        }
+      ]
+    },
+    {
+      "id": "grammar",
+      "source": {
+        "file": "SpeechGrammarContext.js",
+        "owner": "VALUE_CAPTURE_TYPES"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "GRAMMAR__COMMANDS",
+          "value": "commands",
+          "meaning": "commands"
+        },
+        {
+          "id": "GRAMMAR__TIME",
+          "value": "time",
+          "meaning": "time"
+        },
+        {
+          "id": "GRAMMAR__DATE",
+          "value": "date",
+          "meaning": "date"
+        },
+        {
+          "id": "GRAMMAR__DIGITS",
+          "value": "digits",
+          "meaning": "digits"
+        },
+        {
+          "id": "GRAMMAR__NUMBER",
+          "value": "number",
+          "meaning": "number"
+        },
+        {
+          "id": "GRAMMAR__DURATION",
+          "value": "duration",
+          "meaning": "duration"
+        }
+      ]
+    },
+    {
+      "id": "collector",
+      "source": {
+        "file": "SpeechMenu.js",
+        "owner": "digest context / pending plan"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "COLLECTOR__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "COLLECTOR__ROOT",
+          "value": "root",
+          "meaning": "root"
+        },
+        {
+          "id": "COLLECTOR__COMMAND",
+          "value": "command",
+          "meaning": "command"
+        },
+        {
+          "id": "COLLECTOR__CONTEXT",
+          "value": "context",
+          "meaning": "context"
+        }
+      ]
+    },
+    {
+      "id": "continuation",
+      "source": {
+        "file": "SpeechContinuationSession.js",
+        "owner": "#phase"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "CONTINUATION__IDLE",
+          "value": "idle",
+          "meaning": "idle"
+        },
+        {
+          "id": "CONTINUATION__COLLECTING",
+          "value": "collecting",
+          "meaning": "collecting"
+        },
+        {
+          "id": "CONTINUATION__SETTLING",
+          "value": "settling",
+          "meaning": "settling"
+        },
+        {
+          "id": "CONTINUATION__ACCEPTED",
+          "value": "accepted",
+          "meaning": "accepted"
+        },
+        {
+          "id": "CONTINUATION__CANCELLED",
+          "value": "cancelled",
+          "meaning": "cancelled"
+        }
+      ]
+    },
+    {
+      "id": "collectorValidity",
+      "source": {
+        "file": "SpeechMenu.js",
+        "owner": "pending / invalid / status:defer"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "COLLECTOR-VALIDITY__EMPTY",
+          "value": "empty",
+          "meaning": "empty"
+        },
+        {
+          "id": "COLLECTOR-VALIDITY__INCOMPLETE",
+          "value": "incomplete",
+          "meaning": "incomplete"
+        },
+        {
+          "id": "COLLECTOR-VALIDITY__VALID",
+          "value": "valid",
+          "meaning": "valid"
+        },
+        {
+          "id": "COLLECTOR-VALIDITY__MALFORMED",
+          "value": "malformed",
+          "meaning": "malformed"
+        },
+        {
+          "id": "COLLECTOR-VALIDITY__INVALID_VALUE",
+          "value": "invalid-value",
+          "meaning": "invalid value"
+        },
+        {
+          "id": "COLLECTOR-VALIDITY__DEFERRED",
+          "value": "deferred",
+          "meaning": "deferred"
+        }
+      ]
+    },
+    {
+      "id": "silence",
+      "source": {
+        "file": "SpeechContinuationSession.js",
+        "owner": "#deadline"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SILENCE__UNARMED",
+          "value": "unarmed",
+          "meaning": "unarmed"
+        },
+        {
+          "id": "SILENCE__ARMED",
+          "value": "armed",
+          "meaning": "armed"
+        },
+        {
+          "id": "SILENCE__EXPIRED",
+          "value": "expired",
+          "meaning": "expired"
+        }
+      ]
+    },
+    {
+      "id": "speechOutcome",
+      "source": {
+        "file": "SpeechRejectionFeedback.js",
+        "owner": "recognition result outcome"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SPEECH-OUTCOME__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "SPEECH-OUTCOME__ACCEPTED",
+          "value": "accepted",
+          "meaning": "accepted"
+        },
+        {
+          "id": "SPEECH-OUTCOME__MALFORMED",
+          "value": "malformed",
+          "meaning": "malformed"
+        },
+        {
+          "id": "SPEECH-OUTCOME__INCOMPLETE",
+          "value": "incomplete",
+          "meaning": "incomplete"
+        },
+        {
+          "id": "SPEECH-OUTCOME__INVALID_VALUE",
+          "value": "invalid-value",
+          "meaning": "invalid value"
+        },
+        {
+          "id": "SPEECH-OUTCOME__UNRECOGNIZED",
+          "value": "unrecognized",
+          "meaning": "unrecognized"
+        },
+        {
+          "id": "SPEECH-OUTCOME__IGNORED",
+          "value": "ignored",
+          "meaning": "ignored"
+        }
+      ],
+      "notes": "Per logical root; discarded text does not become another command."
+    },
+    {
+      "id": "micBar",
+      "source": {
+        "file": "SpeechMicBar.js",
+        "owner": "isOpen"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "MIC-BAR__HIDDEN",
+          "value": "hidden",
+          "meaning": "hidden"
+        },
+        {
+          "id": "MIC-BAR__VISIBLE",
+          "value": "visible",
+          "meaning": "visible"
+        }
+      ]
+    },
+    {
+      "id": "commandsList",
+      "source": {
+        "file": "SpeechMicBar.js",
+        "owner": "optionsOpen"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "COMMANDS-LIST__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "COMMANDS-LIST__OPEN",
+          "value": "open",
+          "meaning": "open"
+        }
+      ]
+    },
+    {
+      "id": "responseItem",
+      "source": {
+        "file": "SpeechMicBar.js",
+        "owner": "response chain TTL / animation"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "RESPONSE-ITEM__ENTERING",
+          "value": "entering",
+          "meaning": "entering"
+        },
+        {
+          "id": "RESPONSE-ITEM__DOCKED",
+          "value": "docked",
+          "meaning": "docked"
+        },
+        {
+          "id": "RESPONSE-ITEM__EXITING",
+          "value": "exiting",
+          "meaning": "exiting"
+        },
+        {
+          "id": "RESPONSE-ITEM__EXPIRED",
+          "value": "expired",
+          "meaning": "expired"
+        }
+      ],
+      "notes": "Per response in ordered horizontal chain; a single response uses the same model."
+    },
+    {
+      "id": "speechOutput",
+      "source": {
+        "file": "app.js",
+        "owner": "audioSettings speech flag"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SPEECH-OUTPUT__OFF",
+          "value": "off",
+          "meaning": "off"
+        },
+        {
+          "id": "SPEECH-OUTPUT__ON",
+          "value": "on",
+          "meaning": "on"
+        }
+      ]
+    },
+    {
+      "id": "chimeOutput",
+      "source": {
+        "file": "app.js",
+        "owner": "audioSettings chime flag"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "CHIME-OUTPUT__OFF",
+          "value": "off",
+          "meaning": "off"
+        },
+        {
+          "id": "CHIME-OUTPUT__ON",
+          "value": "on",
+          "meaning": "on"
+        }
+      ]
+    },
+    {
+      "id": "announcementCategory",
+      "source": {
+        "file": "app.js",
+        "owner": "semantic announcement cause"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "ANNOUNCEMENT-CATEGORY__TRANSITIONAL",
+          "value": "transitional",
+          "meaning": "transitional"
+        },
+        {
+          "id": "ANNOUNCEMENT-CATEGORY__USER_ACTIVATED",
+          "value": "user-activated",
+          "meaning": "user activated"
+        }
+      ]
+    },
+    {
+      "id": "announcementPhase",
+      "source": {
+        "file": "app.js",
+        "owner": "announcementComponents()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "ANNOUNCEMENT-PHASE__CHIME",
+          "value": "chime",
+          "meaning": "chime"
+        },
+        {
+          "id": "ANNOUNCEMENT-PHASE__SUMMARY",
+          "value": "summary",
+          "meaning": "summary"
+        },
+        {
+          "id": "ANNOUNCEMENT-PHASE__DETAILS",
+          "value": "details",
+          "meaning": "details"
+        }
+      ]
+    },
+    {
+      "id": "announcementWork",
+      "source": {
+        "file": "OwnedFeedbackScope.js",
+        "owner": "pending / playing / closed"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "ANNOUNCEMENT-WORK__IDLE",
+          "value": "idle",
+          "meaning": "idle"
+        },
+        {
+          "id": "ANNOUNCEMENT-WORK__DEFERRED",
+          "value": "deferred",
+          "meaning": "deferred"
+        },
+        {
+          "id": "ANNOUNCEMENT-WORK__QUEUED",
+          "value": "queued",
+          "meaning": "queued"
+        },
+        {
+          "id": "ANNOUNCEMENT-WORK__PLAYING",
+          "value": "playing",
+          "meaning": "playing"
+        },
+        {
+          "id": "ANNOUNCEMENT-WORK__COMPLETED",
+          "value": "completed",
+          "meaning": "completed"
+        },
+        {
+          "id": "ANNOUNCEMENT-WORK__CANCELLED",
+          "value": "cancelled",
+          "meaning": "cancelled"
+        },
+        {
+          "id": "ANNOUNCEMENT-WORK__FAILED",
+          "value": "failed",
+          "meaning": "failed"
+        }
+      ],
+      "notes": "Per owner/entry; terminal work may be retained in trace after removal from the queue."
+    },
+    {
+      "id": "timeReadback",
+      "source": {
+        "file": "ToneReferencedAnnouncement.js",
+        "owner": "readback / speech / cue completion"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TIME-READBACK__IDLE",
+          "value": "idle",
+          "meaning": "idle"
+        },
+        {
+          "id": "TIME-READBACK__ESTIMATING",
+          "value": "estimating",
+          "meaning": "estimating"
+        },
+        {
+          "id": "TIME-READBACK__QUEUED",
+          "value": "queued",
+          "meaning": "queued"
+        },
+        {
+          "id": "TIME-READBACK__SPEAKING",
+          "value": "speaking",
+          "meaning": "speaking"
+        },
+        {
+          "id": "TIME-READBACK__AWAITING_TONE",
+          "value": "awaiting-tone",
+          "meaning": "awaiting tone"
+        },
+        {
+          "id": "TIME-READBACK__COMPLETED",
+          "value": "completed",
+          "meaning": "completed"
+        },
+        {
+          "id": "TIME-READBACK__CANCELLED",
+          "value": "cancelled",
+          "meaning": "cancelled"
+        }
+      ],
+      "notes": "Readback request coalescing and monotonic cue deadline stay attached to the request owner."
+    },
+    {
+      "id": "operation",
+      "source": {
+        "file": "StateTransactions.js",
+        "owner": "CommandOperation.phase"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "OPERATION__COLLECTING",
+          "value": "collecting",
+          "meaning": "collecting"
+        },
+        {
+          "id": "OPERATION__QUEUED",
+          "value": "queued",
+          "meaning": "queued"
+        },
+        {
+          "id": "OPERATION__EXECUTING",
+          "value": "executing",
+          "meaning": "executing"
+        },
+        {
+          "id": "OPERATION__AWAITING_RESULT",
+          "value": "awaiting-result",
+          "meaning": "awaiting result"
+        },
+        {
+          "id": "OPERATION__COMMITTING",
+          "value": "committing",
+          "meaning": "committing"
+        },
+        {
+          "id": "OPERATION__RECONCILING",
+          "value": "reconciling",
+          "meaning": "reconciling"
+        },
+        {
+          "id": "OPERATION__CONFIRMED",
+          "value": "confirmed",
+          "meaning": "confirmed"
+        },
+        {
+          "id": "OPERATION__REVERTED",
+          "value": "reverted",
+          "meaning": "reverted"
+        }
+      ],
+      "notes": "Per owned operation. queued/reconciling are also emitted on coordinator trace/pending projection."
+    },
+    {
+      "id": "transaction",
+      "source": {
+        "file": "StateTransactions.js",
+        "owner": "transaction.status"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TRANSACTION__PENDING",
+          "value": "pending",
+          "meaning": "pending"
+        },
+        {
+          "id": "TRANSACTION__CONFIRMED",
+          "value": "confirmed",
+          "meaning": "confirmed"
+        },
+        {
+          "id": "TRANSACTION__REVERTED",
+          "value": "reverted",
+          "meaning": "reverted"
+        }
+      ]
+    },
+    {
+      "id": "retry",
+      "source": {
+        "file": "StateTransactions.js",
+        "owner": "transaction.retrying"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "RETRY__NOT_RETRYING",
+          "value": "not-retrying",
+          "meaning": "not retrying"
+        },
+        {
+          "id": "RETRY__RETRYING",
+          "value": "retrying",
+          "meaning": "retrying"
+        }
+      ]
+    },
+    {
+      "id": "locks",
+      "source": {
+        "file": "StateTransactions.js",
+        "owner": "#locks"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "LOCKS__FREE",
+          "value": "free",
+          "meaning": "free"
+        },
+        {
+          "id": "LOCKS__SINGLE_OWNER",
+          "value": "single-owner",
+          "meaning": "single owner"
+        },
+        {
+          "id": "LOCKS__MULTIPLE_OWNERS",
+          "value": "multiple-owners",
+          "meaning": "multiple owners"
+        }
+      ]
+    },
+    {
+      "id": "effect",
+      "source": {
+        "file": "StateTransactions.js",
+        "owner": "#effects / coordinator trace"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "EFFECT__SCHEDULED",
+          "value": "scheduled",
+          "meaning": "scheduled"
+        },
+        {
+          "id": "EFFECT__RUNNING",
+          "value": "running",
+          "meaning": "running"
+        },
+        {
+          "id": "EFFECT__COMPLETED",
+          "value": "completed",
+          "meaning": "completed"
+        },
+        {
+          "id": "EFFECT__FAILED",
+          "value": "failed",
+          "meaning": "failed"
+        },
+        {
+          "id": "EFFECT__CANCELLED",
+          "value": "cancelled",
+          "meaning": "cancelled"
+        },
+        {
+          "id": "EFFECT__STALE",
+          "value": "stale",
+          "meaning": "stale"
+        }
+      ],
+      "notes": "Per effect; stale means invalid ownership/generation, not an application error by itself."
+    },
+    {
+      "id": "persistenceBehavior",
+      "source": {
+        "file": "StateTransactions.js",
+        "owner": "declared persistence behavior"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "PERSISTENCE-BEHAVIOR__WAIT_SYNC",
+          "value": "Wait Sync",
+          "meaning": "Wait Sync"
+        },
+        {
+          "id": "PERSISTENCE-BEHAVIOR__WAIT_ASYNC",
+          "value": "Wait Async",
+          "meaning": "Wait Async"
+        },
+        {
+          "id": "PERSISTENCE-BEHAVIOR__OPTIMISTIC",
+          "value": "Optimistic",
+          "meaning": "Optimistic"
+        },
+        {
+          "id": "PERSISTENCE-BEHAVIOR__ENFORCE",
+          "value": "Enforce",
+          "meaning": "Enforce"
+        }
+      ],
+      "notes": "Operation policy, not a global app mode."
+    },
+    {
+      "id": "renderedTime",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "renderedTimeMode"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "RENDERED-TIME__REMAINING",
+          "value": "remaining",
+          "meaning": "remaining"
+        },
+        {
+          "id": "RENDERED-TIME__ELAPSED",
+          "value": "elapsed",
+          "meaning": "elapsed"
+        },
+        {
+          "id": "RENDERED-TIME__CALCULATED_END",
+          "value": "calculated-end",
+          "meaning": "calculated end"
+        }
+      ]
+    },
+    {
+      "id": "timerLayout",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "timer-type"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TIMER-LAYOUT__RADIAL_FITTED",
+          "value": "radial-fitted",
+          "meaning": "radial fitted"
+        },
+        {
+          "id": "TIMER-LAYOUT__RADIAL_OVERFLOW",
+          "value": "radial-overflow",
+          "meaning": "radial overflow"
+        }
+      ]
+    },
+    {
+      "id": "timerTransition",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "uiState.transition_phase"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TIMER-TRANSITION__ACTIVE",
+          "value": "active",
+          "meaning": "active"
+        },
+        {
+          "id": "TIMER-TRANSITION__SETTLED",
+          "value": "settled",
+          "meaning": "settled"
+        }
+      ]
+    },
+    {
+      "id": "orientation",
+      "source": {
+        "file": "ViewportLayout.js",
+        "owner": "viewport aspect"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "ORIENTATION__PORTRAIT",
+          "value": "portrait",
+          "meaning": "portrait"
+        },
+        {
+          "id": "ORIENTATION__LANDSCAPE",
+          "value": "landscape",
+          "meaning": "landscape"
+        }
+      ]
+    },
+    {
+      "id": "fullscreen",
+      "source": {
+        "file": "ViewportLayout.js",
+        "owner": "document.fullscreenElement"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "FULLSCREEN__WINDOWED",
+          "value": "windowed",
+          "meaning": "windowed"
+        },
+        {
+          "id": "FULLSCREEN__FULLSCREEN",
+          "value": "fullscreen",
+          "meaning": "fullscreen"
+        }
+      ]
+    },
+    {
+      "id": "keyboard",
+      "source": {
+        "file": "ViewportLayout.js",
+        "owner": "visual viewport / focused editor"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "KEYBOARD__HIDDEN",
+          "value": "hidden",
+          "meaning": "hidden"
+        },
+        {
+          "id": "KEYBOARD__VISIBLE",
+          "value": "visible",
+          "meaning": "visible"
+        }
+      ]
+    },
+    {
+      "id": "training",
+      "source": {
+        "file": "app.js",
+        "owner": "speech training choices / pending decision / busy"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TRAINING__INACTIVE",
+          "value": "inactive",
+          "meaning": "inactive"
+        },
+        {
+          "id": "TRAINING__COLLECTING",
+          "value": "collecting",
+          "meaning": "collecting"
+        },
+        {
+          "id": "TRAINING__CHOICE_REQUIRED",
+          "value": "choice-required",
+          "meaning": "choice required"
+        },
+        {
+          "id": "TRAINING__PENDING_DECISION",
+          "value": "pending-decision",
+          "meaning": "pending decision"
+        },
+        {
+          "id": "TRAINING__BUSY",
+          "value": "busy",
+          "meaning": "busy"
+        }
+      ],
+      "notes": "Detailed training recordings/results are owned payload, not credential data."
+    },
+    {
+      "id": "stream",
+      "source": {
+        "file": "LiveTripStream.js",
+        "owner": "publisher connection events"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "STREAM__IDLE",
+          "value": "idle",
+          "meaning": "idle"
+        },
+        {
+          "id": "STREAM__CONNECTING",
+          "value": "connecting",
+          "meaning": "connecting"
+        },
+        {
+          "id": "STREAM__CONNECTED",
+          "value": "connected",
+          "meaning": "connected"
+        },
+        {
+          "id": "STREAM__INTERRUPTED",
+          "value": "interrupted",
+          "meaning": "interrupted"
+        },
+        {
+          "id": "STREAM__DISCONNECTED",
+          "value": "disconnected",
+          "meaning": "disconnected"
+        },
+        {
+          "id": "STREAM__REJECTED",
+          "value": "rejected",
+          "meaning": "rejected"
+        }
+      ],
+      "notes": "Publisher presence is orthogonal to trip state; observer-only standalone UI is outside this coupled runtime."
+    },
+    {
+      "id": "permission",
+      "source": {
+        "file": "app.js",
+        "owner": "signedInProfile.permissions"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "PERMISSION__DENIED",
+          "value": "denied",
+          "meaning": "denied"
+        },
+        {
+          "id": "PERMISSION__ALLOWED",
+          "value": "allowed",
+          "meaning": "allowed"
+        }
+      ],
+      "notes": "Per named permission, not a single all-permissions boolean."
+    },
+    {
+      "id": "focus",
+      "source": {
+        "file": "SharedModal.js",
+        "owner": "ordered active surface stack"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "FOCUS__MAIN",
+          "value": "main",
+          "meaning": "main"
+        },
+        {
+          "id": "FOCUS__SURFACE",
+          "value": "surface",
+          "meaning": "surface"
+        }
+      ],
+      "notes": "surface carries an exact surface ID from surfaces plus an ordered return/owner path."
+    },
+    {
+      "id": "menuVisibility",
+      "source": {
+        "file": "HamburgerMenu.js",
+        "owner": "menu visibility"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "MENU-VISIBILITY__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "MENU-VISIBILITY__OPENING",
+          "value": "opening",
+          "meaning": "opening"
+        },
+        {
+          "id": "MENU-VISIBILITY__OPEN",
+          "value": "open",
+          "meaning": "open"
+        },
+        {
+          "id": "MENU-VISIBILITY__CLOSING",
+          "value": "closing",
+          "meaning": "closing"
+        }
+      ]
+    },
+    {
+      "id": "menuPane",
+      "source": {
+        "file": "HamburgerMenu.js",
+        "owner": "promoted parent pane"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "MENU-PANE__ROOT",
+          "value": "root",
+          "meaning": "root"
+        },
+        {
+          "id": "MENU-PANE__SETTINGSSUBMENU",
+          "value": "settingsSubmenu",
+          "meaning": "settingsSubmenu"
+        },
+        {
+          "id": "MENU-PANE__RECOGNIZERNAMESUBMENU",
+          "value": "recognizerNameSubmenu",
+          "meaning": "recognizerNameSubmenu"
+        },
+        {
+          "id": "MENU-PANE__TRIPLOGSUBMENU",
+          "value": "tripLogSubmenu",
+          "meaning": "tripLogSubmenu"
+        },
+        {
+          "id": "MENU-PANE__DEVELOPERSUBMENU",
+          "value": "developerSubmenu",
+          "meaning": "developerSubmenu"
+        },
+        {
+          "id": "MENU-PANE__SPEECHSUBMENU",
+          "value": "speechSubmenu",
+          "meaning": "speechSubmenu"
+        }
+      ],
+      "notes": "Per menu; active path and expanded child set are attached payload. Visible descendants count regardless of nesting."
+    },
+    {
+      "id": "menuPromotion",
+      "source": {
+        "file": "HamburgerMenu.js",
+        "owner": "promotion / restoration animation"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "MENU-PROMOTION__SETTLED",
+          "value": "settled",
+          "meaning": "settled"
+        },
+        {
+          "id": "MENU-PROMOTION__PROMOTING",
+          "value": "promoting",
+          "meaning": "promoting"
+        },
+        {
+          "id": "MENU-PROMOTION__RESTORING",
+          "value": "restoring",
+          "meaning": "restoring"
+        }
+      ]
+    },
+    {
+      "id": "dialMode",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "timer-mode"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "DIAL-MODE__ELAPSED",
+          "value": "elapsed",
+          "meaning": "elapsed"
+        },
+        {
+          "id": "DIAL-MODE__REMAINING",
+          "value": "remaining",
+          "meaning": "remaining"
+        }
+      ]
+    },
+    {
+      "id": "timePresentation",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "renderTime handler family"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "TIME-PRESENTATION__CLOCK",
+          "value": "clock",
+          "meaning": "clock"
+        },
+        {
+          "id": "TIME-PRESENTATION__ELAPSED",
+          "value": "elapsed",
+          "meaning": "elapsed"
+        },
+        {
+          "id": "TIME-PRESENTATION__REMAINING",
+          "value": "remaining",
+          "meaning": "remaining"
+        },
+        {
+          "id": "TIME-PRESENTATION__END",
+          "value": "end",
+          "meaning": "end"
+        }
+      ]
+    },
+    {
+      "id": "settingProvenance",
+      "source": {
+        "file": "ObserverSettingBadge.js",
+        "owner": "setting badge source"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SETTING-PROVENANCE__DEFAULT",
+          "value": "default",
+          "meaning": "default"
+        },
+        {
+          "id": "SETTING-PROVENANCE__CUSTOM",
+          "value": "custom",
+          "meaning": "custom"
+        },
+        {
+          "id": "SETTING-PROVENANCE__USER",
+          "value": "user",
+          "meaning": "user"
+        },
+        {
+          "id": "SETTING-PROVENANCE__DEFAULT_USER",
+          "value": "default+user",
+          "meaning": "default+user"
+        },
+        {
+          "id": "SETTING-PROVENANCE__CUSTOM_USER",
+          "value": "custom+user",
+          "meaning": "custom+user"
+        }
+      ],
+      "notes": "Per setting; Default and Custom cannot coincide."
+    },
+    {
+      "id": "settingMirror",
+      "source": {
+        "file": "app.js",
+        "owner": "Mirror option"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "SETTING-MIRROR__OFF",
+          "value": "off",
+          "meaning": "off"
+        },
+        {
+          "id": "SETTING-MIRROR__ON",
+          "value": "on",
+          "meaning": "on"
+        }
+      ]
+    },
+    {
+      "id": "formWork",
+      "source": {
+        "file": "app.js",
+        "owner": "per-surface settings/profile/down-details draft"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "FORM-WORK__PRISTINE",
+          "value": "pristine",
+          "meaning": "pristine"
+        },
+        {
+          "id": "FORM-WORK__DIRTY",
+          "value": "dirty",
+          "meaning": "dirty"
+        },
+        {
+          "id": "FORM-WORK__INVALID",
+          "value": "invalid",
+          "meaning": "invalid"
+        },
+        {
+          "id": "FORM-WORK__SAVING",
+          "value": "saving",
+          "meaning": "saving"
+        },
+        {
+          "id": "FORM-WORK__SAVED",
+          "value": "saved",
+          "meaning": "saved"
+        },
+        {
+          "id": "FORM-WORK__ERROR",
+          "value": "error",
+          "meaning": "error"
+        }
+      ]
+    },
+    {
+      "id": "downDetails",
+      "source": {
+        "file": "app.js",
+        "owner": "openDownDetailsModal()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "DOWN-DETAILS__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "DOWN-DETAILS__LOADING",
+          "value": "loading",
+          "meaning": "loading"
+        },
+        {
+          "id": "DOWN-DETAILS__VIEW",
+          "value": "view",
+          "meaning": "view"
+        },
+        {
+          "id": "DOWN-DETAILS__CAPTURE",
+          "value": "capture",
+          "meaning": "capture"
+        },
+        {
+          "id": "DOWN-DETAILS__EDIT",
+          "value": "edit",
+          "meaning": "edit"
+        },
+        {
+          "id": "DOWN-DETAILS__SAVING",
+          "value": "saving",
+          "meaning": "saving"
+        },
+        {
+          "id": "DOWN-DETAILS__ERROR",
+          "value": "error",
+          "meaning": "error"
+        }
+      ]
+    },
+    {
+      "id": "camera",
+      "source": {
+        "file": "app.js",
+        "owner": "cameraStream / openCamera()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "CAMERA__IDLE",
+          "value": "idle",
+          "meaning": "idle"
+        },
+        {
+          "id": "CAMERA__REQUESTING",
+          "value": "requesting",
+          "meaning": "requesting"
+        },
+        {
+          "id": "CAMERA__LIVE",
+          "value": "live",
+          "meaning": "live"
+        },
+        {
+          "id": "CAMERA__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        }
+      ]
+    },
+    {
+      "id": "photo",
+      "source": {
+        "file": "app.js",
+        "owner": "data.hasImage / selectedImage / deleteImage"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "PHOTO__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "PHOTO__EXISTING",
+          "value": "existing",
+          "meaning": "existing"
+        },
+        {
+          "id": "PHOTO__SELECTED",
+          "value": "selected",
+          "meaning": "selected"
+        },
+        {
+          "id": "PHOTO__DELETE_PENDING",
+          "value": "delete-pending",
+          "meaning": "delete pending"
+        }
+      ]
+    },
+    {
+      "id": "nativePrompt",
+      "source": {
+        "file": "app.js",
+        "owner": "permissions / file input / confirm()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "NATIVE-PROMPT__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "NATIVE-PROMPT__PERMISSION",
+          "value": "permission",
+          "meaning": "permission"
+        },
+        {
+          "id": "NATIVE-PROMPT__FILE_PICKER",
+          "value": "file-picker",
+          "meaning": "file picker"
+        },
+        {
+          "id": "NATIVE-PROMPT__CONFIRMATION",
+          "value": "confirmation",
+          "meaning": "confirmation"
+        }
+      ],
+      "notes": "Browser-owned interaction boundary; app cannot assume microphone command processing while a native modal blocks it."
+    },
+    {
+      "id": "timerStatus",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "status"
+      },
+      "cardinality": "one",
+      "notes": "Public status is distinct from lifecycle/operating state; open denotes an open-ended interval.",
+      "values": [
+        {
+          "id": "TIMER-STATUS__READY",
+          "value": "ready",
+          "meaning": "ready"
+        },
+        {
+          "id": "TIMER-STATUS__RUNNING",
+          "value": "running",
+          "meaning": "running"
+        },
+        {
+          "id": "TIMER-STATUS__OPEN",
+          "value": "open",
+          "meaning": "open"
+        },
+        {
+          "id": "TIMER-STATUS__STOPPED",
+          "value": "stopped",
+          "meaning": "stopped"
+        }
+      ]
+    },
+    {
+      "id": "displayData",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "UI component.available"
+      },
+      "cardinality": "one",
+      "notes": "Per component; numeric values remain payload.",
+      "values": [
+        {
+          "id": "DISPLAY-DATA__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "DISPLAY-DATA__AVAILABLE",
+          "value": "available",
+          "meaning": "available"
+        }
+      ]
+    },
+    {
+      "id": "dateRangeValidity",
+      "source": {
+        "file": "ModeMenu.js",
+        "owner": "custom date input validity"
+      },
+      "cardinality": "one",
+      "notes": "Custom scope date validity is independent of goal percentage validity.",
+      "values": [
+        {
+          "id": "DATE-RANGE-VALIDITY__UNSET",
+          "value": "unset",
+          "meaning": "unset"
+        },
+        {
+          "id": "DATE-RANGE-VALIDITY__PARTIAL",
+          "value": "partial",
+          "meaning": "partial"
+        },
+        {
+          "id": "DATE-RANGE-VALIDITY__VALID",
+          "value": "valid",
+          "meaning": "valid"
+        },
+        {
+          "id": "DATE-RANGE-VALIDITY__INVALID",
+          "value": "invalid",
+          "meaning": "invalid"
+        }
+      ]
+    },
+    {
+      "id": "frame",
+      "source": {
+        "file": "GraphicalSettingsHost.js",
+        "owner": "settings frame lifecycle"
+      },
+      "cardinality": "one",
+      "notes": "Per embedded settings frame; stale close/load acknowledgements belong to owners.",
+      "values": [
+        {
+          "id": "FRAME__CLOSED",
+          "value": "closed",
+          "meaning": "closed"
+        },
+        {
+          "id": "FRAME__LOADING",
+          "value": "loading",
+          "meaning": "loading"
+        },
+        {
+          "id": "FRAME__READY",
+          "value": "ready",
+          "meaning": "ready"
+        },
+        {
+          "id": "FRAME__CLOSING",
+          "value": "closing",
+          "meaning": "closing"
+        },
+        {
+          "id": "FRAME__ERROR",
+          "value": "error",
+          "meaning": "error"
+        }
+      ]
+    },
+    {
+      "id": "goalPerformance",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "countedPercent / selected goal"
+      },
+      "cardinality": "one",
+      "notes": "Performance relative to the selected goal; ties with 100% do not erase either relation.",
+      "values": [
+        {
+          "id": "GOAL-PERFORMANCE__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "GOAL-PERFORMANCE__ABOVE",
+          "value": "above",
+          "meaning": "above"
+        },
+        {
+          "id": "GOAL-PERFORMANCE__AT",
+          "value": "at",
+          "meaning": "at"
+        },
+        {
+          "id": "GOAL-PERFORMANCE__BELOW",
+          "value": "below",
+          "meaning": "below"
+        }
+      ]
+    },
+    {
+      "id": "standardPerformance",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "countedPercent / standard baseline"
+      },
+      "cardinality": "one",
+      "notes": "Independent relation to 100%; avoids assuming the selected goal exceeds 100%.",
+      "values": [
+        {
+          "id": "STANDARD-PERFORMANCE__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        },
+        {
+          "id": "STANDARD-PERFORMANCE__ABOVE",
+          "value": "above",
+          "meaning": "above"
+        },
+        {
+          "id": "STANDARD-PERFORMANCE__AT",
+          "value": "at",
+          "meaning": "at"
+        },
+        {
+          "id": "STANDARD-PERFORMANCE__BELOW",
+          "value": "below",
+          "meaning": "below"
+        }
+      ]
+    },
+    {
+      "id": "credentialCell",
+      "source": {
+        "file": "app.js",
+        "owner": "loginDigitSlots"
+      },
+      "cardinality": "one",
+      "notes": "Per ID/PIN cell. Occupancy/focus affect Backspace behavior; actual digits are excluded.",
+      "values": [
+        {
+          "id": "CREDENTIAL-CELL__EMPTY",
+          "value": "empty",
+          "meaning": "empty"
+        },
+        {
+          "id": "CREDENTIAL-CELL__FILLED",
+          "value": "filled",
+          "meaning": "filled"
+        }
+      ]
+    },
+    {
+      "id": "credentialField",
+      "source": {
+        "file": "app.js",
+        "owner": "active login input"
+      },
+      "cardinality": "one",
+      "notes": "Username/password fields remain distinct in legacy/password entry.",
+      "values": [
+        {
+          "id": "CREDENTIAL-FIELD__NONE",
+          "value": "none",
+          "meaning": "none"
+        },
+        {
+          "id": "CREDENTIAL-FIELD__ID",
+          "value": "id",
+          "meaning": "id"
+        },
+        {
+          "id": "CREDENTIAL-FIELD__PIN",
+          "value": "pin",
+          "meaning": "pin"
+        },
+        {
+          "id": "CREDENTIAL-FIELD__USERNAME",
+          "value": "username",
+          "meaning": "username"
+        },
+        {
+          "id": "CREDENTIAL-FIELD__PASSWORD",
+          "value": "password",
+          "meaning": "password"
+        }
+      ]
+    },
+    {
+      "id": "recognizerBackend",
+      "source": {
+        "file": "SpeechMenu.js",
+        "owner": "#recognizerBackend"
+      },
+      "cardinality": "one",
+      "notes": "Includes the legacy initial label; do not treat backend names as spoken commands.",
+      "values": [
+        {
+          "id": "RECOGNIZER-BACKEND__SHERPA",
+          "value": "sherpa",
+          "meaning": "sherpa"
+        },
+        {
+          "id": "RECOGNIZER-BACKEND__VOSK",
+          "value": "vosk",
+          "meaning": "vosk"
+        },
+        {
+          "id": "RECOGNIZER-BACKEND__POCKETSPHINX",
+          "value": "pocketsphinx",
+          "meaning": "pocketsphinx"
+        }
+      ]
+    },
+    {
+      "id": "audioPipeline",
+      "source": {
+        "file": "SpeechMenu.js",
+        "owner": "#pipeline"
+      },
+      "cardinality": "one",
+      "notes": "Recognizer/VAD configuration, independent of app-mode.",
+      "values": [
+        {
+          "id": "AUDIO-PIPELINE__RAW",
+          "value": "raw",
+          "meaning": "raw"
+        },
+        {
+          "id": "AUDIO-PIPELINE__SILERO",
+          "value": "silero",
+          "meaning": "silero"
+        }
+      ]
+    },
+    {
+      "id": "spokenTimeStyle",
+      "source": {
+        "file": "app.js",
+        "owner": "audioSettings.formalTime"
+      },
+      "cardinality": "one",
+      "notes": "Speech style affects the duration text, not ownership or trip state.",
+      "values": [
+        {
+          "id": "SPOKEN-TIME-STYLE__INFORMAL",
+          "value": "informal",
+          "meaning": "informal"
+        },
+        {
+          "id": "SPOKEN-TIME-STYLE__FORMAL",
+          "value": "formal",
+          "meaning": "formal"
+        }
+      ]
+    },
+    {
+      "id": "announcementLayer",
+      "source": {
+        "file": "app.js",
+        "owner": "per-announcement output layer"
+      },
+      "cardinality": "one",
+      "notes": "Per chime/summary/details layer, with declared master overrides.",
+      "values": [
+        {
+          "id": "ANNOUNCEMENT-LAYER__OFF",
+          "value": "off",
+          "meaning": "off"
+        },
+        {
+          "id": "ANNOUNCEMENT-LAYER__ON",
+          "value": "on",
+          "meaning": "on"
+        }
+      ]
+    },
+    {
+      "id": "devicePermission",
+      "source": {
+        "file": "app.js",
+        "owner": "mediaDevices access"
+      },
+      "cardinality": "one",
+      "notes": "Per microphone/camera; hardware capability and permission are separate from desired recognition mode.",
+      "values": [
+        {
+          "id": "DEVICE-PERMISSION__UNKNOWN",
+          "value": "unknown",
+          "meaning": "unknown"
+        },
+        {
+          "id": "DEVICE-PERMISSION__REQUESTING",
+          "value": "requesting",
+          "meaning": "requesting"
+        },
+        {
+          "id": "DEVICE-PERMISSION__GRANTED",
+          "value": "granted",
+          "meaning": "granted"
+        },
+        {
+          "id": "DEVICE-PERMISSION__DENIED",
+          "value": "denied",
+          "meaning": "denied"
+        },
+        {
+          "id": "DEVICE-PERMISSION__UNAVAILABLE",
+          "value": "unavailable",
+          "meaning": "unavailable"
+        }
+      ]
+    },
+    {
+      "id": "recognitionModel",
+      "source": {
+        "file": "SpeechMenu.js",
+        "owner": "#modelReady / start model loading"
+      },
+      "cardinality": "one",
+      "notes": "Model readiness is separate from desired listening mode and capture ownership.",
+      "values": [
+        {
+          "id": "RECOGNITION-MODEL__UNLOADED",
+          "value": "unloaded",
+          "meaning": "unloaded"
+        },
+        {
+          "id": "RECOGNITION-MODEL__LOADING",
+          "value": "loading",
+          "meaning": "loading"
+        },
+        {
+          "id": "RECOGNITION-MODEL__READY",
+          "value": "ready",
+          "meaning": "ready"
+        },
+        {
+          "id": "RECOGNITION-MODEL__FAILED",
+          "value": "failed",
+          "meaning": "failed"
+        }
+      ]
+    }
+  ],
+  "surfaces": [
+    {
+      "id": "tripLogDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-TRIP-LOG-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "voiceEntrySurface",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-VOICE-ENTRY-SURFACE",
+      "kind": "dialog"
+    },
+    {
+      "id": "speechTrainingChoiceDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-SPEECH-TRAINING-CHOICE-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "speechTrainingPendingDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-SPEECH-TRAINING-PENDING-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "loginDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-LOGIN-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "legacyLoginDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-LEGACY-LOGIN-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "autoGoalDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-AUTO-GOAL-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "profileDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-PROFILE-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "newUserDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-NEW-USER-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "graphicalSettingsDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-GRAPHICAL-SETTINGS-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "audioSettingsDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-AUDIO-SETTINGS-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "audioAnnouncementsDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-AUDIO-ANNOUNCEMENTS-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "stateSettingsDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-STATE-SETTINGS-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "tripSettingsDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-TRIP-SETTINGS-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "scheduledStartDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-SCHEDULED-START-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "breakDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-BREAK-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "cancelDownConfirmDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-CANCEL-DOWN-CONFIRM-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "speechTimingDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-SPEECH-TIMING-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "liveStreamDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-LIVE-STREAM-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "tripTransitionOverlay",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-TRIP-TRANSITION-OVERLAY",
+      "kind": "dialog"
+    },
+    {
+      "id": "voicePadRecognitionDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-VOICE-PAD-RECOGNITION-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "voiceInputSwitchDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-VOICE-INPUT-SWITCH-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "speechBreakConfirmDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-SPEECH-BREAK-CONFIRM-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "clockTimerSettingsFrameDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-CLOCK-TIMER-SETTINGS-FRAME-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "userLookupDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-USER-LOOKUP-DIALOG",
+      "kind": "dialog"
+    },
+    {
+      "id": "numberPadDialog",
+      "source": "numberpad.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-NUMBER-PAD-DIALOG",
+      "kind": "loaded-dialog"
+    },
+    {
+      "id": "speechMicBar",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-SPEECH-MIC-BAR",
+      "kind": "popover"
+    },
+    {
+      "id": "speechTrainingWidget",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-SPEECH-TRAINING-WIDGET",
+      "kind": "popover"
+    },
+    {
+      "id": "graphicalHelpPopover",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-GRAPHICAL-HELP-POPOVER",
+      "kind": "popover"
+    },
+    {
+      "id": "modeCustomDates",
+      "selector": ".mode-date-dialog",
+      "source": "ModeMenu.js",
+      "owner": "dates",
+      "kind": "dynamic",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-MODE-CUSTOM-DATES"
+    },
+    {
+      "id": "downDetailsEditor",
+      "selector": ".down-details-dialog",
+      "source": "app.js",
+      "owner": "openDownDetailsModal",
+      "kind": "dynamic",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-DOWN-DETAILS-EDITOR"
+    },
+    {
+      "id": "modeDropdown",
+      "selector": ".mode-dropdown",
+      "source": "ModeMenu.js",
+      "owner": "button.id + Dropdown",
+      "kind": "dynamic",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-MODE-DROPDOWN"
+    }
+  ],
+  "constraints": [
+    {
+      "id": "SHARED-VOCABULARY",
+      "requirement": "App mode does not prefix, clone or filter shared region states. Debug-only workflow aliases are explicitly marked and use shared editor/lifecycle regions."
+    },
+    {
+      "id": "EXPLICIT-MODE",
+      "requirement": "Execution mode is explicit; no implicit default. Current implementation declares Debug."
+    },
+    {
+      "id": "INTERVAL-OWNER",
+      "requirement": "Opening/closing buffer, pending and latency retain interval identity/kind. None extent implies no active interval phase."
+    },
+    {
+      "id": "EDITOR-CONSISTENCY",
+      "requirement": "No editor surface implies no active editor kind/field/role/workflow. Voice and keypad share the value/continuation model."
+    },
+    {
+      "id": "FOCUS-STACK",
+      "requirement": "Focused surface is an open/opening registered surface in an ordered stack. Multiple surfaces can remain open; manual mic access remains available."
+    },
+    {
+      "id": "SUMMARY-CONSISTENCY",
+      "requirement": "Closed summary has no invocation. Loading/error and empty successful data are distinct."
+    },
+    {
+      "id": "BREAK-CONFIRM",
+      "requirement": "End confirmation retains original interval identity; replacement invalidates it without stopping the trip."
+    },
+    {
+      "id": "ONE-PIN-OK",
+      "requirement": "A complete PIN plus one OK submits once. No PIN review stage or second confirmation."
+    },
+    {
+      "id": "SLEEP-VOICE",
+      "requirement": "Sleeping accepts only Wake voice commands. Manual Commands access neither wakes recognition nor authorizes other voice commands."
+    },
+    {
+      "id": "GOAL-ORDER",
+      "requirement": "A stable descending permutation of Trip/Total/Standard with tie priority in that order; derived rather than independently mutable."
+    },
+    {
+      "id": "TIMING-RELATIONS",
+      "requirement": "Historical early start is distinct from currently before scheduled start. Overtime is after standard boundary. B-game requires target above 100%, missed target and performance still above 100%."
+    },
+    {
+      "id": "OPERATION-TERMINAL",
+      "requirement": "Confirmed/reverted operations have no outstanding waits. Only owned locks release; stale callbacks cannot mutate replacement/account/target."
+    },
+    {
+      "id": "AUDIO-CAUSE",
+      "requirement": "Transitional and user-activated announcements follow their event/request owners, not repeated state-matching ticks."
+    },
+    {
+      "id": "DEBUG-SUMMARY",
+      "requirement": "Between trips, summary remains open. Spoken OK opens Voicepad when available; touch OK opens Numberpad. Cancel/Close dismisses without entry. Other valid commands retain the existing dismissal rule."
+    },
+    {
+      "id": "PAYLOAD",
+      "requirement": "Raw credentials, unique identities, transcript text, numerical readings, exact goals and deadlines are payload. Boundary labels, ownership relations and ordered return/continuation paths determine behavioral state; relevant navigation history must not be omitted."
+    },
+    {
+      "id": "VALID-COMBINATIONS",
+      "requirement": "Do not treat arbitrary Cartesian products as valid. Reachability and transition coverage are separate from enumerating region vocabulary."
+    }
+  ],
+  "transitionPolicies": [
+    {
+      "id": "SUMMARY-OK-BETWEEN-TRIPS",
+      "trigger": "Summary OK",
+      "debug": {
+        "status": "implemented",
+        "possibleDestinations": [
+          "DEBUG-MANUAL-ENTRY-EMPTY"
+        ],
+        "effect": "Spoken input opens shared Voicepad; button input opens shared Numberpad."
+      },
+      "simulation": {
+        "status": "deferred-to-test-branch"
+      },
+      "production": {
+        "status": "excluded-from-current-map"
+      }
+    },
+    {
+      "id": "READY-ACTIVE-TRIP",
+      "trigger": "Ready on an active productive trip",
+      "sharedDestination": "summary ready after read settles",
+      "debug": {
+        "status": "implemented"
+      },
+      "simulation": {
+        "status": "deferred-to-test-branch"
+      },
+      "production": {
+        "status": "deferred-to-test-branch"
+      }
+    }
+  ],
+  "sourceAudit": [
+    {
+      "file": "ClockTimer.js",
+      "owners": [
+        "#lifecycle",
+        "#getOperatingState",
+        "getDispatchState",
+        "getActiveIntervalState",
+        "#setIntervalApprovalAttributes"
+      ]
+    },
+    {
+      "file": "app.js",
+      "owners": [
+        "readInteractionState",
+        "createNumberPadState",
+        "getSyncRuntimeState",
+        "getTripListState",
+        "completedTripSummary",
+        "speechBreakPromptState",
+        "tripDraft",
+        "tripSettingsSession",
+        "startupAnnouncementPending",
+        "connectionCloudPhase",
+        "openDownDetailsModal"
+      ]
+    },
+    {
+      "file": "StateTransactions.js",
+      "owners": [
+        "StateTransactions"
+      ]
+    },
+    {
+      "file": "SpeechContinuationSession.js",
+      "owners": [
+        "SpeechContinuationSession"
+      ]
+    },
+    {
+      "file": "SpeechMenu.js",
+      "owners": [
+        "SpeechMenu"
+      ]
+    },
+    {
+      "file": "OwnedFeedbackScope.js",
+      "owners": [
+        "OwnedFeedbackScope"
+      ]
+    },
+    {
+      "file": "SpeechMicBar.js",
+      "owners": [
+        "SpeechMicBar"
+      ]
+    },
+    {
+      "file": "UserLookup.js",
+      "owners": [
+        "WMOFUserLookup"
+      ]
+    },
+    {
+      "file": "AccountSettings.js",
+      "owners": [
+        "AccountSettings"
+      ]
+    },
+    {
+      "file": "SharedModal.js",
+      "owners": [
+        "SharedModal"
+      ]
+    },
+    {
+      "file": "HamburgerMenu.js",
+      "owners": [
+        "HamburgerMenu"
+      ]
+    },
+    {
+      "file": "ToneReferencedAnnouncement.js",
+      "owners": [
+        "ToneReferencedAnnouncement"
+      ]
+    },
+    {
+      "file": "SpeechGrammarContext.js",
+      "owners": [
+        "SpeechGrammarContext"
+      ]
+    },
+    {
+      "file": "TripSummary.js",
+      "owners": [
+        "TripSummary"
+      ]
+    },
+    {
+      "file": "TripLog.js",
+      "owners": [
+        "TripLog"
+      ]
+    },
+    {
+      "file": "LiveTripStream.js",
+      "owners": [
+        "LiveTripStream"
+      ]
+    },
+    {
+      "file": "ViewportLayout.js",
+      "owners": [
+        "ViewportLayout"
+      ]
+    },
+    {
+      "file": "ModeMenu.js",
+      "owners": [
+        "ModeMenu"
+      ]
+    },
+    {
+      "file": "ObserverSettingBadge.js",
+      "owners": [
+        "ObserverSettingBadge"
+      ]
+    },
+    {
+      "file": "templates/pages/order-filler/body.html",
+      "owners": [
+        "speechMicBar",
+        "tripLogDialog"
+      ]
+    },
+    {
+      "file": "order-filler.html",
+      "owners": [
+        "mainMenu",
+        "loginDialog",
+        "tripTransitionOverlay",
+        "voiceEntrySurface"
+      ]
+    },
+    {
+      "file": "numberpad.html",
+      "owners": [
+        "numberPadDialog"
+      ]
+    },
+    {
+      "file": "GraphicalSettingsHost.js",
+      "owners": [
+        "GraphicalSettingsHost"
+      ]
+    }
+  ],
+  "observabilityGaps": [
+    "The root interaction snapshot omits editor role/dirty state, break selection, scheduled preparation, startup and audio ownership phases. The inventory references their actual owners; future FSM work must expose them rather than infer eligibility from disabled buttons.",
+    "ModeMenu custom dates and Down Details create unnamed dialogs. Their selectors/creator owners are registered here; future runtime FSM work should give them stable surface IDs.",
+    "Domain labels include canonical derived boundary classes as well as literal runtime enums. No claim is made that every combined state is reachable or every transition has been tested.",
+    "New custom callback editor sources, surfaces and providers require explicit inventory registration.",
+    "Numerical equality/ties are represented by independent goal/standard relations. No priority-based performance-band enum is used, since goals can be below, equal to or above 100%."
+  ],
+  "exclusions": [
+    "Server-assigned trips and assignment handling",
+    "Standalone landing/Drop-In/admin pages except surfaces embedded by Order Filler",
+    "Future Simulation/Production transition implementations",
+    "Individual credential values, timestamps, numerical readings and cosmetic color/instrument choices"
+  ],
+  "futureBranch": {
+    "name": "test",
+    "when": "after Debug is stable",
+    "purpose": "Modify runtime enumerations/FSM and mode-specific transitions",
+    "created": false
+  },
+  "debugWorkflows": [
+    {
+      "id": "DEBUG-MANUAL-ENTRY-EMPTY",
+      "when": {
+        "tripActive": false,
+        "editorField": "new-trip",
+        "editorValidity": "empty"
+      },
+      "meaning": "Manual standard-time entry awaiting a value.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-MANUAL-ENTRY-INCOMPLETE",
+      "when": {
+        "tripActive": false,
+        "editorField": "new-trip",
+        "editorValidity": "incomplete"
+      },
+      "meaning": "Manual standard-time collection is waiting for continuation.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-MANUAL-ENTRY-VALID",
+      "when": {
+        "tripActive": false,
+        "editorField": "new-trip",
+        "editorValidity": "valid"
+      },
+      "meaning": "Standard time entered; OK may start the Debug trip.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-MANUAL-ENTRY-INVALID",
+      "when": {
+        "tripActive": false,
+        "editorField": "new-trip",
+        "editorValidity": [
+          "invalid",
+          "malformed"
+        ]
+      },
+      "meaning": "Invalid/malformed standard time; no trip starts.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-MANUAL-ENTRY-DEFERRED",
+      "when": {
+        "tripActive": false,
+        "editorField": "new-trip",
+        "editorValidity": "deferred"
+      },
+      "meaning": "Collected value defers to a root command before validity settles.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-SCHEDULED-NEEDS-DURATION",
+      "when": {
+        "scheduledStart": "future-needs-duration"
+      },
+      "meaning": "Manual future trip has a scheduled start but needs standard time.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-SCHEDULED-READY",
+      "when": {
+        "scheduledStart": "future-ready"
+      },
+      "meaning": "Manual future trip details are valid, waiting for start.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-SCHEDULED-DUE",
+      "when": {
+        "scheduledStart": [
+          "due-ready",
+          "due-needs-duration"
+        ]
+      },
+      "meaning": "Manual scheduled start is due; value completeness determines available action.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-SCHEDULED-RESOLUTION",
+      "when": {
+        "scheduledStart": "late-needs-resolution"
+      },
+      "meaning": "Manual draft requires due/late start resolution.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-DEFERRED-DRAFT",
+      "when": {
+        "tripPreparation": "deferred"
+      },
+      "meaning": "Manual draft retained without starting the trip.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    },
+    {
+      "id": "DEBUG-DRAFT-SETTINGS",
+      "when": {
+        "tripSettings": "draft"
+      },
+      "meaning": "Editing settings of a manually prepared trip.",
+      "appliesTo": [
+        "debug"
+      ],
+      "source": "app.js",
+      "notes": "Voicepad/Numberpad are shared editor states; only this manual new-trip workflow is Debug-specific."
+    }
+  ],
+  "sharedAliases": [
+    {
+      "id": "CLOCK-EARLY-START",
+      "when": {
+        "lifecycle": "running",
+        "scheduledBoundary": "before"
+      },
+      "meaning": "Trip is currently before scheduled start; not merely historically started early."
+    },
+    {
+      "id": "CLOCK-B-GAME",
+      "when": {
+        "goalValueBand": "above-standard",
+        "goalPerformance": "below",
+        "standardPerformance": "above"
+      },
+      "meaning": "Missed the selected above-100% goal, but still above 100% performance."
+    },
+    {
+      "id": "CLOCK-OVERTIME",
+      "when": {
+        "lifecycle": "running",
+        "standardBoundary": "after"
+      },
+      "meaning": "Productive trip timeline has passed standard end."
+    },
+    {
+      "id": "INTERVAL-OPENING-BUFFER",
+      "when": {
+        "intervalPhase": "start-buffer"
+      },
+      "meaning": "Opening buffer with owning interval retained."
+    },
+    {
+      "id": "INTERVAL-CLOSING-BUFFER",
+      "when": {
+        "intervalPhase": "end-buffer"
+      },
+      "meaning": "Closing buffer with owning interval retained."
+    },
+    {
+      "id": "INTERVAL-OVERTIME",
+      "when": {
+        "intervalKind": [
+          "break",
+          "short-break",
+          "lunch"
+        ],
+        "intervalAllowance": "expired"
+      },
+      "meaning": "Allowance expired; pending/latency and confirmation remain separate states."
+    },
+    {
+      "id": "SUMMARY-BETWEEN-TRIPS",
+      "when": {
+        "lifecycle": [
+          "ready",
+          "stopped"
+        ],
+        "summary": "ready"
+      },
+      "meaning": "Summary retained between trips until an accepted interaction."
+    },
+    {
+      "id": "VOICEPAD-VALID",
+      "when": {
+        "editorSurface": "voice",
+        "editorValidity": "valid"
+      },
+      "meaning": "Voice value ready for confirmation; workflow/source remain attached."
+    },
+    {
+      "id": "NUMBERPAD-VALID",
+      "when": {
+        "editorSurface": "keypad",
+        "editorValidity": "valid"
+      },
+      "meaning": "Keypad value ready for confirmation; workflow/source remain attached."
+    }
+  ],
+  "referenceMapping": [
+    {
+      "legacyId": "R0",
+      "title": "Ready",
+      "disposition": "mapped",
+      "regions": [
+        "lifecycle"
+      ]
+    },
+    {
+      "legacyId": "V0",
+      "title": "Voicepad: empty",
+      "disposition": "mapped",
+      "regions": [
+        "editorSurface",
+        "editorValidity"
+      ]
+    },
+    {
+      "legacyId": "V1",
+      "title": "Voicepad: valid value",
+      "disposition": "mapped",
+      "regions": [
+        "editorSurface",
+        "editorValidity"
+      ]
+    },
+    {
+      "legacyId": "N0",
+      "title": "Numpad: empty",
+      "disposition": "mapped",
+      "regions": [
+        "editorSurface",
+        "editorValidity"
+      ]
+    },
+    {
+      "legacyId": "N1",
+      "title": "Numpad: valid value",
+      "disposition": "mapped",
+      "regions": [
+        "editorSurface",
+        "editorValidity"
+      ]
+    },
+    {
+      "legacyId": "R1",
+      "title": "Trip running",
+      "disposition": "mapped",
+      "regions": [
+        "lifecycle"
+      ]
+    },
+    {
+      "legacyId": "W",
+      "title": "Trip Summary: trip ended",
+      "disposition": "mapped",
+      "regions": [
+        "summary",
+        "summaryInvocation"
+      ]
+    },
+    {
+      "legacyId": "ST",
+      "title": "Stopped",
+      "disposition": "mapped",
+      "regions": [
+        "lifecycle"
+      ]
+    },
+    {
+      "legacyId": "D",
+      "title": "Deferred trip",
+      "disposition": "mapped",
+      "regions": [
+        "tripPreparation"
+      ]
+    },
+    {
+      "legacyId": "S0",
+      "title": "Scheduled: needs duration",
+      "disposition": "mapped",
+      "regions": [
+        "scheduledStart",
+        "editorValidity"
+      ]
+    },
+    {
+      "legacyId": "S1",
+      "title": "Scheduled: duration valid",
+      "disposition": "mapped",
+      "regions": [
+        "scheduledStart",
+        "editorValidity"
+      ]
+    },
+    {
+      "legacyId": "SR",
+      "title": "Scheduled: due or late",
+      "disposition": "mapped",
+      "regions": [
+        "scheduledStart"
+      ]
+    },
+    {
+      "legacyId": "SE",
+      "title": "Scheduled time editor",
+      "disposition": "mapped",
+      "regions": [
+        "editorField"
+      ]
+    },
+    {
+      "legacyId": "B0",
+      "title": "Break selector: type then OK",
+      "disposition": "mapped",
+      "regions": [
+        "breakSelection"
+      ]
+    },
+    {
+      "legacyId": "B1",
+      "title": "Start interval confirmation",
+      "disposition": "mapped",
+      "regions": [
+        "breakPrompt"
+      ]
+    },
+    {
+      "legacyId": "B10",
+      "title": "Short break",
+      "disposition": "mapped",
+      "regions": [
+        "intervalKind"
+      ]
+    },
+    {
+      "legacyId": "B15",
+      "title": "Break",
+      "disposition": "mapped",
+      "regions": [
+        "intervalKind"
+      ]
+    },
+    {
+      "legacyId": "BL",
+      "title": "Lunch",
+      "disposition": "mapped",
+      "regions": [
+        "intervalKind"
+      ]
+    },
+    {
+      "legacyId": "BUF",
+      "title": "Buffer",
+      "disposition": "mapped",
+      "regions": [
+        "intervalPhase"
+      ]
+    },
+    {
+      "legacyId": "OTHER",
+      "title": "Other interval",
+      "disposition": "mapped",
+      "regions": [
+        "intervalKind"
+      ]
+    },
+    {
+      "legacyId": "DOWN",
+      "title": "Down Time",
+      "disposition": "mapped",
+      "regions": [
+        "intervalKind"
+      ]
+    },
+    {
+      "legacyId": "CD",
+      "title": "Delete Down confirmation",
+      "disposition": "mapped",
+      "regions": [
+        "focus"
+      ]
+    },
+    {
+      "legacyId": "BE",
+      "title": "End break confirmation",
+      "disposition": "mapped",
+      "regions": [
+        "breakPrompt"
+      ]
+    },
+    {
+      "legacyId": "BS",
+      "title": "Legacy lunch question (retired)",
+      "disposition": "retired",
+      "regions": []
+    },
+    {
+      "legacyId": "TS",
+      "title": "Trip settings",
+      "disposition": "mapped",
+      "regions": [
+        "tripSettings"
+      ]
+    },
+    {
+      "legacyId": "EV",
+      "title": "Edit value by voice",
+      "disposition": "mapped",
+      "regions": [
+        "editorSurface"
+      ]
+    },
+    {
+      "legacyId": "EN",
+      "title": "Edit value by touch",
+      "disposition": "mapped",
+      "regions": [
+        "editorSurface"
+      ]
+    },
+    {
+      "legacyId": "LOG",
+      "title": "Trip log",
+      "disposition": "mapped",
+      "regions": [
+        "tripLog"
+      ]
+    },
+    {
+      "legacyId": "GA",
+      "title": "Auto mode",
+      "disposition": "mapped",
+      "regions": [
+        "goalMode"
+      ]
+    },
+    {
+      "legacyId": "GT",
+      "title": "Trip mode",
+      "disposition": "mapped",
+      "regions": [
+        "goalMode"
+      ]
+    },
+    {
+      "legacyId": "GL",
+      "title": "Total mode",
+      "disposition": "mapped",
+      "regions": [
+        "goalMode"
+      ]
+    },
+    {
+      "legacyId": "SO",
+      "title": "Sync Off",
+      "disposition": "mapped",
+      "regions": [
+        "syncPreference"
+      ]
+    },
+    {
+      "legacyId": "SI",
+      "title": "Sync On",
+      "disposition": "mapped",
+      "regions": [
+        "syncPreference"
+      ]
+    },
+    {
+      "legacyId": "MIC",
+      "title": "Listening",
+      "disposition": "mapped",
+      "regions": [
+        "recognition"
+      ]
+    },
+    {
+      "legacyId": "SLEEP",
+      "title": "Sleeping",
+      "disposition": "mapped",
+      "regions": [
+        "recognition"
+      ]
+    },
+    {
+      "legacyId": "OFF",
+      "title": "Recognition Off",
+      "disposition": "mapped",
+      "regions": [
+        "recognition"
+      ]
+    },
+    {
+      "legacyId": "F",
+      "title": "Checkpoint restored",
+      "disposition": "mapped",
+      "regions": [
+        "operation"
+      ]
+    },
+    {
+      "legacyId": "P",
+      "title": "Optimistic outcome",
+      "disposition": "mapped",
+      "regions": [
+        "transaction"
+      ]
+    },
+    {
+      "legacyId": "C",
+      "title": "Accepted outcome",
+      "disposition": "mapped",
+      "regions": [
+        "transaction"
+      ]
+    },
+    {
+      "legacyId": "HT",
+      "title": "Home: originating phase T",
+      "disposition": "mapped",
+      "regions": [
+        "focus"
+      ]
+    },
+    {
+      "legacyId": "RP",
+      "title": "Return to originating surface",
+      "disposition": "mapped",
+      "regions": [
+        "focus"
+      ]
+    },
+    {
+      "legacyId": "VRQ",
+      "title": "Enable recognition?",
+      "disposition": "mapped",
+      "regions": [
+        "inputSwitch"
+      ]
+    },
+    {
+      "legacyId": "SET-G",
+      "title": "Graphical settings",
+      "disposition": "mapped",
+      "regions": [
+        "frame"
+      ]
+    },
+    {
+      "legacyId": "SET-A",
+      "title": "Audio settings",
+      "disposition": "mapped",
+      "regions": [
+        "formWork"
+      ]
+    },
+    {
+      "legacyId": "SET-P",
+      "title": "Trip preferences",
+      "disposition": "mapped",
+      "regions": [
+        "formWork"
+      ]
+    },
+    {
+      "legacyId": "SET-R",
+      "title": "Profile settings",
+      "disposition": "mapped",
+      "regions": [
+        "profilePhase"
+      ]
+    },
+    {
+      "legacyId": "CLK-R",
+      "title": "Ready",
+      "disposition": "mapped",
+      "regions": [
+        "operating"
+      ]
+    },
+    {
+      "legacyId": "CLK-N",
+      "title": "Running",
+      "disposition": "mapped",
+      "regions": [
+        "operating"
+      ]
+    },
+    {
+      "legacyId": "CLK-O",
+      "title": "Overtime",
+      "disposition": "mapped",
+      "regions": [
+        "standardBoundary"
+      ]
+    },
+    {
+      "legacyId": "CLK-OB",
+      "title": "Opening buffer",
+      "disposition": "mapped",
+      "regions": [
+        "intervalPhase"
+      ]
+    },
+    {
+      "legacyId": "CLK-B",
+      "title": "Break / Lunch",
+      "disposition": "mapped",
+      "regions": [
+        "intervalKind"
+      ]
+    },
+    {
+      "legacyId": "CLK-EB",
+      "title": "Closing buffer",
+      "disposition": "mapped",
+      "regions": [
+        "intervalPhase"
+      ]
+    },
+    {
+      "legacyId": "CLK-D",
+      "title": "Down",
+      "disposition": "mapped",
+      "regions": [
+        "intervalKind"
+      ]
+    },
+    {
+      "legacyId": "RETRY",
+      "title": "Retrying optimistic action",
+      "disposition": "mapped",
+      "regions": [
+        "retry"
+      ]
+    },
+    {
+      "legacyId": "MS",
+      "title": "Trip Summary: requested",
+      "disposition": "mapped",
+      "regions": [
+        "summary",
+        "summaryInvocation"
+      ]
+    },
+    {
+      "legacyId": "PREV",
+      "title": "Prior focus / trip state",
+      "disposition": "mapped",
+      "regions": [
+        "focus"
+      ]
+    },
+    {
+      "legacyId": "LOGIN-ID",
+      "title": "Login: user ID",
+      "disposition": "mapped",
+      "regions": [
+        "login",
+        "credentialGroup"
+      ]
+    },
+    {
+      "legacyId": "LOGIN-PIN",
+      "title": "Login: PIN",
+      "disposition": "mapped",
+      "regions": [
+        "login",
+        "credentialGroup"
+      ]
+    },
+    {
+      "legacyId": "LOGIN-WAIT",
+      "title": "Login: checking credentials",
+      "disposition": "mapped",
+      "regions": [
+        "login"
+      ]
+    },
+    {
+      "legacyId": "LOGIN-USER",
+      "title": "Login: username/password",
+      "disposition": "mapped",
+      "regions": [
+        "login"
+      ]
+    },
+    {
+      "legacyId": "LOGIN-PIN-CANCEL",
+      "title": "Login: PIN cleared once",
+      "disposition": "mapped",
+      "regions": [
+        "login",
+        "pinCancel"
+      ]
+    },
+    {
+      "legacyId": "ADM-LOOKUP",
+      "title": "Account lookup",
+      "disposition": "mapped",
+      "regions": [
+        "profilePhase"
+      ]
+    },
+    {
+      "legacyId": "ADM-LOAD",
+      "title": "Profile loading",
+      "disposition": "mapped",
+      "regions": [
+        "profilePhase"
+      ]
+    },
+    {
+      "legacyId": "ADM-EDIT",
+      "title": "Edit Profile",
+      "disposition": "mapped",
+      "regions": [
+        "profilePhase"
+      ]
+    },
+    {
+      "legacyId": "ADM-SAVE",
+      "title": "Profile saving",
+      "disposition": "mapped",
+      "regions": [
+        "profilePhase"
+      ]
+    },
+    {
+      "legacyId": "ADM-ERROR",
+      "title": "Profile error",
+      "disposition": "mapped",
+      "regions": [
+        "profilePhase"
+      ]
+    },
+    {
+      "legacyId": "DROP-IN",
+      "title": "Drop-In",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "STARTUP-AUDIO",
+      "title": "Startup: page loading",
+      "disposition": "mapped",
+      "regions": [
+        "startup",
+        "audioUnlock"
+      ]
+    },
+    {
+      "legacyId": "HOME-OUT",
+      "title": "Landing: signed out",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "HOME-LOGIN",
+      "title": "Landing: login",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "HOME-ERROR",
+      "title": "Landing: login rejected",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "HOME-IN",
+      "title": "Landing: signed in",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DI-CONNECTING",
+      "title": "Drop-In: connecting",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DI-LIVE",
+      "title": "Drop-In: live snapshot",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DI-INTERRUPTED",
+      "title": "Drop-In: transport interrupted",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DI-DISCONNECTED",
+      "title": "Drop-In: disconnected",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DI-REJECTED",
+      "title": "Drop-In: connection rejected",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DI-APPLY",
+      "title": "Drop-In: Apply settings scope",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DI-DATES",
+      "title": "Drop-In: Custom range dates",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DI-LOG",
+      "title": "Drop-In: Selected user Trip Log",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "DROP-IN-TARGET",
+      "title": "Drop-In: Apply to",
+      "disposition": "out-of-scope",
+      "regions": []
+    },
+    {
+      "legacyId": "LOGIN-REVIEW",
+      "title": "Login: typed PIN complete",
+      "disposition": "mapped",
+      "regions": [
+        "login",
+        "credentialGroup"
+      ]
+    },
+    {
+      "legacyId": "BSELECT",
+      "title": "Break selector: type selected",
+      "disposition": "mapped",
+      "regions": [
+        "breakSelection"
+      ]
+    }
+  ]
+}

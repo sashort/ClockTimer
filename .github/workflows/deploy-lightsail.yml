@@ -29,6 +29,8 @@ jobs:
           node tests/shared-page-templates.mjs
           python tests/build-version.py
           node tests/fsm-reference.mjs
+          node tests/application-state-inventory.mjs
+          node tests/order-filler-state-contract.mjs
           node tests/fsm-loopback-feedback.mjs
           node tests/application-coordinator.mjs
           node tests/speech-failfast.mjs
@@ -58,6 +60,7 @@ jobs:
           node tests/app-state-transactions.mjs --post-login-ready --voice-feedback
           node tests/app-state-transactions.mjs --voicepad-value-argument --voice-feedback
           node tests/app-state-transactions.mjs --mic-feedback --voice-feedback
+          node tests/app-state-transactions.mjs --sleep-wake-only --voice-feedback
           node tests/app-state-transactions.mjs --mic-wake-grammar --voice-feedback
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip
@@ -111,6 +114,7 @@ jobs:
       - run: node tests/shared-modal-browser.cjs
       - run: node tests/hamburger-menu-coverage-browser.cjs
       - run: node tests/mic-modal-browser.cjs
+      - run: node tests/application-state-inventory-browser.cjs
       - run: node tests/graphical-settings-browser.cjs
       - run: node tests/radial-fitted-tick-browser.cjs
       - run: php -l graphical-settings.php

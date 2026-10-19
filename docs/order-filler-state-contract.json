@@ -1,0 +1,2603 @@
+{
+  "schemaVersion": 1,
+  "status": "incremental",
+  "purpose": "Independent behavioral oracle for coupled Order Filler and ClockTimer states. Named cases cover a subset; absence is unreviewed, never permission or silence.",
+  "snapshotSources": [
+    "ClockTimer.getUIState()",
+    "ClockTimer.getDispatchState()",
+    "WMOFInteractionState.state"
+  ],
+  "axes": {
+    "operatingState": {
+      "source": "clock.dispatch_state.state",
+      "values": [
+        "ready",
+        "deferred",
+        "running",
+        "break",
+        "lunch",
+        "down",
+        "buffer",
+        "other",
+        "stopped"
+      ]
+    },
+    "timing": {
+      "source": "Derived from timestamps and selected goal; not clock_phase alone",
+      "values": [
+        "unavailable",
+        "before-scheduled-start",
+        "before-goal",
+        "at-goal",
+        "b-game",
+        "past-goal-below-standard",
+        "at-standard",
+        "overtime"
+      ],
+      "notes": "B-game: selected goal above 100%, goal deadline passed, before the standard deadline. A startRelation of early is historical and does not imply still before scheduled start. Pauses retain timing context."
+    },
+    "startRelation": {
+      "source": "clock.dispatch_state.startRelation",
+      "values": [
+        "none",
+        "early",
+        "on_time",
+        "late"
+      ]
+    },
+    "intervalPhase": {
+      "source": "clock.interval_state.phase",
+      "values": [
+        "none",
+        "start-buffer",
+        "break",
+        "lunch",
+        "down",
+        "end-buffer",
+        "pending",
+        "latency"
+      ],
+      "exhaustive": false
+    },
+    "recognition": {
+      "source": "speechRecognition",
+      "values": [
+        "off",
+        "starting",
+        "listening",
+        "sleeping",
+        "suspended"
+      ]
+    },
+    "goalMode": {
+      "source": "goalMode",
+      "values": [
+        "trip",
+        "total",
+        "auto"
+      ]
+    },
+    "goalScope": {
+      "source": "goalScope",
+      "values": [
+        "day",
+        "week",
+        "pay-period",
+        "month",
+        "year",
+        "custom"
+      ]
+    },
+    "sync": {
+      "source": "sync",
+      "notes": "Enabled preference and effective active/off/offline/blocked/data-unavailable status are distinct; enumerate separately."
+    },
+    "focus": {
+      "source": "focus + surfaces + editor + login + tripSummary",
+      "notes": "Open surfaces and focused surface are separate. Commands availability also depends on modal context and open collectors."
+    },
+    "operation": {
+      "source": "pending + locks",
+      "notes": "Owner, operation phase, validation, persistence result, cancellation and stale completion affect transitions."
+    },
+    "session": {
+      "source": "session",
+      "notes": "Authentication, permissions and connection constrain actions."
+    },
+    "utterance": {
+      "source": "SpeechMenu continuation owner and settlement events",
+      "notes": "Root/command/context collection, malformed input, deferred validity and adaptive silence affect command and announcement timing."
+    },
+    "appMode": {
+      "source": "appMode",
+      "values": [
+        "debug",
+        "production",
+        "simulation"
+      ],
+      "notes": "Current implementation explicitly declares debug. No missing-mode fallback. Production and Simulation are reserved future modes, not enabled runtime options. Simulation behavior is unspecified."
+    }
+  },
+  "invariants": [
+    {
+      "id": "AUTH-PIN-ONE-OK",
+      "requirement": "Four PIN digits plus one OK submit once. There is no second confirmation.",
+      "evidence": "node tests/app-state-transactions.mjs --pin-review --voice-feedback"
+    },
+    {
+      "id": "SLEEP-VOICE-ONLY",
+      "requirement": "Sleeping admits only Wake and its configured aliases. Pointer access to Commands remains available and does not wake recognition.",
+      "evidence": "node tests/app-state-transactions.mjs --sleep-wake-only --voice-feedback"
+    },
+    {
+      "id": "NO-READBACK-WRITES",
+      "requirement": "Time readbacks do not write trip data and leave no operation locks."
+    },
+    {
+      "id": "AUDIO-OWNERSHIP",
+      "requirement": "Announcements belong to a transition/request, are not replayed on each tick, and stale owners must not announce."
+    },
+    {
+      "id": "AUTO-DEFAULTS",
+      "requirement": "Unspecified Total is Day and unspecified goals are 100%. Touch and voice can enter Auto without any setup selector or goal editor.",
+      "evidence": "node tests/order-filler-state-contract.mjs"
+    }
+  ],
+  "cases": [
+    {
+      "id": "MIC-SLEEP",
+      "group": "microphone",
+      "setup": {
+        "recognition": "listening"
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "pointer",
+        "action": "sleep"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "sleeping",
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "chime",
+            "name": "microphone-deactivated"
+          },
+          {
+            "kind": "speech",
+            "text": "Microphone deactivated."
+          }
+        ],
+        "writes": 0,
+        "locks": 0,
+        "family": "SPEECH-SLEEPING",
+        "commands": {
+          "only": [
+            "SpeechMenu.wake"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "givenFamily": "SPEECH-LISTENING",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "MIC-SLEEP-REPEAT",
+      "group": "microphone",
+      "setup": {
+        "recognition": "sleeping"
+      },
+      "given": {
+        "speechRecognition": "sleeping",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "pointer",
+        "action": "sleep"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "sleeping",
+          "appMode": "debug"
+        },
+        "audio": [],
+        "writes": 0,
+        "locks": 0,
+        "family": "SPEECH-SLEEPING",
+        "commands": {
+          "only": [
+            "SpeechMenu.wake"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "givenFamily": "SPEECH-SLEEPING",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "MIC-WAKE",
+      "group": "microphone",
+      "setup": {
+        "recognition": "sleeping"
+      },
+      "given": {
+        "speechRecognition": "sleeping",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "pointer",
+        "action": "wake"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "chime",
+            "name": "microphone-activated"
+          },
+          {
+            "kind": "speech",
+            "text": "Microphone activated."
+          }
+        ],
+        "writes": 0,
+        "locks": 0,
+        "family": "SPEECH-LISTENING"
+      },
+      "coverage": "runtime",
+      "givenFamily": "SPEECH-SLEEPING",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "MIC-WAKE-REPEAT",
+      "group": "microphone",
+      "setup": {
+        "recognition": "listening"
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "pointer",
+        "action": "wake"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "appMode": "debug"
+        },
+        "audio": [],
+        "writes": 0,
+        "locks": 0,
+        "family": "SPEECH-LISTENING"
+      },
+      "coverage": "runtime",
+      "givenFamily": "SPEECH-LISTENING",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "TIME-RUNNING",
+      "group": "time",
+      "setup": {
+        "standardMinutes": 30,
+        "tripGoalPercent": 120,
+        "elapsed": 60000
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "tripActive": true,
+        "clockPhase": "running",
+        "tripStatus": "running",
+        "goalMode": "trip",
+        "clock.goal_component.value": 1.2,
+        "actions.ready": true,
+        "actions.resume": false,
+        "actions.endBreak": false,
+        "controls.primaryAction": "endTrip",
+        "controls.busy": false,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.openBreakStartMenu",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "time"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "tripActive": true,
+          "clockPhase": "running",
+          "tripStatus": "running",
+          "goalMode": "trip",
+          "clock.goal_component.value": 1.2,
+          "actions.ready": true,
+          "actions.resume": false,
+          "actions.endBreak": false,
+          "controls.primaryAction": "endTrip",
+          "controls.busy": false,
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "speech",
+            "format": "duration-only"
+          },
+          {
+            "kind": "chime",
+            "name": "time-reference",
+            "scheduled": true
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "TRIP-RUNNING"
+      },
+      "coverage": "runtime",
+      "givenFamily": "TRIP-RUNNING",
+      "announcementCategory": "user-activated",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "TIME-B-GAME",
+      "group": "time",
+      "setup": {
+        "standardMinutes": 30,
+        "tripGoalPercent": 120,
+        "elapsed": 1560000
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "tripActive": true,
+        "clockPhase": "running",
+        "clock.dispatch_state.goalProgress": "past",
+        "goalMode": "trip",
+        "clock.goal_component.value": 1.2,
+        "actions.ready": true,
+        "actions.resume": false,
+        "actions.endBreak": false,
+        "controls.primaryAction": "endTrip",
+        "controls.busy": false,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.openBreakStartMenu",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "time"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "tripActive": true,
+          "clockPhase": "running",
+          "clock.dispatch_state.goalProgress": "past",
+          "goalMode": "trip",
+          "clock.goal_component.value": 1.2,
+          "actions.ready": true,
+          "actions.resume": false,
+          "actions.endBreak": false,
+          "controls.primaryAction": "endTrip",
+          "controls.busy": false,
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "speech",
+            "format": "duration-only"
+          },
+          {
+            "kind": "chime",
+            "name": "time-reference",
+            "scheduled": true
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "TRIP-B-GAME"
+      },
+      "coverage": "runtime",
+      "givenFamily": "TRIP-B-GAME",
+      "announcementCategory": "user-activated",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "TIME-OVERTIME",
+      "group": "time",
+      "setup": {
+        "standardMinutes": 30,
+        "tripGoalPercent": 120,
+        "elapsed": 1860000
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "tripActive": true,
+        "clockPhase": "overtime",
+        "goalMode": "trip",
+        "clock.goal_component.value": 1.2,
+        "actions.ready": true,
+        "actions.resume": false,
+        "actions.endBreak": false,
+        "controls.primaryAction": "endTrip",
+        "controls.busy": false,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.openBreakStartMenu",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "time"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "tripActive": true,
+          "clockPhase": "overtime",
+          "goalMode": "trip",
+          "clock.goal_component.value": 1.2,
+          "actions.ready": true,
+          "actions.resume": false,
+          "actions.endBreak": false,
+          "controls.primaryAction": "endTrip",
+          "controls.busy": false,
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "speech",
+            "format": "duration-only"
+          },
+          {
+            "kind": "chime",
+            "name": "time-reference",
+            "scheduled": true
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "TRIP-OVERTIME"
+      },
+      "coverage": "runtime",
+      "givenFamily": "TRIP-OVERTIME",
+      "announcementCategory": "user-activated",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "TIME-EARLY",
+      "group": "time",
+      "setup": {
+        "standardMinutes": 30,
+        "tripGoalPercent": 120,
+        "elapsed": 0,
+        "early": true
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "tripActive": true,
+        "clock.dispatch_state.startRelation": "early",
+        "goalMode": "trip",
+        "clock.goal_component.value": 1.2,
+        "actions.ready": true,
+        "actions.resume": false,
+        "actions.endBreak": false,
+        "controls.primaryAction": "endTrip",
+        "controls.busy": false,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.openBreakStartMenu",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "time"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "tripActive": true,
+          "clock.dispatch_state.startRelation": "early",
+          "goalMode": "trip",
+          "clock.goal_component.value": 1.2,
+          "actions.ready": true,
+          "actions.resume": false,
+          "actions.endBreak": false,
+          "controls.primaryAction": "endTrip",
+          "controls.busy": false,
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "speech",
+            "format": "duration-only"
+          },
+          {
+            "kind": "chime",
+            "name": "time-reference",
+            "scheduled": true
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "TRIP-EARLY-START"
+      },
+      "coverage": "runtime",
+      "givenFamily": "TRIP-EARLY-START",
+      "announcementCategory": "user-activated",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "TIME-BREAK",
+      "group": "time",
+      "setup": {
+        "standardMinutes": 30,
+        "tripGoalPercent": 120,
+        "interval": "break"
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "tripStatus": "break",
+        "goalMode": "trip",
+        "clock.goal_component.value": 1.2,
+        "actions.ready": false,
+        "actions.resume": false,
+        "actions.endBreak": true,
+        "controls.primaryAction": "endInterval",
+        "controls.busy": false,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.openBreakEndMenu"
+        ],
+        "forbidden": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.resumeTrip"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "time"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "tripStatus": "break",
+          "goalMode": "trip",
+          "clock.goal_component.value": 1.2,
+          "actions.ready": false,
+          "actions.resume": false,
+          "actions.endBreak": true,
+          "controls.primaryAction": "endInterval",
+          "controls.busy": false,
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "chime",
+            "name": "time-reference",
+            "scheduled": false
+          },
+          {
+            "kind": "speech",
+            "format": "duration-only"
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "BREAK-ACTIVE"
+      },
+      "coverage": "runtime",
+      "givenFamily": "BREAK-ACTIVE",
+      "announcementCategory": "user-activated",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "TIME-SHORT-BREAK",
+      "group": "time",
+      "setup": {
+        "standardMinutes": 30,
+        "tripGoalPercent": 120,
+        "interval": "short break"
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "tripStatus": "short-break",
+        "goalMode": "trip",
+        "clock.goal_component.value": 1.2,
+        "actions.ready": false,
+        "actions.resume": false,
+        "actions.endBreak": true,
+        "controls.primaryAction": "endInterval",
+        "controls.busy": false,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.openBreakEndMenu"
+        ],
+        "forbidden": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.resumeTrip"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "time"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "tripStatus": "short-break",
+          "goalMode": "trip",
+          "clock.goal_component.value": 1.2,
+          "actions.ready": false,
+          "actions.resume": false,
+          "actions.endBreak": true,
+          "controls.primaryAction": "endInterval",
+          "controls.busy": false,
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "chime",
+            "name": "time-reference",
+            "scheduled": false
+          },
+          {
+            "kind": "speech",
+            "format": "duration-only"
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "SHORT-BREAK-ACTIVE"
+      },
+      "coverage": "runtime",
+      "givenFamily": "SHORT-BREAK-ACTIVE",
+      "announcementCategory": "user-activated",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "TIME-LUNCH",
+      "group": "time",
+      "setup": {
+        "standardMinutes": 30,
+        "tripGoalPercent": 120,
+        "interval": "lunch"
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "tripStatus": "lunch",
+        "goalMode": "trip",
+        "clock.goal_component.value": 1.2,
+        "actions.ready": false,
+        "actions.resume": false,
+        "actions.endBreak": true,
+        "controls.primaryAction": "endInterval",
+        "controls.busy": false,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.openBreakEndMenu"
+        ],
+        "forbidden": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.resumeTrip"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "time"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "tripStatus": "lunch",
+          "goalMode": "trip",
+          "clock.goal_component.value": 1.2,
+          "actions.ready": false,
+          "actions.resume": false,
+          "actions.endBreak": true,
+          "controls.primaryAction": "endInterval",
+          "controls.busy": false,
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "chime",
+            "name": "time-reference",
+            "scheduled": false
+          },
+          {
+            "kind": "speech",
+            "format": "duration-only"
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "LUNCH-ACTIVE"
+      },
+      "coverage": "runtime",
+      "givenFamily": "LUNCH-ACTIVE",
+      "announcementCategory": "user-activated",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "TIME-DOWN",
+      "group": "time",
+      "setup": {
+        "standardMinutes": 30,
+        "tripGoalPercent": 120,
+        "interval": "down"
+      },
+      "given": {
+        "speechRecognition": "listening",
+        "tripStatus": "down",
+        "goalMode": "trip",
+        "clock.goal_component.value": 1.2,
+        "actions.ready": false,
+        "actions.resume": true,
+        "actions.endBreak": false,
+        "controls.primaryAction": "resume",
+        "controls.busy": false,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.resumeTrip"
+        ],
+        "forbidden": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "time"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "listening",
+          "tripStatus": "down",
+          "goalMode": "trip",
+          "clock.goal_component.value": 1.2,
+          "actions.ready": false,
+          "actions.resume": true,
+          "actions.endBreak": false,
+          "controls.primaryAction": "resume",
+          "controls.busy": false,
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "chime",
+            "name": "time-reference",
+            "scheduled": false
+          },
+          {
+            "kind": "speech",
+            "format": "duration-only"
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "DOWN-ACTIVE"
+      },
+      "coverage": "runtime",
+      "givenFamily": "DOWN-ACTIVE",
+      "announcementCategory": "user-activated",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "SLEEP-COMMANDS-CLOSED",
+      "group": "sleep-command",
+      "setup": {
+        "commandsOpen": false
+      },
+      "given": {
+        "speechRecognition": "sleeping",
+        "appMode": "debug"
+      },
+      "commands": {
+        "only": [
+          "SpeechMenu.wake"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "commands"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "sleeping",
+          "appMode": "debug"
+        },
+        "commandsOpen": false,
+        "committed": false,
+        "dispatches": 0,
+        "writes": 0,
+        "locks": 0,
+        "family": "SPEECH-SLEEPING",
+        "audio": [],
+        "commands": {
+          "only": [
+            "SpeechMenu.wake"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "givenFamily": "SPEECH-SLEEPING",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "SLEEP-COMMANDS-OPEN",
+      "group": "sleep-command",
+      "setup": {
+        "commandsOpen": true
+      },
+      "given": {
+        "speechRecognition": "sleeping",
+        "appMode": "debug"
+      },
+      "commands": {
+        "only": [
+          "SpeechMenu.wake"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "commands"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "sleeping",
+          "appMode": "debug"
+        },
+        "commandsOpen": true,
+        "committed": false,
+        "dispatches": 0,
+        "writes": 0,
+        "locks": 0,
+        "family": "SPEECH-SLEEPING",
+        "audio": [],
+        "commands": {
+          "only": [
+            "SpeechMenu.wake"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "givenFamily": "SPEECH-SLEEPING",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "SLEEP-POINTER-COMMANDS",
+      "group": "manual-command",
+      "setup": {
+        "commandsOpen": false
+      },
+      "given": {
+        "speechRecognition": "sleeping",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "pointer",
+        "action": "openSpeechOptions"
+      },
+      "expect": {
+        "state": {
+          "speechRecognition": "sleeping",
+          "appMode": "debug"
+        },
+        "commandsOpen": true,
+        "audio": [],
+        "dispatches": 0,
+        "writes": 0,
+        "locks": 0,
+        "family": "SPEECH-SLEEPING",
+        "commands": {
+          "only": [
+            "SpeechMenu.wake"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "givenFamily": "SPEECH-SLEEPING",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "AUTO-DEFAULTS-POINTER",
+      "group": "auto-defaults",
+      "setup": {
+        "noTotalScope": true,
+        "noGoals": true
+      },
+      "given": {
+        "goalMode": "trip",
+        "goalScope": "day",
+        "goals.trip": 1,
+        "goals.total": 1,
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "pointer",
+        "action": "changeGoalMode",
+        "arguments": [
+          "auto"
+        ]
+      },
+      "expect": {
+        "state": {
+          "goalMode": "auto",
+          "goalScope": "day",
+          "goals.trip": 1,
+          "goals.total": 1,
+          "editor.open": false,
+          "surfaces": [],
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "chime",
+            "name": "setting-on"
+          },
+          {
+            "kind": "speech",
+            "text": "Auto Mode"
+          }
+        ],
+        "dispatches": 0,
+        "writes": 0,
+        "locks": 0,
+        "family": "AUTO-DAY-DEFAULTS"
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "AUTO-DEFAULTS-VOICE",
+      "group": "auto-defaults",
+      "setup": {
+        "noTotalScope": true,
+        "noGoals": true
+      },
+      "given": {
+        "goalMode": "trip",
+        "goalScope": "day",
+        "goals.trip": 1,
+        "goals.total": 1,
+        "appMode": "debug"
+      },
+      "commands": {
+        "required": [
+          "WMOFActions.changeGoalMode"
+        ],
+        "forbidden": []
+      },
+      "input": {
+        "method": "voice",
+        "text": "auto mode"
+      },
+      "expect": {
+        "state": {
+          "goalMode": "auto",
+          "goalScope": "day",
+          "goals.trip": 1,
+          "goals.total": 1,
+          "editor.open": false,
+          "surfaces": [],
+          "appMode": "debug"
+        },
+        "audio": [
+          {
+            "kind": "chime",
+            "name": "setting-on"
+          },
+          {
+            "kind": "speech",
+            "text": "Auto Mode"
+          }
+        ],
+        "committed": true,
+        "dispatches": 1,
+        "writes": 0,
+        "locks": 0,
+        "family": "AUTO-DAY-DEFAULTS"
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-READY-PARTIAL",
+      "group": "workflow",
+      "setup": {},
+      "givenFamily": "TRIP-IDLE",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "ready",
+        "final": false
+      },
+      "expect": {
+        "family": "TRIP-IDLE",
+        "state": {
+          "editor.open": false,
+          "appMode": "debug"
+        },
+        "committed": false,
+        "writes": 0,
+        "locks": 0,
+        "dispatches": 0,
+        "audio": []
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-READY-OPENS-ENTRY",
+      "group": "workflow",
+      "setup": {},
+      "givenFamily": "TRIP-IDLE",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "ready"
+      },
+      "expect": {
+        "family": "ENTRY-DURATION",
+        "state": {
+          "tripActive": false,
+          "editor.open": true,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "dispatches": 1,
+        "announcements": {
+          "required": [
+            {
+              "text": "Say Standard Time"
+            }
+          ],
+          "forbidden": []
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-READY-DURATION-CONTINUES",
+      "group": "workflow",
+      "setup": {},
+      "givenFamily": "TRIP-IDLE",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "ready twenty two fifty six",
+        "partials": [
+          "ready",
+          "ready twenty",
+          "ready twenty two",
+          "ready twenty two fifty"
+        ]
+      },
+      "expect": {
+        "family": "ENTRY-DURATION",
+        "state": {
+          "tripActive": false,
+          "editor.value": "2256",
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "actionDispatches": {
+          "WMOFActions.prepareReadyAction": 1
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-ENTRY-CANCEL",
+      "group": "workflow",
+      "setup": {
+        "beforeSpeech": [
+          "ready"
+        ]
+      },
+      "givenFamily": "ENTRY-DURATION",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "cancel"
+      },
+      "expect": {
+        "family": "TRIP-IDLE",
+        "state": {
+          "editor.open": false,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "announcements": {
+          "required": [
+            {
+              "text": "Trip entry cancelled."
+            }
+          ],
+          "forbidden": []
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-BREAK-SELECTOR",
+      "group": "workflow",
+      "setup": {
+        "trip": true
+      },
+      "givenFamily": "TRIP-RUNNING",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "break start"
+      },
+      "expect": {
+        "family": "BREAK-SELECTOR",
+        "state": {
+          "actions.confirmBreak": false,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "announcements": {
+          "required": [
+            {
+              "text": "Say/press break type then OK."
+            }
+          ],
+          "forbidden": []
+        },
+        "dom": [
+          {
+            "selector": "#breakTypeOK",
+            "property": "disabled",
+            "value": true
+          }
+        ],
+        "commands": {
+          "required": [
+            "WMOFActions.chooseBreakType"
+          ],
+          "forbidden": [
+            "WMOFActions.confirmBreakType"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-BREAK-CHOICE-WAITS",
+      "group": "workflow",
+      "setup": {
+        "trip": true,
+        "beforeSpeech": [
+          "break start"
+        ]
+      },
+      "givenFamily": "BREAK-SELECTOR",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "short break"
+      },
+      "expect": {
+        "family": "BREAK-SELECTOR",
+        "state": {
+          "tripStatus": "running",
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "dom": [
+          {
+            "selector": "#breakTypeOK",
+            "property": "disabled",
+            "value": false
+          }
+        ],
+        "commands": {
+          "required": [
+            "WMOFActions.chooseBreakType",
+            "WMOFActions.confirmBreakType"
+          ],
+          "forbidden": []
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-START-BREAK",
+      "group": "workflow",
+      "setup": {
+        "trip": true
+      },
+      "givenFamily": "TRIP-RUNNING",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "break start break okay"
+      },
+      "expect": {
+        "family": "BREAK-ACTIVE",
+        "state": {
+          "tripActive": true,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 1,
+        "locks": 0,
+        "eventWrites": {
+          "interval.started": 1
+        },
+        "announcements": {
+          "required": [
+            {
+              "text": "Break started. Say break end to end your break."
+            }
+          ],
+          "forbidden": []
+        },
+        "dom": [
+          {
+            "selector": "#breakDialog",
+            "property": "open",
+            "value": false
+          }
+        ]
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-START-SHORT-BREAK",
+      "group": "workflow",
+      "setup": {
+        "trip": true
+      },
+      "givenFamily": "TRIP-RUNNING",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "break start short break okay"
+      },
+      "expect": {
+        "family": "SHORT-BREAK-ACTIVE",
+        "state": {
+          "tripActive": true,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 1,
+        "locks": 0,
+        "eventWrites": {
+          "interval.started": 1
+        },
+        "announcements": {
+          "required": [
+            {
+              "text": "Short break started. Say break end to end your short break."
+            }
+          ],
+          "forbidden": []
+        },
+        "dom": [
+          {
+            "selector": "#breakDialog",
+            "property": "open",
+            "value": false
+          }
+        ]
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-START-LUNCH",
+      "group": "workflow",
+      "setup": {
+        "trip": true
+      },
+      "givenFamily": "TRIP-RUNNING",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "break start lunch okay"
+      },
+      "expect": {
+        "family": "LUNCH-ACTIVE",
+        "state": {
+          "tripActive": true,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 1,
+        "locks": 0,
+        "eventWrites": {
+          "interval.started": 1
+        },
+        "announcements": {
+          "required": [
+            {
+              "text": "Lunch started. Say break end to end your lunch."
+            }
+          ],
+          "forbidden": []
+        },
+        "dom": [
+          {
+            "selector": "#breakDialog",
+            "property": "open",
+            "value": false
+          }
+        ]
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-BREAK-END-ASK",
+      "group": "workflow",
+      "setup": {
+        "trip": true,
+        "beforeSpeech": [
+          "break start short break okay"
+        ]
+      },
+      "givenFamily": "SHORT-BREAK-ACTIVE",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "break end"
+      },
+      "expect": {
+        "family": "BREAK-CONFIRM-END",
+        "state": {
+          "tripStatus": "short-break",
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "announcements": {
+          "required": [
+            {
+              "text": "Are you ready to end your short break?"
+            }
+          ],
+          "forbidden": []
+        },
+        "eventWrites": {
+          "interval.ended": 0,
+          "trip.stopped": 0
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.openBreakEndMenu"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.prepareReadyAction"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-BREAK-END-CANCEL",
+      "group": "workflow",
+      "setup": {
+        "trip": true,
+        "beforeSpeech": [
+          "break start short break okay",
+          "break end"
+        ]
+      },
+      "givenFamily": "BREAK-CONFIRM-END",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "cancel"
+      },
+      "expect": {
+        "family": "SHORT-BREAK-ACTIVE",
+        "state": {
+          "tripActive": true,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "eventWrites": {
+          "interval.ended": 0,
+          "trip.stopped": 0
+        },
+        "dom": [
+          {
+            "selector": "#speechBreakConfirmDialog",
+            "property": "open",
+            "value": false
+          }
+        ]
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-DOWN-START",
+      "group": "workflow",
+      "setup": {
+        "trip": true
+      },
+      "givenFamily": "TRIP-RUNNING",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "down time"
+      },
+      "expect": {
+        "family": "DOWN-ACTIVE",
+        "state": {
+          "tripActive": true,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 1,
+        "locks": 0,
+        "eventWrites": {
+          "interval.started": 1
+        },
+        "announcements": {
+          "required": [
+            {
+              "text": "Down time started"
+            }
+          ],
+          "forbidden": []
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-DOWN-RESUME",
+      "group": "workflow",
+      "setup": {
+        "trip": true,
+        "beforeSpeech": [
+          "down time"
+        ]
+      },
+      "givenFamily": "DOWN-ACTIVE",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "resume"
+      },
+      "expect": {
+        "family": "TRIP-RUNNING",
+        "state": {
+          "tripActive": true,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 1,
+        "locks": 0,
+        "eventWrites": {
+          "interval.ended": 1
+        },
+        "announcements": {
+          "required": [
+            {
+              "text": "Trip resumed"
+            }
+          ],
+          "forbidden": []
+        },
+        "commands": {
+          "required": [
+            "WMOFActions.prepareReadyAction",
+            "WMOFActions.readTimeRemaining",
+            "WMOFActions.startDownTime"
+          ],
+          "forbidden": [
+            "WMOFActions.resumeTrip",
+            "WMOFActions.openBreakEndMenu"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.resumeTrip"
+        ],
+        "forbidden": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-SUMMARY-OPEN",
+      "group": "workflow",
+      "setup": {
+        "trip": true,
+        "summaryData": true
+      },
+      "givenFamily": "TRIP-RUNNING",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "trip summary"
+      },
+      "expect": {
+        "family": "SUMMARY-ACTIVE-TRIP",
+        "state": {
+          "tripSummary.loading": false,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "announcements": {
+          "required": [
+            {
+              "pattern": "^Actual time for your last trip was .+\\. Your performance was 150\\.0 percent, and your day performance is 150\\.0 percent\\. Standard time for this trip is .+\\.$"
+            }
+          ],
+          "forbidden": []
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "user-activated",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-SUMMARY-CLOSE",
+      "group": "workflow",
+      "setup": {
+        "trip": true,
+        "summaryData": true,
+        "beforeSpeech": [
+          "trip summary"
+        ]
+      },
+      "givenFamily": "SUMMARY-ACTIVE-TRIP",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "close"
+      },
+      "expect": {
+        "family": "TRIP-RUNNING",
+        "state": {
+          "tripSummary": null,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "announcements": {
+          "required": [
+            {
+              "text": "Trip Summary closed."
+            }
+          ],
+          "forbidden": []
+        },
+        "commands": {
+          "required": [
+            "WMOFActions.prepareReadyAction",
+            "WMOFActions.readTimeRemaining",
+            "WMOFActions.startDownTime"
+          ],
+          "forbidden": [
+            "WMOFActions.resumeTrip",
+            "WMOFActions.openBreakEndMenu"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.confirmTripSummary"
+        ],
+        "forbidden": []
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-SUMMARY-OK-ACTIVE",
+      "group": "workflow",
+      "setup": {
+        "trip": true,
+        "summaryData": true,
+        "beforeSpeech": [
+          "trip summary"
+        ]
+      },
+      "givenFamily": "SUMMARY-ACTIVE-TRIP",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "okay"
+      },
+      "expect": {
+        "family": "TRIP-RUNNING",
+        "state": {
+          "editor.open": false,
+          "tripSummary": null,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "commands": {
+          "required": [
+            "WMOFActions.prepareReadyAction",
+            "WMOFActions.readTimeRemaining",
+            "WMOFActions.startDownTime"
+          ],
+          "forbidden": [
+            "WMOFActions.resumeTrip",
+            "WMOFActions.openBreakEndMenu"
+          ]
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.confirmTripSummary"
+        ],
+        "forbidden": []
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-SUMMARY-OK-UNASSIGNED",
+      "group": "workflow",
+      "setup": {
+        "summaryData": true,
+        "beforeSpeech": [
+          "trip summary"
+        ]
+      },
+      "givenFamily": "SUMMARY-NO-ACTIVE-TRIP",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "okay"
+      },
+      "expect": {
+        "family": "ENTRY-DURATION",
+        "state": {
+          "tripActive": false,
+          "editor.open": true,
+          "appMode": "debug",
+          "focus": "voiceEntrySurface"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "announcements": {
+          "required": [
+            {
+              "text": "Say Standard Time"
+            }
+          ],
+          "forbidden": []
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.confirmTripSummary"
+        ],
+        "forbidden": []
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-SUMMARY-DEBUG-IGNORES-ASSIGNMENT",
+      "group": "workflow",
+      "setup": {
+        "summaryData": true,
+        "assignedTrip": true,
+        "beforeSpeech": [
+          "trip summary"
+        ]
+      },
+      "givenFamily": "SUMMARY-NO-ACTIVE-TRIP",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "okay"
+      },
+      "expect": {
+        "family": "ENTRY-DURATION",
+        "state": {
+          "editor.open": true,
+          "tripActive": false,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "dom": [
+          {
+            "selector": "#tripTransitionOverlay",
+            "property": "open",
+            "value": false
+          }
+        ],
+        "announcements": {
+          "required": [
+            {
+              "text": "Say Standard Time"
+            }
+          ],
+          "forbidden": []
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.confirmTripSummary"
+        ],
+        "forbidden": []
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "id": "FLOW-READY-ENDS-RUNNING",
+      "group": "workflow",
+      "setup": {
+        "trip": true
+      },
+      "givenFamily": "TRIP-RUNNING",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "input": {
+        "method": "voice",
+        "text": "ready"
+      },
+      "expect": {
+        "family": "SUMMARY-NO-ACTIVE-TRIP",
+        "state": {
+          "tripActive": false,
+          "tripSummary.loading": false,
+          "appMode": "debug"
+        },
+        "committed": true,
+        "writes": 1,
+        "locks": 0,
+        "eventWrites": {
+          "trip.stopped": 1
+        },
+        "dom": [
+          {
+            "selector": "#tripTransitionOverlay",
+            "property": "open",
+            "value": true
+          }
+        ],
+        "announcements": {
+          "required": [
+            {
+              "pattern": "^Actual time for your last trip was .+\\. Your performance was 3000\\.0 percent, and your day performance is 3000\\.0 percent\\.$"
+            }
+          ],
+          "forbidden": []
+        }
+      },
+      "coverage": "runtime",
+      "announcementCategory": "transitional",
+      "commands": {
+        "required": [
+          "WMOFActions.prepareReadyAction",
+          "WMOFActions.readTimeRemaining",
+          "WMOFActions.startDownTime"
+        ],
+        "forbidden": [
+          "WMOFActions.resumeTrip",
+          "WMOFActions.openBreakEndMenu"
+        ]
+      },
+      "modeFamily": "APP-DEBUG"
+    },
+    {
+      "group": "workflow",
+      "modeFamily": "APP-DEBUG",
+      "givenFamily": "SUMMARY-NO-ACTIVE-TRIP",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "announcementCategory": "transitional",
+      "coverage": "runtime",
+      "id": "FLOW-SUMMARY-POINTER-OK",
+      "setup": {
+        "summaryData": true,
+        "beforeSpeech": [
+          "trip summary"
+        ]
+      },
+      "input": {
+        "method": "pointer",
+        "selector": "#tripTransitionSummaryOk"
+      },
+      "expect": {
+        "family": "ENTRY-DURATION",
+        "state": {
+          "appMode": "debug",
+          "tripActive": false,
+          "editor.open": true,
+          "focus": "numberPadDialog"
+        },
+        "dispatches": 0,
+        "writes": 0,
+        "locks": 0,
+        "dom": [
+          {
+            "selector": "#tripTransitionOverlay",
+            "property": "open",
+            "value": false
+          },
+          {
+            "selector": "#numberPadDialog",
+            "property": "open",
+            "value": true
+          }
+        ]
+      }
+    },
+    {
+      "group": "workflow",
+      "modeFamily": "APP-DEBUG",
+      "givenFamily": "SUMMARY-NO-ACTIVE-TRIP",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "announcementCategory": "transitional",
+      "coverage": "runtime",
+      "id": "FLOW-SUMMARY-CANCEL-BETWEEN",
+      "setup": {
+        "summaryData": true,
+        "beforeSpeech": [
+          "trip summary"
+        ]
+      },
+      "input": {
+        "method": "voice",
+        "text": "cancel"
+      },
+      "expect": {
+        "family": "TRIP-IDLE",
+        "state": {
+          "appMode": "debug",
+          "editor.open": false,
+          "tripSummary": null
+        },
+        "committed": true,
+        "writes": 0,
+        "locks": 0,
+        "announcements": {
+          "required": [
+            {
+              "text": "Trip Summary closed."
+            }
+          ],
+          "forbidden": []
+        }
+      }
+    },
+    {
+      "group": "workflow",
+      "modeFamily": "APP-DEBUG",
+      "givenFamily": "SUMMARY-NO-ACTIVE-TRIP",
+      "given": {
+        "speechRecognition": "listening",
+        "appMode": "debug"
+      },
+      "announcementCategory": "transitional",
+      "coverage": "runtime",
+      "id": "FLOW-SUMMARY-REMAINS-OPEN",
+      "setup": {
+        "trip": true,
+        "beforeSpeech": [
+          "ready"
+        ]
+      },
+      "input": {
+        "method": "automatic",
+        "waitMilliseconds": 8000
+      },
+      "expect": {
+        "family": "SUMMARY-NO-ACTIVE-TRIP",
+        "state": {
+          "appMode": "debug",
+          "tripActive": false,
+          "editor.open": false,
+          "tripSummary.loading": false
+        },
+        "dispatches": 0,
+        "writes": 0,
+        "locks": 0,
+        "audio": [],
+        "dom": [
+          {
+            "selector": "#tripTransitionOverlay",
+            "property": "open",
+            "value": true
+          }
+        ]
+      }
+    }
+  ],
+  "backlog": [
+    {
+      "area": "Timing boundaries",
+      "remaining": [
+        "exact goal/standard boundary",
+        "late start",
+        "start and stop before scheduled start",
+        "Auto goal handoff",
+        "goal below 100%"
+      ]
+    },
+    {
+      "area": "Intervals",
+      "remaining": [
+        "opening/closing buffers",
+        "allowance expiry and latency",
+        "early finish credits",
+        "approval/rejection",
+        "replacement and cancellation"
+      ]
+    },
+    {
+      "area": "Workflow",
+      "remaining": [
+        "Ready silence/final callback boundaries and malformed continuations",
+        "summary loading/error, cancellation and late server assignment",
+        "login rejection/cancel",
+        "Voicepad/Numberpad handoffs",
+        "Trip Log contexts",
+        "remaining modal combinations"
+      ]
+    },
+    {
+      "area": "Audio",
+      "remaining": [
+        "start/end/goal-crossing announcements",
+        "suppression during continuation",
+        "adaptive silence settlement",
+        "malformed/incomplete rejection",
+        "stale feedback cancellation",
+        "settings and interruption"
+      ]
+    },
+    {
+      "area": "Operations",
+      "remaining": [
+        "pending validation",
+        "accepted/rejected writes",
+        "rollback",
+        "account changes",
+        "offline/reconnect",
+        "lock ownership"
+      ]
+    },
+    {
+      "area": "Production app-mode",
+      "remaining": [
+        "server assignment lifecycle",
+        "no-assignment/loading/error behavior",
+        "production command and announcement contracts",
+        "production activation configuration"
+      ]
+    },
+    {
+      "area": "Simulation app-mode",
+      "remaining": [
+        "define simulation behavior",
+        "simulation activation configuration",
+        "mode-specific commands and announcements"
+      ]
+    }
+  ],
+  "defaults": {
+    "totalScope": "day",
+    "goalPercent": 100,
+    "rule": "Missing Total scope means Day. Missing Trip or Total goal means 100%. Auto proceeds without a scope or percentage setup prompt; explicit settings take precedence."
+  },
+  "stateFamilies": {
+    "SPEECH-LISTENING": {
+      "region": "recognition",
+      "match": {
+        "speechRecognition": "listening"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SPEECH-SLEEPING": {
+      "region": "recognition",
+      "match": {
+        "speechRecognition": "sleeping"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "TRIP-IDLE": {
+      "region": "trip",
+      "match": {
+        "tripActive": false,
+        "editor.open": false
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "TRIP-RUNNING": {
+      "region": "trip",
+      "match": {
+        "tripActive": true,
+        "tripStatus": "running"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "TRIP-B-GAME": {
+      "region": "timing",
+      "match": {
+        "tripActive": true,
+        "clockPhase": "running",
+        "clock.dispatch_state.goalProgress": "past"
+      },
+      "constraints": [
+        {
+          "path": "clock.goal_component.value",
+          "op": "gt",
+          "value": 1
+        },
+        {
+          "path": "clock.current_percent_component.value",
+          "op": "gt",
+          "value": 1
+        }
+      ],
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "TRIP-OVERTIME": {
+      "region": "timing",
+      "match": {
+        "tripActive": true,
+        "clockPhase": "overtime"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "TRIP-EARLY-START": {
+      "region": "startRelation",
+      "match": {
+        "tripActive": true,
+        "clock.dispatch_state.startRelation": "early"
+      },
+      "notes": "Historical start relation; does not alone prove the scheduled start is still in the future.",
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "ENTRY-DURATION": {
+      "region": "focus",
+      "match": {
+        "editor.open": true,
+        "editor.mode": "duration",
+        "editor.source": "new-trip"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "BREAK-SELECTOR": {
+      "region": "focus",
+      "match": {
+        "tripActive": true,
+        "focus": "breakDialog"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "BREAK-CONFIRM-END": {
+      "region": "focus",
+      "match": {
+        "tripActive": true,
+        "focus": "speechBreakConfirmDialog"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "BREAK-ACTIVE": {
+      "region": "trip",
+      "match": {
+        "tripActive": true,
+        "tripStatus": "break"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SHORT-BREAK-ACTIVE": {
+      "region": "trip",
+      "match": {
+        "tripActive": true,
+        "tripStatus": "short-break"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "LUNCH-ACTIVE": {
+      "region": "trip",
+      "match": {
+        "tripActive": true,
+        "tripStatus": "lunch"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "DOWN-ACTIVE": {
+      "region": "trip",
+      "match": {
+        "tripActive": true,
+        "tripStatus": "down"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SUMMARY-ACTIVE-TRIP": {
+      "region": "focus",
+      "match": {
+        "tripActive": true,
+        "focus": "tripTransitionOverlay",
+        "tripSummary.loading": false
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SUMMARY-NO-ACTIVE-TRIP": {
+      "region": "focus",
+      "match": {
+        "tripActive": false,
+        "focus": "tripTransitionOverlay",
+        "tripSummary.loading": false
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "AUTO-DAY-DEFAULTS": {
+      "region": "goals",
+      "match": {
+        "goalMode": "auto",
+        "goalScope": "day",
+        "goals.trip": 1,
+        "goals.total": 1
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "LOGIN-ID": {
+      "region": "session",
+      "match": {
+        "login.phase": "id-entry"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "LOGIN-PIN": {
+      "region": "session",
+      "match": {
+        "login.phase": "pin-entry"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "LOGIN-SUBMITTING": {
+      "region": "session",
+      "match": {
+        "login.phase": "submitting"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SPEECH-OFF": {
+      "region": "recognition",
+      "match": {
+        "speechRecognition": "off"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SPEECH-STARTING": {
+      "region": "recognition",
+      "match": {
+        "speechRecognition": "starting"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SPEECH-SUSPENDED": {
+      "region": "recognition",
+      "match": {
+        "speechRecognition": "suspended"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "BREAK-OPENING-BUFFER": {
+      "region": "interval",
+      "match": {
+        "clockPhase": "opening-buffer"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "BREAK-CLOSING-BUFFER": {
+      "region": "interval",
+      "match": {
+        "clockPhase": "closing-buffer"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SUMMARY-LOADING": {
+      "region": "focus",
+      "match": {
+        "tripSummary.loading": true
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "SUMMARY-ERROR": {
+      "region": "focus",
+      "match": {
+        "tripSummary.error": true
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+    },
+    "APP-DEBUG": {
+      "region": "application",
+      "match": {
+        "appMode": "debug"
+      },
+      "coverage": "named-cases",
+      "audioPolicy": "Enables manual standard-time entry. Does not interpret summary assignment hints as the next trip."
+    },
+    "APP-PRODUCTION": {
+      "region": "application",
+      "match": {
+        "appMode": "production"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Future server-assignment workflow; manual standard-time entry is unavailable."
+    },
+    "APP-SIMULATION": {
+      "region": "application",
+      "match": {
+        "appMode": "simulation"
+      },
+      "coverage": "unreviewed",
+      "audioPolicy": "Reserved future mode. Trip source, controls and announcement behavior are unspecified."
+    }
+  },
+  "inventorySemantics": "Case families are runtime-test projections, not the exhaustive shared vocabulary. App-mode observations are execution-policy metadata. The shared inventory and Debug-only workflows are in application-state-inventory.json; server-assigned trips are excluded from the current map.",
+  "announcementCategories": {
+    "transitional": {
+      "label": "Transitional announcements",
+      "meaning": "Feedback or a prompt caused by a workflow/domain state transition, including transitions initiated by voice or touch. Suppress duplicate/no-op transitions and stale transition owners."
+    },
+    "user-activated": {
+      "label": "User-activated announcements",
+      "meaning": "Information explicitly requested by the user, such as Time or Trip Summary. Opening an informational surface does not reclassify the response as transitional."
+    }
+  },
+  "implementation": {
+    "appMode": "debug",
+    "declaration": "#app[app-mode]",
+    "implicitDefault": false,
+    "productionImplemented": false,
+    "simulationImplemented": false
+  },
+  "productionRequirements": [
+    {
+      "id": "PRODUCTION-ASSIGNMENT",
+      "status": "not-implemented",
+      "requirement": "Server assigns the next trip and its standard time; summary OK must not open manual standard-time entry."
+    },
+    {
+      "id": "PRODUCTION-NO-ASSIGNMENT",
+      "status": "not-implemented",
+      "requirement": "No assignment must not silently fall back to Debug/manual entry. Waiting/error presentation is to be specified."
+    }
+  ],
+  "simulationRequirements": [
+    {
+      "id": "SIMULATION-MODE",
+      "status": "not-implemented",
+      "requirement": "Reserve simulation as an explicit app-mode. Define its trip source, timing, persistence, commands and announcements before activation; do not infer these from Debug or Production."
+    }
+  ],
+  "inventoryReference": "application-state-inventory.json",
+  "inventoryBindings": {
+    "speechRecognition": "recognition",
+    "goalMode": "goalMode",
+    "goalScope": "goalScope",
+    "clock.dispatch_state.startRelation": "startRelation",
+    "clock.dispatch_state.state": "operating",
+    "editor.mode": "editorKind",
+    "editor.source": "editorField",
+    "login.phase": "login"
+  }
+}

@@ -1,0 +1,43 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const {pathToFileURL} = require('node:url');
+const {chromium} = require('playwright');
+const root = path.resolve(__dirname, '..');
+const inventory = JSON.parse(fs.readFileSync(path.join(root, 'docs/application-state-inventory.json'), 'utf8'));
+const {sharedRows} = require('../scripts/build-application-state-inventory.cjs');
+(async () => {
+    const browser = await chromium.launch({headless:true, ...(process.env.BROWSER_EXECUTABLE ? {executablePath:process.env.BROWSER_EXECUTABLE} : {})});
+    try {
+        const page = await browser.newPage({viewport:{width:1200,height:850}});
+        const errors = []; page.on('pageerror', error => errors.push(error.message));
+        await page.goto(pathToFileURL(path.join(root, 'docs/application-state-inventory.html')).href);
+        const rows = page.locator('#rows tr');
+        assert.equal(await rows.count(), sharedRows(inventory).length + inventory.debugWorkflows.length);
+        await page.locator('#search').fill('CLOCK-B-GAME');
+        assert.equal(await rows.count(), 1);
+        assert.match(await rows.first().innerText(), /Missed the selected above-100% goal/);
+        await page.locator('#search').fill('');
+        await page.locator('#kind').selectOption('debug-only');
+        assert.equal(await rows.count(), inventory.debugWorkflows.length);
+        assert((await rows.allTextContents()).every(text => text.includes('DEBUG-')));
+        await page.locator('#kind').selectOption('all');
+        await page.locator('#search').fill('overtime');
+        assert.equal(await page.locator('#rows code').filter({hasText:/^CLOCK-OVERTIME$/}).count(), 1);
+        const contract = JSON.parse(fs.readFileSync(path.join(root, 'docs/order-filler-state-contract.json'), 'utf8'));
+        assert.equal(await page.locator('#behaviorRows tr').count(), contract.cases.length);
+        await page.locator('#behaviorSearch').fill('SLEEP-COMMANDS-CLOSED');
+        const behavior = page.locator('#behaviorRows tr');
+        assert.equal(await behavior.count(), 1);
+        assert.match(await behavior.innerText(), /RECOGNITION__SLEEPING/);
+        assert.match(await behavior.innerText(), /Exclusive: SpeechMenu.wake/);
+        assert.match(await behavior.innerText(), /Complete ordered sequence: silence/);
+        await page.locator('#behaviorSearch').fill('FLOW-READY-DURATION-CONTINUES');
+        assert.match(await behavior.innerText(), /Unreviewed/);
+        await page.locator('#behaviorSearch').fill('');
+        await page.setViewportSize({width:390,height:844});
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Table scroll remains inside the mobile viewport');
+        assert.deepEqual(errors, []);
+        console.log('PASS inventory view: complete entries, B-game/Overtime search, Debug-only filter and narrow layout');
+    } finally {await browser.close();}
+})().catch(error => {console.error(error);process.exitCode=1;});

@@ -57,6 +57,16 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(()=>document.querySelector('#speechMicBar').parentElement.id),'app');
   assert(await page.evaluate(()=>document.querySelector('#speechMicBar') instanceof SharedModal),'mic inherits the shared UI base');
   assert(await page.evaluate(()=>document.querySelector('trip-log-modal') instanceof SharedModal),'Trip Log UI inherits the shared base');
+  await page.evaluate(async()=>{window.sleepCommandActions=[];SpeechMenu.events.addEventListener('speechCommandDispatched',event=>sleepCommandActions.push(event.detail.commandElement.getAttribute('speech-function')));document.querySelector('#speechMicBar').collapseOptions();await SpeechMenu.sleep();});
+  await say('commands');assert.equal(await page.evaluate(()=>document.querySelector('#speechMicBar').optionsOpen),false,'spoken Commands cannot open a closed list while sleeping');
+  assert.deepEqual(await page.evaluate(()=>sleepCommandActions),[],'sleeping speech does not dispatch Commands');
+  const optionsToggle=await page.evaluateHandle(()=>testShadows.get(document.querySelector('#speechMicBar')).querySelector('#optionsClose'));
+  await optionsToggle.asElement().tap();await page.waitForTimeout(800);
+  assert(await page.evaluate(()=>SpeechMenu.muted&&document.querySelector('#speechMicBar').optionsOpen),'a real touch may open Commands without waking recognition');
+  await optionsToggle.asElement().tap();await optionsToggle.dispose();
+  await say('wake');assert.equal(await page.evaluate(()=>SpeechMenu.muted),false,'spoken Wake is still accepted');
+  await say('commands');assert(await page.evaluate(()=>document.querySelector('#speechMicBar').optionsOpen),'spoken Commands returns after Wake');
+  await page.evaluate(()=>document.querySelector('#speechMicBar').collapseOptions());
   await page.evaluate(()=>testWaitForFeedback());
   await page.evaluate(async()=>{
    window.handoffAudio=[];window.handoffConfirmed=[];

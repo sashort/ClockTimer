@@ -13,7 +13,7 @@ window.SpeechRecognition=class {start(){recognition=this;this.onstart?.();} abor
 const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
 Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
 const capturedShadows=new WeakMap();
-if(process.argv.includes('--commands-close')) {const attach=window.Element.prototype.attachShadow;window.Element.prototype.attachShadow=function(...args){const root=attach.apply(this,args);capturedShadows.set(this,root);return root;};}
+if(process.argv.includes('--commands-close') || process.argv.includes('--sleep-wake-only')) {const attach=window.Element.prototype.attachShadow;window.Element.prototype.attachShadow=function(...args){const root=attach.apply(this,args);capturedShadows.set(this,root);return root;};}
 const animationCalls=[];window.Element.prototype.animate=function(keyframes,options){animationCalls.push({target:this,keyframes,options});return{finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}}};
 const consoleErrors=[];window.console.error=(...args)=>consoleErrors.push(args.map(a=>a?.stack||String(a)).join(' '));
 const errors=[];window.addEventListener('error',e=>{errors.push(e.message);});
@@ -105,6 +105,131 @@ window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--state-contract')) {
+ const {stateContract,assertState,assertCommands,assertAudio,assertFamily,assertAnnouncements}=await import('./state-contract-fixture.mjs');
+ const id=process.argv.find(value=>value.startsWith('--case='))?.slice(7);
+ const scenario=stateContract.cases.find(item=>item.id===id);assert(scenario,'named state contract case is required');
+ assert(process.argv.includes('--voice-feedback'),'audio observation must be enabled');
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ await window.WMOFActions.handleSpeechRuntimeStarted();const bar=window.document.querySelector('#speechMicBar');bar.isOpen=true;await settle();
+ const say=async(text,final=true,partials=[])=>{const u=['time','auto-defaults','workflow'].includes(scenario.group)?window.SpeechMenu.testBegin():window.SpeechMenu.testCapture();await settle();for(const partial of partials){await window.SpeechMenu.testTranscript(u,partial,false);await u.digestQueue;await u.segmentBarrier;}await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();return u;};
+ if(scenario.group==='auto-defaults') {
+  // Exercise mode transitions without selecting or persisting a Total scope.
+  await window.WMOFActions.changeGoalMode('total');await settle();
+  await window.WMOFActions.changeGoalMode('trip');await settle();
+  assert(!timer.hasAttribute('trip-goal')&&!timer.hasAttribute('total-goal'),'fixture goals are unspecified');
+  assert(!Object.keys(accountBlob.orderFiller).some(key=>/tripLogRange|totalGoal|tripGoal/.test(key)),'server has no saved scope or goals');
+ }
+ if(scenario.group==='time') {
+  await window.WMOFActions.changeGoalMode('day');await settle();
+  await window.WMOFActions.changeGoalMode('trip');await settle();
+  const options={standardTimeMilliseconds:scenario.setup.standardMinutes*60000};
+  if(scenario.setup.early)Object.assign(options,{scheduledStart:'12:10:00',startTime:'12:00:00'});
+  await window.WMOFCoordinator.run('contract-trip',()=>timer.start(options));await settle();
+  window.__testTime+=scenario.setup.elapsed||0;
+  timer.configure({goal_type:'trip',trip_goal:scenario.setup.tripGoalPercent+'%',auto_goal:false});await settle();
+  if(scenario.setup.interval){const setupCommand=await say(scenario.setup.interval==='down'?'down time':'break start '+scenario.setup.interval+' okay');assert(setupCommand.hadCommittedCommand&&!setupCommand.digestExecutionFailed,id+': interval setup command commits');}
+  // Settle the cadence tick and its boundary feedback before testing Time.
+  await new Promise(resolve=>setTimeout(resolve,1200));
+ }
+ if(scenario.group==='workflow') {
+  if(scenario.setup.trip) {
+   await window.WMOFCoordinator.run('contract-workflow-trip',()=>timer.start({standardTimeMilliseconds:1800000}));await settle();
+   window.__testTime+=60000;timer.configure({});await settle();
+  }
+  if(scenario.setup.summaryData)summaryTrips=[
+   {id:901,startTime:'2026-10-06T10:00:00Z',endTime:'2026-10-06T10:10:00Z',standardTimeMilliseconds:600000,countedTimeMilliseconds:400000,actualTimeMilliseconds:500000},
+   {id:902,startTime:'2026-10-06T11:00:00Z',endTime:'2026-10-06T11:05:00Z',standardTimeMilliseconds:300000,countedTimeMilliseconds:200000,actualTimeMilliseconds:250000}];
+  if(scenario.setup.assignedTrip)summaryAssignedTrip={id:999,standardTimeMilliseconds:600000};
+  for(const text of scenario.setup.beforeSpeech||[]){const u=await say(text);assert(u.hadCommittedCommand&&!u.digestExecutionFailed,id+': setup commits '+text);}
+ }
+ if(scenario.setup.recognition==='sleeping'||['sleep-command','manual-command'].includes(scenario.group))await window.SpeechMenu.sleep();
+ if(scenario.setup.commandsOpen)await window.WMOFActions.openSpeechOptions();
+ await settle();if(process.env.STATE_CONTRACT_DEBUG)console.log(JSON.stringify({ui:window.WMOFInteractionState.state.clock,now:window.__testTime,direct:timer.getDispatchState(new window.Date()),summary:timer.getSummarySnapshot()},null,2));assertState(window.WMOFInteractionState.state,scenario.given,id+' Given');
+ assertFamily(window.WMOFInteractionState.state,scenario.modeFamily,id+' app-mode');
+ assert.throws(()=>new window.WMOFApplicationMode.constructor(),/explicit app-mode/,'no implicit application mode');
+ assert.throws(()=>new window.WMOFApplicationMode.constructor('invalid'),/explicit app-mode/,'invalid application mode');
+ assert.equal(new window.WMOFApplicationMode.constructor('simulation').name,'simulation','Simulation is a recognized reserved mode');
+ assert.equal(window.WMOFApplicationMode.manualStandardTimeEntry,true);
+ assert.equal(window.WMOFApplicationMode.serverTripAssignment,false);
+ if(scenario.givenFamily)assertFamily(window.WMOFInteractionState.state,scenario.givenFamily,id+' Given');
+ if(scenario.commands) {
+  const u=window.SpeechMenu.testCapture();await settle();const grammar=await window.SpeechMenu.testVoskContext(u.id);
+  assertCommands(grammar.records.map(record=>record.action),scenario.commands,id);
+ }
+ const audio=[];let speechPending=false,cuePending=false;
+ window.WMOFAudio.speak=(text,options={})=>{
+  assert(!cuePending,id+': speech waits for cue completion');speechPending=true;
+  audio.push({kind:'speech',text:String(text)});queueMicrotask(()=>{speechPending=false;options.onEnd?.();});return true;
+ };
+ window.WMOFAudio.startSong=async(name,options={})=>{
+  assert(!speechPending,id+': cue waits for speech completion');cuePending=true;
+  audio.push({kind:'chime',name,startAtPerformanceMs:options.startAtPerformanceMs});
+  return {hasChime:true,finished:Promise.resolve().then(()=>{cuePending=false;return {reason:'completed'};})};
+ };
+ const dispatched=[];window.SpeechMenu.events.addEventListener('speechCommandDispatched',event=>dispatched.push(event.detail));
+ const writeCount=()=>requests.filter(request=>request.options.method==='POST'&&/\/(trips|trip-events|trip-editor)\/$/.test(request.path)).length;
+ const beforeWrites=writeCount();const eventCounts=()=>Object.fromEntries(['trip.started','trip.stopped','interval.started','interval.ended'].map(event=>[event,stored.filter(record=>record.event===event).length]));const beforeEvents=eventCounts();let utterance;
+ if(scenario.input.method==='automatic')await new Promise(resolve=>setTimeout(resolve,scenario.input.waitMilliseconds));
+ else if(scenario.input.selector)window.document.querySelector(scenario.input.selector).click();
+ else if(scenario.input.method==='voice')utterance=await say(scenario.input.text,scenario.input.final!==false,scenario.input.partials||[]);
+ else if(scenario.input.action==='openSpeechOptions')await window.WMOFActions.openSpeechOptions();
+ else if(scenario.group==='auto-defaults')await window.WMOFActions[scenario.input.action](...(scenario.input.arguments||[]));
+ else await window.SpeechMenu[scenario.input.action]();
+ await settle();
+ assertState(window.WMOFInteractionState.state,scenario.expect.state,id+' Expect');
+ if(scenario.expect.family)assertFamily(window.WMOFInteractionState.state,scenario.expect.family,id+' Expect');
+ if(scenario.expect.announcements)assertAnnouncements(audio,scenario.expect.announcements,id);
+ for(const item of scenario.expect.dom||[]){const element=window.document.querySelector(item.selector);assert(element,id+': DOM target '+item.selector);assert.equal(element[item.property],item.value,id+': '+item.selector+'.'+item.property);}
+ for(const [event,count] of Object.entries(scenario.expect.eventWrites||{}))assert.equal(eventCounts()[event]-beforeEvents[event],count,id+': '+event+' writes');
+ for(const [action,count] of Object.entries(scenario.expect.actionDispatches||{}))assert.equal(dispatched.filter(event=>event.commandElement.getAttribute('speech-function')===action).length,count,id+': '+action+' dispatches');
+ if(scenario.expect.audio)assertAudio(audio,scenario.expect.audio,id);
+ if(scenario.expect.commands){const u=window.SpeechMenu.testCapture();await settle();const grammar=await window.SpeechMenu.testVoskContext(u.id);assertCommands(grammar.records.map(record=>record.action),scenario.expect.commands,id+' Expect');}
+ if(scenario.expect.commandsOpen!==undefined)assert.equal(bar.optionsOpen,scenario.expect.commandsOpen,id+': Commands visibility');
+ if(scenario.expect.committed!==undefined)assert.equal(Boolean(utterance?.hadCommittedCommand),scenario.expect.committed,id+': commitment');
+ if(scenario.expect.dispatches!==undefined)assert.equal(dispatched.length,scenario.expect.dispatches,id+': command dispatch count');
+ assert.equal(writeCount()-beforeWrites,scenario.expect.writes,id+': trip writes');
+ assert.equal(window.WMOFCoordinator.lockCount,scenario.expect.locks,id+': locks');
+ assert.deepEqual(errors,[],id+': browser errors');assert.deepEqual(consoleErrors,[],id+': console errors');
+ console.log('PASS state contract '+id);await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--sleep-wake-only')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ await window.WMOFActions.handleSpeechRuntimeStarted();const bar=window.document.querySelector('#speechMicBar');bar.isOpen=true;await settle();
+ const cached=window.SpeechMenu.testCapture();await settle();
+ const awake=await window.SpeechMenu.testVoskContext(cached.id);assert(awake.records.some(r=>r.action==='WMOFActions.openSpeechOptions'));
+ await window.SpeechMenu.sleep();await settle();assert(!bar.optionsOpen,'Commands starts closed while sleeping');
+ const cachedGrammar=await window.SpeechMenu.testVoskContext(cached.id);
+ assert(cachedGrammar.records.length&&cachedGrammar.records.every(r=>r.action==='SpeechMenu.wake'),'cached awake grammar is restricted after sleep');
+ const writes=requests.filter(r=>r.options.method==='POST').length;
+ for(const text of ['commands','ready','trip summary','time','log','speech off','cancel']) {
+  const u=window.SpeechMenu.testCapture();await settle();
+  const grammar=await window.SpeechMenu.testVoskContext(u.id);assert(grammar.records.length&&grammar.records.every(r=>r.action==='SpeechMenu.wake'),'sleep grammar only allows Wake');
+  await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await settle();
+  assert(!u.hadCommittedCommand,'sleep rejects spoken '+text);assert(window.SpeechMenu.muted);assert(!bar.optionsOpen,'spoken '+text+' cannot open Commands');
+ }
+ assert.equal(requests.filter(r=>r.options.method==='POST').length,writes,'sleep attempts cannot mutate server state');
+ assert.equal(await window.WMOFActions.openSpeechOptions(),true,'manual action may open Commands while sleeping');assert(bar.optionsOpen);
+ bar.collapseOptions();const toggle=capturedShadows.get(bar).querySelector('#optionsClose');assert(!toggle.disabled);toggle.click();await settle();assert(bar.optionsOpen,'pointer toggle may expand Commands while sleeping');
+ const sleepingCommand=window.SpeechMenu.testCapture();await settle();await window.SpeechMenu.testTranscript(sleepingCommand,'commands',true);await sleepingCommand.digestQueue;await settle();assert(!sleepingCommand.hadCommittedCommand,'manual list access does not re-enable spoken Commands');
+ assert(window.SpeechMenu.muted,'manual access never wakes the mic');bar.collapseOptions();
+ const wake=window.SpeechMenu.testCapture();await settle();await window.SpeechMenu.testTranscript(wake,'wake',true);await wake.digestQueue;await settle();
+ assert(wake.hadCommittedCommand&&!window.SpeechMenu.muted,'spoken Wake still works');
+ const commands=window.SpeechMenu.testCapture();await settle();await window.SpeechMenu.testTranscript(commands,'commands',true);await commands.digestQueue;await settle();assert(commands.hadCommittedCommand&&bar.optionsOpen,'spoken Commands returns after wake');
+ await window.SpeechMenu.sleep();await settle();assert(bar.optionsOpen,'sleep leaves a manually accessible list available');await window.SpeechMenu.wake();await settle();
+ bar.collapseOptions();
+ const commandsElement=window.document.querySelector('speech-command[data-speech-system-command="commands"]');let releasePreparation;
+ window.SleepTest={async delay(text,{provisional}){if(provisional)return text;await new Promise(resolve=>releasePreparation=resolve);return text;}};
+ commandsElement.setAttribute('speech-preproc','SleepTest.delay');await settle();
+ const pending=window.SpeechMenu.testCapture();await settle();const processing=window.SpeechMenu.testTranscript(pending,'commands',true);
+ for(let i=0;i<100&&!releasePreparation;i++)await new Promise(resolve=>setTimeout(resolve,5));
+ assert(releasePreparation,'fixture holds real command preparation');
+ await window.SpeechMenu.sleep();releasePreparation();await processing;await pending.digestQueue;await settle();
+ assert(!bar.optionsOpen&&!pending.hadCommittedCommand,'an awake-prepared command cannot execute after sleep');
+ assert(window.SpeechMenu.muted,'rejecting a stale command preserves sleep');commandsElement.removeAttribute('speech-preproc');delete window.SleepTest;await window.SpeechMenu.wake();await settle();
+ assert.equal(window.WMOFCoordinator.lockCount,0);assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
+ console.log('PASS sleeping mic restricts voice/grammar to Wake, preserves manual Commands access and restores spoken Commands after wake');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--sync-availability')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await window.WMOFActions.toggleSync('on');await settle();
@@ -176,14 +301,14 @@ if(process.argv.includes('--summary-dialog')) {
  assert(valueCommand.hadCommittedCommand&&!valueCommand.digestExecutionFailed&&!dialog.open,'valid underlying Voicepad command dismisses the informational summary and executes');
  assert.equal(window.WMOFInteractionState.state.editor.value,'1100');await say('cancel');
  summaryAssignedTrip={id:999,standardTimeMilliseconds:600000};
- spoken.length=0;await say('trip summary');assert.equal(rows()[2].children[1].textContent,'0:10:00');
- assert.equal(rows()[2].children[2].textContent,'---');assert.equal(rows()[2].children[3].textContent,'---');
+ spoken.length=0;await say('trip summary');assert.equal(rows().length,2,'Debug ignores future production assignment hints');
+ assert(!spoken.some(text=>text.includes('Standard time for this trip is ')),'Debug cannot announce an assigned next trip');
  const writes=requests.filter(r=>r.path.endsWith('/trips/')&&r.options.method==='POST').length;
- await say('okay');assert(!dialog.open&&!window.WMOFVoiceEntry.active,'server assignment suppresses manual entry');
+ await say('okay');assert(!dialog.open&&window.WMOFVoiceEntry.active,'Debug OK opens manual entry even if an assignment hint is returned');
  assert.equal(requests.filter(r=>r.path.endsWith('/trips/')&&r.options.method==='POST').length,writes,'OK never creates a duplicate assignment');
  assert.equal(window.WMOFCoordinator.lockCount,0);assert.equal(window.WMOFStateTransactions.pending.length,0);
  assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
- console.log('PASS trip summary table, counted Actual, requested/automatic announcement, valid-command/OK/close/cancel dismissal and server-assignment fallback');await window.happyDOM.close();process.exit(0);
+ console.log('PASS trip summary table, counted Actual, requested/automatic announcement, valid-command/OK/close/cancel dismissal and explicit Debug manual-entry behavior');await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--announcement-layers')) {
  await timer.connect('test','test');await settle();await window.WMOFActions.toggleSync('on');await settle();await window.WMOFActions.toggleSync('off');await settle();

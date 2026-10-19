@@ -189,8 +189,15 @@ function composeBase(catalog) {
         instruments, song:{bpm:120,instrument:bass,events},
         render:{sampleRate:48000,channels:2,seconds:120,fadeOutSeconds:2,peakTarget:.85}},catalog),catalog);
 }
-function compose(catalog) {return require('./neon-countdown-part-one.cjs').arrangePartOne(composeBase(catalog),catalog);}
-module.exports={compose};
+function composeAuthored(catalog) {return {...require('./neon-countdown-part-one.cjs').arrangePartOne(composeBase(catalog),catalog),revision:58};}
+function compose(catalog) {
+    const score=require('./neon-countdown-tempo.cjs').retimeFinale(composeAuthored(catalog),114);
+    // Events describe the base arrangement; this approved rendered passage is
+    // applied afterward so its auditioned crossfades and vinyl remain exact.
+    score.render.postprocess={type:'approved-solo-insert',settings:'api/audio/instruments/neon-solo-insert.json'};
+    return score;
+}
+module.exports={compose,composeAuthored};
 if(require.main===module) {
     const score=compose(JSON.parse(fs.readFileSync(path.join(root,'api/audio/catalog.json'),'utf8')));
     fs.writeFileSync(path.join(root,'api/audio/instruments/neon-countdown-score.json'),JSON.stringify(score,null,2)+'\n');

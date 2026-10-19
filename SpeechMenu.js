@@ -7000,6 +7000,7 @@ class SpeechMenu {
         const context = continuing ? utterance.digestContext : undefined;
         const frames = continuing ? utterance.digestSurfaceStack : utterance.voskInitialFrames;
         let candidates = continuing ? SpeechMenu.#digestCandidates(context, frames) : utterance.voskInitialCandidates;
+        candidates = candidates.filter(SpeechMenu.#commandAllowedWhileSleeping);
         if (transcript && continuing) {
             const remaining = SpeechMenu.#digestRemainder(utterance, transcript);
             if (remaining === undefined) return {records: []};
@@ -7044,6 +7045,7 @@ class SpeechMenu {
     }
 
     static #digestCandidates(context, frames) {
+        if (SpeechMenu.#sleeping) return SpeechMenu.#availableCandidates();
         const contextual = context ? SpeechMenu.#chainContextCandidates(context) : [];
         return [...new Set([...contextual, ...SpeechMenu.#availableCandidates(frames === undefined ? undefined : frames.at(-1)?.surface || null)])];
     }
@@ -7055,6 +7057,7 @@ class SpeechMenu {
     }
 
     static #canAttemptStateCommand(element) {
+        if (!SpeechMenu.#commandAllowedWhileSleeping(element)) return false;
         if (!element?.isConnected || !element.hasAttribute("data-speech-state-command") ||
             element.matches("[disabled], [hidden], [inert], [aria-hidden='true']")) return false;
         if (!SpeechMenu.#surfaceAcceptsCommand(element)) return false;
@@ -8131,10 +8134,16 @@ class SpeechMenu {
         return true;
     }
 
+    static #commandAllowedWhileSleeping(element) {
+        return !SpeechMenu.#sleeping || element?.dataset?.speechSystemCommand === "wake" ||
+            element?.getAttribute?.("speech-function") === "SpeechMenu.wake";
+    }
+
     static #candidateStateAvailable(
         element,
         projected = false
     ) {
+        if (!SpeechMenu.#commandAllowedWhileSleeping(element)) return false;
         if (element && !SpeechMenu.#surfaceAcceptsCommand(element)) return false;
         const primed = projected || SpeechMenu.#isPrimed(element);
         if (
@@ -8345,19 +8354,7 @@ class SpeechMenu {
             };
 
         if (SpeechMenu.#sleeping) {
-            append(
-                system.filter(
-                    element =>
-                        element.dataset
-                            ?.speechSystemCommand ===
-                            "wake" ||
-                        element.getAttribute(
-                            "speech-function"
-                        ) ===
-                            "SpeechMenu.wake"
-                )
-            );
-
+            append(system.filter(SpeechMenu.#commandAllowedWhileSleeping));
             return result;
         }
 
@@ -9448,7 +9445,7 @@ class SpeechMenu {
         quietProvisional = false,
         executionMetadata
     ) {
-        if (signal?.aborted) {
+        if (signal?.aborted || !SpeechMenu.#commandAllowedWhileSleeping(element)) {
             return false;
         }
 
@@ -9938,10 +9935,12 @@ class SpeechMenu {
         // Preparation may have awaited while this attempt lost its right to act.
         if (signal?.aborted || executionMetadata?.canCommit?.() === false) return false;
 
+        if (!SpeechMenu.#commandAllowedWhileSleeping(element)) return false;
         const beforeCommand=SpeechMenu.#surfaceHandlers.get(SpeechMenu.activeSurface)?.beforeCommand;
         if(beforeCommand && SpeechMenu.#candidateStateAvailable(element,true))
             await beforeCommand(element);
-        if(signal?.aborted || executionMetadata?.canCommit?.() === false)return false;
+        if(signal?.aborted || executionMetadata?.canCommit?.() === false ||
+            !SpeechMenu.#commandAllowedWhileSleeping(element))return false;
 
         const responseSession =
             globalThis

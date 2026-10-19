@@ -1,5 +1,163 @@
 # ClockTimer state dispatch
 
+## Current Debug state inventory
+
+Use the [searchable state map](application-state-inventory.html) and its
+[machine-readable inventory](application-state-inventory.json) for enumeration.
+The map currently records 116 regions with 448 named values, 32 surface types
+with four lifecycle states each, nine aliases for useful combined states, and
+11 explicitly Debug-only manual-trip workflow entries. These are vocabulary
+counts, **not** the number of unique reachable application states or test cases.
+
+The shared state vocabulary is independent of app-mode. Debug-only manual
+trip-entry workflows are marked separately; reusable Voicepad/Numberpad states
+remain shared. Server-assigned trips are excluded from this map. Simulation and
+Production transitions are outside the current mapping scope; their behavior is
+not invented from mode names. The current runtime remains explicitly Debug.
+
+A complete behavioral state combines the selected regions, each active owner's
+operation/collector/audio state, and the ordered modal/return/continuation paths.
+Payload includes numerical readings, exact percentages, timestamps and identities;
+credentials never enter state IDs. Independent comparison regions preserve ties
+and goals below 100%. Named aliases make Early Start, B-game, Overtime, buffers
+and between-trip summary states easy to find without conflating their dimensions.
+
+The source audit registers static and dynamically loaded surfaces, two unnamed
+dynamic dialogs, the mode dropdown, menu parent panes, operation and continuation
+phases, and every node in the existing FSM chart. Legacy nodes are mapped,
+retired, or explicitly outside the coupled Order Filler scope. Coverage checks
+fail if a registered source disappears, a new static surface/pane is omitted, or
+a chart node has no disposition. This audit is not a proof of every reachable
+combination or a claim that every transition has a runtime test.
+
+The map records root-snapshot observability gaps rather than deriving command
+eligibility from disabled buttons. In particular, unnamed custom-date/Down Details
+dialogs and editor/break/scheduled/audio ownership detail need explicit runtime
+bindings in the later FSM work. Current case-family projections (including the
+old app-mode observations) are test fixtures, not a competing shared enumeration.
+
+Stay on the current Debug branch while debugging. Create the `test` branch only
+after Debug is stable, then modify runtime enumerations/FSM and mode-specific
+transitions there. This inventory work creates neither that branch nor a runtime
+FSM replacement.
+
+Run `node tests/application-state-inventory.mjs` for source/model/view coverage,
+and `node scripts/build-application-state-inventory.cjs` after editing the JSON.
+The existing 39 runtime cases remain a separate, partial transition evidence set.
+
+## Coupled-state behavioral contract, 18 October 2026
+
+The incremental machine-readable contract is
+[order-filler-state-contract.json](order-filler-state-contract.json). It is a new
+behavioral oracle alongside the existing graph, not a claim that every combined
+state has already been enumerated. Its axes identify the state dimensions still
+to reconcile; its backlog records unreviewed combinations. Historical graph or
+prose entries must not override newer explicit requirements such as one PIN OK.
+
+A case supplies independent Given state assertions, public setup inputs, an
+input method and command, and expected state, command dispatch count, trip write
+count, remaining locks, and ordered audio. Required/forbidden command lists are
+partial assertions; an explicit `only` list is exhaustive for that case.
+An omitted audio expectation is unreviewed, never an assertion of silence. An
+explicit empty audio list requires silence. Case definitions do not constitute
+passing evidence: execute the runner to obtain results for the current checkout.
+
+The initial 17 cases cover microphone activation/deactivation and duplicate
+suppression; sleeping voice rejection with Commands open and closed; pointer
+Commands access while sleeping; and Time while running, in B-game, overtime,
+early start, break, short break, lunch and Down. Time cases verify one dispatch,
+ordered speech/chime requests, completion barriers, no trip writes and no locks.
+B-game fixtures use a 120% Trip goal after its 25-minute deadline but before the
+30-minute standard deadline. Early fixtures distinguish the historical start
+relation from being before scheduled start. These are representative cases, not
+all combinations of goal modes, dialogs, permissions or speech collectors.
+
+Unspecified Total scope is Day, and unspecified goals are 100%. Existing explicit
+settings take precedence. Auto requires no scope selector or percentage-entry
+prompt when those settings are missing. The two Auto defaults cases verify voice
+and the pointer action, including the ordinary Auto Mode confirmation, no new
+dialog/editor, no trip writes and no remaining locks. This tests existing runtime
+defaults; no new setup workflow is introduced.
+
+The earlier runtime fixture names 30 case families across recognition, trip, timing,
+start relation, focus, goals, interval and session regions. These are projections
+that can overlap; they are not the shared enumeration or a count of unique combined states. Eighteen families
+are linked to runnable cases; twelve additional families are explicitly unreviewed.
+A case records its Given and expected family, and the driver checks each named
+family against the real interaction snapshot. B-game also requires a goal above
+100% and performance still above 100%; a late goal alone is insufficient.
+
+The next 22 cases cover partial/final Ready, continuing duration entry, cancelling
+entry, break selection/confirmation/start for all three types, Break End prompt
+and cancellation, Down/resume, requested summary, summary close/OK paths and
+Ready ending a running trip. Cases check relevant command availability before
+and after transitions, actual dialog/button properties, exactly-once event writes,
+remaining locks and specified announcements. Partial announcement requirements
+are marked separately from a complete ordered audio sequence; unspecified audio
+is still unreviewed. These 39 tests are not a count of unique combined states.
+
+Application mode is an independent axis, `appMode`, with the names
+`debug`, `production` and `simulation`. There is no default or saved-setting fallback.
+The canonical Order Filler template explicitly declares `app-mode="debug"`.
+`ApplicationMode` in `app.js` is an immutable capability object; it rejects
+missing/unknown modes. The current entry point permits only Debug and explicitly
+rejects Production and Simulation activation until those implementations exist. This is separate
+from Trip/Total/Auto, goal scope, and ClockTimer presentation modes.
+
+All current runtime cases assert Debug. Debug uses manual standard-time entry
+and ignores future server-assignment hints in summary responses. Restoration of
+an existing unfinished Debug trip is unaffected. Production requirements are
+recorded separately as not implemented: the server assigns the next trip and
+standard time, with no fallback to manual entry. Its absent/loading/error
+assignment behavior remains to be specified. Existing summary assignment tests
+must not be presented as completed Production coverage. Simulation is a reserved
+future mode with unspecified trip source, timing, persistence, controls and audio;
+its behavior must not be inferred from either Debug or Production.
+
+Between trips, the Debug summary stays open until dismissed by an accepted
+interaction. Spoken OK opens Voicepad when recognition is available; pressing OK
+opens Numberpad. Cancel/Close dismiss without opening either editor. The retained
+prior rule lets another valid command dismiss and execute. One idle case waits
+eight seconds, beyond the transient overlay lifetime, and requires the summary
+to remain open with no repeated audio, commands, writes or locks. Another presses
+the actual summary OK button while the mic is listening and checks Numberpad.
+
+Announcement categories use the agreed terms:
+
+- **Transitional announcements** follow workflow/domain changes, including changes
+  initiated by the user. Examples: Break started, Trip resumed, a newly opened
+  entry prompt, or the automatic summary after ending a trip. Duplicate/no-op
+  transitions and stale transition owners must not replay them.
+- **User-activated announcements** answer explicit information requests, such as
+  Time or Trip Summary. Opening a summary dialog does not change the category.
+
+The categories currently describe the behavioral oracle. They do not introduce
+another runtime queue or change the existing announcement scheduler. Both kinds
+retain owner/cancellation rules. A state snapshot alone is never an instruction
+to replay an announcement on every tick.
+
+Use `node tests/order-filler-state-contract.mjs --inventory --validate-only`
+to list named families and their case references without running the app. Use
+`--case-prefix=FLOW-` to run just the workflow group. The inventory deliberately
+retains unreviewed authentication, recognition, buffer and loading/error families.
+Unreviewed here means not yet represented by a runnable case in this contract;
+other existing suites may already cover those behaviors.
+
+Run `node tests/order-filler-state-contract.mjs`. Each case starts an isolated
+real-app fixture, reaches state through public APIs and speech input, and
+compares observations with the JSON expectations. No private state is injected
+to manufacture a Given state. The recognizer fixture supplies transcripts; this
+is not a physical-device acoustic test. Audio checks observe playback requests
+and simulated completion, not a rendered waveform or actual playback timing.
+
+Use `--validate-only` for schema/oracle checks. For a single runtime case run
+`TZ=UTC node tests/app-state-transactions.mjs --state-contract --case=TIME-B-GAME --voice-feedback`.
+Set `STATE_CONTRACT_DEBUG=1` to include non-credential timer diagnostics.
+The negative oracle checks ensure missing snapshots, empty or overbroad grammar,
+duplicate audio and reversed audio fail. Production does not yet consume this
+contract: retain it as an independent oracle while coverage and semantics are
+reviewed before changing runtime dispatch architecture.
+
 ## Version 2 behavioral test reference, 16 October 2026
 
 The [speech recognition contract](speech-recognition-v2.md) specifies generic
@@ -41,14 +199,15 @@ are required assertions. Never derive expected results from the implementation
 under test or insert private state to bypass a transition.
 
 The runtime login oracle uses `login.phase`: `id-entry`, `pin-entry`,
-`pin-review`, `submitting`, `password-entry`, or `closed`. ID and PIN speech input
-both require exactly four digits plus OK. ID group OK focuses the first PIN cell
-and speaks the individual ID digits, a sentence pause, then Password. PIN group
-OK reads back individual PIN digits and performs **no** authentication. Only the
-following independent OK/Enter authenticates. Editing invalidates review. A failed
-login retains ID, clears PIN/review and focuses the first PIN cell. Cancel on an
-empty PIN returns to empty ID; Cancel on entered/reviewed PIN clears PIN, and a
-second Cancel returns to ID. Backspace on an empty first PIN cell also restarts ID.
+`submitting`, `password-entry`, or `closed`. ID and PIN speech input both
+require exactly four digits plus OK. ID group OK focuses the first PIN cell and
+speaks the individual ID digits, a sentence pause, then Password. PIN group OK
+submits authentication exactly once; there is no second confirmation or PIN
+readback. A failed login retains ID, clears PIN and focuses the first PIN cell.
+Cancel on an empty PIN returns to empty ID; Cancel on entered PIN clears PIN,
+and a second Cancel returns to ID. Backspace on an empty first PIN cell also
+restarts ID. `reviewReady` is a compatibility name for a complete PIN awaiting
+its first OK, not a separate review stage.
 Public snapshots and trace evidence must never contain raw PIN digits.
 
 Listed automated scenarios are evidence sources, not a claim that every chart
@@ -58,7 +217,7 @@ older contracts remain explicit coverage gaps. Structured `v2_contracts` and
 Custom in-place Vosk switching is deferred and requires a new branch.
 
 Run `node tests/fsm-reference.mjs` for model/HTML parity, stable edge references,
-complete commit inventory, scenario structure and two-step login invariants.
+complete commit inventory, scenario structure and single-confirmation login invariants.
 Run `node tests/app-state-transactions.mjs --pin-review --voice-feedback` to compare
 the real login runtime against the model's bindings and speech/persistence rules.
 `scripts/reconcile-fsm.cjs` rebuilds this reconciliation at its pinned reviewed
@@ -234,3 +393,34 @@ Order-Filler and Drop-In display `settings.html` directly inside an iframe-only 
 Order-Filler keeps distinct launcher entries for Clock/Timer Settings and Audio Settings. Each entry selects its corresponding settings surface in the iframe. Drop-In reuses its existing ClockTimer menu item to open the graphical settings surface; no additional top-of-page launcher is added. The standalone page owns its existing labels, controls, and settings handlers. Its embedded presentation hides the standalone return header, while direct navigation without a selected surface retains the full page.
 
 Settings navigation is orthogonal to the trip lifecycle. Opening or closing the dialog must not dispatch `start`, `stop`, or `reset`, alter the focused trip phase, or change persistence semantics. Existing settings handlers and persistence paths are preserved. Regression coverage lives in `tests/standalone-settings-page.mjs`.
+
+
+## Checking announcements and commands against the inventory
+
+The searchable `application-state-inventory.html` now includes the independent
+behavioral expectations in `order-filler-state-contract.json`. Its behavior table
+shows the input, before/after snapshot predicates, mapped region identifiers,
+required/forbidden or exclusive voice commands, and audio expectations for each
+scenario. State rows show scenario-reference counts, not a claim of exhaustive
+coverage. Search the behavior table by command, state identifier, or announcement.
+
+`inventoryBindings` connects public snapshot paths to inventory regions.
+`tests/state-contract-fixture.mjs` rejects unknown region values before checking
+actual runtime state; family predicates use the same checks. Current bindings
+cover recognition, goal mode/scope, operating state, historical start relation,
+editor kind/field and login phase.
+Other regions, surface phases and combinations still require explicit bindings
+and behavioral cases. The table labels missing expectations **Unreviewed**;
+omitted audio never means silence. Required announcements alone do not forbid
+other audio, and required/forbidden commands do not enumerate the entire grammar.
+
+Run `node tests/order-filler-state-contract.mjs` for fresh runtime verification.
+The static view embeds expectations only and deliberately has no saved green
+pass status. Run `node scripts/build-application-state-inventory.cjs` after
+changing either JSON contract. Sleeping command attempts explicitly expect no
+audio, and sleeping result states require an exclusive Wake grammar, including
+when the Commands menu was opened manually. Pointer access remains available.
+
+This is an incremental Debug audit; it does not replace the runtime FSM, assert
+full reachability, implement Simulation/Production, or introduce server-assigned
+trip behavior. Continue filling missing expectations before moving to `test`.

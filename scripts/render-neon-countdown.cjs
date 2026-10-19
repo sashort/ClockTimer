@@ -1,6 +1,7 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{spawn}=require('child_process');
 const root=path.resolve(__dirname,'..');
-const out=process.argv[2]||path.join(root,'api/audio/samples');
+// Edge requires an absolute user-data-dir on Windows.
+const out=path.resolve(process.argv[2]||path.join(root,'api/audio/samples'));
 const score=JSON.parse(fs.readFileSync(process.argv[3]||path.join(root,'api/audio/instruments/neon-countdown-score.json'),'utf8'));
 const outputName=process.argv[4]||'neon-countdown';
 const seconds=score.render.seconds,renderSeconds=seconds+4,fadeSeconds=score.render.fadeOutSeconds;
@@ -85,7 +86,7 @@ const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++nextId,
  fs.writeFileSync(path.join(out,outputName+'.wav'),wav);
  const notes={title:score.title,key:score.key,durationSeconds:seconds,sampleRate:48000,channels:2,peak,rawPeak,gain,partOneGain,sectionGains,secondRms,sections:score.sections,revision:score.revision||1,partTwo:score.partTwo,partThree:score.partThree};
  fs.writeFileSync(path.join(out,outputName+'-render.json'),JSON.stringify(notes,null,2)+'\n');
- const unexpectedQuietSeconds=secondRms.flatMap((x,index)=>{const ending=score.partThree?.ending;return x>.0001||(ending&&index+1>ending.startSeconds+ending.holdSeconds)?[]:[index];});
+ const unexpectedQuietSeconds=secondRms.flatMap((x,index)=>{const ending=score.ending||score.partThree?.ending;return x>.0001||index+1<=(score.render.firstNoteSeconds||0)||(ending&&index+1>ending.startSeconds+ending.holdSeconds)?[]:[index];});
  assert.deepEqual(unexpectedQuietSeconds,[],'no unintended quiet seconds before the final release');
  console.log(JSON.stringify({...notes,secondRms:undefined}));
  }finally{try{await call('Browser.close');}catch{}child.kill();}})().catch(error=>{console.error(error);process.exitCode=1;});

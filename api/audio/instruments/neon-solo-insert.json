@@ -1,0 +1,12 @@
+{
+  "preview": "api/audio/samples/neon-solo-approved.wav",
+  "previewSha256": "52822d72ea1f254f1d8199306b19adee9587ceebd0df8e1c0e62b31c2a12c976",
+  "previewScore": "api/audio/instruments/neon-solo-approved.json",
+  "sourceStartSeconds": 300.2631578947368,
+  "replaceLocalSeconds": [
+    7.5,
+    35.5
+  ],
+  "crossfadeSeconds": 0.25,
+  "referenceGain": 1.1988566475791276
+}

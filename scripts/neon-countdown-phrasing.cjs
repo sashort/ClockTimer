@@ -49,14 +49,16 @@ function arrangeFinale({events,instruments,start,stringRuns,violins,strings,runS
    add(lead,pickup,.455,quarterVoice);
    quarterLeadIns.push({bar,startSeconds:lead,target,pickup});
   }
-  // At bars 4/6/16 the approved arrangement leaves the bells silent.
-  if([4,6,16].includes(bar))continue;
-  const paired=bar%4===0;
-  if(paired) {
-   add(lead,pickup,.5,bells,'ff');
-   add(at,bar===12?'F4':target,.5,bells,'ff');
-  } else add(at,bar===14?'C4':target.replace(/\d$/,o=>String(Number(o)-1)),.5,bells,'ff');
-  bellPhrases.push({bar,atSeconds:at,count:paired?2:1});
+ }
+ // Sparse punctuation at section arrivals, independent of the string melody.
+ // Two quarter-note hits form a double accent: lead-in beat, then arrival.
+ const accents=[{bar:8,tones:['C5','F4']},{bar:20,tones:['F4']},
+  {bar:32,tones:['A4','D4']},{bar:40,tones:['A4']},{bar:48,tones:['D5']}];
+ for(const {bar,tones} of accents) {
+  const at=start+bar*2;
+  if(tones.length===2)add(at-.5,tones[0],.5,bells,'ff');
+  add(at,tones.at(-1),.5,bells,'ff');
+  bellPhrases.push({bar,atSeconds:at,count:tones.length,role:'section-accent'});
  }
  events.sort((a,b)=>Number(a.offset)-Number(b.offset));
  return {quarterLeadIns,bellPhrases,heldVoicings:voicings};

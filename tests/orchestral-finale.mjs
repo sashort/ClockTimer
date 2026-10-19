@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 const read=name=>JSON.parse(fs.readFileSync(new URL('../'+name,import.meta.url),'utf8'));
-const score=read('api/audio/instruments/neon-countdown-score.json');
+const actual=read('api/audio/instruments/neon-countdown-score.json');
+const {createRequire}=await import('node:module');
+// Historical phrasing assertions stay on the authored grid; actual tempo is
+// checked separately below against the approved 114-BPM performance.
+const {composeAuthored}=createRequire(import.meta.url)('../scripts/compose-neon-countdown.cjs');
+const score=composeAuthored(read('api/audio/catalog.json'));
 const manifest=read('api/audio/instruments/neon-orchestra-samples.json');
 assert.equal(manifest.license,'CC0-1.0');
 for(const samples of Object.values(manifest.groups))for(const sample of samples) {
@@ -34,7 +39,7 @@ assert(score.durationSeconds>=score.partThree.naturalTailEndSeconds,'recorded pe
 assert(third.filter(e=>e.instrument==='finale-last-organ').every(e=>Number(e.length)/2===2));
 const bridge=score.song.events.filter(e=>score.partTwo.ending.instruments.includes(e.instrument));
 assert(bridge.length>0&&bridge.every(e=>Number(e.offset)/2<at&&Number(e.offset)/2+Number(e.length)/2+score.instruments[e.instrument].envelope.release>at),'transition release carries into the tempo switch');
-console.log('PASS recorded orchestral assets, cinematic-pulse exception, 120 BPM direct handoff, sustained bridge, audible string arrangement, contour bells and final organ');
+console.log('PASS recorded orchestral assets, cinematic-pulse exception, authored-grid handoff, sustained bridge, audible string arrangement, bell accents and final organ');
 
 assert.equal(score.partThree.percussion.steady,true);
 assert.equal(third.filter(e=>e.instrument==='finale-hiphop-hat').length,48*16,'steady sixteenth-note percussion throughout');
@@ -89,8 +94,8 @@ assert.equal(score.partTwo.ending.holdSeconds,5.625,'the sustained handoff has r
 // Audition approved before integration: exact musical events, except the next phrase pickup beyond35.5s.
 const fixture=read('tests/fixtures/neon-approved-phrasing.json');
 const canonical=es=>es.map(e=>JSON.stringify(e,Object.keys(e).sort())).sort();
-const auditionEvents=third.filter(e=>Number(e.offset)/2<at+35.5).map(e=>({...e,offset:String(Number(e.offset)-at*2)}));
-assert.deepEqual(canonical(auditionEvents),canonical(fixture),'approved audition retained exactly at the new entrance');
+const auditionEvents=third.filter(e=>e.instrument!=='finale-bells'&&Number(e.offset)/2<at+35.5).map(e=>({...e,offset:String(Number(e.offset)-at*2)}));
+assert.deepEqual(canonical(auditionEvents),canonical(fixture.filter(e=>e.instrument!=='finale-bells')),'approved non-bell accompaniment retained exactly at the new entrance');
 for(const pickup of score.partThree.quarterLeadIns)assert(third.some(e=>e.instrument==='finale-quarter-string-lead'&&Number(e.offset)/2===pickup.startSeconds),'legato quarter pickups fill the original contour gaps');
 
 const slowBeat=60/64,slowGrid=slowBeat/4;
@@ -102,3 +107,38 @@ for(const e of score.song.events.filter(e=>['midnight-organ','midnight-tubular-b
 assert.equal(score.partThree.startSeconds,275);
 assert.equal(score.partTwo.ending.startSeconds,269.0625);
 console.log('PASS approved Part II alignment and weighted handoff');
+
+// Bells punctuate major arrivals rather than follow every string entrance.
+assert.equal(score.partThree.bells.sparse,true);
+assert.equal(score.partThree.bells.role,'section-accents');
+assert.equal(score.partThree.bells.strikeCount,7);
+assert.deepEqual(score.partThree.bellPhrases.map(p=>p.count),[2,1,2,1,1]);
+assert.deepEqual(score.partThree.bells.accentBars,[8,20,32,40,48]);
+for(let i=1;i<score.partThree.bellPhrases.length;i++)assert(score.partThree.bellPhrases[i].atSeconds-score.partThree.bellPhrases[i-1].atSeconds>=16,'at least eight bars between accent phrases');
+assert.equal(score.partThree.bells.contourStrikeCount,0,'bells do not trace the string contours');
+
+const firstAccent=third.filter(e=>e.instrument==='finale-bells').slice(0,2).map(e=>({...e,offset:String(Number(e.offset)-at*2)}));
+assert.deepEqual(firstAccent,fixture.filter(e=>e.instrument==='finale-bells').slice(0,2),'first double accent retains its original C5/F4 pitches and quarter-note timing');
+
+const authored=score.song.events.filter(e=>Number(e.offset)/2>=score.partThree.startSeconds);
+const performed=actual.song.events.filter(e=>Number(e.offset)/2>=actual.partThree.startSeconds);
+assert.equal(actual.partThree.bpm,114);
+assert.equal(actual.partTwo.tempoChange.toBpm,114);
+assert.equal(performed.length,authored.length);
+for(let i=0;i<authored.length;i++){
+ assert.equal(performed[i].tone,authored[i].tone,'retiming preserves every pitch');
+ assert.equal(performed[i].instrument,authored[i].instrument);
+ assert(Math.abs((Number(performed[i].offset)/2-275)-(Number(authored[i].offset)/2-275)*120/114)<1e-9,'every finale attack follows 114 BPM');
+ assert(Math.abs(Number(performed[i].length)-Number(authored[i].length)*120/114)<1e-9,'gates follow the slower beat');
+}
+assert.deepEqual(actual.song.events.filter(e=>Number(e.offset)/2<275),score.song.events.filter(e=>Number(e.offset)/2<275),'Parts I/II and handoff pitches/timing are unchanged');
+assert.deepEqual(actual.instruments,score.instruments,'tempo does not alter sample tuning or releases');
+assert(actual.durationSeconds>=actual.partThree.bells.naturalEndSeconds);
+console.log('PASS 114-BPM finale, unchanged pitches/earlier parts, and complete natural bell decays');
+
+const softened=read('api/audio/instruments/cinematic-pulse-softened.json');
+assert.deepEqual(actual.instruments['finale-pulse'].filter,softened.filter);
+assert.deepEqual(actual.instruments['finale-last-pulse'].filter,softened.filter);
+assert.deepEqual(actual.instruments['finale-pulse'].partials,read('api/audio/catalog.json').instruments['cinematic-pulse-bass'].partials,'approved softened voice keeps original oscillator identity');
+assert.deepEqual(actual.instruments['neon-bass'].filter,read('api/audio/catalog.json').instruments['cinematic-pulse-bass'].filter,'Part I bass remains original');
+assert.deepEqual(actual.instruments['midnight-pulse'].filter,{type:'lowpass',frequency:650,Q:.65,envelopeAmount:850},'Part II retains its approved dark filter');

@@ -1,0 +1,5627 @@
+{
+  "title": "Neon Countdown — upper chord solo / original pulse with softened buzz",
+  "key": "D minor",
+  "revision": 57,
+  "durationSeconds": 42,
+  "instruments": {
+    "finale-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.1,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.22,
+        "sustain": 0.76,
+        "release": 0.16
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "finale-cellos": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded cello-short",
+      "orchestraGroup": "cello-short",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-cello-short-10.wav",
+          "rootFrequency": 65.40639132514966,
+          "note": "C2",
+          "durationSeconds": 3.2272108843537417,
+          "peakAmplitude": 0.3993399143218994,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C1_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "92de035cdbfab6e41f94115b2c23716a9e93554a4c23c1cc4b946f7492d9c927",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-11.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 3.386485260770975,
+          "peakAmplitude": 0.38178324699401855,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_D2_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "c647723304b5f4b2d3af02739017e38bc4e85244c15355ebd6f8443c1445b5ab",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-12.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 2.026893424036281,
+          "peakAmplitude": 0.314375638961792,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C3_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "278a14177cd3ffffc5418e403d9583af22778a8ce8fc548f88ea707e044a62d4",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "finale-spiccato": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-short",
+      "orchestraGroup": "violin-short",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-short-0.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 1.7675963718820862,
+          "peakAmplitude": 0.27215576171875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-1.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 1.2079365079365079,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-2.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.9490249433106576,
+          "peakAmplitude": 0.362060546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-3.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 0.9231972789115647,
+          "peakAmplitude": 0.34674072265625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "finale-violins": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-long",
+      "orchestraGroup": "violin-long",
+      "volume": 2.4,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-long-4.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 9.476530612244899,
+          "peakAmplitude": 0.170379638671875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_A3_v2.wav",
+          "library": "vsco",
+          "sha256": "3fc4a9e22037643fce11e755da72c61c664893f83e637c24a7b5c2d3824ab986"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-5.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 11.436893424036281,
+          "peakAmplitude": 0.2657470703125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "5857387b40c412f756ef281c1171247664432a4e5078c98142d595d15cd92ef9"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-6.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 12.18873015873016,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_G4_v2.wav",
+          "library": "vsco",
+          "sha256": "a1d6d5a0397541692e2f88a0cd9820eabe90407784ee631aa3bfa74772637a65"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-7.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 11.20312925170068,
+          "peakAmplitude": 0.2459716796875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "0c2ca9de723bed0a0968e32126b934f778cd678b367a29e7fde91004daf84daf"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-29.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 13.933469387755101,
+          "peakAmplitude": 0.129669189453125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D3_v2.wav",
+          "library": "vsco",
+          "sha256": "77893dbf1ea1be8c40ad756d16b916298e6b1b0742495e9853e020375592357c"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "finale-string-runs": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-short",
+      "orchestraGroup": "violin-short",
+      "volume": 4.8,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.02,
+        "sustain": 0.96,
+        "release": 0.012
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-short-0.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 1.7675963718820862,
+          "peakAmplitude": 0.27215576171875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-1.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 1.2079365079365079,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-2.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.9490249433106576,
+          "peakAmplitude": 0.362060546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-3.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 0.9231972789115647,
+          "peakAmplitude": 0.34674072265625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141"
+        }
+      ],
+      "reverb": {
+        "wet": 0.025,
+        "decay": 0.35
+      }
+    },
+    "finale-horror-strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-tremolo",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 0.5
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "reverb": {
+        "wet": 0.08,
+        "decay": 1.2
+      }
+    },
+    "finale-horns": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded horn",
+      "orchestraGroup": "horn",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.35
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-horn-13.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 14.644716553287981,
+          "peakAmplitude": 0.03826904296875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_D2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "9155ef0c33c06ebe55daeaaaca7dec4090578af6cf3d6a028fbfa7b7f2ec876e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-14.wav",
+          "rootFrequency": 174.61411571650194,
+          "note": "F3",
+          "durationSeconds": 14.502448979591836,
+          "peakAmplitude": 0.065521240234375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_F2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "2e487a49c834ff2d76aff1c9755875fc03013bf202b949a5c5fe354d0c2123c2"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-15.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 12.703197278911565,
+          "peakAmplitude": 0.110565185546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_C3_v2_1.wav",
+          "library": "vsco",
+          "sha256": "c0c0b157dcde094c4417b7c165d645897cde9ea6d74247bbab0c0e75355e78c3"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "finale-trumpets": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded trumpet",
+      "orchestraGroup": "trumpet",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-trumpet-16.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 1.140453514739229,
+          "peakAmplitude": 0.0556640625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_C3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "dcd3d370fe299ca76b222066d7facd0034a549a105051ed474f8dd1f478f1afa",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-trumpet-17.wav",
+          "rootFrequency": 587.3295358348151,
+          "note": "D5",
+          "durationSeconds": 1.337437641723356,
+          "peakAmplitude": 0.132171630859375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_D4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a817b4b11b818e04cf73197a382b380c5dd8576f1e7f7d1ee359559d0542eb8a",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "finale-flute": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded flute",
+      "orchestraGroup": "flute",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-flute-18.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.6005442176870748,
+          "peakAmplitude": 0.05548453330993652,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "dc1938d6becee0d3c175b69899490cb7a24e1ad8d73a57668835afd2ae516838",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-flute-19.wav",
+          "rootFrequency": 1046.5022612023945,
+          "note": "C6",
+          "durationSeconds": 0.664421768707483,
+          "peakAmplitude": 0.19474661350250244,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_C5_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "11eefb155e4d6dced1059363a00915c3b606ab05e41c98bd83e19e57cd1ca9e7",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "finale-hiphop-kick": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s kick",
+      "volume": 3.2,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-kick.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 0.43,
+          "peakAmplitude": 0.318634033203125,
+          "sha256": "c86b8a2caca94874871008c88d7997fbf9d169104a65926f1ed579ed72eb6ef6",
+          "sourceBeat": 32,
+          "sourceVelocity": 1,
+          "gain": 2.3537975289723208
+        }
+      ]
+    },
+    "finale-hiphop-snare": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s snare",
+      "volume": 2.6,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-snare.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 0.24,
+          "peakAmplitude": 0.384674072265625,
+          "sha256": "7a538a6026e1d86aae86538a170081fc75c4a8cb19b1eca1ef29f62cc6b92007",
+          "sourceBeat": 34,
+          "sourceVelocity": 1,
+          "gain": 1.94970249900833
+        }
+      ]
+    },
+    "finale-hiphop-clap": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s clap",
+      "volume": 2.2,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-clap.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 0.18,
+          "peakAmplitude": 0.148040771484375,
+          "sha256": "068c53d0a907cc2ec18ee09bee71ff01d6792d4ccce028adb24fd25ed2168f24",
+          "sourceBeat": 34,
+          "sourceVelocity": 0.85,
+          "gain": 5.066171923314781
+        }
+      ]
+    },
+    "finale-hiphop-hat": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s hat",
+      "volume": 1.6,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-hat.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 0.072,
+          "peakAmplitude": 0.060211181640625,
+          "sha256": "5f8ed26ec444a3d914c69adfc47744c2935ab21ad77eaf19306b77b384df25da",
+          "sourceBeat": 32,
+          "sourceVelocity": 0.65,
+          "gain": 12.456158134820072
+        }
+      ]
+    },
+    "finale-bells": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded Tubular Bells (VCSL)",
+      "volume": 5.2,
+      "velocitySensitivity": 0.7,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Asharp3_ff_rr1.wav",
+          "rootFrequency": 233.08188075904496,
+          "naturalDecay": true,
+          "durationSeconds": 12.56702947845805,
+          "note": "A#3",
+          "sha256": "55fcfdb825026629670e3486f47762e6a3c4a89e138990fbd0e65c3f0a1d6a79",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_A%233_ff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_C3_f_rr1.wav",
+          "rootFrequency": 130.8127826502993,
+          "naturalDecay": true,
+          "durationSeconds": 11.355963718820862,
+          "note": "C3",
+          "sha256": "76d51955e61e70e7a6b46a05865cd0f06f4948aaab97b1925f0f06f193f717f5",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C3_f_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_C4_ff_rr2.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 18.43077097505669,
+          "note": "C4",
+          "sha256": "50d2c2bff54396a684ce9b29346bb8d43bb55d5d9adb9d736bdd5a713adc424a",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_D3_ff_rr1.wav",
+          "rootFrequency": 146.8323839587038,
+          "naturalDecay": true,
+          "durationSeconds": 19.611541950113377,
+          "note": "D3",
+          "sha256": "ca1c64961ce8e96f6ea3ed3bf67bde09c0beb723b0fe346881b317695b1ce84f",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D3_ff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_D4_ff_rr2.wav",
+          "rootFrequency": 293.6647679174076,
+          "naturalDecay": true,
+          "durationSeconds": 13.736190476190476,
+          "note": "D4",
+          "sha256": "2657add471fc1804a29c1261df45af13c700803cfa29bd11c134400a3fbc8700",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_E3_ff_rr2.wav",
+          "rootFrequency": 164.81377845643496,
+          "naturalDecay": true,
+          "durationSeconds": 17.82390022675737,
+          "note": "E3",
+          "sha256": "086a46cb560dae926014c0494965034aeecdffade7a1d6f54feda13274775a11",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E3_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_E4_ff_rr2.wav",
+          "rootFrequency": 329.6275569128699,
+          "naturalDecay": true,
+          "durationSeconds": 12.852947845804989,
+          "note": "E4",
+          "sha256": "1bec82ee61186bf12863842251b1ec726322a649bc90f50f7bca423d30b345ac",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Fsharp3_fff_rr1.wav",
+          "rootFrequency": 184.9972113558172,
+          "naturalDecay": true,
+          "durationSeconds": 13.189274376417234,
+          "note": "F#3",
+          "sha256": "4664366c705496c3dc5ba9de75ffcd6739610dc669391cadda34a63cbcfa1251",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_F%233_fff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Gsharp3_ff_rr1.wav",
+          "rootFrequency": 207.65234878997256,
+          "naturalDecay": true,
+          "durationSeconds": 14.701269841269841,
+          "note": "G#3",
+          "sha256": "ec7743ccc27b4546f51852965e7d96e97cc14270f6051040c2890fd4d34c24c2",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_G%233_ff_rr1.wav"
+        }
+      ],
+      "reverb": {
+        "wet": 0.1,
+        "decay": 2.8
+      }
+    },
+    "finale-quarter-string-lead": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Sustained violin quarter-note lead-in",
+      "orchestraGroup": "violin-long",
+      "volume": 2.4,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.035,
+        "decay": 0.08,
+        "sustain": 0.95,
+        "release": 0.08
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-long-4.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 9.476530612244899,
+          "peakAmplitude": 0.170379638671875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_A3_v2.wav",
+          "library": "vsco",
+          "sha256": "3fc4a9e22037643fce11e755da72c61c664893f83e637c24a7b5c2d3824ab986"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-5.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 11.436893424036281,
+          "peakAmplitude": 0.2657470703125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "5857387b40c412f756ef281c1171247664432a4e5078c98142d595d15cd92ef9"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-6.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 12.18873015873016,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_G4_v2.wav",
+          "library": "vsco",
+          "sha256": "a1d6d5a0397541692e2f88a0cd9820eabe90407784ee631aa3bfa74772637a65"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-7.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 11.20312925170068,
+          "peakAmplitude": 0.2459716796875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "0c2ca9de723bed0a0968e32126b934f778cd678b367a29e7fde91004daf84daf"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-29.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 13.933469387755101,
+          "peakAmplitude": 0.129669189453125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D3_v2.wav",
+          "library": "vsco",
+          "sha256": "77893dbf1ea1be8c40ad756d16b916298e6b1b0742495e9853e020375592357c"
+        }
+      ],
+      "reverb": {
+        "wet": 0.08,
+        "decay": 1.2
+      }
+    },
+    "vintage-upper-held-strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Vintage upper held string chords",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 3.5,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.12,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 0.65
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.4
+      },
+      "filter": {
+        "type": "lowpass",
+        "frequency": 6000,
+        "Q": 0.5
+      }
+    },
+    "solo-entry-cut-finale-hiphop-hat": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s hat",
+      "volume": 1.6,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-hat.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": false,
+          "durationSeconds": 0.072,
+          "peakAmplitude": 0.060211181640625,
+          "sha256": "5f8ed26ec444a3d914c69adfc47744c2935ab21ad77eaf19306b77b384df25da",
+          "sourceBeat": 32,
+          "sourceVelocity": 0.65,
+          "gain": 12.456158134820072
+        }
+      ],
+      "reverb": {
+        "wet": 0
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-entry-cut-finale-cellos": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded cello-short",
+      "orchestraGroup": "cello-short",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-cello-short-10.wav",
+          "rootFrequency": 65.40639132514966,
+          "note": "C2",
+          "durationSeconds": 3.2272108843537417,
+          "peakAmplitude": 0.3993399143218994,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C1_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "92de035cdbfab6e41f94115b2c23716a9e93554a4c23c1cc4b946f7492d9c927",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-11.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 3.386485260770975,
+          "peakAmplitude": 0.38178324699401855,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_D2_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "c647723304b5f4b2d3af02739017e38bc4e85244c15355ebd6f8443c1445b5ab",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-12.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 2.026893424036281,
+          "peakAmplitude": 0.314375638961792,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C3_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "278a14177cd3ffffc5418e403d9583af22778a8ce8fc548f88ea707e044a62d4",
+          "naturalDecay": false
+        }
+      ],
+      "reverb": {
+        "wet": 0,
+        "decay": 1.2
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-entry-cut-finale-spiccato": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-short",
+      "orchestraGroup": "violin-short",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-short-0.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 1.7675963718820862,
+          "peakAmplitude": 0.27215576171875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-1.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 1.2079365079365079,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-2.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.9490249433106576,
+          "peakAmplitude": 0.362060546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-3.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 0.9231972789115647,
+          "peakAmplitude": 0.34674072265625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141",
+          "naturalDecay": false
+        }
+      ],
+      "reverb": {
+        "wet": 0,
+        "decay": 1.2
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-entry-cut-finale-violins": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-long",
+      "orchestraGroup": "violin-long",
+      "volume": 2.4,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-long-4.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 9.476530612244899,
+          "peakAmplitude": 0.170379638671875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_A3_v2.wav",
+          "library": "vsco",
+          "sha256": "3fc4a9e22037643fce11e755da72c61c664893f83e637c24a7b5c2d3824ab986",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-5.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 11.436893424036281,
+          "peakAmplitude": 0.2657470703125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "5857387b40c412f756ef281c1171247664432a4e5078c98142d595d15cd92ef9",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-6.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 12.18873015873016,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_G4_v2.wav",
+          "library": "vsco",
+          "sha256": "a1d6d5a0397541692e2f88a0cd9820eabe90407784ee631aa3bfa74772637a65",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-7.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 11.20312925170068,
+          "peakAmplitude": 0.2459716796875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "0c2ca9de723bed0a0968e32126b934f778cd678b367a29e7fde91004daf84daf",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-29.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 13.933469387755101,
+          "peakAmplitude": 0.129669189453125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D3_v2.wav",
+          "library": "vsco",
+          "sha256": "77893dbf1ea1be8c40ad756d16b916298e6b1b0742495e9853e020375592357c",
+          "naturalDecay": false
+        }
+      ],
+      "reverb": {
+        "wet": 0,
+        "decay": 1.2
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-entry-cut-finale-hiphop-kick": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s kick",
+      "volume": 3.2,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-kick.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": false,
+          "durationSeconds": 0.43,
+          "peakAmplitude": 0.318634033203125,
+          "sha256": "c86b8a2caca94874871008c88d7997fbf9d169104a65926f1ed579ed72eb6ef6",
+          "sourceBeat": 32,
+          "sourceVelocity": 1,
+          "gain": 2.3537975289723208
+        }
+      ],
+      "reverb": {
+        "wet": 0
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-entry-cut-finale-hiphop-snare": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s snare",
+      "volume": 2.6,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-snare.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": false,
+          "durationSeconds": 0.24,
+          "peakAmplitude": 0.384674072265625,
+          "sha256": "7a538a6026e1d86aae86538a170081fc75c4a8cb19b1eca1ef29f62cc6b92007",
+          "sourceBeat": 34,
+          "sourceVelocity": 1,
+          "gain": 1.94970249900833
+        }
+      ],
+      "reverb": {
+        "wet": 0
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-entry-cut-finale-hiphop-clap": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s clap",
+      "volume": 2.2,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-clap.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": false,
+          "durationSeconds": 0.18,
+          "peakAmplitude": 0.148040771484375,
+          "sha256": "068c53d0a907cc2ec18ee09bee71ff01d6792d4ccce028adb24fd25ed2168f24",
+          "sourceBeat": 34,
+          "sourceVelocity": 0.85,
+          "gain": 5.066171923314781
+        }
+      ],
+      "reverb": {
+        "wet": 0
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-entry-cut-finale-horns": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded horn",
+      "orchestraGroup": "horn",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-horn-13.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 14.644716553287981,
+          "peakAmplitude": 0.03826904296875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_D2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "9155ef0c33c06ebe55daeaaaca7dec4090578af6cf3d6a028fbfa7b7f2ec876e",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-14.wav",
+          "rootFrequency": 174.61411571650194,
+          "note": "F3",
+          "durationSeconds": 14.502448979591836,
+          "peakAmplitude": 0.065521240234375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_F2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "2e487a49c834ff2d76aff1c9755875fc03013bf202b949a5c5fe354d0c2123c2",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-15.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 12.703197278911565,
+          "peakAmplitude": 0.110565185546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_C3_v2_1.wav",
+          "library": "vsco",
+          "sha256": "c0c0b157dcde094c4417b7c165d645897cde9ea6d74247bbab0c0e75355e78c3",
+          "naturalDecay": false
+        }
+      ],
+      "reverb": {
+        "wet": 0,
+        "decay": 1.2
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-entry-cut-finale-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.1,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.22,
+        "sustain": 0.76,
+        "release": 0.18
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "solo-entry-cut-finale-horror-strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-tremolo",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 0.18
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82",
+          "naturalDecay": false
+        }
+      ],
+      "reverb": {
+        "wet": 0,
+        "decay": 1.2
+      },
+      "delay": {
+        "wet": 0
+      }
+    },
+    "solo-low-cello": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Low Bowed Cello Pulse",
+      "orchestraGroup": "cello-short",
+      "volume": 4.8,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.05,
+        "sustain": 0.9,
+        "release": 0.065
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-cello-short-10.wav",
+          "rootFrequency": 65.40639132514966,
+          "note": "C2",
+          "durationSeconds": 3.2272108843537417,
+          "peakAmplitude": 0.3993399143218994,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C1_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "92de035cdbfab6e41f94115b2c23716a9e93554a4c23c1cc4b946f7492d9c927",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-11.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 3.386485260770975,
+          "peakAmplitude": 0.38178324699401855,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_D2_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "c647723304b5f4b2d3af02739017e38bc4e85244c15355ebd6f8443c1445b5ab",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-12.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 2.026893424036281,
+          "peakAmplitude": 0.314375638961792,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C3_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "278a14177cd3ffffc5418e403d9583af22778a8ce8fc548f88ea707e044a62d4",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.07,
+        "decay": 0.6
+      }
+    },
+    "solo-cello-contour": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Low Bowed Cello Pulse",
+      "orchestraGroup": "cello-short",
+      "volume": 4.8,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.02,
+        "sustain": 0.96,
+        "release": 0.012
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-cello-short-10.wav",
+          "rootFrequency": 65.40639132514966,
+          "note": "C2",
+          "durationSeconds": 3.2272108843537417,
+          "peakAmplitude": 0.3993399143218994,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C1_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "92de035cdbfab6e41f94115b2c23716a9e93554a4c23c1cc4b946f7492d9c927",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-11.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 3.386485260770975,
+          "peakAmplitude": 0.38178324699401855,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_D2_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "c647723304b5f4b2d3af02739017e38bc4e85244c15355ebd6f8443c1445b5ab",
+          "naturalDecay": false
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-12.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 2.026893424036281,
+          "peakAmplitude": 0.314375638961792,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C3_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "278a14177cd3ffffc5418e403d9583af22778a8ce8fc548f88ea707e044a62d4",
+          "naturalDecay": false
+        }
+      ],
+      "reverb": {
+        "wet": 0.025,
+        "decay": 0.35
+      }
+    }
+  },
+  "song": {
+    "bpm": 120,
+    "instrument": "finale-pulse",
+    "events": [
+      {
+        "offset": "0",
+        "tone": "F2",
+        "length": "0.6842105263157895",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "C4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "F4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "A4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "C5",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "A3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "C5",
+        "length": "0.7894736842105263",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "F5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "A5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "C6",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "f"
+      },
+      {
+        "offset": "0",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "0",
+        "tone": "C4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-trumpets",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "F4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-trumpets",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0",
+        "tone": "A4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-trumpets",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0.263157894736878",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "0.526315789473756",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "0.526315789473756",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0.7894736842105203",
+        "tone": "F2",
+        "length": "0.47368421052631576",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0.7894736842105203",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "0.7894736842105203",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "1.0526315789473983",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "1.0526315789473983",
+        "tone": "A4",
+        "length": "0.5263157894736842",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "1.0526315789473983",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "1.0526315789473983",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "1.0526315789473983",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "1.0526315789473983",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "1.3157894736842763",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "1.5789473684210407",
+        "tone": "C3",
+        "length": "0.6842105263157895",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "1.5789473684210407",
+        "tone": "C4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "1.5789473684210407",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "1.5789473684210407",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "1.8421052631579187",
+        "tone": "C5",
+        "length": "0.2631578947368421",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "1.8421052631579187",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "2.1052631578947967",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.1052631578947967",
+        "tone": "F5",
+        "length": "1.5789473684210527",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.1052631578947967",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.1052631578947967",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "2.368421052631561",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "2.631578947368439",
+        "tone": "F2",
+        "length": "0.7894736842105263",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.631578947368439",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.631578947368439",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "2.631578947368439",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.631578947368439",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.631578947368439",
+        "tone": "A3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.631578947368439",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "2.894736842105317",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "3.157894736842195",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "3.157894736842195",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "3.157894736842195",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "3.157894736842195",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "3.157894736842195",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "3.4210526315789593",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "3.6842105263158373",
+        "tone": "C3",
+        "length": "0.39999999999999997",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "3.6842105263158373",
+        "tone": "C4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "3.6842105263158373",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "3.6842105263158373",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "3.9473684210527153",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "F2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "C4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "A4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "C5",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "F5",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "E5",
+        "length": "0.5263157894736842",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "f"
+      },
+      {
+        "offset": "4.21052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "4.473684210526358",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "4.736842105263236",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "4.736842105263236",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5",
+        "tone": "F5",
+        "length": "0.5263157894736842",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "5.263157894736878",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5.263157894736878",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5.263157894736878",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "5.263157894736878",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "5.263157894736878",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "5.526315789473756",
+        "tone": "C3",
+        "length": "0.5263157894736842",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5.526315789473756",
+        "tone": "C4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5.526315789473756",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "5.78947368421052",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "5.78947368421052",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5.78947368421052",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5.78947368421052",
+        "tone": "A3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5.78947368421052",
+        "tone": "A5",
+        "length": "0.7894736842105263",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "5.78947368421052",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "6.052631578947398",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "6.315789473684276",
+        "tone": "F2",
+        "length": "0.7894736842105263",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "6.315789473684276",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "6.315789473684276",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "6.315789473684276",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "6.315789473684276",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "6.578947368421041",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "6.842105263157919",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "6.842105263157919",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.105263157894797",
+        "tone": "G5",
+        "length": "0.5263157894736842",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.105263157894797",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "F2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "A3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "7.368421052631561",
+        "tone": "D6",
+        "length": "0.9578947368421052",
+        "instrument": "finale-quarter-string-lead",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.631578947368439",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "7.894736842105317",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "7.894736842105317",
+        "tone": "F5",
+        "length": "0.2631578947368421",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "7.894736842105317",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.157894736842195",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "C2",
+        "length": "0.6842105263157895",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "E4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "G4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "Bb4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "E5",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "E3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "G3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "E5",
+        "length": "0.7894736842105263",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "G5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "Bb5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "E6",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "f"
+      },
+      {
+        "offset": "8.42105263157896",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "8.684210526315837",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "8.947368421052715",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "8.947368421052715",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "9.21052631578948",
+        "tone": "C2",
+        "length": "0.47368421052631576",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "9.21052631578948",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "9.21052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "9.473684210526358",
+        "tone": "G4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "9.473684210526358",
+        "tone": "D5",
+        "length": "0.5263157894736842",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "9.473684210526358",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "9.473684210526358",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "9.473684210526358",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "9.473684210526358",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "9.736842105263236",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "10",
+        "tone": "G2",
+        "length": "0.6842105263157895",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "10",
+        "tone": "G3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "10",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "10",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "10.263157894736878",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "10.526315789473756",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "10.526315789473756",
+        "tone": "C5",
+        "length": "0.7894736842105263",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "10.526315789473756",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "10.526315789473756",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "10.78947368421052",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "11.052631578947398",
+        "tone": "C2",
+        "length": "0.7894736842105263",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.052631578947398",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.052631578947398",
+        "tone": "G4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "11.052631578947398",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.052631578947398",
+        "tone": "E3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.052631578947398",
+        "tone": "G3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.052631578947398",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.315789473684276",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "11.57894736842104",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.57894736842104",
+        "tone": "G4",
+        "length": "0.7894736842105263",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.57894736842104",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "11.57894736842104",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "11.57894736842104",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "11.57894736842104",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "11.842105263157919",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "12.105263157894797",
+        "tone": "G2",
+        "length": "0.39999999999999997",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.105263157894797",
+        "tone": "G3",
+        "length": "0.8421052631578947",
+        "instrument": "solo-entry-cut-finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.105263157894797",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "solo-entry-cut-finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "12.105263157894797",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.368421052631561",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "C2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "solo-entry-cut-finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "E4",
+        "length": "0.3368421052631579",
+        "instrument": "solo-entry-cut-finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "Bb4",
+        "length": "2.797894736842087",
+        "instrument": "solo-entry-cut-finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "E5",
+        "length": "2.797894736842087",
+        "instrument": "solo-entry-cut-finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "G5",
+        "length": "2.797894736842087",
+        "instrument": "solo-entry-cut-finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "A4",
+        "length": "0.7894736842105263",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "solo-entry-cut-finale-hiphop-kick",
+        "dynamic": "f"
+      },
+      {
+        "offset": "12.631578947368439",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "12.894736842105317",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "13.157894736842195",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "solo-entry-cut-finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "13.157894736842195",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "13.42105263157896",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "13.684210526315837",
+        "tone": "G4",
+        "length": "0.3368421052631579",
+        "instrument": "solo-entry-cut-finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "13.684210526315837",
+        "tone": "C5",
+        "length": "0.5263157894736842",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "13.684210526315837",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "solo-entry-cut-finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "13.684210526315837",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "solo-entry-cut-finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "13.684210526315837",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "solo-entry-cut-finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "13.684210526315837",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "13.947368421052715",
+        "tone": "G2",
+        "length": "0.5263157894736842",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "13.947368421052715",
+        "tone": "G3",
+        "length": "0.8421052631578947",
+        "instrument": "solo-entry-cut-finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "13.947368421052715",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "14.21052631578948",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "solo-entry-cut-finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "14.21052631578948",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "solo-entry-cut-finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.21052631578948",
+        "tone": "E3",
+        "length": "0.8421052631578947",
+        "instrument": "solo-entry-cut-finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.21052631578948",
+        "tone": "G3",
+        "length": "0.8421052631578947",
+        "instrument": "solo-entry-cut-finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.21052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.473684210526358",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "14.736842105263236",
+        "tone": "C2",
+        "length": "0.69263157894729",
+        "instrument": "solo-entry-cut-finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.736842105263236",
+        "tone": "C3",
+        "length": "0.69263157894729",
+        "instrument": "solo-entry-cut-finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.736842105263236",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "solo-entry-cut-finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.736842105263236",
+        "tone": "E5",
+        "length": "0.5263157894736842",
+        "instrument": "solo-entry-cut-finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.736842105263236",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "solo-entry-cut-finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "14.736842105263236",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "15",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "15.263157894736878",
+        "tone": "G4",
+        "length": "0.16631578947364767",
+        "instrument": "solo-entry-cut-finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "15.263157894736878",
+        "tone": "E6",
+        "length": "0.16631578947364767",
+        "instrument": "solo-entry-cut-finale-horror-strings",
+        "dynamic": "f"
+      },
+      {
+        "offset": "15.263157894736878",
+        "tone": "F6",
+        "length": "0.16631578947364767",
+        "instrument": "solo-entry-cut-finale-horror-strings",
+        "dynamic": "f"
+      },
+      {
+        "offset": "15.263157894736878",
+        "tone": "C4",
+        "length": "0.16631578947364767",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "15.526315789473756",
+        "tone": "C#5",
+        "length": "0.03",
+        "instrument": "solo-entry-cut-finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "15.526315789473756",
+        "tone": "C4",
+        "length": "0.03",
+        "instrument": "solo-entry-cut-finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "15.78947368421052",
+        "tone": "G4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "16.0526315789474",
+        "tone": "A4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "16.315789473684276",
+        "tone": "Bb4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "16.578947368421154",
+        "tone": "C5",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "16.84210526315792",
+        "tone": "A5",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "16.84210526315792",
+        "tone": "D6",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "16.84210526315792",
+        "tone": "F6",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "16.84210526315792",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "17.368421052631604",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "17.89473684210529",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "18.42105263157897",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "18.947368421052655",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "19.47368421052634",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "20.000000000000025",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "20.526315789473706",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "21.05263157894739",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "21.578947368421076",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "22.10526315789476",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "22.631578947368446",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "23.15789473684213",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "23.684210526315812",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "24.21052631578948",
+        "tone": "C6",
+        "length": "0.9578947368421052",
+        "instrument": "finale-quarter-string-lead",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "24.210526315789497",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "24.736842105263182",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "25.263157894736878",
+        "tone": "F5",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "25.263157894736878",
+        "tone": "Bb5",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "25.263157894736878",
+        "tone": "D6",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "25.263157894736878",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "25.789473684210563",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "26.315789473684248",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "26.84210526315793",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "27.368421052631614",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "27.8947368421053",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "28.421052631578984",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "28.947368421052666",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "29.47368421052635",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "30.000000000000036",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "30.52631578947372",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "31.052631578947405",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "31.57894736842109",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "32.105263157894775",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "32.63157894736844",
+        "tone": "D4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "32.63157894736845",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "32.89473684210532",
+        "tone": "E4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "Bb1",
+        "offset": "33.15789473684214",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "33.157894736842195",
+        "tone": "F4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "33.42105263157896",
+        "tone": "G4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "33.68421052631584",
+        "tone": "A5",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "33.68421052631584",
+        "tone": "C6",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "33.68421052631584",
+        "tone": "F6",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "33.68421052631584",
+        "tone": "F4",
+        "length": "1.0526315789473684",
+        "instrument": "finale-bells",
+        "dynamic": "ff"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "33.68421052631584",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "34.21052631578952",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "34.73684210526321",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "35.26315789473689",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "35.78947368421058",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "36.315789473684255",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "36.84210526315794",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "37.368421052631625",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "37.89473684210531",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "38.421052631578995",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "38.94736842105268",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "39.473684210526365",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "40.00000000000005",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "40.526315789473735",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "41.0526315789474",
+        "tone": "F6",
+        "length": "0.9578947368421052",
+        "instrument": "finale-quarter-string-lead",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "41.05263157894741",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "F2",
+        "offset": "41.5789473684211",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "42.1052631578948",
+        "tone": "Bb5",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "42.1052631578948",
+        "tone": "E6",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "42.1052631578948",
+        "tone": "G6",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "42.1052631578948",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "42.63157894736848",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "43.15789473684217",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "43.68421052631585",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "44.21052631578954",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "44.736842105263214",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "45.2631578947369",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "45.789473684210584",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "46.31578947368427",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "46.842105263157954",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "47.36842105263164",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "47.894736842105324",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "48.42105263157901",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "48.947368421052694",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "49.47368421052636",
+        "tone": "G4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "49.47368421052637",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "49.736842105263236",
+        "tone": "A4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "50",
+        "tone": "Bb4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "C2",
+        "offset": "50.00000000000006",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "50.26315789473688",
+        "tone": "C5",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "50.526315789473756",
+        "tone": "D5",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "50.526315789473756",
+        "tone": "F5",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "50.526315789473756",
+        "tone": "A5",
+        "length": "8.021052631578947",
+        "instrument": "vintage-upper-held-strings",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "50.526315789473756",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "51.05263157894744",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "51.578947368421126",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "52.10526315789481",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "52.631578947368496",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "53.157894736842174",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "53.68421052631586",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "54.210526315789544",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "54.73684210526323",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "55.26315789473691",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "55.7894736842106",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "56.31578947368428",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "56.84210526315797",
+        "length": "0.4421052631578947",
+        "dynamic": "f"
+      },
+      {
+        "instrument": "solo-low-cello",
+        "tone": "D2",
+        "offset": "57.36842105263165",
+        "length": "0.4421052631578947",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-cello-contour",
+        "tone": "E2",
+        "offset": "57.89473684210512",
+        "length": "0.22105263157894736",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "57.89473684210532",
+        "tone": "E5",
+        "length": "0.9578947368421052",
+        "instrument": "finale-quarter-string-lead",
+        "dynamic": "mf"
+      },
+      {
+        "instrument": "solo-cello-contour",
+        "tone": "F2",
+        "offset": "58.157894736841996",
+        "length": "0.22105263157894736",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "instrument": "solo-cello-contour",
+        "tone": "G2",
+        "offset": "58.421052631578874",
+        "length": "0.22105263157894736",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "instrument": "solo-cello-contour",
+        "tone": "A2",
+        "offset": "58.68421052631575",
+        "length": "0.22105263157894736",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "Bb1",
+        "length": "0.6842105263157895",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "D4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "Bb3",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "D4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "F4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "D3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "Bb4",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "D5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "F5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "f"
+      },
+      {
+        "offset": "58.947368421052715",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "59.21052631578948",
+        "tone": "D5",
+        "length": "0.8421052631578947",
+        "instrument": "finale-flute",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "59.21052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "59.47368421052636",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "59.47368421052636",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "59.736842105263236",
+        "tone": "Bb1",
+        "length": "0.47368421052631576",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "59.736842105263236",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "59.736842105263236",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "60",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "60",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "60",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "60",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "60",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "60.26315789473688",
+        "tone": "F5",
+        "length": "0.8421052631578947",
+        "instrument": "finale-flute",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "60.26315789473688",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "60.526315789473756",
+        "tone": "F2",
+        "length": "0.6842105263157895",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "60.526315789473756",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "60.526315789473756",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "60.526315789473756",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "60.78947368421052",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "61.0526315789474",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.0526315789474",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.0526315789474",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "61.315789473684276",
+        "tone": "A5",
+        "length": "0.8421052631578947",
+        "instrument": "finale-flute",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.315789473684276",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "61.57894736842104",
+        "tone": "Bb1",
+        "length": "0.7894736842105263",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.57894736842104",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.57894736842104",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "61.57894736842104",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.57894736842104",
+        "tone": "D3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.57894736842104",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.57894736842104",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "61.84210526315792",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "62.1052631578948",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "62.1052631578948",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "62.1052631578948",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "62.1052631578948",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "62.1052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "62.36842105263156",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "62.63157894736844",
+        "tone": "F2",
+        "length": "0.39999999999999997",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "62.63157894736844",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "62.63157894736844",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "62.63157894736844",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "62.89473684210532",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "63.157894736842195",
+        "tone": "Bb1",
+        "length": "0.8421052631578947",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "63.157894736842195",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "63.157894736842195",
+        "tone": "D4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "63.157894736842195",
+        "tone": "D4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "63.157894736842195",
+        "tone": "F4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "63.157894736842195",
+        "tone": "Bb4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "63.157894736842195",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "f"
+      },
+      {
+        "offset": "63.157894736842195",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "63.42105263157896",
+        "tone": "A4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "63.42105263157896",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "63.68421052631584",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "63.68421052631584",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "63.947368421052715",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "64.21052631578948",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "64.21052631578948",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "64.21052631578948",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "64.21052631578948",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "64.21052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "64.47368421052636",
+        "tone": "F2",
+        "length": "0.5263157894736842",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "64.47368421052636",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "64.47368421052636",
+        "tone": "F4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "64.47368421052636",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "64.73684210526324",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "64.73684210526324",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "64.73684210526324",
+        "tone": "D3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "64.73684210526324",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "64.73684210526324",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "65",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "65.26315789473688",
+        "tone": "Bb1",
+        "length": "0.7894736842105263",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "65.26315789473688",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "65.26315789473688",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "65.26315789473688",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "65.26315789473688",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "65.52631578947376",
+        "tone": "D4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "65.52631578947376",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "65.78947368421052",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "65.78947368421052",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.0526315789474",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "Bb1",
+        "length": "0.8421052631578947",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "Bb2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "D3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "66.31578947368428",
+        "tone": "G4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "66.57894736842104",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "66.57894736842104",
+        "tone": "F4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "66.84210526315792",
+        "tone": "Bb4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "66.84210526315792",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "66.84210526315792",
+        "tone": "E4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "67.1052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "67.1052631578948",
+        "tone": "D4",
+        "length": "0.22105263157894736",
+        "instrument": "finale-string-runs",
+        "dynamic": "mf",
+        "sampleStartSeconds": 0.12
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "F2",
+        "length": "0.6842105263157895",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "C4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "C4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "F4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "A4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "A3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "C5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "F5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "A5",
+        "length": "5.789473684210526",
+        "instrument": "finale-horror-strings",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "f"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "C4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-trumpets",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "F4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-trumpets",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.36842105263156",
+        "tone": "A4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-trumpets",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.63157894736844",
+        "tone": "D5",
+        "length": "0.8421052631578947",
+        "instrument": "finale-flute",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "67.63157894736844",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "67.89473684210532",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "67.89473684210532",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "68.1578947368422",
+        "tone": "F2",
+        "length": "0.47368421052631576",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "68.1578947368422",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "68.1578947368422",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "68.42105263157896",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "68.42105263157896",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "68.42105263157896",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "68.42105263157896",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "68.42105263157896",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "68.68421052631584",
+        "tone": "F5",
+        "length": "0.8421052631578947",
+        "instrument": "finale-flute",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "68.68421052631584",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "68.94736842105272",
+        "tone": "C3",
+        "length": "0.6842105263157895",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "68.94736842105272",
+        "tone": "C4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "68.94736842105272",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "68.94736842105272",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "69.21052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "69.47368421052636",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "69.47368421052636",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "69.47368421052636",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "69.73684210526324",
+        "tone": "A5",
+        "length": "0.8421052631578947",
+        "instrument": "finale-flute",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "69.73684210526324",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "70",
+        "tone": "F2",
+        "length": "0.7894736842105263",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "70",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "70",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "70",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "70",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "70",
+        "tone": "A3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "70",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "70.26315789473688",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "70.52631578947376",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "70.52631578947376",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "70.52631578947376",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "70.52631578947376",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "70.52631578947376",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "70.78947368421052",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "71.0526315789474",
+        "tone": "C3",
+        "length": "0.39999999999999997",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.0526315789474",
+        "tone": "C4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.0526315789474",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "71.0526315789474",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.31578947368428",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "71.57894736842104",
+        "tone": "F2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.57894736842104",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.57894736842104",
+        "tone": "C4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.57894736842104",
+        "tone": "F4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.57894736842104",
+        "tone": "A4",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.57894736842104",
+        "tone": "C5",
+        "length": "3.3684210526315788",
+        "instrument": "finale-violins",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.57894736842104",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "f"
+      },
+      {
+        "offset": "71.57894736842104",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "71.84210526315792",
+        "tone": "A4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "71.84210526315792",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "72.1052631578948",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "72.1052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "72.36842105263156",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "72.63157894736844",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "72.63157894736844",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "72.63157894736844",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "72.63157894736844",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "72.63157894736844",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "72.89473684210532",
+        "tone": "C3",
+        "length": "0.5263157894736842",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "72.89473684210532",
+        "tone": "C4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "72.89473684210532",
+        "tone": "F4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "72.89473684210532",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "73.1578947368422",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "73.1578947368422",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.1578947368422",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.1578947368422",
+        "tone": "A3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.1578947368422",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.42105263157896",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "73.68421052631584",
+        "tone": "F2",
+        "length": "0.7894736842105263",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.68421052631584",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.68421052631584",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.68421052631584",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.68421052631584",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "73.94736842105272",
+        "tone": "D4",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "73.94736842105272",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "74.21052631578948",
+        "tone": "F4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "74.21052631578948",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "74.47368421052636",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "F2",
+        "length": "0.8421052631578947",
+        "instrument": "finale-pulse",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-cellos",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "A4",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "C3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "F3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "A3",
+        "length": "0.8421052631578947",
+        "instrument": "finale-horns",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "C4",
+        "length": "0.42105263157894735",
+        "instrument": "finale-hiphop-kick",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-snare",
+        "dynamic": "f"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "C4",
+        "length": "0.3157894736842105",
+        "instrument": "finale-hiphop-clap",
+        "dynamic": "f"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "f"
+      },
+      {
+        "offset": "74.73684210526324",
+        "tone": "A5",
+        "length": "0.9578947368421052",
+        "instrument": "finale-quarter-string-lead",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "75",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "75.26315789473688",
+        "tone": "C5",
+        "length": "0.3368421052631579",
+        "instrument": "finale-spiccato",
+        "dynamic": "mp"
+      },
+      {
+        "offset": "75.26315789473688",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "mf"
+      },
+      {
+        "offset": "75.52631578947376",
+        "tone": "C4",
+        "length": "0.21052631578947367",
+        "instrument": "finale-hiphop-hat",
+        "dynamic": "p"
+      }
+    ]
+  },
+  "partThree": {
+    "startSeconds": 0,
+    "bpm": 114,
+    "ending": {
+      "startSeconds": 37.89473684210526,
+      "holdSeconds": 0
+    }
+  },
+  "sections": [
+    [
+      "Existing string chords in vintage focus",
+      0,
+      42
+    ]
+  ],
+  "render": {
+    "sampleRate": 48000,
+    "channels": 2,
+    "seconds": 42,
+    "fadeOutSeconds": 0.035,
+    "peakTarget": 0.85,
+    "preservePartOneLevel": false,
+    "integration": {
+      "method": "separate upper/backing/cello stems; backing crossfade, vintage filter on upper/backing only, then unfiltered cello and seeded vinyl pops",
+      "scripts": [
+        "scripts/audition-neon-vintage-solo.cjs",
+        "scripts/neon-solo-chord-transitions.cjs",
+        "scripts/neon-solo-lower-strings.cjs",
+        "scripts/apply-neon-filter-fade.cjs",
+        "scripts/add-neon-vinyl-pops.cjs"
+      ],
+      "upperStringGateSeconds": 4.010526315789473,
+      "upperStringReleaseSeconds": 0.65,
+      "backingFadeSeconds": [
+        8.42105263157896,
+        12.631578947368439
+      ],
+      "backingReturnSeconds": [
+        25.263157894736878,
+        29.473684210526315
+      ],
+      "lowCelloMixBoostDb": 5,
+      "vinyl": {
+        "seed": "0x1835ad91",
+        "synthetic": true,
+        "constantHiss": false,
+        "gainRelativeToFirstPreview": 24,
+        "gainRelativeToPreviousPreview": 4,
+        "gainIncreaseDb": 27.60422483423212,
+        "soloSeconds": [
+          8.42105263157896,
+          29.473684210526315
+        ],
+        "peak": 0.973968505859375,
+        "pops": [
+          {
+            "atSeconds": 8.72105263157896,
+            "durationSeconds": 0.011026357730850578,
+            "peakScale": 0.014824884063796801,
+            "pan": 0.5730558742769063,
+            "secondary": false
+          },
+          {
+            "atSeconds": 9.824063725491605,
+            "durationSeconds": 0.008967979377601295,
+            "peakScale": 0.2024339635985065,
+            "pan": 0.7018333677668125,
+            "secondary": false
+          },
+          {
+            "atSeconds": 10.968229048952079,
+            "durationSeconds": 0.010594233371783049,
+            "peakScale": 0.5422393270897462,
+            "pan": 0.6279407831374556,
+            "secondary": false
+          },
+          {
+            "atSeconds": 12.331538058064496,
+            "durationSeconds": 0.011549965375568717,
+            "peakScale": 0.7958465435424597,
+            "pan": 0.3143713192548603,
+            "secondary": false
+          },
+          {
+            "atSeconds": 13.506914063647006,
+            "durationSeconds": 0.010331961260642857,
+            "peakScale": 0.9912295381240546,
+            "pan": 0.689944084873423,
+            "secondary": false
+          },
+          {
+            "atSeconds": 14.793198591616552,
+            "durationSeconds": 0.0037201364589855073,
+            "peakScale": 1.242007838672027,
+            "pan": 0.24034387022256853,
+            "secondary": false
+          },
+          {
+            "atSeconds": 15.503932091222692,
+            "durationSeconds": 0.009883559129200876,
+            "peakScale": 1.3629829841461032,
+            "pan": 0.32591066844761374,
+            "secondary": false
+          },
+          {
+            "atSeconds": 15.562765921442619,
+            "durationSeconds": 0.012860102063976229,
+            "peakScale": 0.6608936323454976,
+            "pan": 0.5071267668157816,
+            "secondary": true
+          },
+          {
+            "atSeconds": 16.76370199331696,
+            "durationSeconds": 0.005335902797058225,
+            "peakScale": 0.536106931546703,
+            "pan": 0.5806589924730361,
+            "secondary": false
+          },
+          {
+            "atSeconds": 17.478482249231625,
+            "durationSeconds": 0.006063855455256999,
+            "peakScale": 1.1191328694652767,
+            "pan": 0.7191667223349214,
+            "secondary": false
+          },
+          {
+            "atSeconds": 19.14293295974991,
+            "durationSeconds": 0.010820182724390177,
+            "peakScale": 0.6490794914290308,
+            "pan": 0.7863468435127288,
+            "secondary": false
+          },
+          {
+            "atSeconds": 20.962839409621978,
+            "durationSeconds": 0.007250501766800881,
+            "peakScale": 1.383918908106163,
+            "pan": 0.3308160121552646,
+            "secondary": false
+          },
+          {
+            "atSeconds": 21.74183971495515,
+            "durationSeconds": 0.005248911079950631,
+            "peakScale": 0.5482117316108197,
+            "pan": 0.7263960612937808,
+            "secondary": false
+          },
+          {
+            "atSeconds": 23.349456355461463,
+            "durationSeconds": 0.012617604857776313,
+            "peakScale": 1.089349543534219,
+            "pan": 0.2021692816633731,
+            "secondary": false
+          },
+          {
+            "atSeconds": 24.284594039215317,
+            "durationSeconds": 0.005714348970912397,
+            "peakScale": 0.8728006700780242,
+            "pan": 0.2390639077872038,
+            "secondary": false
+          },
+          {
+            "atSeconds": 24.337585134813406,
+            "durationSeconds": 0.012342572162859142,
+            "peakScale": 0.5852768577030301,
+            "pan": 0.45271501541137693,
+            "secondary": true
+          },
+          {
+            "atSeconds": 25.664760389026796,
+            "durationSeconds": 0.004650146080646664,
+            "peakScale": 0.606767532470149,
+            "pan": 0.4778057691175491,
+            "secondary": false
+          },
+          {
+            "atSeconds": 26.465670317999628,
+            "durationSeconds": 0.012690836425870659,
+            "peakScale": 0.5077145521177217,
+            "pan": 0.22492131730541587,
+            "secondary": false
+          },
+          {
+            "atSeconds": 26.959303555080275,
+            "durationSeconds": 0.004453690838534385,
+            "peakScale": 0.7721800885449487,
+            "pan": 0.43488272414542734,
+            "secondary": false
+          },
+          {
+            "atSeconds": 27.002530463030403,
+            "durationSeconds": 0.00971625899616629,
+            "peakScale": 0.24020851368836735,
+            "pan": 0.7175459818914534,
+            "secondary": true
+          },
+          {
+            "atSeconds": 28.521871410423497,
+            "durationSeconds": 0.0037567809126339852,
+            "peakScale": 0.09996783473328234,
+            "pan": 0.7802072902675719,
+            "secondary": false
+          }
+        ],
+        "sha256": "52822d72ea1f254f1d8199306b19adee9587ceebd0df8e1c0e62b31c2a12c976",
+        "backingAndStringsUnchanged": true
+      }
+    }
+  },
+  "audition": {
+    "bpm": 114,
+    "focusBars": 10,
+    "chordCount": 5,
+    "chords": [
+      "Dm",
+      "Bb",
+      "F",
+      "E diminished",
+      "Dm"
+    ],
+    "sourceStartSeconds": 300.2631578947368,
+    "entrySeconds": [
+      8.42105263157896,
+      12.631578947368439
+    ],
+    "focusSeconds": [
+      7.894736842105263,
+      29.473684210526315
+    ],
+    "exitSeconds": [
+      25.263157894736878,
+      29.473684210526315
+    ],
+    "originalEvents": 1043,
+    "soloVoices": [
+      "vintage-upper-held-strings",
+      "finale-string-runs",
+      "finale-quarter-string-lead",
+      "finale-bells"
+    ],
+    "originalBellAccentsRetained": true,
+    "chordGateSeconds": 4.010526315789473,
+    "chordAttackSeconds": 0.12,
+    "chordReleaseSeconds": 0.65,
+    "processing": "natural recorded strings with mild high-frequency rolloff",
+    "heldChordNotes": 15,
+    "percussionInSolo": false,
+    "lowerStringsInSolo": true,
+    "harmonyUnchanged": true,
+    "newMelody": false,
+    "pulseInstrument": "cinematic-pulse-softened",
+    "backingFadeSeconds": [
+      8.42105263157896,
+      12.631578947368439
+    ],
+    "backingReturnSeconds": [
+      25.263157894736878,
+      29.473684210526315
+    ],
+    "lowerStringPulse": {
+      "roots": [
+        "D2",
+        "Bb1",
+        "F2",
+        "C2",
+        "D2"
+      ],
+      "mixBoostDb": 5,
+      "naturalRecordedDecay": true,
+      "timbre": "recorded bowed cello, low natural register",
+      "octaveReinforcement": false,
+      "fourthGroupSource": "original finale-pulse C2 / finale-cellos C3",
+      "eighthNoteSeconds": 0.2631578947368421,
+      "notesPerOrdinaryChord": 16,
+      "finalChordRepeatedNotes": 14,
+      "changesOnlyWithChord": true,
+      "finalFourException": {
+        "notes": [
+          "E2",
+          "F2",
+          "G2",
+          "A2"
+        ],
+        "direction": "rising",
+        "resolvesTo": "Bb2",
+        "purpose": "lead into normal accompaniment",
+        "subdivision": "sixteenth",
+        "stepSeconds": 0.131578947368439,
+        "gateSeconds": 0.11052631578947368
+      },
+      "fadeInSeconds": [
+        8.42105263157896,
+        12.631578947368439
+      ]
+    }
+  }
+}

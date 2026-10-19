@@ -830,7 +830,7 @@
       }
     },
     "easter-egg-tuba-expressive": {
-      "displayName": "Tuba — Expressive Reference",
+      "displayName": "Tuba â€” Expressive Reference",
       "type": "oscillator",
       "waveform": "sine",
       "volume": 3.4,
@@ -974,7 +974,7 @@
       }
     },
     "steelpan-expressive": {
-      "displayName": "Steel Pan — Expressive Preview",
+      "displayName": "Steel Pan â€” Expressive Preview",
       "class": "expressive",
       "type": "oscillator",
       "waveform": "sine",
@@ -2581,6 +2581,78 @@
           "loopEnd": 2.04
         }
       ]
+    },
+    "cinematic-pulse-softened": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.82,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
     }
   },
   "songs": {
@@ -16776,19 +16848,19 @@
         {
           "offset": "0",
           "tone": "C4",
-          "length": "762",
+          "length": "774",
           "dynamic": "ff",
           "instrument": "neon-countdown-render"
         }
       ],
       "mediaUrl": "api/audio/samples/neon-countdown.wav",
       "renderedMix": {
-        "durationSeconds": 381,
+        "durationSeconds": 387,
         "key": "D minor / C# minor / D minor",
-        "sha256": "335fe6d32c9b01ce44a6277266d68fb30c47d12ce5a37b1b0996ebb95b9de89a",
+        "sha256": "d94db36be861176c098c7224fa21d0f072c14361b6b64946fa948bb4788b29a3",
         "settings": "api/audio/instruments/neon-countdown-mix.json",
         "score": "api/audio/instruments/neon-countdown-score.json",
-        "revision": 53,
+        "revision": 58,
         "partTwo": {
           "startSeconds": 120,
           "durationSeconds": 155,
@@ -16892,7 +16964,7 @@
           "tempoChange": {
             "atSeconds": 275,
             "fromBpm": 64,
-            "toBpm": 120,
+            "toBpm": 114,
             "mode": "immediate",
             "sustainedHandoff": true
           },
@@ -16911,12 +16983,13 @@
         },
         "partThree": {
           "startSeconds": 275,
-          "durationSeconds": 106,
-          "bpm": 120,
+          "durationSeconds": 112,
+          "bpm": 114,
           "key": "D minor",
           "bars": 48,
           "balance": {
             "orchestraRaised": true,
+            "pulseSource": "cinematic-pulse-softened",
             "pulseGain": 1.1,
             "pulseArticulation": "original short pattern",
             "pulseSustain": 0.76
@@ -16924,67 +16997,67 @@
           "quarterLeadIns": [
             {
               "bar": 6,
-              "startSeconds": 286.5,
+              "startSeconds": 287.10526315789474,
               "target": "Bb5",
               "pickup": "A5"
             },
             {
               "bar": 10,
-              "startSeconds": 294.5,
+              "startSeconds": 295.5263157894737,
               "target": "Bb5",
               "pickup": "A5"
             },
             {
               "bar": 14,
-              "startSeconds": 302.5,
+              "startSeconds": 303.9473684210526,
               "target": "E6",
               "pickup": "D6"
             },
             {
               "bar": 18,
-              "startSeconds": 310.5,
+              "startSeconds": 312.36842105263156,
               "target": "D6",
               "pickup": "C6"
             },
             {
               "bar": 22,
-              "startSeconds": 318.5,
+              "startSeconds": 320.7894736842105,
               "target": "G6",
               "pickup": "F6"
             },
             {
               "bar": 26,
-              "startSeconds": 326.5,
+              "startSeconds": 329.2105263157895,
               "target": "F5",
               "pickup": "E5"
             },
             {
               "bar": 30,
-              "startSeconds": 334.5,
+              "startSeconds": 337.63157894736844,
               "target": "Bb5",
               "pickup": "A5"
             },
             {
               "bar": 34,
-              "startSeconds": 342.5,
+              "startSeconds": 346.0526315789474,
               "target": "Bb5",
               "pickup": "A5"
             },
             {
               "bar": 38,
-              "startSeconds": 350.5,
+              "startSeconds": 354.4736842105263,
               "target": "E6",
               "pickup": "D6"
             },
             {
               "bar": 42,
-              "startSeconds": 358.5,
+              "startSeconds": 362.89473684210526,
               "target": "D6",
               "pickup": "C6"
             },
             {
               "bar": 46,
-              "startSeconds": 366.5,
+              "startSeconds": 371.3157894736842,
               "target": "G5",
               "pickup": "F5"
             }
@@ -16992,103 +17065,33 @@
           "bellPhrases": [
             {
               "bar": 8,
-              "atSeconds": 291,
-              "count": 2
-            },
-            {
-              "bar": 10,
-              "atSeconds": 295,
-              "count": 1
-            },
-            {
-              "bar": 12,
-              "atSeconds": 299,
-              "count": 2
-            },
-            {
-              "bar": 14,
-              "atSeconds": 303,
-              "count": 1
-            },
-            {
-              "bar": 18,
-              "atSeconds": 311,
-              "count": 1
+              "atSeconds": 291.8421052631579,
+              "count": 2,
+              "role": "section-accent"
             },
             {
               "bar": 20,
-              "atSeconds": 315,
-              "count": 2
-            },
-            {
-              "bar": 22,
-              "atSeconds": 319,
-              "count": 1
-            },
-            {
-              "bar": 24,
-              "atSeconds": 323,
-              "count": 2
-            },
-            {
-              "bar": 26,
-              "atSeconds": 327,
-              "count": 1
-            },
-            {
-              "bar": 28,
-              "atSeconds": 331,
-              "count": 2
-            },
-            {
-              "bar": 30,
-              "atSeconds": 335,
-              "count": 1
+              "atSeconds": 317.10526315789474,
+              "count": 1,
+              "role": "section-accent"
             },
             {
               "bar": 32,
-              "atSeconds": 339,
-              "count": 2
-            },
-            {
-              "bar": 34,
-              "atSeconds": 343,
-              "count": 1
-            },
-            {
-              "bar": 36,
-              "atSeconds": 347,
-              "count": 2
-            },
-            {
-              "bar": 38,
-              "atSeconds": 351,
-              "count": 1
+              "atSeconds": 342.36842105263156,
+              "count": 2,
+              "role": "section-accent"
             },
             {
               "bar": 40,
-              "atSeconds": 355,
-              "count": 2
-            },
-            {
-              "bar": 42,
-              "atSeconds": 359,
-              "count": 1
-            },
-            {
-              "bar": 44,
-              "atSeconds": 363,
-              "count": 2
-            },
-            {
-              "bar": 46,
-              "atSeconds": 367,
-              "count": 1
+              "atSeconds": 359.2105263157895,
+              "count": 1,
+              "role": "section-accent"
             },
             {
               "bar": 48,
-              "atSeconds": 371,
-              "count": 2
+              "atSeconds": 376.0526315789474,
+              "count": 1,
+              "role": "section-accent"
             }
           ],
           "heldVoicings": [
@@ -17164,7 +17167,7 @@
           "stringRuns": [
             {
               "bar": 4,
-              "startSeconds": 282.5,
+              "startSeconds": 282.89473684210526,
               "previousHeldNotes": [
                 "D4",
                 "F4",
@@ -17182,7 +17185,7 @@
             },
             {
               "bar": 8,
-              "startSeconds": 290.5,
+              "startSeconds": 291.3157894736842,
               "previousHeldNotes": [
                 "G4",
                 "Bb4",
@@ -17203,7 +17206,7 @@
             },
             {
               "bar": 12,
-              "startSeconds": 298.5,
+              "startSeconds": 299.7368421052632,
               "previousHeldNotes": [
                 "F4",
                 "Bb4",
@@ -17224,7 +17227,7 @@
             },
             {
               "bar": 16,
-              "startSeconds": 306.5,
+              "startSeconds": 308.1578947368421,
               "previousHeldNotes": [
                 "Bb4",
                 "E5",
@@ -17245,7 +17248,7 @@
             },
             {
               "bar": 20,
-              "startSeconds": 314.5,
+              "startSeconds": 316.57894736842104,
               "previousHeldNotes": [
                 "Bb3",
                 "D4",
@@ -17266,7 +17269,7 @@
             },
             {
               "bar": 24,
-              "startSeconds": 322.5,
+              "startSeconds": 325,
               "previousHeldNotes": [
                 "E4",
                 "G4",
@@ -17287,7 +17290,7 @@
             },
             {
               "bar": 28,
-              "startSeconds": 330.5,
+              "startSeconds": 333.42105263157896,
               "previousHeldNotes": [
                 "D4",
                 "F4",
@@ -17308,7 +17311,7 @@
             },
             {
               "bar": 32,
-              "startSeconds": 338.5,
+              "startSeconds": 341.8421052631579,
               "previousHeldNotes": [
                 "G4",
                 "Bb4",
@@ -17329,7 +17332,7 @@
             },
             {
               "bar": 36,
-              "startSeconds": 346.5,
+              "startSeconds": 350.2631578947368,
               "previousHeldNotes": [
                 "F4",
                 "Bb4",
@@ -17350,7 +17353,7 @@
             },
             {
               "bar": 40,
-              "startSeconds": 354.5,
+              "startSeconds": 358.6842105263158,
               "previousHeldNotes": [
                 "Bb4",
                 "E5",
@@ -17371,7 +17374,7 @@
             },
             {
               "bar": 44,
-              "startSeconds": 362.5,
+              "startSeconds": 367.10526315789474,
               "previousHeldNotes": [
                 "Bb3",
                 "D4",
@@ -17392,7 +17395,7 @@
             },
             {
               "bar": 48,
-              "startSeconds": 370.5,
+              "startSeconds": 375.5263157894737,
               "previousHeldNotes": [
                 "C#4",
                 "E4",
@@ -17492,45 +17495,51 @@
           },
           "orchestral": true,
           "electronicExceptions": [
-            "cinematic-pulse-bass",
+            "cinematic-pulse-softened",
             "Dark 80s hip-hop percussion"
           ],
           "sampleManifest": "api/audio/instruments/neon-orchestra-samples.json",
           "horrorStrings": {
             "instrument": "finale-horror-strings",
-            "entrySeconds": 275.25,
+            "entrySeconds": 275.2631578947368,
             "openingInstrument": "finale-opening-horror-strings",
-            "openingHoldSeconds": 0.75,
+            "openingHoldSeconds": 0.7894736842105263,
             "openingReleaseSeconds": 1.75,
             "semitoneAccents": true,
             "recordedTremolo": true
           },
           "bells": {
-            "strikeCount": 30,
-            "contourPositions": [
-              "run-start",
-              "held-chord"
+            "strikeCount": 7,
+            "role": "section-accents",
+            "accentBars": [
+              8,
+              20,
+              32,
+              40,
+              48
             ],
-            "contourGateBeats": 1,
-            "contourStrikeCount": 20,
-            "exactContourOctaves": true,
+            "contourPositions": [],
+            "accentGateBeats": 1,
+            "contourStrikeCount": 0,
             "foregroundGain": 5.2,
             "dynamic": "ff",
-            "lastStrikeSeconds": 371,
-            "naturalEndSeconds": 380.6079977689804,
+            "lastStrikeSeconds": 376.0526315789474,
+            "naturalEndSeconds": 386.0661046618553,
             "naturalDecay": true,
-            "sparse": false
+            "sparse": true
           },
-          "naturalTailEndSeconds": 380.6079977689804,
+          "naturalTailEndSeconds": 386.0661046618553,
           "ending": {
-            "startSeconds": 371,
-            "holdSeconds": 2,
+            "startSeconds": 376.0526315789474,
+            "holdSeconds": 2.1052631578947367,
             "releaseSeconds": 3,
             "dramaticFinalHit": true,
             "organOnlySustained": false,
-            "ensembleHoldSeconds": 1.5
-          }
-        }
+            "ensembleHoldSeconds": 1.5789473684210527
+          },
+          "authoredBpm": 120
+        },
+        "approvedSolo": "api/audio/instruments/neon-solo-insert.json"
       }
     }
   }

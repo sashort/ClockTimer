@@ -28,6 +28,13 @@ on:
       - 'tests/application-coordinator.mjs'
       - 'tests/trip-replay-identity.mjs'
       - 'tests/app-state-transactions.mjs'
+      - 'tests/order-filler-state-contract.mjs'
+      - 'tests/state-contract-fixture.mjs'
+      - 'docs/order-filler-state-contract.json'
+      - 'docs/application-state-inventory.json'
+      - 'docs/application-state-inventory.html'
+      - 'scripts/build-application-state-inventory.cjs'
+      - 'tests/application-state-inventory.mjs'
       - 'tests/speech-failfast.mjs'
       - 'tests/owned-feedback-scope.mjs'
       - 'tests/speech-continuation-session.mjs'
@@ -81,6 +88,8 @@ jobs:
           node tests/shared-page-templates.mjs
           python tests/build-version.py
           node tests/fsm-reference.mjs
+          node tests/application-state-inventory.mjs
+          node tests/order-filler-state-contract.mjs
           node tests/fsm-loopback-feedback.mjs
           node tests/application-coordinator.mjs
           node tests/speech-failfast.mjs
@@ -110,6 +119,7 @@ jobs:
           node tests/app-state-transactions.mjs --post-login-ready --voice-feedback
           node tests/app-state-transactions.mjs --voicepad-value-argument --voice-feedback
           node tests/app-state-transactions.mjs --mic-feedback --voice-feedback
+          node tests/app-state-transactions.mjs --sleep-wake-only --voice-feedback
           node tests/app-state-transactions.mjs --mic-wake-grammar --voice-feedback
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip

@@ -33,6 +33,7 @@ for(const page of pages){
   if(option.dataset.menuIcon)assert(icons.includes('[data-menu-icon="'+option.dataset.menuIcon+'"]'),option.dataset.menuIcon+' must exist in the shared icon library');
  }
  if(page==='order-filler'){
+  assert.equal(w.document.querySelector('#app').getAttribute('app-mode'),'debug','current implementation explicitly selects Debug, with no default');
   for(const id of ['settingsMenuButton','tripLogMenuParentButton','recognizerNameMenuButton']) {
    const button=w.document.getElementById(id),submenu=w.document.getElementById(button.getAttribute('aria-controls'));
    assert.equal(button.getAttribute('aria-expanded'),'false');assert(submenu.hidden,'Order Filler parent sub-items must start collapsed');
