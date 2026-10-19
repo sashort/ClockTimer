@@ -114,6 +114,7 @@ jobs:
       - run: node tests/shared-modal-browser.cjs
       - run: node tests/hamburger-menu-coverage-browser.cjs
       - run: node tests/mic-modal-browser.cjs
+      - run: node tests/trip-log-downtime-browser.cjs
       - run: node tests/application-state-inventory-browser.cjs
       - run: node tests/graphical-settings-browser.cjs
       - run: node tests/radial-fitted-tick-browser.cjs

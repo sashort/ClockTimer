@@ -7518,3 +7518,31 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .trip-summary-table [data-trip-summary-row="active"]{background:rgb(37 116 183 / 20%)}
 #tripTransitionSummaryActions{justify-content:center}
 #tripTransitionSummaryCancel[hidden]{display:none}
+
+/* Downtime remains subordinate to the existing performance columns. */
+.trip-log-downtime {display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-top:7px;font-size:13px;font-weight:400;line-height:1.5;text-align:left;}
+.trip-log-downtime-title {color:inherit;font-size:inherit;opacity:.82;}
+.trip-log-downtime span strong {font-weight:500;font-variant-numeric:tabular-nums;}
+.trip-log-downtime-approved {color:#a9ddf7;}
+.trip-log-trip>summary>.trip-log-downtime {grid-column:1 / -1;padding-left:8px;margin-top:0;}
+.trip-log-downtime-overview {justify-content:center;border-top:1px solid rgb(255 255 255 / 25%);padding-top:10px;margin-top:12px;gap:8px 22px;}
+.trip-log-downtime-overview>span {display:grid;gap:2px;}
+.trip-log-downtime-overview>span strong {font-size:20px;font-weight:700;}
+
+.trip-log-downtime {background:#090b0d;border-radius:6px;padding:6px 9px;}
+.trip-log-trip>summary>.trip-log-downtime {padding:6px 9px;}
+/* One guide per group, aligned with its disclosure arrow. Ancestors stay visible. */
+.trip-log-group {border-top:0;}
+.trip-log-group>summary {position:relative;list-style:none;padding-left:28px;}
+.trip-log-group>summary::-webkit-details-marker {display:none;}
+.trip-log-group>summary::before {content:'▸';position:absolute;left:8px;top:12px;width:14px;text-align:center;}
+.trip-log-group[open]>summary::before {content:'▾';}
+.trip-log-group-children {margin-left:14px;padding-left:2px;border-left:2px solid #a9ddf7;}
+
+.trip-log-group-heading {flex-wrap:wrap;}
+.trip-log-trip>summary::before {top:22px;}
+
+.trip-log-group>summary::before {height:16px;line-height:16px;}
+.trip-log-group[open]>summary::after {content:'';position:absolute;left:14px;top:28px;bottom:0;border-left:2px solid #a9ddf7;pointer-events:none;}
+
+.trip-log-group-children {display:flow-root;}

@@ -149,4 +149,20 @@ assert(root.querySelector('.trip-log-settings').classList.contains('is-open'));
 const appSource = fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
 assert.match(appSource,/function getAppContentMetrics\([\s\S]*visualViewport[\s\S]*Math\.max\([\s\S]*viewportLeft[\s\S]*Math\.min\([\s\S]*viewportRight/,'Trip Log geometry is constrained to the visual viewport');
 console.log('PASS local offline trips and uncertain totals render, and deleting the only trip reveals filters');
+
+const noDown={...trips[0],id:301,events:[]};
+const withDown={...trips[1],id:302,events:[
+ {event:'interval.started',timestamp:'2026-09-18T12:05:00Z',value:{type:'down',intervalKey:'summary-down',approvedTime:300000}},
+ {event:'interval.ended',timestamp:'2026-09-18T12:13:00Z',value:{intervalKey:'summary-down'}}
+]};
+view.options.liveTrip=undefined;view.render({trips:[noDown,withDown]},calendar);
+assert.equal(root.querySelector('[data-trip-id="301"]>summary .trip-log-downtime'),null,'omit downtime for a trip without Down');
+assert.match(root.querySelector('[data-trip-id="302"]>summary .trip-log-downtime').textContent,/0:08:00/);
+assert.match(root.querySelector('[data-trip-id="302"]>summary .trip-log-downtime').textContent,/0:05:00/);
+assert(root.querySelector('.trip-log-overview .trip-log-downtime'));
+assert(root.querySelector('.trip-log-group>summary .trip-log-downtime'));
+for(const group of root.querySelectorAll('.trip-log-group'))assert.equal([...group.children].filter(e=>e.classList.contains('trip-log-group-children')).length,1,'one guide-bearing child container per aggregate');
+view.render({trips:[noDown]},calendar);
+assert.equal(root.querySelector('.trip-log-downtime'),null,'omit zero downtime at every aggregate and trip level');
+console.log('PASS logged/approved downtime summaries, zero omission and one grouping guide per aggregate');
 w.happyDOM.abort();

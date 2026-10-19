@@ -19,7 +19,7 @@
             : '---';
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
     const counted = trip => TripAggregates.counted(trip);
-    const aggregate = (trips, parent = false) => TripAggregates.calculate({trips,
+    const aggregate = (trips, parent = false, now = Date.now()) => TripAggregates.calculate({trips, now,
         includeActiveTrip: !parent || trips.some(trip => trip.running && trip.includeInParentPercent)});
     const percent = (trips, parent = false) => {
         const result = aggregate(trips, parent);
@@ -35,10 +35,22 @@
     };
     class TripLog {
         constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editing=new Set();this.entrySessions=new Map();this.addBefore=new Map();this.newEntries=new Map();this.deleteVisible=new Set();this.editor=null;this.settingsVisible=false;this.outsideEntryPointer=event=>this.handleOutsideEntryPointer(event);document.addEventListener('pointerdown',this.outsideEntryPointer,true);}
+        downtimeSummary(summary, overview=false) {
+            if(!summary?.hasDowntime)return undefined;
+            const box=node('div',undefined,'trip-log-downtime'+(overview?' trip-log-downtime-overview':''));
+            const title=globalThis.WMOFLanguagePack.text('e09300d4-7ac5-4678-9f45-f5cc4500ff6d');
+            box.setAttribute('role','group');box.setAttribute('aria-label',title);
+            box.append(node('strong',title,'trip-log-downtime-title'));
+            for(const [label,value,kind] of [[globalThis.WMOFLanguagePack.text('edb1ce75-f212-4577-a1b3-e88dc28bcb78'),summary.loggedMilliseconds,'logged'],[globalThis.WMOFLanguagePack.text('a6d2eeb0-2d5b-4a59-b059-4039e7492e39'),summary.approvedMilliseconds,'approved']]) {
+                const cell=node('span',undefined,'trip-log-downtime-'+kind);
+                cell.append(node('span',label+' '),node('strong',duration(value)));box.append(cell);
+            }
+            return box;
+        }
         numberPad(options={}) {return this.options.numberPad({cancelTarget:'none',confirmTarget:'none',...options});}
         setSettingsVisible(visible) {this.settingsVisible=Boolean(visible);const box=this.root.querySelector('.trip-log-settings');if(box){box.classList.toggle('is-open',this.settingsVisible);box.firstElementChild.inert=!this.settingsVisible;box.setAttribute('aria-hidden',String(!this.settingsVisible));const sync=()=>this.root.style.setProperty('--trip-log-settings-height',`${this.settingsVisible?box.getBoundingClientRect().height:0}px`);requestAnimationFrame(sync);box.addEventListener('transitionend',sync,{once:true});}}
         render(data,calendar) {
-            this.calendar=calendar;
+            this.calendar=calendar;this.downtimeNow=this.options.now?.()??Date.now();
             this.activeSweepDelay=`-${Math.round(performance.now()%4200)}ms`;
             this.incomplete=Boolean(data.incomplete);this.offline=Boolean(data.offline);this.loginRequired=Boolean(data.loginRequired);
             const trips=data.loginRequired?[]:[...data.trips];const live=data.loginRequired?null:this.options.liveTrip?.();
@@ -50,7 +62,7 @@
                 } else if(index>=0) trips.splice(index,1);
             }
             trips.sort((a,b)=>Date.parse(iso(b.startTime))-Date.parse(iso(a.startTime))||b.id-a.id);
-            this.trips=trips;this.aggregation=aggregate(trips,true);const fragment=document.createDocumentFragment();
+            this.trips=trips;this.aggregation=aggregate(trips,true,this.downtimeNow);const fragment=document.createDocumentFragment();
             if(!trips.length)this.settingsVisible=true;
             let settings=this.root.querySelector('.trip-log-settings');
             const reuseSettings=Boolean(settings);
@@ -68,7 +80,7 @@
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
             emphasis.append(node('strong',`${trips.length} ${trips.length===1?globalThis.WMOFLanguagePack.text("3b289746-71b2-4ac3-90dd-00a0402ba34f"):globalThis.WMOFLanguagePack.text("1c1bf8a6-f452-4dfa-8d43-ed38d4bcae1f")}`),node('strong',percent(trips,true),'trip-log-actual'));
             if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());
-            const totals=aggregate(trips,true);overview.append(emphasis,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.countedTimeMilliseconds)}`,'trip-log-times'));fragment.append(overview);
+            const totals=aggregate(trips,true,this.downtimeNow);overview.append(emphasis,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.countedTimeMilliseconds)}`,'trip-log-times'));const downtime=this.downtimeSummary(totals.downtime,true);if(downtime)overview.append(downtime);fragment.append(overview);
             const columns=node('div',undefined,'trip-log-column-header');columns.setAttribute('role','row');for(const label of [globalThis.WMOFLanguagePack.text("5e8f393d-72a7-4b30-ba1e-69bbd765354f"),globalThis.WMOFLanguagePack.text("07613a20-4d6c-4fdf-a16d-6c94d28e5590"),globalThis.WMOFLanguagePack.text("77f1eddd-89b9-4e22-9fe1-aeeb4d060722"),globalThis.WMOFLanguagePack.text("c755d5bf-3277-4630-a938-898b8b6172dd"),'']){const cell=node('span',label);cell.setAttribute('role','columnheader');columns.append(cell);}fragment.append(columns);
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
@@ -116,7 +128,7 @@
             for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group'),active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
                 const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${group.length} trips · ${percent(group,true)}`,'trip-log-actual'));
                 if(this.incomplete)heading.lastElementChild.append(uncertainIcon());
-                const totals=aggregate(group,true);summary.append(heading,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.countedTimeMilliseconds)}`,'trip-log-times'));details.append(summary,this.groups(group,rest,calendar));fragment.append(details);}
+                const totals=aggregate(group,true,this.downtimeNow);summary.append(heading,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.countedTimeMilliseconds)}`,'trip-log-times'));const downtime=this.downtimeSummary(totals.downtime);if(downtime)summary.append(downtime);const children=node('div',undefined,'trip-log-group-children');children.append(this.groups(group,rest,calendar));details.append(summary,children);fragment.append(details);}
             return fragment;
         }
         trip(trip) {
@@ -129,7 +141,7 @@
             for(const [label,action] of [[globalThis.WMOFLanguagePack.text("e467a304-0e63-42cf-8668-861ce62a7200"),()=>this.openSettings(trip)],[globalThis.WMOFLanguagePack.text("d8e75f94-b2ac-484b-86f3-350c8b90433a"),()=>this.beginEntryEdit(trip)],[globalThis.WMOFLanguagePack.text("4f07c05e-91f4-4cfb-bb2c-f81e58259258"),()=>this.deleteTrip(trip)]]) {
                 const button=node('button',label);button.type='button';if(label==='Delete trip')button.className='danger';button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=true;toggle.setAttribute('aria-expanded','false');Promise.resolve(action()).catch(error=>this.error(error));});actions.append(button);
             }
-            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!trip.running&&(!this.offline||trip.buffered))summary.append(menu);details.append(summary);
+            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!trip.running&&(!this.offline||trip.buffered))summary.append(menu);const downtime=this.downtimeSummary(TripDowntimeSummary.trip(trip,{now:this.downtimeNow}));if(downtime)summary.append(downtime);details.append(summary);
             const entries=node('div',undefined,'trip-log-entries');const header=node('div',undefined,'trip-log-entry-heading');header.append(node('strong',this.editing.has(trip.id)?globalThis.WMOFLanguagePack.text("c2599142-6f20-4b53-b109-bd3aa79985dc"):globalThis.WMOFLanguagePack.text("d54c5628-5a22-4fb4-a3e9-e5674f490f25")));
             if(this.editing.has(trip.id)){const done=node('button',globalThis.WMOFLanguagePack.text("c0534d6d-1102-4592-b5c7-eba1e33d05d5"));done.type='button';done.addEventListener('click',()=>this.finishEntryEdit(trip,done));header.append(done);entries.append(header,node('p',globalThis.WMOFLanguagePack.text("fa5d607f-0793-49d4-9d67-5b02f8263aea")));}else entries.append(header);
             const events=trip.events||[];const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value.intervalKey));
@@ -169,7 +181,7 @@
             return `${title} Ended`;
         }
         entryKind(event) {const type=String(event?.value?.type||'').toLowerCase();const breakType=String(event?.value?.attributes?.breakType||event?.value?.breakType||'').toLowerCase();return type==='break'&&breakType==='short'?'short-break':type;}
-        approvedTime(started,ended,events=[]) {if(String(started?.value?.type||'').toLowerCase()!=='down')return undefined;const approval=[...events].reverse().find(event=>event.event==='interval.approval-changed'&&event.value?.intervalKey===started.value?.intervalKey);if(approval?.value?.state==='unapproved')return 0;if(approval?.value?.state==='approved'&&Number.isSafeInteger(approval.value.value)&&approval.value.value>=0)return approval.value.value;if(Number.isSafeInteger(started.value.approvedTime)&&started.value.approvedTime>=0)return started.value.approvedTime;if(!started.timestamp||!ended?.timestamp)return undefined;const milliseconds=Date.parse(iso(ended.timestamp))-Date.parse(iso(started.timestamp));return Number.isSafeInteger(milliseconds)&&milliseconds>=0?milliseconds:undefined;}
+        approvedTime(started,ended,events=[]) {return TripDowntimeSummary.approved(started,ended,events);}
         rerender(){this.render({trips:this.trips,offline:this.offline,incomplete:this.incomplete,loginRequired:this.loginRequired},this.calendar);}
         cancelNewEntry(trip) {const key=String(trip.id);this.newEntries.delete(key);this.addBefore.delete(key);this.rerender();}
         newEntryRows(trip,draft) {

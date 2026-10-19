@@ -6873,6 +6873,21 @@
       "id": "3bc86f3a-84cd-43f4-9fe8-721661c99ac7",
       "text": "Switch to voice input?",
       "default": "Switch to voice input?"
+    },
+    "e09300d4-7ac5-4678-9f45-f5cc4500ff6d": {
+      "id": "e09300d4-7ac5-4678-9f45-f5cc4500ff6d",
+      "text": "Down time",
+      "default": "Down time"
+    },
+    "edb1ce75-f212-4577-a1b3-e88dc28bcb78": {
+      "id": "edb1ce75-f212-4577-a1b3-e88dc28bcb78",
+      "text": "Logged",
+      "default": "Logged"
+    },
+    "a6d2eeb0-2d5b-4a59-b059-4039e7492e39": {
+      "id": "a6d2eeb0-2d5b-4a59-b059-4039e7492e39",
+      "text": "Approved",
+      "default": "Approved"
     }
   }
 }

@@ -424,3 +424,28 @@ when the Commands menu was opened manually. Pointer access remains available.
 This is an incremental Debug audit; it does not replace the runtime FSM, assert
 full reachability, implement Simulation/Production, or introduce server-assigned
 trip behavior. Continue filling missing expectations before moving to `test`.
+
+
+## Trip Log downtime ledger
+
+`TripDowntimeSummary` in `TripAggregates.js` is the shared, read-only calculator
+for logged and approved downtime. Trip Log entry editing uses its same approval
+resolver, keeping individual entries and totals consistent. Latest explicit
+approval wins; unapproved means zero; stored approved time is next; otherwise a
+closed interval defaults to its elapsed duration, preserving the existing rule.
+Approved time can exceed logged time. Deleted intervals and non-Down intervals
+are excluded, and duplicate interval keys do not double count. Open intervals
+use one render-time clock sample. No approval or persistence state is changed.
+
+`TripAggregates.calculate().downtime` uses exactly the same deduplicated,
+range-filtered, active-trip-included population as the performance totals.
+`TripLog` displays that ledger under each trip, each aggregate and the overview.
+No ledger is rendered when logged and approved values are both zero. Black
+backgrounds distinguish the ledger. Its labels are in the English UI resources.
+
+Each expanded aggregate has one `.trip-log-group-children` container with a
+single left guide aligned beneath its disclosure arrow. Nested groups add one
+line each; no extra nested outlines are drawn. Collapse naturally hides the
+guide and its children. Tests cover approval changes/defaults/surplus/deletion,
+active inclusion, zero omission, and readable, arrow-aligned layouts at phone
+and desktop widths. Version 2 should preserve the pure calculator and UI split.
