@@ -130,7 +130,7 @@ if ($method === 'GET') {
         $parameters[':exclude_trip_id'] = $excludeTripId;
     }
 
-    $aggregateBaseWhere = $where;
+    $aggregateBaseWhere = $where . ' AND t.break_only = 0';
     $aggregateBaseParameters = $parameters;
 
     $productionFilter = $_GET['productionFilter'] ?? null;
@@ -139,7 +139,7 @@ if ($method === 'GET') {
     }
     if ($productionFilter !== null) {
         $nonProductionFilter = 'all';
-        if ($productionFilter !== 'all') $where .= ' AND t.non_production = ' . ($productionFilter === 'productive' ? '0' : '1');
+        if ($productionFilter !== 'all') $where .= ' AND t.break_only = 0 AND t.non_production = ' . ($productionFilter === 'productive' ? '0' : '1');
     }
 
     if ($nonProductionFilter === 'none') {
@@ -162,7 +162,7 @@ if ($method === 'GET') {
             . 'AND start_time >= :production_min_date_time '
             . 'AND start_time <= :production_max_date_time '
             . 'AND pending = 0 '
-            . 'AND non_production = 0';
+            . 'AND non_production = 0 AND break_only = 0';
 
         $productionParameters = [
             ':production_user_id' => $userId,
@@ -253,7 +253,7 @@ if ($method === 'GET') {
 
         $statement = db()->prepare(
             'SELECT t.id, t.user_id, t.start_time, t.end_time, '
-            . 't.standard_time_ms, t.counted_time_ms, t.non_production, t.created_at, '
+            . 't.standard_time_ms, t.counted_time_ms, t.non_production, t.break_only, t.created_at, '
             . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
             . 'FROM trips t WHERE ' . $where . ' '
             . 'ORDER BY t.start_time DESC, t.id DESC '
@@ -272,7 +272,8 @@ if ($method === 'GET') {
                 'id' => $tripId,
                 'startTime' => (string) $row['start_time'],
                 'endTime' => (string) $row['end_time'],
-                'standardTimeMilliseconds' => (int) $row['standard_time_ms'],
+                'standardTimeMilliseconds' => $row['standard_time_ms'] === null ? null : (int) $row['standard_time_ms'],
+                'breakOnly' => ((int) $row['break_only']) === 1,
                 'actualTimeMilliseconds' => intdiv($actualMicroseconds, 1000),
                 'countedTimeMilliseconds' => (int) ($row['counted_time_ms'] ?? 0),
                 'nonProduction' => ((int) $row['non_production']) === 1,
@@ -318,7 +319,7 @@ if ($method === 'GET') {
         . 'COALESCE(SUM(t.standard_time_ms), 0) AS standard_time_ms, '
         . 'COALESCE(SUM(t.counted_time_ms), 0) AS counted_time_ms, '
         . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time)), 0) AS actual_time_us '
-        . 'FROM trips t WHERE ' . $where
+        . 'FROM trips t WHERE ' . $where . ' AND t.break_only = 0'
     );
     $statement->execute($parameters);
     $row = $statement->fetch();
@@ -582,21 +583,26 @@ if ($method === 'POST') {
 
     $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
-    $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
+    $breakOnly = $input['breakOnly'] ?? false;
+    if (!is_bool($breakOnly)) api_error('breakOnly must be a boolean.', 422, 'invalid_argument');
+    if ($breakOnly && ($input['standardTimeMilliseconds'] ?? null) !== null) api_error('A break-only session has no standard time.', 422, 'invalid_argument');
+    $standardTimeMilliseconds = $breakOnly ? null : require_positive_int($input, 'standardTimeMilliseconds');
+    $breakOnlyValue = $breakOnly ? 1 : 0;
     $countedTimeMilliseconds = $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
 
     $nonProduction = $input['nonProduction'] ?? false;
     if (!is_bool($nonProduction)) {
         api_error('nonProduction must be a boolean.', 422, 'invalid_argument');
     }
-    $nonProductionValue = $nonProduction ? 1 : 0;
+    $nonProductionValue = !$breakOnly && $nonProduction ? 1 : 0;
+    if ($breakOnly) $countedTimeMilliseconds = 0;
 
     if ($endTime <= $startTime) {
         api_error('endTime must be later than startTime.', 422, 'invalid_argument');
     }
 
     $tripId = audited_write(
-        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $clientToken): int {
+        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $breakOnlyValue, $clientToken): int {
             if ($clientToken !== null) {
                 $existing = $pdo->prepare(
                     'SELECT id FROM trips WHERE user_id = :user_id AND client_token = :client_token LIMIT 1 FOR UPDATE'
@@ -609,7 +615,7 @@ if ($method === 'POST') {
                 if ($existingId > 0) {
                     $update = $pdo->prepare(
                         'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
-                        . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, pending = 0 '
+                        . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, break_only = :break_only, pending = 0 '
                         . 'WHERE id = :trip_id AND user_id = :user_id'
                     );
                     $update->execute([
@@ -618,6 +624,7 @@ if ($method === 'POST') {
                         ':standard_time_ms' => $standardTimeMilliseconds,
                         ':counted_time_ms' => $countedTimeMilliseconds,
                         ':non_production' => $nonProductionValue,
+                        ':break_only' => $breakOnlyValue,
                         ':trip_id' => $existingId,
                         ':user_id' => authenticated_user_id(),
                     ]);
@@ -627,8 +634,8 @@ if ($method === 'POST') {
 
             $statement = $pdo->prepare(
                 'INSERT INTO trips '
-                . '(user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, pending, client_token) '
-                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms, :counted_time_ms, :non_production, 0, :client_token)'
+                . '(user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, break_only, pending, client_token) '
+                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms, :counted_time_ms, :non_production, :break_only, 0, :client_token)'
             );
             $statement->execute([
                 ':user_id' => authenticated_user_id(),
@@ -637,6 +644,7 @@ if ($method === 'POST') {
                 ':standard_time_ms' => $standardTimeMilliseconds,
                 ':counted_time_ms' => $countedTimeMilliseconds,
                 ':non_production' => $nonProductionValue,
+                ':break_only' => $breakOnlyValue,
                 ':client_token' => $clientToken,
             ]);
             return (int) $pdo->lastInsertId();
@@ -745,23 +753,28 @@ $action = require_string($input, 'action');
 if ($action === 'start') {
     $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
-    $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
+    $breakOnly = $input['breakOnly'] ?? false;
+    if (!is_bool($breakOnly)) api_error('breakOnly must be a boolean.', 422, 'invalid_argument');
+    if ($breakOnly && ($input['standardTimeMilliseconds'] ?? null) !== null) api_error('A break-only session has no standard time.', 422, 'invalid_argument');
+    $standardTimeMilliseconds = $breakOnly ? null : require_positive_int($input, 'standardTimeMilliseconds');
+    $breakOnlyValue = $breakOnly ? 1 : 0;
     $countedTimeMilliseconds = $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
     $nonProduction = $input['nonProduction'] ?? false;
     if (!is_bool($nonProduction)) {
         api_error('nonProduction must be a boolean.', 422, 'invalid_argument');
     }
-    $nonProductionValue = $nonProduction ? 1 : 0;
+    $nonProductionValue = !$breakOnly && $nonProduction ? 1 : 0;
+    if ($breakOnly) $countedTimeMilliseconds = 0;
     if ($endTime <= $startTime) {
         api_error('endTime must be later than startTime.', 422, 'invalid_argument');
     }
 
     audited_write(
-        static function (PDO $pdo) use ($tripId, $startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue): void {
+        static function (PDO $pdo) use ($tripId, $startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $breakOnlyValue): void {
             require_trip_owner($pdo, $tripId);
             $statement = $pdo->prepare(
                 'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
-                . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, pending = 0 '
+                . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, break_only = :break_only, pending = 0 '
                 . 'WHERE id = :trip_id AND user_id = :user_id'
             );
             $statement->execute([
@@ -770,6 +783,7 @@ if ($action === 'start') {
                 ':standard_time_ms' => $standardTimeMilliseconds,
                 ':counted_time_ms' => $countedTimeMilliseconds,
                 ':non_production' => $nonProductionValue,
+                ':break_only' => $breakOnlyValue,
                 ':trip_id' => $tripId,
                 ':user_id' => authenticated_user_id(),
             ]);
@@ -781,12 +795,17 @@ if ($action === 'start') {
 
 if ($action === 'stop') {
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
-    $standardTimeMilliseconds = require_positive_int($input, 'standardTimeMilliseconds');
-    $countedTimeMilliseconds = $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
+    $breakOnly = $input['breakOnly'] ?? false;
+    if (!is_bool($breakOnly)) api_error('breakOnly must be a boolean.', 422, 'invalid_argument');
+    if ($breakOnly && ($input['standardTimeMilliseconds'] ?? null) !== null) api_error('A break-only session has no standard time.', 422, 'invalid_argument');
+    $standardTimeMilliseconds = $breakOnly ? null : require_positive_int($input, 'standardTimeMilliseconds');
+    $breakOnlyValue = $breakOnly ? 1 : 0;
+    $countedTimeMilliseconds = $breakOnly ? 0 : $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
 
     audited_write(
-        static function (PDO $pdo) use ($tripId, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds): void {
+        static function (PDO $pdo) use ($tripId, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $breakOnly): void {
             $trip = require_trip_owner($pdo, $tripId);
+            if (((int) $trip['break_only'] === 1) !== $breakOnly) api_error('Session kind cannot change when stopping.', 422, 'invalid_argument');
 
             if ($endTime <= (string) $trip['start_time']) {
                 api_error('endTime must be later than the trip start.', 422, 'invalid_argument');

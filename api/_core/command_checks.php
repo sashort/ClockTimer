@@ -10,6 +10,7 @@ function check_trip_event_command(array $events, array $input): array
     if (!is_array($value)) return ['accepted' => false, 'reason' => 'Event value must be an object.'];
     $now = (float) (new DateTimeImmutable($timestamp))->format('U.u') * 1000;
     $started = false;
+    $breakOnly = false;
     $running = false;
     $intervals = [];
     foreach ($events as $event) {
@@ -19,7 +20,7 @@ function check_trip_event_command(array $events, array $input): array
         $at = (float) (new DateTimeImmutable($event['timestamp']))->format('U.u') * 1000;
         if ($at > $now) continue;
         $existing = $event['value'] ?? [];
-        if ($event['event'] === 'trip.started') {$started = true; $running = true;}
+        if ($event['event'] === 'trip.started') {$started = true; $running = true; $breakOnly = ($existing['breakOnly'] ?? false) === true;}
         if ($event['event'] === 'trip.stopped') $running = false;
         $key = (string) ($existing['intervalKey'] ?? $event['id'] ?? '');
         if ($event['event'] === 'interval.started') {
@@ -36,6 +37,7 @@ function check_trip_event_command(array $events, array $input): array
     if ($name === 'trip.stopped' && !$running) return $reject('The trip has already stopped.');
     if ($name === 'interval.started') {
         if (!$running) return $reject('A running trip is required.');
+        if ($breakOnly && !in_array(strtolower((string) ($value['type'] ?? '')), ['break','lunch'], true)) return $reject('Break-only sessions cannot start downtime.');
         if (!in_array(strtolower((string) ($value['type'] ?? '')), ['break', 'lunch', 'down'], true)) return $reject('Unknown interval type.');
         foreach (['length', 'startBuffer', 'endBuffer'] as $field) {
             if (isset($value[$field]) && (!is_numeric($value[$field]) || (float) $value[$field] < 0)) return $reject('Invalid interval duration.');

@@ -6166,7 +6166,7 @@
             const time = Date.parse(/Z$|[+-]\d\d:\d\d$/.test(trip.startTime) ? trip.startTime : trip.startTime.replace(" ", "T") + "Z");
             const filter = clockTimer.productionFilter || "all";
             return time >= Date.parse(tripWindow.startTime) && time < Date.parse(tripWindow.endTime) &&
-                (filter === "all" || (filter === "productive" && !trip.nonProduction) || (filter === "non-productive" && trip.nonProduction));
+                (filter === "all" || (filter === "productive" && !trip.breakOnly && !trip.nonProduction) || (filter === "non-productive" && !trip.breakOnly && trip.nonProduction));
         });
         return {trips, allTrips: [...allTrips.values()], loginRequired, offline: true, incomplete: true};
     }
@@ -6223,7 +6223,7 @@
                     totalSummary.countedPercent<totalSummary.percentGoal;
                 const start=clockTimer.uiState?.trip_start_component?.date?.toISOString?.();
                 if(!start) return null;
-                return {id:clockTimer.currentTripId,running:true,activeState,
+                return {id:clockTimer.currentTripId,running:true,activeState,breakOnly:clockTimer.breakOnly,
                     includeInParentPercent:getTripLogIncludeCurrent()||tripGoalMissed||totalGoalMissed,startTime:start,endTime:new Date().toISOString(),
                     standardTimeMilliseconds:summary.standardTimeMilliseconds,
                     allottedTimeMilliseconds:summary.allottedTimeMilliseconds,
@@ -16960,9 +16960,9 @@
             ready: live ? !paused : !newTripWorkflowLocked,
             // Explicit optimistic replacement commands remain available. A
             // duplicate break is validated asynchronously and can revert.
-            startBreak: true,
+            startBreak: !clockTimer.breakOnly,
             openBreakSelector: !paused || interval === "down",
-            startDown: interval !== "down",
+            startDown: Boolean(clockTimer.getBreakTransitionState().canStartDown),
             endBreak: ["break", "short-break", "lunch"].includes(kind),
             endShortBreak: kind === "short-break",
             endLunch: kind === "lunch",
@@ -17024,6 +17024,9 @@
                 primaryText: live || endingTransient ? timerState?.controls?.primary_action?.text || "End Trip"
                     : globalThis.WMOFLanguagePack.text("1cf0b3f1-858c-50c8-8cb9-8b3af9e1decd"),
                 activeTripVisible: live || endingTransient, primaryVisible: interval !== "down",
+                breakLabel: kind ? timerState?.controls?.primary_action?.label : null,
+                breakClock: kind ? timerState?.controls?.primary_action?.clock : null,
+                breakDownVisible: Boolean(clockTimer.getBreakTransitionState().canConvertBreak),
                 actionRowVisible: !paused, breakVisible: !paused, downVisible: !paused,
                 downVisiblePanel: interval === "down"})
         };
@@ -17035,7 +17038,7 @@
         return interactionStateSnapshot;
     }
 
-    const orchestrationControlIds = new Set(["newTripButton", "breakButton", "breakTypeOK", "downButton", "endTripButton", "downBreakButton", "downCancelButton", "downResumeButton", "tripTransitionSummaryOk", "tripTransitionSummaryCancel"]);
+    const orchestrationControlIds = new Set(["newTripButton", "idleBreakButton", "breakDownButton", "breakButton", "breakTypeOK", "downButton", "endTripButton", "downBreakButton", "downCancelButton", "downResumeButton", "tripTransitionSummaryOk", "tripTransitionSummaryCancel"]);
     function setInteractionDisabled(control, value) {
         const disabled = Boolean(value);
         if (control && control.disabled !== disabled) control.disabled = disabled;
@@ -17052,6 +17055,19 @@
         for(const input of loginDialog.querySelectorAll('[data-login-digit]'))input.disabled=!actions.loginDigits || input.dataset.loginDigit!==state.login.stage;
         setInteractionDisabled(newTripButton, controls.busy || !actions.startTrip);
         activeTripControls.hidden = !controls.activeTripVisible;
+        const idleBreak = $("#idleBreakButton");
+        idleBreak.hidden = controls.activeTripVisible;
+        setInteractionDisabled(idleBreak, controls.busy || !actions.openBreakSelector);
+        const breakDown = $("#breakDownButton");
+        const endRow = $("#breakEndRow");
+        const entering = controls.breakDownVisible && endRow.dataset.downAvailable !== "true";
+        endRow.dataset.downAvailable = String(controls.breakDownVisible);
+        setInteractionDisabled(breakDown, controls.busy || !actions.startDown);
+        breakDown.inert = !controls.breakDownVisible;
+        breakDown.setAttribute("aria-hidden", String(!controls.breakDownVisible));
+        if (entering && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+            breakDown.animate?.([{transform:"translateX(100%)",opacity:0},{transform:"translateX(0)",opacity:1}], {duration:400,easing:"ease-out"});
+        }
         tripActionRow.hidden = !controls.actionRowVisible;
         breakButton.hidden = !controls.breakVisible;
         setInteractionDisabled(breakButton, controls.busy || !actions.openBreakSelector);
@@ -17059,8 +17075,22 @@
         downButton.hidden = !controls.downVisible;
         setInteractionDisabled(downButton, controls.busy || !actions.startDown);
         endTripButton.hidden = !controls.primaryVisible;
+        endRow.hidden = !controls.primaryVisible;
         setInteractionDisabled(endTripButton, controls.busy || !actions[controls.primaryAction]);
-        endTripButton.textContent = controls.primaryText;
+        endRow.dataset.timedPause = String(Boolean(controls.breakLabel));
+        if (controls.breakLabel) {
+            if (!endTripButton.querySelector(".break-action-label")) {
+                const label = document.createElement("span");label.className = "break-action-label";
+                const clock = document.createElement("span");clock.className = "break-action-clock";
+                endTripButton.replaceChildren(label, clock);
+            }
+            endTripButton.querySelector(".break-action-label").textContent = controls.breakLabel;
+            endTripButton.querySelector(".break-action-clock").textContent = controls.breakClock;
+            endTripButton.setAttribute("aria-label", controls.primaryText);
+        } else {
+            endTripButton.textContent = controls.primaryText;
+            endTripButton.removeAttribute("aria-label");
+        }
         downTripControls.hidden = !controls.downVisiblePanel;
         setInteractionDisabled(downBreakButton, controls.busy || !actions.openBreakSelector);
         setInteractionDisabled(downCancelButton, controls.busy || !actions.cancelDown);
@@ -18943,6 +18973,10 @@
                 "startDownTime"
         });
 
+    for (const [id, action] of [["idleBreakButton", "openBreakMenu"], ["breakDownButton", "startDownTime"]]) {
+        globalThis.WMOFInteractionFunctions.bindAction({element: $("#" + id), event: "pointerup", name: id + "PointerUp", action});
+    }
+
     downDetailsButton.addEventListener("pointerup", () => {
         const reference=activeDownReference();
         if(reference?.tripId&&reference.intervalKey)void openDownDetailsModal(reference.tripId,reference.intervalKey,{editing:true,capture:true});
@@ -19441,6 +19475,14 @@
         };
         const config = configs[kind];
         if (!config) return false;
+        if (clockTimer.breakOnly) return false;
+        if (!clockTimer.getUIState(transactionTime).trip_active) {
+            const result = await clockTimer.startBreakSession(config.type, config.lengthMilliseconds,
+                config.attributes, 150000, 150000, transactionTime);
+            updateSummaryValues();
+            renderTripActionState();
+            return Boolean(result);
+        }
 
         const lookupTime =
             transactionTime instanceof Date &&
@@ -21279,6 +21321,7 @@
     function showTripEndTransitionOverlay() { return showTripSummary({automatic: true}); }
 
     async function onTripStarted(event) {
+        if (clockTimer.breakOnly) return;
         globalThis
             .SpeechMenu
             ?.beginSpeechTimingTrip?.();
@@ -21345,6 +21388,7 @@
     }
 
     function onTripStartedEarly(event) {
+        if (clockTimer.breakOnly) return;
         globalThis
             .SpeechMenu
             ?.beginSpeechTimingTrip?.();
@@ -21361,6 +21405,7 @@
     }
 
     function onTripStartedLate(event) {
+        if (clockTimer.breakOnly) return;
         globalThis
             .SpeechMenu
             ?.beginSpeechTimingTrip?.();
@@ -21462,6 +21507,7 @@
     }
 
     function onTripEnded(event) {
+        if (clockTimer.breakOnly) return;
         const exactStopTime = event?.detail?.stopTime;
         const parsedStopTime = exactStopTime instanceof Date
             ? new Date(exactStopTime.getTime())
@@ -22123,6 +22169,7 @@
 
     let activeGoalFailureBatch;
     function onGoalFail(event) {
+        if (clockTimer.breakOnly) return;
         reserveSemanticEvent(event, "One or more goals failed");
         if (activeGoalFailureBatch && activeGoalFailureBatch.tripId === clockTimer.currentTripId) {
             activeGoalFailureBatch.add(event.detail);
@@ -24079,14 +24126,7 @@
 
                 const result =
                     await clockTimer
-                        .startInterval(
-                            "down",
-                            undefined,
-                            undefined,
-                            undefined,
-                            undefined,
-                            transactionTime
-                        );
+                        .startDownTime(transactionTime);
 
                 if (result) {
                     renderTripActionState();
@@ -27296,7 +27336,7 @@
             }
             const speechTargets = {
                 readyAt:"#newTripButton", ready:"#newTripButton:enabled, #endTripButton:enabled",
-                startBreak:"#breakButton", startShortBreak:"#breakButton", startLunch:"#breakButton", down:"#downButton", endBreak:"#breakButton", endShortBreak:"#breakButton", endLunch:"#breakButton",
+                startBreak:"#idleBreakButton:enabled, #breakButton:enabled", startShortBreak:"#idleBreakButton:enabled, #breakButton:enabled", startLunch:"#idleBreakButton:enabled, #breakButton:enabled", down:"#breakDownButton:enabled, #downButton:enabled", endBreak:"#breakButton", endShortBreak:"#breakButton", endLunch:"#breakButton",
                 resume:"#downResumeButton",
                 changeGoal:"#goalPercentValue",
                 sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",

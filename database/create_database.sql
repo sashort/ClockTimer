@@ -375,9 +375,10 @@ CREATE TABLE IF NOT EXISTS `trips` (
     `user_id` BIGINT UNSIGNED NOT NULL,
     `start_time` DATETIME(3) NOT NULL,
     `end_time` DATETIME(3) NOT NULL,
-    `standard_time_ms` BIGINT UNSIGNED NOT NULL,
+    `standard_time_ms` BIGINT UNSIGNED NULL,
     `counted_time_ms` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     `non_production` TINYINT(1) NOT NULL DEFAULT 0,
+    `break_only` TINYINT(1) NOT NULL DEFAULT 0,
     `pending` TINYINT(1) NOT NULL DEFAULT 0,
     `client_token` CHAR(36) NULL,
     `created_at` TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -392,7 +393,7 @@ CREATE TABLE IF NOT EXISTS `trips` (
     CONSTRAINT `chk_trips_time_order`
         CHECK (`end_time` > `start_time`),
     CONSTRAINT `chk_trips_standard_time`
-        CHECK (`standard_time_ms` > 0),
+        CHECK ((`break_only` = 1 AND `standard_time_ms` IS NULL AND `non_production` = 0) OR (`break_only` = 0 AND `standard_time_ms` IS NOT NULL AND `standard_time_ms` > 0)),
     CONSTRAINT `chk_trips_non_production`
         CHECK (`non_production` IN (0, 1)),
     CONSTRAINT `chk_trips_pending`

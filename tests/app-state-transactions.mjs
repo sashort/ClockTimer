@@ -1389,6 +1389,63 @@ if(process.argv.includes('--down-timing')) {
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  console.log('PASS spoken Down commands tolerate cadence ticks during recognition');await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--break-session-controls')) {
+ const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text);};
+ const control=id=>window.document.querySelector('#'+id);
+ assert.equal(control('idleBreakButton').hidden,false);
+ for (const kind of ['break','short-break','lunch']) {
+   assert.equal(await window.WMOFActions.startBreak(kind),true);await settle();
+   assert.equal(timer.breakOnly,true);assert.equal(timer.nonProduction,false);
+   assert.equal(timer.standardTimeMilliseconds,undefined);
+   assert.equal(timer.getSummarySnapshot().trip.standardTimeMilliseconds,undefined);
+   assert.equal(timer.uiState.break_only,true);
+   const create=requests.map(request=>request.options.body?JSON.parse(request.options.body):null).findLast(body=>body?.breakOnly===true && body?.action!=='stop' && body?.standardTimeMilliseconds===null);
+   assert(create,'durable break-only owner has null standard');
+   assert.equal(create.nonProduction,false);assert.equal(create.countedTimeMilliseconds,0);
+   assert.equal(timer.getBreakTransitionState().canStartDown,false);
+   assert.equal(await window.WMOFActions.startDownTime(),false);
+   assert.equal(await timer.startInterval('down'),false,'model rejects bypass');
+   assert.equal(await window.WMOFActions.startBreak('break'),false);
+   assert.equal(control('idleBreakButton').hidden,true);
+   const snapshot=timer.captureState();
+   assert(snapshot.events.some(event=>event.event==='trip.started' && event.value.breakOnly===true),'break-only flag survives snapshots');
+   const replay=window.document.createElement('clock-timer');window.document.body.append(replay);
+   replay.restoreState(snapshot);assert.equal(replay.breakOnly,true);assert.equal(replay.nonProduction,false);
+   assert.equal(await replay.startInterval('down'),false,'replayed owner rejects downtime');replay.remove();
+   window.__testTime+=40*60000;timer.configure({});await settle();
+   assert.equal(timer.getBreakTransitionState().canStartDown,false);
+   assert.equal(control('breakEndRow').dataset.downAvailable,'false');
+   await say('break end ok');
+   assert.equal(timer.uiState.trip_active,false,'ending standalone break ends its owner');
+   assert.equal(timer.breakOnly,false);
+   const stopped=requests.map(request=>request.options.body?JSON.parse(request.options.body):null).findLast(body=>body?.action==='stop');
+   assert.equal(stopped.breakOnly,true);assert.equal(stopped.standardTimeMilliseconds,null);assert.equal(stopped.countedTimeMilliseconds,0);
+   assert.equal(control('idleBreakButton').hidden,false);
+   assert.equal(control('tripTransitionOverlay').open,false,'no productive summary');
+ }
+ for (const path of ['pointer','voice','extended']) {
+   await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+   if(path==='extended')timer.intervalElapsedBehavior='extendBoundary';
+   assert.equal(await window.WMOFActions.startBreak('break'),true);await settle();
+   const boundary=Date.parse(timer.getActiveIntervalState().boundaryTime);
+   window.__testTime=boundary-1;timer.configure({});await settle();
+   assert.equal(timer.getBreakTransitionState().canStartDown,false);
+   window.__testTime=boundary+30000;timer.configure({});await new Promise(resolve=>setTimeout(resolve,1200));await settle();
+   assert.equal(timer.getBreakTransitionState().canConvertBreak,true);
+   assert.equal(control('breakEndRow').dataset.downAvailable,'true');
+   if(path==='voice')await say('down');
+   else {control('breakDownButton').dispatchEvent(new window.Event('pointerup',{bubbles:true}));await settle();}
+   const down=timer.getActiveIntervalState();
+   assert.equal(down.intervalType,'down');
+   assert.equal(Date.parse(down.startTime),boundary,'down is backdated to end buffer');
+   assert.equal(down.elapsedMilliseconds,30000);
+   assert.equal(timer.uiState.trip_active,true);
+   await timer.endInterval(new window.Date());await timer.stop(new window.Date());await timer.resetCompletedTrip();await settle();
+ }
+ assert.equal(window.WMOFCoordinator.lockCount,0);assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS standalone break lifecycle, persisted policy, overdue Down touch/voice and exact buffer timestamps');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--down-break')) {
  await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
  const say=async(text,final=true,u=window.SpeechMenu.testBegin())=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();assert(!u.digestExecutionFailed,text+' executes');return u;};

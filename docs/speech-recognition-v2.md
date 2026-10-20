@@ -525,3 +525,17 @@ Regression coverage: `tests/goal-feedback.mjs`,
 `--goal-cascade --voice-feedback`, `--goal-failure-batch --voice-feedback`,
 `--startup-speech --startup-no-focus --voice-feedback`,
 `--voice-code-adapter`, and `tests/vosk-speechmenu-context.mjs`.
+
+### Break session ownership
+
+Break commands use `BreakSessionPolicy` and `ClockTimer.getBreakTransitionState()`;
+see `clock-timer-fsm.md` for lifecycle/persistence details. `break start` can open
+the existing selector while idle and create a standalone break-only owner without standard time or production classification.
+It remains in applicable Trip Log lists and is excluded from every aggregate.
+`break end` keeps its existing confirmation and stale-interval identity checks;
+ending that standalone interval also ends its owner, without a productive summary.
+A break-only owner never exposes Down to speech, even after its end buffer.
+For an overdue regular break, `down`/`down time` and the new button call the same
+`startDownTime` operation and backdate to the original buffered end. Availability
+must follow model policy across grammar refreshes, not button visibility. Keep
+intermediate trip-resumed announcements suppressed during this handoff.

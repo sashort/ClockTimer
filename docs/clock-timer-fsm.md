@@ -449,3 +449,61 @@ line each; no extra nested outlines are drawn. Collapse naturally hides the
 guide and its children. Tests cover approval changes/defaults/surplus/deletion,
 active inclusion, zero omission, and readable, arrow-aligned layouts at phone
 and desktop widths. Version 2 should preserve the pure calculator and UI split.
+
+### Standalone breaks and overdue break handoff (2026-10-20)
+
+`BreakSessionPolicy` in `ClockTimer.js` is a pure policy shared by the timer,
+interaction snapshot, touch controls and speech availability. Its input is the
+active trip flag, persisted break-only flag, interval snapshot and one clock
+sample. `canConvertBreak` becomes true at the original scheduled end buffer,
+including when the interval's configured elapsed behavior extends its end.
+`scheduledBoundaryTime` preserves that original boundary separately from the
+current display boundary. `getDispatchState()` exposes `sessionKind` and
+`breakDownEligible`; `getUIState()` exposes `break_only` and `break_transition`.
+
+`startDownTime(at)` rechecks eligibility, closes an overdue regular break at
+`downStart`, suppresses the intermediate trip-resumed announcement, then starts
+Down at the same instant. Selecting it later therefore credits all elapsed time
+since the buffer ended to downtime. Existing downtime announcements, animations,
+approval/persistence and transaction rollback remain the shared flow. The End
+Break row animates to two equal tracks with a gutter; Down enters from the right.
+Reduced motion disables this animation. Existing `down` and `down time` commands
+invoke the same action; no new voice aliases are added.
+
+`startBreakSession()` creates a standalone timed-break owner while idle. It has
+no standard time (`null` in durable records), no production/non-production
+classification, and contributes nothing to any aggregate, including trip counts,
+actual/counted/standard time, performance or downtime. The internal zero budget
+supports clock arithmetic only; it is never presented or persisted as standard
+time. `trip.started.breakOnly` survives load/restore/observer snapshots and
+migration 014 adds `trips.break_only` with a nullable standard-time contract.
+Apply that migration before deploying this change to an existing database.
+It also converts historical owners explicitly marked breakOnly in their events.
+
+Log queries retain these sessions for applicable range/All filters; Productive
+and Non-productive filters exclude them because neither classification applies.
+Local/offline lists follow the same rule. Aggregation filters separately, so
+entries remain visible even when excluded from performance. A Break only badge
+and lighter row distinguish the session, with selected-color streak animation
+outlined by light/dark edges for contrast. The row shows elapsed duration and
+start time, without standard/count/performance fields or standard-time settings.
+
+Break-only owners reject Down and replacement intervals, disable automatic
+late-break resume, and finish/reset when End Break/End Lunch is confirmed.
+They retain break announcements but skip productive trip announcements, goal
+failure audio and the trip summary. The idle Start Break control is full-width
+beneath New Trip and opens the existing selector; canceling creates no session.
+
+Version 2 should retain these as independent policy and lifecycle operations,
+with the owning coordinator providing atomic checkpoint/rollback for the two
+mutations in a handoff. Do not infer eligibility from hidden/disabled controls.
+Tests: `app-state-transactions.mjs --break-session-controls --voice-feedback`
+checks standalone types, replay, model guards, touch/voice handoff and exact
+boundary timestamps. `break-session-browser.cjs` checks mobile geometry and
+actual touch activation; ordinary interval and boundary suites cover regressions.
+
+The mobile End Break presentation follows the approved mockup: one centered
+label/countdown at full width, two compact centered lines in the split row, with
+positive elapsed-over-buffer notation. The adjoining label is Down Time.
+Boundary observation remains monotonic when a factual interval end is backdated;
+`TimeRangeGroup` must never be ticked backwards to implement that operation.

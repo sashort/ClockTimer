@@ -165,4 +165,20 @@ for(const group of root.querySelectorAll('.trip-log-group'))assert.equal([...gro
 view.render({trips:[noDown]},calendar);
 assert.equal(root.querySelector('.trip-log-downtime'),null,'omit zero downtime at every aggregate and trip level');
 console.log('PASS logged/approved downtime summaries, zero omission and one grouping guide per aggregate');
+const standalone={id:910,startTime:'2026-09-18T13:00:00Z',endTime:'2026-09-18T13:15:00Z',breakOnly:true,nonProduction:false,
+ standardTimeMilliseconds:null,countedTimeMilliseconds:0,actualTimeMilliseconds:900000,events:[{event:'trip.started',timestamp:'2026-09-18T13:00:00Z',value:{breakOnly:true}}]};
+view.render({trips:[...trips,standalone]},calendar);
+assert.equal(root.querySelectorAll('.trip-log-trip').length,3,'break-only sessions remain visible');
+assert.equal(view.aggregation.tripCount,2,'aggregate trip count excludes break-only');
+assert.equal(view.aggregation.standardTimeMilliseconds,3000000);
+const breakRow=root.querySelector('[data-trip-id="910"]');
+assert(breakRow.classList.contains('is-break-only'));
+assert.equal(breakRow.querySelector('.trip-log-break-only-badge').textContent,'Break only');
+assert.equal(breakRow.querySelector('.trip-log-break-only-duration').textContent,'0:15:00');
+assert.equal(breakRow.querySelector('.trip-log-actual'),null,'no performance on break-only row');
+view.options.liveTrip=()=>({...standalone,id:911,running:true,activeState:'break'});
+filter='all';view.render({trips},calendar);assert(root.querySelector('[data-trip-id="911"]'));
+filter='productive';view.render({trips},calendar);assert(!root.querySelector('[data-trip-id="911"]'));
+filter='non-productive';view.render({trips},calendar);assert(!root.querySelector('[data-trip-id="911"]'));
+console.log('PASS break-only log visibility, badge, elapsed duration, filter classification and aggregate exclusion');
 w.happyDOM.abort();

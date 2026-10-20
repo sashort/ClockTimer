@@ -65,6 +65,10 @@ function trip_edit_settings(array $events): array {
         if ($event['event']==='trip.creation-date-changed' && isset($v['creationAnchor'])) $settings['creationAnchor']=$v['creationAnchor'];
         if (isset($v['nonProduction'])) $settings['nonProduction']=$v['nonProduction'];
     }
+    if (($settings['breakOnly'] ?? false) === true) {
+        $settings['standardTimeMilliseconds'] = null;
+        $settings['nonProduction'] = false;
+    }
     return $settings;
 }
 
@@ -79,6 +83,7 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
             $events=trip_edit_apply($events,$change,false);
         }
     } elseif ($operation==='settings') {
+        if ((trip_edit_settings($events)['breakOnly'] ?? false) === true) throw new InvalidArgumentException('Standard time and production settings do not apply to break-only sessions.');
         $s=$input['settings']??null;
         if (!is_array($s) || !is_bool($s['nonProduction']??null)) throw new InvalidArgumentException('Invalid trip settings.');
         trip_edit_duration_milliseconds(
@@ -172,6 +177,7 @@ function trip_edit_aggregate(array $events): array {
         $time=(float)(new DateTimeImmutable($e['timestamp'],new DateTimeZone('UTC')))->format('U.u')*1000;
         if($e['event']==='trip.started') $start=$time;
         if($e['event']==='trip.stopped') $end=$time;
+        if (($s['breakOnly']??false) && $e['event']==='interval.started' && !in_array($e['value']['type']??'', ['break','lunch'], true)) throw new InvalidArgumentException('Break-only sessions can only contain a break or lunch.');
         $key=$e['value']['intervalKey']??'';
         if($e['event']==='interval.deleted') $deleted[$key]=true;
         if($e['event']==='interval.started') $intervals[$key]=['start'=>$time,'type'=>$e['value']['type'],'length'=>$e['value']['length']??null,'startBuffer'=>$e['value']['startBuffer']??null,'endBuffer'=>$e['value']['endBuffer']??null,'approvedTime'=>$e['value']['approvedTime']??null,'end'=>null];
@@ -205,6 +211,6 @@ function trip_edit_aggregate(array $events): array {
     foreach($excluded as [$a,$b]) {if($b>max($last,$a)) $removed+=$b-max($last,$a);$last=max($last,$b);}
     return ['startTime'=>gmdate('Y-m-d H:i:s',(int)floor($begin/1000)),
         'endTime'=>gmdate('Y-m-d H:i:s',(int)floor($terminal/1000)),
-        'standard'=>trip_edit_duration_milliseconds($s['standardTimeMilliseconds']),'counted'=>(int)max(0,round($terminal-$begin-$removed)),
+        'standard'=>($s['breakOnly']??false)?null:trip_edit_duration_milliseconds($s['standardTimeMilliseconds']),'counted'=>($s['breakOnly']??false)?0:(int)max(0,round($terminal-$begin-$removed)),
         'nonProduction'=>($s['nonProduction']??false)?1:0];
 }

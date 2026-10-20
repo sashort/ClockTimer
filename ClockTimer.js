@@ -1,4 +1,20 @@
 (() => {
+    // Shared policy for model, touch controls and speech availability.
+    class BreakSessionPolicy {
+        static evaluate({tripActive, breakOnly, interval, now = new Date()}) {
+            const timed = ["break", "lunch"].includes(interval?.intervalType);
+            const boundary = Date.parse(interval?.scheduledBoundaryTime || interval?.boundaryTime);
+            const overdue = timed && Number.isFinite(boundary) && now.getTime() >= boundary;
+            return Object.freeze({
+                breakOnly: Boolean(breakOnly),
+                canStartDown: Boolean(tripActive && !breakOnly && (!interval || overdue)),
+                canConvertBreak: Boolean(tripActive && !breakOnly && overdue),
+                downStart: overdue ? new Date(boundary).toISOString() : null
+            });
+        }
+    }
+    globalThis.BreakSessionPolicy = BreakSessionPolicy;
+
     class ClockTimerUIState {
         constructor(values = {}) {
             Object.assign(this, values);
@@ -228,6 +244,7 @@
 
         #nonProduction =
             false;
+        #breakOnly = false;
 
         #nonProductionFilter =
             "none";
@@ -449,6 +466,8 @@
             const budget = selection.requirements.adjustedTimeElapsed;
             return Object.freeze({
                 state: this.#getOperatingState(now),
+                sessionKind: this.#breakOnly ? "break-only" : "trip",
+                breakDownEligible: this.getBreakTransitionState(now).canConvertBreak,
                 goalMode: this.#percentMode,
                 currentGoal: selection.scope,
                 percentageOrder: this.#getPercentageOrder(),
@@ -1711,7 +1730,7 @@
                     ? "End Time"
                     : "Time Remaining";
             const interval = this.getActiveIntervalState?.(now);
-            const standardText = selected?.standardTime;
+            const standardText = this.#breakOnly ? undefined : selected?.standardTime;
             const effectiveTimeState =
                 this.#getEffectiveTimeState(
                     now,
@@ -1730,11 +1749,11 @@
             const renderedDate =
                 effectiveTimeState
                     ?.date;
-            const countedPercent = Number(selected?.countedPercent);
+            const countedPercent = this.#breakOnly ? NaN : Number(selected?.countedPercent);
             const ordinaryGoal = scope === "standard"
                 ? Number(this.#getTripGoal())
                 : Number(selected?.percentGoal);
-            const goal = ordinaryGoal;
+            const goal = this.#breakOnly ? NaN : ordinaryGoal;
             const intervalType = String(interval?.intervalType || "").trim().toLowerCase();
             const tripActive = this.#hasStartProperties() && this.status !== "stopped";
             const creationDate = this.#getJSONCreationDate();
@@ -1742,21 +1761,25 @@
             const tripStartDate = creationDate instanceof Date && Number.isFinite(startMilliseconds)
                 ? new Date(creationDate.getTime() + startMilliseconds)
                 : null;
+            const breakTransition = this.getBreakTransitionState(now);
             const timedPause = intervalType === "break" || intervalType === "lunch";
             const downPause = intervalType === "down";
             const normalActions = !timedPause && !downPause;
+            const breakLabel = `End ${intervalType === "lunch" ? "Lunch" : "Break"}`;
+            const remaining = Number(interval?.remainingMilliseconds);
+            const breakClock = `${remaining < 0 ? "+" : ""}${this.#actionClock(Math.abs(remaining)).replace(/^(\d):/, "0$1:")}`;
             const primaryAction = intervalType === "down"
                 ? {action: "resume_trip", text: `Resume Trip : ${this.#actionClock(interval?.elapsedMilliseconds)}`, visible: true, enabled: true}
                 : intervalType === "break" || intervalType === "lunch"
-                    ? {action: "end_interval", text: `End ${intervalType === "lunch" ? "Lunch" : "Break"} : ${this.#actionClock(interval?.remainingMilliseconds)}`, visible: true, enabled: true}
+                    ? {action: "end_interval", text: `${breakLabel} : ${breakClock}`, label: breakLabel, clock: breakClock, visible: true, enabled: true}
                     : {action: "end_trip", text: "End Trip", visible: tripActive, enabled: tripActive};
             const availableActions = Object.freeze({
                 start_trip: !tripActive,
                 end_trip: tripActive && normalActions,
                 resume_trip: downPause,
                 end_interval: timedPause,
-                start_break: tripActive && !timedPause,
-                start_down: tripActive && normalActions,
+                start_break: !timedPause,
+                start_down: breakTransition.canStartDown,
                 edit_trip: tripActive
             });
             const controls = Object.freeze({
@@ -1772,6 +1795,8 @@
                 : intervalPhase || (this.#started && this.#getCurrentTimelineTime(now) > this.#standardEnd ? "overtime" : state);
             const values = {
                 state,
+                break_only: this.#breakOnly,
+                break_transition: breakTransition,
                 clock_phase: clockPhase,
                 interval_state: interval ? Object.freeze({...interval}) : null,
                 timer_type: this.#getTimerType(),
@@ -2587,7 +2612,8 @@
                 creationDate:
                     this.creationDate,
                 standardTimeMilliseconds:
-                    this.standardTimeMilliseconds,
+                    this.#breakOnly ? null : this.standardTimeMilliseconds,
+                breakOnly: this.#breakOnly,
                 scheduledStart:
                     this.scheduledStart,
                 nonProduction:
@@ -3573,6 +3599,7 @@
                             tripId,
                             action: "stop",
                             endTime: event.timestamp,
+                            breakOnly: event.value.breakOnly === true,
                             standardTimeMilliseconds:
                                 event.value.standardTimeMilliseconds,
                             countedTimeMilliseconds:
@@ -3680,6 +3707,7 @@
                 const start = Date.parse(/Z$|[+-]\d\d:\d\d$/.test(trip.startTime) ? trip.startTime : trip.startTime.replace(" ", "T") + "Z");
                 if (trip.running || Number(trip.id) === this.#tripId ||
                     start < Date.parse(startTime) || start >= Date.parse(endTime)) continue;
+                if (trip.breakOnly || trip.events?.some(event => event.event === "trip.started" && event.value?.breakOnly)) continue;
                 if (trip.nonProduction) nonProduction.push(trip);
                 else this.#addTripAggregateSummary(production, {...trip, tripCount: 1});
             }
@@ -3739,6 +3767,7 @@
                             method: "PATCH", csrf: true,
                             body: {tripId: trip.tripId, action: "stop",
                                 endTime: event.timestamp,
+                                breakOnly: event.value.breakOnly === true,
                                 standardTimeMilliseconds: event.value.standardTimeMilliseconds,
                                 countedTimeMilliseconds: event.value.countedTimeMilliseconds}
                         });
@@ -3788,7 +3817,9 @@
         #tripPersistencePayload() {
             const timelineNow = this.#getSummaryTimelineNow(new Date());
             const startTime = this.#timelineToISO(this.#getElapsedStartTimeMilliseconds());
-            const endTime = this.#timelineToISO(this.#calculatedEndTime);
+            const endTime = this.#timelineToISO(this.#breakOnly
+                ? Math.max(this.#calculatedEndTime, timelineNow, this.#getElapsedStartTimeMilliseconds() + 1)
+                : this.#calculatedEndTime);
             const standardTimeMilliseconds =
                 this.#standardDuration;
             const countedTimeMilliseconds =
@@ -3800,7 +3831,7 @@
                 !startTime ||
                 !endTime ||
                 !Number.isInteger(standardTimeMilliseconds) ||
-                standardTimeMilliseconds < 1
+                (!this.#breakOnly && standardTimeMilliseconds < 1)
             ) {
                 throw new Error("The trip does not have persistable timing data.");
             }
@@ -3808,10 +3839,10 @@
             const payload = {
                 startTime,
                 endTime,
-                standardTimeMilliseconds,
-                countedTimeMilliseconds,
-                nonProduction:
-                    this.#nonProduction
+                standardTimeMilliseconds: this.#breakOnly ? null : standardTimeMilliseconds,
+                countedTimeMilliseconds: this.#breakOnly ? 0 : countedTimeMilliseconds,
+                breakOnly: this.#breakOnly,
+                nonProduction: this.#nonProduction
             };
 
             if (typeof this.#preparedTrip?.clientToken === "string") {
@@ -4276,6 +4307,7 @@
             nonProduction
         }) {
             if (
+                this.#breakOnly ||
                 !this.#hasUsableAggregateSnapshot() ||
                 typeof startTime !== "string" ||
                 !Number.isFinite(standardTimeMilliseconds) ||
@@ -5012,11 +5044,11 @@
         #stateEvents() {
             if (!this.#hasStartProperties()) return [];
             const events = [{event: "trip.started", timestamp: this.#timelineToISO(this.#getStartTimeMilliseconds()), value: {
-                standardTimeMilliseconds: this.#standardDuration,
+                standardTimeMilliseconds: this.#breakOnly ? null : this.#standardDuration,
                 creationTime: this.#formatStandardTime(this.#creationMilliseconds, {clock: true, includeHours: true}),
                 scheduledStart: this.#formatTimelineTime(this.#scheduledStartMilliseconds),
                 startTime: this.#formatTimelineTime(this.#getStartTimeMilliseconds()),
-                nonProduction: this.#nonProduction, creationAnchor: this.#getJSONCreationDate()?.toISOString(),
+                nonProduction: this.#nonProduction, breakOnly: this.#breakOnly, creationAnchor: this.#getJSONCreationDate()?.toISOString(),
                 intervalElapsedBehavior: this.#intervalElapsedBehavior,
                 autoRestartTripAfterLateBreak: this.#autoRestartTripAfterLateBreak
             }}];
@@ -5248,7 +5280,7 @@
             let startedStandardTimeMilliseconds;
 
             try {
-                startedStandardTimeMilliseconds =
+                startedStandardTimeMilliseconds = startedValue.breakOnly === true ? 0 :
                     this.#serializedDurationToMilliseconds(
                         startedValue.standardTimeMilliseconds ??
                             startedValue.standardTime,
@@ -5309,6 +5341,7 @@
                             startedValue.startTime,
                         scheduledStart:
                             startedValue.scheduledStart,
+                        breakOnly: startedValue.breakOnly === true,
                         nonProduction:
                             startedValue.nonProduction ===
                                 true
@@ -5658,7 +5691,7 @@
                             break;
 
                         case "trip.standard-time-changed":
-                            if (typeof value.nonProduction === "boolean") this.#nonProduction = value.nonProduction;
+                            if (!this.#breakOnly && typeof value.nonProduction === "boolean") this.#nonProduction = value.nonProduction;
                             this.standardTimeMilliseconds =
                                 this.#serializedDurationToMilliseconds(
                                     value.value,
@@ -5793,6 +5826,39 @@
             };
         }
 
+        get breakOnly() { return this.#breakOnly; }
+
+        getBreakTransitionState(now = new Date()) {
+            return BreakSessionPolicy.evaluate({
+                tripActive: this.#hasStartProperties() && this.status !== "stopped",
+                breakOnly: this.#breakOnly, interval: this.getActiveIntervalState(now), now
+            });
+        }
+
+        async startBreakSession(type, length, attributes, startBuffer = 0, endBuffer = 0, at = new Date()) {
+            if (!["break", "lunch"].includes(type)) return false;
+            this.#validateDurationMilliseconds(length, "length");
+            if (![startBuffer, endBuffer].every(value => Number.isFinite(value) && value >= 0)) return false;
+            if (this.#hasStartProperties() && this.status !== "stopped") return false;
+            // A standalone break has timing and persistence, but no performance budget.
+            await this.start({standardTimeMilliseconds: null,
+                creationTime: this.#dateToStandardTime(at), startTime: this.#dateToStandardTime(at),
+                scheduledStart: this.#dateToStandardTime(at),
+                breakOnly: true, nonProduction: false});
+            return this.startInterval(type, length, attributes, startBuffer, endBuffer, at);
+        }
+
+        async startDownTime(at = new Date()) {
+            const policy = this.getBreakTransitionState(at);
+            if (!policy.canStartDown) return false;
+            if (policy.canConvertBreak) {
+                const ended = await this.endInterval(new Date(policy.downStart), {suppressTripResumed: true});
+                if (!ended) return false;
+            }
+            return this.startInterval("down", undefined, undefined, undefined, undefined,
+                policy.canConvertBreak ? new Date(policy.downStart) : at);
+        }
+
         async start(options = {}) {
             if (options === null || typeof options !== "object" || Array.isArray(options)) {
                 throw new TypeError("start options must be an object.");
@@ -5865,7 +5931,7 @@
                 ? Number(prepared.tripId)
                 : undefined;
 
-            const standardTimeMilliseconds =
+            const standardTimeMilliseconds = localOptions.breakOnly === true ? 0 :
                 localOptions.standardTimeMilliseconds !==
                     undefined
                     ? this.#validateDurationMilliseconds(
@@ -5906,7 +5972,7 @@
                 startEventTime,
                 {
                     standardTimeMilliseconds:
-                        this.#standardDuration,
+                        this.#breakOnly ? null : this.#standardDuration,
                     creationTime:
                         this.#formatStandardTime(
                             this.#creationMilliseconds,
@@ -5930,6 +5996,7 @@
                             ?.toISOString?.(),
                     nonProduction:
                         this.#nonProduction,
+                    breakOnly: this.#breakOnly,
                     intervalElapsedBehavior:
                         this.#intervalElapsedBehavior,
                     autoRestartTripAfterLateBreak:
@@ -6101,9 +6168,10 @@
                 persistedEnd,
                 {
                     standardTimeMilliseconds:
-                        this.#standardDuration,
+                        this.#breakOnly ? null : this.#standardDuration,
+                    breakOnly: this.#breakOnly,
                     countedTimeMilliseconds:
-                        aggregateCountedTime
+                        this.#breakOnly ? 0 : aggregateCountedTime
                 }
             );
 
@@ -6253,6 +6321,7 @@
             endBufferMilliseconds,
             at
         ) {
+            if (this.#breakOnly && (type === "down" || this.getActiveIntervalState(at || new Date()))) return false;
             const operationTime =
                 at === undefined
                     ? this.#transactionTimestamp(
@@ -6729,10 +6798,14 @@
                 {
                     automaticRestart: false,
                     actualEnd: now,
-                    suppressTripResumed
+                    suppressTripResumed: suppressTripResumed || this.#breakOnly
                 }
             );
 
+            if (this.#breakOnly && ["break", "lunch"].includes(record?.type)) {
+                await this.stop(nowDate);
+                await this.resetCompletedTrip();
+            }
             return result;
         }
 
@@ -7145,6 +7218,9 @@
                 open,
                 startTime: this.#timelineToISO(start),
                 boundaryTime: Number.isFinite(end) ? this.#timelineToISO(end) : undefined,
+                scheduledBoundaryTime: this.#timelineToISO(
+                    Number.isFinite(record.clockTimerExtensionBoundaryTimeline)
+                        ? record.clockTimerExtensionBoundaryTimeline : end),
                 elapsedMilliseconds,
                 remainingMilliseconds
             };
@@ -7413,6 +7489,7 @@
         }
 
         set nonProduction(value) {
+            if (this.#breakOnly) return;
             if (typeof value !== "boolean") throw new TypeError("nonProduction must be a boolean.");
             if (value === this.#nonProduction) return;
             this.#nonProduction = value;
@@ -7916,6 +7993,7 @@
         }
 
         get standardTimeMilliseconds() {
+            if (this.#breakOnly) return undefined;
             return Number.isSafeInteger(
                 this.#standardDuration
             )
@@ -7924,6 +8002,7 @@
         }
 
         set standardTimeMilliseconds(value) {
+            if (this.#breakOnly) return;
             if (!this.#hasStartProperties()) {
                 return;
             }
@@ -8036,6 +8115,7 @@
         }
 
         set standardTime(value) {
+            if (this.#breakOnly) return;
             let parsed;
 
             try {
@@ -8402,7 +8482,7 @@
 
         #hasStartProperties() {
             return (
-                this.#standardTime !== undefined &&
+                (this.#breakOnly || this.#standardTime !== undefined) &&
                 this.#creationTime !== undefined &&
                 this.#scheduledStart !== undefined
             );
@@ -9256,7 +9336,8 @@
             creationTime,
             startTime,
             scheduledStart,
-            nonProduction = false
+            nonProduction = false,
+            breakOnly = false
         } = {}) {
             try {
                 if (
@@ -9271,13 +9352,15 @@
                     );
                 }
 
+                if (typeof breakOnly !== "boolean") return false;
+                if (breakOnly) nonProduction = false;
                 if (typeof nonProduction !== "boolean") {
                     throw new TypeError(
                         "nonProduction must be a boolean."
                     );
                 }
 
-                this.#validateDurationMilliseconds(
+                if (!breakOnly) this.#validateDurationMilliseconds(
                     standardTimeMilliseconds,
                     "standardTimeMilliseconds"
                 );
@@ -9313,7 +9396,8 @@
                 creationTime,
                 startTime,
                 scheduledStart,
-                nonProduction
+                nonProduction,
+                breakOnly
             };
 
             this.#preserveInsertedOnClear =
@@ -9332,6 +9416,7 @@
 
             this.#nonProduction =
                 nonProduction;
+            this.#breakOnly = breakOnly;
 
             if (
                 creationTime ===
@@ -9424,10 +9509,8 @@
             this.#boundaryIntervalRecords = new WeakMap();
             this.#countedStopTime = undefined;
 
-            this.#standardTime =
-                this.#formatStandardTime(
-                    standardTimeMilliseconds
-                );
+            this.#standardTime = breakOnly ? undefined :
+                this.#formatStandardTime(standardTimeMilliseconds);
 
             this.#standardDuration =
                 standardTimeMilliseconds;
@@ -13024,7 +13107,10 @@
             }
             this.#boundaryResult = false;
             const dispatched = record.clockTimerElapsedDispatched === true;
-            this.#intervalTimeRangeGroup.tick(now);
+            // A factual end may be backdated (for example Break -> Down).
+            // Boundary observation stays monotonic; mutation still uses `now`.
+            const observedNow = Math.max(now, this.#intervalTimeRangeGroup.lastTickTime?.getTime() ?? now);
+            this.#intervalTimeRangeGroup.tick(observedNow);
             // Existing elapsed decisions may need continued lifecycle work.
             if (record.clockTimerElapsedDispatched === true && dispatched) {
                 return this.#handleIntervalElapsed(record, boundary, now);
@@ -13248,7 +13334,7 @@
 
 
             if (
-                this.#autoRestartTripAfterLateBreak &&
+                !this.#breakOnly && this.#autoRestartTripAfterLateBreak &&
                 decision.boundaryType === "end-buffer" &&
                 ["break", "lunch"].includes(String(record.type).toLowerCase())
             ) {
@@ -14612,6 +14698,7 @@
 
             this.#nonProduction =
                 false;
+            this.#breakOnly = false;
 
             this.#startedAtEpoch =
                 undefined;
@@ -32912,7 +32999,7 @@
 
             if (
                 !base &&
-                !this.#hasStartProperties() &&
+                (!this.#hasStartProperties() || this.#breakOnly) &&
                 !Number.isFinite(this.#externalStandardTime) &&
                 !Number.isFinite(this.#externalCountedTime)
             ) return undefined;
@@ -32932,7 +33019,7 @@
             }
 
             remainingCountedTimeMilliseconds = countedTimeMilliseconds;
-            if (this.#hasStartProperties() && this.#tripAddedToAggregate !== true) {
+            if (!this.#breakOnly && this.#hasStartProperties() && this.#tripAddedToAggregate !== true) {
                 standardTimeMilliseconds += Number(this.#standardDuration ?? 0);
                 actualTimeMilliseconds += this.#getTripActualTimeElapsed(timelineNow);
                 const balance = this.#getCountedTimeBalance(timelineNow);
@@ -32948,7 +33035,7 @@
                 : undefined;
             const percentGoal = this.#getScopePercentGoal("total");
             const activeTrip =
-                this.#started &&
+                !this.#breakOnly && this.#started &&
                 this.#hasStartProperties();
             const totalGoalRequirements =
                 activeTrip
@@ -33045,7 +33132,7 @@
                     ? new Date(nowDate.getTime())
                     : new Date();
             const timelineNow = this.#getSummaryTimelineNow(validNow);
-            const hasTrip = this.#hasStartProperties();
+            const hasTrip = this.#hasStartProperties() && !this.#breakOnly;
             const tripActualTimeElapsedMilliseconds = hasTrip
                 ? this.#getTripActualTimeElapsed(timelineNow)
                 : 0;
@@ -33093,8 +33180,9 @@
 
             const trip = {
                 available: hasTrip,
+                breakOnly: this.#breakOnly,
                 standardTime: this.#standardTime,
-                standardTimeMilliseconds: Number.isFinite(this.#standardDuration)
+                standardTimeMilliseconds: !this.#breakOnly && Number.isFinite(this.#standardDuration)
                     ? this.#standardDuration
                     : undefined,
                 actualTimeElapsedMilliseconds: tripActualTimeElapsedMilliseconds,

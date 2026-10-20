@@ -75,6 +75,7 @@ jobs:
           node tests/app-state-transactions.mjs --voicepad-continuation
           node tests/app-state-transactions.mjs --interval-actions
           node tests/app-state-transactions.mjs --break-boundaries --voice-feedback
+          node tests/app-state-transactions.mjs --break-session-controls --voice-feedback
           node tests/app-state-transactions.mjs --break-end-stream --voice-feedback
           node tests/app-state-transactions.mjs --down-timing
           node tests/app-state-transactions.mjs --down-break
@@ -119,13 +120,41 @@ jobs:
       - run: node tests/hamburger-menu-coverage-browser.cjs
       - run: node tests/mic-modal-browser.cjs
       - run: node tests/trip-log-downtime-browser.cjs
+      - run: node tests/break-session-browser.cjs
+      - run: node tests/break-only-log-browser.cjs
       - run: node tests/application-state-inventory-browser.cjs
       - run: node tests/graphical-settings-browser.cjs
       - run: node tests/radial-fitted-tick-browser.cjs
       - run: php -l graphical-settings.php
       - run: php tests/graphical-settings-page.php
+  break-session-backend:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: clocktimer-test
+          MARIADB_DATABASE: clocktimer_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - run: php -l api/trips/index.php
+      - run: php -l api/_core/trip_editor.php
+      - run: php -l database/apply_admin_permissions.php
+      - run: php -l migrations/014_break_only_sessions.php
+      - run: php tests/command_checks.php
+      - run: php tests/trip_editor.php
+      - run: php tests/migrations.php
+      - run: php tests/break-only-migration.php
+        env:
+          CLOCKTIMER_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=clocktimer_test;charset=utf8mb4
+          CLOCKTIMER_TEST_PASSWORD: clocktimer-test
   deploy:
-    needs: [speech-tests, settings-browser]
+    needs: [speech-tests, settings-browser, break-session-backend]
     runs-on: ubuntu-latest
 
     steps:
@@ -211,6 +240,10 @@ jobs:
              echo "Deploy branch: $(git branch --show-current)"
              echo "Deploy commit: $(git rev-parse HEAD)"
 
+             # Apply schema changes immediately after checkout, before asset setup.
+             sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
+             echo "Database migrations and connectivity check passed."
+
              python3 deploy/install_vosk_assets.py
 
              SHERPA_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/runtime
@@ -280,8 +313,6 @@ jobs:
              echo "Silero VAD runtime assets:"
              ls -lh "$VAD_DIR"/sherpa-onnx-*
 
-             sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
-             echo "Database connectivity check passed."
 
              LIVE_STREAM_SERVICE=/etc/systemd/system/clocktimer-live-stream.service
              LIVE_STREAM_APACHE_CONF=/opt/bitnami/apache2/conf/clocktimer-live-stream.conf

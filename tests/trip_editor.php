@@ -34,3 +34,9 @@ rejects(fn()=>trip_edit_duration_milliseconds(0),'rejects zero standard duration
 rejects(fn()=>trip_edit_apply($events,['operation'=>'add-entry','entry'=>['type'=>'down','start'=>'2026-09-18T12:06:00Z','end'=>'2026-09-18T12:08:00Z']]),'rejects overlapping entries that cannot be replayed');
 rejects(fn()=>trip_edit_apply($events,['operation'=>'entries','changes'=>[['operation'=>'add-entry','entry'=>['type'=>'down','start'=>'2026-09-18T12:06:00Z','end'=>'2026-09-18T12:08:00Z']]]]),'rejects an invalid final entry batch');
 echo "$checks trip editor checks passed.\n";
+
+$standalone=$events;$standalone[0]['value']['breakOnly']=true;$standalone[0]['value']['standardTimeMilliseconds']=null;
+$standalone[0]['value']['nonProduction']=true;
+$breakOnlyAggregate=trip_edit_aggregate($standalone);
+check($breakOnlyAggregate['standard']===null&&$breakOnlyAggregate['counted']===0&&$breakOnlyAggregate['nonProduction']===0,'standalone breaks have no standard or production classification');
+rejects(fn()=>trip_edit_apply($standalone,['operation'=>'settings','settings'=>$settings]),'standalone break cannot acquire a standard time');

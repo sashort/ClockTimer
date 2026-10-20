@@ -16,6 +16,9 @@
             return Number.isSafeInteger(elapsed) && elapsed >= 0 ? elapsed : undefined;
         }
         static trip(trip, {now = Date.now()} = {}) {
+            if (trip.breakOnly || trip.events?.some(event => event.event === "trip.started" && event.value?.breakOnly === true)) {
+                return Object.freeze({loggedMilliseconds:0, approvedMilliseconds:0, intervalCount:0, hasDowntime:false});
+            }
             const events = trip.events || [], starts = new Map(), ends = new Map(), deleted = new Set();
             for (const event of events) {
                 const key = event.value?.intervalKey;
@@ -65,6 +68,7 @@
             const unique = new Map();
             for (const trip of trips) unique.set(trip.id == null ? trip : String(trip.id), trip);
             const included = [...unique.values()].filter(trip => {
+                if (trip.breakOnly || trip.events?.some(event => event.event === "trip.started" && event.value?.breakOnly === true)) return false;
                 const time = instant(trip.startTime);
                 const active = trip.running || (currentTripId !== null && String(trip.id) === String(currentTripId));
                 return (includeActiveTrip || !active) && (!rangeWindow || time >= start && time <= end);

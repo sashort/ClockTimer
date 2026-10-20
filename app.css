@@ -7546,3 +7546,32 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .trip-log-group[open]>summary::after {content:'';position:absolute;left:14px;top:28px;bottom:0;border-left:2px solid #a9ddf7;pointer-events:none;}
 
 .trip-log-group-children {display:flow-root;}
+
+/* Idle actions share one stacked region. Active controls occupy both tracks. */
+.trip-action-controls { display: grid; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 4px; }
+.trip-action-controls > .new-trip-button { grid-row: 1; }
+.idle-break-button { grid-row: 2; min-height: 0; }
+.trip-action-controls > .active-trip-controls { grid-row: 1 / -1; }
+.app[data-trip-state="ready"] { grid-template-rows: 52px 142px 126px 29px minmax(0, 1fr) calc(var(--trip-log-row-height) + var(--speech-command-row-height)) var(--speech-mic-row-height); }
+.break-end-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0fr); gap: 0; min-width: 0; min-height: 0; overflow: hidden; transition: grid-template-columns 400ms ease-out, gap 400ms ease-out; }
+.break-end-row > button { min-width: 0; overflow: hidden; }
+.break-end-row .break-down-button { visibility: hidden; opacity: 0; pointer-events: none; white-space: nowrap; }
+.break-end-row[data-down-available="true"] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+.break-end-row[data-down-available="true"] .break-down-button { visibility: visible; opacity: 1; pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) { .break-end-row { transition: none; } }
+/* Match the preview: one centered line before the split, two compact lines after. */
+.break-end-row[data-timed-pause="true"] .end-trip-button { display: flex; align-items: center; justify-content: center; gap: .3em; padding: 4px 10px; font-size: clamp(24px, 7vw, 32px); line-height: 1.08; }
+.break-action-label, .break-action-clock { white-space: nowrap; }
+.break-end-row:not([data-down-available="true"]) .break-action-clock::before { content: ": "; }
+.break-end-row[data-down-available="true"] .end-trip-button { flex-direction: column; gap: 1px; font-size: clamp(18px, 5.6vw, 26px); padding: 3px 5px; }
+.break-end-row .break-down-button { font-size: clamp(18px, 5.6vw, 26px); padding: 3px 5px; }
+
+/* Standalone breaks are log entries, never performance rows. Keep the selected
+   sweep color; light/dark edges make its motion visible for any break palette. */
+.trip-log-trip.is-break-only {border:2px solid #b7d7ed;background:#dce7f2;color:#001e60;}
+.trip-log-trip.is-break-only>summary {grid-template-columns:minmax(0,1fr) auto minmax(65px,1fr) 24px;}
+.trip-log-break-only-badge {padding:3px 7px;border:1px solid #001e60;border-radius:5px;background:#fff;color:#001e60;font-size:12px;font-weight:700;white-space:nowrap;}
+.trip-log-break-only-duration {font-variant-numeric:tabular-nums;white-space:nowrap;}
+.trip-log-trip.is-break-only.is-active-trip>summary,
+.trip-log-trip.is-break-only .trip-log-entry.is-active-entry {background-image:linear-gradient(105deg,transparent 0%,transparent 32%,color-mix(in srgb,var(--trip-log-active-sweep-color) 15%,transparent) 42%,rgb(255 255 255 / 80%) 47%,var(--trip-log-active-sweep-color) 49%,var(--trip-log-active-sweep-color) 52%,rgb(0 0 0 / 65%) 54%,transparent 68%,transparent 100%);}
+.trip-log-trip.is-break-only .trip-log-menu-actions {color:#fff;}

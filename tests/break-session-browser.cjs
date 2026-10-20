@@ -1,0 +1,62 @@
+const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict');
+const {chromium}=require('playwright'),root=path.resolve(__dirname,'..');
+const server=http.createServer((req,res)=>{
+ const pathname=new URL(req.url,'http://localhost').pathname;
+ const file=path.resolve(root,'.'+pathname.replace(/\.php$/,'.html'));
+ if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}
+ res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/json');
+ let source=fs.readFileSync(file);
+ if(pathname==='/api/audio/AudioEngine.js')source=source.toString()+`\nWMOFAudio.speak=(text,options={})=>{(globalThis.handoffAudio ||= []).push('speech:'+text);queueMicrotask(()=>options.onEnd?.());return true;};WMOFAudio.startSong=async name=>{(globalThis.handoffAudio ||= []).push('chime:'+name);return {hasChime:true,finished:Promise.resolve()};};`;
+ if(pathname==='/app.js')source=source.toString().replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;','const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;').replace('    document.dispatchEvent(new Event("clocktimer-app-ready"));','    globalThis.testWaitForFeedback=async()=>{await microphoneFeedbackCompletion;while(semanticAnnouncementDraining || semanticAnnouncementQueue.pointer<semanticAnnouncementQueue.length)await new Promise(resolve=>setTimeout(resolve,10));};\n    document.dispatchEvent(new Event("clocktimer-app-ready"));');
+ if(pathname==='/SharedModal.js'&&process.env.DISABLE_SHARED_MODAL)source='';
+ if(pathname==='/SpeechMenu.js')source=source.toString().replace(/\r\n/g,'\n').replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;',()=>`\nstatic testActivate(){SpeechMenu.#modelReady=true;SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={beginUtterance(){},abortUtterance(){},finishUtterance(id){const u=SpeechMenu.#utterance?.id===id?SpeechMenu.#utterance:SpeechMenu.#finishedUtterances.get(id);setTimeout(()=>SpeechMenu.#onSherpaTranscript({detail:{utteranceId:id,transcript:u?.transcript||"",isFinal:true}}),10);}};}\nstatic async testSayAfterSilence(text){SpeechMenu.#beginUtterance(performance.now());const u=SpeechMenu.#utterance;await SpeechMenu.#handleLiveTranscript(u,text,false);await u.digestQueue;u.continuationPauseStartedAt=performance.now()-SpeechMenu.#continuationGraceMilliseconds();SpeechMenu.#armContinuationPauseDeadline(u);await new Promise(resolve=>setTimeout(resolve,250));await u.digestQueue;await u.segmentBarrier;return !u.digestExecutionFailed&&!u.digestFailed;}\nstatic async testSay(text){SpeechMenu.#beginUtterance(performance.now());const u=SpeechMenu.#utterance;await SpeechMenu.#handleLiveTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;return !u.digestExecutionFailed;}\n}\n\nglobalThis.SpeechMenu = SpeechMenu;\nSpeechMenu.start=async()=>{SpeechMenu.testActivate();SpeechMenu.events.dispatchEvent(new Event('started'));return true;};`);
+ res.end(source);
+});
+(async()=>{
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const browser=await chromium.launch({headless:true,...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});
+ try{
+  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')console.log('browser error:',m.text());});
+  await page.addInitScript(()=>{window.testShadows=new WeakMap();const attach=Element.prototype.attachShadow;Element.prototype.attachShadow=function(options){const result=attach.call(this,options);testShadows.set(this,result);return result;};});
+  await page.route('**/api/**',r=>new URL(r.request().url()).pathname.endsWith('.js')?r.continue():r.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules:{weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'}}],trips:[],instruments:[],voices:[],accepted:true,tripId:41,eventId:1,events:[]}}));
+  await page.goto(`http://127.0.0.1:${server.address().port}/order-filler.php`);
+  await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));
+  await page.waitForTimeout(1000);
+  await page.evaluate(async()=>{SpeechMenu.testActivate();await WMOFActions.handleSpeechRuntimeStarted();const bar=document.querySelector('#speechMicBar');bar.hidden=false;bar.promoteTopLayer();});
+  await page.waitForTimeout(1100);
+  const say=text=>page.evaluate(text=>Promise.race([SpeechMenu.testSay(text),new Promise((_,reject)=>setTimeout(()=>reject(new Error('speech stalled: '+JSON.stringify({text,pending:WMOFStateTransactions.pending,locks:WMOFCoordinator.lockCount,dialogs:[...document.querySelectorAll('dialog[open]')].map(d=>d.id)}))),5000))]),text);
+  await say('zero zero four two okay');await say('one two three four okay');
+  await page.waitForFunction(()=>!document.querySelector('#loginDialog').open);
+  const out=path.join(root,'tests/artifacts/break-sessions');fs.mkdirSync(out,{recursive:true});
+  await page.waitForTimeout(600);
+  const idle=await page.locator('#idleBreakButton').boundingBox(),start=await page.locator('#newTripButton').boundingBox();
+  assert(idle.y>=start.y+start.height,'idle Start Break is beneath New Trip');
+  assert(Math.abs(idle.width-start.width)<1);
+  await page.screenshot({path:path.join(out,'idle.png')});
+  await page.locator('#idleBreakButton').tap();await page.waitForFunction(()=>document.querySelector('#breakDialog').open);
+  await page.evaluate(()=>document.querySelector('#breakDialog').close());
+  await page.evaluate(()=>WMOFActions.startBreak('short-break'));await page.waitForTimeout(600);
+  assert(await page.evaluate(()=>document.querySelector('#clockTimer').breakOnly));
+  await page.screenshot({path:path.join(out,'break-only.png')});
+  await page.locator('#endTripButton').tap();await page.waitForFunction(()=>document.querySelector('#speechBreakConfirmDialog').open);await page.locator('#speechBreakConfirmYes').tap();await page.waitForFunction(()=>!document.querySelector('#clockTimer').uiState.trip_active);
+  await page.evaluate(async()=>{await WMOFCoordinator.run('preview-trip',()=>document.querySelector('#clockTimer').start({standardTimeMilliseconds:3600000}));});
+  await page.clock.install({time:new Date()});
+  await page.evaluate(()=>WMOFActions.startBreak('break'));await page.waitForTimeout(600);
+  const boundary=await page.evaluate(()=>document.querySelector('#clockTimer').getActiveIntervalState().boundaryTime);
+  await page.clock.fastForward(Date.parse(boundary)+30000-await page.evaluate(()=>Date.now()));
+  await page.evaluate(()=>document.querySelector('#clockTimer').configure({}));
+  await page.waitForTimeout(600);
+  const end=await page.locator('#endTripButton').boundingBox(),down=await page.locator('#breakDownButton').boundingBox();
+  assert(down && Math.abs(down.y-end.y)<1,'Down shares End Break row');
+  assert(Math.abs(down.width-end.width)<2,'buttons split available width');
+  assert(await page.locator('#endTripButton').evaluate(button=>button.scrollHeight<=button.clientHeight && button.scrollWidth<=button.clientWidth),'End Break content fits');
+  await page.screenshot({path:path.join(out,'overdue-break.png')});
+  await page.locator('#breakEndRow').screenshot({path:path.join(out,'overdue-break-controls.png')});
+  await page.locator('#breakDownButton').tap();
+  await page.waitForTimeout(500);
+  await page.waitForFunction(()=>document.querySelector('#clockTimer').getActiveIntervalState()?.intervalType==='down');
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').getActiveIntervalState().startTime),boundary);
+  assert.deepEqual(errors,[]);
+  console.log('PASS mobile stacked idle controls, break-only End, animated split row and backdated Down touch transition');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}
+})().catch(e=>{console.error(e);process.exitCode=1;});

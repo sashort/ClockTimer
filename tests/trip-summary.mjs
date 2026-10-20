@@ -49,3 +49,10 @@ assert.equal(ctx.TripAggregates.calculate({...options,includeActiveTrip:true}).d
 assert.equal(ctx.TripDowntimeSummary.trip({...downTrip,events:[...downEvents,downEvents[0]]}).intervalCount,1,'duplicate starts cannot double count');
 assert.equal(ctx.TripDowntimeSummary.trip({...downTrip,events:downEvents.map(e=>({...e,value:{...e.value,type:'break'}}))}).hasDowntime,false,'breaks are not downtime');
 console.log('PASS downtime approval precedence, surplus, deletion, default approval, active inclusion, deduplication and event immutability');
+
+const standalone={...downTrip,id:'standalone',breakOnly:true,standardTimeMilliseconds:999999999,actualTimeMilliseconds:999999999,countedTimeMilliseconds:999999999};
+const ordinary=ctx.TripAggregates.calculate({trips:[downTrip],includeActiveTrip:true});
+assert.deepEqual(ctx.TripAggregates.calculate({trips:[downTrip,standalone],includeActiveTrip:true}),ordinary,'break-only never contributes any performance or downtime data');
+const historical={...standalone,breakOnly:undefined,events:[...standalone.events,{event:'trip.started',value:{breakOnly:true}}]};
+assert.deepEqual(ctx.TripAggregates.calculate({trips:[downTrip,historical],includeActiveTrip:true}),ordinary,'event metadata also excludes legacy standalone sessions');
+console.log('PASS all break-only aggregate fields excluded, including legacy event-only classification');

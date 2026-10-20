@@ -18,6 +18,7 @@
             ? duration(value)
             : '---';
     const iso = value => /(?:Z|[+-]\d\d:\d\d)$/.test(value)?value:String(value).replace(' ','T')+'Z';
+    const breakOnly = trip => Boolean(trip.breakOnly || trip.events?.some(event => event.event === 'trip.started' && event.value?.breakOnly === true));
     const counted = trip => TripAggregates.counted(trip);
     const aggregate = (trips, parent = false, now = Date.now()) => TripAggregates.calculate({trips, now,
         includeActiveTrip: !parent || trips.some(trip => trip.running && trip.includeInParentPercent)});
@@ -57,7 +58,7 @@
             if(live && Date.parse(live.startTime)>=Date.parse(calendar.startTime) && Date.parse(live.startTime)<Date.parse(calendar.endTime)) {
                 const index=trips.findIndex(t=>String(t.id)===String(live.id));
                 const filter=this.options.filter();
-                if(filter==='all'||(filter==='productive'&&!live.nonProduction)||(filter==='non-productive'&&live.nonProduction)) {
+                if(filter==='all'||(filter==='productive'&&!breakOnly(live)&&!live.nonProduction)||(filter==='non-productive'&&!breakOnly(live)&&live.nonProduction)) {
                     if(index>=0) trips[index]={...trips[index],...live};else trips.push(live);
                 } else if(index>=0) trips.splice(index,1);
             }
@@ -78,7 +79,7 @@
             this.root.classList.toggle('trip-log-empty',trips.length===0);
             if(trips.length) {
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
-            emphasis.append(node('strong',`${trips.length} ${trips.length===1?globalThis.WMOFLanguagePack.text("3b289746-71b2-4ac3-90dd-00a0402ba34f"):globalThis.WMOFLanguagePack.text("1c1bf8a6-f452-4dfa-8d43-ed38d4bcae1f")}`),node('strong',percent(trips,true),'trip-log-actual'));
+            emphasis.append(node('strong',`${this.aggregation.tripCount} ${this.aggregation.tripCount===1?globalThis.WMOFLanguagePack.text("3b289746-71b2-4ac3-90dd-00a0402ba34f"):globalThis.WMOFLanguagePack.text("1c1bf8a6-f452-4dfa-8d43-ed38d4bcae1f")}`),node('strong',percent(trips,true),'trip-log-actual'));
             if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());
             const totals=aggregate(trips,true,this.downtimeNow);overview.append(emphasis,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.countedTimeMilliseconds)}`,'trip-log-times'));const downtime=this.downtimeSummary(totals.downtime,true);if(downtime)overview.append(downtime);fragment.append(overview);
             const columns=node('div',undefined,'trip-log-column-header');columns.setAttribute('role','row');for(const label of [globalThis.WMOFLanguagePack.text("5e8f393d-72a7-4b30-ba1e-69bbd765354f"),globalThis.WMOFLanguagePack.text("07613a20-4d6c-4fdf-a16d-6c94d28e5590"),globalThis.WMOFLanguagePack.text("77f1eddd-89b9-4e22-9fe1-aeeb4d060722"),globalThis.WMOFLanguagePack.text("c755d5bf-3277-4630-a938-898b8b6172dd"),'']){const cell=node('span',label);cell.setAttribute('role','columnheader');columns.append(cell);}fragment.append(columns);
@@ -126,19 +127,24 @@
             const fragment=document.createDocumentFragment();if(!levels.length){for(const trip of trips)fragment.append(this.trip(trip));return fragment;}
             const [level,...rest]=levels;const groups=new Map();for(const trip of trips){const key=this.key(trip,level);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(trip);}
             for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group'),active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
-                const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${group.length} trips · ${percent(group,true)}`,'trip-log-actual'));
+                const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${aggregate(group,true,this.downtimeNow).tripCount} trips · ${percent(group,true)}`,'trip-log-actual'));
                 if(this.incomplete)heading.lastElementChild.append(uncertainIcon());
                 const totals=aggregate(group,true,this.downtimeNow);summary.append(heading,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.countedTimeMilliseconds)}`,'trip-log-times'));const downtime=this.downtimeSummary(totals.downtime);if(downtime)summary.append(downtime);const children=node('div',undefined,'trip-log-group-children');children.append(this.groups(group,rest,calendar));details.append(summary,children);fragment.append(details);}
             return fragment;
         }
         trip(trip) {
-            const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.dataset.tripId=String(trip.id);details.classList.toggle('is-active-trip',Boolean(trip.running));if(trip.running){details.dataset.activeState=trip.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
+            const standalone=breakOnly(trip);const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.classList.toggle('is-break-only',standalone);details.dataset.tripId=String(trip.id);details.classList.toggle('is-active-trip',Boolean(trip.running));if(trip.running){details.dataset.activeState=trip.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
             const summary=node('summary');const fmt=new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
-            summary.append(node('strong',`${trip.running?'● ':''}${fmt.format(new Date(iso(trip.startTime)))}`),node('span',duration(trip.standardTimeMilliseconds)),node('span',duration(counted(trip))),node('strong',percent([trip]),'trip-log-actual'));
+            if(standalone) {
+                const badge=node('span',globalThis.WMOFLanguagePack.text('418a206a-0686-4503-a9fd-4913490a5999'),'trip-log-break-only-badge');
+                const ended=trip.running?this.downtimeNow:Date.parse(iso(trip.endTime));
+                summary.append(node('strong',`${trip.running?'● ':''}${fmt.format(new Date(iso(trip.startTime)))}`),badge,
+                    node('span',duration(Math.max(0,ended-Date.parse(iso(trip.startTime)))),'trip-log-break-only-duration'));
+            } else summary.append(node('strong',`${trip.running?'● ':''}${fmt.format(new Date(iso(trip.startTime)))}`),node('span',duration(trip.standardTimeMilliseconds)),node('span',duration(counted(trip))),node('strong',percent([trip]),'trip-log-actual'));
             if(trip.buffered)summary.lastElementChild.append(uncertainIcon());
             const menu=node('div',undefined,'trip-log-menu');const toggle=node('button','⋮');toggle.type='button';toggle.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("20d61461-e2f9-5bef-a66c-1effecbc1dab", {value0: (trip.id)}));toggle.setAttribute('aria-expanded','false');
             const actions=node('div',undefined,'trip-log-menu-actions');actions.hidden=true;
-            for(const [label,action] of [[globalThis.WMOFLanguagePack.text("e467a304-0e63-42cf-8668-861ce62a7200"),()=>this.openSettings(trip)],[globalThis.WMOFLanguagePack.text("d8e75f94-b2ac-484b-86f3-350c8b90433a"),()=>this.beginEntryEdit(trip)],[globalThis.WMOFLanguagePack.text("4f07c05e-91f4-4cfb-bb2c-f81e58259258"),()=>this.deleteTrip(trip)]]) {
+            for(const [label,action] of [...(!standalone?[[globalThis.WMOFLanguagePack.text("e467a304-0e63-42cf-8668-861ce62a7200"),()=>this.openSettings(trip)]]:[]),[globalThis.WMOFLanguagePack.text("d8e75f94-b2ac-484b-86f3-350c8b90433a"),()=>this.beginEntryEdit(trip)],[globalThis.WMOFLanguagePack.text("4f07c05e-91f4-4cfb-bb2c-f81e58259258"),()=>this.deleteTrip(trip)]]) {
                 const button=node('button',label);button.type='button';if(label==='Delete trip')button.className='danger';button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=true;toggle.setAttribute('aria-expanded','false');Promise.resolve(action()).catch(error=>this.error(error));});actions.append(button);
             }
             toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!trip.running&&(!this.offline||trip.buffered))summary.append(menu);const downtime=this.downtimeSummary(TripDowntimeSummary.trip(trip,{now:this.downtimeNow}));if(downtime)summary.append(downtime);details.append(summary);
@@ -146,7 +152,7 @@
             if(this.editing.has(trip.id)){const done=node('button',globalThis.WMOFLanguagePack.text("c0534d6d-1102-4592-b5c7-eba1e33d05d5"));done.type='button';done.addEventListener('click',()=>this.finishEntryEdit(trip,done));header.append(done);entries.append(header,node('p',globalThis.WMOFLanguagePack.text("fa5d607f-0793-49d4-9d67-5b02f8263aea")));}else entries.append(header);
             const events=trip.events||[];const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value.intervalKey));
             const intervalEntries=events.filter(e=>['interval.started','interval.ended'].includes(e.event)&&!deleted.has(e.value.intervalKey));
-            const visible=events.filter(e=>['trip.started','trip.stopped'].includes(e.event)).concat(intervalEntries).sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
+            const visible=events.filter(e=>!standalone&&['trip.started','trip.stopped'].includes(e.event)).concat(intervalEntries).sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
             const activeEntry=trip.running?(visible.find(event=>event.event==='interval.started'&&!events.some(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===event.value.intervalKey))||visible.find(event=>event.event==='trip.started')):null;
             const tripKey=String(trip.id),draft=this.newEntries.get(tripKey),insertBefore=this.addBefore.get(tripKey);let addPlaced=false;
             const addButton=()=>{const add=node('button','+ Add Entry','trip-log-add');add.type='button';add.addEventListener('click',()=>{this.newEntries.set(tripKey,{beforeEventId:this.addBefore.get(tripKey)});this.rerender();});return add;};

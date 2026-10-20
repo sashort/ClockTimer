@@ -21,3 +21,7 @@ expect(!check_trip_event_command([$start,$interval,$end],command('interval.ended
 $before=serialize([$start,$interval]);check_trip_event_command([$start,$interval],$new);
 expect(serialize([$start,$interval])===$before,'validation is read-only');
 echo "PASS server command checks for starts, stops, interval conflicts, missing targets and read-only validation\n";
+
+$standalone=$start;$standalone['value']=['breakOnly'=>true,'standardTimeMilliseconds'=>null,'nonProduction'=>false];
+expect(!check_trip_event_command([$standalone],$new)['accepted'],'standalone owner rejects downtime on server');
+expect(check_trip_event_command([$standalone],command('interval.started',['type'=>'break','intervalKey'=>'standalone','length'=>900000]))['accepted'],'standalone owner accepts its break');

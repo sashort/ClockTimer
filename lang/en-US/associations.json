@@ -6718,6 +6718,22 @@
         "text0": "36448f0b-e2b9-4e7e-8f48-a73c6d360407"
       },
       "attributes": {}
+    },
+    "62d079ed-90b8-49cd-91ea-38b2c9ba1e45": {
+      "elementId": "62d079ed-90b8-49cd-91ea-38b2c9ba1e45",
+      "source": "idleBreakButton",
+      "texts": {
+        "text0": "62d079ed-90b8-49cd-91ea-38b2c9ba1e45"
+      },
+      "attributes": {}
+    },
+    "4a595dad-4ed7-4a04-84a5-ce551b15ea50": {
+      "elementId": "4a595dad-4ed7-4a04-84a5-ce551b15ea50",
+      "source": "breakDownButton",
+      "texts": {
+        "text0": "25305960-9e42-527a-a617-eda4c0a9e82a"
+      },
+      "attributes": {}
     }
   },
   "selects": {

@@ -3,6 +3,9 @@
     // Presentation contract only; fetching, assignment and persistence stay outside.
     class TripSummary {
         static build({trips = [], totals, activeTrip, scope, scopeLabel = scope, text, duration, percent, spokenDuration, spokenPercent}) {
+            const breakOnly = trip => trip?.breakOnly || trip?.events?.some(event => event.event === "trip.started" && event.value?.breakOnly === true);
+            if (breakOnly(activeTrip)) activeTrip = undefined;
+            trips = trips.filter(trip => !breakOnly(trip));
             const known = value => Number.isFinite(value) && value >= 0;
             // Summary precision is presentation-only: truncate percentage tenths.
             // Correct binary error at exact decimal boundaries such as 100.1.

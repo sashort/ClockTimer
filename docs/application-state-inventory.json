@@ -3465,6 +3465,48 @@
           "meaning": "failed"
         }
       ]
+    },
+    {
+      "id": "sessionKind",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getDispatchState().sessionKind / breakOnly"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "trip",
+          "meaning": "ordinary productive or manually non-production trip",
+          "id": "SESSION-KIND-TRIP"
+        },
+        {
+          "value": "break-only",
+          "meaning": "standalone break session excluded from every aggregate; End Break finishes its owning trip",
+          "id": "SESSION-KIND-BREAK-ONLY"
+        }
+      ],
+      "notes": "Persisted in trip.started.breakOnly. No Down, replacement break, productive trip summary or automatic late-break resume for a break-only owner."
+    },
+    {
+      "id": "breakDownEligibility",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "BreakSessionPolicy / getBreakTransitionState()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "unavailable",
+          "meaning": "no eligible overdue trip-owned break",
+          "id": "BREAK-DOWN-UNAVAILABLE"
+        },
+        {
+          "value": "available",
+          "meaning": "regular break/lunch has reached its scheduled end buffer; Down transitions at that exact boundary",
+          "id": "BREAK-DOWN-AVAILABLE"
+        }
+      ],
+      "notes": "Touch and down/down time share the policy. The End Break row splits horizontally with Down entering from the right."
     }
   ],
   "surfaces": [

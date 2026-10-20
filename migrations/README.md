@@ -33,3 +33,10 @@ Deployment prepares the writable applied.json file and records the existing
 idempotent permission migration. Future migrations are applied explicitly
 through the superuser endpoint. The PHP worker owns only the ledger file,
 not the script directory.
+
+Migration 014 adds explicit break-only ownership to persisted sessions. It permits
+NULL standard time only for those sessions and removes their former nominal
+standard/non-production classification if flagged in trip.started events.
+The deployment migration runner applies 014 before the server restart.
+The deployment is gated on a MariaDB integration test of the actual migration,
+including legacy conversion, constraints, aggregate exclusion and ledger replay.

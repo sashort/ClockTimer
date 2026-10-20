@@ -6888,6 +6888,16 @@
       "id": "a6d2eeb0-2d5b-4a59-b059-4039e7492e39",
       "text": "Approved",
       "default": "Approved"
+    },
+    "62d079ed-90b8-49cd-91ea-38b2c9ba1e45": {
+      "id": "62d079ed-90b8-49cd-91ea-38b2c9ba1e45",
+      "text": "Start Break",
+      "default": "Start Break"
+    },
+    "418a206a-0686-4503-a9fd-4913490a5999": {
+      "id": "418a206a-0686-4503-a9fd-4913490a5999",
+      "text": "Break only",
+      "default": "Break only"
     }
   }
 }
