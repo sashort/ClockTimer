@@ -198,6 +198,26 @@ if(process.argv.includes('--state-contract')) {
  assert.deepEqual(errors,[],id+': browser errors');assert.deepEqual(consoleErrors,[],id+': console errors');
  console.log('PASS state contract '+id);await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--sleep-false-wake-simulation')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const snapshots=[];
+ const capture=label=>snapshots.push({label,sleeping:window.SpeechMenu.muted,log:window.WMOFInteractionState.state.tripLogRange,
+   logOpen:window.WMOFInteractionState.state.surfaces.includes('tripLogDialog'),locks:window.WMOFCoordinator.lockCount,
+   pending:window.WMOFStateTransactions.pending.map(operation=>operation.action||operation.name||operation.state),
+   closeDisabled:window.document.querySelector('#tripLogCloseButton').disabled});
+ await window.SpeechMenu.sleep();await settle();
+ const literal=window.SpeechMenu.testCapture();await settle();
+ await window.SpeechMenu.testTranscript(literal,'who do you love',true);await literal.digestQueue;await settle();capture('literal: who do you love');
+ const coerced=window.SpeechMenu.testCapture();await settle();
+ await window.SpeechMenu.testTranscript(coerced,'wake',false);await coerced.digestQueue;await settle();capture('decoder partial: wake');
+ await window.SpeechMenu.testTranscript(coerced,'wake log',false);await coerced.digestQueue;await settle();capture('same utterance partial: wake log');
+ window.document.querySelector('#tripLogCloseButton').click();await settle();capture('press X while utterance is open');
+ window.SpeechMenu.testDeliverFinal(coerced,'wake log');await settle();await coerced.digestQueue;await coerced.segmentBarrier;await settle();capture('delivered decoder final: wake log');
+ window.document.querySelector('#tripLogCloseButton').click();await settle();capture('press X after final');
+ console.log(JSON.stringify({snapshots,errors,consoleErrors},null,2));
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--sleep-wake-only')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  await window.WMOFActions.handleSpeechRuntimeStarted();const bar=window.document.querySelector('#speechMicBar');bar.isOpen=true;await settle();

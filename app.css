@@ -447,7 +447,8 @@ html[data-trip-log-startup="unpinned"] .app {
     background: var(--timer-down-color, #5f6772);
 }
 
-.new-trip-button {
+.new-trip-button,
+.idle-break-button {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -1993,12 +1994,13 @@ button:active:not(:disabled):not(#toggleSyncGoalButton) {
         font-size: clamp(40px, 10.7vw, 44px);
     }
 
-    .new-trip-button {
+    .new-trip-button,
+    .idle-break-button {
         padding-inline: clamp(10px, 3vw, 14px);
         font-size: clamp(36px, 10vw, 42px);
     }
 
-    .trip-action-button {
+    .trip-action-button:not(.idle-break-button) {
         padding-inline: clamp(8px, 2.6vw, 12px);
         font-size: clamp(28px, 8.3vw, 34px);
     }
@@ -7318,7 +7320,7 @@ speech-command {
     .summary-cell strong { font-size: 25px; }
     .percent-summary { font-size: 33px; gap: 8px; }
     .trip-action-button { font-size: 25px; border-width: 2px; border-radius: 10px; }
-    .new-trip-button { font-size: 27px; border-width: 2px; }
+    .new-trip-button, .idle-break-button { font-size: 27px; border-width: 2px; border-radius: 15px; }
     .down-trip-controls { gap: 2px; padding: 2px; grid-template-rows: 60px 46px 42px; }
     .down-elapsed-panel { padding: 3px; border-width: 2px; }
     .down-elapsed-panel > span { font-size: 14px; }

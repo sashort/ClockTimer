@@ -507,3 +507,15 @@ label/countdown at full width, two compact centered lines in the split row, with
 positive elapsed-over-buffer notation. The adjoining label is Down Time.
 Boundary observation remains monotonic when a factual interval end is backdated;
 `TimeRangeGroup` must never be ticked backwards to implement that operation.
+
+### Shared session timing validation
+
+`api/_core/trip_session_timing.php` defines `TripSessionTimingInput::parse` as
+the common request contract: standalone breaks accept only a null/absent standard,
+while ordinary trips require a positive integer. The API wrapper maps invalid
+input to 422. Both `api/command-check` and all `api/trips` start/stop/create writes
+use this validator. Updating storage validation alone is insufficient: an older
+preflight rule can reject an otherwise valid break before persistence and revert
+its UI transaction. `tests/trip-session-timing.php` covers that distinction.
+The browser regression now selects and confirms a break through the actual idle
+selector and compares computed New Trip/Start Break typography across viewports.

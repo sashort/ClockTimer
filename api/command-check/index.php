@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/_core/bootstrap.php';
+require_once dirname(__DIR__) . '/_core/trip_session_timing.php';
 require_once dirname(__DIR__) . '/_core/command_checks.php';
 require_method('POST');
 require_csrf();
@@ -34,7 +35,7 @@ if ($endpoint === 'trips') {
     if ($method === 'PATCH' && !in_array($command['action'] ?? '', ['start', 'stop'], true)) api_error('Invalid trip action.', 422, 'invalid_argument');
     if ($method !== 'DELETE' && ($command['action'] ?? '') !== 'prepare') {
         $end = normalize_datetime(require_string($command, 'endTime'), 'endTime');
-        require_positive_int($command, 'standardTimeMilliseconds');
+        require_trip_session_timing($command);
         if (isset($command['startTime']) && $end <= normalize_datetime(require_string($command, 'startTime'), 'startTime')) {
             json_response(['accepted' => false, 'reason' => 'Trip end must follow its start.']);
         }

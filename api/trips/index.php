@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/_core/bootstrap.php';
+require_once dirname(__DIR__) . '/_core/trip_session_timing.php';
 
 $method = require_method('GET', 'POST', 'PATCH', 'DELETE');
 
@@ -583,10 +584,9 @@ if ($method === 'POST') {
 
     $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
-    $breakOnly = $input['breakOnly'] ?? false;
-    if (!is_bool($breakOnly)) api_error('breakOnly must be a boolean.', 422, 'invalid_argument');
-    if ($breakOnly && ($input['standardTimeMilliseconds'] ?? null) !== null) api_error('A break-only session has no standard time.', 422, 'invalid_argument');
-    $standardTimeMilliseconds = $breakOnly ? null : require_positive_int($input, 'standardTimeMilliseconds');
+    $timing = require_trip_session_timing($input);
+    $breakOnly = $timing['breakOnly'];
+    $standardTimeMilliseconds = $timing['standardTimeMilliseconds'];
     $breakOnlyValue = $breakOnly ? 1 : 0;
     $countedTimeMilliseconds = $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
 
@@ -753,10 +753,9 @@ $action = require_string($input, 'action');
 if ($action === 'start') {
     $startTime = normalize_datetime(require_string($input, 'startTime'), 'startTime');
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
-    $breakOnly = $input['breakOnly'] ?? false;
-    if (!is_bool($breakOnly)) api_error('breakOnly must be a boolean.', 422, 'invalid_argument');
-    if ($breakOnly && ($input['standardTimeMilliseconds'] ?? null) !== null) api_error('A break-only session has no standard time.', 422, 'invalid_argument');
-    $standardTimeMilliseconds = $breakOnly ? null : require_positive_int($input, 'standardTimeMilliseconds');
+    $timing = require_trip_session_timing($input);
+    $breakOnly = $timing['breakOnly'];
+    $standardTimeMilliseconds = $timing['standardTimeMilliseconds'];
     $breakOnlyValue = $breakOnly ? 1 : 0;
     $countedTimeMilliseconds = $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
     $nonProduction = $input['nonProduction'] ?? false;
@@ -795,10 +794,9 @@ if ($action === 'start') {
 
 if ($action === 'stop') {
     $endTime = normalize_datetime(require_string($input, 'endTime'), 'endTime');
-    $breakOnly = $input['breakOnly'] ?? false;
-    if (!is_bool($breakOnly)) api_error('breakOnly must be a boolean.', 422, 'invalid_argument');
-    if ($breakOnly && ($input['standardTimeMilliseconds'] ?? null) !== null) api_error('A break-only session has no standard time.', 422, 'invalid_argument');
-    $standardTimeMilliseconds = $breakOnly ? null : require_positive_int($input, 'standardTimeMilliseconds');
+    $timing = require_trip_session_timing($input);
+    $breakOnly = $timing['breakOnly'];
+    $standardTimeMilliseconds = $timing['standardTimeMilliseconds'];
     $breakOnlyValue = $breakOnly ? 1 : 0;
     $countedTimeMilliseconds = $breakOnly ? 0 : $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
 

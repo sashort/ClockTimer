@@ -33,9 +33,17 @@ const server=http.createServer((req,res)=>{
   assert(idle.y>=start.y+start.height,'idle Start Break is beneath New Trip');
   assert(Math.abs(idle.width-start.width)<1);
   await page.screenshot({path:path.join(out,'idle.png')});
+  for(const viewport of [{width:390,height:844},{width:360,height:640},{width:900,height:900}]) {
+   await page.setViewportSize(viewport);
+   const typography=await page.evaluate(()=>['#newTripButton','#idleBreakButton'].map(selector=>{const s=getComputedStyle(document.querySelector(selector));return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight,s.paddingInline,s.borderRadius];}));
+   assert.deepEqual(typography[1],typography[0],'idle button typography matches at '+viewport.width+'x'+viewport.height);
+  }
+  await page.setViewportSize({width:390,height:844});
   await page.locator('#idleBreakButton').tap();await page.waitForFunction(()=>document.querySelector('#breakDialog').open);
-  await page.evaluate(()=>document.querySelector('#breakDialog').close());
-  await page.evaluate(()=>WMOFActions.startBreak('short-break'));await page.waitForTimeout(600);
+  await page.locator('#breakDialog [data-break-type="short-break"]').tap();
+  await page.locator('#breakTypeOK').tap();
+  await page.waitForFunction(()=>document.querySelector('#clockTimer').breakOnly);
+  await page.waitForTimeout(600);
   assert(await page.evaluate(()=>document.querySelector('#clockTimer').breakOnly));
   await page.screenshot({path:path.join(out,'break-only.png')});
   await page.locator('#endTripButton').tap();await page.waitForFunction(()=>document.querySelector('#speechBreakConfirmDialog').open);await page.locator('#speechBreakConfirmYes').tap();await page.waitForFunction(()=>!document.querySelector('#clockTimer').uiState.trip_active);

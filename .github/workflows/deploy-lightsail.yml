@@ -142,6 +142,9 @@ jobs:
           --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
+      - run: php -l api/command-check/index.php
+      - run: php -l api/_core/trip_session_timing.php
+      - run: php tests/trip-session-timing.php
       - run: php -l api/trips/index.php
       - run: php -l api/_core/trip_editor.php
       - run: php -l database/apply_admin_permissions.php
