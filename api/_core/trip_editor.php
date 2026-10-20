@@ -187,7 +187,7 @@ function trip_edit_aggregate(array $events): array {
         }
         if($e['event']==='interval.approval-changed'&&isset($intervals[$key]))$intervals[$key]['approvedTime']=($e['value']['state']??'')==='approved'?($e['value']['value']??null):0;
     }
-    if($start===null || !isset($s['standardTimeMilliseconds'],$s['scheduledStart'],$s['creationAnchor'])) throw new InvalidArgumentException('Trip settings are incomplete.');
+    if($start===null || !isset($s['scheduledStart'],$s['creationAnchor']) || (!(($s['breakOnly']??false) === true) && !isset($s['standardTimeMilliseconds']))) throw new InvalidArgumentException('Trip settings are incomplete.');
     $scheduled=(float)(new DateTimeImmutable(trip_edit_clock_iso($s['creationAnchor'],$s['scheduledStart']),new DateTimeZone('UTC')))->format('U.u')*1000;
     $begin=min($start,$scheduled);$terminal=$end??round(microtime(true)*1000);
     if($terminal<$start) throw new InvalidArgumentException('Trip end must follow actual start.');
