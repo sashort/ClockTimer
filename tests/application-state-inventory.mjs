@@ -86,7 +86,8 @@ for (const item of inventory.referenceMapping) {
     for (const region of item.regions) assert(regions.has(region));
 }
 const html = read('docs/application-state-inventory.html');
-assert.equal(html, render(inventory), 'Searchable view matches the exact inventory');
+// Git may use CRLF on Windows; require identical content apart from checkout line endings.
+assert.equal(html.replace(/\r\n/g, '\n'), render(inventory).replace(/\r\n/g, '\n'), 'Searchable view matches the exact inventory');
 const embedded = JSON.parse(html.match(/<script id="state-inventory" type="application\/json">([\s\S]*?)<\/script>/)[1]);
 assert.deepEqual(embedded, inventory);
 assert(inventory.constraints.length && inventory.observabilityGaps.length);

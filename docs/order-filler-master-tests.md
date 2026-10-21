@@ -135,6 +135,56 @@ and panel scroll offsets are retained at render time, including scrolling during
 a pending request. Focused controls remain mounted. Quiet runs are never inferred
 to have passed.
 
+## Interactive diagnostics controls and result views
+
+The dashboard has six keyboard-accessible result selectors: Press, Fast, Medium,
+Slow, Clock times and Durations. Selecting one filters the individual-results table
+and targets Start, Stop, Resume and Abort at that category and language/region.
+Only one interactive job runs at once to bound server load. Selecting another
+category never changes or interrupts the active job. Return to its selector to
+control it. Only the initiating principal may stop, resume or abort a job.
+
+Start replaces only that category's report. Workflow categories now have independent
+`press-<locale>.log`, `fast-<locale>.log`, `medium-<locale>.log` and `slow-<locale>.log`
+files. Full CI runs retain the combined `order-filler-<locale>.log`; the dashboard
+uses whichever run started most recently for each category. Existing combined
+reports remain readable. Their outcome counts are reconstructed once and cached,
+so failed cases are never counted as passed merely because a lane completed.
+
+Stop is cooperative: an ongoing workflow checkpoint/support test finishes before
+the runner waits. Numeric tests stop after their current batch of at most 200
+cases. The UI shows Stopping until the checkpoint acknowledges Stopped. Resume
+keeps the same process, run ID, numbering and completed results. Abort terminates
+the job's entire process group, closes open reports as aborted and keeps completed
+rows. It never turns unrun tests into successes. A stopped process survives page
+navigation but not a deployment/service restart; restart marks it incomplete.
+
+`DiagnosticsJobs` owns the private queue, one-job lock, six-category/corpus
+allowlist, principal checks and stop/resume/abort flags. Its API actions are
+`job-start`, `job-stop`, `job-resume`, `job-abort`; `GET ?job=1` returns sanitized
+status and worker availability. Commands, target hosts and executable paths are
+fixed in `services/diagnostics-worker.cjs`, never provided by the browser. The
+systemd daemon runs as daemon with a private source/history checkout, CPU/memory
+limits and write access limited to `/var/lib/clocktimer/diagnostics`. Deployment
+installs a Node 22 runtime verified against its official SHA256 manifest, Chromium
+and its system dependencies. It does not change the application's Node packages.
+The worker uses the initiating diagnostics session's cookie/CSRF grant, held only
+in a private request file and process environment. That request file is removed on
+completion, abort or recovery. Session expiry is a failure, never a passed run.
+
+`OrderFillerDiagnostics::results` provides bounded pages using byte cursors, optional
+delivery/failure filters and a run ID fence. A poll reads at most 1 MiB and returns
+at most 50 rows; sparse filters can require Next to continue scanning. Replacement
+resets stale cursors instead of mixing runs. No raw JSON is rendered as a results
+panel. Counts and page rows are fetched independently; polling preserves existing
+DOM nodes, scroll and focus. Completed Remaining and every zero count render `---`.
+Running states are amber and explicitly labeled. Logs are bounded at 256 MiB to
+accommodate exhaustive numeric corpora with full per-case metadata.
+
+Dedicated checks: `php tests/diagnostics-jobs.php`,
+`php tests/order-filler-diagnostics.php`, `node tests/diagnostics-checkpoint.cjs`,
+`node tests/diagnostics-reporter.mjs` and `node tests/order-filler-status-browser.cjs`.
+
 ## Restricted access and deployment
 
 Both the page and endpoint require HTTPS and Developer or Superuser permission,
@@ -155,8 +205,10 @@ For server reports, configure the existing permitted token as the GitHub secret
 `CLOCKTIMER_DIAGNOSTICS_TOKEN`. Without it, deployed checks still run and their logs
 are CI artifacts, but the restricted server log cannot be written. For repeated
 CI runs the credential needs sufficient uses/expiry; one-use credentials are suitable
-for a single run exchange. Pass credentials in environment variables, not commands
-or URLs. `CLOCKTIMER_TEST_LOCALES=en-US,en-GB` selects multiple available corpora;
+for a single run exchange. Supply credentials in environment variables, not commands.
+The report client exchanges a one-use token through the supported `access_token`
+query parameter exactly once, then discards it and uses cookie/CSRF requests.
+`CLOCKTIMER_TEST_LOCALES=en-US,en-GB` selects multiple available corpora;
 only installed/reviewed corpora should be listed. `ORDER_FILLER_TEST_BASE_URL`
 selects the deployed application; `CLOCKTIMER_DIAGNOSTICS_URL` can select its report
 endpoint. `BROWSER_EXECUTABLE` selects a local Chromium/Edge binary if necessary.

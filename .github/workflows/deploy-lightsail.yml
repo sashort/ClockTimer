@@ -30,6 +30,7 @@ jobs:
           python tests/build-version.py
           node tests/fsm-reference.mjs
           node tests/application-state-inventory.mjs
+          node tests/diagnostics-checkpoint.cjs
           node tests/order-filler-state-contract.mjs
           node tests/fsm-loopback-feedback.mjs
           node tests/application-coordinator.mjs
@@ -148,6 +149,7 @@ jobs:
       - run: php -l api/diagnostics/order-filler/index.php
       - run: php -l api/_core/order_filler_diagnostics.php
       - run: php tests/order-filler-diagnostics.php
+      - run: php tests/diagnostics-jobs.php
       - run: php -l api/_core/trip_session_timing.php
       - run: php tests/trip-session-timing.php
       - run: php -l api/trips/index.php
@@ -359,6 +361,7 @@ jobs:
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/diagnostics
              python3 scripts/stamp-version.py
+             sudo -n bash deploy/install-diagnostics-runner.sh
 
              USERS_STATUS=$(curl -sS -o /tmp/clocktimer-users-health.json -w "%{http_code}" https://wmof.sashort-apps.com/api/users/)
              echo "Users API status: $USERS_STATUS"

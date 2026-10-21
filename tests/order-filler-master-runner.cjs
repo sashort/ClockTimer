@@ -16,18 +16,21 @@ module.exports=async method=>{
  const commands=require('./order-filler-master-plan.cjs').commands(method);
  const results=[];
  for(const test of commands){
+  await require('./diagnostics-reporter.cjs').checkpoint();
   console.log('RUN '+method+' FSM/support: '+test.id);
+  const started=Date.now();let failureDetail='';
   const code=await new Promise(resolve=>{
    const env={...process.env};
    if(test.id==='speech-response-chain-browser')env.SPEECH_BROWSER ||= env.BROWSER_EXECUTABLE || require('playwright').chromium.executablePath();
-   const child=spawn(process.execPath,test.args,{cwd:root,stdio:'inherit',env});
+   const child=spawn(process.execPath,test.args,{cwd:root,stdio:['inherit','inherit','pipe'],env});
+   child.stderr.on('data',data=>{process.stderr.write(data);failureDetail=(failureDetail+data.toString()).slice(-6000);});
    let expired=false;
    const timeout=setTimeout(()=>{expired=true;child.kill();},120000);
    child.on('error',error=>{console.error(error);});
    child.on('close',code=>{clearTimeout(timeout);resolve(expired?'timeout':code);});
   });
   results.push({id:test.id,result:code===0?'passed':'failed',code});
-  await reporter.tests([{label:method+' FSM/support: '+test.id,status:code===0?'passed':'failed'}]);
+  await reporter.tests([{label:method+' FSM/support: '+test.id,status:code===0?'passed':'failed',elapsedMs:Date.now()-started,...(code===0?{}:{message:Buffer.from(failureDetail||'Test exited with '+code).subarray(0,1800).toString()})}]);
  }
  const report={method,contractSchema:contract.schemaVersion,results,
   unreviewed:contract.backlog,

@@ -20,6 +20,7 @@ module.exports = async function runMaster(method) {
  const wait = predicate => page.waitForFunction(predicate);
  const state = expression => page.evaluate(expression);
  const check = async (label, operation) => {
+  await require('./diagnostics-reporter.cjs').checkpoint();
   currentStep=label;const started=Date.now();
   console.log('RUN '+method+': '+label);
   await operation();
@@ -166,7 +167,7 @@ module.exports = async function runMaster(method) {
   await page.screenshot({path:path.join(out,'complete.png')});
   console.log(`PASS ${method} master (${steps.length} checkpoints)`);
  } catch(error) {
-  await reporter.tests([{label:method+': '+currentStep,status:'failed'}]).catch(()=>{});
+  await reporter.tests([{label:method+': '+currentStep,status:'failed',message:Buffer.from(String(error.message)).subarray(0,1800).toString()}]).catch(()=>{});
   await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});
   throw error;
  } finally {

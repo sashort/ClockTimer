@@ -52,7 +52,26 @@ try {
     $many=[];for($i=0;$i<100;$i++)$many[]='aa-'.str_repeat('abcdefg-',6).sprintf('r%06d',$i);
     $store->apply(['suite'=>'summary','locale'=>'en-US','action'=>'start','totalTests'=>400,'languages'=>$many],'developer-1',$build);
     check(count($store->last('summary','en-US')['languages'])===100,'Tail reader handles a summary longer than the first read chunk');
-    echo "PASS diagnostics numbering, statistics, overwrite, locale separation, validation and stale/principal fences\n";
+    $category=['suite'=>'fast','locale'=>'en-US'];
+    $first=$store->apply($category+['action'=>'start','totalTests'=>3,'deliveryTotals'=>['fast'=>3]],'developer-1',$build)['state']['runId'];
+    $store->apply($category+['action'=>'append','runId'=>$first,'tests'=>[['label'=>'one','status'=>'passed','delivery'=>'fast'],['label'=>'bad','status'=>'failed','delivery'=>'fast','message'=>'Expected entry, received rejection']]],'developer-1',$build);
+    $metrics=$store->statistics('fast','en-US');check($metrics['deliveryStats']['fast']===['passed'=>1,'failed'=>1,'skipped'=>0],'Per-category outcome counts');
+    check(!isset($metrics['principal']),'Statistics do not expose principal');
+    $page=$store->results('fast','en-US',0,$first,'fast',true);
+    check(count($page['rows'])===1&&$page['rows'][0]['label']==='bad'&&$page['rows'][0]['message']==='Expected entry, received rejection','Failure filtering and detail');
+    $store->apply($category+['action'=>'abort','runId'=>$first],'developer-1',$build);
+    check($store->last('fast','en-US')['runStatus']==='aborted','Abort retains partial outcome and ends explicitly');
+    try{$store->apply($category+['action'=>'append','runId'=>$first,'tests'=>[['label'=>'late','status'=>'passed']]],'developer-1',$build);throw new RuntimeException('Aborted run accepted a result');}catch(DomainException){}
+    $store->apply($category+['action'=>'start','totalTests'=>1],'developer-1',$build);
+    check($store->results('fast','en-US',$page['nextCursor'],$first)['reset'],'Replaced run resets old page cursor');
+    check($store->statistics('duration','en-US')['runId']===$replacement['state']['runId'],'Category runs do not overwrite numeric reports');
+    try{$store->results('duration','en-US',1);throw new RuntimeException('Partial line cursor accepted');}catch(InvalidArgumentException){}
+    $large=['suite'=>'slow','locale'=>'en-US'];$largeRun=$store->apply($large+['action'=>'start','totalTests'=>75],'developer-1',$build)['state']['runId'];
+    $batch=[];for($i=0;$i<75;$i++)$batch[]=['label'=>'row '.$i,'status'=>'passed'];
+    $store->apply($large+['action'=>'append','runId'=>$largeRun,'tests'=>$batch],'developer-1',$build);
+    $one=$store->results('slow','en-US');$two=$store->results('slow','en-US',$one['nextCursor'],$largeRun);
+    check(count($one['rows'])===50&&$one['hasMore']&&count($two['rows'])===25,'Bounded pages cover all individual results without duplication');
+    echo "PASS diagnostics numbering, counts, paging, filtering, replacement, abort, privacy and stale/principal fences\n";
 } finally {
     if(is_dir($directory)){
         $files=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);

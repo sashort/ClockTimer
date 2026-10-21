@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path');
 function identity(suite,locale){
- if(!['order-filler','time','duration'].includes(suite)||!/^[a-z]{2,8}(?:-[a-z0-9]{2,8})*$/i.test(locale))throw Error('Invalid diagnostics suite/locale');
+ if(!['order-filler','press','fast','medium','slow','time','duration'].includes(suite)||!/^[a-z]{2,8}(?:-[a-z0-9]{2,8})*$/i.test(locale))throw Error('Invalid diagnostics suite/locale');
  return suite+'-'+locale.toLowerCase()+'.log';
 }
 class DiagnosticsClient {
@@ -11,7 +11,7 @@ class DiagnosticsClient {
  }
  async request(input,authenticate=false){
   const url=new URL(this.url),headers={'Content-Type':'application/json'};
-  if(authenticate&&this.token)headers.Authorization='Bearer '+this.token;
+  if(authenticate&&this.token)url.searchParams.set('access_token',this.token);
   else {if(this.cookie)headers.Cookie=this.cookie;if(this.csrf)headers['X-CSRF-Token']=this.csrf;}
   if(authenticate){url.searchParams.set('suite',input.suite);url.searchParams.set('locale',input.locale);}
   const response=await fetch(url,{method:authenticate?'GET':'POST',headers,body:authenticate?undefined:JSON.stringify(input),redirect:'error',signal:AbortSignal.timeout(30000)});
@@ -27,7 +27,15 @@ class DiagnosticsClient {
 function sharedReporter(){
  if(!process.env.CLOCKTIMER_DIAGNOSTICS_RUN_ID)return {tests:async()=>{}};
  const client=new DiagnosticsClient(process.env.CLOCKTIMER_DIAGNOSTICS_URL,{cookie:process.env.CLOCKTIMER_DIAGNOSTICS_COOKIE,csrf:process.env.CLOCKTIMER_DIAGNOSTICS_CSRF});
- return {tests:tests=>client.request({action:'append',suite:'order-filler',locale:process.env.CLOCKTIMER_TEST_LOCALE||'en-US',runId:process.env.CLOCKTIMER_DIAGNOSTICS_RUN_ID,tests:tests.map(t=>({...t,delivery:process.env.CLOCKTIMER_SPEECH_DELIVERY||'press'}))})};
+ return {tests:async tests=>{await client.request({action:'append',suite:process.env.CLOCKTIMER_DIAGNOSTICS_SUITE||'order-filler',locale:process.env.CLOCKTIMER_TEST_LOCALE||'en-US',runId:process.env.CLOCKTIMER_DIAGNOSTICS_RUN_ID,tests:tests.map(t=>({...t,delivery:process.env.CLOCKTIMER_SPEECH_DELIVERY||'press'}))});await checkpoint();}};
+}
+async function checkpoint(){
+ const prefix=process.env.CLOCKTIMER_DIAGNOSTICS_JOB_PREFIX;if(!prefix)return;
+ while(fs.existsSync(prefix+'.pause')&&!fs.existsSync(prefix+'.abort')){
+  fs.writeFileSync(prefix+'.paused','stopped',{mode:0o600});await new Promise(resolve=>setTimeout(resolve,200));
+ }
+ fs.rmSync(prefix+'.paused',{force:true});
+ if(fs.existsSync(prefix+'.abort'))throw Error('Diagnostics run aborted');
 }
 async function beginValueRun({suite,locale,totalTests}){
  const file=identity(suite,locale),out=path.join(__dirname,'artifacts/language-tests',locale.toLowerCase());fs.mkdirSync(out,{recursive:true});
@@ -35,11 +43,12 @@ async function beginValueRun({suite,locale,totalTests}){
  const record=(type,fields={})=>({type,suite,locale,...fields,completed:counts.completed,total:totalTests,progress:'test '+counts.completed+'/'+totalTests,runStatus:'running',at:new Date().toISOString()});
  fs.writeFileSync(log,JSON.stringify(record('test-start'))+'\n');
  let client,runId;
- if(process.env.CLOCKTIMER_DIAGNOSTICS_URL){client=new DiagnosticsClient(process.env.CLOCKTIMER_DIAGNOSTICS_URL,{token:process.env.CLOCKTIMER_DIAGNOSTICS_TOKEN});await client.request({suite,locale},true);const r=await client.request({action:'start',suite,locale,totalTests});runId=r.state.runId;}
+ if(process.env.CLOCKTIMER_DIAGNOSTICS_URL){client=new DiagnosticsClient(process.env.CLOCKTIMER_DIAGNOSTICS_URL,{token:process.env.CLOCKTIMER_DIAGNOSTICS_TOKEN,cookie:process.env.CLOCKTIMER_DIAGNOSTICS_COOKIE,csrf:process.env.CLOCKTIMER_DIAGNOSTICS_CSRF});await client.request({suite,locale},true);const r=await client.request({action:'start',suite,locale,totalTests});runId=r.state.runId;}
  const flush=async()=>{
   if(local.length){fs.appendFileSync(log,local.map(r=>JSON.stringify(r)).join('\n')+'\n');local=[];}
   if(client)for(let i=0;i<pending.length;i+=500)await client.request({action:'append',suite,locale,runId,tests:pending.slice(i,i+500)});
   pending=[];
+  await checkpoint();
  };
  return {
   record(test){counts.completed++;counts[test.status]++;pending.push(test);local.push(record('test',{number:counts.completed,...test}));},
@@ -51,4 +60,4 @@ async function beginValueRun({suite,locale,totalTests}){
   }
  };
 }
-module.exports={identity,DiagnosticsClient,sharedReporter,beginValueRun};
+module.exports={identity,DiagnosticsClient,sharedReporter,beginValueRun,checkpoint};

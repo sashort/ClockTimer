@@ -8,7 +8,7 @@ final class OrderFillerDiagnostics
 
     public static function basename(string $suite, string $locale): string
     {
-        if (strlen($locale) > 63 || !in_array($suite, ['summary', 'order-filler', 'duration', 'time'], true) ||
+        if (strlen($locale) > 63 || !in_array($suite, ['summary', 'order-filler', 'press', 'fast', 'medium', 'slow', 'duration', 'time'], true) ||
             !preg_match('/^[a-z]{2,8}(?:-[a-z0-9]{2,8})*$/D', strtolower($locale))) {
             throw new InvalidArgumentException('Invalid suite or language/region.');
         }
@@ -19,6 +19,65 @@ final class OrderFillerDiagnostics
     {
         $name = self::basename($suite, $locale);
         return $suite === 'summary' ? $this->directory.'/'.$name : $this->directory.'/language-tests/'.strtolower($locale).'/'.$name;
+    }
+
+    /** Counts for old reports are reconstructed once, rather than inferred from a lane's status. */
+    public function statistics(string $suite, string $locale): ?array
+    {
+        $path = $this->path($suite, $locale);
+        if (!is_file($path.'.state')) return null;
+        $lock = fopen($path.'.lock', 'c');
+        if (!$lock || !flock($lock, LOCK_SH)) throw new RuntimeException('Diagnostics lock unavailable.');
+        try {
+            $state = json_decode((string)file_get_contents($path.'.state'), true, 32, JSON_THROW_ON_ERROR);
+            if (isset($state['deliveryTotals']) && !isset($state['deliveryStats'])) {
+                $cachePath = $path.'.counts';
+                $cache = is_file($cachePath) ? json_decode((string)file_get_contents($cachePath), true) : null;
+                if (($cache['runId'] ?? '') !== $state['runId'] || ($cache['tests'] ?? -1) !== $state['tests']) {
+                    $stats = array_fill_keys(array_keys($state['deliveryTotals']), ['passed'=>0,'failed'=>0,'skipped'=>0]);
+                    $file = fopen($path, 'rb');
+                    try { while (($line = fgets($file)) !== false) {
+                        $record = json_decode($line, true, 32, JSON_THROW_ON_ERROR);
+                        if (($record['type'] ?? '') === 'test' && isset($stats[$record['delivery'] ?? ''][$record['status'] ?? ''])) $stats[$record['delivery']][$record['status']]++;
+                    }} finally { fclose($file); }
+                    $cache = ['runId'=>$state['runId'],'tests'=>$state['tests'],'deliveryStats'=>$stats];
+                    $temporary = $cachePath.'.'.bin2hex(random_bytes(4));
+                    file_put_contents($temporary, json_encode($cache, JSON_THROW_ON_ERROR));chmod($temporary,0600);rename($temporary,$cachePath);
+                }
+                $state['deliveryStats'] = $cache['deliveryStats'];
+            }
+            unset($state['principal']);
+            return $state;
+        } finally { flock($lock, LOCK_UN);fclose($lock); }
+    }
+
+    /** Byte cursors bound both response size and work per poll, even for large numeric corpora. */
+    public function results(string $suite, string $locale, int $cursor = 0, string $runId = '', string $delivery = '', bool $failuresOnly = false): array
+    {
+        if ($cursor < 0 || !in_array($delivery,['','press','fast','medium','slow'],true)) throw new InvalidArgumentException('Invalid results cursor or delivery.');
+        $path = $this->path($suite,$locale);
+        if (!is_file($path)) return ['rows'=>[],'cursor'=>0,'nextCursor'=>0,'hasMore'=>false,'runId'=>null];
+        $lock=fopen($path.'.lock','c');
+        if (!$lock || !flock($lock,LOCK_SH)) throw new RuntimeException('Diagnostics lock unavailable.');
+        try {
+            $state=json_decode((string)file_get_contents($path.'.state'),true,32,JSON_THROW_ON_ERROR);
+            $reset=$runId!=='' && $runId!==$state['runId'];
+            if ($reset) $cursor=0;
+            clearstatcache(true,$path);
+            if ($cursor>filesize($path)) throw new InvalidArgumentException('Results cursor exceeds the report.');
+            $file=fopen($path,'rb');$rows=[];
+            try {
+                if ($cursor>0) { fseek($file,$cursor-1);if(fread($file,1)!=="\n")throw new InvalidArgumentException('Results cursor must follow a complete record.'); }
+                fseek($file,$cursor);$scanned=0;
+                while(count($rows)<50 && $scanned<1048576 && ($line=fgets($file))!==false) {
+                    $scanned+=strlen($line);$record=json_decode($line,true,32,JSON_THROW_ON_ERROR);
+                    if (($record['type']??'')!=='test' || ($delivery!=='' && ($record['delivery']??'')!==$delivery) || ($failuresOnly && ($record['status']??'')!=='failed')) continue;
+                    $rows[]=$record;
+                }
+                $next=ftell($file);$more=$next<filesize($path);
+            } finally { fclose($file); }
+            return ['rows'=>$rows,'cursor'=>$cursor,'nextCursor'=>$next,'hasMore'=>$more,'runId'=>$state['runId'],'reset'=>$reset,'completed'=>$state['tests'],'total'=>$state['totalTests']];
+        } finally { flock($lock,LOCK_UN);fclose($lock); }
     }
 
     /** Read at most 16 KiB from EOF; status never scans a whole report. */
@@ -50,7 +109,7 @@ final class OrderFillerDiagnostics
     {
         $name = self::basename((string)($input['suite'] ?? ''), (string)($input['locale'] ?? ''));
         $action = $input['action'] ?? '';
-        if (!in_array($action, ['start', 'append', 'end', 'read', 'progress'], true)) throw new InvalidArgumentException('Invalid diagnostics action.');
+        if (!in_array($action, ['start', 'append', 'end', 'abort', 'read', 'progress'], true)) throw new InvalidArgumentException('Invalid diagnostics action.');
         $path = $this->path($input['suite'], $input['locale']);
         $directory = dirname($path);
         if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) throw new RuntimeException('Diagnostics directory unavailable.');
@@ -72,6 +131,7 @@ final class OrderFillerDiagnostics
                     foreach ($totals as $delivery=>$total) if (!in_array($delivery,['press','fast','medium','slow'],true) || !is_int($total) || $total < 1) throw new InvalidArgumentException('Invalid delivery total.');
                     $state['deliveryTotals'] = $totals;
                     $state['deliveryCounts'] = array_fill_keys(array_keys($totals),0);
+                    $state['deliveryStats'] = array_fill_keys(array_keys($totals), ['passed'=>0,'failed'=>0,'skipped'=>0]);
                 }
                 if ($input['suite'] === 'summary') {
                     $languages = $input['languages'] ?? null;
@@ -110,11 +170,16 @@ final class OrderFillerDiagnostics
                         if (!is_numeric($elapsed) || !is_finite((float)$elapsed) || $elapsed < 0 || $elapsed > 86400000) throw new InvalidArgumentException('Invalid test elapsed time.');
                         $records[] = ['type'=>'test', 'number'=>++$state['tests'], 'label'=>$test['label'],
                             'status'=>$test['status'], 'elapsedMs'=>$elapsed, 'at'=>$now];
+                        if (isset($test['message'])) {
+                            if (!is_string($test['message']) || strlen($test['message']) > 2048) throw new InvalidArgumentException('Invalid failure detail.');
+                            $records[array_key_last($records)]['message'] = $test['message'];
+                        }
                         if (isset($test['delivery'])) {
                             if (!in_array($test['delivery'],['press','slow','medium','fast'],true)) throw new InvalidArgumentException('Unknown delivery rate.');
                             $records[array_key_last($records)]['delivery'] = $test['delivery'];
                             if (isset($state['deliveryTotals'][$test['delivery']])) {
                                 $count = ++$state['deliveryCounts'][$test['delivery']];
+                                $state['deliveryStats'][$test['delivery']][$test['status']] = ($state['deliveryStats'][$test['delivery']][$test['status']] ?? 0) + 1;
                                 $total = $state['deliveryTotals'][$test['delivery']];
                                 if ($count > $total) throw new InvalidArgumentException('Delivery results exceed the planned count.');
                                 $records[array_key_last($records)] += ['deliveryNumber'=>$count,'deliveryTotal'=>$total];
@@ -140,7 +205,7 @@ final class OrderFillerDiagnostics
                         $clean[$key] = $summary[$key];
                     }
                     $state['endedAt'] = $now;
-                    $state['status'] = $state['tests'] < $state['totalTests'] ? 'incomplete' : (($state['failed'] > 0 || ($clean['failures'] ?? 0) > 0) ? 'failed' : 'passed');
+                    $state['status'] = $action === 'abort' ? 'aborted' : ($state['tests'] < $state['totalTests'] ? 'incomplete' : (($state['failed'] > 0 || ($clean['failures'] ?? 0) > 0) ? 'failed' : 'passed'));
                     $records[] = ['type'=>'summary', 'tests'=>$state['tests'], 'passed'=>$state['passed'],
                         'failed'=>$state['failed'], 'skipped'=>$state['skipped'], 'tripRun'=>$clean, 'at'=>$now];
                     $records[] = ['type'=>'test-end', 'runId'=>$state['runId'], 'status'=>$state['status'], 'at'=>$now];
@@ -151,12 +216,13 @@ final class OrderFillerDiagnostics
                 $record += ['runId'=>$state['runId'], 'suite'=>$state['suite'], 'locale'=>$state['locale'],
                     'completed'=>$completed, 'total'=>$state['totalTests'], 'progress'=>'test '.$completed.'/'.$state['totalTests'],
                     'runStatus'=>$state['status'] ?? 'running', 'build'=>$state['build']];
-                if (isset($state['deliveryTotals'])) $record += ['deliveryCounts'=>$state['deliveryCounts'],'deliveryTotals'=>$state['deliveryTotals']];
+                $record += ['passed'=>$state['passed'],'failed'=>$state['failed'],'skipped'=>$state['skipped']];
+                if (isset($state['deliveryTotals'])) $record += ['deliveryCounts'=>$state['deliveryCounts'],'deliveryTotals'=>$state['deliveryTotals'],'deliveryStats'=>$state['deliveryStats'] ?? []];
                 if (isset($state['languages'])) $record += ['languages'=>$state['languages'],'results'=>$state['results']];
             }
             unset($record);
             $lines = implode('', array_map(static fn(array $record): string => json_encode($record, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n", $records));
-            if ($action !== 'start' && (filesize($path) ?: 0) + strlen($lines) > 67108864) throw new InvalidArgumentException('Diagnostics report exceeds 64 MiB.');
+            if ($action !== 'start' && (filesize($path) ?: 0) + strlen($lines) > 268435456) throw new InvalidArgumentException('Diagnostics report exceeds 256 MiB.');
             if (file_put_contents($path, $lines, $action === 'start' ? 0 : FILE_APPEND) === false ||
                 file_put_contents($statePath, json_encode($state, JSON_THROW_ON_ERROR)) === false) throw new RuntimeException('Diagnostics write failed.');
             chmod($path, 0600); chmod($statePath, 0600);
