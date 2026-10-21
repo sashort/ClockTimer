@@ -42,6 +42,22 @@ it does not test acoustic recognition or a physical microphone. Announcement rat
 is not changed. `CLOCKTIMER_SPEECH_DELIVERY=fast` selects one rate for diagnosis.
 `--journey-only` omits supporting suites during development; full masters are the gate.
 
+## WMOF homepage panes
+
+The homepage remains `index.html`, generated from `templates/pages/index/`; `index.php`
+serves the same templates with the selected language. There is no `index2.html` source.
+Visible home buttons replace the hamburger popover. `main.js` uses the shared
+`PanePage.showView()`/`back()` methods for Admin, Trainer and Dev Tools, including
+reduced-motion handling and restored button focus. Each view scrolls within the
+available viewport height; its Back/header stays sticky. Permission changes and
+logout reset inaccessible panes. Profile and login keep their existing dialogs.
+
+The press master runs `main-page-browser.cjs` for desktop/mobile overflow, group
+navigation, Back/Escape, focus restoration, permissions and login/logout. The existing
+`main-page.mjs` model test checks rejected login/logout and confirmed session handoff.
+Update the shared template source and regenerate static HTML with
+`node scripts/build-pages.cjs` rather than editing the generated homepage directly.
+
 ## Language corpora and numeric paths
 
 `tests/languages/<locale>/profile.cjs` selects the workflow phrase map and numeric

@@ -3,6 +3,8 @@
     const $ = id => document.getElementById(id);
     const text = key => WMOFLanguagePack.text(WMOFMainText[key]);
     const endpoint = new URL('api/users/',document.baseURI);
+    const pane = $('homePane');
+    const duration = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 420;
     let user, csrf, busy = false, authRevision = 0;
     const permitted = mask => Boolean(Number(user?.permissions) & (mask | 4));
     const lookup = new WMOFUserLookup({baseUrl:new URL('./',document.baseURI),identityContext:WMOFIdentityContext,
@@ -10,7 +12,7 @@
         canAssignPermissions:()=>permitted(4),
         canGrantPermission:bit=>permitted(bit),
         onProfileSaved:profile=>{if(Number(profile.id)===Number(user?.id)){user=profile;render();}}});
-    function render(expand = false) {
+    function render(resetPane = false) {
         $('signedOutActions').hidden = Boolean(user);
         $('signedInActions').hidden = !user;
         $('signedInActions').querySelector('.order-filler-link').href = 'order-filler.php?session=existing';
@@ -18,14 +20,33 @@
         $('homeAdmin').hidden = !permitted(1|2|32|128);
         $('homeTrainer').hidden = !permitted(64);
         $('homeDev').hidden = !permitted(8|16);
-        for (const link of $('homeDev').querySelectorAll('a[href="api/docs/"],a[href="api/admin/sql/?console=1"]')) link.hidden = !permitted(16);
+        for (const link of $('homeDevSubmenu').querySelectorAll('a[href="api/docs/"],a[href="api/admin/sql/?console=1"]')) link.hidden = !permitted(16);
         $('homeEditProfileButton').hidden = !permitted(128);
-        $('homeAdmin').querySelector('a[href="api/admin/new-user/"]').hidden = !permitted(1);
-        $('homeAdmin').querySelector('a[href="api/admin/access-tokens/?console=1"]').hidden = !permitted(32);
-        if(expand)$('homeMenu').showPopover();
-        else if(!user)$('homeMenu').hidePopover();
+        $('homeAdminSubmenu').querySelector('a[href="api/admin/new-user/"]').hidden = !permitted(1);
+        $('homeAdminSubmenu').querySelector('a[href="api/admin/access-tokens/?console=1"]').hidden = !permitted(32);
+        $('homeDiagnostics').hidden = !permitted(16);
+        const selected = document.querySelector('[data-home-pane="'+pane.activeView?.dataset.paneView+'"]');
+        if (resetPane || !user || selected?.hidden) pane.reset();
         lookup.sync();
     }
+    for (const button of document.querySelectorAll('[data-home-pane]')) {
+        button.addEventListener('click', async () => {
+            if (!user || button.hidden) return;
+            if (await pane.showView(button.dataset.homePane, {source:button, duration:duration()})) {
+                pane.activeView.scrollTop = 0;
+                pane.activeView.querySelector('[data-home-back]').focus({preventScroll:true});
+            }
+        });
+    }
+    for (const button of document.querySelectorAll('[data-home-back]')) {
+        button.addEventListener('click', () => pane.back({duration:duration()}));
+    }
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && pane.depth && !document.querySelector('dialog[open]')) {
+            event.preventDefault();
+            pane.back({duration:duration()});
+        }
+    });
     async function request(body) {
         const response=await fetch(endpoint,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',
             headers:body?{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf}:{})}:{},

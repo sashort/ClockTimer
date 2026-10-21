@@ -30,7 +30,7 @@ const {chromium}=require('playwright');
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'status page fits mobile');
   await page.screenshot({path:path.join(out,'mobile.png'),fullPage:true});
   finished=true;await page.waitForFunction(()=>document.querySelector('#live-progress').textContent.includes('test 62/62'));
-  assert(calls.length>=10,'status polling refreshes the page');assert.deepEqual(errors,[]);
+  assert(calls.filter(url=>new URL(url).searchParams.get('suite')==='summary').length>=2,'status polling refreshes the page');assert.deepEqual(errors,[]);
   console.log('PASS status matrix, fast-first order, last-line polling, inert labels, live refresh and mobile layout');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -26,17 +26,16 @@ try{
  const moving=samples.filter(s=>s.progress>.02&&s.progress<.98);assert(moving.length>2,'sample intermediate animation positions');
  for(const s of moving)assert(Math.abs(s.progress-s.thumb)<.025,JSON.stringify(s));
 
- for(const [page,menuId,parents] of [['order-filler','mainMenu',['settingsMenuButton','tripLogMenuParentButton','recognizerNameMenuButton']],['index','homeMenu',['homeAdmin','homeTrainer','homeDev']]]){
+ for(const [page,menuId,parents] of [['order-filler','mainMenu',['settingsMenuButton','tripLogMenuParentButton','recognizerNameMenuButton']]]){
   await call('Page.navigate',{url:'about:blank'});await new Promise(r=>setTimeout(r,100));
   const body=read(page+'.html').match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
   await call('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:false});
   const pageFrame=await call('Page.getFrameTree');
-  await call('Page.setDocumentContent',{frameId:pageFrame.frameTree.frame.id,html:'<style>'+read('app.css')+read('MenuIcons.css')+(page==='index'?read('main.css'):'')+'</style>'+body});
+  await call('Page.setDocumentContent',{frameId:pageFrame.frameTree.frame.id,html:'<style>'+read('app.css')+read('MenuIcons.css')+'</style>'+body});
   await ev('globalThis.WMOFLanguagePack={text:id=>id}');await ev(read('PanePage.js'));await ev(read('HamburgerMenu.js'));
-  if(page==='index')await ev('document.getElementById("signedInActions").hidden=false;'+parents.map(id=>'document.getElementById('+JSON.stringify(id)+').hidden=false;').join(''));
   await ev('document.getElementById('+JSON.stringify(menuId)+').showPopover()');await new Promise(r=>setTimeout(r,650));
   for(const id of parents){
-   const buttonExpression=page==='index'?'document.getElementById('+JSON.stringify(id)+').querySelector("button[aria-controls]")':'document.getElementById('+JSON.stringify(id)+')';
+   const buttonExpression='document.getElementById('+JSON.stringify(id)+')';
    assert(await ev('(()=>{const b='+buttonExpression+',s=document.getElementById(b.getAttribute("aria-controls"));return b.getAttribute("aria-expanded")==="false"&&s.hidden&&getComputedStyle(s).display==="none";})()'),'initially collapsed '+id);
    await ev(buttonExpression+'.click()');await new Promise(r=>setTimeout(r,1800));
    assert(await ev(buttonExpression+'.getAttribute("aria-expanded")==="true"'),'opens '+id);
@@ -44,7 +43,7 @@ try{
    assert(await ev(buttonExpression+'.getAttribute("aria-expanded")==="false"'),'collapses '+id);
   }
  }
- console.log('PASS later-panel restoration, continuous swipe tracking, and initially collapsed animated parents on Order Filler and landing');
+ console.log('PASS later-panel restoration, continuous swipe tracking, and initially collapsed animated parents on Order Filler');
 }finally{ws?.close();child.kill();}
 })().catch(e=>{console.error(e);process.exit(1);});
 

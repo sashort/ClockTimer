@@ -27,7 +27,7 @@ for(const page of pages){
  assert.equal(w.document.querySelectorAll('#editProfilePermissions input[type=checkbox]').length,8,'permissions use named choices');
  assert.equal(Boolean(w.document.getElementById('dropInLookupActionTemplate')),page==='drop-in','only Drop-In owns its action template');
  assert.equal(w.document.querySelectorAll('link[href^="MenuIcons.css"]').length,1);
- const menu=page==='index'?'#homeMenu button:not(#homeMenuButton),#homeMenu a,#signedOutActions button,#signedOutActions a':page==='order-filler'?'#mainMenu button:not(#menuButton),#mainMenu a,#mainMenu summary':'#dropInMenu button:not(#dropInMenuButton),#dropInMenu a';
+ const menu=page==='index'?'#homePane button,#homePane a,#signedOutActions button,#signedOutActions a':page==='order-filler'?'#mainMenu button:not(#menuButton),#mainMenu a,#mainMenu summary':'#dropInMenu button:not(#dropInMenuButton),#dropInMenu a';
  for(const option of w.document.querySelectorAll(menu)){
   assert(option.dataset.menuIcon || option.querySelector('svg'),page+': missing icon for '+(option.id||option.textContent.trim()));
   if(option.dataset.menuIcon)assert(icons.includes('[data-menu-icon="'+option.dataset.menuIcon+'"]'),option.dataset.menuIcon+' must exist in the shared icon library');

@@ -6,7 +6,7 @@ function commands(method){
   ...cases.map(c=>({id:c.id,args:['tests/app-state-transactions.mjs','--state-contract','--case='+c.id,'--voice-feedback']})),
   ...(['application-state-inventory','clock-state-contract','trip-log','trip-summary','async-persistence','diagnostics-reporter'].map(name=>({id:name,args:['tests/'+name+'.mjs']}))),
   ...['goal-cascade','goal-failure-batch','sync-availability','range-permissions'].map(flag=>({id:flag,args:['tests/app-state-transactions.mjs','--'+flag,'--voice-feedback']})),
-  ...(method==='touch'?['order-filler-status-browser','order-filler-deployed-browser','graphical-settings-browser','hamburger-menu-coverage-browser','break-only-log-browser','trip-log-downtime-browser']:['speech-continuation-browser']).map(name=>({id:name,args:['tests/'+name+'.cjs']})),
+  ...(method==='touch'?['main-page-browser','order-filler-status-browser','order-filler-deployed-browser','graphical-settings-browser','hamburger-menu-coverage-browser','break-only-log-browser','trip-log-downtime-browser']:['speech-continuation-browser']).map(name=>({id:name,args:['tests/'+name+'.cjs']})),
   ...(method==='voice'?[{id:'speech-response-chain-browser',args:['tests/speech-response-chain-browser.mjs']}]:[])
  ];
 }
