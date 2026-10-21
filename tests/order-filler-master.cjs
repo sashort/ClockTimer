@@ -5,31 +5,34 @@ const fixture = require('./order-filler-master-fixture.cjs');
 const reporter = require('./diagnostics-reporter.cjs').sharedReporter();
 
 module.exports = async function runMaster(method) {
- const f = await fixture(), {page} = f;
+ const f = await fixture({input:method==='voice'?(process.env.CLOCKTIMER_VOICE_INPUT||'audio'):'transcript'}), {page} = f;
  const diagnostics=require('./diagnostics-reporter.cjs');
  diagnostics.setCheckpointHooks(new (require('./browser-test-pause.cjs'))(page));
  const steps = [];
  let currentStep='initialization';
+ let audioStart=0;
+ let failure=null;
+ const evidence=()=>({inputLayer:method==='touch'?'press':f.input,recognizer:f.recognizer||undefined,audioClips:f.audioCases.slice(audioStart).map(({key,text,wpm,recognized})=>({key,text,wpm,recognized}))});
  const delivery=process.env.CLOCKTIMER_SPEECH_DELIVERY||'press';
  const requestedLocale=process.env.CLOCKTIMER_TEST_LOCALE||'en-US';
  const profile=require(path.join(__dirname,'languages',requestedLocale,'profile.cjs'));
  const corpus=require(path.resolve(__dirname,'languages',requestedLocale,profile.workflowCorpus));
  const phrase=text=>{assert.equal(typeof corpus.phrases[text],'string','locale corpus phrase: '+text);return corpus.phrases[text];};
  const locale=(process.env.CLOCKTIMER_TEST_LOCALE||'en-US').toLowerCase();
- const out = path.join(__dirname, 'artifacts', 'language-tests',locale,'order-filler', method,delivery);
+ const out = path.join(__dirname, 'artifacts', 'language-tests',locale,'order-filler', method,delivery,...(method==='voice'?[f.input]:[]));
  fs.mkdirSync(out, {recursive:true});
  const tap = selector => page.locator(selector).tap();
  const wait = predicate => page.waitForFunction(predicate);
  const state = expression => page.evaluate(expression);
  const check = async (label, operation) => {
   await require('./diagnostics-reporter.cjs').checkpoint();
-  currentStep=label;const started=Date.now();
+  currentStep=label;audioStart=f.audioCases.length;const started=Date.now();
   console.log('RUN '+method+': '+label);
   await operation();
   await page.waitForFunction(() => WMOFCoordinator.lockCount === 0 && WMOFStateTransactions.pending.length === 0);
   assert.deepEqual(f.errors, [], label+': browser errors');
   steps.push(label);
-  await reporter.tests([{label:method+': '+label,status:'passed',elapsedMs:Date.now()-started}]);
+  await reporter.tests([{label:method+': '+label,status:'passed',elapsedMs:Date.now()-started,...evidence()}]);
  };
  const say = async text => assert(await f.say(phrase(text)), 'speech failed: '+text);
  const touchPad = async () => {
@@ -39,7 +42,7 @@ module.exports = async function runMaster(method) {
  const action = async (selector, phrase) => method === 'voice' ? say(phrase) : tap(selector);
  try {
   await check('ID and PIN login', async () => {
-   if (method === 'voice') {await say('zero zero four two okay');await say('one two three four okay');}
+   if (method === 'voice') {await say('zero zero four two okay');await wait(()=>!document.querySelector('#loginPinRow').hidden);await say('one two three four okay');}
    else {
     for (const [kind,value] of [['id','0042'],['pin','1234']]) {
      for (let i=0;i<4;i++) await page.locator(`[data-login-digit="${kind}"][data-digit-index="${i}"]`).fill(value[i]);
@@ -163,20 +166,22 @@ module.exports = async function runMaster(method) {
    assert.equal(await state(()=>document.querySelector('#clockTimer').uiState.trip_active),true);
    await page.clock.resume();
    const speech=await state(()=>globalThis.masterSpeechInputs||[]);
-   if(method==='voice')for(const input of speech){assert.equal(input.partials.length,input.text.trim().split(/\s+/).length,'every word is delivered as a growing partial');for(let i=1;i<input.partials.length;i++)assert(input.partials[i].at-input.partials[i-1].at >= 60000/input.wpm*.8,'delivery follows configured speech pace');}
+   if(method==='voice'&&f.input==='transcript')for(const input of speech){assert.equal(input.partials.length,input.text.trim().split(/\s+/).length,'every word is delivered as a growing partial');for(let i=1;i<input.partials.length;i++)assert(input.partials[i].at-input.partials[i-1].at >= 60000/input.wpm*.8,'delivery follows configured speech pace');}
   });
   assert.equal(steps.length,require('./order-filler-master-plan.cjs').journeyCheckpoints,'planned and executed checkpoint counts agree');
   await page.screenshot({path:path.join(out,'complete.png')});
   console.log(`PASS ${method} master (${steps.length} checkpoints)`);
  } catch(error) {
-  await reporter.tests([{label:method+': '+currentStep,status:'failed',message:Buffer.from(String(error.message)).subarray(0,1800).toString()}]).catch(()=>{});
+  const heard=f.audioCases.slice(audioStart).map(clip=>'Expected: '+clip.text+'; heard: '+(clip.recognized||'[no transcript]')).join('\n');
+  failure={step:currentStep,message:[String(error.message),heard].filter(Boolean).join('\n')};
+  await reporter.tests([{label:method+': '+currentStep,status:'failed',message:Buffer.from([String(error.message),heard].filter(Boolean).join('\n')).subarray(0,1800).toString(),...evidence()}]).catch(()=>{});
   await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});
   throw error;
  } finally {
   diagnostics.setCheckpointHooks();
   const speech=await page.evaluate(()=>globalThis.masterSpeechInputs||[]).catch(()=>[]);
 
-  fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({method,delivery,passed:steps,errors:f.errors,speech},null,2));
+  fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({method,delivery,input:f.input,status:failure?'failed':'passed',failure,passed:steps,errors:f.errors,speech,audioCases:f.audioCases},null,2));
   await f.close();
  }
 };

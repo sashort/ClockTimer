@@ -48,13 +48,16 @@
     "test:pocketsphinx-recognizer": "node pocketsphinx-recognizer.mjs",
     "test:vosk-phrase-list": "node vosk-phrase-list-compiler.mjs",
     "test:vosk-router": "node vosk-grammar-router.mjs && node vosk-speechmenu-context.mjs",
-    "test:coordinator": "node application-coordinator.mjs && node async-command-lifecycle.mjs && node app-state-transactions.mjs --coordinator-end-trip"
+    "test:coordinator": "node application-coordinator.mjs && node async-command-lifecycle.mjs && node app-state-transactions.mjs --coordinator-end-trip",
+    "test:order-filler:audio": "node order-filler-acoustic-smoke.cjs",
+    "test:order-filler:audio-fixtures": "node diagnostic-speech-audio-test.cjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"
   },
   "devDependencies": {
     "playwright": "1.55.0",
-    "pngjs": "7.0.0"
+    "pngjs": "7.0.0",
+    "@echogarden/espeak-ng-emscripten": "https://codeload.github.com/echogarden-project/espeak-ng-emscripten/tar.gz/7ab07eba2d966ce45040c88d9be953e1d68640e7"
   }
 }

@@ -71,6 +71,12 @@ try {
     $store->apply($large+['action'=>'append','runId'=>$largeRun,'tests'=>$batch],'developer-1',$build);
     $one=$store->results('slow','en-US');$two=$store->results('slow','en-US',$one['nextCursor'],$largeRun);
     check(count($one['rows'])===50&&$one['hasMore']&&count($two['rows'])===25,'Bounded pages cover all individual results without duplication');
+    $audio=['suite'=>'medium','locale'=>'en-US'];$audioRun=$store->apply($audio+['action'=>'start','totalTests'=>2],'developer-1',$build)['state']['runId'];
+    $clip=['key'=>str_repeat('a',64),'text'=>'ready','recognized'=>'ready','wpm'=>160];
+    $store->apply($audio+['action'=>'append','runId'=>$audioRun,'tests'=>[['label'=>'real recognition','status'=>'passed','inputLayer'=>'audio','recognizer'=>'vosk','audioClips'=>[$clip]]]],'developer-1',$build);
+    $row=$store->results('medium','en-US')['rows'][0];check($row['audioClips']===[$clip]&&$row['inputLayer']==='audio'&&$row['recognizer']==='vosk','Replay evidence and test layer survive storage/pagination');
+    try{$store->apply($audio+['action'=>'append','runId'=>$audioRun,'tests'=>[['label'=>'unsafe clip','status'=>'passed','audioClips'=>[array_replace($clip,['key'=>'../private'])]]]],'developer-1',$build);throw new RuntimeException('Unsafe clip key accepted');}catch(InvalidArgumentException){}
+    check($store->statistics('medium','en-US')['tests']===1,'Invalid replay evidence cannot append a partial result');
     echo "PASS diagnostics numbering, counts, paging, filtering, replacement, abort, privacy and stale/principal fences\n";
 } finally {
     if(is_dir($directory)){

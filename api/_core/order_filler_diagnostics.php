@@ -174,6 +174,23 @@ final class OrderFillerDiagnostics
                             if (!is_string($test['message']) || strlen($test['message']) > 2048) throw new InvalidArgumentException('Invalid failure detail.');
                             $records[array_key_last($records)]['message'] = $test['message'];
                         }
+                        if (isset($test['inputLayer'])) {
+                            if (!in_array($test['inputLayer'],['audio','transcript','press','model'],true)) throw new InvalidArgumentException('Invalid input layer.');
+                            $records[array_key_last($records)]['inputLayer']=$test['inputLayer'];
+                        }
+                        if (isset($test['recognizer'])) {
+                            if (!in_array($test['recognizer'],['vosk','sherpa','pocketsphinx'],true)) throw new InvalidArgumentException('Invalid recognizer.');
+                            $records[array_key_last($records)]['recognizer']=$test['recognizer'];
+                        }
+                        if (isset($test['audioClips'])) {
+                            if(!is_array($test['audioClips']) || !array_is_list($test['audioClips']) || count($test['audioClips'])>25)throw new InvalidArgumentException('Invalid audio evidence.');
+                            $clips=[];
+                            foreach($test['audioClips'] as $clip){
+                                if(!is_array($clip)||!is_string($clip['key']??null)||!preg_match('/^[a-f0-9]{64}$/D',$clip['key'])||!is_string($clip['text']??null)||strlen($clip['text'])>512||!is_string($clip['recognized']??null)||strlen($clip['recognized'])>2048||!in_array($clip['wpm']??null,[90,160,240],true))throw new InvalidArgumentException('Invalid audio evidence.');
+                                $clips[]=['key'=>$clip['key'],'text'=>$clip['text'],'recognized'=>$clip['recognized'],'wpm'=>$clip['wpm']];
+                            }
+                            $records[array_key_last($records)]['audioClips']=$clips;
+                        }
                         if (isset($test['delivery'])) {
                             if (!in_array($test['delivery'],['press','slow','medium','fast'],true)) throw new InvalidArgumentException('Unknown delivery rate.');
                             $records[array_key_last($records)]['delivery'] = $test['delivery'];

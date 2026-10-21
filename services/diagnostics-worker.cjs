@@ -23,6 +23,7 @@ async function execute(job){
  const env={...process.env,CLOCKTIMER_TEST_LOCALE:request.locale,CLOCKTIMER_DIAGNOSTICS_URL:'https://wmof.sashort-apps.com/api/diagnostics/order-filler/',CLOCKTIMER_DIAGNOSTICS_COOKIE:request.credentials.cookie,CLOCKTIMER_DIAGNOSTICS_CSRF:request.credentials.csrf,ORDER_FILLER_TEST_BASE_URL:'https://wmof.sashort-apps.com/'};
  delete env.CLOCKTIMER_DIAGNOSTICS_TOKEN;
  env.CLOCKTIMER_DIAGNOSTICS_JOB_PREFIX=prefix;
+ env.CLOCKTIMER_VOICE_INPUT='audio';
  env.CLOCKTIMER_TEST_EXPECTED_COMMIT=read(path.join(root,'build-version.json')).commit;
  if(['press','fast','medium','slow'].includes(request.suite))env.CLOCKTIMER_DIAGNOSTICS_CATEGORY=request.suite;
  write(prefix+'.status',{status:'running',at:new Date().toISOString()});

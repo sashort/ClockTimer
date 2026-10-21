@@ -17,6 +17,15 @@ $input = $method === 'GET' ? ['action'=>'read','suite'=>$_GET['suite'] ?? 'order
 $buildPath = dirname(__DIR__, 3) . '/build-version.json';
 $build = is_file($buildPath) ? json_decode((string)file_get_contents($buildPath), true, 16, JSON_THROW_ON_ERROR) : [];
 try {
+    if($method==='GET' && isset($_GET['audio'])){
+        OrderFillerDiagnostics::basename((string)$input['suite'],(string)$input['locale']);
+        $key=(string)$_GET['audio'];
+        if(!preg_match('/^[a-f0-9]{64}$/D',$key))throw new InvalidArgumentException('Invalid audio key.');
+        $audio='/var/lib/clocktimer/diagnostics/runner/tests/artifacts/language-tests/'.strtolower((string)$input['locale']).'/audio/'.$key.'.wav';
+        if(!is_file($audio))api_error('Audio clip is not available on this server.',404,'audio_not_found');
+        header('Content-Type: audio/wav');header('Cache-Control: private, no-store');header('Content-Length: '.filesize($audio));
+        session_write_close();readfile($audio);exit;
+    }
     if (($method==='GET' && ($_GET['job']??'')==='1') || ($method==='POST' && str_starts_with((string)($input['action']??''),'job-'))) {
         $jobs=new DiagnosticsJobs('/var/lib/clocktimer/diagnostics/jobs',dirname(__DIR__,3).'/tests/languages');
         $result=$jobs->handle($method==='GET'?['action'=>'job-status']:$input,guarded_access_principal_key($authorization),['cookie'=>session_name().'='.session_id(),'csrf'=>csrf_token()]);

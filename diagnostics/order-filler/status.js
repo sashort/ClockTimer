@@ -83,9 +83,19 @@
    const key=runId+':'+record.number;keys.add(key);let tr=resultRows.get(key);
    if(!tr){tr=document.createElement('tr');for(let i=0;i<6;i++)element(tr,'td');resultRows.set(key,tr);}
    if(body.children[index]!==tr)body.insertBefore(tr,body.children[index]||null);
-   const cells=tr.children;setText(cells[0],record.number+' / '+record.total);setText(cells[1],record.locale);setText(cells[2],record.delivery?title(record.delivery):'Voice / keypad');
+   const cells=tr.children;setText(cells[0],record.number+' / '+record.total);setText(cells[1],record.locale);setText(cells[2],(record.delivery?title(record.delivery):'Voice / keypad')+(record.inputLayer?' · '+({audio:'Audio',model:'FSM/model',transcript:'Text simulation',press:'Press'}[record.inputLayer]):''));
    let label=cells[3].querySelector('span');if(!label)label=element(cells[3],'span');setText(label,record.label);
    let message=cells[3].querySelector('small');if(record.message){if(!message)message=element(cells[3],'small');setText(message,record.message);}else message?.remove();
+   let evidence=cells[3].querySelector('details');
+   if(record.audioClips?.length){
+    if(!evidence){evidence=element(cells[3],'details');element(evidence,'summary');}
+    setText(evidence.querySelector('summary'),'Audio · '+(record.recognizer||'recognizer')+' · '+record.audioClips.length+' clip'+(record.audioClips.length===1?'':'s'));
+    for(const clip of record.audioClips){
+     let item=[...evidence.querySelectorAll('[data-audio-key]')].find(e=>e.dataset.audioKey===clip.key);
+     if(!item){item=element(evidence,'div');item.dataset.audioKey=clip.key;element(item,'p');const player=element(item,'audio');player.controls=true;player.preload='none';player.style.maxWidth='100%';player.src=url(record.suite,record.locale,{audio:clip.key});}
+     setText(item.querySelector('p'),clip.wpm+' wpm · Expected: '+clip.text+' · Heard: '+(clip.recognized||'[no transcript]'));
+    }
+   }else{evidence?.remove();}
    setText(cells[4],title(record.status));cells[4].className=record.status==='passed'?'pass':record.status==='failed'?'fail':'queued';tr.className=record.status;
    setText(cells[5],Number(record.elapsedMs)>0?(record.elapsedMs>=1000?(record.elapsedMs/1000).toFixed(1)+' s':Math.round(record.elapsedMs)+' ms'):'---');
   }

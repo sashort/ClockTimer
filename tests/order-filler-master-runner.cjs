@@ -30,11 +30,11 @@ module.exports=async method=>{
    child.on('close',code=>{clearTimeout(timeout);resolve(expired?'timeout':code);});
   });
   results.push({id:test.id,result:code===0?'passed':'failed',code});
-  await reporter.tests([{label:method+' FSM/support: '+test.id,status:code===0?'passed':'failed',elapsedMs:Date.now()-started,...(code===0?{}:{message:Buffer.from(failureDetail||'Test exited with '+code).subarray(0,1800).toString()})}]);
+  await reporter.tests([{label:method+' FSM/support: '+test.id,inputLayer:'model',status:code===0?'passed':'failed',elapsedMs:Date.now()-started,...(code===0?{}:{message:Buffer.from(failureDetail||'Test exited with '+code).subarray(0,1800).toString()})}]);
  }
  const report={method,contractSchema:contract.schemaVersion,results,
   unreviewed:contract.backlog,
-  limits:['Recognized text is injected; no acoustic recognition or physical microphone.','Local API fixture; production database/authentication are tested separately.','Time/duration value matrices have separate entry points.']};
+  limits:['Voice journeys use generated WAV audio through real capture/VAD/recognition; FSM/support cases use text/model fixtures. No physical microphone is tested.','Local API fixture; production database/authentication are tested separately.','Time/duration value matrices have separate entry points.']};
  const out=path.join(__dirname,'artifacts/language-tests',(process.env.CLOCKTIMER_TEST_LOCALE||'en-US').toLowerCase(),'order-filler',method);
  fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'fsm-report.json'),JSON.stringify(report,null,2));
  if(results.some(r=>r.result==='failed'))throw Error(method+' master failed: '+results.filter(r=>r.result==='failed').map(r=>r.id).join(', '));

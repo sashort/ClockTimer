@@ -117,6 +117,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: tests
       - run: node tests/order-filler-master-touch.cjs
+      - run: python deploy/install_vosk_assets.py
+      - run: node tests/diagnostic-speech-audio-test.cjs
+      - run: node tests/order-filler-acoustic-smoke.cjs
       - run: node tests/order-filler-master-voice.cjs
       - run: node tests/speech-continuation-browser.cjs
       - run: node tests/shared-modal-browser.cjs

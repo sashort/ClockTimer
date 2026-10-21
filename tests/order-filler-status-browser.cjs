@@ -21,7 +21,7 @@ const {chromium}=require('playwright');
     }
     if(url.searchParams.has('job'))return route.fulfill({json:{job,ready:true,busy:job&&job.status!=='aborted',canAbort:job&&job.status!=='aborted',csrfToken:'fixture-csrf'}});
     if(url.searchParams.has('results')){
-     const failed=url.searchParams.get('failures')==='1';return route.fulfill({json:{runId:'run-'+suite,cursor:0,nextCursor:100,hasMore:false,completed:finished?62:39,total:62,rows:[{number:1,total:62,locale,delivery:url.searchParams.get('delivery')||suite,label:'<img src=x onerror=alert(1)>',status:failed?'failed':'passed',message:failed?'Expected entry; received rejection':'',elapsedMs:184}]}});
+     const failed=url.searchParams.get('failures')==='1';return route.fulfill({json:{runId:'run-'+suite,cursor:0,nextCursor:100,hasMore:false,completed:finished?62:39,total:62,rows:[{number:1,total:62,locale,delivery:url.searchParams.get('delivery')||suite,label:'<img src=x onerror=alert(1)>',status:failed?'failed':'passed',message:failed?'Expected entry; received rejection':'',inputLayer:'audio',recognizer:'vosk',audioClips:[{key:'a'.repeat(64),text:'ready',recognized:'ready',wpm:240}],elapsedMs:184}]}});
     }
     if(suite==='duration'&&pauseNumeric){pauseNumeric=false;await new Promise(resolve=>{releaseNumeric=resolve;notifyBlocked();});}
     if(['press','fast','medium','slow'].includes(suite))return route.fulfill({json:{last:null,statistics:null}});
@@ -47,6 +47,8 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator(`[data-category=${category}]`).getAttribute('aria-pressed'),'true');
   }
   assert.equal(await page.locator('#result-rows img').count(),0,'labels are inert text');
+  assert.equal(await page.locator('#result-rows audio[controls]').count(),1,'speech samples have replay controls');
+  assert.match(await page.locator('#result-rows audio').getAttribute('src'),/audio=a{64}/,'replay uses the protected clip endpoint');
   await page.locator('#result-filter').selectOption('failed');await page.waitForFunction(()=>document.querySelector('#result-rows').textContent.includes('Expected entry'));
   await page.locator('[data-category=press]').click();await page.locator('#start-tests').click();await page.waitForFunction(()=>!document.querySelector('#stop-tests').disabled);
   await page.locator('#stop-tests').click();await page.waitForFunction(()=>!document.querySelector('#resume-tests').disabled);

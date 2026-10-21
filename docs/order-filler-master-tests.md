@@ -5,7 +5,7 @@ Run from `tests/` after `npm install` and `npx playwright install chromium`.
 | When | Command | Coverage |
 | --- | --- | --- |
 | Ordinary changes | `npm run test:order-filler:press` | Browser presses, pointer FSM contract cases, supporting UI/model tests |
-| Ordinary changes | `npm run test:order-filler:voice` | Fast → Medium → Slow progressive transcript journeys, voice FSM contract cases, supporting speech/UI/model tests |
+| Ordinary changes | `npm run test:order-filler:voice` | Fast → Medium → Slow audio-driven journeys, voice FSM contract cases, supporting speech/UI/model tests |
 | Recognizer/language work | `npm run test:order-filler:duration` | Every second through 1:59:59, across applicable duration phrase paths and Numberpad forms |
 | Recognizer/language work | `npm run test:order-filler:time` | Every hour/minute through voice and Numberpad; every second through the absolute Numberpad |
 | After deployment | `npm run test:order-filler:deployed` | Served application assets in an isolated browser, per-locale Press/Fast/Medium/Slow results |
@@ -35,12 +35,65 @@ included in `fsm-report.json`. Passing these tests does not establish every poss
 combination of states; new states/transitions need reviewed contract cases.
 
 Voice delivery runs Fast (240 words/minute), then Medium (160), then Slow (90).
-Each phrase arrives as growing partials at that cadence, followed by its final
-result. Traces retain partial timestamps, and the test checks that every word was
-actually delivered at the configured pace. This exercises continuation/FSM timing;
-it does not test acoustic recognition or a physical microphone. Announcement rate
-is not changed. `CLOCKTIMER_SPEECH_DELIVERY=fast` selects one rate for diagnosis.
+The voice journey now synthesizes audible WAV clips, substitutes only the microphone
+source with a Web Audio MediaStream, and leaves SpeechMenu, its AudioWorklet resampler,
+VAD, grammar selection and recognizer intact. Expected text stays in Node: it is
+never sent to SpeechMenu or to the decoder as a recognition result. A two-second
+silent tail gives the normal silence/continuation logic time to finish. A committed
+surface transition is also a valid end boundary even when that transition cancels
+the old decoder before its final callback. The workflow still asserts actual UI/FSM
+results and released locks, rather than treating a recognized word as a passed action.
+
+`DiagnosticSpeechAudio` owns synthesis, rate/voice/locale cache identities, PCM WAV
+encoding and virtual-microphone installation. It uses the test-only eSpeak NG
+Emscripten port pinned to upstream commit
+`7ab07eba2d966ce45040c88d9be953e1d68640e7` (GPL-3.0, with its upstream COPYING).
+Source: https://github.com/echogarden-project/espeak-ng-emscripten . The pinned API
+accepts rate in words/minute; tests check that 240/160/90 produce different actual
+audio lengths. `tests/languages/<locale>/profile.cjs` declares the reviewed synthesis
+voice and recognizer/model identity; missing acoustic profiles fail explicitly.
+The current profile uses en-US and Vosk small en-US 0.15. Synthetic speech tests one
+speaker/pronunciation style; it does not establish accuracy for human speakers,
+noise, physical microphones or speaker-to-microphone echo. Announcement audio is
+stubbed to prevent it becoming unintended test input; announcement assertions remain
+in the separate FSM/model cases. Time/duration matrices remain exhaustive parser/
+Numberpad tests, not hundreds of thousands of synthesized recordings.
+
+`CLOCKTIMER_SPEECH_DELIVERY=fast` selects one delivery rate. Voice masters default to
+real audio. `CLOCKTIMER_VOICE_INPUT=transcript` explicitly selects the older growing-
+text simulation for FSM-only debugging; diagnostics workers force `audio` for voice.
+Supporting FSM/model cases remain independent deterministic checks and are labeled
+`model`, not acoustic coverage. Press cases are labeled `press`.
 `--journey-only` omits supporting suites during development; full masters are the gate.
+
+Audio and transcript-simulation journey reports use separate `audio/` and `transcript/` subfolders under each delivery rate, so simulation cannot overwrite acoustic evidence. Generated WAVs and metadata live under
+`tests/artifacts/language-tests/<locale>/audio/`. Journey reports retain the expected
+phrase, exact waveform SHA256, real partial/final transcripts and capture-end events.
+Published per-test records contain bounded `audioClips` replay references plus
+`inputLayer` and `recognizer`. The protected results table shows a collapsible Audio
+section with players and Expected/Heard text. `GET ?audio=<64-hex-key>&locale=<locale>`
+serves only a validated cache file behind the existing diagnostics authorization;
+there is no arbitrary file path or remote audio URL. Session credentials never enter
+clip metadata. No transcript fallback is allowed when recognition fails, and missing
+planned results still end incomplete.
+
+For Version 2, preserve these boundaries: a source adapter supplies PCM sound;
+production capture/recognition decides the words; a workflow oracle asserts behavior;
+a report adapter preserves the sound, hypotheses and outcome. Keep text-only FSM
+fixtures separate so their pass cannot be mistaken for acoustic recognition passing.
+
+Focused verification:
+`node tests/diagnostic-speech-audio-test.cjs` checks WAV sound, real rate differences
+and exact replay. `node tests/order-filler-acoustic-smoke.cjs` runs all three speeds
+through real Vosk, asserts that transcript-injection hooks do not exist, and checks
+that a silent waveform produces no recognized words. Install the pinned Vosk assets
+first with `python deploy/install_vosk_assets.py` for local runs. Deployment-targeted
+runs load the actual served recognizer/model instead.
+
+The first audio-driven Fast workflow run (2026-10-21) failed login because
+“zero zero four two okay” was recognized as “zero zero four two”, leaving the ID
+unconfirmed. This is retained as a failed acoustic workflow, not patched into a
+passing expected result. Medium audio reached goal entry but the goal remained 100% instead of 110%; Slow audio reached Trip mode and failed to select it. The three-rate capture/recognizer smoke tests pass. These workflow failures are not replaced with text injection or relabeled as passes.
 
 ## WMOF homepage panes
 
@@ -104,9 +157,9 @@ tests/artifacts/language-tests/
     time-summary.json
     order-filler/
       touch/press/report.json
-      voice/fast/report.json
-      voice/medium/report.json
-      voice/slow/report.json
+      voice/fast/audio/report.json
+      voice/medium/audio/report.json
+      voice/slow/audio/report.json
 ```
 
 The server uses `/var/lib/clocktimer/diagnostics/summary.log` plus
@@ -202,7 +255,7 @@ checks after stamping the build. `GITHUB_SHA` must match the published build com
 Backend trip/auth/settings calls are intercepted in the test browser: fixture trips
 are never written to production. Service-worker speech caching is intentionally
 bypassed in this fixture so it cannot hide or bypass test instrumentation. That
-cache and acoustic decoding need separate tests. Local supporting model tests still
+cache and physical microphone/echo behavior need separate tests. Local supporting model tests still
 run against the checked-out code, not against production APIs.
 
 For server reports, configure the existing permitted token as the GitHub secret
