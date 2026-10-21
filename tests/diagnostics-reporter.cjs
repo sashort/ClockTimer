@@ -13,7 +13,7 @@ class DiagnosticsClient {
   const url=new URL(this.url),headers={'Content-Type':'application/json'};
   if(authenticate&&this.token)url.searchParams.set('access_token',this.token);
   else {if(this.cookie)headers.Cookie=this.cookie;if(this.csrf)headers['X-CSRF-Token']=this.csrf;}
-  if(authenticate){url.searchParams.set('suite',input.suite);url.searchParams.set('locale',input.locale);}
+  if(authenticate){url.searchParams.set('suite',input.suite);url.searchParams.set('locale',input.locale);url.searchParams.set('status','1');}
   const response=await fetch(url,{method:authenticate?'GET':'POST',headers,body:authenticate?undefined:JSON.stringify(input),redirect:'error',signal:AbortSignal.timeout(30000)});
   const cookies=response.headers.getSetCookie?.()||[];
   if(cookies.length)this.cookie=cookies.map(c=>c.split(';')[0]).join('; ');
@@ -29,13 +29,18 @@ function sharedReporter(){
  const client=new DiagnosticsClient(process.env.CLOCKTIMER_DIAGNOSTICS_URL,{cookie:process.env.CLOCKTIMER_DIAGNOSTICS_COOKIE,csrf:process.env.CLOCKTIMER_DIAGNOSTICS_CSRF});
  return {tests:async tests=>{await client.request({action:'append',suite:process.env.CLOCKTIMER_DIAGNOSTICS_SUITE||'order-filler',locale:process.env.CLOCKTIMER_TEST_LOCALE||'en-US',runId:process.env.CLOCKTIMER_DIAGNOSTICS_RUN_ID,tests:tests.map(t=>({...t,delivery:process.env.CLOCKTIMER_SPEECH_DELIVERY||'press'}))});await checkpoint();}};
 }
+let checkpointHooks={};
+function setCheckpointHooks(hooks={}){checkpointHooks=hooks;}
 async function checkpoint(){
  const prefix=process.env.CLOCKTIMER_DIAGNOSTICS_JOB_PREFIX;if(!prefix)return;
+ let stopped=false;
+ if(fs.existsSync(prefix+'.pause')&&!fs.existsSync(prefix+'.abort')){await checkpointHooks.stop?.();stopped=true;}
  while(fs.existsSync(prefix+'.pause')&&!fs.existsSync(prefix+'.abort')){
   fs.writeFileSync(prefix+'.paused','stopped',{mode:0o600});await new Promise(resolve=>setTimeout(resolve,200));
  }
  fs.rmSync(prefix+'.paused',{force:true});
  if(fs.existsSync(prefix+'.abort'))throw Error('Diagnostics run aborted');
+ if(stopped)await checkpointHooks.resume?.();
 }
 async function beginValueRun({suite,locale,totalTests}){
  const file=identity(suite,locale),out=path.join(__dirname,'artifacts/language-tests',locale.toLowerCase());fs.mkdirSync(out,{recursive:true});
@@ -60,4 +65,4 @@ async function beginValueRun({suite,locale,totalTests}){
   }
  };
 }
-module.exports={identity,DiagnosticsClient,sharedReporter,beginValueRun,checkpoint};
+module.exports={identity,DiagnosticsClient,sharedReporter,beginValueRun,checkpoint,setCheckpointHooks};

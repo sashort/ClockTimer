@@ -154,7 +154,11 @@ so failed cases are never counted as passed merely because a lane completed.
 Stop is cooperative: an ongoing workflow checkpoint/support test finishes before
 the runner waits. Numeric tests stop after their current batch of at most 200
 cases. The UI shows Stopping until the checkpoint acknowledges Stopped. Resume
-keeps the same process, run ID, numbering and completed results. Abort terminates
+keeps the same process, run ID, numbering and completed results. Workflow browser
+clocks are frozen at the stop boundary and resumed with the same test; their timers
+cannot run ahead during a long pause. The pause boundary permits a one-second clock
+settle before freezing, rather than changing the timer in the middle of an action.
+Abort terminates
 the job's entire process group, closes open reports as aborted and keeps completed
 rows. It never turns unrun tests into successes. A stopped process survives page
 navigation but not a deployment/service restart; restart marks it incomplete.

@@ -6,6 +6,8 @@ const reporter = require('./diagnostics-reporter.cjs').sharedReporter();
 
 module.exports = async function runMaster(method) {
  const f = await fixture(), {page} = f;
+ const diagnostics=require('./diagnostics-reporter.cjs');
+ diagnostics.setCheckpointHooks(new (require('./browser-test-pause.cjs'))(page));
  const steps = [];
  let currentStep='initialization';
  const delivery=process.env.CLOCKTIMER_SPEECH_DELIVERY||'press';
@@ -171,6 +173,7 @@ module.exports = async function runMaster(method) {
   await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});
   throw error;
  } finally {
+  diagnostics.setCheckpointHooks();
   const speech=await page.evaluate(()=>globalThis.masterSpeechInputs||[]).catch(()=>[]);
 
   fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({method,delivery,passed:steps,errors:f.errors,speech},null,2));

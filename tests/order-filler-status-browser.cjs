@@ -60,6 +60,15 @@ const {chromium}=require('playwright');
   releaseNumeric();await page.waitForFunction(()=>document.querySelector('#live-progress').textContent.includes('test 62/62'));
   const after=await page.evaluate(()=>({y:scrollY,x:document.querySelector('#folders').closest('.panel').scrollLeft,stable:statusNodes.summary===document.querySelector('#summary-rows tr')&&statusNodes.numeric===document.querySelector('#numeric-rows tr')&&statusNodes.progress===document.querySelector('#live-progress progress'),focus:document.activeElement.id}));
   assert.equal(documentLoads,1);assert(Math.abs(after.y-before.y)<1,'retain scroll during fetch');assert.equal(after.x,before.x);assert(after.stable);assert.equal(after.focus,'locale');assert.deepEqual(errors,[]);
-  console.log('PASS six selectors, zero/count rendering, amber running state, result filtering, Start/Stop/Resume/Abort, inert labels, mobile and retained scroll/focus');
+  const pausePage=await browser.newPage();await pausePage.clock.install();await pausePage.setContent('<script>window.ticks=0;setInterval(()=>ticks++,50);</script>');
+  const diagnostics=require('./diagnostics-reporter.cjs'),pauseFolder=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'diagnostics-browser-pause-')),prefix=path.join(pauseFolder,'job'),previousPrefix=process.env.CLOCKTIMER_DIAGNOSTICS_JOB_PREFIX;
+  try{
+   process.env.CLOCKTIMER_DIAGNOSTICS_JOB_PREFIX=prefix;diagnostics.setCheckpointHooks(new (require('./browser-test-pause.cjs'))(pausePage));fs.writeFileSync(prefix+'.pause','pause');
+   const gate=diagnostics.checkpoint();for(let i=0;i<100&&!fs.existsSync(prefix+'.paused');i++)await new Promise(resolve=>setTimeout(resolve,50));
+   assert(fs.existsSync(prefix+'.paused'),'browser acknowledges stopped only after freezing');
+   const frozen=await pausePage.evaluate(()=>({now:Date.now(),ticks}));await new Promise(resolve=>setTimeout(resolve,400));assert.deepEqual(await pausePage.evaluate(()=>({now:Date.now(),ticks})),frozen,'stopped workflow timers do not advance');
+   fs.unlinkSync(prefix+'.pause');await gate;await new Promise(resolve=>setTimeout(resolve,200));assert((await pausePage.evaluate(()=>ticks))>frozen.ticks,'resume continues the same browser timers');
+  }finally{diagnostics.setCheckpointHooks();if(previousPrefix===undefined)delete process.env.CLOCKTIMER_DIAGNOSTICS_JOB_PREFIX;else process.env.CLOCKTIMER_DIAGNOSTICS_JOB_PREFIX=previousPrefix;await pausePage.close();fs.rmSync(pauseFolder,{recursive:true,force:true});}
+  console.log('PASS six selectors, counts, amber states, filtering, all controls, mobile, retained scroll/focus and frozen/resumed workflow timers');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
