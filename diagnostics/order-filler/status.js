@@ -7,7 +7,7 @@
  const url=(suite,language,parameters={})=>{const u=new URL('/api/diagnostics/order-filler/',location.origin);for(const [k,v] of Object.entries({suite,locale:language,...parameters}))u.searchParams.set(k,v);return u;};
  const count=value=>Number(value)>0?String(value):'---';
  const title=value=>value?value[0].toUpperCase()+value.slice(1):'No run';
- let category='press',language=locale,cursor=0,history=[],nextCursor=0,runId='',hasMore=false,csrf='',jobInfo={},generation=0,busy=false,pending=false,timer;
+ let category='press',language=locale.toLowerCase(),cursor=0,history=[],nextCursor=0,runId='',hasMore=false,csrf='',jobInfo={},generation=0,busy=false,pending=false,timer;
  const summaryRows=new Map(),numericRows=new Map(),resultRows=new Map();let snapshots={};
  const live=$('#live-progress'),liveTitle=element(live,'strong'),progress=element(live,'progress'),liveAge=element(live,'small','','muted');progress.hidden=true;
  function preserveScroll(update){const x=scrollX,y=scrollY,panels=[...document.querySelectorAll('.panel,.results-wrap')].map(e=>({e,x:e.scrollLeft,y:e.scrollTop}));update();for(const p of panels)p.e.scrollTo({left:p.x,top:p.y,behavior:'instant'});window.scrollTo({left:x,top:y,behavior:'instant'});}
@@ -65,7 +65,7 @@
   setText($('#build'),'Latest test runs'+(summary?.build?.version?' · build '+summary.build.version:''));$('#summary-log').href=url('summary',locale);
   for(const suite of ['time','duration']){
    let row=numericRows.get(suite);
-   if(!row){const tr=document.createElement('tr');element(tr,'td',names[suite]);const view=makeCategory(element(tr,'td'),suite,locale.toLowerCase());row={tr,view};numericRows.set(suite,row);$('#numeric-rows').append(tr);}
+   if(!row){const tr=document.createElement('tr');tr.style.cursor='pointer';tr.addEventListener('click',event=>{if(!event.target.closest('button'))choose(suite,locale);});element(tr,'td',names[suite]);const view=makeCategory(element(tr,'td'),suite,locale.toLowerCase());row={tr,view};numericRows.set(suite,row);$('#numeric-rows').append(tr);}
    renderCategory(row.view,stats(suite,locale.toLowerCase(),summary),suite,locale.toLowerCase());
   }
   const current=stats(category,language,summary),record=current.record;
@@ -93,7 +93,7 @@
   setText($('#page-label'),data.rows.length+' results on this page · '+(data.completed||0)+' / '+(data.total||0)+' reported'+(!data.rows.length&&hasMore?' · More records to search':''));
   $('#previous-results').disabled=!history.length;$('#next-results').disabled=!hasMore;
  }
- function choose(suite,lang=locale){category=suite;language=lang;cursor=0;history=[];runId='';generation++;$('#run-category').value=suite;renderControls();refresh();}
+ function choose(suite,lang=locale){category=suite;language=lang.toLowerCase();cursor=0;history=[];runId='';generation++;$('#run-category').value=suite;renderControls();refresh();}
  $('#run-category').addEventListener('change',event=>choose(event.target.value));
  $('#result-filter').addEventListener('change',()=>{cursor=0;history=[];generation++;refresh();});
  $('#next-results').addEventListener('click',()=>{if(!hasMore)return;history.push(cursor);cursor=nextCursor;generation++;refresh();});
