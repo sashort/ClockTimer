@@ -19,7 +19,7 @@ module.exports={locale:"en-US",phrases:{
   "commands": "commands",
   "who do you love": "who do you love",
   "wake": "wake",
-  "one hour and five seconds": "one hour and five seconds",
+  "one hour and five minutes": "one hour and five minutes",
   "day mode": "day mode",
   "week mode": "week mode",
   "money mode": "money mode",

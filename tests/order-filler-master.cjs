@@ -147,16 +147,16 @@ module.exports = async function runMaster(method) {
    assert.equal(await state(()=>document.querySelector('#tripTransitionOverlay').open),false);
   });
   await check('hour boundary switches the active overflow ring',async()=>{
-   if(method==='voice'){await say('ready');await say('one hour and five seconds');await say('okay');}
-   else {await tap('#newTripButton');await touchPad();for(const digit of '10005')await tap(`#numberPadGrid [data-number="${digit}"]`);await tap('#numberPadConfirm');}
+   if(method==='voice'){await say('ready');await say('one hour and five minutes');await say('okay');}
+   else {await tap('#newTripButton');await touchPad();for(const digit of '10500')await tap(`#numberPadGrid [data-number="${digit}"]`);await tap('#numberPadConfirm');}
    await wait(()=>document.querySelector('#clockTimer').status==='running');
-   assert.equal(await state(()=>document.querySelector('#clockTimer').standardTimeMilliseconds),3605000);
-   const start=await state(()=>Date.now());await page.clock.install({time:new Date(start)});
-   const active=()=>state(()=>[...document.querySelector('#clockTimer').querySelectorAll('ring-container[active]')].filter(r=>r.clockTimerRingIndex!==undefined).map(r=>r.clockTimerRingIndex));
-   const before=await active();assert.equal(before.length,1);
+   assert.equal(await state(()=>document.querySelector('#clockTimer').standardTimeMilliseconds),3900000);
+   const active=()=>state(()=>[...document.querySelector('#clockTimer').querySelectorAll('ring-container[active]')].filter(r=>r.clockTimerRingIndex!==undefined).map(r=>Number(r.clockTimerRingIndex)));
+   // Leave five minutes after the hour boundary for the handoff animation.
+   const before=await active();assert.deepEqual(before,[0],'initial hour ring');
    await page.clock.fastForward(3600000);
    await page.clock.runFor(1200);
-   const after=await active();assert.equal(after.length,1);assert.notDeepEqual(after,before,'hour handoff changes the active ring');
+   const after=await active();assert.deepEqual(after,[1],'hour handoff changes to the second ring');
    assert.equal(await state(()=>document.querySelector('#clockTimer').uiState.trip_active),true);
    await page.clock.resume();
    const speech=await state(()=>globalThis.masterSpeechInputs||[]);

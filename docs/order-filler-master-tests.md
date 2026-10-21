@@ -16,7 +16,7 @@ The browser journeys cover ID/PIN login, every preset goal mode, cancel/confirm
 entry, trip goal read/set, Sync, all three break types and confirmations,
 downtime/resume, Trip Log, mic interaction through an open modal, sleeping-command
 rejection/wake, summary/next-entry and standalone breaks. A 40-second trip is used
-for ordinary transitions. One 1:00:05 trip uses a virtual clock to cross the hour
+for ordinary transitions. One 1:05:00 trip uses a virtual clock to cross the hour
 boundary and verifies that exactly one indexed overflow ring remains active and
 that the active ring changes. No hour-long wall-clock wait is needed.
 
