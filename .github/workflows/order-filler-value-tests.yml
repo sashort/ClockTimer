@@ -1,0 +1,49 @@
+name: Exhaustive clock time and duration inputs
+on:
+  push:
+    paths:
+      - 'Vosk*.js'
+      - 'Sherpa*.js'
+      - 'PocketSphinx*.js'
+      - 'SpeechMenu.js'
+      - 'SpeechGrammarContext.js'
+      - 'speech/**'
+      - 'lang/**'
+      - 'tests/order-filler-*exhaustive.mjs'
+      - 'tests/languages/**'
+      - '.github/workflows/order-filler-value-tests.yml'
+  pull_request:
+    paths:
+      - 'Vosk*.js'
+      - 'Sherpa*.js'
+      - 'PocketSphinx*.js'
+      - 'SpeechMenu.js'
+      - 'SpeechGrammarContext.js'
+      - 'speech/**'
+      - 'lang/**'
+      - 'tests/order-filler-*exhaustive.mjs'
+      - 'tests/languages/**'
+      - '.github/workflows/order-filler-value-tests.yml'
+  workflow_dispatch:
+jobs:
+  values:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [time, duration]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+        working-directory: tests
+      - run: npm run test:order-filler:${{ matrix.kind }}
+        working-directory: tests
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: order-filler-values-${{ matrix.kind }}
+          path: tests/artifacts/language-tests/

@@ -2,6 +2,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:order-filler:press": "node order-filler-master-touch.cjs",
+    "test:order-filler:voice": "node order-filler-master-voice.cjs",
+    "test:order-filler:time": "node order-filler-time-exhaustive.mjs",
+    "test:order-filler:duration": "node order-filler-duration-exhaustive.mjs",
+    "test:order-filler:deployed": "node order-filler-post-deploy.cjs",
     "test:trip-sync": "node autosync-rebuild.mjs",
     "test:offline-buffer": "node offline-trip-buffer.mjs",
     "test:calendar": "node calendar-ranges.mjs",

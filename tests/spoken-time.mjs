@@ -25,3 +25,10 @@ assert.deepEqual(parts("today at five"), [2026, 9, 20, 17, 0]);
 assert.equal(Parser.parse("twenty five sixty", {baseDate: reference}), undefined);
 
 console.log("PASS English spoken-time parsing and future-time resolution");
+
+for (const [phrase, hour, minute] of [
+    ["quarter to twelve pm", 11, 45], ["quarter to twelve am", 23, 45],
+    ["five till twelve pm", 11, 55], ["five until twelve am", 23, 55],
+    ["zero to six pm", 18, 0]
+]) { const value=Parser.parseParts(phrase);assert.equal(value.hour % 12 + (value.meridiem === 'pm' ? 12 : 0),hour,phrase);assert.equal(value.minute,minute,phrase); }
+console.log('PASS relative time preserves meridiem across noon/midnight and handles zero offset');

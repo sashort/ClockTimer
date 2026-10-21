@@ -115,6 +115,8 @@ jobs:
         working-directory: tests
       - run: npx playwright install --with-deps chromium
         working-directory: tests
+      - run: node tests/order-filler-master-touch.cjs
+      - run: node tests/order-filler-master-voice.cjs
       - run: node tests/speech-continuation-browser.cjs
       - run: node tests/shared-modal-browser.cjs
       - run: node tests/hamburger-menu-coverage-browser.cjs
@@ -143,6 +145,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: php -l api/command-check/index.php
+      - run: php -l api/diagnostics/order-filler/index.php
+      - run: php -l api/_core/order_filler_diagnostics.php
+      - run: php tests/order-filler-diagnostics.php
       - run: php -l api/_core/trip_session_timing.php
       - run: php tests/trip-session-timing.php
       - run: php -l api/trips/index.php
@@ -352,9 +357,30 @@ jobs:
              sudo -n chmod 664 SpeechFunctionRoles.js
 
              sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/calendars
+             sudo -n install -d -o daemon -g daemon -m 700 /var/lib/clocktimer/diagnostics
              python3 scripts/stamp-version.py
 
              USERS_STATUS=$(curl -sS -o /tmp/clocktimer-users-health.json -w "%{http_code}" https://wmof.sashort-apps.com/api/users/)
              echo "Users API status: $USERS_STATUS"
              cat /tmp/clocktimer-users-health.json
              echo'
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+        working-directory: tests
+      - run: npx playwright install --with-deps chromium
+        working-directory: tests
+      - name: Verify deployed Order Filler workflows
+        run: node tests/order-filler-post-deploy.cjs
+        env:
+          ORDER_FILLER_TEST_BASE_URL: https://wmof.sashort-apps.com/
+          CLOCKTIMER_DIAGNOSTICS_TOKEN: ${{ secrets.CLOCKTIMER_DIAGNOSTICS_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployed-order-filler-diagnostics
+          path: tests/artifacts/language-tests/

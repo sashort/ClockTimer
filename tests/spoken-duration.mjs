@@ -200,3 +200,6 @@ console.log(
 assert.equal(parse("tutu"),parse("22"));
 assert.equal(parse("tutu minutes"),parse("22 minutes"));
 assert.equal(parse("tutu nineteen"),parse("twenty two nineteen"));
+
+for(const [phrase,expected] of [['twenty one',1260000],['twenty two',1320000],['fifty nine',3540000],['twenty two seventeen',1337000],['an hour and five',3900000],['one hour 5 minutes',3900000]])assert.equal(Parser.parse(phrase),expected,phrase);
+console.log('PASS whole cardinals stay minutes; positional suffixes and article/explicit units remain intact');

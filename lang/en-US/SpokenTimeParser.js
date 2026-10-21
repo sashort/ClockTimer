@@ -74,11 +74,15 @@ class EnglishSpokenTimeParser {
             const minute = relative[1] === "quarter" ? 15 : relative[1] === "half" ? 30 : EnglishSpokenTimeParser.#wordsToNumber(relative[1]);
             const hour = EnglishSpokenTimeParser.#parseHour(relative[3]);
             if (!Number.isInteger(minute) || minute < 0 || minute > 59 || hour === undefined) return undefined;
-            if (["to", "till", "until"].includes(relative[2])) {
-                const adjustedHour = hour === 1 ? 12 : hour - 1;
-                return {hour: adjustedHour, minute: 60 - minute, meridiem, day};
-            }
-            return {hour, minute, meridiem, day};
+            if (!EnglishSpokenTimeParser.#validate(hour, 0, meridiem, day)) return undefined;
+            const anchorHour = meridiem ? hour % 12 + (meridiem === "pm" ? 12 : 0) : hour;
+            const subtract = ["to", "till", "until"].includes(relative[2]);
+            const totalMinutes = (anchorHour * 60 + (subtract ? -minute : minute) + 1440) % 1440;
+            const resultHour24 = Math.floor(totalMinutes / 60);
+            const resultMeridiem = meridiem ? (resultHour24 >= 12 ? "pm" : "am") : undefined;
+            // Preserve ambiguous 12-hour speech when no meridiem was supplied.
+            const resultHour = meridiem || (hour > 0 && hour <= 12) ? resultHour24 % 12 || 12 : resultHour24;
+            return EnglishSpokenTimeParser.#validate(resultHour, totalMinutes % 60, resultMeridiem, day);
         }
 
         const numeric = text.match(/^(\d{1,2})(?::|\s)(\d{1,2})$/);

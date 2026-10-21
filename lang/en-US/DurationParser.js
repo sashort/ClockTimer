@@ -170,6 +170,15 @@ class EnglishDurationParser {
                 .replace(/\s+/g, " ")
                 .trim();
 
+        const minutes =
+            EnglishDurationParser
+                .#number(
+                    cardinalText
+                );
+
+        // A complete cardinal is one minute quantity, not an hour/minute split.
+        if (Number.isInteger(minutes) && minutes > 0 && minutes <= 59) return minutes * 60000;
+
         const clockStyleHourMinute =
             EnglishDurationParser
                 .#parseClockStyleHourMinute(
@@ -183,19 +192,7 @@ class EnglishDurationParser {
             return clockStyleHourMinute;
         }
 
-        const minutes =
-            EnglishDurationParser
-                .#number(
-                    cardinalText
-                );
-
-        return (
-            Number.isInteger(minutes) &&
-            minutes > 0 &&
-            minutes <= 59
-        )
-            ? minutes * 60000
-            : undefined;
+        return undefined;
     }
 
     static format(milliseconds) {

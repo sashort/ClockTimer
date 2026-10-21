@@ -5,6 +5,7 @@ const ACCESS_TOKEN_SCOPE_SQL = 'sql';
 const ACCESS_TOKEN_SCOPE_SPEECH_EDITOR = 'speech_editor';
 const ACCESS_TOKEN_SCOPE_ACCESS_TOKENS = 'access_tokens';
 const ACCESS_TOKEN_SCOPE_NEW_USER = 'new_user';
+const ACCESS_TOKEN_SCOPE_DIAGNOSTICS = 'diagnostics';
 
 function optional_current_user(): ?array
 {
@@ -211,6 +212,7 @@ function consume_access_token(
                 ACCESS_TOKEN_SCOPE_SPEECH_EDITOR,
                 ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
                 ACCESS_TOKEN_SCOPE_NEW_USER,
+                ACCESS_TOKEN_SCOPE_DIAGNOSTICS,
             ],
             true
         )
