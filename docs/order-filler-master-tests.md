@@ -129,7 +129,11 @@ reader grows its EOF window for a long language summary; it does not scan the wh
 report. Full logs are available through an authenticated GET without `status=1`.
 `/diagnostics/order-filler/` polls status every two seconds and shows the language
 matrix in Press/Fast/Medium/Slow order, live progress, separate numeric results,
-log links and stale-update notices. Quiet runs are never inferred to have passed.
+log links and stale-update notices. Polling uses `fetch` without document navigation.
+A complete snapshot is fetched before patching stable table/progress nodes; page
+and panel scroll offsets are retained at render time, including scrolling during
+a pending request. Focused controls remain mounted. Quiet runs are never inferred
+to have passed.
 
 ## Restricted access and deployment
 
