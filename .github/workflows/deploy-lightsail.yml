@@ -120,7 +120,9 @@ jobs:
       - run: python deploy/install_vosk_assets.py
       - run: node tests/diagnostic-speech-audio-test.cjs
       - run: node tests/order-filler-acoustic-smoke.cjs
+        timeout-minutes: 5
       - run: node tests/order-filler-master-voice.cjs
+        timeout-minutes: 15
       - run: node tests/speech-continuation-browser.cjs
       - run: node tests/shared-modal-browser.cjs
       - run: node tests/hamburger-menu-coverage-browser.cjs

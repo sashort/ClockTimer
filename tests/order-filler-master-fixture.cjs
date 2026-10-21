@@ -44,13 +44,14 @@ module.exports=async function createMasterFixture({input='transcript'}={}){
   assert(await page.evaluate(()=>typeof SpeechMenu.testActivate==='function'),'SpeechMenu test hook must attach to the served runtime');
   await page.evaluate(async()=>{SpeechMenu.testActivate();await WMOFActions.handleSpeechRuntimeStarted();const bar=document.querySelector('#speechMicBar');bar.hidden=false;bar.promoteTopLayer();});
   }else{
-   await page.evaluate(async()=>{
+   let startupDeadline;
+   try{await Promise.race([page.evaluate(async()=>{
     globalThis.acousticSpeechEvents=[];globalThis.acousticRuntime=null;
     SpeechMenu.events.addEventListener('started',event=>{acousticRuntime=event.detail;});
     for(const type of ['speechTranscriptScoped','utteranceStarted','utteranceFinished','utteranceCommitted','speechRecognitionFailed'])SpeechMenu.events.addEventListener(type,event=>acousticSpeechEvents.push({type,...event.detail}));
     if(!await SpeechMenu.start(document.documentElement.lang||'en-US'))throw Error('Real speech runtime did not start');
     await WMOFActions.handleSpeechRuntimeStarted();const bar=document.querySelector('#speechMicBar');bar.hidden=false;bar.promoteTopLayer();
-   });
+   }),new Promise((_,reject)=>{startupDeadline=setTimeout(()=>reject(Error('Real speech runtime startup exceeded 90 seconds')),90000);})]);}finally{clearTimeout(startupDeadline);}
   }
   await page.waitForTimeout(1100);
   if(acoustic)assert.equal(await page.evaluate(()=>WMOF_SPEECH_BACKEND),profile.acoustic.backend,'audio diagnostics use the configured recognizer');
