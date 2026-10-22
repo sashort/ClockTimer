@@ -2,6 +2,14 @@
 
 Run from `tests/` after `npm install` and `npx playwright install chromium`.
 
+Use the pinned Playwright 1.62.1 dependency and its matching browser. Playwright
+1.55 stalled `AudioContext.audioWorklet.addModule()` before Vosk/model startup,
+including in a minimal worklet-only reproduction. Switching the driver to 1.62.1
+with the same Chromium binary allowed startup and real speech recognition. Keep
+the real audio smoke check as a release gate; a timeout is a failure, never a
+reason to substitute transcript injection. Startup failures include the audio
+source state, latest speech status and browser exceptions for diagnosis.
+
 | When | Command | Coverage |
 | --- | --- | --- |
 | Ordinary changes | `npm run test:order-filler:press` | Browser presses, pointer FSM contract cases, supporting UI/model tests |

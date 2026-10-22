@@ -56,7 +56,7 @@
     "happy-dom": "20.14.5"
   },
   "devDependencies": {
-    "playwright": "1.55.0",
+    "playwright": "1.62.1",
     "pngjs": "7.0.0",
     "@echogarden/espeak-ng-emscripten": "https://codeload.github.com/echogarden-project/espeak-ng-emscripten/tar.gz/7ab07eba2d966ce45040c88d9be953e1d68640e7"
   }

@@ -45,13 +45,19 @@ module.exports=async function createMasterFixture({input='transcript'}={}){
   await page.evaluate(async()=>{SpeechMenu.testActivate();await WMOFActions.handleSpeechRuntimeStarted();const bar=document.querySelector('#speechMicBar');bar.hidden=false;bar.promoteTopLayer();});
   }else{
    let startupDeadline;
-   try{await Promise.race([page.evaluate(async()=>{
+   // Retain the evaluated promise while asynchronous audio/model startup is pending.
+   try{await Promise.race([page.evaluate(()=>globalThis.acousticStartupPromise=(async()=>{
     globalThis.acousticSpeechEvents=[];globalThis.acousticRuntime=null;
+    globalThis.acousticStartupStatus='starting';
+    SpeechMenu.events.addEventListener('speechRecognitionStatusChanged',event=>{acousticStartupStatus=event.detail?.status;});
     SpeechMenu.events.addEventListener('started',event=>{acousticRuntime=event.detail;});
     for(const type of ['speechTranscriptScoped','utteranceStarted','utteranceFinished','utteranceCommitted','speechRecognitionFailed'])SpeechMenu.events.addEventListener(type,event=>acousticSpeechEvents.push({type,...event.detail}));
     if(!await SpeechMenu.start(document.documentElement.lang||'en-US'))throw Error('Real speech runtime did not start');
     await WMOFActions.handleSpeechRuntimeStarted();const bar=document.querySelector('#speechMicBar');bar.hidden=false;bar.promoteTopLayer();
-   }),new Promise((_,reject)=>{startupDeadline=setTimeout(()=>reject(Error('Real speech runtime startup exceeded 90 seconds')),90000);})]);}finally{clearTimeout(startupDeadline);}
+   })()),new Promise((_,reject)=>{startupDeadline=setTimeout(()=>reject(Error('Real speech runtime startup exceeded 90 seconds')),90000);})]);}catch(error){
+    const state=await page.evaluate(()=>({audio:diagnosticsAudioInput.state,status:globalThis.acousticStartupStatus,events:globalThis.acousticSpeechEvents?.slice(-5)})).catch(()=>null);
+    console.error('Acoustic startup evidence:',JSON.stringify({state,errors}));throw error;
+   }finally{clearTimeout(startupDeadline);}
   }
   await page.waitForTimeout(1100);
   if(acoustic)assert.equal(await page.evaluate(()=>WMOF_SPEECH_BACKEND),profile.acoustic.backend,'audio diagnostics use the configured recognizer');

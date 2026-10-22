@@ -38,6 +38,7 @@ class DiagnosticSpeechAudio {
     await ensure();return destination.stream.clone();
    };
    globalThis.diagnosticsAudioInput={
+    get state(){return context?.state||'not-created';},
     async play(base64){
      await ensure();const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));const buffer=await context.decodeAudioData(bytes.buffer);
      const source=context.createBufferSource();source.buffer=buffer;source.connect(destination);
