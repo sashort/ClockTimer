@@ -494,7 +494,9 @@ if(process.argv.includes('--range-permissions')) {
    valuePhrases:window.VoskGrammarRouter.valuePhrases(),
    nextRecords:async text=>(await window.SpeechMenu.testVoskContext(u.id,text)).records});
   await router.update(phrase.split(' ').slice(0,2).join(' '));
-  const routed=await router.update(phrase);
+  assert(!router.prefix || phrase.startsWith(router.prefix+' '),'the routed prefix belongs to the original phrase');
+  // The adapter removes the consumed prefix from cumulative decoder text.
+  const routed=await router.update(phrase.slice(router.prefix.length).trim());
   assert.equal(routed.transcript,phrase,phrase+' retains its leading percentage');
   window.SpeechMenu.testResult(u,routed.transcript,true);await settle();await u.digestQueue;await u.segmentBarrier;await settle();
   assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' commits through the raw recognition path');
