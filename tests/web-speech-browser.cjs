@@ -17,6 +17,8 @@ const root=path.resolve(__dirname,'..');
   const errors=[],requests=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>requests.push(new URL(request.url()).pathname));
   await page.addInitScript(()=>{
    globalThis.nativeSpeechInstances=[];globalThis.captureCalls=0;
+   globalThis.webSpeechShadows=new WeakMap();const attach=Element.prototype.attachShadow;
+   Element.prototype.attachShadow=function(options){const shadow=attach.call(this,options);webSpeechShadows.set(this,shadow);return shadow;};
    if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia=async()=>{captureCalls++;throw Error('Web Speech must own capture');};
    globalThis.SpeechRecognition=class {
     constructor(){nativeSpeechInstances.push(this);this.results=[];}
@@ -91,6 +93,14 @@ const root=path.resolve(__dirname,'..');
   await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['diagnostic command']));
   await page.waitForTimeout(200);
   assert.equal(await page.evaluate(()=>webSpeechTestCalls),2,'sleep blocks ordinary commands');
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).onend?.());
+  await page.waitForTimeout(500);
+  assert.equal(await page.locator('#speechMicBar').getAttribute('state'),'muted','native restart preserves the sleeping indicator');
+  assert.equal(await page.evaluate(()=>webSpeechShadows.get(document.querySelector('#speechMicBar')).textContent.includes('browser-listening')),false,'native status is not rendered as a transcript');
+  await page.evaluate(()=>SpeechMenu.wake());
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).onend?.());
+  await page.waitForTimeout(500);
+  assert.equal(await page.locator('#speechMicBar').getAttribute('state'),'listening','native restart updates the listening indicator');
   await page.evaluate(()=>SpeechMenu.stop());
   assert.equal(await page.evaluate(()=>SpeechMenu.started),false);
   assert.deepEqual(requests.filter(p=>/VoskRecognizer|VoskTestConfig|PocketSphinxRecognizer|SherpaRecognizer|SileroVad|SpeechAssetCacheWorker|\.wasm$|vosk-model/.test(p)),[],'no local recognition backend loads');

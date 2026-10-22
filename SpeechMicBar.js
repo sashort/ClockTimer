@@ -6025,6 +6025,15 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 );
                 break;
             case "speechRecognitionStatusChanged":
+                if (detail?.status === "browser-listening") {
+                    this.#clearLoadingProgress();
+                    this.setAttribute("state", globalThis.SpeechMenu?.listeningSuspended
+                        ? "suspended" : globalThis.SpeechMenu?.muted ? "muted" : "listening");
+                    const pending = this.#pendingTranscript();
+                    if (pending) this.#showStreamingPhrase(pending);
+                    else this.#showIdleText();
+                    break;
+                }
                 // Decoder routing is diagnostic information. Keep the live
                 // transcript visible while its constrained grammar changes.
                 if (["grammar-switch", "grammar-omissions"].includes(detail?.status)) break;
