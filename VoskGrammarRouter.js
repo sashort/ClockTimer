@@ -37,10 +37,20 @@
         }
 
         get phrases() {
+            const initialPhrases = path => {
+                const stage = path.stages[0];
+                // Root value-first alternatives need a bootstrap vocabulary,
+                // not hundreds of repeated numeric phrase transitions that
+                // overpower literal heads such as "trip mode".
+                return this.grammar === "commands" && stage?.grammar !== "commands" &&
+                    path.record.atomic !== "digits" && path.stages[1]?.grammar === "commands"
+                    ? unique(stage.phrases.flatMap(phrase => phrase.split(" ")))
+                    : stage?.phrases || [];
+            };
             const continuations = this.confirmationLocked
                 ? this.continuations.filter(path => path.record.action === "SpeechMenu.cancel")
                 : this.continuations;
-            return unique([...this.paths.flatMap(path => path.stages[0]?.phrases || []),
+            return unique([...this.paths.flatMap(initialPhrases),
                 // A value-first command can finish without a pause before its
                 // literal suffix (for example "one hundred ten percent trip").
                 ...this.paths.flatMap(path => path.record.atomic !== "digits" && path.stages[0]?.grammar !== "commands" &&

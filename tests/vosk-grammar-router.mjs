@@ -12,6 +12,8 @@ const mixedRoot = new Router({records:[
 ],valuePhrases:{number:['three','one hundred ten']}});
 assert.equal((await mixedRoot.update('three')).grammar,'commands','a provisional value-first head must retain literal command competitors');
 assert(mixedRoot.phrases.includes('trip mode'),'Trip mode remains available after an unstable numeric partial');
+assert(mixedRoot.phrases.includes('hundred'),'value-first numeric words remain recognizable at root');
+assert(!mixedRoot.phrases.includes('one hundred ten'),'root numeric words do not overweight command heads with repeated number phrases');
 assert.equal((await mixedRoot.update('trip mode')).transcript,'trip mode','a corrected partial can resolve the literal command');
 const numericRoot = new Router({records:[{pattern:'^trip(?: mode)?$'},
     {pattern:'^(?<percent>.+) (?<goalScope>trip|day)$'}],valuePhrases:{number:['three','one hundred ten']}});

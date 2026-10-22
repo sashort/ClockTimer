@@ -16,7 +16,7 @@ function createServer(acoustic){return http.createServer((req,res)=>{
  res.end(instrument(pathname,source,acoustic));
 });}
 
-module.exports=async function createMasterFixture({input='transcript'}={}){
+module.exports=async function createMasterFixture({input='transcript',beforeAudioStart}={}){
  if(!['audio','transcript'].includes(input))throw Error('Choose audio or explicitly select transcript simulation');
  const acoustic=input==='audio';
  const locale=process.env.CLOCKTIMER_TEST_LOCALE||'en-US',profile=require('./languages/'+locale+'/profile.cjs');
@@ -44,6 +44,7 @@ module.exports=async function createMasterFixture({input='transcript'}={}){
   assert(await page.evaluate(()=>typeof SpeechMenu.testActivate==='function'),'SpeechMenu test hook must attach to the served runtime');
   await page.evaluate(async()=>{SpeechMenu.testActivate();await WMOFActions.handleSpeechRuntimeStarted();const bar=document.querySelector('#speechMicBar');bar.hidden=false;bar.promoteTopLayer();});
   }else{
+   if(beforeAudioStart)await beforeAudioStart(page);
    let startupDeadline;
    // Retain the evaluated promise while asynchronous audio/model startup is pending.
    try{await Promise.race([page.evaluate(()=>globalThis.acousticStartupPromise=(async()=>{

@@ -70,7 +70,9 @@ Numberpad tests, not hundreds of thousands of synthesized recordings.
 Root grammar routing keeps a provisional value-first command in competition with
 literal heads until its required suffix arrives. A partial `three` must be able
 to revise to `trip mode`; a complete number-first goal still follows its declared
-suffix. Optional value continuations come only from the matched command, not from
+suffix. At a mixed root, those alternatives contribute their bounded word
+vocabulary rather than hundreds of repeated numeric phrase transitions; typed
+collectors retain their full phrase vocabulary. Optional value continuations come only from the matched command, not from
 unrelated time/duration commands. Routing also accepts a first partial that already
 contains both the command head and its value.
 

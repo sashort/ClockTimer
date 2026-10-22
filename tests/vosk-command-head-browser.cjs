@@ -4,14 +4,16 @@ const fixture=require('./order-filler-master-fixture.cjs');
  const previous=process.env.CLOCKTIMER_SPEECH_RATE_WPM;
  try{for(const wpm of [240,160,90]){
   process.env.CLOCKTIMER_SPEECH_RATE_WPM=String(wpm);
-  const f=await fixture({input:'audio'});
-  try{
+  const f=await fixture({input:'audio',beforeAudioStart:async page=>{
    // Touch login isolates root-command recognition from the separate PIN workflow.
    for(const [kind,value] of [['id','0042'],['pin','1234']]){
-    for(let i=0;i<4;i++)await f.page.locator(`[data-login-digit="${kind}"][data-digit-index="${i}"]`).fill(value[i]);
-    await f.page.locator('#loginButton').tap();
+    for(let i=0;i<4;i++)await page.locator(`[data-login-digit="${kind}"][data-digit-index="${i}"]`).fill(value[i]);
+    await page.locator('#loginButton').tap();
+    if(kind==='id')await page.waitForFunction(()=>!document.querySelector('#loginPinRow').hidden);
    }
-   await f.page.waitForFunction(()=>!document.querySelector('#loginDialog').open);
+   await page.waitForFunction(()=>!document.querySelector('#loginDialog').open);
+  }});
+  try{
    await f.page.locator('#scopeToggle').tap();
    await f.page.locator('#scopeToggleDropdown [data-mode="year"]').tap();
    assert.equal(await f.page.evaluate(()=>document.querySelector('#clockTimer').percentMode),'total');
