@@ -12421,9 +12421,14 @@
                 // modal in the top layer. Keep Login in front until it succeeds.
                 if (document.fullscreenElement && loginIsOpen() &&
                     !loginConfirmedThisLoad) {
-                    const dialog=activeLoginDialog();dialog.close();dialog.showModal();
+                    const dialog=activeLoginDialog();
+                    // SharedModal reorders its host on fullscreenchange. A
+                    // close/open cycle here restarts Login and erases a PIN
+                    // entered while the fullscreen request was pending.
+                    if (!dialog.closest('shared-modal-host')) {dialog.close();dialog.showModal();}
                     speechMicBar?.promoteTopLayer?.();refreshLoginBoundary();
-                    (dialog === legacyLoginDialog ? $("#loginLegacyUsername") : dialog.querySelector('[data-login-digit="id"]'))?.focus({preventScroll:true});
+                    const digitIndex=Math.max(0,loginDigitSlots[voiceLoginStage].indexOf(''));
+                    (dialog === legacyLoginDialog ? $("#loginLegacyUsername") : dialog.querySelector(`[data-login-digit="${voiceLoginStage}"][data-digit-index="${digitIndex}"]`))?.focus({preventScroll:true});
                 }
                 fullscreenLoginAttempt = undefined;
             });

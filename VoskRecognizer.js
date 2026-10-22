@@ -147,7 +147,7 @@
                 : [...stagePhrases];
             // Give out-of-grammar speech a rejection path instead of forcing
             // every sound into an available command (especially a wake word).
-            if (this.#router.grammar === "commands" && !this.#router.confirmationLocked) phrases.push("[unk]");
+            if (!literalPrefix && this.#router.grammar === "commands" && !this.#router.confirmationLocked) phrases.push("[unk]");
             if (this.#router.unsupported.length > this.#reportedOmissions) {
                 this.dispatchEvent(new CustomEvent("status", {detail: {
                     status: "grammar-omissions", utteranceId: this.#id,

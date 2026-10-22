@@ -115,13 +115,17 @@ head-only readback. Atomic digit groups stay revisable until a following token
 establishes their boundary. Vosk terminal command effects wait for a final result
 or an explicit following command; opening a declared continuation surface keeps
 its existing behavior. Sleep is an execution boundary: partial wake hypotheses
-cannot activate the UI. `[unk]` gives out-of-grammar sounds a rejection path
+cannot activate the UI. At command roots, `[unk]` gives out-of-grammar sounds a rejection path
 instead of forcing every sound into an available command.
 
 The focused command-head audio regression also checks setting 110 percent and
 reading it back at all three delivery rates. The virtual audio fixture retains
 its AudioContexts throughout browser startup to prevent pending worklet promises
 from being collected; it still processes real PCM through VAD and Vosk.
+
+`node tests/login-fullscreen-browser.cjs` completes a deferred fullscreen request
+during PIN entry. SharedModal promotes its host without reopening Login, preserving
+the current stage, entered digits and next-digit focus.
 
 `CLOCKTIMER_SPEECH_DELIVERY=fast` selects one delivery rate. Voice masters default to
 real audio. `CLOCKTIMER_VOICE_INPUT=transcript` explicitly selects the older growing-

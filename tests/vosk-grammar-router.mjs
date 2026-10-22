@@ -178,6 +178,9 @@ assert(decoders.at(-1).phrases.includes('week mode'),'the original terminal rema
 assert(!decoders.at(-1).phrases.includes('week mode log'),'a provisional literal is not forced into replay');
 decoders.at(-1).emit('week');await flush();
 assert.equal(terminalText.at(-1),'week','uncommitted hypotheses remain revisable');
+decoders.at(-1).emit('week mode log');await flush();
+assert.equal(terminalText.at(-1),'week mode log');
+assert(!decoders.at(-1).phrases.includes('[unk]'),'a consumed-prefix continuation keeps its constrained vocabulary');
 literalRecognizer.close();
 
 // Sleeping vocabulary can recognize the dummy without translating it to Wake.

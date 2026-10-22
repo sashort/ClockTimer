@@ -116,6 +116,7 @@ jobs:
         working-directory: tests
       - run: npx playwright install --with-deps chromium
         working-directory: tests
+      - run: node tests/login-fullscreen-browser.cjs
       - run: node tests/order-filler-master-touch.cjs
       - run: python deploy/install_vosk_assets.py
       - run: node tests/diagnostic-speech-audio-test.cjs
