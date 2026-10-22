@@ -691,14 +691,16 @@ Recovery policy:
 - `network`, unexpected `aborted`, `audio-capture`, and `no-speech` recover.
   An ordinary end also schedules a new session.
 - An audio-end event immediately clears capture readiness. If no end arrives,
-  a 1,000 ms grace watchdog replaces the interrupted session.
+  wait for recognition to drain; capture ending does not end recognition.
+  A 10,000 ms watchdog bounds missing results/end. Once a final result has
+  arrived, a 1,000 ms missing-end guard can safely restart the session.
 - Every native start, including restarts, has a 10,000 ms capture-start watchdog.
   Missing audio after a service start therefore cannot strand the adapter.
 - Restart backoff begins at 300 ms, doubles to a 5,000 ms ceiling, and stops
   after six unsuccessful/unstable recovery attempts. A usable result or five
   seconds of stable capture resets the failure count. No-speech is a normal
   inactivity boundary rather than an accumulated service failure.
-- A missing final after an explicit finish has a 7,000 ms deadline; it settles
+- A missing final after an explicit finish has a 10,000 ms deadline; it settles
   the old utterance and recovers capture. Alternative selection has a 10,000 ms
   deadline so a stuck planner promise cannot permanently block the result queue.
 - Permission/service denial, unsupported configuration, and exhausted recovery
@@ -757,3 +759,34 @@ The application uses it only to admit pending captured input during recovery.
 Capture status remains separate: the Mic Bar can be reconnecting while retaining
 validated text until its normal TTL. A final-result-then-native-end login test
 protects this ordering. Deliberate off, sleep, and authorization gates still apply.
+
+
+### Capture completion is not recognition completion
+
+`audioend` means capture stopped; it is not a failure or proof that the final
+transcript has arrived. See the [Web Speech event contract](https://webaudio.github.io/web-speech-api/#speechreco-events).
+The previous one-second audio-end watchdog could abort a valid remote result
+before delivery. A regression now delivers a final after 1.5 seconds and requires
+that it is processed exactly once, with capture still reported inactive.
+
+The native-session owner exposes a separate processing/draining phase. Normal
+`audioend` displays Processing, preserves its callbacks for the bounded final-result
+wait, and waits for `end` to restart. A delayed result does not claim capture has
+resumed. Normal `end`, no-speech completion, and a missing end after a delivered
+final use a clean restart without consuming the transient-error retry budget.
+Only actual failures or expired progress watchdogs enter Reconnecting. Tests also
+cycle twelve short normal sessions to verify they cannot exhaust error retries.
+
+For shared percentage presentation, actual and goal always occupy equal-width
+tracks, even when their text lengths differ. Each uses its own font-fit scale.
+Sync remains fixed-size in its separate track, which collapses when hidden.
+
+
+### Shared validated command buffer
+
+See [ValidatedCommandBuffer](class-architecture-v2.md#validatedcommandbuffer--accepted-work-independent-of-capture).
+Capture session identity no longer owns the execution queue or accepted Mic Bar
+text. SpeechMenu publishes buffer snapshots; the Mic Bar renders the same ordered
+components being executed. Restarting capture can accept new components while an
+earlier command is pending. Keep per-command execution-context deduplication,
+owned malformed-root cancellation, and transactional authorization.

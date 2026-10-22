@@ -1,12 +1,14 @@
 /* Browser-owned capture and N-best results. Only SpeechMenu validates commands. */
 (() => {
     "use strict";
+    const finalResultTimeoutMilliseconds=10000;
     // Owns browser capture lifecycle independently of transcript/command work.
     class BrowserSpeechSession extends EventTarget {
         #Recognition; #options; #native; #closed=false; #started=false; #audio=false;
         #attempts=0; #readyAt=0; #sequence=0; #restartTimer; #startupTimer; #audioEndTimer; #stableTimer;
-        #resolve; #reject; #starting; #listeners=[];
+        #resolve; #reject; #starting; #listeners=[]; #draining=false; #normalRestart=false;
         get listening(){return !this.#closed&&this.#started&&this.#audio;}
+        get processing(){return !this.#closed&&(this.#draining||this.#normalRestart);}
         constructor(Recognition,options){
             super();this.#Recognition=Recognition;this.#options=options;
             const bind=(target,type,handler)=>{target?.addEventListener?.(type,handler);this.#listeners.push(()=>target?.removeEventListener?.(type,handler));};
@@ -25,27 +27,35 @@
         }
         #open(){
             if(this.#closed)return;
-            this.#restartTimer=undefined;this.#started=this.#audio=false;this.#readyAt=0;
+            this.#restartTimer=undefined;this.#started=this.#audio=this.#draining=false;this.#readyAt=0;
+            this.#normalRestart=this.#sequence>0&&this.#attempts===0;
             const native=this.#native=new this.#Recognition(),sessionId=++this.#sequence;
             const current=()=>!this.#closed&&this.#native===native;
             Object.assign(native,{lang:this.#options.language,continuous:true,interimResults:true,maxAlternatives:this.#options.maxAlternatives});
             if('processLocally' in native)native.processLocally=this.#options.processLocally;
-            this.#status(this.#attempts?'browser-reconnecting':'browser-starting','start');
+            this.#status(this.#attempts?'browser-reconnecting':this.#normalRestart?'browser-restarting':'browser-starting','start');
             this.#startupTimer=setTimeout(()=>{if(current())this.recover('startup-timeout');},10000);
             native.onstart=()=>{if(current()){this.#started=true;this.#ready();}};
-            native.onaudiostart=()=>{if(current()){this.#audio=true;clearTimeout(this.#audioEndTimer);this.#ready();}};
+            native.onaudiostart=()=>{if(current()){this.#audio=true;this.#draining=false;clearTimeout(this.#audioEndTimer);this.#ready();}};
             native.onaudioend=()=>{
-                if(!current())return;this.#audio=false;this.#status('browser-reconnecting','audio-ended');
+                if(!current())return;this.#audio=false;this.#draining=true;this.#status('browser-processing','audio-ended');
                 clearTimeout(this.#audioEndTimer);
-                // Some browser interruptions omit end. Do not wait forever for it.
-                this.#audioEndTimer=setTimeout(()=>{if(current())this.recover('audio-ended');},1000);
+                // Capture may end before the remote recognizer delivers its result.
+                this.#audioEndTimer=setTimeout(()=>{if(current())this.recover('result-drain-timeout');},finalResultTimeoutMilliseconds);
             };
             native.onspeechstart=()=>{if(current())this.#emit('speechStart');};
             native.onspeechend=()=>{if(current())this.#emit('speechEnd');};
             native.onresult=event=>{
                 if(!current())return;
-                this.#started=this.#audio=true;this.#attempts=0;this.#ready();
+                this.#attempts=0;
+                // A result from already captured audio does not reopen capture.
+                if(!this.#draining){this.#started=this.#audio=true;this.#ready();}
                 this.#emit('result',{event,sessionId});
+                if(this.#draining&&Array.from(event.results).every(result=>result.isFinal)){
+                    clearTimeout(this.#audioEndTimer);
+                    // Final text is safely queued; recover only if end is missing.
+                    this.#audioEndTimer=setTimeout(()=>{if(current())this.recover('final-result-no-end');},1000);
+                }
             };
             native.onnomatch=()=>{if(current())this.#emit('nomatch');};
             native.onerror=event=>{
@@ -62,6 +72,7 @@
         }
         #ready(){
             if(!this.listening)return;
+            this.#normalRestart=false;
             clearTimeout(this.#startupTimer);clearTimeout(this.#audioEndTimer);
             if(!this.#readyAt){
                 this.#readyAt=Date.now();clearTimeout(this.#stableTimer);
@@ -73,10 +84,11 @@
         recover(reason){
             if(this.#closed||this.#restartTimer!==undefined)return;
             const stable=this.#readyAt&&Date.now()-this.#readyAt>=5000;
-            if(stable||reason==='no-speech')this.#attempts=0;
+            const normal=['ended','no-speech','final-result-no-end'].includes(reason);
+            if(stable||normal)this.#attempts=0;
             else this.#attempts++;
-            this.#detach();this.#started=this.#audio=false;
-            this.#status('browser-reconnecting',reason);this.#emit('end',{reason,sessionId:this.#sequence});
+            this.#detach();this.#started=this.#audio=this.#draining=false;this.#normalRestart=normal;
+            this.#status(normal?'browser-restarting':'browser-reconnecting',reason);this.#emit('end',{reason,sessionId:this.#sequence});
             if(this.#attempts>6){this.#fail('Browser speech could not resume after repeated interruptions.','recovery-exhausted');return;}
             this.#restartTimer=setTimeout(()=>this.#open(),Math.min(5000,300*2**Math.max(0,this.#attempts-1)));
         }
@@ -103,8 +115,10 @@
         #snapshot=[]; #finishing; #finalTimer; #selectionTimer; #cancelSelection; #generation=0;
         #speechActive=false; #ignored=false; #processingResults=0;
         get transcriptMode(){return "cumulative";}
+        get utteranceId(){return this.#id;}
         get speechActive(){return this.#speechActive;}
         get listening(){return this.#session.listening;}
+        get processing(){return this.#session.processing;}
         get processingResult(){return this.#processingResults>0;}
         constructor({language="en-US",maxAlternatives=10,maxCandidates=50,processLocally=false,
             selectHypothesis,Recognition=globalThis.SpeechRecognition||globalThis.webkitSpeechRecognition}={}) {
@@ -199,7 +213,7 @@
             if(this.#closed||this.#id!==id)return Promise.resolve();
             return new Promise(resolve=>{
                 this.#finishing=resolve;
-                this.#finalTimer=setTimeout(()=>{if(this.#id===id){this.#complete('',true);this.#session.recover('final-timeout');}},7000);
+                this.#finalTimer=setTimeout(()=>{if(this.#id===id){this.#complete('',true);this.#session.recover('final-timeout');}},finalResultTimeoutMilliseconds);
                 this.#session.stopCapture();
             });
         }

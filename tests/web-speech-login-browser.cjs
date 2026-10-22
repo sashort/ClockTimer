@@ -52,6 +52,7 @@ const root=path.resolve(__dirname,'..');
 
   const id='zero zero four two okay',full=id+' one two three four okay';
   const cases=[
+   {name:'delayed final after audio capture ends',audioEndDelay:1500,chunks:[[full,true]]},
    {name:'final result immediately followed by native end',endAfterResult:true,chunks:[[full,true]]},
    {name:'automatic login startup',activate:true,chunks:[[id,false,true],[full,false],[full,true]]},
    {name:'cumulative interims',chunks:[[id,false,true],[full,false],[full,false],[full,true]]},
@@ -87,7 +88,13 @@ const root=path.resolve(__dirname,'..');
     await page.evaluate(()=>SpeechMenu.unregisterSynthesizedSpeech(loginPromptToken,{graceMilliseconds:0}));
    }
    for(const [text,final,waitPin] of scenario.chunks){
+    if(scenario.audioEndDelay){
+     await page.evaluate(()=>{const native=nativeSpeechInstances.at(-1);native.onspeechstart?.();native.onaudioend?.();});
+     await page.waitForTimeout(scenario.audioEndDelay);
+     assert.equal(await page.locator('#speechMicBar').getAttribute('state'),'processing','audio completion waits for the delayed result instead of reconnecting');
+    }
     await page.evaluate(({text,final,endAfterResult})=>{const native=nativeSpeechInstances.at(-1);native.emit([text],final);if(endAfterResult)native.onend?.();},{text,final,endAfterResult:scenario.endAfterResult});
+    if(scenario.audioEndDelay)await page.evaluate(()=>nativeSpeechInstances.at(-1).onend?.());
     if(waitPin)await page.waitForFunction(()=>!document.querySelector('#loginPinRow').hidden,null,{timeout:5000});
    }
    try{await page.waitForFunction(()=>!document.querySelector('#loginDialog').open,null,{timeout:5000});}

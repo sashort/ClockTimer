@@ -13,6 +13,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         "utteranceTranscribed",
         "utteranceCommitted",
         "speechCommandDigested",
+        "speechCommandBufferChanged",
         "speechSegmentSkipped",
         "speechCommandMatched",
         "speechMenuMatched",
@@ -46,6 +47,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     #consumedSegments = [];
     #rejectedClearTimer;
     #retainedTranscript = "";
+    #bufferTranscript = "";
     #transcriptClearTimer;
     #loadingAnimationFrame;
     #loadingDisplayed = 0;
@@ -6028,6 +6030,13 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                     this.#showIdleText();
                     break;
                 }
+                if (["browser-processing", "browser-restarting"].includes(detail?.status)) {
+                    this.#clearLoadingProgress();
+                    this.setAttribute("state",globalThis.SpeechMenu?.muted?"muted":
+                        globalThis.SpeechMenu?.listeningSuspended?"suspended":"processing");
+                    this.#showIdleText();
+                    break;
+                }
                 if (detail?.status === "browser-listening") {
                     this.#clearLoadingProgress();
                     this.setAttribute("state", this.#listeningState());
@@ -6188,6 +6197,13 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                         "state",
                         this.#listeningState()
                     );
+                }
+                break;
+            case "speechCommandBufferChanged":
+                this.#bufferTranscript=detail?.text||"";
+                if(!["muted","stopped"].includes(this.state)){
+                    if(this.#bufferTranscript)this.#showStreamingPhrase(this.#bufferTranscript);
+                    else this.#showIdleText();
                 }
                 break;
             case "speechCommandDigested":
@@ -6445,15 +6461,19 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     #listeningState() {
         const speech=globalThis.SpeechMenu;
         return speech?.muted ? "muted" : speech?.listeningSuspended ? "suspended" :
-            speech?.captureListening === false ? "reconnecting" : "listening";
+            speech?.captureProcessing ? "processing" : speech?.captureListening === false ? "reconnecting" : "listening";
     }
 
     #showIdleText() {
+        if(this.#bufferTranscript && !["muted","stopped"].includes(this.state)){
+            this.#showStreamingPhrase(this.#bufferTranscript);return;
+        }
         if (this.#retainedTranscript && !["muted", "stopped"].includes(this.state)) {
             this.#showStreamingPhrase(this.#retainedTranscript);
             return;
         }
         this.#showStatus(
+            this.state === "processing" ? globalThis.WMOFLanguagePack.text("b3a1644c-9bd5-451e-b159-2dbfb5ffcc18") :
             this.state === "starting" ? globalThis.WMOFLanguagePack.text("d6c28b0f-dabd-4a67-9bf3-62209a2ce011") :
             this.state === "reconnecting" ? globalThis.WMOFLanguagePack.text("ac117311-8c8b-41ac-bcdd-f1d0447a56b4") :
             this.state === "muted"
@@ -6862,6 +6882,11 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         text
     ) {
         text = text || this.#retainedTranscript;
+        if(this.#bufferTranscript && text!==this.#bufferTranscript){
+            const pending=this.#pendingTranscript();
+            text=pending && !this.#bufferTranscript.endsWith(pending)
+                ?[this.#bufferTranscript,pending].join(" "):this.#bufferTranscript;
+        }
         const parts =
             this.#corePhraseParts(
                 text

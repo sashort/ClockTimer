@@ -20,14 +20,16 @@ const root=path.resolve(__dirname,'..');
      const layout=await page.evaluate(()=>{
       const cells=[...document.querySelector('.percent-summary').children];
       const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,height:r.height};};
-      return {overlay:rect(document.querySelector('.sync-offline-overlay')),pause:rect(document.querySelector('.sync-pause-badge')),cells:cells.map(rect),cloud:rect(document.querySelector('.scope-connection-button')),overflow:cells.slice(0,3).map(e=>e.scrollWidth-e.clientWidth)};
+      return {fonts:cells.slice(0,3).map(e=>parseFloat(getComputedStyle(e).fontSize)),overlay:rect(document.querySelector('.sync-offline-overlay')),pause:rect(document.querySelector('.sync-pause-badge')),cells:cells.map(rect),cloud:rect(document.querySelector('.scope-connection-button')),overflow:cells.slice(0,3).map(e=>e.scrollWidth-e.clientWidth)};
      });
      const badge=layout.cells[3];
+     assert.ok(Math.abs(layout.cells[0].width-layout.cells[2].width)<1,`${name} actual and goal tracks always have equal widths`);
      assert.equal(badge.width,40,`${name} badge fixed width`);
      assert.equal(badge.height,40,`${name} badge fixed height`);
      assert.ok(Math.abs(layout.overlay.left+layout.overlay.width/2-badge.left-badge.width/2)<1,`${name} arrow overlay anchored to badge`);
      assert.ok(layout.pause.left>=badge.left&&layout.pause.right<=badge.right,`${name} pause overlay anchored to badge`);
      assert.ok(Math.abs((badge.left+badge.right-layout.cloud.left-layout.cloud.right)/2)<1,`${name} cloud alignment`);
+     if(width===240&&actual==='12345.6%'&&goal==='7%')assert.ok(layout.fonts[0]<layout.fonts[2],name+' unequal values fit independently');
      assert.ok(layout.overflow.every(v=>v<=1),`${name} ${width} text fits: ${layout.overflow}`);
      for(let i=1;i<4;i++)assert.ok(layout.cells[i].left>=layout.cells[i-1].right,`${name} columns cannot overlap`);
     }

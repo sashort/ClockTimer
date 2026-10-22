@@ -69,7 +69,7 @@ const root=path.resolve(__dirname,'..');
    SpeechMenu.events.addEventListener('utteranceTranscriptChanged',event=>webSpeechTestTranscripts.push(event.detail.transcript));
    SpeechMenu.refresh();nativeSpeechInstances.at(-1).emit(['diagnostic demand','diagnostic command'],false);
   });
-  try{await page.waitForFunction(()=>webSpeechTestCalls===1,null,{timeout:5000});}catch(error){console.error(await page.evaluate(()=>({events:webSpeechTestEvents,enabled:SpeechMenu.executionEnabled,suspended:SpeechMenu.listeningSuspended,muted:SpeechMenu.muted})));throw error;}
+  try{await page.waitForFunction(()=>webSpeechTestCalls===1,null,{timeout:5000});}catch(error){console.error(errors,await page.evaluate(()=>({events:webSpeechTestEvents,enabled:SpeechMenu.executionEnabled,suspended:SpeechMenu.listeningSuspended,muted:SpeechMenu.muted})));throw error;}
   assert.equal(await page.evaluate(()=>nativeSpeechInstances.at(-1).results.at(-1).isFinal),false,'complete terminal command executes before final recognition');
   await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['diagnostic demand','diagnostic command'],true));
   assert(await page.evaluate(()=>webSpeechTestTranscripts.includes('diagnostic command')),'Mic Bar transcript events use the selected API result');
@@ -122,9 +122,15 @@ const root=path.resolve(__dirname,'..');
   });
   await page.waitForFunction(()=>typeof finishDelayedCommand==='function');
   assert(await page.evaluate(()=>webSpeechShadows.get(document.querySelector('#speechMicBar')).querySelector('#activity').textContent.includes('delayed command')),'validated transcript remains visible while action completion is pending');
-  await page.evaluate(()=>{nativeSpeechInstances.at(-1).emit(['delayed command'],true);finishDelayedCommand(true);});
-  await page.waitForTimeout(100);
-  assert(await page.evaluate(()=>webSpeechShadows.get(document.querySelector('#speechMicBar')).querySelector('#activity').textContent.includes('delayed command')),'final transcript is retained after processing completes');
+  const pendingSession=await page.evaluate(()=>nativeSpeechInstances.length);
+  await page.evaluate(()=>{const native=nativeSpeechInstances.at(-1);native.emit(['delayed command'],true);native.onend?.();});
+  await page.waitForFunction(count=>nativeSpeechInstances.length>count&&SpeechMenu.captureListening,pendingSession);
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['diagnostic command'],true));
+  try{await page.waitForFunction(()=>webSpeechShadows.get(document.querySelector('#speechMicBar')).querySelector('#activity').textContent.includes('delayed command diagnostic command'),null,{timeout:5000});}catch(error){console.error(await page.evaluate(()=>({events:webSpeechTestEvents.slice(-20),text:webSpeechShadows.get(document.querySelector('#speechMicBar')).querySelector('#activity').textContent,state:WMOFInteractionState.state,nativeId:SpeechMenu.started})));throw error;}
+  assert.equal(await page.evaluate(()=>webSpeechTestCalls),3,'new capture can buffer a command without running ahead of pending work');
+  await page.evaluate(()=>finishDelayedCommand(true));
+  await page.waitForFunction(()=>webSpeechTestCalls===4);
+  assert(await page.evaluate(()=>webSpeechShadows.get(document.querySelector('#speechMicBar')).querySelector('#activity').textContent.includes('delayed command diagnostic command')),'buffer text survives capture restart and pending execution');
   await page.evaluate(()=>SpeechMenu.stop());
   assert.equal(await page.evaluate(()=>SpeechMenu.started),false);
   assert.deepEqual(requests.filter(p=>/VoskRecognizer|VoskTestConfig|PocketSphinxRecognizer|SherpaRecognizer|SileroVad|SpeechAssetCacheWorker|\.wasm$|vosk-model/.test(p)),[],'no local recognition backend loads');

@@ -236,3 +236,56 @@ settings, display limitations and executable verification. Neither this change
 nor the rejection-cue class has been deployed yet.
 
 Speech feedback adapters bind after `speech-runtime-ready` (or immediately when the runtime already exists). App startup must not read `SpeechMenu.events` before lazy loading finishes. Binding is idempotent so the same app cannot duplicate rejection listeners. The settings browser integration test covers cold app startup with this lazy runtime.
+
+
+## ValidatedCommandBuffer — accepted work independent of capture
+
+`ValidatedCommandBuffer.js` owns ordered validated components and their display
+lifetime. SpeechMenu remains responsible for grammar validation, projected
+continuations, authorization, execution contexts, transactions and effects. Native
+capture end/restart is not a buffer cancellation event.
+
+- `enqueue({id, ownerId, chainId, transcript, commandId, ttl, ...metadata}, execute)`
+  accepts one validated component and returns its completion promise. Component
+  IDs are monotonically unique within the logical utterance; they must not reset
+  when a root commits or capture restarts. Reusing an ID returns the original
+  promise. The existing command-ID plus execution-context guard still decides
+  whether a planned command can dispatch. A guard skip uses `SKIPPED`, preserving
+  successful chain semantics while removing the duplicate presentation entry.
+- `snapshot`, `pending`, `pendingOwner`, and `hasPendingOwner(ownerId)` expose the
+  accepted work needed for presentation and capture handoff. Snapshot records
+  include acceptance/completion timestamps and resolved execution context.
+- `annotate(id, metadata)` records the command ID/context resolved immediately
+  before dispatch, after preceding actions have changed state.
+- `cancelChain(chainId)` discards an invalid logical root without removing earlier
+  independent roots from the same acoustic utterance. `cancelOwner(ownerId)` and
+  `cancelAll()` support wider explicit cancellation. Queued canceled work never
+  executes. Active cancellation relies on existing transaction/authorization
+  checks to prevent stale commits; a completed callback cannot turn cancellation
+  into reported success.
+
+`onChange` publishes entries, pending status and ordered text. The Mic Bar consumes
+`speechCommandBufferChanged`; it appends newly accepted components while earlier
+work is pending, including across native recognizer restarts. Raw hypotheses and
+rejected alternatives never enter this buffer. Interim revisions remain in the
+existing selected-transcript path; they do not append copies of the same command.
+
+Hold completed components while any buffered work remains pending. Start the
+normal idle transcript TTL only after that work drains; honor command/host
+`speech-transcript-timeout`, with `speech-response-timeout` as fallback. Native
+transport status must not overwrite retained accepted text. Timer host functions
+are invoked through bound wrappers to avoid browser illegal-invocation errors.
+The default bound is 128 entries; overflow is explicit rather than silently
+dropping accepted commands.
+
+A new capture utterance inherits the pending predecessor's projected frames and
+continuation context. Execution stays ordered and rechecks cancellation and hard
+gates. If the predecessor fails, dependent projected work cannot execute. Pure
+selection does not wait for an already validated terminal command's UI action;
+unvalidated tails whose destination is unknown may retry after the existing
+transition boundary. Authentication failure must still block its suffix.
+
+Tests: `validated-command-buffer.mjs`, `web-speech-browser.cjs` (blocked command,
+restart, append, ordered execution), `web-speech-login-browser.cjs`,
+`web-speech-command-selection.mjs`, and `speech-command-digest.mjs`. These are
+simulated browser-result checks, not Android acoustic accuracy measurements.

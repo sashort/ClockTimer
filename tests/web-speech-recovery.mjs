@@ -39,7 +39,7 @@ function fixture(select=async(_id,c)=>c[0]){
 }
 {
  const f=fixture();await f.r.start();f.instances.at(-1).onaudioend();assert.equal(f.r.listening,false);
- await f.advance(1000);await f.advance(300);assert(f.r.listening,'capture loss recovers even without end');f.r.close();
+ await f.advance(10000);await f.advance(300);assert(f.r.listening,'missing result/end eventually recovers');f.r.close();
 }
 {
  const f=fixture();f.behaviors.push(n=>n.onstart?.());const started=f.r.start();let ready=false;started.then(()=>ready=true);
@@ -50,7 +50,7 @@ function fixture(select=async(_id,c)=>c[0]){
 }
 {
  const f=fixture();await f.r.start();f.r.beginUtterance(8);const finish=f.r.finishUtterance(8);
- await f.advance(7000);await finish;await f.advance(300);assert(f.r.listening,'missing final result recovers');
+ await f.advance(10000);await finish;await f.advance(300);assert(f.r.listening,'missing final result recovers');
  assert.equal(f.transcripts.filter(t=>t.isFinal).length,1);f.r.close();
 }
 {
@@ -75,5 +75,21 @@ function fixture(select=async(_id,c)=>c[0]){
  let blocked=true;const f=fixture(async(_id,c)=>blocked?new Promise(()=>{}):c[0]);await f.r.start();
  f.instances.at(-1).result('ready');await flush();await f.advance(10000);blocked=false;await f.advance(300);
  f.instances.at(-1).result('time');await flush();assert.equal(f.transcripts.at(-1).transcript,'time','stalled selection cannot strand the recognition queue');f.r.close();
+}
+{
+ const f=fixture();await f.r.start();const native=f.instances.at(-1);
+ native.onspeechstart();native.onaudioend();await f.advance(1500);
+ native.result('ready');await flush();
+ assert.equal(f.transcripts.at(-1)?.transcript,'ready','a final result arriving after capture ends must not be aborted after one second');
+ assert.equal(f.r.listening,false,'a delayed result is not evidence that capture restarted');
+ native.onend();await f.advance(300);assert(f.r.listening);f.r.close();
+}
+{
+ const f=fixture();await f.r.start();
+ for(let i=0;i<12;i++){
+  f.instances.at(-1).onend();await f.advance(300);
+  assert(f.r.listening,'ordinary short sessions restart without exhausting retry budget');
+ }
+ assert.equal(f.errors.length,0);f.r.close();
 }
 console.log('PASS native capture evidence, transient recovery, missing end/final, every-start watchdogs, stale callbacks, bounded retries, permission failure, foreground restoration, intentional stop and stalled selection');
