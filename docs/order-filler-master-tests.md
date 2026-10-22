@@ -67,6 +67,23 @@ stubbed to prevent it becoming unintended test input; announcement assertions re
 in the separate FSM/model cases. Time/duration matrices remain exhaustive parser/
 Numberpad tests, not hundreds of thousands of synthesized recordings.
 
+Root grammar routing keeps a provisional value-first command in competition with
+literal heads until its required suffix arrives. A partial `three` must be able
+to revise to `trip mode`; a complete number-first goal still follows its declared
+suffix. Optional value continuations come only from the matched command, not from
+unrelated time/duration commands. Routing also accepts a first partial that already
+contains both the command head and its value.
+
+`VoskRecognizer.transcriptMode` declares cumulative hypotheses: SpeechMenu replaces
+revised partials directly instead of appending its segment-recovery prefix. Adapters
+that emit segment-local text retain the existing recovery behavior. Model tests
+cover revisions, duplicate prevention, optional values and segment compatibility;
+`node tests/vosk-command-head-browser.cjs` verifies actual Trip mode selection from
+Year mode with audio at 240/160/90 WPM. The virtual audio fixture uses a silent
+Web Audio output sink so headless runs do not depend on speaker hardware; real
+PCM processing and recognition remain active. The full audio workflow remains a
+separate gate and can still report other recognition failures.
+
 `CLOCKTIMER_SPEECH_DELIVERY=fast` selects one delivery rate. Voice masters default to
 real audio. `CLOCKTIMER_VOICE_INPUT=transcript` explicitly selects the older growing-
 text simulation for FSM-only debugging; diagnostics workers force `audio` for voice.

@@ -3553,6 +3553,9 @@ class SpeechMenu {
                 .#normalizeTranscript(
                     transcript
                 );
+        // Cumulative adapters already splice decoder stages. A revised head
+        // replaces its hypothesis; it is not another segment to append.
+        if (SpeechMenu.#recognizer?.transcriptMode === "cumulative") return incoming;
         const stream =
             SpeechMenu
                 .#recognitionStreamHead(

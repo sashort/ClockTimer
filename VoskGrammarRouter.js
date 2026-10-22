@@ -54,12 +54,12 @@
             this.prefix = [this.prefix, text].filter(Boolean).join(" ");
         }
 
-        async project(value) {
+        async project(value, paths = this.paths) {
             const full = [this.prefix, value].filter(Boolean).join(" ");
             const records = await this.nextRecords(full);
             const compiled = globalThis.VoskPhraseListCompiler.compileStages(records, this.options);
             this.reportUnsupported(compiled.unsupported);
-            const suffixes = this.paths.filter(path => path.stages.length > 1)
+            const suffixes = paths.filter(path => path.stages.length > 1)
                 .map(path => ({ ...path, stages: path.stages.slice(1) }));
             // An extendable value is still the same collector, not the next
             // command. Keep compound duration fragments in the current stage.
@@ -97,12 +97,21 @@
                     const valueTypes = unique(valuePaths.map(path => path.stages[0].grammar));
                     const literalMatch = this.paths.some(path => path.stages[0]?.grammar === "commands" &&
                         path.stages[0].phrases.some(phrase => begins(text, phrase) || begins(phrase, text)));
-                    if (!literalMatch && valueTypes.length === 1) {
+                    // A value-first command still needs its literal suffix.
+                    // Do not discard competing command heads on a provisional
+                    // numeric partial ("three" can revise to "trip mode").
+                    const needsSuffix = valuePaths.length && valuePaths.every(path => path.stages[1]?.grammar === "commands");
+                    const suffixMatched = valuePaths.some(path => path.stages[0].phrases.some(value => {
+                        if (!begins(text, value)) return false;
+                        const tail = text.slice(value.length).trim();
+                        return tail && path.stages[1]?.phrases.some(phrase => begins(tail, phrase));
+                    }));
+                    if (!literalMatch && valueTypes.length === 1 && (!needsSuffix || suffixMatched)) {
                         this.paths = valuePaths;
                         this.grammar = valueTypes[0];
                         continue;
                     }
-                    const matching = this.paths.filter(path => path.stages[0]?.phrases.some(phrase =>
+                    const matching = this.paths.filter(path => (path.stages[0]?.grammar === "commands" || path.record.atomic === "digits") && path.stages[0].phrases.some(phrase =>
                         begins(text, phrase) || begins(phrase, text)));
                     const completed = matching.filter(path => path.stages[0].phrases.some(phrase => begins(text, phrase)));
                     if (!completed.length || matching.length !== completed.length) break;
@@ -113,12 +122,10 @@
                     if (types.length !== 1 || types[0] === "terminal") {
                         // Only SpeechMenu can establish a boundary after a
                         // terminal command and choose its next context.
-                        if (text === head) {
-                            await this.project(head);
-                            if (types.length === 1) {
-                                stableHead = head;
-                                this.confirmationLocked = false;
-                            }
+                        await this.project(head, selected);
+                        if (text === head && types.length === 1) {
+                            stableHead = head;
+                            this.confirmationLocked = false;
                         }
                         const tail = text.slice(head.length).trim();
                         if (!tail || !this.continuations.some(path => path.stages[0]?.phrases.some(phrase => begins(phrase, tail) || begins(tail, phrase)))) break;

@@ -6,6 +6,26 @@ const context = {EventTarget, Event, CustomEvent, Float32Array, setTimeout, clea
 for (const file of ['SpeechGrammarContext', 'VoskPhraseListCompiler', 'VoskGrammarRouter', 'VoskRecognizer'])
     vm.runInNewContext(fs.readFileSync(new URL(`../${file}.js`, import.meta.url), 'utf8'), context);
 const {VoskGrammarRouter: Router, VoskPhraseListCompiler: Compiler, VoskRecognizer: Recognizer} = context;
+const mixedRoot = new Router({records:[
+    {pattern:'^trip(?: mode)?$'},
+    {pattern:'^(?<percent>.+) (?<goalScope>trip|day)$'}
+],valuePhrases:{number:['three','one hundred ten']}});
+assert.equal((await mixedRoot.update('three')).grammar,'commands','a provisional value-first head must retain literal command competitors');
+assert(mixedRoot.phrases.includes('trip mode'),'Trip mode remains available after an unstable numeric partial');
+assert.equal((await mixedRoot.update('trip mode')).transcript,'trip mode','a corrected partial can resolve the literal command');
+const numericRoot = new Router({records:[{pattern:'^trip(?: mode)?$'},
+    {pattern:'^(?<percent>.+) (?<goalScope>trip|day)$'}],valuePhrases:{number:['three','one hundred ten']}});
+assert.equal((await numericRoot.update('one hundred ten')).grammar,'commands');
+assert.equal((await numericRoot.update('one hundred ten trip')).transcript,'one hundred ten trip','a value-first command still resolves when its required suffix arrives');
+const optionalValue = new Router({records:[{pattern:'^trip goal(?: (?<percent>.+)(?: percent)?)?$'},
+    {pattern:'^ready at (?<spokenTime>.+)$'}],valuePhrases:{number:['one hundred ten'],time:['four twelve']}});
+await optionalValue.update('trip goal');
+assert(optionalValue.phrases.includes('one hundred ten'),'the matched optional value continuation is available');
+assert(!optionalValue.phrases.includes('four twelve'),'unrelated command captures cannot contaminate the selected continuation');
+assert.equal((await optionalValue.update('trip goal one hundred ten')).grammar,'number');
+const latePartial = new Router({records:[{pattern:'^trip goal(?: (?<percent>.+))?$'},
+    {pattern:'^ready at (?<spokenTime>.+)$'}],valuePhrases:{number:['one hundred ten'],time:['four twelve']}});
+assert.equal((await latePartial.update('trip goal one hundred ten')).grammar,'number','routing cannot require a separate head-only partial');
 const initial = [{pattern: '^ready$'}, {pattern: '^ready at (?<spokenTime>.+)$'}];
 const scheduled = [{pattern: '^standard(?: time)? (?<timeValue>.+)$', expect: 'duration'}, {pattern: '^cancel$'}];
 const values = {time: ['four twelve', 'four thirteen', 'four twenty two'], duration: ['twenty minutes', 'thirteen minutes']};

@@ -23,6 +23,8 @@
         #seed = "";
         #reportedOmissions = 0;
 
+        get transcriptMode() { return "cumulative"; }
+
         constructor({ model, modelUrl, runtimeUrl, modelLoadTimeoutMilliseconds = 120000,
             sampleRate = 16000, overlapMilliseconds = 320,
             finalTimeoutMilliseconds = 5000, contextProvider, ...routerOptions } = {}) {

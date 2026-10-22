@@ -29,6 +29,8 @@ source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testVoskContext(id,text){return SpeechMenu.#voskContext(id,text);}
     static testScope(text){return SpeechMenu.#scopeTranscriptToCommands(text);}
     static testActive(){return SpeechMenu.#utterance;}
+    static testTranscriptMode(mode){SpeechMenu.#recognizer.transcriptMode=mode;}
+    static testRecover(u,text){return SpeechMenu.#recoverOpenContinuationTranscript(u,text);}
     static testReset(){SpeechMenu.#clearPrimed();SpeechMenu.#finishedUtterances.clear();SpeechMenu.#utterance=undefined;}
     static testPrepare(element){return SpeechMenu.#prepare(element,true);}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
@@ -101,6 +103,15 @@ const log=make(document.body,'log','^show log$','showLog',{'speech-modal':'top-l
 const hear=async(...args)=>{await speech.testTranscript(...args);await new Promise(setImmediate);};
 const fresh=()=>{speech.testReset();calls.length=0;errors.length=0;return speech.testBegin();};
 try {
+    const revision=fresh();
+    revision.streamStack=[{source:'speech',baseTranscript:'three',status:'pending'}];
+    speech.testTranscriptMode('cumulative');
+    assert.equal(speech.testRecover(revision,'trip goal'),'trip goal','cumulative partial revisions replace an earlier misheard command head');
+    revision.streamStack[0].baseTranscript='trip goal one hundred';
+    assert.equal(speech.testRecover(revision,'trip goal one hundred ten percent'),'trip goal one hundred ten percent','cumulative values are not appended twice across continuation streams');
+    speech.testTranscriptMode('segment');
+    assert.equal(speech.testRecover(revision,'ten percent'),'trip goal one hundred ten percent','segment-local adapters retain continuation recovery');
+    speech.testReset();
     // Vosk obtains both initial availability and future chain surfaces from
     // SpeechMenu, without running actions or changing the live collector state.
     const recognition=fresh();

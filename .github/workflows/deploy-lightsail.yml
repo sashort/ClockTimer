@@ -121,6 +121,8 @@ jobs:
       - run: node tests/diagnostic-speech-audio-test.cjs
       - run: node tests/order-filler-acoustic-smoke.cjs
         timeout-minutes: 5
+      - run: node tests/vosk-command-head-browser.cjs
+        timeout-minutes: 5
       - run: node tests/order-filler-master-voice.cjs
         timeout-minutes: 15
       - run: node tests/speech-continuation-browser.cjs

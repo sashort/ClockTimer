@@ -26,6 +26,12 @@ class DiagnosticSpeechAudio {
  }
  static async install(page){
   await page.addInitScript(()=>{
+   // Keep real Web Audio processing, with no dependency on a physical output
+   // device in headless/CI sessions. Input is supplied by the WAV MediaStream.
+   const NativeAudioContext=globalThis.AudioContext;
+   globalThis.AudioContext=class extends NativeAudioContext{
+    constructor(options={}){super({...options,sinkId:{type:'none'}});}
+   };
    let context,destination,silence;
    async function ensure(){
     if(!context){context=new AudioContext();destination=context.createMediaStreamDestination();silence=context.createConstantSource();silence.offset.value=0;silence.connect(destination);silence.start();}
