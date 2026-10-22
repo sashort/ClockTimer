@@ -88,12 +88,18 @@ class ProtocolTests(unittest.TestCase):
             self.assertFalse(json.loads(await first.recv())['authenticated'])
             started=time.monotonic()
             # Both audio and repeated downgrade controls must leave the original deadline intact.
+            async def exchange(message):
+                try:
+                    await first.send(message)
+                except websockets.exceptions.ConnectionClosed:
+                    # A completed close can precede send; its ordered error
+                    # response remains buffered and must still be verified.
+                    pass
+                return json.loads(await first.recv())
             while True:
-                await first.send(b'\0'*1280)
-                reply=json.loads(await first.recv())
+                reply=await exchange(b'\0'*1280)
                 if reply['type']=='error':break
-                await first.send('{"type":"deauthenticate"}')
-                reply=json.loads(await first.recv())
+                reply=await exchange('{"type":"deauthenticate"}')
                 if reply['type']=='error':break
                 await asyncio.sleep(.025)
             self.assertEqual(reply['code'],'login_timeout')
@@ -162,3 +168,4 @@ if __name__ == '__main__':
         asyncio.run(fixture())
     else:
         unittest.main()
+
