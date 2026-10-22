@@ -562,3 +562,13 @@ The adapter preserves interim revisions and consumes final result slots once.
 verify these contracts using simulated browser results; they do not establish
 real acoustic recognition accuracy. Browser recognition may use a remote speech
 service. This adapter uses browser-owned microphone capture, not Vosk PCM input.
+
+
+Fully formed Web Speech commands with no possible continuations execute from
+interim results. Commands with viable continuations keep collecting. Each
+utterance owns `interimDispatchedCommandIds`, a set reserved synchronously before
+queuing an interim action. It uses `data-speech-editor-id`, the element ID, or a
+stable runtime ID for an anonymous command. Later interim revisions and final
+results cannot dispatch an ID in that set again, even with different wording.
+The set survives command-stream settlement and state transfers, and resets only
+with a new utterance. Other command IDs can execute in that same utterance.

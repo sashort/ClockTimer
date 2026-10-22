@@ -1,7 +1,7 @@
 name: Order Filler master tests
 on:
   push:
-    branches-ignore: [pocketsphinx-experiment] # Its deployment workflow gates on both masters.
+    branches-ignore: [pocketsphinx-experiment, web-speech-experiment] # Its deployment workflow gates on both masters.
   pull_request:
   workflow_dispatch:
 jobs:

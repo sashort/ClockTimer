@@ -24,7 +24,8 @@ const root=path.resolve(__dirname,'..');
     stop(){queueMicrotask(()=>this.onend?.());}
     abort(){}
     emit(texts,final=true){
-     this.results.push(Object.assign(texts.map((transcript,i)=>({transcript,confidence:1-i*.1})),{isFinal:final}));
+     const result=Object.assign(texts.map((transcript,i)=>({transcript,confidence:1-i*.1})),{isFinal:final});
+     if(this.results.at(-1)?.isFinal===false)this.results[this.results.length-1]=result;else this.results.push(result);
      this.onresult?.({resultIndex:this.results.length-1,results:this.results});
     }
    };
@@ -64,17 +65,32 @@ const root=path.resolve(__dirname,'..');
    command.setAttribute('speech-pattern','^diagnostic command$');
    command.setAttribute('speech-function','WebSpeechTest.command');command.setAttribute('speech-modal','system');document.body.append(command);
    SpeechMenu.events.addEventListener('utteranceTranscriptChanged',event=>webSpeechTestTranscripts.push(event.detail.transcript));
-   SpeechMenu.refresh();nativeSpeechInstances.at(-1).emit(['diagnostic demand','diagnostic command']);
+   SpeechMenu.refresh();nativeSpeechInstances.at(-1).emit(['diagnostic demand','diagnostic command'],false);
   });
   try{await page.waitForFunction(()=>webSpeechTestCalls===1,null,{timeout:5000});}catch(error){console.error(await page.evaluate(()=>({events:webSpeechTestEvents,enabled:SpeechMenu.executionEnabled,suspended:SpeechMenu.listeningSuspended,muted:SpeechMenu.muted})));throw error;}
+  assert.equal(await page.evaluate(()=>nativeSpeechInstances.at(-1).results.at(-1).isFinal),false,'complete terminal command executes before final recognition');
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['diagnostic demand','diagnostic command'],true));
   assert(await page.evaluate(()=>webSpeechTestTranscripts.includes('diagnostic command')),'Mic Bar transcript events use the selected API result');
   await page.evaluate(()=>nativeSpeechInstances.at(-1).onresult?.({resultIndex:0,results:nativeSpeechInstances.at(-1).results}));
   await page.waitForTimeout(200);
   assert.equal(await page.evaluate(()=>webSpeechTestCalls),1,'final result not replayed');
+  await page.evaluate(()=>{
+   const command=document.createElement('speech-command');
+   command.setAttribute('speech-pattern','^continuation command(?: details)?$');
+   command.setAttribute('speech-function','WebSpeechTest.command');command.setAttribute('speech-modal','system');document.body.append(command);
+   SpeechMenu.refresh();nativeSpeechInstances.at(-1).emit(['continuation command'],false);
+  });
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(()=>webSpeechTestCalls),1,'a possible continuation keeps collecting');
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['continuation command details'],false));
+  await page.waitForFunction(()=>webSpeechTestCalls===2);
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['continuation command details'],true));
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(()=>webSpeechTestCalls),2,'final confirmation cannot repeat interim execution');
   await page.evaluate(()=>SpeechMenu.sleep());
   await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['diagnostic command']));
   await page.waitForTimeout(200);
-  assert.equal(await page.evaluate(()=>webSpeechTestCalls),1,'sleep blocks ordinary commands');
+  assert.equal(await page.evaluate(()=>webSpeechTestCalls),2,'sleep blocks ordinary commands');
   await page.evaluate(()=>SpeechMenu.stop());
   assert.equal(await page.evaluate(()=>SpeechMenu.started),false);
   assert.deepEqual(requests.filter(p=>/VoskRecognizer|VoskTestConfig|PocketSphinxRecognizer|SherpaRecognizer|SileroVad|SpeechAssetCacheWorker|\.wasm$|vosk-model/.test(p)),[],'no local recognition backend loads');

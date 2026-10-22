@@ -246,6 +246,8 @@ class SpeechMenu {
     static #recognizer;
     static #recognizerBackend = "sherpa";
     static #externalCapture = false;
+    static #webSpeechCommandIds = new WeakMap();
+    static #webSpeechCommandSequence = 0;
     static #pocketSphinxGrammarNames = new Set(["commands"]);
     static #vad;
     static #pipeline = "raw";
@@ -2979,6 +2981,7 @@ class SpeechMenu {
             digestContext: undefined,
             digestQueue: Promise.resolve(),
             digestSteps: [],
+            interimDispatchedCommandIds: new Set(),
             chainActive: false,
             chainCanceled: false,
             digestFailed: false,
@@ -4079,6 +4082,25 @@ class SpeechMenu {
         utterance.digestTranscript = [utterance.digestTranscript, step.ignoredBefore, segment].filter(Boolean).join(" ");
         (utterance.digestCommandSegments ??= []).push(segment);
         utterance.digestDiscardedTail = "";
+        if (SpeechMenu.#recognizerBackend === "web-speech") {
+            const element = step.commandElement;
+            let commandId = element.getAttribute("data-speech-editor-id") || element.id ||
+                SpeechMenu.#webSpeechCommandIds.get(element);
+            if (!commandId) {
+                commandId = "runtime-command:" + ++SpeechMenu.#webSpeechCommandSequence;
+                SpeechMenu.#webSpeechCommandIds.set(element, commandId);
+            }
+            // Reserve the command ID synchronously, before its async action is
+            // queued. Keep the reservation through interim revisions and final
+            // confirmation; a new utterance receives a fresh set.
+            const dispatched = utterance.interimDispatchedCommandIds ??= new Set();
+            if (dispatched.has(commandId)) {
+                SpeechMenu.#emit("speechCommandSkipped", {utteranceId: utterance.id,
+                    commandId, transcript: segment, reason: "already-dispatched-from-interim"});
+                return;
+            }
+            if (!utterance.digestIsFinal) dispatched.add(commandId);
+        }
         if (step.ignoredBefore) SpeechMenu.#emit("speechSegmentSkipped", {
             utteranceId: utterance.id, transcript: step.ignoredBefore, reason: "malformed-segment"
         });
@@ -4311,7 +4333,7 @@ class SpeechMenu {
         // A terminal command has no collector to open. Let its last words
         // settle before applying effects; a following command still supplies
         // an explicit boundary for earlier steps in the same utterance.
-        else if (["vosk", "web-speech"].includes(SpeechMenu.#recognizerBackend) && !isFinal && last && !candidate.pending &&
+        else if (SpeechMenu.#recognizerBackend === "vosk" && !isFinal && last && !candidate.pending &&
             !last.commandElement.hasAttribute("speech-chain-next") &&
             !last.commandElement.hasAttribute("speech-chain-surface") &&
             !last.commandElement.hasAttribute("speech-chain-transition")) count--;

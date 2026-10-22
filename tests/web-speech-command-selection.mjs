@@ -17,6 +17,7 @@ source=source.replace(anchor,`
         SpeechMenu.#recognizer={beginUtterance(){},setHotwords(){},abortUtterance(){},finishUtterance(){}};
         SpeechMenu.#beginUtterance(performance.now());return SpeechMenu.#utterance;
     }
+    static testQueue(u,step,final=false){u.digestIsFinal=final;SpeechMenu.#queueDigestStep(u,step);}
     static testSelect(u,values){return SpeechMenu.#selectWebSpeechHypothesis(u.id,values,{isFinal:true});}
     static testReset(){SpeechMenu.#clearPrimed();SpeechMenu.#finishedUtterances.clear();SpeechMenu.#utterance=undefined;}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
@@ -43,6 +44,19 @@ try {
     assert.equal((await speech.testSelect(u,hypotheses))?.text,'sync on','no per-command tuning remains');
     u.chainCanceled=true;
     assert.equal(await speech.testSelect(u,hypotheses),undefined,'canceled session cannot select a command');
+    u=fresh();
+    const step={commandElement:sync,segmentTranscript:'sync on',nextContext:undefined};
+    speech.testQueue(u,step);
+    assert(u.interimDispatchedCommandIds.has('sync-command'),'ID reserved before async execution');
+    speech.testQueue(u,{...step,segmentTranscript:'sync off'});speech.testQueue(u,{...step,segmentTranscript:'sync off'},true);
+    await u.digestQueue;
+    assert.equal(executed,1,'interim revisions and final confirmation dispatch a reserved ID once');
+    const other=sync.cloneNode(true);other.id='sync-other';document.body.append(other);
+    speech.testQueue(u,{...step,commandElement:other},false);await u.digestQueue;
+    assert.equal(executed,2,'distinct command IDs can dispatch in the same utterance');
+    u=fresh();speech.testQueue(u,step);await u.digestQueue;
+    assert.equal(executed,3,'a fresh utterance can dispatch the same command ID again');
+    other.remove();
     await speech.sleep();
     u=fresh();
     assert.equal(await speech.testSelect(u,hypotheses),undefined,'sleeping cannot select ordinary commands');

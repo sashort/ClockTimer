@@ -106,8 +106,10 @@ const server=http.createServer((req,res)=>{
   await page.locator('#loginButton').click();await page.waitForTimeout(300);
   assert(await page.evaluate(()=>Boolean(document.fullscreenElement)),'login activation enters real browser fullscreen');
   if(await page.evaluate(()=>SpeechMenu.muted))await tapMic();
+  const viewportSession=await page.context().newCDPSession(page);
   for(const height of [600,844,720,844]){
-   await page.setViewportSize({width:390,height});await page.waitForTimeout(200);
+   // Simulate mobile viewport changes without resizing a fullscreen desktop window.
+   await viewportSession.send("Emulation.setDeviceMetricsOverride",{width:390,height,deviceScaleFactor:1,mobile:true});await page.waitForTimeout(200);
    const m=await page.evaluate(()=>{const app=document.querySelector('#app'),d=document.querySelector('#loginDialog'),bar=document.querySelector('#speechMicBar');return {height:app.getBoundingClientRect().height,viewport:visualViewport.height,bottom:d.getBoundingClientRect().bottom,safe:bar.getSafeTop(),micWidth:bar.getBoundingClientRect().width,width:visualViewport.width};});
    assert(Math.abs(m.height-m.viewport)<1,JSON.stringify(m));
    assert(m.bottom<=m.safe-7,JSON.stringify(m));
