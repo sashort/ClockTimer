@@ -22,6 +22,20 @@
         get phase() { return this.#phase; }
         get deadline() { return this.#deadline; }
 
+        valueCollector(key, options = {}) {
+            if (this.#phase === 'cancelled') throw Error('A cancelled continuation cannot acquire a value collector.');
+            let collector = this.collectors.get(key);
+            if (!(collector instanceof globalThis.SpeechValueCollector)) {
+                // Value and command planning have distinct deadlines. Cancelling
+                // a speculative command probe must not erase the value's timer.
+                const continuation = new SpeechContinuationSession({id: `${this.id}:${String(key)}`,
+                    now: this.#now, schedule: this.#schedule, unschedule: this.#unschedule});
+                collector = new globalThis.SpeechValueCollector({...options, continuation});
+                this.collectors.set(key, collector);
+            }
+            return collector;
+        }
+
         observe(transcript) {
             if (this.#phase === "cancelled") return false;
             if (transcript !== this.#transcript) this.cancelFeedback("input-changed", false);
@@ -78,6 +92,7 @@
         cancel(reason = "cancelled") {
             this.#phase = "cancelled";
             this.cancelSilence(); this.#feedback.cancel(reason);
+            for (const collector of this.collectors.values()) collector.cancel?.(reason);
             this.collectors.clear();
         }
     }

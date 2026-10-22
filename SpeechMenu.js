@@ -3004,7 +3004,7 @@ class SpeechMenu {
             digestContext: undefined,
             digestQueue: Promise.resolve(),
             digestSteps: [],
-            interimDispatchedCommandIds: new Set(),
+            dispatchedCommandIds: new Set(),
             chainActive: false,
             chainCanceled: false,
             digestFailed: false,
@@ -4100,7 +4100,7 @@ class SpeechMenu {
         SpeechMenu.#emit("utteranceUnrecognized", {id: utterance.id, transcript: remainder, reason, fast: true});
     }
 
-    static #reserveInterimCommand(utterance, step, fromInterim) {
+    static #reserveCommandDispatch(utterance, step) {
         const element = step.commandElement;
         const declaration = element.getAttribute("speech-execution-context");
         let executionContext = null;
@@ -4126,14 +4126,14 @@ class SpeechMenu {
         }
         step.commandId=commandId;
         const identity = executionContext === null ? commandId : JSON.stringify([commandId, executionContext]);
-        const dispatched = utterance.interimDispatchedCommandIds ??= new Set();
+        const dispatched = utterance.dispatchedCommandIds ??= new Set();
         if (dispatched.has(identity)) {
             SpeechMenu.#emit("speechCommandSkipped", {utteranceId: utterance.id, commandId, executionContext,
-                transcript: step.segmentTranscript, reason: "already-dispatched-from-interim"});
+                transcript: step.segmentTranscript, reason: "already-dispatched"});
             return false;
         }
         // Reserve before invoking the action, including while its promise is pending.
-        if (fromInterim) dispatched.add(identity);
+        dispatched.add(identity);
         return true;
     }
 
@@ -4143,11 +4143,10 @@ class SpeechMenu {
         utterance.digestTranscript = [utterance.digestTranscript, step.ignoredBefore, segment].filter(Boolean).join(" ");
         (utterance.digestCommandSegments ??= []).push(segment);
         utterance.digestDiscardedTail = "";
-        const fromInterim = !utterance.digestIsFinal;
         const scopedExecution = step.commandElement.hasAttribute("speech-execution-context");
         // Unscoped commands reserve immediately. A dynamic context is resolved
         // at dispatch, after preceding actions have settled their state changes.
-        if (!scopedExecution && !SpeechMenu.#reserveInterimCommand(utterance, step, fromInterim)) return;
+        if (!scopedExecution && !SpeechMenu.#reserveCommandDispatch(utterance, step)) return;
         if (step.ignoredBefore) SpeechMenu.#emit("speechSegmentSkipped", {
             utteranceId: utterance.id, transcript: step.ignoredBefore, reason: "malformed-segment"
         });
@@ -4200,7 +4199,7 @@ class SpeechMenu {
                 SpeechMenu.#rejectDigest(utterance, "chain-action-unavailable", segment);
                 return false;
             }
-            if (scopedExecution && !SpeechMenu.#reserveInterimCommand(utterance, step, fromInterim)) return globalThis.ValidatedCommandBuffer.SKIPPED;
+            if (scopedExecution && !SpeechMenu.#reserveCommandDispatch(utterance, step)) return globalThis.ValidatedCommandBuffer.SKIPPED;
             buffer.annotate(bufferId,{commandId:step.commandId,executionContext:step.executionContext??null});
             utterance.commandChainExecuting = true;
             utterance.digestExecutingContext = SpeechMenu.#chainContextTokens(step.commandElement)[0];
@@ -7108,9 +7107,12 @@ class SpeechMenu {
             const result = await probe(segment);
             if (result) accepted = {end, segment, result};
         }
-        const state = {status: accepted ? "valid" : "pending",
-            transcript: words.join(" "), value: accepted?.result.transcript,
-            acceptedTranscript: accepted?.segment, end: accepted?.end};
+        const collector=new globalThis.SpeechValueCollector({id:element,
+            classify:()=>accepted ? {status:'valid',value:accepted.result.transcript,
+                acceptedTranscript:accepted.segment,end:accepted.end} : {status:'incomplete'}});
+        collector.update([{id:'probe',text:words.join(' '),final:false}]);
+        const decision=collector.evaluate({boundary:Boolean(utterance.digestIsFinal)});
+        const state={...decision,status:accepted?'valid':'pending'};
         // Probes include competing tail splits of this same collector. Publish
         // collector state only after the winning plan has been selected.
         return {state, accepted};
@@ -7164,7 +7166,12 @@ class SpeechMenu {
     static async #startWebSpeech(generation) {
         if(typeof globalThis.WebSpeechRecognizer!=="function")throw Error("The browser speech adapter is not loaded.");
         const recognizer=new globalThis.WebSpeechRecognizer({language:SpeechMenu.#language,
-            ...globalThis.WMOF_WEB_SPEECH_CONFIG,selectHypothesis:SpeechMenu.#selectWebSpeechHypothesis});
+            ...globalThis.WMOF_WEB_SPEECH_CONFIG,selectHypothesis:SpeechMenu.#selectWebSpeechHypothesis,
+            getCollectionSession:id=>{
+                const owner=SpeechMenu.#utterance?.id===id?SpeechMenu.#utterance:SpeechMenu.#finishedUtterances.get(id);
+                return owner&&SpeechMenu.#continuationSession(owner);
+            },
+            collectionSilenceMilliseconds:()=>SpeechMenu.#continuationPauseBoundaryMilliseconds()+SpeechMenu.#continuationDispatchDelayMilliseconds()});
         SpeechMenu.#recognizer=recognizer;SpeechMenu.#recognizerBackend="web-speech";
         recognizer.addEventListener("transcript",SpeechMenu.#onSherpaTranscript);
         recognizer.addEventListener("error",event=>{
@@ -7224,6 +7231,7 @@ class SpeechMenu {
         const frames=continuing||buffered?utterance.digestSurfaceStack:SpeechMenu.#surfaceFrames();
         const candidates=(continuing||buffered?SpeechMenu.#digestCandidates(context,frames):SpeechMenu.#availableCandidates())
             .filter(SpeechMenu.#commandAllowedWhileSleeping);
+        let incompleteValue;
         // Sleeping does not search lower-ranked guesses for a way to wake.
         for(const hypothesis of SpeechMenu.#sleeping?hypotheses.slice(0,1):hypotheses){
             const normalized=SpeechMenu.#stripSynthesizedSpeech(SpeechMenu.#normalizeTranscript(hypothesis.text));
@@ -7232,14 +7240,23 @@ class SpeechMenu {
             const probe={...utterance,digestClosed:true,digestIsFinal:isFinal,chainActive:false,
                 digestContext:context,digestSurfaceStack:frames,valueCollectors:new Map()};
             const plan=text?await SpeechMenu.#planDigest(candidates,text.split(" ").filter(Boolean),probe):{steps:[],exact:true};
-            if(!plan || plan.invalid || (text&&!plan.steps?.length&&!plan.pending))continue;
+            if(!plan || plan.invalid || (text&&!plan.steps?.length&&!plan.pending)){
+                if(!SpeechMenu.#sleeping && candidates.some(element=>element.hasAttribute('speech-collect') &&
+                    SpeechMenu.#classifySpeechValue(element,text,false)?.status==='incomplete'))
+                    incompleteValue??={...hypothesis,text:normalized,collectingValue:true,valueStatus:'incomplete'};
+                continue;
+            }
             if(isFinal && !plan.exact)continue;
             // Alternatives may compete only as complete interpretations, not
             // by fishing a command out of words discarded as background junk.
             if(plan.steps?.some(step=>step.ignoredBefore))continue;
             if(utterance.chainCanceled||utterance.digestFailed)return;
-            return {...hypothesis,text:normalized};
+            const last=plan.steps?.at(-1);
+            const collectingValue=!SpeechMenu.#sleeping && Boolean(last?.commandElement.hasAttribute('speech-collect') &&
+                last.canContinue && !plan.invalid && !plan.pending && !plan.remainder);
+            return {...hypothesis,text:normalized,collectingValue,valueStatus:'valid'};
         }
+        if(incompleteValue)return incompleteValue;
         // If a transition has no knowable projected surface (authentication is
         // one example), retry only the unvalidated tail after that boundary.
         // Already valid components and terminal final confirmations never wait.

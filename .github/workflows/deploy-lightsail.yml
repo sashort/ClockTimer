@@ -41,6 +41,7 @@ jobs:
           node tests/speech-failfast.mjs
           node tests/owned-feedback-scope.mjs
           node tests/speech-continuation-session.mjs
+          node tests/speech-value-collector.mjs
           node tests/goal-feedback.mjs
           node tests/app-state-transactions.mjs --goal-failure-batch --voice-feedback
           node tests/app-state-transactions.mjs --goal-cascade --voice-feedback
@@ -123,6 +124,7 @@ jobs:
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
       - run: node tests/web-speech-login-browser.cjs
+      - run: node tests/web-speech-value-collection-browser.cjs
       - run: node tests/login-fullscreen-browser.cjs
       - run: node tests/order-filler-master-touch.cjs
       - run: node tests/diagnostic-speech-audio-test.cjs

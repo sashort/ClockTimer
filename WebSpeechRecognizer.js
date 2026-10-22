@@ -114,6 +114,7 @@
         #session; #id; #queue=Promise.resolve(); #closed=false; #offset=0;
         #snapshot=[]; #finishing; #finalTimer; #selectionTimer; #cancelSelection; #generation=0;
         #speechActive=false; #ignored=false; #processingResults=0;
+        #value; #valuePending=false; #valueTimer; #collectionSession;
         get transcriptMode(){return "cumulative";}
         get utteranceId(){return this.#id;}
         get speechActive(){return this.#speechActive;}
@@ -121,11 +122,12 @@
         get processing(){return this.#session.processing;}
         get processingResult(){return this.#processingResults>0;}
         constructor({language="en-US",maxAlternatives=10,maxCandidates=50,processLocally=false,
-            selectHypothesis,Recognition=globalThis.SpeechRecognition||globalThis.webkitSpeechRecognition}={}) {
+            selectHypothesis,getCollectionSession,collectionSilenceMilliseconds=()=>1000,Recognition=globalThis.SpeechRecognition||globalThis.webkitSpeechRecognition}={}) {
             super();
             if(typeof Recognition!=="function")throw Error("This browser does not expose SpeechRecognition or webkitSpeechRecognition.");
             if(typeof selectHypothesis!=="function")throw Error("Browser speech requires the command planner's alternative selector.");
             if(!Number.isInteger(maxAlternatives)||maxAlternatives<1||maxAlternatives>30||!Number.isInteger(maxCandidates)||maxCandidates<1||maxCandidates>100)throw Error("Choose 1–30 alternatives and 1–100 combined candidates.");
+            this.getCollectionSession=getCollectionSession;this.collectionSilenceMilliseconds=collectionSilenceMilliseconds;
             this.language=language;this.maxAlternatives=maxAlternatives;this.maxCandidates=maxCandidates;this.selectHypothesis=selectHypothesis;
             if(processLocally && !("processLocally" in new Recognition()))throw Error("This browser cannot require local speech processing.");
             const session=this.#session=new BrowserSpeechSession(Recognition,{language,maxAlternatives,processLocally});
@@ -134,12 +136,12 @@
             session.addEventListener('speechStart',()=>this.#activity(true));
             session.addEventListener('speechEnd',()=>this.#activity(false));
             session.addEventListener('nomatch',()=>{if(this.#id!==undefined)this.#complete('',true);});
-            session.addEventListener('result',({detail:{event}})=>{
+            session.addEventListener('result',({detail:{event,sessionId}})=>{
                 if(this.#closed)return;
                 const results=Array.from(event.results,result=>({isFinal:result.isFinal,
                     alternatives:Array.from(result).slice(0,maxAlternatives).map((value,rank)=>({text:String(value.transcript||'').trim(),confidence:Number(value.confidence)||0,rank}))}));
                 const generation=this.#generation,receivedAt=Date.now();
-                this.#queue=this.#queue.then(()=>generation===this.#generation&&!this.#closed?this.#processResult(results,receivedAt):undefined).catch(error=>{
+                this.#queue=this.#queue.then(()=>generation===this.#generation&&!this.#closed?this.#processResult(results,receivedAt,sessionId):undefined).catch(error=>{
                     if(error.code==='selection-timeout'){
                         this.#generation++;this.#queue=Promise.resolve();this.#complete('',true);this.#session.recover(error.code);
                     }else this.#fail(error.message);
@@ -150,38 +152,50 @@
                 const generation=this.#generation;
                 this.#queue=this.#queue.then(()=>{
                     if(this.#closed||generation!==this.#generation)return;
-                    if(this.#id!==undefined)this.#complete('',true);
+                    if(this.#valuePending&&this.#value?.segments.some(segment=>!segment.final&&!segment.sealed)){
+                        // Capture cannot revise its last accepted interim after
+                        // end. Retain it across restart, but still await the
+                        // logical value's silence/command boundary.
+                        this.#value.sealCapture();this.#armValueSilence();
+                    }
+                    if(this.#id!==undefined&&!this.#valuePending)this.#complete('',true);
                     this.#offset=0;this.#snapshot=[];this.#ignored=false;
                 }).catch(error=>this.#fail(error.message));
             });
         }
         #emit(type,detail){this.dispatchEvent(new CustomEvent(type,{detail}));}
-        #activity(active){if(this.#closed)return;this.#speechActive=active;this.#emit(active?"speechStart":"speechEnd",{});}
+        #activity(active){if(this.#closed)return;if(active)this.#cancelValueSilence();this.#speechActive=active;this.#emit(active?"speechStart":"speechEnd",{});}
         start(){return this.#session.start();}
         beginUtterance(id){this.#id=id;}
         accept(){/* Browser capture supplies its own audio; no PCM substitution. */}
-        async #processResult(results,receivedAt){
+        async #processResult(results,receivedAt,sessionId){
             this.#processingResults++;
-            try{return await this.#result(results,receivedAt);}
+            try{return await this.#result(results,receivedAt,sessionId);}
             finally{this.#processingResults--;}
         }
-        async #result(results,receivedAt=Date.now()){
+        async #result(results,receivedAt=Date.now(),sessionId=0){
             if(results.length-this.#offset>64)throw Error("Browser speech pending results exceeded their bound.");
             this.#snapshot=results;
             const pending=results.slice(this.#offset);if(!pending.length)return;
+            this.#cancelValueSilence();
             const isFinal=pending.every(result=>result.isFinal);
             if(this.#ignored){if(isFinal){this.#offset=results.length;this.#ignored=false;}return;}
             if(this.#id===undefined)this.#activity(true);
             if(this.#id===undefined){if(isFinal){this.#offset=results.length;this.#ignored=false;}return;}
             const id=this.#id;
-            let candidates=[{text:"",rank:0,maxRank:0,confidence:1}];
-            for(const result of pending){
+            const owner=this.getCollectionSession?.(id);
+            this.#value ??= owner?.valueCollector('browser-segments',{id}) || new globalThis.SpeechValueCollector({id});
+            this.#collectionSession=this.#value.continuation;
+            let candidates=[{text:"",rank:0,maxRank:0,confidence:1,segments:[]}];
+            for(const [index,result] of pending.entries()){
                 candidates=candidates.flatMap(prefix=>result.alternatives.filter(value=>value.text).map(value=>({
-                    text:[prefix.text,value.text].filter(Boolean).join(" "),rank:prefix.rank+value.rank,
+                    text:[prefix.text,value.text].filter(Boolean).join(" "),
+                    segments:[...prefix.segments,{id:`${sessionId}:${this.#offset+index}`,text:value.text,final:result.isFinal}],rank:prefix.rank+value.rank,
                     maxRank:Math.max(prefix.maxRank,value.rank),
                     confidence:Math.min(prefix.confidence,value.confidence)
                 }))).filter(value=>value.text.length<=2048).sort((a,b)=>a.rank-b.rank||b.confidence-a.confidence).slice(0,this.maxCandidates);
             }
+            candidates=candidates.map(candidate=>({...candidate,text:this.#value.project(candidate.segments)})).filter(candidate=>candidate.text.length<=2048);
             // Preserve rank order while deduplicating equivalent hypotheses.
             const unique=new Map();
             for(const candidate of candidates)if(!unique.has(candidate.text))unique.set(candidate.text,candidate);
@@ -200,30 +214,58 @@
             this.#emit('resultTiming',{utteranceId:id,isFinal,accepted:Boolean(selected),
                 receivedAt,queueMilliseconds:selectionStartedAt-receivedAt,
                 selectionMilliseconds:Date.now()-selectionStartedAt});
-            if(isFinal){this.#offset=results.length;this.#complete(selected?.text||"",!selected);}
+            if(selected?.segments){
+                this.#value.update(selected.segments);
+                this.#value.classify=(_text,{final})=>({status:final&&selected.valueStatus==='incomplete'?'malformed':selected.valueStatus||'valid',value:selected.text});
+                this.#value.evaluate({canContinue:Boolean(selected.collectingValue)});
+            }
+            this.#valuePending=Boolean(selected?.collectingValue);
+            if(isFinal)this.#offset=results.length;
+            if(this.#valuePending){
+                this.#emit("transcript",{utteranceId:id,transcript:selected.text,isFinal:false,segmentFinal:isFinal});
+                if(isFinal)this.#armValueSilence();
+            }else if(isFinal)this.#complete(selected?.text||"",!selected);
             else if(selected)this.#emit("transcript",{utteranceId:id,transcript:selected.text,isFinal:false});
+        }
+        #cancelValueSilence(){
+            clearTimeout(this.#valueTimer);this.#valueTimer=undefined;
+            if(this.#valuePending)this.#collectionSession?.cancelSilence();
+        }
+        #armValueSilence(){
+            const id=this.#id;
+            const delay=this.collectionSilenceMilliseconds();
+            if(!Number.isFinite(delay)||delay<0)throw RangeError('Value silence must be a nonnegative number.');
+            const expire=()=>{
+                this.#queue=this.#queue.then(()=>{if(this.#id===id&&this.#valuePending)this.#complete(this.#value.transcript);});
+            };
+            if(this.#collectionSession)this.#collectionSession.armSilence(delay,expire);
+            else this.#valueTimer=setTimeout(expire,delay);
         }
         #complete(text,rejected=false){
             const id=this.#id;if(id===undefined)return;
+            this.#cancelValueSilence();this.#value?.complete();this.#value=undefined;this.#valuePending=false;this.#collectionSession=undefined;
             clearTimeout(this.#finalTimer);this.#id=undefined;this.#speechActive=false;
             this.#emit("transcript",{utteranceId:id,transcript:text,isFinal:true,rejected});
             this.#emit("utteranceEnded",{utteranceId:id,transcript:text});this.#finishing?.();this.#finishing=undefined;
         }
         finishUtterance(id){
             if(this.#closed||this.#id!==id)return Promise.resolve();
+            if(this.#valuePending&&this.#snapshot.every(result=>result.isFinal)){
+                return this.#queue=this.#queue.then(()=>{if(this.#id===id)this.#complete(this.#value.transcript);});
+            }
             return new Promise(resolve=>{
                 this.#finishing=resolve;
                 this.#finalTimer=setTimeout(()=>{if(this.#id===id){this.#complete('',true);this.#session.recover('final-timeout');}},finalResultTimeoutMilliseconds);
                 this.#session.stopCapture();
             });
         }
-        abortUtterance(id){if(this.#id!==id)return;this.#id=undefined;this.#offset=this.#snapshot.length;clearTimeout(this.#finalTimer);this.#finishing?.();this.#finishing=undefined;}
+        abortUtterance(id){if(this.#id!==id)return;this.#cancelValueSilence();this.#value?.cancel();this.#value=undefined;this.#valuePending=false;this.#id=undefined;this.#offset=this.#snapshot.length;clearTimeout(this.#finalTimer);this.#finishing?.();this.#finishing=undefined;}
         ignoreUtterance(){this.#ignored=true;}
         #fail(message,code="browser-speech"){
             const id=this.#id;this.#emit("error",{utteranceId:id,message,error:code,fatal:true});this.close();
         }
         close(){
-            if(this.#closed)return;this.#closed=true;this.#generation++;this.#id=undefined;
+            if(this.#closed)return;this.#cancelValueSilence();this.#value?.cancel();this.#value=undefined;this.#valuePending=false;this.#closed=true;this.#generation++;this.#id=undefined;
             clearTimeout(this.#finalTimer);clearTimeout(this.#selectionTimer);
             this.#cancelSelection?.(Error('Browser speech selection was canceled.'));this.#cancelSelection=undefined;
             this.#finishing?.();this.#finishing=undefined;this.#session.close();

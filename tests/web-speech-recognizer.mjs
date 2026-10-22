@@ -11,6 +11,7 @@ class Native{
  result(values){this.onresult?.({resultIndex:0,results:values.map(({final,texts})=>Object.assign(texts.map((transcript,i)=>({transcript,confidence:1-i*.1})),{isFinal:final}))});}
 }
 const context={EventTarget,CustomEvent,setTimeout,clearTimeout};
+vm.runInNewContext(fs.readFileSync(new URL('../SpeechValueCollector.js',import.meta.url),'utf8'),context);
 vm.runInNewContext(fs.readFileSync(new URL('../WebSpeechRecognizer.js',import.meta.url),'utf8'),context);
 const Recognizer=context.WebSpeechRecognizer,flush=async()=>{for(let i=0;i<6;i++)await new Promise(setImmediate);};
 assert.throws(()=>new Recognizer({Recognition:undefined,selectHypothesis(){}}),/does not expose/);

@@ -557,7 +557,9 @@ not search lower-ranked hypotheses for a wake command.
 
 There are no per-command alternative limits: `speech-max-alternatives` and
 `commandAlternatives` are not used. One shared limit applies to all commands.
-The adapter preserves interim revisions and consumes final result slots once.
+The adapter preserves interim revisions and consumes native final result slots once.
+A native final slot does not settle an open logical value; see the shared value
+collection contract below.
 `tests/web-speech-recognizer.mjs` and `tests/web-speech-command-selection.mjs`
 verify these contracts using simulated browser results; they do not establish
 real acoustic recognition accuracy. Browser recognition may use a remote speech
@@ -566,7 +568,7 @@ service. This adapter uses browser-owned microphone capture, not Vosk PCM input.
 
 Fully formed Web Speech commands with no possible continuations execute from
 interim results. Commands with viable continuations keep collecting. Each
-utterance owns `interimDispatchedCommandIds`, a set that reserves an unscoped
+utterance owns `dispatchedCommandIds`, a set that reserves an unscoped
 identity before queuing and a scoped identity immediately before dispatch. It uses `data-speech-editor-id`, the element ID, or a
 stable runtime ID for an anonymous command. Later interim revisions and final
 results cannot dispatch an ID in that set again, even with different wording.
@@ -790,3 +792,65 @@ text. SpeechMenu publishes buffer snapshots; the Mic Bar renders the same ordere
 components being executed. Restarting capture can accept new components while an
 earlier command is pending. Keep per-command execution-context deduplication,
 owned malformed-root cancellation, and transactional authorization.
+
+### Interim and final dispatch share the same reservation
+
+Reserve each command ID plus its resolved execution context before invocation,
+regardless of whether the first accepted component is interim or final. A final
+result confirms earlier interim work; repeated finals and late interims must also
+be unable to replay a final-first command. The reservation belongs to the logical
+utterance and is not cleared when an action completes or opens a new surface.
+Distinct contexts such as login ID and PIN remain distinct dispatch identities.
+
+Before enqueueing an interim component, keep any viable longer command or growing
+value pending. A complete terminal command, an explicit next-command boundary, or
+the established logical final/silence boundary can release it. A native final
+slot alone is not that boundary for an open value. Do not use the buffer or
+Mic Bar text to infer execution eligibility.
+
+`tests/web-speech-command-selection.mjs` covers final-first replay protection and
+a short command with a longer continuation. `tests/web-speech-login-browser.cjs`
+observes Mic Bar display mutations during repeated cumulative login results,
+including distinct and identical ID/PIN values, and asserts once-only dispatch.
+These simulated cases do not establish the cause of a physical Android transcript
+repetition; compare validated components and dispatch identities when diagnosing
+that device behavior.
+
+## Shared value collection across contexts and capture sessions
+
+Use `SpeechValueCollector` for source identity, revision replacement, accumulation,
+classification, and once-only completion. Keep language rules in the shared duration,
+clock, and percentage parsers. Digit and future date/option strategies use their own
+completion rules through the same lifecycle, rather than pad-specific fragment
+assembly. The implementation contract and required regression matrix are in
+[class-architecture-v2.md](class-architecture-v2.md#speechvaluecollector-shared-value-lifecycle).
+
+There are three distinct boundaries:
+
+1. Native segment finality: stable words for one browser result slot.
+2. Capture completion: microphone/session ends; recognition may restart.
+3. Logical value completion: confirmation, a valid following command, or adaptive
+   silence closes the accumulated value and allows dispatch.
+
+For example, final `an hour` followed by final `and five` must produce one logical
+`an hour and five` and one `1:05:00` value. Final `ready at five` followed by final
+`thirty` must produce a single `5:30` scheduled-start value. Do not interpret the
+second segment using the pad's already-updated value, and do not drop earlier
+segments simply because capture restarts.
+
+SpeechMenu marks selected, extensible values with `collectingValue`; registered
+classifiers may also retain incomplete value vocabulary. The browser adapter emits
+these as logical interim transcripts, with `segmentFinal` identifying native
+finality. An owned child continuation deadline settles the value after the existing
+adaptive silence interval. Command-probe cancellation must not erase this deadline.
+A replayed native final slot has no new pending words and cannot reset its timer.
+If capture ends after a selected interim without a final slot, seal that closed
+capture span, preserve it through restart, and revalidate it at the logical boundary.
+Sealing does not claim native finality.
+The pure grammar collector also uses `SpeechValueCollector` classification state;
+its speculative probes cannot mutate the live source collection.
+
+Existing pads receive settled values through the command queue. This change does
+not introduce a second duration/time parser or move business effects into the
+recognizer. Malformed logical finals still use the common rejection path; stop and
+parent cancellation discard open values and fence late callbacks.

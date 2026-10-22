@@ -52,6 +52,9 @@ const root=path.resolve(__dirname,'..');
 
   const id='zero zero four two okay',full=id+' one two three four okay';
   const cases=[
+   {name:'distinct numeric ID and PIN repeated interims',chunks:[['1234 okay',false,true],['1234 okay',false],['1234 okay 5678 okay',false],['1234 okay 5678 okay',false],['1234 okay 5678 okay',true]]},
+   {name:'identical ID and PIN interims',chunks:[['1234 okay',false,true],['1234 okay 1234 okay',false],['1234 okay 1234 okay',false],['1234 okay 1234 okay',true]]},
+   {name:'identical ID and PIN separate slots',chunks:[['1234 okay',true,true],['1234 okay',true]]},
    {name:'delayed final after audio capture ends',audioEndDelay:1500,chunks:[[full,true]]},
    {name:'final result immediately followed by native end',endAfterResult:true,chunks:[[full,true]]},
    {name:'automatic login startup',activate:true,chunks:[[id,false,true],[full,false],[full,true]]},
@@ -68,13 +71,16 @@ const root=path.resolve(__dirname,'..');
    {name:'eight digits then interim settings',contexts:['credentials',null,null],chunks:[['5 5 5 5 5 5 5 5',false],['5 5 5 5 5 5 5 5 sync on trip goal 100%',false],['5 5 5 5 5 5 5 5 sync on trip goal 100%',true]],tail:'settings'},
    {name:'eight digits then scheduled start',contexts:['credentials',null],chunks:[['5 5 5 5 5 5 5 5 ready at 4:12',true]],tail:'scheduled'}
   ];
-  for(const scenario of cases){
+  for(const scenario of cases.filter(c=>!process.env.LOGIN_TEST_CASE||c.name.includes(process.env.LOGIN_TEST_CASE))){
    const postsBefore=loginPosts;
    await page.goto(new URL('order-filler.php',base).href);
    await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));
    assert.equal(await page.evaluate(()=>WMOF_SPEECH_BACKEND),'web-speech');
    await page.evaluate(async()=>{
-    globalThis.loginSpeechEvents=[];
+    globalThis.loginSpeechEvents=[];globalThis.loginDisplaySnapshots=[];
+    const activity=webSpeechShadows.get(document.querySelector('#speechMicBar')).querySelector('#activity');
+    new MutationObserver(()=>loginDisplaySnapshots.push(activity.textContent)).observe(activity,{childList:true,subtree:true,characterData:true});
+    SpeechMenu.events.addEventListener('speechCommandBufferChanged',e=>loginSpeechEvents.push({type:'buffer',entries:e.detail.entries.map(x=>({ownerId:x.ownerId,id:x.id,text:x.transcript})),text:e.detail.text}));
     for(const type of ['speechCommandDigested','speechCommandSkipped','speechStreamCommitted','speechCommandDispatched','speechCommandExecuted','speechTranscriptScoped','utteranceUnrecognized'])SpeechMenu.events.addEventListener(type,e=>loginSpeechEvents.push({type,utteranceId:e.detail?.utteranceId,reason:e.detail?.reason,commandId:e.detail?.commandId,executionContext:e.detail?.executionContext,transcript:e.detail?.transcript}));
    });
    if(scenario.activate)await page.waitForFunction(()=>SpeechMenu.started&&!SpeechMenu.listeningSuspended);
@@ -111,6 +117,11 @@ const root=path.resolve(__dirname,'..');
    if(scenario.tail==='scheduled')assert(await page.locator('#scheduledStartDialog').evaluate(e=>e.open),'scheduled start follows authentication');
    if(scenario.tail==='settings')assert.equal(await page.locator('#clockTimer').evaluate(e=>e.getSummarySnapshot().trip.percentGoal),1,'goal follows authentication and sync');
    assert.deepEqual(errors,[]);
+   if(scenario.name.startsWith('identical')||scenario.name.startsWith('distinct numeric')){
+    const displays=await page.evaluate(()=>loginDisplaySnapshots);
+    const limit=scenario.name.startsWith('identical')?2:1;
+    for(const text of displays)assert((text.match(/1234 okay/g)||[]).length<=limit,scenario.name+': ID text must not multiply: '+text);
+   }
    console.log('PASS rapid ID/OK/PIN/OK: '+scenario.name);
   }
   failLogin=true;

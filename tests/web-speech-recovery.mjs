@@ -16,7 +16,8 @@ function fixture(select=async(_id,c)=>c[0]){
   result(text,final=true){this.onresult?.({results:[Object.assign([{transcript:text,confidence:1}],{isFinal:final})]});}
  }
  const context={EventTarget,CustomEvent,setTimeout,clearTimeout,Date:{now:()=>now},document,addEventListener:events.addEventListener.bind(events),removeEventListener:events.removeEventListener.bind(events)};
- vm.runInNewContext(source,context);
+ vm.runInNewContext(fs.readFileSync(new URL('../SpeechValueCollector.js',import.meta.url),'utf8'),context);
+vm.runInNewContext(source,context);
  const r=new context.WebSpeechRecognizer({Recognition:Native,selectHypothesis:select}),status=[],errors=[],transcripts=[];
  r.addEventListener('status',e=>status.push(e.detail));r.addEventListener('error',e=>errors.push(e.detail));
  r.addEventListener('speechStart',()=>r.beginUtterance(1));r.addEventListener('transcript',e=>transcripts.push(e.detail));
@@ -91,5 +92,45 @@ function fixture(select=async(_id,c)=>c[0]){
   assert(f.r.listening,'ordinary short sessions restart without exhausting retry budget');
  }
  assert.equal(f.errors.length,0);f.r.close();
+}
+{
+ const f=fixture(async(_id,c)=>({...c[0],collectingValue:true,valueStatus:'valid'}));
+ f.r.collectionSilenceMilliseconds=()=>400;await f.r.start();
+ const native=f.instances.at(-1);
+ const slot=text=>Object.assign([{transcript:text,confidence:1}],{isFinal:true});
+ native.onresult({results:[slot('an hour')]});await flush();
+ assert.equal(f.transcripts.at(-1).isFinal,false,'a stable native slot is not a completed value');
+ await f.advance(100);
+ native.onresult({results:[slot('an hour'),slot('and five')]});await flush();
+ assert.equal(f.transcripts.at(-1).transcript,'an hour and five');
+ await f.advance(200);
+ native.onresult({results:[slot('an hour'),slot('and five')]});await flush();
+ await f.advance(200);
+ assert.equal(f.transcripts.filter(t=>t.isFinal).length,1,'final replay cannot cancel or restart the value deadline');
+ assert.equal(f.transcripts.at(-1).transcript,'an hour and five');f.r.close();
+}
+{
+ const f=fixture(async(_id,c)=>({...c[0],collectingValue:true}));
+ f.r.collectionSilenceMilliseconds=()=>1000;await f.r.start();
+ f.instances.at(-1).result('five');await flush();
+ f.instances.at(-1).onend();await f.advance(300);
+ f.instances.at(-1).result('thirty');await flush();await f.advance(1000);
+ assert.equal(f.transcripts.at(-1).transcript,'five thirty','clock value survives capture-session replacement');
+ assert.equal(f.transcripts.filter(t=>t.isFinal).length,1);f.r.close();
+}
+{
+ const f=fixture(async(_id,c)=>({...c[0],collectingValue:true}));await f.r.start();
+ f.instances.at(-1).result('an hour');await flush();f.r.close();await f.advance(2000);
+ assert.equal(f.transcripts.filter(t=>t.isFinal).length,0,'explicit off cancels an open value rather than submitting it');
+ assert.equal(f.timers.size,0);
+}
+{
+ const f=fixture(async(_id,c)=>({...c[0],collectingValue:true}));
+ f.r.collectionSilenceMilliseconds=()=>1000;await f.r.start();
+ f.instances.at(-1).result('an hour',false);await flush();
+ f.instances.at(-1).onend();await f.advance(300);
+ f.instances.at(-1).result('and five');await flush();await f.advance(1000);
+ assert.equal(f.transcripts.at(-1).transcript,'an hour and five','accepted interim survives a closed capture without a native final');
+ assert.equal(f.transcripts.filter(t=>t.isFinal).length,1);f.r.close();
 }
 console.log('PASS native capture evidence, transient recovery, missing end/final, every-start watchdogs, stale callbacks, bounded retries, permission failure, foreground restoration, intentional stop and stalled selection');

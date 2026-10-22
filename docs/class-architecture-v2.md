@@ -289,3 +289,92 @@ Tests: `validated-command-buffer.mjs`, `web-speech-browser.cjs` (blocked command
 restart, append, ordered execution), `web-speech-login-browser.cjs`,
 `web-speech-command-selection.mjs`, and `speech-command-digest.mjs`. These are
 simulated browser-result checks, not Android acoustic accuracy measurements.
+
+## SpeechValueCollector: shared value lifecycle
+
+`SpeechValueCollector.js` owns one logical value independently of the recognizer,
+DOM, language, and application effect. Duration, clock, and percentage commands
+already use it. Atomic digit input keeps its declared length/confirmation rules;
+it does not inherit duration-style waiting. Future date or option collectors can
+use the same class with their own classifier and completion policy.
+
+The classifier contract is `classify(text, {final, ...options})`, returning
+`{status, value?, ...metadata}`. Status is `incomplete`, `valid`, `defer`, or
+`malformed`. `valid` means parseable, not necessarily finished. Keep linguistic
+interpretation in the existing language value parsers/preprocessor. Neither pads
+nor recognizers should invent an alternative duration/time parser.
+
+| API | Contract |
+| --- | --- |
+| `update([{id, text, final}])` | Replace mutable source slots; retain prior finalized slots; ignore replay of the same final identity. Missing mutable slots are removed. |
+| `sealCapture()` | Freeze the last selected source spans when their capture ends, preserving `final` separately; logical validation still waits for a boundary. |
+| `project(segments)` | Build an alternative transcript without mutating the live collection. |
+| `evaluate({boundary, canContinue, ...options})` | Classify the entire accumulated value and report `settled`; no action is invoked. |
+| `complete(options)` | Mark a logical boundary once, cancel its value deadline, and return the final classification; subsequent calls return `undefined`. |
+| `cancel()` | Clear text, cancel the owned deadline, reject later updates, and prevent completion. |
+| `transcript`, `segments`, `status`, `completed` | Observe current collection without acquiring execution ownership. |
+
+Identity is source identity, not text equality: browser slots are named
+`captureSessionId:resultIndex`. Interim revisions replace that slot. Finalized
+slots are immutable and may be replayed harmlessly. A closed capture may seal its last selected interim without claiming it was a
+native final. Revalidate the accumulated text at the logical boundary. Two distinct slots containing
+`one` must remain `one one`; never deduplicate words or guess overlap from suffixes.
+The default bound is 64 segments. Overflow fails explicitly.
+
+`SpeechContinuationSession.valueCollector(key, options)` creates or returns an
+owned collector. It survives expected context/surface transfer. Each value owns a
+child continuation deadline using the same clock/scheduler infrastructure; a
+speculative command replan may cancel the command deadline without cancelling the
+value deadline. Cancelling the parent cancels its collectors and their child
+deadlines, including stale timer callbacks. Do not share a single cancellable timer
+between value collection, command planning, and capture recovery.
+
+### Browser integration and completion
+
+`WebSpeechRecognizer` supplies candidates with source-slot identities to the pure
+SpeechMenu selector. The selector reports `collectingValue` when the remaining
+value is valid but extensible, or a registered classifier recognizes an incomplete
+value. Invalid alternatives are not promoted. Selection and speculative grammar
+probes never commit UI effects or mutate the live collector.
+
+For an open value, native `isFinal` confirms a source segment only. The adapter
+emits a selected transcript with logical `isFinal: false` and `segmentFinal: true`.
+It advances the native slot offset, retains the logical utterance/collector, and
+starts an owned silence deadline. New source slots append; a new capture session
+changes the source ID namespace, not the logical value owner. Native `end` restarts
+capture without rejecting or submitting the open value.
+
+A valid next command or confirmation supplies an explicit boundary. Otherwise the
+silence delay comes from the existing adaptive continuation pause plus dispatch
+delay. Silence delivers one logical final transcript through normal SpeechMenu
+validation and transaction handling. The shared parser validates the whole value
+again at that boundary; an incomplete/malformed remainder cannot earn the valid
+prefix's effects. Explicit stop/off/cancellation discards the open collection.
+Missing recognition results remain subject to the separate capture watchdog.
+
+Only a settled command component enters `ValidatedCommandBuffer`. The pads render
+that accepted value; they do not accumulate recognition fragments themselves.
+Every dispatch, whether first observed as interim or final, reserves command ID
+plus execution context before invocation. A native final, a timer, and a restart
+must never independently invoke the same accepted component.
+
+### Required Version 2 regression cases
+
+- `an hour` -> `an hour and` -> `an hour and five`, as revisions of one slot.
+- Final `an hour`, then final `and five`, including a native restart between them:
+  exactly one `1:05:00` value; no interim `1:00:00` commitment or `0:05:00` replacement.
+- Final `ready at five`, then final `thirty`: exactly one scheduled `5:30` action.
+- Native end without a final slot: retain the selected interim across restart,
+  then revalidate once at the logical silence/command boundary.
+- Replayed final slots: neither appended text nor extended/cancelled silence.
+- Identical text in distinct slots: retain legitimate repeated words/digits.
+- Incomplete/malformed final value: reject the value, without applying its prefix.
+- Context handoff: preserve collector, source identities, and deadline.
+- Parent cancellation/off: clear collection and fence late results/timers.
+- Explicit following command/confirmation: release through normal ordered dispatch.
+
+Tests are `speech-value-collector.mjs`, `web-speech-recovery.mjs`,
+`web-speech-value-collection-browser.cjs`, `web-speech-command-selection.mjs`,
+`web-speech-login-browser.cjs`, and `speech-command-digest.mjs`. Browser result
+fixtures simulate segment timing; physical Android acoustic verification remains
+separate. Load `SpeechValueCollector` before SpeechMenu/browser recognition starts.

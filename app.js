@@ -503,7 +503,7 @@
                 Promise.resolve()
                     .then(async () => {
                         await speechAssetCacheReady;
-                        for (const name of ["OwnedFeedbackScope", "SpeechCommandBranchPolicy", "ValidatedCommandBuffer", "SpeechContinuationSession", "SpeechRejectionFeedback", "SpeechDurationEstimator", "ToneReferencedAnnouncement"]) {
+                        for (const name of ["OwnedFeedbackScope", "SpeechCommandBranchPolicy", "ValidatedCommandBuffer", "SpeechValueCollector", "SpeechContinuationSession", "SpeechRejectionFeedback", "SpeechDurationEstimator", "ToneReferencedAnnouncement"]) {
                             if (!globalThis[name]) await loadClassicScript(name + ".js");
                         }
                         if (

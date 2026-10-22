@@ -18,6 +18,7 @@ source=source.replace(anchor,`
         SpeechMenu.#beginUtterance(performance.now());return SpeechMenu.#utterance;
     }
     static testQueue(u,step,final=false){u.digestIsFinal=final;SpeechMenu.#queueDigestStep(u,step);}
+    static testHear(u,text,final=false){return SpeechMenu.#handleLiveTranscript(u,text,final);}
     static testSelect(u,values){return SpeechMenu.#selectWebSpeechHypothesis(u.id,values,{isFinal:true});}
     static testReset(){SpeechMenu.#clearPrimed();SpeechMenu.#finishedUtterances.clear();SpeechMenu.#utterance=undefined;}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
@@ -47,7 +48,7 @@ try {
     u=fresh();
     const step={commandElement:sync,segmentTranscript:'sync on',nextContext:undefined};
     speech.testQueue(u,step);
-    assert(u.interimDispatchedCommandIds.has('sync-command'),'ID reserved before async execution');
+    assert(u.dispatchedCommandIds.has('sync-command'),'ID reserved before async execution');
     speech.testQueue(u,{...step,segmentTranscript:'sync off'});speech.testQueue(u,{...step,segmentTranscript:'sync off'},true);
     await u.digestQueue;
     assert.equal(executed,1,'interim revisions and final confirmation dispatch a reserved ID once');
@@ -57,6 +58,11 @@ try {
     u=fresh();speech.testQueue(u,step);await u.digestQueue;
     assert.equal(executed,3,'a fresh utterance can dispatch the same command ID again');
     other.remove();
+    u=fresh();
+    const beforeFinal=executed;
+    speech.testQueue(u,{...step},true);speech.testQueue(u,{...step},true);speech.testQueue(u,{...step},false);
+    await u.digestQueue;
+    assert.equal(executed-beforeFinal,1,'a final-first command is reserved too: repeated final and late interim cannot dispatch it again');
     let phase='id';const contexts=[];
     globalThis.ExecutionContexts=window.ExecutionContexts={login:()=>phase};
     sync.setAttribute('speech-execution-context','ExecutionContexts.login');
@@ -74,6 +80,20 @@ try {
     sync.removeAttribute('speech-execution-context');
     u=fresh();speech.testQueue(u,{...step});await u.digestQueue;
     assert.equal(contexts.at(-1),null,'execution context defaults to null');
+    const readback=document.createElement('speech-command');
+    readback.id='continuation-readback';readback.setAttribute('speech-pattern','^sample$');
+    readback.setAttribute('speech-function','Actions.sync');readback.setAttribute('speech-modal','top-level');document.body.append(readback);
+    const extended=readback.cloneNode(true);extended.id='continuation-extension';extended.setAttribute('speech-pattern','^sample(?: mode)? (?<action>on|off)$');document.body.append(extended);
+    let continuations=[];Actions.sync=()=>{continuations.push(speech.executionContext.transcript);return true;};
+    u=fresh();await speech.testHear(u,'sample');await u.digestQueue;
+    assert.equal(continuations.length,0,'exact short head waits while a longer command can continue');
+    await speech.testHear(u,'sample mode');await u.digestQueue;
+    assert.equal(continuations.length,0,'unfinished longer head remains pending');
+    await speech.testHear(u,'sample mode on');await u.digestQueue;
+    assert.equal(continuations.length,1,'complete terminal continuation executes from interim');
+    await speech.testHear(u,'sample mode on',true);await u.digestQueue;
+    assert.equal(continuations.length,1,'final confirms rather than repeats the dispatched continuation');
+    readback.remove();extended.remove();
     await speech.sleep();
     u=fresh();
     assert.equal(await speech.testSelect(u,hypotheses),undefined,'sleeping cannot select ordinary commands');
