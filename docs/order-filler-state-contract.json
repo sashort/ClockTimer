@@ -2453,7 +2453,13 @@
         "login.phase": "id-entry"
       },
       "coverage": "unreviewed",
-      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio.",
+      "speechTransitionRules": [
+        "Four digits + OK advance to PIN entry.",
+        "Eight sequential digits, with optional trailing OK, enter submitting.",
+        "Do not release suffix commands until authentication and login-surface closure settle."
+      ],
+      "targetedTest": "tests/web-speech-login-browser.cjs"
     },
     "LOGIN-PIN": {
       "region": "session",
@@ -2461,7 +2467,12 @@
         "login.phase": "pin-entry"
       },
       "coverage": "unreviewed",
-      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio.",
+      "speechTransitionRules": [
+        "Four digits + OK enter submitting.",
+        "Authentication failure clears PIN and remains in PIN entry; subsequent utterance commands cannot execute."
+      ],
+      "targetedTest": "tests/web-speech-login-browser.cjs"
     },
     "LOGIN-SUBMITTING": {
       "region": "session",
@@ -2469,7 +2480,12 @@
         "login.phase": "submitting"
       },
       "coverage": "unreviewed",
-      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio."
+      "audioPolicy": "Transitional announcements belong to transition owners; user-activated announcements belong to explicit requests. Matching a state alone never replays audio.",
+      "speechTransitionRules": [
+        "Success transitions to closed only after the login close operation settles.",
+        "Failure returns to PIN entry without dispatching dependent suffix commands."
+      ],
+      "targetedTest": "tests/web-speech-login-browser.cjs"
     },
     "SPEECH-OFF": {
       "region": "recognition",

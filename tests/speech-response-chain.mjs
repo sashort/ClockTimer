@@ -79,6 +79,28 @@ try {
     await bar.clearResponse();
     assert.equal(bar.hasAttribute('has-response'), false);
 
+    const matched=window.document.createElement('speech-command');
+    matched.setAttribute('speech-transcript-timeout','30ms');
+    emit('utteranceStarted',{id:50});
+    emit('utteranceTranscriptChanged',{id:50,transcript:'sync on',isFinal:false});
+    emit('speechCommandDigested',{utteranceId:50,transcript:'sync on',consumedTranscript:'sync on',commandElement:matched});
+    assert.match(shadow.querySelector('#activity').textContent,/Sync On/i,'dispatched interim remains visible');
+    emit('utteranceTranscribed',{id:50,transcript:'sync on'});
+    emit('utteranceCommitted',{id:50,transcript:'sync on'});
+    emit('utteranceFinished',{id:50,committed:true});
+    assert.match(shadow.querySelector('#activity').textContent,/Sync On/i,'final and finish do not erase the retained match');
+    assert.equal(bar.getAttribute('transcript-state'),'retained');
+    await new Promise(resolve=>window.setTimeout(resolve,60));
+    assert.equal(bar.hasAttribute('transcript-state'),false,'matched transcript clears on its timeout');
+    assert.doesNotMatch(shadow.querySelector('#activity').textContent,/Sync On/i);
+    matched.setAttribute('speech-transcript-timeout','persistent');
+    emit('utteranceStarted',{id:51});
+    emit('utteranceTranscriptChanged',{id:51,transcript:'sync off'});
+    emit('speechCommandDigested',{utteranceId:51,transcript:'sync off',consumedTranscript:'sync off',commandElement:matched});
+    emit('utteranceStarted',{id:52});
+    assert.match(shadow.querySelector('#activity').textContent,/Sync Off/i,'new utterance retains a match until replaced or cleared');
+    bar.clear();assert.equal(bar.hasAttribute('transcript-state'),false,'explicit clear overrides persistent retention');
+
     // The parent schedules one TTL for each result, including dictation.
     const timers = new Map(); let timerId = 0;
     window.setTimeout = (callback, delay) => {const id = ++timerId; timers.set(id, {callback, delay}); return id;};

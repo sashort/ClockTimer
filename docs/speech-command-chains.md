@@ -42,7 +42,8 @@ the speech-speed setting. Pause detection and extra continuation dispatch grace
 remain distinct; collection settlement respects their full adaptive window rather
 than clipping it to 350 ms. Successful digests feed continuation/separation learning.
 
-The Mic Bar removes consumed text from the active transcript without losing its
+The Mic Bar prunes consumed text from processing and retains the latest matched
+transcript until its timeout (default two seconds), without losing its
 internal execution history. Results use one horizontal row of columns, newest on
 the left. A new result travels left from the right, beneath existing results, and
 docks at the left edge. Each result retains its own `speech-response-timeout` TTL
@@ -87,3 +88,19 @@ Run `npm run test:state-transactions` from `tests`, and `php tests/command_check
 ## Release identification
 
 Developer tools shows `Version` with six random uppercase letters and digits. The Lightsail deploy workflow runs `python3 scripts/stamp-version.py` after checking out each release. Both page templates, script and style cache keys, and the speech runtime cache key use the same ID. `build-version.json` records the ID, Git commit, and UTC timestamp. Ask for the visible Version ID when investigating a live bug; a cached page retains its previous ID. Local updates can be stamped with the same command.
+
+
+## Deferred dispatch and execution identity
+
+A command may declare `speech-dispatch-boundary` to settle its action before
+planning the remaining utterance against the resulting real state. Login uses
+this for ID/PIN and combined eight-digit credentials, allowing later commands to
+continue only through the authenticated surface. Login's close animation is part
+of action completion. Failure cannot grant access to the suffix.
+
+`speech-execution-context` optionally supplies a literal label or provider; its
+default is null. The shared duplicate guard keys on command ID and captured
+context. Providers resolve after preceding actions settle. ID and PIN therefore
+reuse their command with different contexts while revisions in the same context
+remain suppressed. See `speech-recognition-v2.md` for the complete attribute and
+Mic Bar transcript timeout contracts.

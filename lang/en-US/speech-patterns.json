@@ -28,15 +28,15 @@
     },
     "74c28b6f-1b4e-542d-888a-fa1a8c861e34": {
       "id": "74c28b6f-1b4e-542d-888a-fa1a8c861e34",
-      "pattern": "^trip goal(?: (?<percent>.+?)(?: percent)?)?$"
+      "pattern": "^trip(?= goal(?: |$)| (?!goal$))(?: goal)?(?: (?<percent>(?!goal$).+?)(?: percent)?)?$"
     },
     "96c8476f-2dc6-5eca-9d83-824d69cb8bd8": {
       "id": "96c8476f-2dc6-5eca-9d83-824d69cb8bd8",
-      "pattern": "^(?<goalScope>day|week|money|month|year) goal(?: (?<percent>.+?)(?: percent)?)?$"
+      "pattern": "^(?<goalScope>day|week|money|month|year)(?= goal(?: |$)| (?!goal$))(?: goal)?(?: (?<percent>(?!goal$).+?)(?: percent)?)?$"
     },
     "17bb8ab5-2caa-5ec3-915d-5c6978e62143": {
       "id": "17bb8ab5-2caa-5ec3-915d-5c6978e62143",
-      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|week|money|month|year)$"
+      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|week|money|month|year)(?: goal)?$"
     },
     "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8": {
       "id": "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8",
@@ -237,19 +237,19 @@
     },
     "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f": {
       "id": "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f",
-      "pattern": "^trip goal(?: (?<percent>.+?)(?: percent)?)?$",
+      "pattern": "^trip(?= goal(?: |$)| (?!goal$))(?: goal)?(?: (?<percent>(?!goal$).+?)(?: percent)?)?$",
       "command": "tripGoal",
       "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
     "32cacf3a-7da9-59a1-8944-857bce67d349": {
       "id": "32cacf3a-7da9-59a1-8944-857bce67d349",
-      "pattern": "^(?<goalScope>day|week|money|month|year) goal(?: (?<percent>.+?)(?: percent)?)?$",
+      "pattern": "^(?<goalScope>day|week|money|month|year)(?= goal(?: |$)| (?!goal$))(?: goal)?(?: (?<percent>(?!goal$).+?)(?: percent)?)?$",
       "command": "scopeGoal",
       "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
     "a195f1e5-4693-5f11-80e8-ad6bcff662fd": {
       "id": "a195f1e5-4693-5f11-80e8-ad6bcff662fd",
-      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|week|money|month|year)$",
+      "pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|week|money|month|year)(?: goal)?$",
       "command": "changeGoal",
       "preprocessorId": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
     },
@@ -427,6 +427,10 @@
     "50e02b33-bf99-4c4b-bbf4-66688736fbdf": {
       "id": "50e02b33-bf99-4c4b-bbf4-66688736fbdf",
       "pattern": "^voice$"
+    },
+    "05a71e25-9753-42c4-a7f7-d7d4a94dac73": {
+      "id": "05a71e25-9753-42c4-a7f7-d7d4a94dac73",
+      "pattern": "^(?<credentials>(?:[0-9]{8}|(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})\\s+(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})))(?:\\s+(?<confirmation>ok|okay|o\\s+k))?$"
     }
   },
   "preprocessors": {
@@ -653,7 +657,8 @@
         "tripSummary": "5a5fb15c-7f35-4539-9e7e-e12cc81043eb",
         "loginDigits": "ca8315b4-5d42-4aa7-9987-e0edbfe08048",
         "loginVoice": "50e02b33-bf99-4c4b-bbf4-66688736fbdf",
-        "loginUsername": "6554460d-3a71-486e-baae-6388767527d9"
+        "loginUsername": "6554460d-3a71-486e-baae-6388767527d9",
+        "loginCredentials": "05a71e25-9753-42c4-a7f7-d7d4a94dac73"
       },
       "ranges": {
         "day": "day",

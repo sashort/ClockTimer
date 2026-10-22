@@ -1,0 +1,1750 @@
+{
+  "locale": "en-US",
+  "rows": [
+    {
+      "element": "#app",
+      "tag": "main",
+      "surface": "page",
+      "label": "Profile Login Settings Clock/Timer Settings Audio Settings Speech Recognition i Recognizer",
+      "attributes": {
+        "data-speech-active": "true"
+      },
+      "source": "Template / PHP + client bindings",
+      "initialAttributes": {}
+    },
+    {
+      "element": "#speechTopLevelMenu",
+      "tag": "speech-menu",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "speech-modal": "top-level",
+        "data-speech-editor-id": "builtin:menu:top-level"
+      },
+      "source": "Template / PHP + client bindings",
+      "initialAttributes": {
+        "speech-modal": "top-level",
+        "data-speech-editor-id": "builtin:menu:top-level"
+      }
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:readyAt:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:readyAt:page",
+        "data-speech-options-category": "trip-actions",
+        "speech-chain-next": "scheduled-start",
+        "speech-available": "WMOFSpeechAvailability.canStartTrip",
+        "data-speech-target": "#newTripButton",
+        "speech-function": "WMOFActions.scheduleStartAt",
+        "speech-persist": "",
+        "speech-collect": "",
+        "data-speech-pattern-id": "978255d5-aa06-506d-a272-a01539ee1587",
+        "speech-pattern": "^ready at (?<spokenTime>.+)$",
+        "data-speech-preproc-id": "204da7f1-f1f5-5f6b-951a-f9a1cd05155f",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "clock",
+        "speech-preproc-field": "spokenTime",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "7cfc2b56-03bc-56ea-a11c-3cb3679456cc",
+        "data-speech-preproc-definition": "204da7f1-f1f5-5f6b-951a-f9a1cd05155f"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:readyAtContinuation:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:readyAtContinuation:page",
+        "data-speech-options-category": "trip-actions",
+        "speech-available": "WMOFSpeechAvailability.canContinueStartAt",
+        "speech-function": "WMOFActions.continueStartAt",
+        "speech-persist": "",
+        "speech-collect": "",
+        "data-speech-pattern-id": "69c663ba-52cf-52f2-b173-9c20e3199b32",
+        "speech-pattern": "^at (?<spokenTime>.+)$",
+        "data-speech-preproc-id": "150a0f87-e3f2-5609-9df4-8691efd7b7d0",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "clock",
+        "speech-preproc-field": "spokenTime",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "8e3d3f08-975b-53c6-9729-127b6c376ddf",
+        "data-speech-preproc-definition": "150a0f87-e3f2-5609-9df4-8691efd7b7d0"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:ready:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:ready:page",
+        "speech-available": "WMOFSpeechAvailability.canUseReady",
+        "data-speech-options-category": "trip-actions",
+        "data-speech-target": "#newTripButton:enabled, #endTripButton:enabled",
+        "speech-function": "WMOFActions.prepareReadyAction",
+        "speech-persist": "",
+        "data-speech-pattern-id": "6552c89a-5807-5ccf-8755-8e411b5c3de5",
+        "speech-pattern": "^ready$",
+        "data-speech-state-command": "",
+        "speech-chain-next": "voice-entry",
+        "data-speech-pattern-definition": "af3af6f3-1e52-544f-bf23-a914078c78b7",
+        "speech-chain-surface": "#voiceEntrySurface",
+        "speech-chain-transition": "WMOFSpeechTransitions.ready"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:down:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:down:page",
+        "data-speech-options-category": "trip-actions",
+        "speech-available": "WMOFSpeechAvailability.canStartDownTime",
+        "data-speech-target": "#breakDownButton:enabled, #downButton:enabled",
+        "speech-function": "WMOFActions.startDownTime",
+        "speech-persist": "",
+        "data-speech-pattern-id": "fa9fc390-ba88-5ee6-8702-1fb6e7b81947",
+        "speech-pattern": "^down(?: time)?$",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "a80f3b5d-027e-5d10-a44a-abefefddcece"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:resume:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:resume:page",
+        "data-speech-options-category": "trip-actions",
+        "speech-available": "WMOFSpeechAvailability.canResumeTrip",
+        "data-speech-target": "#downResumeButton",
+        "speech-function": "WMOFActions.resumeTrip",
+        "speech-persist": "",
+        "data-speech-pattern-id": "215e7e83-3439-5014-a92e-22463882cd66",
+        "speech-pattern": "^resumed?$",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "edf67f42-45c2-5a8f-86a6-6aa38a9ddd39"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:tripGoal:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:tripGoal:page",
+        "speech-collect": "",
+        "data-speech-options-category": "goals",
+        "data-speech-options-group": "goals",
+        "speech-function": "WMOFActions.readTripGoal",
+        "speech-persist": "",
+        "data-speech-pattern-id": "74c28b6f-1b4e-542d-888a-fa1a8c861e34",
+        "speech-pattern": "^trip(?= goal(?: |$)| (?!goal$))(?: goal)?(?: (?<percent>(?!goal$).+?)(?: percent)?)?$",
+        "data-speech-preproc-id": "f3cd9d02-c597-522d-b684-ea5c4f1f7354",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "percent",
+        "speech-preproc-field": "percent",
+        "data-speech-pattern-definition": "ebaed72b-a6d2-52f8-9b39-2bc634b3b78f",
+        "data-speech-preproc-definition": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:scopeGoal:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:scopeGoal:page",
+        "speech-collect": "",
+        "data-speech-options-category": "goals",
+        "data-speech-options-group": "goals",
+        "speech-function": "WMOFActions.readScopeGoal",
+        "speech-persist": "",
+        "data-speech-pattern-id": "96c8476f-2dc6-5eca-9d83-824d69cb8bd8",
+        "speech-pattern": "^(?<goalScope>day|week|money|month|year)(?= goal(?: |$)| (?!goal$))(?: goal)?(?: (?<percent>(?!goal$).+?)(?: percent)?)?$",
+        "data-speech-preproc-id": "1ccf85cb-52f1-48b0-96e2-5c356e048087",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "percent",
+        "speech-preproc-field": "percent",
+        "data-speech-preproc-id-definition": "f3cd9d02-c597-522d-b684-ea5c4f1f7354",
+        "data-speech-pattern-definition": "32cacf3a-7da9-59a1-8944-857bce67d349",
+        "data-speech-preproc-definition": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:changeGoal:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:changeGoal:page",
+        "data-speech-options-category": "goals",
+        "data-speech-options-group": "goals",
+        "data-speech-target": "#goalPercentValue",
+        "speech-function": "WMOFActions.changeGoal",
+        "speech-persist": "",
+        "speech-collect": "",
+        "data-speech-pattern-id": "17bb8ab5-2caa-5ec3-915d-5c6978e62143",
+        "speech-pattern": "^(?<percent>.+?)(?: percent)? (?<goalScope>day|trip|week|money|month|year)(?: goal)?$",
+        "data-speech-preproc-id": "083c0d8a-a220-4974-9e67-92fd1b796fe5",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "percent",
+        "speech-preproc-field": "percent",
+        "data-speech-preproc-id-definition": "f3cd9d02-c597-522d-b684-ea5c4f1f7354",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "a195f1e5-4693-5f11-80e8-ad6bcff662fd",
+        "data-speech-preproc-definition": "f3cd9d02-c597-522d-b684-ea5c4f1f7354"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:readGoalMode:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:readGoalMode:page",
+        "data-speech-options-category": "informational",
+        "data-speech-options-group": "mode",
+        "speech-available": "WMOFSpeechAvailability.canUseInformational",
+        "speech-function": "WMOFActions.readGoalMode",
+        "data-speech-pattern-id": "12fe7788-0e63-5b09-89b7-bc8dd23e7eb8",
+        "speech-pattern": "^mode$",
+        "data-speech-pattern-definition": "e97c639b-bda8-57f4-91d8-3da60b1e0bf8"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:goalMode:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:goalMode:page",
+        "data-speech-options-category": "settings",
+        "data-speech-options-group": "mode",
+        "speech-function": "WMOFActions.changeGoalMode",
+        "speech-persist": "",
+        "data-speech-pattern-id": "42dad3d4-16d6-5256-9799-b4d1b61eff12",
+        "speech-pattern": "^(?<goalMode>auto|total|trip|day|week|money|month|year)(?: mode)?$",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "79d635a9-c4f4-5646-be1c-3d4b9596d241"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:sync:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:sync:page",
+        "data-speech-options-category": "settings",
+        "data-speech-target": "#toggleSyncMenuButton,#toggleSyncGoalButton",
+        "speech-function": "WMOFActions.toggleSync",
+        "speech-persist": "",
+        "data-speech-pattern-id": "76d4ec7f-de0f-5a9a-bc27-a7e91391ae09",
+        "speech-pattern": "^sync(?: (?<syncAction>on|off))?$",
+        "speech-available": "WMOFSpeechAvailability.canUseSyncSettings",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "e8af9836-0b68-572f-a3e2-5a80249855d0"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:lockEndTime:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:lockEndTime:page",
+        "data-speech-options-category": "settings",
+        "speech-available": "WMOFSpeechAvailability.canLockEndTime",
+        "data-speech-target": "#toggleRenderedTimeButton",
+        "speech-function": "WMOFActions.lockEndTime",
+        "speech-persist": "",
+        "speech-collect": "",
+        "data-speech-pattern-id": "4462c434-4696-5dfb-8caa-6e5a28048e9a",
+        "speech-pattern": "^lock end time(?: to)? (?<spokenTime>.+)$",
+        "data-speech-preproc-id": "a12d5454-894d-594c-822a-a10f995cf023",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "clock",
+        "speech-preproc-field": "spokenTime",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "5274c32f-7ccc-562d-971b-6f3dcade100c",
+        "data-speech-preproc-definition": "a12d5454-894d-594c-822a-a10f995cf023"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:showTripLog:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:showTripLog:page",
+        "data-speech-options-category": "trip-actions",
+        "speech-available": "WMOFSpeechAvailability.canOpenTripLog",
+        "data-speech-target": "#tripListMenuButton",
+        "speech-chain-surface": "#tripLogDialog",
+        "speech-function": "WMOFActions.openTripLog",
+        "speech-persist": "",
+        "data-speech-pattern-id": "1f24cb83-74a7-5a1b-a1cd-3247aaf56f50",
+        "speech-pattern": "^(?:trip )?log$",
+        "speech-noun": "log|trip log",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "9d88a842-ff55-512c-a4fe-aefd57e88b20"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:hideTripLog:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:hideTripLog:page",
+        "speech-available": "WMOFSpeechAvailability.canCloseTripLog",
+        "data-speech-options-category": "trip-actions",
+        "data-speech-target": "#tripListMenuButton",
+        "speech-chain-surface": "pop",
+        "speech-function": "WMOFActions.closeTripLog",
+        "data-speech-pattern-id": "e29a547e-a0ca-55e2-9e62-be188f68e605",
+        "speech-pattern": "^(?:hide|close) trip log$",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "783baddc-895b-50fe-9db1-d5c20bf1b77a"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:deferTrip:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:deferTrip:page",
+        "data-speech-options-category": "trip-actions",
+        "speech-available": "WMOFSpeechAvailability.canDeferTrip",
+        "data-speech-target": "#tripDefer",
+        "speech-function": "WMOFActions.deferTrip",
+        "speech-persist": "",
+        "data-speech-pattern-id": "5ad7b062-9ca5-561b-91d0-d6f0f2ed8261",
+        "speech-pattern": "^defer trip$",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "b16fe1e6-3da7-57b4-adb4-a8c2da63030e"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:readRenderedTime:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:readRenderedTime:page",
+        "data-speech-options-category": "informational",
+        "data-speech-options-group": "time",
+        "speech-available": "WMOFSpeechAvailability.canUseInformational",
+        "speech-function": "WMOFActions.readRenderedTime",
+        "data-speech-pattern-id": "61fa6dbb-c724-5639-91e2-4331c624f9b1",
+        "speech-pattern": "^(?<timeMode>time remaining|time elapsed|end time)$",
+        "data-speech-pattern-definition": "1ef88583-92a7-56ff-b847-eeb3ff18a6b3"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:renderedTimeMode:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:renderedTimeMode:page",
+        "data-speech-options-category": "settings",
+        "data-speech-options-group": "time",
+        "speech-available": "WMOFSpeechAvailability.canToggleRenderedTime",
+        "data-speech-target": "#toggleRenderedTimeButton",
+        "speech-function": "WMOFActions.toggleRenderedTime",
+        "data-speech-pattern-id": "abe9c9f9-3993-5d10-8bb9-042cf3f053d3",
+        "speech-pattern": "^show (?<timeMode>time remaining|time elapsed|end time)$",
+        "data-speech-state-command": "",
+        "data-speech-pattern-definition": "348676a8-1088-56aa-9c44-b247f2dc9d1b"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:startBreak:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:startBreak:page",
+        "data-speech-target": "#idleBreakButton:enabled, #breakButton:enabled",
+        "speech-available": "WMOFSpeechAvailability.canOpenBreakMenu",
+        "data-speech-state-command": "",
+        "speech-skippable": "",
+        "data-speech-options-category": "trip-actions",
+        "speech-chain-next": "break-choice",
+        "speech-pattern": "^break start$",
+        "data-speech-pattern-definition": "9d72dea6-abb5-5476-bcf7-49a962c21ac3",
+        "data-speech-pattern-id": "fa61c26c-419b-4ae1-bcda-f806d72b8384",
+        "speech-function": "WMOFActions.openBreakStartMenu",
+        "speech-chain-surface": "#breakDialog"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:endBreak:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:endBreak:page",
+        "data-speech-target": "#breakButton",
+        "speech-available": "WMOFSpeechAvailability.canEndBreak",
+        "data-speech-state-command": "",
+        "speech-skippable": "",
+        "data-speech-options-category": "trip-actions",
+        "speech-chain-next": "break-end-confirm",
+        "speech-pattern": "^break end$",
+        "data-speech-pattern-definition": "5c234686-02c4-5e4f-8e0d-f7d7fbc5bb6c",
+        "data-speech-pattern-id": "caf27682-ff59-47d2-950b-7f09fed3745c",
+        "speech-function": "WMOFActions.openBreakEndMenu",
+        "speech-reject-prefix": "short"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:howLong:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:howLong:page",
+        "data-speech-target": "#toggleRenderedTimeButton",
+        "speech-available": "WMOFSpeechAvailability.canUseInformational",
+        "data-speech-options-category": "informational",
+        "speech-pattern": "^(?:how long|time)$",
+        "data-speech-pattern-definition": "a087b64a-a17c-5570-9677-35fa29a71963",
+        "data-speech-pattern-id": "af12ab7f-ab45-4a8b-b1ce-95dbb6d3bfec",
+        "speech-function": "WMOFActions.readTimeRemaining"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:when:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:when:page",
+        "data-speech-target": "#toggleRenderedTimeButton",
+        "speech-available": "WMOFSpeechAvailability.canUseInformational",
+        "data-speech-options-category": "informational",
+        "speech-pattern": "^when$",
+        "data-speech-pattern-definition": "2ab112df-fdbe-5b21-87ea-7234ec548aa1",
+        "data-speech-pattern-id": "a41a7071-bc40-4127-9d66-02eddbd15725",
+        "speech-function": "WMOFActions.readEndTime"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:tripSummary:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:tripSummary:page",
+        "speech-persist": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^trip summary$",
+        "data-speech-pattern-definition": "5a5fb15c-7f35-4539-9e7e-e12cc81043eb",
+        "data-speech-pattern-id": "c05d1c59-d285-4fcf-8b78-aa661bda3856",
+        "speech-function": "WMOFActions.readTripSummary"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "#speechDefaultMenu",
+      "tag": "speech-menu",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "speech-modal": "default",
+        "data-speech-editor-id": "builtin:menu:default"
+      },
+      "source": "Template / PHP + client bindings",
+      "initialAttributes": {
+        "speech-modal": "default",
+        "data-speech-editor-id": "builtin:menu:default"
+      }
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:close:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:close:page",
+        "speech-available": "WMOFSpeechAvailability.canCloseSurface",
+        "data-speech-options-category": "settings",
+        "speech-modal": "system",
+        "data-speech-system-command": "close",
+        "speech-chain-surface": "pop",
+        "speech-function": "SpeechMenu.close",
+        "speech-persist": "",
+        "data-speech-pattern-id": "bc7b0b38-b5fb-52a9-91aa-372ededfc794",
+        "speech-pattern": "^close$"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "#tripLogBody",
+      "tag": "section",
+      "surface": "tripLogBody",
+      "label": "Trip Log",
+      "attributes": {
+        "speech-scope": ""
+      },
+      "source": "Template / PHP + client bindings",
+      "initialAttributes": {
+        "speech-scope": ""
+      }
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "voiceEntrySurface",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:keypadValue:voiceEntrySurface\"]",
+      "tag": "speech-command",
+      "surface": "voiceEntrySurface",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:keypadValue:voiceEntrySurface",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?<spokenValue>(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|tutu|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?)(?:[\\s\\-\\u2013\\u2014]+(?:\\d+(?::\\d{1,2}){0,2}(?:\\.\\d+)?%?|%|zero|oh|o|naught|nought|double|triple|one|two|to|too|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|tutu|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|and|a|an|hours?|hrs?|minutes?|mins?|seconds?|secs?|percent|per|cent|am|pm|today|tomorrow|noon|midnight|quarter|half|past|after|to|till|until|at|o'?clock|a\\.?\\s*m\\.?|p\\.?\\s*m\\.?))*)$",
+        "data-speech-pattern-definition": "d1fc965f-6fdb-551a-a7e0-60079b90fb3e",
+        "data-speech-pattern-id": "5da4eb6f-5841-4287-9a8e-f953ef048f1f",
+        "speech-function": "WMOFActions.handleVoiceEntrySpeech",
+        "speech-collect": "",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "duration",
+        "speech-preproc-field": "spokenValue",
+        "data-speech-preproc-id": "c7fad9a1-b22a-48f1-b96c-c7f05c8aa6ae",
+        "data-speech-target": "#voiceEntrySurface",
+        "speech-chain-context": "voice-entry",
+        "speech-open-ended": "",
+        "data-speech-options-phrase": "<spokenValue>"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:voiceEntryConfirm:voiceEntrySurface\"]",
+      "tag": "speech-command",
+      "surface": "voiceEntrySurface",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:voiceEntryConfirm:voiceEntrySurface",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+        "data-speech-pattern-definition": "315ffc8d-05f8-5beb-a900-33a0be0b2213",
+        "data-speech-pattern-id": "71025804-40df-4851-88e8-3c54729afbfa",
+        "speech-function": "WMOFActions.handleVoiceEntrySpeech",
+        "speech-chain-surface": "pop",
+        "data-speech-target": "#voiceEntrySurface",
+        "speech-chain-context": "voice-entry"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:voiceEntryTouch:voiceEntrySurface\"]",
+      "tag": "speech-command",
+      "surface": "voiceEntrySurface",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:voiceEntryTouch:voiceEntrySurface",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?:touch|keypad|number pad)$",
+        "data-speech-pattern-definition": "956ded15-a3b9-5d29-bf13-50c65e7c8a66",
+        "data-speech-pattern-id": "6a386ae9-fe0e-4be2-90c9-4019dc448b21",
+        "speech-function": "WMOFActions.handleVoiceEntrySpeech",
+        "data-speech-target": "#voiceEntrySurface",
+        "speech-chain-context": "voice-entry"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:voiceEntryDefer:voiceEntrySurface\"]",
+      "tag": "speech-command",
+      "surface": "voiceEntrySurface",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:voiceEntryDefer:voiceEntrySurface",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^defer trip$",
+        "data-speech-pattern-definition": "ec58c797-85c9-5b9d-864a-6572a2157d50",
+        "data-speech-pattern-id": "3f06e8db-f124-40ca-b5c0-2d2b7e603241",
+        "speech-function": "WMOFActions.handleVoiceEntrySpeech",
+        "data-speech-target": "#voiceEntrySurface",
+        "speech-chain-context": "voice-entry"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "legacyLoginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:loginUsername:legacyLoginDialog\"]",
+      "tag": "speech-command",
+      "surface": "legacyLoginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:loginUsername:legacyLoginDialog",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^user(?:\\s*name)?$",
+        "data-speech-pattern-definition": "6554460d-3a71-486e-baae-6388767527d9",
+        "data-speech-pattern-id": "88e974b8-5cd9-4ba9-a845-2c9bcbd47e93",
+        "speech-function": "WMOFActions.switchToPasswordLogin",
+        "speech-available": "WMOFSpeechAvailability.canSwitchToPasswordLogin",
+        "speech-chain-surface": "#legacyLoginDialog"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:loginVoice:legacyLoginDialog\"]",
+      "tag": "speech-command",
+      "surface": "legacyLoginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:loginVoice:legacyLoginDialog",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^voice$",
+        "data-speech-pattern-definition": "50e02b33-bf99-4c4b-bbf4-66688736fbdf",
+        "data-speech-pattern-id": "f15bac47-ca26-4020-a40e-1d927ea8f813",
+        "speech-function": "WMOFActions.switchToVoiceLogin",
+        "speech-available": "WMOFSpeechAvailability.canSwitchToVoiceLogin",
+        "speech-chain-surface": "#loginDialog"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:standardTime:trip-settings\"]",
+      "tag": "button",
+      "surface": "tripSettingsDialog",
+      "label": "Edit standard time",
+      "attributes": {
+        "data-speech-editor-id": "builtin:standardTime:trip-settings",
+        "data-speech-options-category": "settings",
+        "data-speech-target": "#tripSettingsDialog [data-trip-time-field=\"standard-time\"]",
+        "speech-function": "WMOFActions.changeStandardTime",
+        "speech-persist": "",
+        "speech-collect": "",
+        "data-speech-pattern-id": "bdd8da71-82c9-5853-a344-532e717031db",
+        "speech-pattern": "^standard(?: time)? (?<timeValue>.+)$",
+        "data-speech-preproc-id": "95343326-10ca-5d64-b8a3-1b250d7737df",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "duration",
+        "speech-preproc-field": "timeValue"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:standardTimeEditor:tripSettingsDialog\"]",
+      "tag": "speech-command",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:standardTimeEditor:tripSettingsDialog",
+        "data-speech-target": "#tripSettingsDialog [data-trip-time-field=\"standard-time\"]",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^standard(?: time)?$",
+        "data-speech-pattern-definition": "c7f4346c-a894-58b0-98c4-34ab2edd895c",
+        "data-speech-pattern-id": "350389de-fc88-4f9c-ab06-0d0da53e7d20",
+        "speech-function": "WMOFActions.openTripStandardTimeEditor"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:scheduledStartEditor:tripSettingsDialog\"]",
+      "tag": "speech-command",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:scheduledStartEditor:tripSettingsDialog",
+        "data-speech-target": "#tripSettingsDialog [data-trip-time-field=\"scheduled-start\"]",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?:scheduled start|scheduled time)$",
+        "data-speech-pattern-definition": "6d7fd825-3aba-530a-b9c7-f69d8d4769fc",
+        "data-speech-pattern-id": "86b0f92e-b3e3-43e5-8810-8aa51659620a",
+        "speech-function": "WMOFActions.openTripScheduledStartEditor"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:scheduledStart:tripSettingsDialog\"]",
+      "tag": "speech-command",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:scheduledStart:tripSettingsDialog",
+        "data-speech-target": "#tripSettingsDialog [data-trip-time-field=\"scheduled-start\"]",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?:scheduled start|scheduled time) (?<spokenTime>.+)$",
+        "data-speech-pattern-definition": "5cb36a3c-62e5-5049-9e54-4c9febcab3b0",
+        "data-speech-pattern-id": "8450ac1a-46d5-44ca-aea6-7f664f9d5ac5",
+        "speech-function": "WMOFActions.changeScheduledStart",
+        "speech-collect": "",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "clock",
+        "speech-preproc-field": "spokenTime",
+        "data-speech-preproc-id": "0fcaa942-b363-4def-a350-bf712e2bdbcf"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:actualStartEditor:tripSettingsDialog\"]",
+      "tag": "speech-command",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:actualStartEditor:tripSettingsDialog",
+        "data-speech-target": "#tripSettingsDialog [data-trip-time-field=\"actual-start\"]",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?:actual start|start time)$",
+        "data-speech-pattern-definition": "d783c868-628b-50c5-b09f-3a71468543dc",
+        "data-speech-pattern-id": "8e1a7350-50db-46b4-9800-c3f9b39b2f8a",
+        "speech-function": "WMOFActions.openTripActualStartEditor"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:actualStart:tripSettingsDialog\"]",
+      "tag": "speech-command",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:actualStart:tripSettingsDialog",
+        "data-speech-target": "#tripSettingsDialog [data-trip-time-field=\"actual-start\"]",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?:actual start|start time) (?<spokenTime>.+)$",
+        "data-speech-pattern-definition": "626b495b-78d3-59ef-8c65-2068ec034a66",
+        "data-speech-pattern-id": "21ed8420-8cb3-45fa-9da5-b5176759ca7b",
+        "speech-function": "WMOFActions.changeActualStart",
+        "speech-collect": "",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "clock",
+        "speech-preproc-field": "spokenTime",
+        "data-speech-preproc-id": "8e2ad402-968b-456b-9a85-e07ec01b661e"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:creationTimeEditor:tripSettingsDialog\"]",
+      "tag": "speech-command",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:creationTimeEditor:tripSettingsDialog",
+        "data-speech-target": "#tripSettingsDialog [data-trip-time-field=\"creation-time\"]",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?:creation time|created(?: at)?)$",
+        "data-speech-pattern-definition": "87d47b7a-ea63-5f3a-aa90-c27f3a85b51d",
+        "data-speech-pattern-id": "7972988a-3ac7-461e-a3ad-e48c03c58f18",
+        "speech-function": "WMOFActions.openTripCreationTimeEditor"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:creationTime:tripSettingsDialog\"]",
+      "tag": "speech-command",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:creationTime:tripSettingsDialog",
+        "data-speech-target": "#tripSettingsDialog [data-trip-time-field=\"creation-time\"]",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?:creation time|created(?: at)?) (?<spokenTime>.+)$",
+        "data-speech-pattern-definition": "687d8362-e20f-54e5-983c-b506836371e6",
+        "data-speech-pattern-id": "3f3ee662-70da-4094-852f-a964238d5475",
+        "speech-function": "WMOFActions.changeCreationTime",
+        "speech-collect": "",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "clock",
+        "speech-preproc-field": "spokenTime",
+        "data-speech-preproc-id": "d493230a-787a-47c9-bc91-2eade2ce7392"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:confirm:tripSettingsDialog\"]",
+      "tag": "speech-command",
+      "surface": "tripSettingsDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:confirm:tripSettingsDialog",
+        "data-speech-target": "#breakDialog [data-break-type]",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-intent": "confirm",
+        "data-speech-options-category": "trip-actions",
+        "speech-chain-context": "break-confirm",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+        "data-speech-pattern-definition": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+        "data-speech-pattern-id": "530017ee-bc33-4333-af51-1227ed86040d",
+        "speech-function": "WMOFActions.saveTripSettings",
+        "speech-chain-surface": "pop"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "#scheduledStartStandard",
+      "tag": "button",
+      "surface": "scheduledStartDialog",
+      "label": "Standard Time ---",
+      "attributes": {
+        "data-speech-editor-id": "builtin:standardTime:scheduledStartStandard",
+        "data-speech-options-category": "settings",
+        "speech-chain-context": "scheduled-start",
+        "data-speech-target": "#scheduledStartStandard",
+        "speech-function": "WMOFActions.changeStandardTime",
+        "speech-persist": "",
+        "speech-collect": "",
+        "data-speech-pattern-id": "1cbde201-615f-5deb-830f-dd8fa08125e2",
+        "speech-pattern": "^(?:standard(?: time)? )?(?<timeValue>.+)$",
+        "data-speech-preproc-id": "fbd059b1-70fd-55fc-9265-22f4ac813cd2",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "duration",
+        "speech-preproc-field": "timeValue"
+      },
+      "source": "Template / PHP + client bindings",
+      "initialAttributes": {
+        "data-speech-editor-id": "builtin:standardTime:scheduledStartStandard",
+        "data-speech-options-category": "settings",
+        "speech-chain-context": "scheduled-start",
+        "data-speech-target": "#scheduledStartStandard",
+        "speech-function": "WMOFActions.changeStandardTime",
+        "speech-persist": "",
+        "speech-collect": "",
+        "data-speech-pattern-id": "1cbde201-615f-5deb-830f-dd8fa08125e2",
+        "speech-pattern": "^standard(?: time)? (?<timeValue>.+)$",
+        "data-speech-preproc-id": "fbd059b1-70fd-55fc-9265-22f4ac813cd2",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "duration",
+        "speech-preproc-field": "timeValue"
+      }
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "scheduledStartDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:standardTimeEditor:scheduledStartDialog\"]",
+      "tag": "speech-command",
+      "surface": "scheduledStartDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:standardTimeEditor:scheduledStartDialog",
+        "data-speech-target": "#scheduledStartStandard",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^standard(?: time)?$",
+        "data-speech-pattern-definition": "c7f4346c-a894-58b0-98c4-34ab2edd895c",
+        "data-speech-pattern-id": "b932c0e4-5a87-4ed6-bfa0-a26d8fb587ec",
+        "speech-function": "WMOFActions.openScheduledStandardTimeEditor"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:scheduledStartNow:scheduledStartDialog\"]",
+      "tag": "speech-command",
+      "surface": "scheduledStartDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:scheduledStartNow:scheduledStartDialog",
+        "data-speech-target": "#scheduledStartNow",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "trip-actions",
+        "speech-chain-context": "scheduled-start",
+        "speech-pattern": "^start$",
+        "data-speech-pattern-definition": "d6cd3380-35a6-5b7f-982c-e6588b1663a1",
+        "data-speech-pattern-id": "ba0cbc94-1986-4753-af47-77384c13278b",
+        "speech-function": "WMOFActions.startScheduledTripEarly"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "breakDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:breakChoice:breakDialog\"]",
+      "tag": "speech-command",
+      "surface": "breakDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:breakChoice:breakDialog",
+        "data-speech-target": "#breakDialog [data-break-type]",
+        "data-speech-state-command": "",
+        "speech-skippable": "",
+        "data-speech-options-category": "trip-actions",
+        "speech-chain-context": "break-choice",
+        "speech-chain-next": "break-confirm",
+        "speech-pattern": "^(?<breakChoice>break|lunch|short break)$",
+        "data-speech-pattern-definition": "fd26842e-d902-537c-b813-3f94de48dad0",
+        "data-speech-pattern-id": "65f243b1-dec8-4a37-bef4-3d80489a8c33",
+        "speech-function": "WMOFActions.chooseBreakType"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:confirm:breakDialog\"]",
+      "tag": "speech-command",
+      "surface": "breakDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:confirm:breakDialog",
+        "data-speech-target": "#breakDialog [data-break-type]",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-intent": "confirm",
+        "data-speech-options-category": "trip-actions",
+        "speech-chain-context": "break-confirm",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+        "data-speech-pattern-definition": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+        "data-speech-pattern-id": "122d3b66-7bcc-47c4-a6a6-8a805cb2cd31",
+        "speech-function": "WMOFActions.confirmBreakType",
+        "speech-chain-surface": "pop"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:menu:cancelDownConfirmDialog\"]",
+      "tag": "speech-menu",
+      "surface": "cancelDownConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:menu:cancelDownConfirmDialog"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:confirm:cancelDownConfirmDialog\"]",
+      "tag": "speech-command",
+      "surface": "cancelDownConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:confirm:cancelDownConfirmDialog",
+        "data-speech-intent": "confirm",
+        "data-speech-options-category": "trip-actions",
+        "data-speech-target": "#cancelDownConfirmYes",
+        "speech-function": "WMOFActions.confirmCancelDownTime",
+        "speech-persist": "",
+        "data-speech-pattern-id": "408a0105-d07e-50d7-865a-f91f02112ac6",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "tripTransitionOverlay",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:confirm:tripTransitionOverlay\"]",
+      "tag": "speech-command",
+      "surface": "tripTransitionOverlay",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:confirm:tripTransitionOverlay",
+        "data-speech-target": "#breakDialog [data-break-type]",
+        "data-speech-state-command": "",
+        "data-speech-intent": "confirm",
+        "data-speech-options-category": "trip-actions",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+        "data-speech-pattern-definition": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+        "data-speech-pattern-id": "109944ec-5a35-42f8-9a75-e334d70e82df",
+        "speech-function": "WMOFActions.confirmTripSummary",
+        "speech-available": "WMOFSpeechAvailability.canConfirmTripSummary",
+        "speech-chain-surface": "pop"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "voicePadRecognitionDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:confirm:voicePadRecognitionDialog\"]",
+      "tag": "speech-command",
+      "surface": "voicePadRecognitionDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:confirm:voicePadRecognitionDialog",
+        "data-speech-target": "#breakDialog [data-break-type]",
+        "data-speech-state-command": "",
+        "data-speech-intent": "confirm",
+        "data-speech-options-category": "trip-actions",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+        "data-speech-pattern-definition": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+        "data-speech-pattern-id": "c8958cb1-9e5f-46dc-bfe4-8e023fe0c982",
+        "speech-function": "WMOFActions.confirmVoicePadRecognition"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "voiceInputSwitchDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:confirm:voiceInputSwitchDialog\"]",
+      "tag": "speech-command",
+      "surface": "voiceInputSwitchDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:confirm:voiceInputSwitchDialog",
+        "data-speech-target": "#breakDialog [data-break-type]",
+        "data-speech-state-command": "",
+        "data-speech-intent": "confirm",
+        "data-speech-options-category": "trip-actions",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+        "data-speech-pattern-definition": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+        "data-speech-pattern-id": "adfa8b3a-4449-41f0-8e0f-1a8c555d2900",
+        "speech-function": "WMOFActions.confirmVoiceInputSwitch"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:menu:speechBreakConfirmDialog\"]",
+      "tag": "speech-menu",
+      "surface": "speechBreakConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:menu:speechBreakConfirmDialog"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:yes:speechBreakConfirmDialog\"]",
+      "tag": "speech-command",
+      "surface": "speechBreakConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:yes:speechBreakConfirmDialog",
+        "data-speech-options-category": "trip-actions",
+        "data-speech-target": "#speechBreakConfirmYes",
+        "speech-function": "WMOFActions.confirmBreakPromptYes",
+        "speech-persist": "",
+        "data-speech-pattern-id": "92d60ea1-eca5-5dfa-9662-15ebe254e3f1",
+        "speech-pattern": "^yes$",
+        "speech-available": "WMOFSpeechAvailability.canAnswerLunchQuestion"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:no:speechBreakConfirmDialog\"]",
+      "tag": "speech-command",
+      "surface": "speechBreakConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:no:speechBreakConfirmDialog",
+        "data-speech-options-category": "trip-actions",
+        "data-speech-target": "#speechBreakConfirmNo",
+        "speech-function": "WMOFActions.confirmBreakPromptNo",
+        "speech-persist": "",
+        "data-speech-pattern-id": "b7797206-8526-54e6-907f-0240df4472d4",
+        "speech-pattern": "^no$",
+        "speech-available": "WMOFSpeechAvailability.canAnswerLunchQuestion"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "speechBreakConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:yes:speechBreakConfirmDialog\"]",
+      "tag": "speech-command",
+      "surface": "speechBreakConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:yes:speechBreakConfirmDialog",
+        "data-speech-target": "#speechBreakConfirmYes",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "trip-actions",
+        "speech-pattern": "^yes$",
+        "data-speech-pattern-definition": "1dffbcc6-dfcd-5681-bd6d-e44e0804ecc7",
+        "data-speech-pattern-id": "7f5ddcf1-5dfc-4ba9-a829-f4dd217a0c64",
+        "speech-function": "WMOFActions.confirmBreakPromptYes"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:no:speechBreakConfirmDialog\"]",
+      "tag": "speech-command",
+      "surface": "speechBreakConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:no:speechBreakConfirmDialog",
+        "data-speech-target": "#speechBreakConfirmNo",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "trip-actions",
+        "speech-pattern": "^no$",
+        "data-speech-pattern-definition": "529257c3-f4f4-5200-957e-79ba9b4ec915",
+        "data-speech-pattern-id": "4d8dea9b-c988-4a6b-9272-9fde87085f38",
+        "speech-function": "WMOFActions.confirmBreakPromptNo"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:confirm:speechBreakConfirmDialog\"]",
+      "tag": "speech-command",
+      "surface": "speechBreakConfirmDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:confirm:speechBreakConfirmDialog",
+        "data-speech-target": "#breakDialog [data-break-type]",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-intent": "confirm",
+        "data-speech-options-category": "trip-actions",
+        "speech-chain-context": "break-end-confirm break-start-confirm",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+        "data-speech-pattern-definition": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+        "data-speech-pattern-id": "dd273280-733e-4403-a7cb-425279342d54",
+        "speech-function": "WMOFActions.confirmBreakPromptYes",
+        "speech-chain-surface": "pop",
+        "speech-available": "WMOFSpeechAvailability.canConfirmBreakEnd"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "loginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:loginUsername:loginDialog\"]",
+      "tag": "speech-command",
+      "surface": "loginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:loginUsername:loginDialog",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^user(?:\\s*name)?$",
+        "data-speech-pattern-definition": "6554460d-3a71-486e-baae-6388767527d9",
+        "data-speech-pattern-id": "9cdf2751-10b8-4394-ae65-6a6c3a9edbdc",
+        "speech-function": "WMOFActions.switchToPasswordLogin",
+        "speech-available": "WMOFSpeechAvailability.canSwitchToPasswordLogin",
+        "speech-chain-surface": "#legacyLoginDialog"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:loginVoice:loginDialog\"]",
+      "tag": "speech-command",
+      "surface": "loginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:loginVoice:loginDialog",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^voice$",
+        "data-speech-pattern-definition": "50e02b33-bf99-4c4b-bbf4-66688736fbdf",
+        "data-speech-pattern-id": "7affab44-8280-4172-b304-e3b15fdbd787",
+        "speech-function": "WMOFActions.switchToVoiceLogin",
+        "speech-available": "WMOFSpeechAvailability.canSwitchToVoiceLogin",
+        "speech-chain-surface": "#loginDialog"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:loginCredentials:loginDialog\"]",
+      "tag": "speech-command",
+      "surface": "loginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:loginCredentials:loginDialog",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?<credentials>(?:[0-9]{8}|(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})\\s+(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})))(?:\\s+(?<confirmation>ok|okay|o\\s+k))?$",
+        "data-speech-pattern-definition": "05a71e25-9753-42c4-a7f7-d7d4a94dac73",
+        "data-speech-pattern-id": "adcb37df-24ad-436a-843b-3a9e42af4e5b",
+        "speech-function": "WMOFActions.enterLoginCredentials",
+        "speech-execution-context": "credentials",
+        "speech-available": "WMOFSpeechAvailability.canUseLoginCredentials",
+        "speech-atomic-input": "credentials",
+        "speech-dispatch-boundary": "",
+        "speech-persist": ""
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:loginDigits:loginDialog\"]",
+      "tag": "speech-command",
+      "surface": "loginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:loginDigits:loginDialog",
+        "data-speech-state-command": "",
+        "data-speech-options-category": "settings",
+        "speech-pattern": "^(?<digits>(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3}))\\s+(?<confirmation>ok|okay|o\\s+k)$",
+        "data-speech-pattern-definition": "ca8315b4-5d42-4aa7-9987-e0edbfe08048",
+        "data-speech-pattern-id": "70685399-adcf-41dd-8aab-e67587f7cb67",
+        "speech-function": "WMOFActions.enterLoginDigits",
+        "speech-dispatch-boundary": "",
+        "speech-execution-context": "WMOFSpeechExecutionContexts.login",
+        "speech-persist": "",
+        "speech-available": "WMOFSpeechAvailability.canUseLogin",
+        "speech-atomic-input": "digits"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:confirm:loginDialog\"]",
+      "tag": "speech-command",
+      "surface": "loginDialog",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:confirm:loginDialog",
+        "data-speech-target": "#loginButton",
+        "data-speech-intent": "confirm",
+        "data-speech-options-category": "trip-actions",
+        "speech-pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+        "data-speech-pattern-definition": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
+        "data-speech-pattern-id": "cdbb96d5-df8e-4f94-be24-343212d9393b",
+        "speech-function": "WMOFActions.confirmLoginDigits",
+        "speech-execution-context": "WMOFSpeechExecutionContexts.login",
+        "speech-persist": "",
+        "speech-available": "WMOFSpeechAvailability.canConfirmLoginReview"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "#speechMicBar",
+      "tag": "speech-mic-bar",
+      "surface": "speechMicBar",
+      "label": "Speech recognition",
+      "attributes": {
+        "data-speech-active": "true"
+      },
+      "source": "Template / PHP + client bindings",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:menu:system\"]",
+      "tag": "speech-menu",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "speech-modal": "system",
+        "data-speech-editor-id": "builtin:menu:system"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:wake:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "wake",
+        "data-speech-editor-id": "builtin:wake:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^wake$",
+        "speech-function": "SpeechMenu.wake",
+        "data-speech-pattern-id": "f486af40-41c3-49dd-84f0-2fa44c0399ac"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:sleep:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "sleep",
+        "data-speech-editor-id": "builtin:sleep:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^sleep$",
+        "speech-function": "SpeechMenu.sleep",
+        "data-speech-pattern-id": "55914164-1c0d-41b1-be2b-12477b27cd03"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:off:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "off",
+        "data-speech-editor-id": "builtin:off:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^off$",
+        "speech-function": "WMOFActions.disableSpeechRecognition",
+        "data-speech-pattern-id": "f6f45f28-dd5b-4a59-8807-b6026bb7ef2f"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:commands:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "commands",
+        "data-speech-editor-id": "builtin:commands:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^(?:(?:speech )?commands|choices|options|what)$",
+        "speech-function": "WMOFActions.openSpeechOptions",
+        "data-speech-pattern-id": "f4ed5e9f-e973-4e48-bf16-083c95b55aaf"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:speech:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "speech",
+        "data-speech-editor-id": "builtin:speech:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^speech (?:on|off)$",
+        "speech-function": "WMOFActions.setSpeechMaster",
+        "speech-repeatable": "",
+        "data-speech-pattern-id": "b1120776-2b00-433e-973c-72fae6223615"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:chime:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "chime",
+        "data-speech-editor-id": "builtin:chime:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^chime (?:on|off)$",
+        "speech-function": "WMOFActions.setChimeMaster",
+        "speech-repeatable": "",
+        "data-speech-pattern-id": "ce0ceb2c-3eae-4a9c-9a1c-250e1da9ae49"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:chime-rate:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "chime-rate",
+        "data-speech-editor-id": "builtin:chime-rate:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^chime (?<rate>fast|medium|slow)$",
+        "speech-function": "WMOFActions.setChimeRate",
+        "speech-repeatable": "",
+        "data-speech-pattern-id": "c6c80daa-c74b-4b01-b78b-70550f4fcbda"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:speech-rate-percent:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "speech-rate-percent",
+        "data-speech-editor-id": "builtin:speech-rate-percent:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^speech (?!on$|off$)(?<percent>.+?)(?: percent|%)?$",
+        "speech-function": "WMOFActions.setAudioRatePercent",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "percent",
+        "speech-preproc-field": "percent",
+        "speech-open-ended": "",
+        "speech-repeatable": "",
+        "data-speech-options-phrase": "speech <percent>",
+        "data-speech-pattern-id": "84264e33-40df-4270-aa04-d47eb9e4b6dc",
+        "data-speech-preproc-id": "79bb59a4-1027-47da-b338-b91340e2f1e1"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:volume-percent:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "volume-percent",
+        "data-speech-editor-id": "builtin:volume-percent:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^volume (?<percent>.+?)(?: percent|%)?$",
+        "speech-function": "WMOFActions.setAudioVolumePercent",
+        "speech-preproc": "WMOFSpeechProcessing.normalizeSpeechValue",
+        "speech-preproc-context": "percent",
+        "speech-preproc-field": "percent",
+        "speech-open-ended": "",
+        "speech-repeatable": "",
+        "data-speech-options-phrase": "volume <percent>",
+        "data-speech-pattern-id": "3a6ff59d-db60-4810-a9d5-a028199711dd",
+        "data-speech-preproc-id": "63925cfd-c723-4e34-be66-9545032b429e"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:faster:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "faster",
+        "data-speech-editor-id": "builtin:faster:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^faster$",
+        "speech-function": "WMOFActions.changeAudioRateFaster",
+        "speech-repeatable": "",
+        "data-speech-pattern-id": "9ccb73c4-07d0-4a7a-9844-48d42efb8616"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:slower:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "slower",
+        "data-speech-editor-id": "builtin:slower:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^slower$",
+        "speech-function": "WMOFActions.changeAudioRateSlower",
+        "speech-repeatable": "",
+        "data-speech-pattern-id": "ab79b326-5853-488a-bbf1-87fb47995d2c"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:louder:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "louder",
+        "data-speech-editor-id": "builtin:louder:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^louder$",
+        "speech-function": "WMOFActions.changeAudioVolumeLouder",
+        "speech-repeatable": "",
+        "data-speech-pattern-id": "ac2b7db2-db1c-467a-bf6a-62c276f1d815"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:softer:system\"]",
+      "tag": "speech-command",
+      "surface": "speechMicBar",
+      "label": "",
+      "attributes": {
+        "data-speech-system-command": "softer",
+        "data-speech-editor-id": "builtin:softer:system",
+        "data-speech-options-category": "system",
+        "data-speech-options-group": "speech-controls",
+        "speech-pattern": "^softer$",
+        "speech-function": "WMOFActions.changeAudioVolumeSofter",
+        "speech-repeatable": "",
+        "data-speech-pattern-id": "2389b7e6-7507-4e8a-8690-902c498848ae"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "speech-menu",
+      "tag": "speech-menu",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-runtime-menu": "true",
+        "speech-modal": "default"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:cancel:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:cancel:page",
+        "data-speech-target": "#speechBreakConfirmCancel",
+        "speech-available": "WMOFSpeechAvailability.canCloseSurface",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-intent": "cancel",
+        "data-speech-options-category": "system",
+        "speech-pattern": "^cancel$",
+        "data-speech-pattern-definition": "1d84b59d-4078-5b53-a748-02489f86c0d1",
+        "data-speech-pattern-id": "3d342a3f-8176-42bf-9fb4-d4efda161c29",
+        "speech-function": "SpeechMenu.cancel",
+        "speech-modal": "system",
+        "data-speech-system-command": "cancel",
+        "speech-chain-surface": "pop"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    },
+    {
+      "element": "[data-speech-editor-id=\"builtin:close:page\"]",
+      "tag": "speech-command",
+      "surface": "page",
+      "label": "",
+      "attributes": {
+        "data-speech-editor-id": "builtin:close:page",
+        "data-speech-state-command": "",
+        "speech-persist": "",
+        "data-speech-options-category": "system",
+        "speech-pattern": "^close$",
+        "data-speech-pattern-definition": "b636c62b-ddd1-5619-93ef-685659516e71",
+        "data-speech-pattern-id": "446bc446-4007-4588-9c32-9a1b38a1b972",
+        "speech-function": "SpeechMenu.close",
+        "speech-modal": "system",
+        "data-speech-system-command": "close",
+        "speech-chain-surface": "pop"
+      },
+      "source": "JavaScript / component",
+      "initialAttributes": {}
+    }
+  ],
+  "attributes": [
+    "speech-pattern",
+    "speech-function",
+    "speech-available",
+    "speech-execution-context",
+    "speech-modal",
+    "speech-chain-context",
+    "speech-chain-next",
+    "speech-chain-surface",
+    "speech-chain-transition",
+    "speech-atomic-input",
+    "speech-collect",
+    "speech-dispatch-boundary",
+    "speech-noun",
+    "speech-open-ended",
+    "speech-persist",
+    "speech-preproc",
+    "speech-preproc-context",
+    "speech-preproc-field",
+    "speech-reject-prefix",
+    "speech-repeatable",
+    "speech-scope",
+    "speech-skippable",
+    "data-speech-active",
+    "data-speech-editor-id",
+    "data-speech-intent",
+    "data-speech-options-category",
+    "data-speech-options-group",
+    "data-speech-options-phrase",
+    "data-speech-pattern-definition",
+    "data-speech-pattern-id",
+    "data-speech-preproc-definition",
+    "data-speech-preproc-id",
+    "data-speech-preproc-id-definition",
+    "data-speech-runtime-menu",
+    "data-speech-state-command",
+    "data-speech-system-command",
+    "data-speech-target"
+  ]
+}

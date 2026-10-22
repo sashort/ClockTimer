@@ -119,6 +119,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: tests
       - run: node tests/web-speech-browser.cjs
+      - run: node tests/web-speech-login-browser.cjs
       - run: node tests/login-fullscreen-browser.cjs
       - run: node tests/order-filler-master-touch.cjs
       - run: node tests/diagnostic-speech-audio-test.cjs

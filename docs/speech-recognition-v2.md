@@ -566,9 +566,104 @@ service. This adapter uses browser-owned microphone capture, not Vosk PCM input.
 
 Fully formed Web Speech commands with no possible continuations execute from
 interim results. Commands with viable continuations keep collecting. Each
-utterance owns `interimDispatchedCommandIds`, a set reserved synchronously before
-queuing an interim action. It uses `data-speech-editor-id`, the element ID, or a
+utterance owns `interimDispatchedCommandIds`, a set that reserves an unscoped
+identity before queuing and a scoped identity immediately before dispatch. It uses `data-speech-editor-id`, the element ID, or a
 stable runtime ID for an anonymous command. Later interim revisions and final
 results cannot dispatch an ID in that set again, even with different wording.
 The set survives command-stream settlement and state transfers, and resets only
 with a new utterance. Other command IDs can execute in that same utterance.
+
+
+### Optional command execution context
+
+Every command has an execution context, defaulting to `null`. The shared interim
+duplicate guard remains active; its identity is the command ID together with the
+resolved execution context. Reworded partials and final confirmation cannot
+redispatch that identity within an utterance. A different execution context can
+legitimately reuse the same command ID in that utterance.
+
+Declare `speech-execution-context="scheduled-start-time"` for a literal label,
+or name a provider such as `WMOFSpeechExecutionContexts.login`. A provider returns
+`null`, a string, or a flat object of named string/null labels, for example
+`{valueType: "percent", scope: "day"}`. Object keys are canonicalized and the
+captured object is frozen. Providers receive the command element, matched
+transcript, and prepared argument list. Context labels should describe purpose
+or target, without including credential values or transient loading states.
+
+The context is captured immediately before dispatch, after preceding asynchronous
+actions settle, so ID-to-PIN state changes are visible even when both commands
+arrive in one recognition result. The guard reserves the identity before calling
+the action. Commands with no context retain their existing immediate reservation.
+`SpeechMenu.executionContext.commandContext` and the `executionContext` field on
+`speechCommandDispatched`, `speechCommandExecuted`, and `speechCommandRejected`
+events retain the captured context for inspection and testing.
+
+Voice login binds the shared digit/confirmation commands to `id` and `pin`.
+Other suggested contexts are examples, not globally assigned classifications.
+An atomic input's declared complete pattern establishes its terminal boundary
+without any Vosk finite-phrase compiler. The Web Speech login browser regression
+covers cumulative and back-to-back interims, single and separate finals, formatted
+numeric codes, exact-once authentication, and absence of stranded locks.
+
+
+### Login boundaries, command handoff, and matched transcript lifetime
+
+Voice login accepts ID + OK followed by PIN + OK, including cumulative interim
+revisions and separate final result slots. It also accepts eight sequential
+digits (first four ID, last four PIN), with an optional final OK. The combined
+command has execution context `credentials`; it reuses existing ID-entry,
+PIN-entry, submitting, and closed states rather than introducing parallel states.
+
+`speech-dispatch-boundary` is a generic command attribute for transitions whose
+next command inventory cannot be projected safely. The planner consumes that
+command, retains the suffix, settles its action and transaction, then replans the
+suffix against authoritative surface and availability state. Login completion
+awaits its owned dialog-close completion, including its animation; authentication
+success alone does not release the continuation. Failure leaves the login surface
+in control and cannot authorize the suffix. No particular Sync, goal, or Ready
+sequence is special-cased. `tests/web-speech-login-browser.cjs` checks these flows
+against the existing FSM families, exact-once dispatch, and lock settlement.
+
+Consumed text is pruned from processing immediately, but the latest matched
+transcript remains visible in the Mic Bar after interim dispatch and final
+confirmation. Its default lifetime is 2,000 ms. A command's
+`speech-transcript-timeout` overrides its `speech-response-timeout`, then the bar's
+`speech-transcript-timeout`, then the default. Numeric milliseconds, `ms`, and `s`
+are accepted; `persistent`, `manual`, and `none` retain until replaced or cleared.
+Unfinished selected text can occupy the display while collection continues.
+Response result columns have independent TTLs. Transcript expiry does not
+redispatch commands or change listening state. Disconnect and explicit clear
+cancel retention. `tests/speech-response-chain.mjs` covers this behavior.
+
+Goal setting in en-US supports scope before or after the value, with optional
+`goal` and `percent`: `day 105`, `day goal 105 percent`, `105 day`, and
+`105 percent day goal`. Scopes are trip, day, week, money, month, and year.
+A scope without a value or `goal` remains a mode command; `day goal` remains
+readback. Existing percent preprocessing and setters own validation, range
+selection, Auto retention, Sync recalculation, and announcements. The
+`--range-permissions` app integration test covers all 48 setting combinations.
+
+
+### en-US preprocessor audit on the Web Speech branch
+
+The rendered startup inventory binds 14 elements to one preprocessor function:
+`WMOFSpeechProcessing.normalizeSpeechValue`. Six use clock values, five percent,
+and three duration. These are startup bindings; editor context can change with
+its input mode. The function extracts the named regex field, delegates to
+`EnglishSpeechValuePreprocessor`, and replaces only that field. It also rejects
+invalid provisional values. Dropping it would remove application-level validation
+and canonicalization, even when recognition already supplies numeric text.
+
+| Layer | Finding | Recommendation |
+| --- | --- | --- |
+| Clock parsing | `3:40` and `15:40` are already supported; invalid `25:90` is rejected; spoken fallback still accepts `twenty till four`. | Keep validation, meridiem/day handling, and date selection. Review spoken-form coverage against actual browser output. |
+| Duration parsing | `22:17` becomes `0:22:17`; `an hour and five` becomes `1:05:00`; compact `105` is `0:01:05`. | Keep: browser text does not define the application's duration/keypad semantics. |
+| Percent parsing | `105%` and `one hundred five` both become `105`. | Keep numeric/unit validation; spoken fallback may be reduced only with browser evidence. |
+| Collector classification | `valid`, `incomplete`, `malformed`, and `defer` govern continuations. | Keep independently of the recognition backend. |
+| Recognition repairs | `tutu` is rewritten to 22 in all three parsers; duration also accepts `to`/`too` as two. | Candidates for isolation or removal on this branch, not essential numeric parsing. No removal made in this audit. |
+| Language definitions | Six preprocessor records describe three distinct handler/context/field combinations. | Metadata deduplication candidate; consolidate references deliberately without removing the shared function. |
+
+`tests/speech-value-preprocessor.mjs` passes. Direct probes confirm the numeric,
+spoken, and invalid-value examples above. These probes assess parser behavior,
+not which transcript a real browser will return. The complete rendered attribute
+snapshot is `order-filler-speech-attributes-en-us.html` and its accompanying JSON.

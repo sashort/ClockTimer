@@ -3053,6 +3053,7 @@
     let pinCancelPrimed=false, pendingLoginAnnouncement, pendingVoiceLoginSwitch=false;
     let loginFocusAnnouncementKey;
     let loginDigitSlots = {id:["","","",""],pin:["","","",""]};
+    globalThis.WMOFSpeechExecutionContexts = {login: () => voiceLoginStage};
     function syncLoginDigits() {
         for(const stage of ["id","pin"]){
             $(stage === "id" ? "#loginUsername" : "#loginPassword").value=loginDigitSlots[stage].join("");
@@ -3157,6 +3158,18 @@
         syncLoginDigits();renderInteractionControls();
         return confirmation ? confirmLoginDigits() : true;
     }
+    async function enterLoginCredentials(credentials) {
+        const state=readInteractionState();
+        if(!state.actions.loginDigits || state.login.stage !== "id")return false;
+        const value=DigitSequence.parse(credentials, globalThis.WMOFLanguagePack.language.speech.digits);
+        if(value === null || value.length !== 8)return false;
+        loginDigitSlots.id=[...value.slice(0,4)];loginDigitSlots.pin=[...value.slice(4)];
+        voiceLoginStage="pin";pinCancelPrimed=false;
+        $("#loginUsername").disabled=true;$("#loginPassword").disabled=false;
+        $("#loginIdRow").hidden=true;$("#loginPinRow").hidden=false;
+        syncLoginDigits();renderInteractionControls();
+        return confirmLoginDigits();
+    }
     async function confirmLoginDigits() {
         if(!readInteractionState().actions.loginDigits) return false;
         const input=$(voiceLoginStage === "pin" ? "#loginPassword" : "#loginUsername");
@@ -3218,6 +3231,7 @@
     const pointerPressButtons = new Map();
     const tripFieldAttentionAnimations = new WeakMap();
     const dialogCloseTimers = new WeakMap();
+    const dialogCloseCompletions = new WeakMap();
     const TRIP_LIST_BUTTON_TRANSITION_DURATION = 350;
     const TRIP_LIST_BODY_DELAY = 125;
     const TRIP_LIST_BODY_DURATION = 425;
@@ -8404,6 +8418,12 @@
                     ? CONNECTION_UI_TRANSITION_DURATION
                     : 250;
 
+        let completeClose;
+        const previousClose=dialogCloseCompletions.get(dialog);
+        const promise=new Promise(resolve => {completeClose=resolve;});
+        dialogCloseCompletions.set(dialog, {promise, resolve:completeClose});
+        // An immediate replacement finishes the same owned close operation.
+        if(previousClose)promise.then(previousClose.resolve);
         const finishClose = () => {
             dialogCloseTimers.delete(dialog);
             dialog.style.setProperty("--app-dialog-transition-duration", "0ms");
@@ -8413,6 +8433,8 @@
                 dialog.style.setProperty("--app-dialog-transition-duration", "250ms");
             });
             emitUIEvent(dialog, "closed", { reason, immediate });
+            completeClose();
+            dialogCloseCompletions.delete(dialog);
         };
 
         if (duration === 0) {
@@ -8708,10 +8730,12 @@
         }
 
         if (loginConfirmedThisLoad && loginIsOpen()) {
-            void closeDialogWithReturn(
-                activeLoginDialog(),
-                { reason: "login-connected" }
-            ).catch(() => {});
+            const dialog=activeLoginDialog();
+            return closeDialogWithReturn(dialog, {reason:"login-connected"})
+                .then(async closed => {
+                    await dialogCloseCompletions.get(dialog)?.promise;
+                    return closed || !dialog.open;
+                }).catch(() => false);
         }
     }
 
@@ -22676,6 +22700,7 @@
     globalThis.WMOFSpeechAvailability = Object.freeze({
         canSwitchToPasswordLogin: () => {const state=readInteractionState();return state.actions.loginSwitch && state.speechRecognition === "listening";},
         canSwitchToVoiceLogin: () => {const state=readInteractionState();return state.actions.loginSwitch && state.speechRecognition === "listening";},
+        canUseLoginCredentials: () => {const state=readInteractionState();return state.actions.loginDigits && state.login.stage === "id" && state.speechRecognition === "listening";},
         canUseLogin: () => {const state=readInteractionState();return state.actions.loginDigits && !state.login.reviewReady && state.speechRecognition === "listening";},
         canConfirmLoginReview: () => {const state=readInteractionState();return state.actions.loginDigits && state.login.reviewReady && state.speechRecognition === "listening";},
         canConfirmTripSummary: () => readInteractionState().actions.confirmSummary,
@@ -24166,6 +24191,7 @@
                 );
             },
 
+            enterLoginCredentials: {metadata:{transaction:false}, implementation(credentials) {return enterLoginCredentials(credentials);}},
             enterLoginDigits: {metadata:{transaction:false}, implementation(digits, confirmation) {return enterLoginDigits(digits, confirmation);}},
             switchToPasswordLogin: {metadata:{transaction:false}, implementation() {return switchToPasswordLogin();}},
             switchToVoiceLogin: {metadata:{transaction:false}, implementation() {return switchToVoiceLogin();}},
@@ -25420,10 +25446,9 @@
                         mainMenu
                     );
 
-                    syncNetworkStatusUI({
-                        login:
-                            true
-                    });
+                    // Authentication is not ready for a speech continuation until
+                    // the login surface has completed its owned close transition.
+                    if (await syncNetworkStatusUI() === false) return false;
 
                     return result;
                 }
@@ -27750,7 +27775,7 @@
                     priority: 100,
                     isOpen: () => surface.matches('dialog') ? surface.open : popoverIsOpen(surface),
                     acceptCommand: surface === loginDialog ? command =>
-                        ['WMOFActions.enterLoginDigits','WMOFActions.confirmLoginDigits','SpeechMenu.cancel'].includes(command.getAttribute('speech-function')) : undefined,
+                        ['WMOFActions.enterLoginCredentials','WMOFActions.enterLoginDigits','WMOFActions.confirmLoginDigits','SpeechMenu.cancel'].includes(command.getAttribute('speech-function')) : undefined,
                     inheritCommands: surface === tripTransitionOverlay,
                     beforeCommand: surface === tripTransitionOverlay ? command => {
                         const fn=command.getAttribute('speech-function');
@@ -27767,10 +27792,19 @@
                     if(command){command.setAttribute("speech-available","WMOFSpeechAvailability."+predicate);command.setAttribute("speech-chain-surface",key === "loginUsername" ? "#legacyLoginDialog" : "#loginDialog");}
                 }
             }
+            const loginCredentialsCommand=installSpeechCommand("loginCredentials", "enterLoginCredentials", loginDialog, false);
+            if(loginCredentialsCommand){
+                loginCredentialsCommand.setAttribute("speech-execution-context", "credentials");
+                loginCredentialsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLoginCredentials");
+                loginCredentialsCommand.setAttribute("speech-atomic-input", "credentials");
+                loginCredentialsCommand.setAttribute("speech-dispatch-boundary", "");
+                loginCredentialsCommand.setAttribute("speech-persist", "");
+            }
             const loginDigitsCommand = installSpeechCommand("loginDigits", "enterLoginDigits", loginDialog, false);
-            if(loginDigitsCommand){loginDigitsCommand.setAttribute("speech-persist", "");loginDigitsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");loginDigitsCommand.setAttribute("speech-atomic-input", "digits");}
+            if(loginDigitsCommand){loginDigitsCommand.setAttribute("speech-dispatch-boundary", "");loginDigitsCommand.setAttribute("speech-execution-context", "WMOFSpeechExecutionContexts.login");loginDigitsCommand.setAttribute("speech-persist", "");loginDigitsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");loginDigitsCommand.setAttribute("speech-atomic-input", "digits");}
             const loginReviewCommand = installSpeechCommand("confirm", "confirmLoginDigits", loginDialog, false);
             if(loginReviewCommand){
+                loginReviewCommand.setAttribute("speech-execution-context", "WMOFSpeechExecutionContexts.login");
                 loginReviewCommand.setAttribute("speech-persist", "");
                 loginReviewCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canConfirmLoginReview");
                 loginReviewCommand.dataset.speechTarget="#loginButton";

@@ -520,12 +520,24 @@ if(process.argv.includes('--range-permissions')) {
   assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' reads back');
   assert.deepEqual([timer.getAttribute('trip-goal'),timer.getAttribute('total-goal')],before,'readback does not set a percentage');
  }
+ // Both keyword choices and word orders use the same scoped setters.
+ for(const target of ['trip','day','week','money','month','year']) {
+  for(const goal of ['', ' goal'])for(const percent of ['', ' percent'])for(const reverse of [false,true]) {
+   const phrase=reverse?`105${percent} ${target}${goal}`:`${target}${goal} 105${percent}`;
+   const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await settle();
+   assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' executes');
+   assert.equal(timer.getSummarySnapshot()[target==='trip'?'trip':'total'].percentGoal,1.05,phrase+' sets the intended goal');
+   if(target!=='trip')assert.equal(window.WMOFInteractionState.state.tripLogRange,target==='money'?'pay-period':target,phrase+' selects its scope');
+   assert.equal(window.WMOFCoordinator.lockCount,0,phrase+' releases locks');
+  }
+ }
  await window.WMOFActions.changeGoalMode('auto');await settle();
  const auto=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(auto,'week goal one hundred five percent',true);await auto.digestQueue;await settle();
  assert(auto.hadCommittedCommand&&!auto.digestExecutionFailed);
  assert.equal(timer.percentMode,'auto','scope-specific goal preserves Auto');
  assert.equal(window.WMOFInteractionState.state.tripLogRange,'week');
  assert.equal(timer.getSummarySnapshot().total.percentGoal,1.05);
+ await window.WMOFActions.readScopeGoal('day');await settle();
  await window.WMOFActions.openTripLog('button');await settle();
  for(const [phrase,range] of [['week','week'],['month','month'],['money','pay-period'],['year','year'],['day','day']])await say(phrase,range);
  const select=window.document.querySelector('#tripLogRangeSelect');

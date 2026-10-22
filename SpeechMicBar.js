@@ -44,6 +44,8 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     #consumedTranscript = "";
     #consumedSegments = [];
     #rejectedClearTimer;
+    #retainedTranscript = "";
+    #transcriptClearTimer;
     #loadingAnimationFrame;
     #loadingDisplayed = 0;
     #loadingTarget = 0;
@@ -2022,6 +2024,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     }
 
     disconnectedCallback() {
+        this.#clearRetainedTranscript();
         this.#unsubscribe();
         this.#layoutResizeObserver
             ?.disconnect?.();
@@ -5896,6 +5899,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     }
 
     clear() {
+        this.#clearRetainedTranscript();
         clearTimeout(
             this.#rejectedClearTimer
         );
@@ -6093,7 +6097,8 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                         "state",
                         "utterance"
                     );
-                    this.#showWaveform();
+                    if (this.#retainedTranscript) this.#showStreamingPhrase(this.#retainedTranscript);
+                    else this.#showWaveform();
                 }
                 break;
             case "utteranceFinished":
@@ -6111,6 +6116,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                         !globalThis.SpeechMenu
                             ?.muted &&
                         !detail?.committed &&
+                        !this.#retainedTranscript &&
                         detail?.reason !==
                             "no-candidates"
                     ) {
@@ -6195,6 +6201,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                     this.#codes.replaceChildren();
                     const pending = this.#pendingTranscript();
                     if (pending) this.#showStreamingPhrase(pending);
+                    else if (type === "speechCommandDigested") this.#retainMatchedTranscript(detail);
                     else this.#showWaveform();
                 }
                 break;
@@ -6436,6 +6443,10 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     }
 
     #showIdleText() {
+        if (this.#retainedTranscript && !["muted", "stopped"].includes(this.state)) {
+            this.#showStreamingPhrase(this.#retainedTranscript);
+            return;
+        }
         this.#showStatus(
             this.state === "muted"
                 ? (
@@ -6644,10 +6655,38 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
             );
     }
 
+    #clearRetainedTranscript() {
+        clearTimeout(this.#transcriptClearTimer);
+        this.#transcriptClearTimer=undefined;
+        this.#retainedTranscript="";
+        this.removeAttribute("transcript-state");
+    }
+
+    #retainMatchedTranscript(detail) {
+        this.#clearRetainedTranscript();
+        this.#retainedTranscript=String(detail.transcript || "");
+        if (!this.#retainedTranscript) return;
+        this.setAttribute("transcript-state", "retained");
+        this.#showStreamingPhrase(this.#retainedTranscript);
+        const raw=detail.commandElement?.getAttribute("speech-transcript-timeout") ??
+            detail.commandElement?.getAttribute("speech-response-timeout") ?? this.getAttribute("speech-transcript-timeout");
+        const setting=String(raw ?? "2000").trim().toLowerCase();
+        if (["persistent", "manual", "none"].includes(setting)) return;
+        const value=Number(setting.replace(/ms$|s$/,""))*(setting.endsWith("s")&&!setting.endsWith("ms")?1000:1);
+        const delay=Number.isFinite(value)&&value>=0&&setting!==""?value:2000;
+        this.#transcriptClearTimer=setTimeout(()=>{
+            this.#clearRetainedTranscript();
+            const pending=this.#pendingTranscript();
+            if(pending)this.#showStreamingPhrase(pending);
+            else this.#showIdleText();
+        },delay);
+    }
+
     #scheduleRejectedClear(
         utteranceId,
         delay = 2000
     ) {
+        if(this.#retainedTranscript)return;
         clearTimeout(
             this.#rejectedClearTimer
         );
@@ -6814,6 +6853,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     #showStreamingPhrase(
         text
     ) {
+        text = text || this.#retainedTranscript;
         const parts =
             this.#corePhraseParts(
                 text

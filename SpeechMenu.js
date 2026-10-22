@@ -4076,31 +4076,53 @@ class SpeechMenu {
         SpeechMenu.#emit("utteranceUnrecognized", {id: utterance.id, transcript: remainder, reason, fast: true});
     }
 
+    static #reserveInterimCommand(utterance, step, fromInterim) {
+        const element = step.commandElement;
+        const declaration = element.getAttribute("speech-execution-context");
+        let executionContext = null;
+        if (declaration) {
+            const resolved = SpeechMenu.#resolve(declaration);
+            executionContext = resolved ? resolved.fn.call(resolved.owner, Object.freeze({
+                commandElement: element, transcript: step.segmentTranscript,
+                arguments: Object.freeze((step.arguments || []).slice())
+            })) : declaration;
+            if (executionContext !== null && typeof executionContext !== "string") {
+                if (typeof executionContext !== "object" || Array.isArray(executionContext) ||
+                    !Object.values(executionContext).every(value => value === null || typeof value === "string"))
+                    throw new TypeError("A command execution context must be null, a label, or named labels.");
+                executionContext = Object.freeze(Object.fromEntries(Object.entries(executionContext).sort(([a], [b]) => a.localeCompare(b))));
+            }
+        }
+        step.executionContext = executionContext;
+        if (SpeechMenu.#recognizerBackend !== "web-speech") return true;
+        let commandId = element.getAttribute("data-speech-editor-id") || element.id || SpeechMenu.#webSpeechCommandIds.get(element);
+        if (!commandId) {
+            commandId = "runtime-command:" + ++SpeechMenu.#webSpeechCommandSequence;
+            SpeechMenu.#webSpeechCommandIds.set(element, commandId);
+        }
+        const identity = executionContext === null ? commandId : JSON.stringify([commandId, executionContext]);
+        const dispatched = utterance.interimDispatchedCommandIds ??= new Set();
+        if (dispatched.has(identity)) {
+            SpeechMenu.#emit("speechCommandSkipped", {utteranceId: utterance.id, commandId, executionContext,
+                transcript: step.segmentTranscript, reason: "already-dispatched-from-interim"});
+            return false;
+        }
+        // Reserve before invoking the action, including while its promise is pending.
+        if (fromInterim) dispatched.add(identity);
+        return true;
+    }
+
     static #queueDigestStep(utterance, step) {
         SpeechMenu.#continuationSession(utterance);
         const segment = step.segmentTranscript;
         utterance.digestTranscript = [utterance.digestTranscript, step.ignoredBefore, segment].filter(Boolean).join(" ");
         (utterance.digestCommandSegments ??= []).push(segment);
         utterance.digestDiscardedTail = "";
-        if (SpeechMenu.#recognizerBackend === "web-speech") {
-            const element = step.commandElement;
-            let commandId = element.getAttribute("data-speech-editor-id") || element.id ||
-                SpeechMenu.#webSpeechCommandIds.get(element);
-            if (!commandId) {
-                commandId = "runtime-command:" + ++SpeechMenu.#webSpeechCommandSequence;
-                SpeechMenu.#webSpeechCommandIds.set(element, commandId);
-            }
-            // Reserve the command ID synchronously, before its async action is
-            // queued. Keep the reservation through interim revisions and final
-            // confirmation; a new utterance receives a fresh set.
-            const dispatched = utterance.interimDispatchedCommandIds ??= new Set();
-            if (dispatched.has(commandId)) {
-                SpeechMenu.#emit("speechCommandSkipped", {utteranceId: utterance.id,
-                    commandId, transcript: segment, reason: "already-dispatched-from-interim"});
-                return;
-            }
-            if (!utterance.digestIsFinal) dispatched.add(commandId);
-        }
+        const fromInterim = !utterance.digestIsFinal;
+        const scopedExecution = step.commandElement.hasAttribute("speech-execution-context");
+        // Unscoped commands reserve immediately. A dynamic context is resolved
+        // at dispatch, after preceding actions have settled their state changes.
+        if (!scopedExecution && !SpeechMenu.#reserveInterimCommand(utterance, step, fromInterim)) return;
         if (step.ignoredBefore) SpeechMenu.#emit("speechSegmentSkipped", {
             utteranceId: utterance.id, transcript: step.ignoredBefore, reason: "malformed-segment"
         });
@@ -4138,13 +4160,15 @@ class SpeechMenu {
                 SpeechMenu.#rejectDigest(utterance, "chain-action-unavailable", segment);
                 return false;
             }
+            if (scopedExecution && !SpeechMenu.#reserveInterimCommand(utterance, step, fromInterim)) return true;
             utterance.commandChainExecuting = true;
             utterance.digestExecutingContext = SpeechMenu.#chainContextTokens(step.commandElement)[0];
             try {
                 const result = await SpeechMenu.#processElement(step.commandElement, segment,
                     utterance.id, step.speechMenuElement, SpeechMenu.#shouldExecuteElement(step.commandElement),
                     undefined, utterance.wallStartedAt, true, false,
-                    {chain: true, operation: utterance.operation, chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext,
+                    {chain: true, operation: utterance.operation, commandContext: step.executionContext ?? null,
+                        chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext,
                         hasContinuation: () => utterance.digestSteps.indexOf(step) < utterance.digestSteps.length - 1,
                         nextCommand: () => utterance.digestSteps[utterance.digestSteps.indexOf(step) + 1]?.commandElement.getAttribute("speech-function"),
                         isFinal: () => utterance.digestCommitted,
@@ -4340,6 +4364,7 @@ class SpeechMenu {
         if (isFinal && candidate?.invalid && last && SpeechMenu.#isOpenEndedParameter(last.commandElement) &&
             !SpeechMenu.#digestCandidates(last.nextContext, last.nextSurfaceStack).some(element =>
                 SpeechMenu.#hasExplicitCommandAnchor(element, candidate.remainder || ""))) count--;
+        if (candidate?.dispatchBoundary) count=steps.length;
         if (count && candidate?.ignoredPrefix) {
             utterance.digestTranscript = [utterance.digestTranscript, candidate.ignoredPrefix].filter(Boolean).join(" ");
         }
@@ -4352,6 +4377,17 @@ class SpeechMenu {
         if (!isFinal && !count && !utterance.digestSteps.length && candidate?.invalid && last &&
             SpeechMenu.#typedContinuationViable(last.commandElement, remainder) === false) {
             SpeechMenu.#discardMalformedContinuation(utterance, remainder);
+            return true;
+        }
+        if (candidate?.dispatchBoundary && count && tail) {
+            SpeechMenu.#commitTerminalStream(utterance);
+            void utterance.segmentBarrier.then(accepted => {
+                if (!accepted || SpeechMenu.#utterance !== utterance || utterance.digestFailed || utterance.chainCanceled) return;
+                // Availability is authoritative only after the action settles.
+                utterance.digestSurfaceStack=SpeechMenu.#surfaceFrames();
+                utterance.digestContext=utterance.digestSurfaceStack.at(-1)?.context;
+                return SpeechMenu.#handleLiveTranscript(utterance, utterance.transcript, utterance.digestIsFinal, true);
+            });
             return true;
         }
         // Interim recognition is revisable: keep unmatched head/tail text pending.
@@ -7283,6 +7319,21 @@ class SpeechMenu {
     }
 
     static #typedContinuationViable(element, transcript, strictlyLonger = false) {
+        // Atomic input has an explicit terminator in its declared pattern.
+        // Its completeness must not depend on a recognizer's finite vocabulary.
+        if (element.hasAttribute("speech-atomic-input")) {
+            const match=new RegExp(element.getAttribute("speech-pattern"), "i").exec(transcript);
+            if (match) {
+                if (strictlyLonger && element.getAttribute("speech-atomic-input") === "credentials" && !match.groups?.confirmation) return true;
+                return !strictlyLonger;
+            }
+            const mode=element.getAttribute("speech-atomic-input");
+            const maximum=mode === "credentials" ? 8 : mode === "digits" ? 4 : undefined;
+            if (maximum && globalThis.DigitSequence) {
+                const digits=DigitSequence.parse(transcript, globalThis.WMOFLanguagePack?.language?.speech?.digits || {});
+                return digits !== null && digits.length > 0 && digits.length <= maximum;
+            }
+        }
         const classification = SpeechMenu.#classifySpeechValue(element, transcript);
         if (classification?.status === "malformed") return false;
         if (classification && !strictlyLonger) return true;
@@ -7426,6 +7477,11 @@ class SpeechMenu {
                 const remaining = words.slice(end);
                 step.decision = {status: remaining.length ? "defer" : step.canContinue ? "incomplete" : "valid",
                     transcript: segment, remainder: remaining.join(" ")};
+                if (remaining.length && element.hasAttribute("speech-dispatch-boundary")) {
+                    select({steps:[step], exact:true, continuation:false, terminal:true,
+                        dispatchBoundary:true, consumedWords:end, remainder:remaining.join(" ")});
+                    continue;
+                }
                 if (remaining.length) {
                     let tail = await SpeechMenu.#planDigest(next, remaining, utterance, signal, depth + 1, memo, context, frames, optimistic);
                     let skippedTailWords = 0;
@@ -7714,6 +7770,7 @@ class SpeechMenu {
             speechMenuElement: root?.speechMenuElement,
             transcript: words.slice(offset).join(" "),
             ignoredPrefix: words.slice(0, offset).join(" "),
+            dispatchBoundary: Boolean(best.dispatchBoundary),
             exact: Boolean(best.exact), continuation: Boolean(best.continuation),
             system: false, depth: best.depth ?? Number.MAX_SAFE_INTEGER, order: -1,
             chain: best.steps, pending: best.pending, headViable, terminal: Boolean(best.terminal),
@@ -9395,7 +9452,8 @@ class SpeechMenu {
             target,
             responseSession,
             outcomeValue,
-            executionStartedAt
+            executionStartedAt,
+            commandContext = null
         }
     ) {
         try {
@@ -9413,6 +9471,8 @@ class SpeechMenu {
                     "speechCommandRejected",
                     {
                         utteranceId,
+                        executionContext: commandContext,
+                        commandId: element.getAttribute("data-speech-editor-id") || element.id || SpeechMenu.#webSpeechCommandIds.get(element),
                         commandElement:
                             element,
                         speechMenuElement,
@@ -9496,6 +9556,8 @@ class SpeechMenu {
                 "speechCommandExecuted",
                 {
                     utteranceId,
+                    executionContext: commandContext,
+                    commandId: element.getAttribute("data-speech-editor-id") || element.id || SpeechMenu.#webSpeechCommandIds.get(element),
                     utteranceStartedAt:
                         executionStartedAt,
                     commandElement:
@@ -10102,6 +10164,7 @@ class SpeechMenu {
                     skippable: element.hasAttribute("speech-skippable") && element.getAttribute("speech-skippable") !== "false",
                     hasContinuation: executionMetadata?.hasContinuation,
                     nextCommand: executionMetadata?.nextCommand,
+                    commandContext: executionMetadata?.commandContext ?? null,
                     isFinal: executionMetadata?.isFinal,
                     ownsProjectedSurface: executionMetadata?.ownsProjectedSurface,
                     persist: element.hasAttribute("speech-persist") && element.getAttribute("speech-persist") !== "false"
@@ -10146,6 +10209,8 @@ class SpeechMenu {
                 "speechCommandDispatched",
                 {
                     utteranceId,
+                    executionContext: feedbackContext.commandContext ?? null,
+                    commandId: element.getAttribute("data-speech-editor-id") || element.id || SpeechMenu.#webSpeechCommandIds.get(element),
                     commandElement:
                         element,
                     speechMenuElement,
@@ -10188,6 +10253,7 @@ class SpeechMenu {
                         },
                         responseSession,
                         outcomeValue,
+                        commandContext: feedbackContext.commandContext ?? null,
                         executionStartedAt: executionStartedAt || utterance?.wallStartedAt
                     });
 
