@@ -99,7 +99,9 @@
       "dataUnavailable": "Cannot sync: trip totals are unavailable",
       "failed": "Sync Fail",
       "goal": "Sync Goal {percent}",
-      "id": "33c1ed3d-ea40-5598-85b8-ec94020472c2"
+      "id": "33c1ed3d-ea40-5598-85b8-ec94020472c2",
+      "override": "Sync override {state}.",
+      "newTripGoal": "New trip goal {percent} percent."
     },
     "voice-pad-recognition-required": {
       "id": "81f42d82-8483-44fa-963c-4598e76f214c",

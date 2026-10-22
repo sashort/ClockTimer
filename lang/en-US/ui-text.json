@@ -6920,6 +6920,16 @@
       "text": "Reconnecting microphone…",
       "source": "SpeechMicBar.js",
       "default": "Reconnecting microphone…"
+    },
+    "7f05505a-1327-5bb2-9804-4ecf0c78b536": {
+      "id": "7f05505a-1327-5bb2-9804-4ecf0c78b536",
+      "text": "Sync Override",
+      "default": "Sync Override"
+    },
+    "46dea09b-4cc5-50ee-bf99-e944e84b6f59": {
+      "id": "46dea09b-4cc5-50ee-bf99-e944e84b6f59",
+      "text": "Available when Sync can calculate a trip goal.",
+      "default": "Available when Sync can calculate a trip goal."
     }
   }
 }

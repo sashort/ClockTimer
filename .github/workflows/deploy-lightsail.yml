@@ -105,6 +105,8 @@ jobs:
           node tests/spoken-time.mjs
           node tests/speech-value-preprocessor.mjs
           node tests/legacy-vosk-values.mjs
+          node tests/sync-try.mjs
+          node tests/custom-range-goals.mjs
           node tests/vosk-recognizer.mjs
           node tests/vosk-grammar-router.mjs
           node tests/vosk-speechmenu-context.mjs

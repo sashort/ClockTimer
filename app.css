@@ -7622,3 +7622,13 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .trip-log-trip.is-break-only.is-active-trip>summary,
 .trip-log-trip.is-break-only .trip-log-entry.is-active-entry {background-image:linear-gradient(105deg,transparent 0%,transparent 32%,color-mix(in srgb,var(--trip-log-active-sweep-color) 15%,transparent) 42%,rgb(255 255 255 / 80%) 47%,var(--trip-log-active-sweep-color) 49%,var(--trip-log-active-sweep-color) 52%,rgb(0 0 0 / 65%) 54%,transparent 68%,transparent 100%);}
 .trip-log-trip.is-break-only .trip-log-menu-actions {color:#fff;}
+
+/* Sync keeps the existing arrow and badge artwork; Override is a separate switch. */
+.sync-override-menu-row { flex-wrap: wrap; }
+#syncOverrideButton { display:flex; align-items:center; justify-content:space-between; gap:1rem; width:100%; }
+#syncOverrideButton:disabled { opacity:.45; }
+#syncOverrideHelp { flex-basis:100%; color:var(--muted, #9ab2c6); }
+.sync-override-toggle { display:inline-block; position:relative; flex:0 0 38px; height:22px; border-radius:12px; background:#425466; }
+.sync-override-toggle::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform 180ms ease; }
+#syncOverrideButton[aria-checked="true"] .sync-override-toggle { background:#239c92; }
+#syncOverrideButton[aria-checked="true"] .sync-override-toggle::after { transform:translateX(16px); }

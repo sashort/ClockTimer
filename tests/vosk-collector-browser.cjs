@@ -12,6 +12,7 @@ const root=path.resolve(__dirname,'..');
   if(pathname==='/SpeechMenu.js')body=body.toString().replace(/\r\n/g,'\n').replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
   static testVoskBegin(){SpeechMenu.#beginUtterance(performance.now());}
   static testVoskFinish(){SpeechMenu.#finishUtterance('silence',true);}
+  static testVoskSilence(){const u=SpeechMenu.#utterance;u.continuationPauseStartedAt=performance.now()-10000;SpeechMenu.#armContinuationPauseDeadline(u);}
 }\n\nglobalThis.SpeechMenu = SpeechMenu;`);
   res.end(body);
  });
@@ -20,7 +21,7 @@ const root=path.resolve(__dirname,'..');
  try{
   const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
   page.on('console',message=>{if(message.type()==='error')console.error('BROWSER:',message.text());});
-  const errors=[],requests=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>requests.push(new URL(request.url()).pathname));
+  const errors=[],requests=[];page.on('pageerror',error=>{errors.push(error.message);console.error('PAGE:',error.message);});page.on('request',request=>requests.push(new URL(request.url()).pathname));
   await page.addInitScript(()=>{
    globalThis.voskDecoders=[];globalThis.captureCalls=0;
    if(navigator.serviceWorker)navigator.serviceWorker.register=async()=>{throw Error('Asset cache disabled in deterministic fixture');};
@@ -40,7 +41,7 @@ const root=path.resolve(__dirname,'..');
   });
   await page.route('**/api/**',async route=>{
    if(new URL(route.request().url()).pathname.endsWith('.js'))return route.fallback();
-   return route.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[],trips:[],instruments:[],voices:[],accepted:true,tripId:41,eventId:1,events:[]}});
+   return route.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[],trips:[],instruments:[],voices:[],accepted:true,tripId:41,eventId:1,events:[],aggregateBreakdown:{production:{tripCount:1,standardTimeMilliseconds:600000,actualTimeMilliseconds:300000,countedTimeMilliseconds:300000},nonProduction:{trips:[]}}}});
   });
   await page.route('**/api/audio/AudioEngine.js*',async route=>{
    const response=await route.fetch();
@@ -64,7 +65,7 @@ const root=path.resolve(__dirname,'..');
   assert(await page.evaluate(()=>SpeechMenu.start('en-US')));
   await page.waitForFunction(()=>SpeechMenu.started&&!SpeechMenu.listeningSuspended);
   const tracks=await page.evaluate(()=>captureCalls);
-  const begin=async()=>{const count=await page.evaluate(()=>voskDecoders.length);await page.evaluate(()=>SpeechMenu.testVoskBegin());await page.waitForFunction(count=>voskDecoders.length>count,count);};
+  const begin=async()=>{await page.evaluate(()=>SpeechMenu.testVoskBegin());await page.waitForTimeout(100);};
   const speak=async(text,endpoint=false)=>{await page.evaluate(({text,endpoint})=>voskDecoders.at(-1).emit(text,endpoint),{text,endpoint});await page.waitForTimeout(80);};
   await begin();await speak('ready');await page.evaluate(()=>SpeechMenu.testVoskFinish());
   await page.waitForFunction(()=>WMOFVoiceEntry.active);
@@ -80,6 +81,37 @@ const root=path.resolve(__dirname,'..');
   assert.equal(await page.evaluate(()=>captureCalls),tracks,'capture stays open across utterances');
   await begin();await speak('cancel');await page.evaluate(()=>SpeechMenu.testVoskFinish());
   await page.waitForFunction(()=>!WMOFVoiceEntry.active);
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').syncOverride),false,'override defaults off');
+  for (const [words,expected] of [['sync override on',true],['sync override',true],['sync override off',false]]) {
+   await begin();await speak(words);
+   if(words==='sync override') {await page.evaluate(()=>SpeechMenu.testVoskSilence());await page.waitForFunction(()=>valueDispatches.includes('sync override'));}
+   else await page.evaluate(()=>SpeechMenu.testVoskFinish());
+   await page.waitForFunction(expected=>document.querySelector('#clockTimer').syncOverride===expected,expected);
+   assert.equal(await page.locator('#syncOverrideButton').getAttribute('aria-checked'),String(expected));
+  }
+  await begin();await speak('sync on');
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').autoSyncTripGoal),false,'Sync On holds its possible Override continuation');
+  await speak('sync on override');await page.evaluate(()=>SpeechMenu.testVoskFinish());
+  await page.waitForFunction(()=>document.querySelector('#clockTimer').syncOverride&&document.querySelector('#clockTimer').autoSyncTripGoal);
+  assert.equal(await page.locator('#syncOverrideButton').getAttribute('aria-checked'),'true');
+  assert(await page.locator('#syncOverrideButton').isDisabled(),'unavailable Sync leaves override visibly disabled');
+  await page.evaluate(async()=>{
+   const timer=document.querySelector('#clockTimer');
+   timer.configure({trip_goal:'100%',total_goal:'100%'});
+   await timer.calculateTripTotals('2026-01-01T00:00:00Z','2027-01-01T00:00:00Z');
+   await timer.start({standardTime:'0:20:00'});
+   timer.configure({auto_goal:true,sync_override:true});
+  });
+  await page.waitForFunction(()=>!document.querySelector('#syncOverrideButton').disabled);
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').syncBelowFloor),true);
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),.8);
+  await page.locator('#syncOverrideButton').evaluate(button=>button.click());
+  await page.waitForFunction(()=>!document.querySelector('#clockTimer').syncOverride);
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),1,'touch restores goal floor');
+  await page.locator('#syncOverrideButton').evaluate(button=>button.click());
+  await page.waitForFunction(()=>document.querySelector('#clockTimer').syncOverride);
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),.8,'touch override recalculates');
+  await page.evaluate(async()=>{const timer=document.querySelector('#clockTimer');await timer.stop();await timer.clear();});
   await begin();await speak('break start');
   assert.equal(await page.locator('#breakDialog').evaluate(e=>e.open),false,'chain opener remains pending');
   await speak('break start lunch');
@@ -91,6 +123,6 @@ const root=path.resolve(__dirname,'..');
   assert(!requests.some(path=>/VoskGrammarRouter|VoskPhraseListCompiler/.test(path)),'no grammar router loads');
   assert.deepEqual(errors,[]);
   await page.evaluate(()=>SpeechMenu.stop());
-  console.log('PASS Vosk in current UI: persistent capture, Ready handoff, endpoint continuation, shared duration collector and single dispatch');
+  console.log('PASS Vosk in current UI: persistent capture, Ready handoff, endpoint continuation, shared duration collector and single dispatch, adaptive silence and Sync Override voice/touch recalculation');
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

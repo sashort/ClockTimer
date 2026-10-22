@@ -254,6 +254,9 @@
         #autoSyncTripGoal =
             false;
 
+        #syncOverride = false;
+        #rawSyncTripGoal;
+
         #calculatedTripGoal;
 
         #calculatedTotalGoal;
@@ -1816,6 +1819,8 @@
                 effective_goal_type: scope,
                 auto_goal_active: this.#percentMode === "auto" && this.#autoSyncTripGoal,
                 sync_enabled: this.#autoSyncTripGoal,
+                sync_override: this.#syncOverride,
+                sync_below_floor: this.syncBelowFloor,
                 auto_goal_order: Object.freeze(this.#getPercentageOrder().split("_")),
                 active_break_type: interval?.breakType || null,
                 standard_time_header_text: `${scopeLabel} Standard Time`,
@@ -5079,7 +5084,7 @@
         }
         captureState() {
             // Checkpoints use model records, never the rendered ring DOM.
-            return {activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
+            return {syncOverride:this.#syncOverride, activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
                 attributes: [...this.attributes].map(attribute => [attribute.name, attribute.value]),
                 preparedTrip: this.#preparedTrip && {...this.#preparedTrip},
                 pending: this.#pendingTripEvents.map(event => ({...event, value: structuredClone(event.value)})),
@@ -5094,7 +5099,7 @@
                 attributes:[...this.attributes].filter(attribute => ClockTimer.observedAttributes.includes(attribute.name))
                     .map(attribute => [attribute.name,attribute.value]),
                 totals:this.#cloneAggregateSnapshot(this.#tripTotals), addedToAggregate:this.#tripAddedToAggregate,
-                sync:this.#autoSyncTripGoal, timeDisplay:this.#renderedTimeMode,
+                sync:this.#autoSyncTripGoal, syncOverride:this.#syncOverride, timeDisplay:this.#renderedTimeMode,
                 productionFilter:this.#productionFilter};
         }
 
@@ -5143,7 +5148,7 @@
                 }
             }
             const configuration = {goal_type:mode || this.percentMode,
-                auto_goal:sync ?? snapshot.sync, rendered_time_type:'time_remaining'};
+                auto_goal:sync ?? snapshot.sync, sync_override:snapshot.syncOverride === true, rendered_time_type:'time_remaining'};
             for (const scope of ['trip','total']) if (Number.isFinite(Number(goals?.[scope])) && Number(goals[scope]) > 0) configuration[scope+'_goal'] = `${goals[scope]}%`;
             if (Number.isFinite(goal) && goal > 0) configuration[goalScope === 'total' ? 'total_goal' : 'trip_goal'] = `${goal}%`;
             if (totalLabel) this.setAttribute('total-label', totalLabel);
@@ -5168,6 +5173,7 @@
                     this.#transitionLifecycle("stop"); this.#clearLocal();
                 }
             }
+            this.#syncOverride = snapshot.syncOverride === true;
             this.#tripId = snapshot.tripId;
             this.#preparedTrip = snapshot.preparedTrip;
             this.#completedTripQueue = snapshot.completed;
@@ -7023,6 +7029,9 @@
                         );
                     }
                 }
+                if (has("sync_override")) {
+                    this.syncOverride = Boolean(configuration.sync_override);
+                }
                 if (has("auto_goal")) {
                     this.autoSyncTripGoal = Boolean(configuration.auto_goal);
                 }
@@ -7775,6 +7784,19 @@
                 this.#tripTotals.actualTimeMilliseconds > 0
             );
         }
+
+        get syncOverride() { return this.#syncOverride; }
+        set syncOverride(value) {
+            if (typeof value !== "boolean") throw TypeError("syncOverride must be a boolean.");
+            if (value === this.#syncOverride) return;
+            this.#syncOverride = value;
+            this.#handleTripGoalChange("user");
+        }
+        get syncBelowFloor() {
+            return this.#autoSyncTripGoal && Number.isFinite(this.#rawSyncTripGoal) &&
+                this.#rawSyncTripGoal < this.#getUserTripGoal();
+        }
+        get rawSyncTripGoal() { return this.#rawSyncTripGoal; }
 
         get autoSyncTripGoal() {
             return this.#autoSyncTripGoal;
@@ -23792,6 +23814,7 @@
         }
 
         #syncGoal_off() {
+            this.#rawSyncTripGoal = undefined;
             const previous = this.#calculatedTripGoal;
             if (this.#calculatedGoalSource === "sync") this.#calculatedTripGoal = undefined;
             return previous !== this.#calculatedTripGoal;
@@ -23806,11 +23829,14 @@
                     allowMissed: true
                 });
 
-            this.#calculatedTripGoal =
+            this.#rawSyncTripGoal =
                 Number.isFinite(requirements.tripGoal) &&
                 requirements.tripGoal > 0
                     ? requirements.tripGoal
                     : undefined;
+            this.#calculatedTripGoal = this.#rawSyncTripGoal === undefined ? undefined :
+                this.#syncOverride ? this.#rawSyncTripGoal :
+                Math.max(this.#getUserTripGoal(), this.#rawSyncTripGoal);
 
             this.#calculatedGoalSource =
                 "sync";
@@ -23859,6 +23885,9 @@
                                     .#getTotalGoalRequirementFailureReason() ??
                                 "insufficient-time"
                             ),
+                    syncOverride: this.#syncOverride,
+                    belowFloor: this.syncBelowFloor,
+                    rawCalculatedTripGoal: this.#rawSyncTripGoal ?? null,
                     previousCalculatedTripGoal:
                         Number.isFinite(
                             previous

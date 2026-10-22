@@ -876,3 +876,42 @@ Validation: `tests/vosk-recognizer.mjs` checks full-vocabulary construction, one
 ### Explicit command-chain heads
 
 `speech-command-chain-head` marks a command that is complete syntactically but can lead into a related command. Declare its next context with `speech-chain-next`; descendants use `speech-chain-context` and may themselves be heads. The planner must consider this metadata when deciding whether an interim is terminal. The application marks each generated command with a declared next context, including both `break start` (next: break-choice) and the break type (next: break-confirm). An evolving partial must not dispatch the last head merely because its regex matches. A subsequent validated command establishes its boundary; application silence/finalization can settle a bare head. `okay` is terminal and may execute immediately when complete. This contract is shared by Vosk and Web Speech. It changes continuation handling, not the list of accepted aliases.
+
+## Continuous Vosk audio and logical silence boundaries (22 October 2026)
+
+Keep capture, decoder transport, logical collection, and command execution separate.
+`VoskRecognizer.continuousInput` means SpeechMenu submits every eligible worklet
+frame through `acceptAudio` exactly once, including idle frames. Do not also send
+those frames through utterance append or replay the pre-roll. Explicit microphone
+stop and announcement feedback suspension retain their existing behavior.
+
+One native full-vocabulary decoder lives until listening stops. Beginning a logical
+utterance binds its shared collector; it does not allocate a new decoder. Native
+endpoints remain source spans. Adaptive silence, based on speech rate and settings,
+**assumes no further continuations will follow**, settles the pending command/value,
+and closes that logical continuation. This does not assert that continuations were
+impossible. The microphone and decoder remain open for subsequent commands.
+Existing root junk pruning and malformed/incomplete collection cleanup still run
+at the logical boundary; they never require closing the capture stream.
+
+Serialize boundary requests with PCM submission. A final boundary drains all prior
+worker replies before requesting its final result. New begin/audio requests queue
+behind that fence. Process worker replies outside the queue so the fence cannot
+deadlock waiting for a reply queued behind itself. Never dispose of the previous
+decoder when new speech begins; doing so can discard pending trailing words.
+`retrieveFinalResult` resets native decoding state while reusing the same wrapper;
+the pinned WASM runtime is tested for repeated finalization and subsequent audio.
+
+`audioDelivery` exposes received/submitted sample totals and the outstanding sample
+count. PCM is released after its response; it is not retained as a recording. The
+transport allows at most 30 seconds of outstanding audio by default (about 1.92 MB
+of float samples, excluding worker copies). Overload produces an explicit fatal
+error instead of silently dropping frames or allowing unlimited growth. The
+five-second worker-response deadline detects a stalled worker, not user silence.
+These protections cannot recover audio that the browser/device never delivers.
+
+Validation: `tests/vosk-recognizer.mjs` covers delayed final results overlapping the
+next utterance, single submission, idle audio, aborts, and overload.
+`tests/vosk-continuous-runtime-browser.cjs` exercises repeated boundaries with the
+actual pinned runtime/model. `tests/vosk-collector-browser.cjs` exercises current UI
+handoffs and commands. These are transport/behavior tests, not acoustic-accuracy claims.

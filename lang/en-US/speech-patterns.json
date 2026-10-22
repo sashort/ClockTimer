@@ -431,6 +431,14 @@
     "05a71e25-9753-42c4-a7f7-d7d4a94dac73": {
       "id": "05a71e25-9753-42c4-a7f7-d7d4a94dac73",
       "pattern": "^(?<credentials>(?:[0-9]{8}|(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})\\s+(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})))(?:\\s+(?<confirmation>ok|okay|o\\s+k))?$"
+    },
+    "5531e024-c7e4-50ab-b658-ce855b6908fc": {
+      "id": "5531e024-c7e4-50ab-b658-ce855b6908fc",
+      "pattern": "^sync override(?: (?<overrideAction>on|off))?$"
+    },
+    "64889c6b-5ce7-5451-b94c-ca9fd8a027e5": {
+      "id": "64889c6b-5ce7-5451-b94c-ca9fd8a027e5",
+      "pattern": "^sync on override$"
     }
   },
   "preprocessors": {

@@ -1122,7 +1122,9 @@ if(process.argv.includes('--speech-boundaries')) {
  const cancel=window.SpeechMenu.testBegin();await say(cancel,'cancel',true);
  const provisional=window.SpeechMenu.testBegin();await say(provisional,'ready four twelve sync o');
  assert(!provisional.digestTranscript.endsWith('sync'),'partial on/off must not commit bare Sync inside a pending root');
- assert(window.document.querySelector('#voiceEntrySurface').open,'the root may hold provisional Ready effects while its command continuation grows');
+ assert.equal(provisional.digestPending,'sync o','on/off/override ambiguity defers the pending command');
+ assert(!provisional.digestFailed && !provisional.chainInvalidated,'a viable Sync prefix is not malformed');
+ assert.equal(timer.status,'ready','an ambiguous command prefix cannot start a trip');
  await say(provisional,'ready four twelve sync bananas',true);
  assert.equal(window.WMOFInteractionState.state.editor.open,false,'malformed command continuation rolls back the entire provisional Ready root: '+JSON.stringify({consumed:provisional.digestTranscript,pending:provisional.digestPending,failed:provisional.digestFailed,invalidated:provisional.chainInvalidated,completed:provisional.completedStreams,operation:provisional.operation?.phase,context:provisional.digestContext}));
  assert.equal(window.WMOFCoordinator.lockCount,0,'root rollback releases pending ownership');
@@ -1652,12 +1654,12 @@ if(process.argv.includes('--coordinator-end-trip')) {
     await window.WMOFActions.cancelTripSummary();await settle();
     const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await settle();assert(u.hadCommittedCommand&&!u.digestExecutionFailed,text+' executes');return u;};
     const interruptedChain=window.SpeechMenu.testBegin();
-    await window.SpeechMenu.testTranscript(interruptedChain,'background noise ready at eleven fifty nine pm sync on',false);
+    await window.SpeechMenu.testTranscript(interruptedChain,'background noise ready at eleven fifty nine pm sync off',false);
     await interruptedChain.digestQueue;await interruptedChain.segmentBarrier;await settle();
     assert(!interruptedChain.digestExecutionFailed,'Ready At and intervening Sync execute without waiting for final recognition');
     assert.equal(window.WMOFCoordinator.pending.length,0,'intervening terminal command settles the current operation');
     assert(window.document.querySelector('#scheduledStartDialog').open,'Ready At opens despite its own pending disabled button');
-    await window.SpeechMenu.testTranscript(interruptedChain,'revised background noise ready at eleven fifty nine pm sync on standard time seventeen minutes',true);
+    await window.SpeechMenu.testTranscript(interruptedChain,'revised background noise ready at eleven fifty nine pm sync off standard time seventeen minutes',true);
     await interruptedChain.digestQueue;await settle();
     assert(!interruptedChain.digestExecutionFailed,'Standard Time retains chain context across Sync and revised leading noise');
     assert.match(window.document.querySelector('#scheduledStartStandardValue').textContent,/17/,'the interrupted chain applies its duration');

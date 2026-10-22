@@ -71,6 +71,7 @@
     const PERCENT_MODES = ["trip", "total", "auto"];
     const TRIP_PREFERENCE_DEFAULTS = {
         lateBreakBehavior: "showLateWindow",
+        syncOverride: false,
         syncGoals: false
     };
     const ANNOUNCEMENT_CATALOG =
@@ -6822,6 +6823,7 @@
 
         return {
             lateBreakBehavior,
+            syncOverride: stored.syncOverride === true,
             syncGoals:
                 Boolean(
                     stored.syncGoals ??
@@ -6831,6 +6833,7 @@
     }
 
     function saveTripPreferences(preferences) {
+        preferences = {...getTripPreferences(), ...preferences};
         safeStorageSet(
             STORAGE.tripPreferences,
             JSON.stringify(
@@ -6968,6 +6971,8 @@
     }
 
     function currentCalculatedSyncGoal() {
+        const appliedGoal = Number(clockTimer.calculatedTripGoal);
+        if (Number.isFinite(appliedGoal) && appliedGoal > 0) return appliedGoal;
         const requirements =
             syncGoalRequirements();
 
@@ -7028,6 +7033,29 @@
         return state;
     }
 
+    function syncAnnouncement(text) {
+        return clockTimer.syncBelowFloor ? text + ". " + announcementText("announcements.syncTry.override",
+            {state:clockTimer.syncOverride ? "on" : "off"}) : text;
+    }
+
+    function setSyncOverride(enabled, {enableSync = false} = {}) {
+        const previous = clockTimer.syncOverride;
+        const oldGoal = currentCalculatedSyncGoal();
+        goalChangeFeedbackDepth++;
+        try {
+            clockTimer.configure({sync_override:enabled});
+            if (enableSync) setSyncGoals(true);
+            saveTripPreferences({...getTripPreferences(), syncOverride:enabled});
+        } finally {goalChangeFeedbackDepth--;}
+        renderSyncGoalsState(); setSyncAnnouncementBaseline(); queueSummaryRefresh();
+        let message = announcementText("announcements.syncTry.override", {state:enabled ? "on" : "off"});
+        if (enableSync) message = announcementText("announcements.syncTry.on") + ". " + message;
+        const goal = currentCalculatedSyncGoal();
+        if (Number.isFinite(goal) && !syncGoalMatches(oldGoal,goal))
+            message += " " + announcementText("announcements.syncTry.newTripGoal", {percent:formatSummaryPercent(goal)});
+        return confirmSettingChange(message, {previous,next:enabled});
+    }
+
     function announceCalculatedSyncGoal(
         {
             force = false
@@ -7059,7 +7087,7 @@
 
         return confirmInformationalChange(
             "sync-goal",
-            announcementText("announcements.syncTry.goal", { percent: formatSummaryPercent(goal) }),
+            syncAnnouncement(announcementText("announcements.syncTry.goal", { percent: formatSummaryPercent(goal) })),
             { eventName: "syncTry" }
         );
     }
@@ -7109,7 +7137,7 @@
 
             return confirmInformationalChange(
                 "sync-state",
-                announcementText("announcements.syncTry.offline"),
+                syncAnnouncement(announcementText("announcements.syncTry.offline")),
                 { eventName: "syncTry" }
             );
         }
@@ -7117,14 +7145,14 @@
         if (state === "off") {
             return confirmInformationalChange(
                 "sync-state",
-                announcementText("announcements.syncTry.off"),
+                syncAnnouncement(announcementText("announcements.syncTry.off")),
                 { eventName: "syncTry" }
             );
         }
 
         if (state === "data-unavailable") {
             return confirmInformationalChange("sync-state",
-                announcementText("announcements.syncTry.dataUnavailable"), {eventName:"syncTry"});
+                syncAnnouncement(announcementText("announcements.syncTry.dataUnavailable")), {eventName:"syncTry"});
         }
 
         if (
@@ -7133,7 +7161,7 @@
         ) {
             return confirmInformationalChange(
                 "sync-state",
-                announcementText("announcements.syncTry.blocked"),
+                syncAnnouncement(announcementText("announcements.syncTry.blocked")),
                 { eventName: "syncTry" }
             );
         }
@@ -7152,7 +7180,7 @@
             if (force || changed) {
                 return confirmInformationalChange(
                     "sync-state",
-                    announcementText("announcements.syncTry.on"),
+                    syncAnnouncement(announcementText("announcements.syncTry.on")),
                     { eventName: "syncTry" }
                 );
             }
@@ -7166,7 +7194,7 @@
         ) {
             return confirmInformationalChange(
                 "sync-state",
-                announcementText("announcements.syncTry.on"),
+                syncAnnouncement(announcementText("announcements.syncTry.on")),
                 { eventName: "syncTry" }
             );
         }
@@ -7181,6 +7209,12 @@
         if(renderedScope&&typeof renderedScope==="object")renderedScope=state.effective_goal_type;
         const enabled =
             getSyncGoalsState();
+        const overrideButton = $("#syncOverrideButton");
+        if (overrideButton) {
+            overrideButton.setAttribute("aria-checked", String(clockTimer.syncOverride));
+            overrideButton.disabled = getSyncRuntimeState() !== "active";
+            $("#syncOverrideHelp").hidden = !overrideButton.disabled;
+        }
 
         const runtimeState =
             getSyncRuntimeState();
@@ -12157,6 +12191,10 @@
             },
             CLOCK_TIMER_DOUBLE_PRESS
         );
+    });
+
+    $("#syncOverrideButton")?.addEventListener("click", () => {
+        globalThis.WMOFActions.changeSyncOverride(clockTimer.syncOverride ? "off" : "on");
     });
 
     tripLogPinButton?.addEventListener(
@@ -22270,7 +22308,7 @@
                 if(Number(signedInProfile?.id)!==owner)return;
                 const graphical=getGraphicalSettings(),preferences=getTripPreferences();
                 applyGraphicalSettings(graphical);fillGraphicalForm(graphical);fillTripPreferencesForm(preferences);
-                clockTimer.configure({auto_goal:preferences.syncGoals});
+                clockTimer.configure({auto_goal:preferences.syncGoals, sync_override:preferences.syncOverride});
                 applyScope(safeStorageGet(STORAGE.percentMode)||'trip',false);
                 applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode)||'remaining',false);
                 setTripLogRange(safeStorageGet(STORAGE.tripLogRange),{persist:false,notify:false});
@@ -24655,12 +24693,21 @@
 
             readSyncStatus() {
                 return confirmSettingChange(
-                    getSyncGoalsState()
+                    syncAnnouncement(getSyncGoalsState()
                         ? announcementText("announcements.syncTry.on")
-                        : announcementText("announcements.syncTry.off"),
+                        : announcementText("announcements.syncTry.off")),
                     {unchanged:true,feedbackSong:"setting-unchanged"}
                 );
             },
+
+            changeSyncOverride(overrideAction) {
+                if (overrideAction === undefined || overrideAction === null || overrideAction === "")
+                    return confirmSettingChange(announcementText("announcements.syncTry.override",
+                        {state:clockTimer.syncOverride ? "on" : "off"}), {unchanged:true});
+                if (!["on","off"].includes(overrideAction)) return false;
+                return setSyncOverride(overrideAction === "on");
+            },
+            enableSyncOverride() { return setSyncOverride(true, {enableSync:true}); },
 
             toggleSync(
                 syncAction
@@ -24672,7 +24719,7 @@
                     animateOfflineClouds();
 
                     return confirmSettingChange(
-                        announcementText("announcements.syncTry.offline")
+                        syncAnnouncement(announcementText("announcements.syncTry.offline"))
                     );
                 }
 
@@ -24742,7 +24789,7 @@
                 }
 
                 if (current === enabled) {
-                    return confirmSettingChange(announcementText("messages.voiceFeedback.syncAlready", {state:enabled ? "on" : "off"}), {previous:current,next:enabled});
+                    return confirmSettingChange(syncAnnouncement(announcementText("messages.voiceFeedback.syncAlready", {state:enabled ? "on" : "off"})), {previous:current,next:enabled});
                 }
 
                 try {
@@ -24779,8 +24826,8 @@
 
                 return confirmSettingChange(
                     enabled
-                        ? announcementText("announcements.syncTry.on")
-                        : announcementText("announcements.syncTry.off"),
+                        ? syncAnnouncement(announcementText("announcements.syncTry.on"))
+                        : syncAnnouncement(announcementText("announcements.syncTry.off")),
                     {previous:current,next:enabled}
                 );
             },
@@ -27152,6 +27199,11 @@
             }
         );
 
+    globalThis.WMOFActionFunctions.setMetadata("changeSyncOverride", {
+        parameters:[{name:"overrideAction",type:"choice",optional:true,values:["on","off"]}]
+    });
+    globalThis.WMOFActionFunctions.setMetadata("enableSyncOverride", {parameters:[]});
+
     globalThis
         .WMOFActionFunctions
         .setMetadata(
@@ -27548,7 +27600,7 @@
                 "confirmBreakPromptYes", "confirmBreakType", "confirmCancelDownTime", "continueStartAt",
                 "deferTrip", "lockEndTime", "openTripLog", "prepareReadyAction", "prepareStartMenu",
                 "readTotalGoal", "readScopeGoal", "readTripGoal", "readTripSummary", "resumeTrip", "saveDownDetails", "saveTripSettings",
-                "scheduleStartAt", "startDownTime", "startScheduledTripEarly", "toggleSync"
+                "scheduleStartAt", "startDownTime", "startScheduledTripEarly", "toggleSync", "changeSyncOverride", "enableSyncOverride"
             ].includes(String(actionName));
             // Voice entry uses one action for values and controls; only its
             // confirmation and defer commands can send a persistence request.
@@ -28278,7 +28330,7 @@
                 const graphics = getGraphicalSettings(), preferences = getTripPreferences();
                 applyGraphicalSettings(graphics); fillGraphicalForm(graphics); fillTripPreferencesForm(preferences);
                 applyAudioOutputSettings();
-                clockTimer.configure({auto_goal: preferences.syncGoals});
+                clockTimer.configure({auto_goal: preferences.syncGoals, sync_override:preferences.syncOverride});
                 clockTimer.autoRestartTripAfterLateBreak = preferences.lateBreakBehavior === "autoRestartTrip";
                 applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
                 applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
@@ -28352,7 +28404,8 @@
     clockTimer.autoRestartTripAfterLateBreak =
         tripPreferences.lateBreakBehavior === "autoRestartTrip";
     clockTimer.configure({
-        auto_goal: tripPreferences.syncGoals
+        auto_goal: tripPreferences.syncGoals,
+        sync_override: tripPreferences.syncOverride
     });
     renderSyncGoalsState();
     setSyncAnnouncementBaseline();

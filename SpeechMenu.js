@@ -2410,6 +2410,7 @@ class SpeechMenu {
         const samples =
             data.samples;
 
+        try {
         const level =
             Number.isFinite(
                 Number(data.level)
@@ -2699,6 +2700,10 @@ class SpeechMenu {
                     true
                 );
             }
+        }
+        } finally {
+            if (SpeechMenu.#recognizer?.continuousInput)
+                void SpeechMenu.#recognizer.acceptAudio(samples).catch(() => {});
         }
     };
 
@@ -3074,7 +3079,7 @@ class SpeechMenu {
 
         for (
             const frame of
-            preRollFrames
+            SpeechMenu.#recognizer?.continuousInput ? [] : preRollFrames
         ) {
             SpeechMenu.#recognizer
                 ?.accept(
@@ -3127,6 +3132,8 @@ class SpeechMenu {
 
         utterance.sampleCount +=
             frame.length;
+
+        if (SpeechMenu.#recognizer?.continuousInput) return;
 
         if (SpeechMenu.#recognizerBackend === "pocketsphinx") {
             SpeechMenu.#recognizer?.accept(
