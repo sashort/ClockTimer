@@ -157,3 +157,24 @@ lease. Limits default to four total sessions, two anonymous sessions and two per
 subject. These bounds reduce resource exhaustion; they do not replace upstream
 rate limiting or distributed denial-of-service protection. Installer upgrades
 preserve the secret/model/origin configuration and enforce the 10-second lease.
+
+## Ranked alternatives
+
+The native server enables `SetMaxAlternatives(10)` by default, bounded to 1–30
+through server configuration. Endpoint/final results contain ranked alternatives;
+Vosk partial results still carry a single best partial. Alternatives are not a
+second decoder, a new audio stream, or a guarantee that the correct words appear.
+
+The remote adapter builds each candidate against finalized source spans and asks
+the same SpeechMenu planner used for browser alternatives to select a complete,
+currently available interpretation. It uses projected context and continuations,
+never executes an action during selection, and never waits for business-action
+settlement while holding an audio reply. Only the selected source span enters
+the shared collector; rejected candidates cannot become displayed commands.
+Already dispatched commands retain their identities when the final arrives.
+Sleeping checks only the top acoustic hypothesis; it must not search lower-ranked
+alternatives for a wake command. No per-command alternative count is introduced.
+
+This enables alternatives for the native server backend. The pinned local WASM
+runtime does not expose this native setting and continues to return its best
+transcript. Do not describe that local path as providing ranked alternatives.

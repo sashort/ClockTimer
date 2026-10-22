@@ -2,11 +2,12 @@
 (() => {
     'use strict';
     class VoskServerRecognizer extends EventTarget {
+        #responses=Promise.resolve(); #utteranceId; #segments=[];
         #socket; #adapter; #closed=false; #abort=new AbortController(); #openingReject;
         #leaseTimer; #expired=false; #requestGrant; #authenticated=false; #authTail=Promise.resolve(); #authResponse; #sendLimit;
         constructor({language='en-US',sessionUrl=new URL('api/speech/session/',document.baseURI).href,
             sessionProvider,websocketUrl,connectTimeoutMilliseconds=15000,maxBufferedBytes=1048576,
-            getCollectionSession}={}) {
+            getCollectionSession,selectHypothesis}={}) {
             super();
             this.#sendLimit=maxBufferedBytes;
             this.ready=(async()=>{
@@ -57,7 +58,26 @@
                         }
                         if(message.type==='error' && message.code==='login_timeout'){this.#expire();return;}
                         if(message.type==='error'){this.#fail('Speech service: '+message.code);return;}
-                        if(['partial','result'].includes(message.type))emit(message.type==='partial'?'partialresult':'result',{result:message.result});
+                        if(['partial','result'].includes(message.type)){
+                            this.#responses=this.#responses.then(async()=>{
+                                if(this.#closed)return;
+                                let result=message.result;
+                                if(Array.isArray(result?.alternatives)){
+                                    const alternatives=result.alternatives.slice(0,30);
+                                    const prefix=this.#segments.filter(segment=>segment.final).map(segment=>segment.text).filter(Boolean).join(' ');
+                                    const hypotheses=alternatives.map((alternative,index)=>({index,
+                                        text:[prefix,alternative.text].filter(Boolean).join(' '),confidence:alternative.confidence}));
+                                    const selected=selectHypothesis && this.#utteranceId!==undefined
+                                        ? await selectHypothesis(this.#utteranceId,hypotheses,{isFinal:message.boundary===true}) : hypotheses[0];
+                                    if(this.#closed)return;
+                                    const choice=alternatives[selected?.index];
+                                    result={...(choice||{}),text:choice?.text||''};
+                                    this.dispatchEvent(new CustomEvent('alternatives',{detail:{utteranceId:this.#utteranceId,
+                                        count:alternatives.length,selectedIndex:selected?.index??null}}));
+                                }
+                                emit(message.type==='partial'?'partialresult':'result',{result});
+                            }).catch(error=>this.#fail(error.message||'Speech alternative selection failed.'));
+                        }
                     };
                     socket.onerror=()=>this.#fail('Speech service connection failed.');
                     socket.onclose=()=>{finish();if(!this.#closed)this.#fail('Speech service disconnected.');};
@@ -80,7 +100,7 @@
                     retrieveFinalResult(){transport.#send(JSON.stringify({type:'boundary'}),maxBufferedBytes);}
                     remove(){transport.close();}
                 }}});
-                for(const name of ['transcript','error','status','utteranceEnded'])this.#adapter.addEventListener(name,event=>{if(!this.#expired)this.dispatchEvent(new CustomEvent(name,{detail:event.detail}));});
+                for(const name of ['transcript','error','status','utteranceEnded'])this.#adapter.addEventListener(name,event=>{if(!this.#expired){if(name==='transcript')this.#segments=event.detail.segments||[];this.dispatchEvent(new CustomEvent(name,{detail:event.detail}));}});
                 await this.#adapter.ready;
                 return this;
             })().catch(error=>{this.close();throw error;});
@@ -145,11 +165,11 @@
         get continuousInput(){return true;}
         get transcriptMode(){return 'cumulative';}
         get audioDelivery(){return this.#adapter?.audioDelivery;}
-        async beginUtterance(id){await this.ready;if(!this.#closed)return this.#adapter.beginUtterance(id);}
+        async beginUtterance(id){await this.ready;if(!this.#closed){await this.#adapter.beginUtterance(id);this.#utteranceId=id;this.#segments=[];}}
         async acceptAudio(samples){await this.ready;return !this.#closed&&this.#adapter.acceptAudio(samples);}
         async accept(id,samples){await this.ready;return !this.#closed&&this.#adapter.accept(id,samples);}
-        async finishUtterance(id){await this.ready;if(!this.#closed)return this.#adapter.finishUtterance(id);}
-        async abortUtterance(id){await this.ready;if(!this.#closed)return this.#adapter.abortUtterance(id);}
+        async finishUtterance(id){await this.ready;if(!this.#closed){await this.#adapter.finishUtterance(id);if(this.#utteranceId===id){this.#utteranceId=undefined;this.#segments=[];}}}
+        async abortUtterance(id){await this.ready;if(!this.#closed){await this.#adapter.abortUtterance(id);if(this.#utteranceId===id){this.#utteranceId=undefined;this.#segments=[];}}}
         close(){clearInterval(this.#leaseTimer);if(this.#closed)return;this.#closed=true;this.#abort.abort();this.#openingReject?.(Error('Speech session was closed.'));this.#authResponse?.reject(Error('Speech session was closed.'));this.#socket?.close();this.#adapter?.close();}
     }
     globalThis.VoskServerRecognizer=VoskServerRecognizer;

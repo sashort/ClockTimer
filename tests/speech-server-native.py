@@ -28,7 +28,9 @@ async def exercise(model_path):
                 response=json.loads(await socket.recv())
                 assert response['acceptedSamples']==(i+1)*3200
                 await socket.send('{"type":"boundary"}')
-                assert json.loads(await socket.recv())['boundary']
+                boundary=json.loads(await socket.recv())
+                assert boundary['boundary']
+                assert isinstance(boundary['result']['alternatives'],list), 'Native alternatives must be enabled'
     service.pool.shutdown()
     print('PASS native Vosk server: one socket, nine boundaries, 28800 samples acknowledged once')
 

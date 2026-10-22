@@ -30,15 +30,21 @@ class FakeRecognizer:
         self.model = model
         self.frames = 0
         assert rate == 16000
+    def SetMaxAlternatives(self, count):
+        assert count == 10
     def SetWords(self, enabled):
         assert enabled
     def AcceptWaveform(self, pcm):
+        self.mode='sync' if pcm[:2]==b'\x00\x20' else 'default'
         self.frames += 1
-        return False
+        return self.mode=='sync'
+    def Result(self):
+        result=self.FinalResult();self.mode='empty';self.frames=0;return result
     def PartialResult(self):
         return json.dumps({'partial':'wake' if self.frames == 1 else 'break start'})
     def FinalResult(self):
-        return json.dumps({'text':'wake' if self.frames == 1 else 'break start'})
+        words=[''] if getattr(self,'mode',None)=='empty' else ['sink on','sync on'] if getattr(self,'mode',None)=='sync' else ['wake' if self.frames == 1 else 'break start']
+        return json.dumps({'alternatives':[{'text':text,'confidence':100-i} for i,text in enumerate(words)]})
     def Reset(self):
         self.frames = 0
 
@@ -161,11 +167,10 @@ if __name__ == '__main__':
         async def fixture():
             import websockets
             origins=json.loads(sys.argv[sys.argv.index('--fixture')+1])
-            service=server.SpeechServer({'secret':SECRET,'origins':origins,'models':{'en-US':'english','fr-FR':'french'}},lambda path:path,FakeRecognizer)
+            service=server.SpeechServer({'secret':SECRET,'origins':origins,'models':{'en-US':'english','fr-FR':'french'},'max_anonymous_sessions':4},lambda path:path,FakeRecognizer)
             async with websockets.serve(service.handle,'127.0.0.1',0,origins=origins,max_size=32768,process_request=service.http_request) as host:
                 print(json.dumps({'port':host.sockets[0].getsockname()[1]}),flush=True)
                 await asyncio.Future()
         asyncio.run(fixture())
     else:
         unittest.main()
-

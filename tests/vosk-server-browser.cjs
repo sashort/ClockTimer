@@ -48,6 +48,25 @@ const root=path.resolve(__dirname,'..');
   assert.equal(result.delivery.receivedSamples,1285);assert.equal(result.delivery.queuedSamples,0);
   assert.deepEqual(await page.evaluate(async()=>{const french=new VoskServerRecognizer({language:'fr-FR'});await french.ready;await french.beginUtterance('fr');await french.acceptAudio(new Float32Array(640));await french.finishUtterance('fr');french.close();return french.continuousInput;}),true);
   assert.equal(await page.evaluate(async()=>{try{await new VoskServerRecognizer({language:'de-DE'}).ready;return false;}catch{return true;}}),true);
+  const alternatives=await page.evaluate(async()=>{
+   const selected=[],events=[];
+   const adapter=new VoskServerRecognizer({selectHypothesis:async(id,candidates)=>{
+    selected.push(candidates.map(candidate=>candidate.text));
+    return candidates.find(candidate=>candidate.text==='sync on');
+   }});
+   adapter.addEventListener('transcript',event=>events.push(event.detail));
+   await adapter.ready;await adapter.beginUtterance('alternatives');
+   await adapter.acceptAudio(Float32Array.of(.25));await adapter.finishUtterance('alternatives');adapter.close();
+   const rejected=new VoskServerRecognizer({selectHypothesis:()=>undefined});
+   const invalid=[];rejected.addEventListener('transcript',event=>invalid.push(event.detail));
+   await rejected.ready;await rejected.beginUtterance('invalid');await rejected.acceptAudio(Float32Array.of(.25));await rejected.finishUtterance('invalid');rejected.close();
+   return {selected,events,invalid};
+  });
+  assert.deepEqual(alternatives.selected[0],['sink on','sync on']);
+  assert.equal(alternatives.events.at(-1).transcript,'sync on');
+  assert.equal(alternatives.events.at(-1).isFinal,true);
+  assert.equal(alternatives.events.at(-1).segments.filter(segment=>segment.text).length,1,'final reconciliation preserves one selected span');
+  assert.equal(alternatives.invalid.at(-1).transcript,'','unmatched alternatives do not reach collection as commands');
   await page.evaluate(()=>{globalThis.remoteErrors=[];testRemote.addEventListener('error',e=>remoteErrors.push(e.detail));});
   assert.equal(await page.evaluate(async()=>{
 

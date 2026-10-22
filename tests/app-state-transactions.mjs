@@ -73,6 +73,7 @@ installSpeechLifecycle(window);
 let speechSource=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 if(process.argv.includes('--break-end-stream'))speechSource=speechSource.replace('static #pipeline = "raw";', 'static #pipeline = "silero";');
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
+    static testSelect(id,hypotheses,options){return SpeechMenu.#selectWebSpeechHypothesis(id,hypotheses,{...options,afterBarrier:true});}
     static testStatus(detail){SpeechMenu.#onSherpaStatus({detail});}
     static testPause(u){u.continuationPauseStartedAt=performance.now()-(SpeechMenu.#continuationGraceMilliseconds()-150);SpeechMenu.#armContinuationPauseDeadline(u);}
     static testResume(){const pipeline=SpeechMenu.#pipeline;SpeechMenu.#pipeline="silero";try{SpeechMenu.#onVadSpeechStart({detail:{}});}finally{SpeechMenu.#pipeline=pipeline;}}
@@ -113,6 +114,25 @@ window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--vosk-alternatives')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ window.document.querySelector('#speechMicBar').isOpen=true;await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+ const owner=window.SpeechMenu.testBegin();
+ const hypotheses=[{text:'sink on',index:0},{text:'sync on',index:1}];
+ const selected=await window.SpeechMenu.testSelect(owner.id,hypotheses,{isFinal:true});
+ assert.equal(selected?.index,1,'available command wins over primary homophone');
+ const dispatched=[];window.SpeechMenu.events.addEventListener('speechCommandDispatched',event=>dispatched.push(event.detail));
+ await window.SpeechMenu.testTranscript(owner,selected.text,false);await owner.digestQueue;await settle();
+ const final=await window.SpeechMenu.testSelect(owner.id,hypotheses,{isFinal:true});
+ assert.equal(final?.index,1);await window.SpeechMenu.testTranscript(owner,final.text,true);await owner.digestQueue;await settle();
+ assert.equal(dispatched.length,1,'selected interim and later final execute once');
+ const junk=window.SpeechMenu.testBegin();
+ assert.equal(await window.SpeechMenu.testSelect(junk.id,[{text:'who do you love',index:0}],{isFinal:true}),undefined,'no command fishing through discarded junk');
+ await window.SpeechMenu.sleep();const sleeping=window.SpeechMenu.testCapture();
+ assert.equal(await window.SpeechMenu.testSelect(sleeping.id,[{text:'who do you love',index:0},{text:'wake',index:1}],{isFinal:true}),undefined,'sleeping does not fish for a lower-ranked wake');
+ console.log('PASS Vosk shared alternative validation, homophones, single dispatch reconciliation and sleeping guard');
+ await storage.flush();window.happyDOM.abort();process.exit(0);
+}
 if(process.argv.includes('--login-deadline')) {
  window.document.querySelector('#speechMicBar').isOpen=true;
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();

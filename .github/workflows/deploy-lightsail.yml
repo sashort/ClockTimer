@@ -38,6 +38,7 @@ jobs:
           node tests/application-coordinator.mjs
           node tests/web-speech-recognizer.mjs
           node tests/web-speech-recovery.mjs
+          node tests/app-state-transactions.mjs --vosk-alternatives --voice-feedback
           node tests/app-state-transactions.mjs --login-deadline --voice-feedback
           node tests/validated-command-buffer.mjs
           node tests/app-state-transactions.mjs --parallel-command-buffer --voice-feedback

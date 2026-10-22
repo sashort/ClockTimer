@@ -125,6 +125,7 @@ class SpeechServer:
                 counted_anonymous = True
             loop = asyncio.get_running_loop()
             recognizer = await loop.run_in_executor(self.pool, self.recognizer_factory, self.models[language], 16000)
+            recognizer.SetMaxAlternatives(max(1,min(30,int(self.config.get("max_alternatives",10)))))
             recognizer.SetWords(True)
             await socket.send(json.dumps({"type": "ready", "protocol": 1, "language": language,
                 "sampleRate": 16000, "authenticated": authenticated,

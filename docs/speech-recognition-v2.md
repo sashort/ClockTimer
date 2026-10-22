@@ -977,3 +977,14 @@ upgrades the same socket with a fresh signed authenticated grant, or starts an
 authenticated replacement after expiry. Never extend the lease for audio,
 partial credentials, repeated downgrade messages or failed authentication.
 See `server-speech-recognition.md` for the wire contract and resource limits.
+
+
+### Native Vosk alternatives
+
+Enable a bounded native N-best list on the server and feed candidates through the
+shared command planner before collection. Preserve source-span identity and
+finalized prefixes; only selected candidates may reach the command buffer. A
+native endpoint is still not a logical continuation boundary. Partial results
+remain single-best. Selection must not wait for command execution while audio
+reply fences await selection. Keep the existing interim/final dispatch guard.
+Restrict sleeping wake detection to the top hypothesis to prevent command fishing.

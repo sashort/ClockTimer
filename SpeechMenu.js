@@ -1384,6 +1384,7 @@ class SpeechMenu {
                 const recognizer = useVosk
                     ? new (useVoskServer ? globalThis.VoskServerRecognizer : globalThis.VoskRecognizer)({
                         ...(useVoskServer ? globalThis.WMOF_VOSK_SERVER_CONFIG : globalThis.WMOF_VOSK_CONFIG),
+                        ...(useVoskServer ? {selectHypothesis:(id,hypotheses,options)=>SpeechMenu.#selectWebSpeechHypothesis(id,hypotheses,{...options,afterBarrier:true})} : {}),
                         language: SpeechMenu.#language,
                         getCollectionSession: id => {
                             const owner = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
@@ -1401,6 +1402,7 @@ class SpeechMenu {
                 SpeechMenu.#recognizer =
                     recognizer;
 
+                if(useVoskServer)recognizer.addEventListener("alternatives",event=>SpeechMenu.#emit("speechRecognitionAlternatives",event.detail));
                 recognizer.addEventListener(
                     "transcript",
                     SpeechMenu.#onSherpaTranscript

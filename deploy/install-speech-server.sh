@@ -17,7 +17,7 @@ path=Path('/etc/clocktimer/speech.json')
 if not path.exists():
     config={'secret':secrets.token_hex(32), 'origins':['https://wmof.sashort-apps.com'],
             'models':{'en-US':'/var/lib/clocktimer/speech/models/vosk-model-en-us-0.22'},
-            'workers':2, 'max_sessions':4, 'max_anonymous_sessions':2, 'prelogin_seconds':10, 'max_session_seconds':28800}
+            'workers':2, 'max_alternatives':10, 'max_sessions':4, 'max_anonymous_sessions':2, 'prelogin_seconds':10, 'max_session_seconds':28800}
     with path.open('x') as file: json.dump(config,file)
     os.chmod(path,0o640)
 else:
