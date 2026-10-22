@@ -86,6 +86,14 @@ Web Audio output sink so headless runs do not depend on speaker hardware; real
 PCM processing and recognition remain active. The full audio workflow remains a
 separate gate and can still report other recognition failures.
 
+The same bootstrap constraint applies to projected continuation grammars. Otherwise
+opening the break selector reintroduces full numeric phrase weights and can turn
+`okay` into a number before confirmation. `node tests/vosk-break-selection-browser.cjs`
+uses real audio at all three rates to open the selector, choose Short break and
+confirm in one utterance, checking the selected break type and released locks.
+Master failures also print their expected/heard synthetic phrase evidence in CI
+so failures can be diagnosed without exporting an entire artifact directory.
+
 `CLOCKTIMER_SPEECH_DELIVERY=fast` selects one delivery rate. Voice masters default to
 real audio. `CLOCKTIMER_VOICE_INPUT=transcript` explicitly selects the older growing-
 text simulation for FSM-only debugging; diagnostics workers force `audio` for voice.

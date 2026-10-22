@@ -55,7 +55,7 @@
                 // literal suffix (for example "one hundred ten percent trip").
                 ...this.paths.flatMap(path => path.record.atomic !== "digits" && path.stages[0]?.grammar !== "commands" &&
                     path.stages[1]?.grammar === "commands" ? path.stages[1].phrases : []),
-                ...continuations.flatMap(path => path.stages[0]?.phrases || [])]).sort();
+                ...continuations.flatMap(initialPhrases)]).sort();
         }
 
         get transcript() { return [this.prefix, this.text].filter(Boolean).join(" "); }

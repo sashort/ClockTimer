@@ -174,6 +174,7 @@ module.exports = async function runMaster(method) {
  } catch(error) {
   const heard=f.audioCases.slice(audioStart).map(clip=>'Expected: '+clip.text+'; heard: '+(clip.recognized||'[no transcript]')).join('\n');
   failure={step:currentStep,message:[String(error.message),heard].filter(Boolean).join('\n')};
+  console.error('FAIL '+currentStep+': '+failure.message);
   await reporter.tests([{label:method+': '+currentStep,status:'failed',message:Buffer.from([String(error.message),heard].filter(Boolean).join('\n')).subarray(0,1800).toString(),...evidence()}]).catch(()=>{});
   await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});
   throw error;

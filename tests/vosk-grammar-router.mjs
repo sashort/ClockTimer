@@ -28,6 +28,12 @@ assert.equal((await optionalValue.update('trip goal one hundred ten')).grammar,'
 const latePartial = new Router({records:[{pattern:'^trip goal(?: (?<percent>.+))?$'},
     {pattern:'^ready at (?<spokenTime>.+)$'}],valuePhrases:{number:['one hundred ten'],time:['four twelve']}});
 assert.equal((await latePartial.update('trip goal one hundred ten')).grammar,'number','routing cannot require a separate head-only partial');
+const projectedRecords=[{pattern:'^break start$'},{pattern:'^(?<percent>.+) trip$'}];
+const projectedRoot=new Router({records:projectedRecords,nextRecords:async()=>projectedRecords,
+    valuePhrases:{number:['one hundred ten']}});
+await projectedRoot.update('break start');
+assert(projectedRoot.phrases.includes('hundred'),'projected value-first commands retain their number vocabulary');
+assert(!projectedRoot.phrases.includes('one hundred ten'),'projected root alternatives cannot reintroduce repeated numeric phrase weights');
 const initial = [{pattern: '^ready$'}, {pattern: '^ready at (?<spokenTime>.+)$'}];
 const scheduled = [{pattern: '^standard(?: time)? (?<timeValue>.+)$', expect: 'duration'}, {pattern: '^cancel$'}];
 const values = {time: ['four twelve', 'four thirteen', 'four twenty two'], duration: ['twenty minutes', 'thirteen minutes']};
