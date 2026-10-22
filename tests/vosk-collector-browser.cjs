@@ -9,7 +9,11 @@ const root=path.resolve(__dirname,'..');
   if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}
   res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/json');
   let body=fs.readFileSync(file);
-  if(pathname==='/SpeechMenu.js')body=body.toString().replace(/\r\n/g,'\n').replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
+  // Decoder words and silence boundaries are injected explicitly. Chromium's
+  // unrelated periodic fake-microphone beeps must not end those scripted words.
+  if(pathname==='/SpeechMenu.js')body=body.toString().replace(/\r\n/g,'\n')
+   .replace('        const samples =\n            data.samples;', '        const samples =\n            data.samples;\n        void SpeechMenu.#recognizer?.acceptAudio(samples).catch(()=>{}); return;')
+   .replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
   static testVoskBegin(){SpeechMenu.#beginUtterance(performance.now());}
   static testVoskFinish(){SpeechMenu.#finishUtterance('silence',true);}
   static testVoskSilence(){const u=SpeechMenu.#utterance;u.continuationPauseStartedAt=performance.now()-10000;SpeechMenu.#armContinuationPauseDeadline(u);}
@@ -67,6 +71,11 @@ const root=path.resolve(__dirname,'..');
   const tracks=await page.evaluate(()=>captureCalls);
   const begin=async()=>{await page.evaluate(()=>SpeechMenu.testVoskBegin());await page.waitForTimeout(100);};
   const speak=async(text,endpoint=false)=>{await page.evaluate(({text,endpoint})=>voskDecoders.at(-1).emit(text,endpoint),{text,endpoint});await page.waitForTimeout(80);};
+  await page.evaluate(()=>SpeechMenu.sleep());
+  await begin();await speak('wake');
+  assert.equal(await page.evaluate(()=>SpeechMenu.muted),true,'Wake partial cannot enable unrelated commands');
+  await speak('wake',true);await page.evaluate(()=>SpeechMenu.testVoskFinish());
+  await page.waitForFunction(()=>!SpeechMenu.muted);
   await begin();await speak('ready');await page.evaluate(()=>SpeechMenu.testVoskFinish());
   await page.waitForFunction(()=>WMOFVoiceEntry.active);
   await page.evaluate(()=>{globalThis.valueDispatches=[];SpeechMenu.events.addEventListener('speechCommandDispatched',e=>valueDispatches.push(e.detail.transcript));});
@@ -81,6 +90,12 @@ const root=path.resolve(__dirname,'..');
   assert.equal(await page.evaluate(()=>captureCalls),tracks,'capture stays open across utterances');
   await begin();await speak('cancel');await page.evaluate(()=>SpeechMenu.testVoskFinish());
   await page.waitForFunction(()=>!WMOFVoiceEntry.active);
+  const beforeGoalDispatches=await page.evaluate(()=>valueDispatches.length);
+  await begin();await speak('day goal one',true);await speak('twelve');
+  assert.notEqual(await page.locator('#clockTimer').getAttribute('total-goal'),'112%','endpoint does not commit a partial percentage');
+  await page.evaluate(()=>SpeechMenu.testVoskFinish());
+  await page.waitForFunction(()=>document.querySelector('#clockTimer').getAttribute('total-goal')==='112%');
+  assert.equal(await page.evaluate(()=>valueDispatches.length)-beforeGoalDispatches,1,'native endpoint keeps leading one and dispatches once');
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').syncOverride),false,'override defaults off');
   for (const [words,expected] of [['sync override on',true],['sync override',true],['sync override off',false]]) {
    await begin();await speak(words);
@@ -95,13 +110,15 @@ const root=path.resolve(__dirname,'..');
   await page.waitForFunction(()=>document.querySelector('#clockTimer').syncOverride&&document.querySelector('#clockTimer').autoSyncTripGoal);
   assert.equal(await page.locator('#syncOverrideButton').getAttribute('aria-checked'),'true');
   assert(await page.locator('#syncOverrideButton').isDisabled(),'unavailable Sync leaves override visibly disabled');
+  await page.waitForFunction(()=>!SpeechMenu.commandBufferSnapshot.some(e=>['queued','executing'].includes(e.status))&&WMOFCoordinator.pending.length===0&&WMOFCoordinator.lockCount===0);
   await page.evaluate(async()=>{
    const timer=document.querySelector('#clockTimer');
    timer.configure({trip_goal:'100%',total_goal:'100%'});
-   await timer.calculateTripTotals('2026-01-01T00:00:00Z','2027-01-01T00:00:00Z');
-   await timer.start({standardTime:'0:20:00'});
+   globalThis.testStartPhase='totals';await timer.calculateTripTotals('2026-01-01T00:00:00Z','2027-01-01T00:00:00Z');
+   globalThis.testStartPhase='start';await timer.start({standardTime:'0:20:00'});
+   globalThis.testStartPhase='started';
    timer.configure({auto_goal:true,sync_override:true});
-  });
+  }).catch(async error=>{console.error(await page.evaluate(()=>({phase:testStartPhase,status:document.querySelector('#clockTimer').status,dialogs:[...document.querySelectorAll('dialog[open]')].map(e=>e.id),locks:WMOFCoordinator.lockCount,pending:WMOFCoordinator.pending.map(e=>({action:e.action,name:e.name,status:e.status})),buffer:SpeechMenu.commandBufferSnapshot.map(e=>({text:e.transcript,status:e.status}))})));throw error;});
   await page.waitForFunction(()=>!document.querySelector('#syncOverrideButton').disabled);
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').syncBelowFloor),true);
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),.8);
@@ -111,6 +128,11 @@ const root=path.resolve(__dirname,'..');
   await page.locator('#syncOverrideButton').evaluate(button=>button.click());
   await page.waitForFunction(()=>document.querySelector('#clockTimer').syncOverride);
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),.8,'touch override recalculates');
+  await begin();await speak('break start');
+  await page.evaluate(()=>SpeechMenu.testVoskSilence());
+  await page.waitForFunction(()=>document.querySelector('#breakDialog').open);
+  await begin();await speak('cancel');await page.evaluate(()=>SpeechMenu.testVoskFinish());
+  await page.waitForFunction(()=>!document.querySelector('#breakDialog').open);
   await page.evaluate(async()=>{const timer=document.querySelector('#clockTimer');await timer.stop();await timer.clear();});
   await begin();await speak('break start');
   assert.equal(await page.locator('#breakDialog').evaluate(e=>e.open),false,'chain opener remains pending');

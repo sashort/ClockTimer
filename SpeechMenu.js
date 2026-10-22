@@ -14,7 +14,7 @@ class SpeechCommandIndex {
             this.#observer = new Observer(records => this.#reconcile(records));
             this.#observer.observe(root, {subtree: true, childList: true, attributes: true,
                 attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-skippable', 'speech-chain-context', 'speech-chain-next', 'speech-command-chain-head', 'speech-chain-surface', 'speech-chain-transition', 'speech-available',
-                    'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
+                    'speech-independent', 'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
                     'speech-preproc-field', 'speech-collect', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
         }
     }
@@ -605,8 +605,32 @@ class SpeechMenu {
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
     static get modelReady() {return SpeechMenu.#modelReady;}
-    static get started() { return (Boolean(SpeechMenu.#stream) || SpeechMenu.#externalCapture) && !SpeechMenu.#stopped; }
+    static #preloginExpired = false;
+    static #loginResumePromise;
+    static get started() { return !SpeechMenu.#preloginExpired && (Boolean(SpeechMenu.#stream) || SpeechMenu.#externalCapture) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
+    static async setRecognitionAuthenticated(enabled) {
+        try {
+            if(enabled && SpeechMenu.#preloginExpired) return await SpeechMenu.#resumeAfterLogin();
+            return await SpeechMenu.#recognizer?.setAuthenticated?.(Boolean(enabled));
+        }
+        catch (error) {if(enabled && SpeechMenu.#preloginExpired)return SpeechMenu.#resumeAfterLogin();SpeechMenu.#onSherpaError({detail:{fatal:true,message:error.message,error}});return false;}
+    }
+    static #resumeAfterLogin(){
+        return SpeechMenu.#loginResumePromise ??= (async()=>{
+            if(SpeechMenu.#commandBuffer?.pending) await new Promise(resolve=>{
+                const settled=()=>{
+                    if(SpeechMenu.#commandBuffer?.pending)return;
+                    SpeechMenu.events.removeEventListener("speechCommandBufferChanged",settled);resolve();
+                };
+                SpeechMenu.events.addEventListener("speechCommandBufferChanged",settled);settled();
+            });
+            // Finish command settlement before a new capture generation is created.
+            await new Promise(resolve=>setTimeout(resolve,0));
+            if(!SpeechMenu.#preloginExpired || SpeechMenu.#stopped)return false;
+            return SpeechMenu.start(SpeechMenu.#language,SpeechMenu.#separator);
+        })().finally(()=>{SpeechMenu.#loginResumePromise=undefined;});
+    }
     static get captureListening() {
         return SpeechMenu.started && (SpeechMenu.#recognizerBackend !== "web-speech" || SpeechMenu.#recognizer?.listening === true);
     }
@@ -1248,6 +1272,10 @@ class SpeechMenu {
         if (SpeechMenu.#startPromise) return SpeechMenu.#startPromise;
         if (SpeechMenu.started && SpeechMenu.#modelReady) return true;
 
+        if(SpeechMenu.#preloginExpired){
+            await SpeechMenu.#releaseCapture({preserveCommands:true});
+            SpeechMenu.#preloginExpired=false;
+        }
         SpeechMenu.#language =
             typeof language === "string" && language.trim()
                 ? language
@@ -1313,7 +1341,7 @@ class SpeechMenu {
                     typeof AudioWorkletNodeCtor !== "function" ||
                     !(
                         typeof globalThis.SherpaRecognizer === "function" ||
-                        (globalThis.WMOF_SPEECH_BACKEND === "vosk" &&
+                        (["vosk","vosk-server"].includes(globalThis.WMOF_SPEECH_BACKEND) &&
                             globalThis.WMOF_VOSK_CONFIG &&
                             typeof globalThis.VoskRecognizer === "function") ||
                         (
@@ -1338,10 +1366,12 @@ class SpeechMenu {
                     globalThis.WMOF_SPEECH_BACKEND === "pocketsphinx" &&
                     Boolean(globalThis.WMOF_POCKETSPHINX_CONFIG) &&
                     typeof globalThis.PocketSphinxRecognizer === "function";
-                const useVosk = globalThis.WMOF_SPEECH_BACKEND === "vosk" &&
+                const useVoskServer = globalThis.WMOF_SPEECH_BACKEND === "vosk-server";
+                const useVosk = ["vosk","vosk-server"].includes(globalThis.WMOF_SPEECH_BACKEND) &&
                     Boolean(globalThis.WMOF_VOSK_CONFIG) &&
                     typeof globalThis.VoskRecognizer === "function";
-                if (globalThis.WMOF_SPEECH_BACKEND === "vosk" && !useVosk) {
+                if (["vosk","vosk-server"].includes(globalThis.WMOF_SPEECH_BACKEND) &&
+                    (!useVosk || (useVoskServer && typeof globalThis.VoskServerRecognizer !== "function"))) {
                     throw new Error("The requested Vosk backend is not configured.");
                 }
 
@@ -1352,8 +1382,9 @@ class SpeechMenu {
                 );
 
                 const recognizer = useVosk
-                    ? new globalThis.VoskRecognizer({
-                        ...globalThis.WMOF_VOSK_CONFIG,
+                    ? new (useVoskServer ? globalThis.VoskServerRecognizer : globalThis.VoskRecognizer)({
+                        ...(useVoskServer ? globalThis.WMOF_VOSK_SERVER_CONFIG : globalThis.WMOF_VOSK_CONFIG),
+                        language: SpeechMenu.#language,
                         getCollectionSession: id => {
                             const owner = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
                             return owner && SpeechMenu.#continuationSession(owner);
@@ -1637,6 +1668,7 @@ class SpeechMenu {
     }
 
     static async stop() {
+        SpeechMenu.#preloginExpired=false;
         const wasActive =
             !SpeechMenu.#stopped ||
             Boolean(SpeechMenu.#stream) ||
@@ -2372,7 +2404,7 @@ class SpeechMenu {
     }
 
     static #onTrackEnded = () => {
-        if (SpeechMenu.#stopped) return;
+        if (SpeechMenu.#stopped || SpeechMenu.#preloginExpired) return;
 
         SpeechMenu.#stopped =
             true;
@@ -2389,7 +2421,7 @@ class SpeechMenu {
 
     static #onAudioWorkletMessage = event => {
         if (
-            SpeechMenu.#stopped ||
+            SpeechMenu.#stopped || SpeechMenu.#preloginExpired ||
             SpeechMenu.listeningSuspended ||
             !SpeechMenu.#audioContext
         ) {
@@ -3508,12 +3540,19 @@ class SpeechMenu {
     };
 
     static #onSherpaStatus = event => {
+        if(event.detail?.status === "login-timeout"){
+            SpeechMenu.#preloginExpired=true;
+            SpeechMenu.#modelReady=false;
+            SpeechMenu.#captureNode?.disconnect();
+            SpeechMenu.#sourceNode?.disconnect();
+            for(const track of SpeechMenu.#stream?.getTracks() || [])track.stop();
+            SpeechMenu.#emit("speechCaptureEnded",{reason:"login-timeout",deliberate:false});
+        }
         SpeechMenu.#emit(
             "speechRecognitionStatusChanged",
             {
-                status:
-                    event.detail?.status ||
-                    ""
+                ...event.detail,
+                status: event.detail?.status || ""
             }
         );
     };
@@ -3691,7 +3730,10 @@ class SpeechMenu {
         replan = false
     ) {
         if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
-        if (utterance?.segmentBarrier) await utterance.segmentBarrier;
+        if (utterance?.segmentBarrier) {
+            if (await SpeechMenu.#queueIndependentTail(utterance,transcript,isFinal)) return;
+            await utterance.segmentBarrier;
+        }
         if (
             !utterance ||
             utterance.committed ||
@@ -4116,6 +4158,26 @@ class SpeechMenu {
         SpeechMenu.#emit("utteranceUnrecognized", {id: utterance.id, transcript: remainder, reason, fast: true});
     }
 
+    static async #queueIndependentTail(utterance, transcript, isFinal) {
+        if (!utterance || utterance.chainCanceled || SpeechMenu.#stopped) return false;
+        const normalized=SpeechMenu.#normalizeTranscript(transcript);
+        const remainder=SpeechMenu.#digestRemainder(utterance,normalized);
+        if (!remainder) return false;
+        const candidates=SpeechMenu.#index().elements().filter(element=>
+            element.hasAttribute("speech-independent") && SpeechMenu.#canAttemptStateCommand(element));
+        if (!candidates.length) return false;
+        const plan=await SpeechMenu.#planDigest(candidates,remainder.split(" ").filter(Boolean),
+            {...utterance,valueCollectors:new Map()},undefined,0,undefined,
+            utterance.digestContext,utterance.digestSurfaceStack);
+        if (!plan?.exact || plan.invalid || plan.pending || !plan.steps?.length ||
+            (!isFinal && plan.steps.at(-1).canContinue)) return false;
+        // Another interim/final callback may already have accepted these words.
+        if (SpeechMenu.#digestRemainder(utterance,normalized)!==remainder) return true;
+        utterance.transcript=normalized;
+        for (const step of plan.steps) SpeechMenu.#queueDigestStep(utterance,step);
+        return true;
+    }
+
     static #reserveCommandDispatch(utterance, step) {
         const element = step.commandElement;
         const declaration = element.getAttribute("speech-execution-context");
@@ -4155,6 +4217,7 @@ class SpeechMenu {
 
     static #queueDigestStep(utterance, step) {
         SpeechMenu.#continuationSession(utterance);
+        const independent = step.commandElement.hasAttribute("speech-independent");
         const segment = step.segmentTranscript;
         utterance.digestTranscript = [utterance.digestTranscript, step.ignoredBefore, segment].filter(Boolean).join(" ");
         (utterance.digestCommandSegments ??= []).push(segment);
@@ -4193,46 +4256,56 @@ class SpeechMenu {
             utterance.bufferChain={id:`${utterance.sessionGeneration}:${utterance.id}:chain:${utterance.bufferChainSequence=(utterance.bufferChainSequence||0)+1}`,status:'active'};
         }
         const bufferId=`${utterance.sessionGeneration}:${utterance.id}:component:${utterance.bufferSequence=(utterance.bufferSequence||0)+1}`;
-        utterance.digestQueue = buffer.enqueue({
+        const predecessor = !independent && utterance.bufferPredecessor;
+        const previousStep = !independent && utterance.digestSteps.slice(0,-1).reverse()
+            .find(item=>!item.commandElement.hasAttribute("speech-independent"));
+        const dependency = previousStep?.bufferCompletion || predecessor?.bufferCompletion;
+        const priorQueue = utterance.digestQueue;
+        const work = buffer.enqueue({
             id:bufferId,
-            ownerId:utterance.id,owner:utterance,chainId:utterance.bufferChain.id,transcript:segment,commandElement,
+            ownerId:utterance.id,owner:utterance,chainId:independent?bufferId:utterance.bufferChain.id,transcript:segment,commandElement,
+            dependsOn:dependency?[dependency]:[],
             commandId:step.commandId||commandElement.getAttribute("data-speech-editor-id")||commandElement.id||commandElement.getAttribute("speech-function"),
             ttl:SpeechMenu.#bufferTtl(commandElement)
         },async () => {
-            const predecessor=utterance.bufferPredecessor;
             if (predecessor && (utterance.bufferPredecessorChain?.status==='failed' || predecessor.chainCanceled || predecessor.digestFailed || predecessor.digestExecutionFailed)) {
                 utterance.chainCanceled=true;return false;
             }
-            if (utterance.digestFailed || utterance.chainCanceled || utterance.digestExecutionFailed || SpeechMenu.#stopped ||
+            if ((!independent && (utterance.digestFailed || utterance.chainCanceled || utterance.digestExecutionFailed)) || SpeechMenu.#stopped ||
                 utterance.sessionGeneration !== SpeechMenu.#sessionGeneration) {
                 utterance.chainCanceled = true;
                 SpeechMenu.#clearPrimed(utterance);
                 return false;
             }
             // UI visibility may lag; hard gates are always rechecked at execution.
-            if (!(step.optimistic ? SpeechMenu.#canAttemptStateCommand(step.commandElement) : SpeechMenu.#candidateStateAvailable(step.commandElement, true))) {
-                utterance.digestExecutionFailed = true;
-                SpeechMenu.#rejectDigest(utterance, "chain-action-unavailable", segment);
+            if (!((independent || step.optimistic) ? SpeechMenu.#canAttemptStateCommand(step.commandElement) : SpeechMenu.#candidateStateAvailable(step.commandElement, true))) {
+                if (!independent) {
+                    utterance.digestExecutionFailed = true;
+                    SpeechMenu.#rejectDigest(utterance, "chain-action-unavailable", segment);
+                }
                 return false;
             }
             if (scopedExecution && !SpeechMenu.#reserveCommandDispatch(utterance, step)) return globalThis.ValidatedCommandBuffer.SKIPPED;
             buffer.annotate(bufferId,{commandId:step.commandId,executionContext:step.executionContext??null});
-            utterance.commandChainExecuting = true;
-            utterance.digestExecutingContext = SpeechMenu.#chainContextTokens(step.commandElement)[0];
+            if (!independent) {
+                utterance.commandChainExecuting = true;
+                utterance.digestExecutingContext = SpeechMenu.#chainContextTokens(step.commandElement)[0];
+            }
             try {
                 const result = await SpeechMenu.#processElement(step.commandElement, segment,
                     utterance.id, step.speechMenuElement, SpeechMenu.#shouldExecuteElement(step.commandElement),
                     undefined, utterance.wallStartedAt, true, false,
-                    {chain: true, operation: utterance.operation, commandContext: step.executionContext ?? null,
+                    {independent, chain: !independent, operation: independent?undefined:utterance.operation, commandContext: step.executionContext ?? null,
                         chainSurface: step.surface, chainContext: step.context || utterance.digestExecutingContext,
                         hasContinuation: () => utterance.digestSteps.indexOf(step) < utterance.digestSteps.length - 1,
                         nextCommand: () => utterance.digestSteps[utterance.digestSteps.indexOf(step) + 1]?.commandElement.getAttribute("speech-function"),
                         isFinal: () => utterance.digestCommitted,
                         ownsProjectedSurface: () => !utterance.chainCanceled && utterance.expectedSurfaces?.has(step.surface),
-                        canCommit: () => !utterance.chainCanceled && !utterance.digestExecutionFailed &&
+                        canCommit: () => (independent || (!utterance.chainCanceled && !utterance.digestExecutionFailed)) &&
                             !SpeechMenu.#stopped && utterance.sessionGeneration === SpeechMenu.#sessionGeneration &&
                             SpeechMenu.#commandStillAuthorized(step.commandElement)});
-                if (utterance.chainCanceled) return false;
+                if (!independent && utterance.chainCanceled) return false;
+                if (!result && independent) return false;
                 if (!result) {
                     utterance.digestExecutionFailed = true;
                     utterance.digestSurfaceStack = step.surfaceStack;
@@ -4243,20 +4316,29 @@ class SpeechMenu {
                 utterance.hadCommittedCommand = true;
                 return true;
             } finally {
-                utterance.commandChainExecuting = false;
-                utterance.digestExecutingContext = undefined;
+                if (!independent) {
+                    utterance.commandChainExecuting = false;
+                    utterance.digestExecutingContext = undefined;
+                }
             }
         }).catch(error => {
+            if (independent) {
+                SpeechMenu.#emit("speechMenuCommandError", {utteranceId:utterance.id,error});return false;
+            }
             utterance.digestExecutionFailed = true;
             SpeechMenu.#rejectDigest(utterance, "chain-action-error", segment);
             SpeechMenu.#emit("speechMenuCommandError", {utteranceId: utterance.id, error});
             return false;
         });
+        step.bufferCompletion = {id:bufferId,completion:work};
+        if (!independent) utterance.bufferCompletion = step.bufferCompletion;
+        utterance.digestQueue = Promise.all([priorQueue,work]);
     }
 
     static #completeDigest(utterance) {
         return utterance.digestCompletion ??= (async () => {
-            await utterance.digestQueue;
+            let drained;
+            do {drained=utterance.digestQueue;await drained;} while(drained!==utterance.digestQueue);
             const transactions = globalThis.WMOFStateTransactions;
             const group = utterance.operation?.group || `speech:${utterance.id}`;
             if (utterance.digestExecutionFailed || utterance.chainCanceled) {
@@ -4791,7 +4873,12 @@ class SpeechMenu {
         transcript
     ) {
         if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
-        if (utterance?.segmentBarrier) await utterance.segmentBarrier;
+        if (utterance?.segmentBarrier) {
+            // Accept independent final-only results before waiting for state work.
+            // Continue final settlement afterward so the logical owner is closed.
+            await SpeechMenu.#queueIndependentTail(utterance,transcript,true);
+            await utterance.segmentBarrier;
+        }
         if (
             !utterance ||
             utterance.digestFailed ||
@@ -7357,6 +7444,22 @@ class SpeechMenu {
         });
     }
 
+    static #hasLeadingValuePrefix(element, transcript) {
+        const field = element.getAttribute("speech-preproc-field");
+        const registration = SpeechMenu.#valueContexts.get(element.getAttribute("speech-preproc-context"));
+        if (!field || !registration || !SpeechMenu.#isOpenEndedParameter(element)) return false;
+        // Value-first commands still own a valid number before their literal
+        // suffix arrives: "one twelve" -> "one twelve percent day goal".
+        const marker = `<${field}>`;
+        const valueFirst = SpeechMenu.#expandRegexSource(element.getAttribute("speech-pattern") || "")
+            .some(phrase => phrase.trim().startsWith(marker) &&
+                /[\p{L}\p{N}]/u.test(phrase.trim().slice(marker.length).replace(/<[^>]+>/g, "")));
+        if (!valueFirst) return false;
+        const collector = new globalThis.SpeechValueCollector({...registration.constraints, classify:registration.classify});
+        collector.update([{id:"value-prefix",text:transcript,final:false}]);
+        return ["valid","incomplete"].includes(collector.evaluate({boundary:false})?.status);
+    }
+
     // True when the transcript begins with a command's literal introducer,
     // even when parameter words already follow it. Unlike #hasExplicitCommandPrefix,
     // this is for collector-boundary decisions, not partial-command detection.
@@ -7515,6 +7618,13 @@ class SpeechMenu {
             if (malformedContext) select({steps: [], exact: false, invalid: true,
                 malformedContext, consumedWords: 0, remainder: full});
             const partialDepth = SpeechMenu.#elementDirectContinuationDepth(element, full);
+            // An owned child context has first refusal over bare values. A
+            // global value-first goal must not rescue a malformed Ready value.
+            if (!projectedContext && !utterance.digestIsFinal && SpeechMenu.#hasLeadingValuePrefix(element, full)) {
+                select({steps:[], exact:false, continuation:true, terminal:false,
+                    pending:{element,transcript:full,hasCommandPrefix:false,headStarted:false},
+                    consumedWords:0,remainder:full,depth:0});
+            }
             if (partialDepth !== undefined && SpeechMenu.#typedContinuationViable(element, full) !== false) select({steps: [], exact: false, continuation: true,
                 terminal: false, pending: {element, transcript: full,
                     hasCommandPrefix: SpeechMenu.#hasExplicitCommandPrefix(element, full),
@@ -10258,8 +10368,8 @@ class SpeechMenu {
                         executionStartedAt ||
                         utterance
                             ?.wallStartedAt,
-                    chain: executionMetadata?.chain === true || utterance?.commandChainExecuting === true,
-                    operation: executionMetadata?.operation || utterance?.operation,
+                    chain: executionMetadata?.independent ? false : executionMetadata?.chain === true || utterance?.commandChainExecuting === true,
+                    operation: executionMetadata?.independent ? undefined : executionMetadata?.operation || utterance?.operation,
                     chainContext: executionMetadata?.chainContext || utterance?.digestExecutingContext,
                     chainSurface: executionMetadata?.chainSurface,
                     skippable: element.hasAttribute("speech-skippable") && element.getAttribute("speech-skippable") !== "false",
@@ -10415,10 +10525,10 @@ class SpeechMenu {
                 : value;
     }
 
-    static async #releaseCapture() {
+    static async #releaseCapture({preserveCommands=false}={}) {
         SpeechMenu.#externalCapture=false;
         SpeechMenu.#clearPrimed();
-        if (SpeechMenu.#utterance) SpeechMenu.#utterance.chainCanceled = true;
+        if (!preserveCommands && SpeechMenu.#utterance) SpeechMenu.#utterance.chainCanceled = true;
         const captureNode =
             SpeechMenu.#captureNode;
 
@@ -10560,7 +10670,7 @@ class SpeechMenu {
         SpeechMenu.#preRollSamples =
             0;
 
-        await Promise.all([...SpeechMenu.#finishedUtterances.values()].map(utterance =>
+        if(!preserveCommands) await Promise.all([...SpeechMenu.#finishedUtterances.values()].map(utterance =>
             utterance.operation?.cancel(new DOMException("Speech recognition stopped.", "AbortError"))));
         SpeechMenu.#finishedUtterances
             .clear();

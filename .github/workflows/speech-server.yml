@@ -1,0 +1,30 @@
+name: Server speech transport
+on:
+  workflow_call:
+  workflow_dispatch:
+jobs:
+  transport:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pip install -r services/speech/requirements.txt
+      - run: python tests/speech-server.py
+      - run: php tests/speech-sessions.php
+      - run: python tests/speech-session-api.py
+      - run: php -l api/speech/session/index.php
+      - run: npm install --no-audit --no-fund
+        working-directory: tests
+      - run: npx playwright install --with-deps chromium
+        working-directory: tests
+      - run: node tests/vosk-server-browser.cjs
+      - run: python deploy/install_vosk_assets.py --root speech/vosk
+      - run: python tests/speech-server-native.py

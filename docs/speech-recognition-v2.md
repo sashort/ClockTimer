@@ -877,6 +877,7 @@ Validation: `tests/vosk-recognizer.mjs` checks full-vocabulary construction, one
 
 `speech-command-chain-head` marks a command that is complete syntactically but can lead into a related command. Declare its next context with `speech-chain-next`; descendants use `speech-chain-context` and may themselves be heads. The planner must consider this metadata when deciding whether an interim is terminal. The application marks each generated command with a declared next context, including both `break start` (next: break-choice) and the break type (next: break-confirm). An evolving partial must not dispatch the last head merely because its regex matches. A subsequent validated command establishes its boundary; application silence/finalization can settle a bare head. `okay` is terminal and may execute immediately when complete. This contract is shared by Vosk and Web Speech. It changes continuation handling, not the list of accepted aliases.
 
+
 ## Continuous Vosk audio and logical silence boundaries (22 October 2026)
 
 Keep capture, decoder transport, logical collection, and command execution separate.
@@ -915,3 +916,64 @@ next utterance, single submission, idle audio, aborts, and overload.
 `tests/vosk-continuous-runtime-browser.cjs` exercises repeated boundaries with the
 actual pinned runtime/model. `tests/vosk-collector-browser.cjs` exercises current UI
 handoffs and commands. These are transport/behavior tests, not acoustic-accuracy claims.
+
+
+## Independent command execution and value-first collection (22 October 2026)
+
+`ValidatedCommandBuffer` schedules accepted components asynchronously. A component
+may declare `dependsOn` handles referencing previously accepted work. It starts
+only after all those completions succeed; a failed or canceled prerequisite
+prevents dependent execution. Cancellation resolves dependency waiters promptly.
+The buffer owns execution and display lifetime independently of capture and
+retains its duplicate guard and bounded idle TTL.
+
+Commands that mutate shared trip/dialog state retain explicit dependencies on
+the preceding state command, including across captures. Safe independent actions
+opt in with `ActionFunctions` metadata `{independent:true, transaction:false}`;
+SpeechMenu publishes this as `speech-independent`. Sync and Sync Override are the
+initial actions using this path. They bypass the trip transaction queue, run
+with their own buffer chain, and must not inherit a pending Start operation.
+An independent failure cannot reject its neighboring state chain; a rejected
+Start must not roll back an independently completed Sync change. Other actions
+must not opt in until their rollback and persistence behavior is verified.
+
+Accept independent validated tails before awaiting a state transition barrier,
+for both interim and final-only recognition. Reconcile with the consumed prefix
+to avoid dispatching a tail twice. A following dependent command still waits for
+the preceding state command, even when an independent command appears between
+them. Final settlement waits for all accepted branches, including new work added
+while settlement is waiting.
+
+A value-first declaration can be pending before its literal suffix is spoken:
+`one twelve` may grow into `one twelve percent day goal`. Use the declaration's
+shared value-context classifier to retain viable prefixes; do not discard them
+as root junk merely because the trailing command word has not arrived. Exact
+completed values still require a real command or logical silence/final boundary.
+In en-US percentages, `one twelve` means 112, `one twenty two` means 122, and
+`two fifteen` means 215. Pure digit sequences keep their existing meaning:
+`one two` is 12 and `one oh five` is 105. Both scope/number orders support optional
+Goal and Percent words for Trip, Day, Week, Money, Month and Year.
+
+Validation includes held Start success/failure with independent Sync Off,
+interim/final-only delivery, dependency failure/cancellation, all 48 goal forms,
+growing value-first/scope-first transcripts and native endpoint splits.
+
+## Server-backed recognition (22 October 2026)
+
+[Shared server speech recognition](server-speech-recognition.md) defines the
+language-routed API, signed pre-login grants, PCM protocol, resource limits,
+installation and rollout. Version 2 should preserve the existing collector and
+command-buffer contracts when replacing a decoder transport. The server owns
+acoustic recognition only; it does not duplicate command/FSM interpretation.
+
+
+### Server login lease
+
+Keep the server speech connection separate from command execution and account
+permissions. A server-reported 10-second anonymous lease drives countdown/status
+UI; expiry stops capture, preserves entered credentials, and never aborts a login
+HTTP request already running. Require explicit anonymous retry. Successful login
+upgrades the same socket with a fresh signed authenticated grant, or starts an
+authenticated replacement after expiry. Never extend the lease for audio,
+partial credentials, repeated downgrade messages or failed authentication.
+See `server-speech-recognition.md` for the wire contract and resource limits.

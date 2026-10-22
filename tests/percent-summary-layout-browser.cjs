@@ -20,9 +20,11 @@ const root=path.resolve(__dirname,'..');
      const layout=await page.evaluate(()=>{
       const cells=[...document.querySelector('.percent-summary').children];
       const rect=e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,height:r.height};};
-      return {fonts:cells.slice(0,3).map(e=>parseFloat(getComputedStyle(e).fontSize)),overlay:rect(document.querySelector('.sync-offline-overlay')),pause:rect(document.querySelector('.sync-pause-badge')),cells:cells.map(rect),cloud:rect(document.querySelector('.scope-connection-button')),overflow:cells.slice(0,3).map(e=>e.scrollWidth-e.clientWidth)};
+      return {alignment:cells.slice(0,3).map(e=>getComputedStyle(e).textAlign),fonts:cells.slice(0,3).map(e=>parseFloat(getComputedStyle(e).fontSize)),overlay:rect(document.querySelector('.sync-offline-overlay')),pause:rect(document.querySelector('.sync-pause-badge')),cells:cells.map(rect),cloud:rect(document.querySelector('.scope-connection-button')),overflow:cells.slice(0,3).map(e=>e.scrollWidth-e.clientWidth)};
      });
      const badge=layout.cells[3];
+     assert.equal(layout.alignment[0],'right',name+' Actual hugs slash');
+     assert.equal(layout.alignment[2],'left',name+' Goal hugs slash');
      assert.ok(Math.abs(layout.cells[0].width-layout.cells[2].width)<1,`${name} actual and goal tracks always have equal widths`);
      assert.equal(badge.width,40,`${name} badge fixed width`);
      assert.equal(badge.height,40,`${name} badge fixed height`);

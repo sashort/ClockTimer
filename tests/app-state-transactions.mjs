@@ -73,6 +73,7 @@ installSpeechLifecycle(window);
 let speechSource=fs.readFileSync(process.env.CLOCKTIMER_SPEECH_SOURCE || new URL('../SpeechMenu.js',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 if(process.argv.includes('--break-end-stream'))speechSource=speechSource.replace('static #pipeline = "raw";', 'static #pipeline = "silero";');
 speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
+    static testStatus(detail){SpeechMenu.#onSherpaStatus({detail});}
     static testPause(u){u.continuationPauseStartedAt=performance.now()-(SpeechMenu.#continuationGraceMilliseconds()-150);SpeechMenu.#armContinuationPauseDeadline(u);}
     static testResume(){const pipeline=SpeechMenu.#pipeline;SpeechMenu.#pipeline="silero";try{SpeechMenu.#onVadSpeechStart({detail:{}});}finally{SpeechMenu.#pipeline=pipeline;}}
     static testBackend(name){SpeechMenu.#recognizerBackend=name;}
@@ -112,6 +113,81 @@ window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
+if(process.argv.includes('--login-deadline')) {
+ window.document.querySelector('#speechMicBar').isOpen=true;
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();
+ await window.WMOFActions.handleSpeechRuntimeStarted();
+ await window.WMOFActions.enterLoginDigits('one two three four');await window.WMOFActions.confirmLoginDigits();
+ await window.WMOFActions.enterLoginDigits('five six seven eight');
+ window.SpeechMenu.testStatus({status:'login-countdown',remaining:3});
+ assert(window.document.querySelector('#loginRecognitionStatus').textContent.includes('3s'));
+ holdLogin=true;const owner=window.SpeechMenu.testBegin();
+ const pending=window.SpeechMenu.testTranscript(owner,'five six seven eight okay',true);await owner.digestQueue;await settle();assert(releaseLogin,JSON.stringify({pending:owner.digestPending,failed:owner.digestFailed,executionFailed:owner.digestExecutionFailed,stage:window.WMOFInteractionState.state.login,errors,consoleErrors}));
+ assert(!owner.operation?.settled,'buffer-owned login remains in flight');
+ window.SpeechMenu.testStatus({status:'login-timeout',remaining:0});await settle();
+ assert.equal(window.SpeechMenu.started,false);
+ assert(window.document.querySelector('#loginRecognitionStatus').textContent.includes('Voice login timed out'));
+ assert.equal(window.document.querySelector('#loginUsername').value,'1234');
+ assert.equal(window.document.querySelector('#loginPassword').value,'5678');
+ assert.equal(window.WMOFInteractionState.state.login.pending,true,'expiry preserves in-flight authentication');
+ let restarted=0;window.SpeechMenu.start=async()=>{restarted++;return true;};
+ holdLogin=false;releaseLogin();await pending;
+ for(let i=0;i<20&&!restarted;i++)await settle();
+ assert.equal(restarted,1,'successful late login opens authenticated recognition exactly once');
+ assert(!owner.chainCanceled,'expected deadline must not cancel the dispatched command chain');
+ assert.equal(errors.length,0,errors.join('\n'));
+ console.log('PASS pre-login countdown, preserved credentials and pending HTTP login, late authenticated restart');
+ await storage.flush();window.happyDOM.abort();process.exit(0);
+}
+if(process.argv.includes('--goal-forms')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+ const initial=timer.getAttribute('total-goal');
+ const growing=window.SpeechMenu.testBegin();
+ for(const phrase of ['day goal one','day goal one twelve']) {
+  await window.SpeechMenu.testTranscript(growing,phrase,false);await settle();
+  assert.equal(timer.getAttribute('total-goal'),initial,phrase+' stays open until a real boundary');
+ }
+ await window.SpeechMenu.testTranscript(growing,'day goal one twelve',true);await growing.digestQueue;await settle();
+ assert.equal(timer.getAttribute('total-goal'),'112%');
+ for(const scope of ['trip','day','week','money','month','year']) {
+  for(const phrase of [scope+' one twelve',scope+' goal one twelve',scope+' one twelve percent',scope+' goal one twelve percent','one twelve '+scope,'one twelve percent '+scope,'one twelve '+scope+' goal','one twelve percent '+scope+' goal']) {
+   const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await u.segmentBarrier;await settle();
+   assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' dispatches');
+   assert.equal(timer.getAttribute(scope==='trip'?'trip-goal':'total-goal'),'112%',phrase);
+  }
+ }
+ for(const words of [['day','day one','day one twelve'],['one','one twelve','one twelve percent day']]) {
+  timer.configure({total_goal:'100%'});await settle();
+  const u=window.SpeechMenu.testBegin();
+  for(const phrase of words){await window.SpeechMenu.testTranscript(u,phrase,false);await settle();assert.equal(timer.getAttribute('total-goal'),'100%',phrase+' stays open');}
+  await window.SpeechMenu.testTranscript(u,words.at(-1),true);await u.digestQueue;await settle();assert.equal(timer.getAttribute('total-goal'),'112%',words.join(' -> '));
+ }
+ console.log('PASS all 48 scope/number orders with optional Goal/Percent and growing one-twelve collection');
+ await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--parallel-command-buffer')) {
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();await settle();
+ await window.WMOFActions.toggleSync('on');await settle();
+ const opening=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(opening,'ready',true);await opening.digestQueue;await settle();
+ const duration=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(duration,'twenty minutes',true);await duration.digestQueue;await settle();
+ holdTripCheck=true;rejectTripStart=!process.argv.includes("--accept-start");
+ const starting=window.SpeechMenu.testBegin();
+ await window.SpeechMenu.testTranscript(starting,'okay',false);await settle();
+ assert(releaseTripCheck,'Start is waiting for its real server validation');
+ let independentProcessed=false;
+ const independent=(process.argv.includes('--final-only')?window.SpeechMenu.testFinal(starting,'okay sync off'):window.SpeechMenu.testTranscript(starting,'okay sync off',false)).then(()=>independentProcessed=true);
+ await Promise.race([(async()=>{while(timer.autoSyncTripGoal)await settle();})(),new Promise((_,reject)=>setTimeout(()=>reject(Error('independent Sync blocked behind Start')),2000))]);
+ await settle();if(!process.argv.includes('--final-only'))assert(independentProcessed);assert.equal(timer.autoSyncTripGoal,false,'Sync Off executes while Start is pending');
+ assert(window.SpeechMenu.commandBufferSnapshot.some(entry=>entry.transcript==='sync off'&&entry.status==='completed'));
+ releaseTripCheck();holdTripCheck=false;await independent;await starting.digestQueue;await starting.segmentBarrier;await settle();
+ assert.equal(timer.autoSyncTripGoal,false,'failed Start cannot undo the independent Sync change');
+ if(rejectTripStart) assert.notEqual(timer.status,'running');else assert.equal(timer.status,'running');
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ console.log('PASS independent Sync Off executes during held Start ('+(rejectTripStart?'rejected':'accepted')+', '+(process.argv.includes('--final-only')?'final':'interim')+')');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--exhaustive-values')) {
  const {runExhaustiveValues}=await import('./order-filler-values-exhaustive.mjs');
  try {await runExhaustiveValues({window,timer,settle,errors,consoleErrors});}

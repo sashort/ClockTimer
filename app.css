@@ -3991,10 +3991,12 @@ clock-timer[hide-latency] time-range[type="latency"] {
 }
 
 .percent-summary > #currentPercentValue {
+    text-align: right;
     font-size: var(--summary-actual-font-size, 1em);
 }
 
 .percent-summary > #goalPercentValue {
+    text-align: left;
     font-size: var(--summary-goal-font-size, 1em);
 }
 

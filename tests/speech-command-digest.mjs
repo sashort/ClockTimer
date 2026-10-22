@@ -315,6 +315,17 @@ try {
     await u.digestQueue;
     assert.equal(calls.length,2,'identical/stale final decode never executes consumed commands twice');
 
+    const parallelSync=make(document.body,'parallel-sync','^sync (?<syncAction>off)$','sync',{
+        'speech-modal':'top-level','speech-independent':'','data-speech-state-command':''});
+    const interleaved=fresh();
+    await hear(interleaved,'ready at four fifteen sync off standard time one hour',true);
+    assert.deepEqual(calls.slice().sort((a,b)=>a[0].localeCompare(b[0])),[['ready','4:15'],['sync','off']],
+        'Sync may finish while the preceding Ready is held');
+    release(true);await interleaved.digestQueue;
+    assert.deepEqual(calls.at(-1),['standard','1:00:00'],
+        'Standard depends on Ready even when an independent Sync is between them');
+    parallelSync.remove();
+
     readyOutcome=()=>Promise.resolve(true);
     let unrelatedRelease;
     readyOutcome=()=>new Promise(resolve=>unrelatedRelease=resolve);

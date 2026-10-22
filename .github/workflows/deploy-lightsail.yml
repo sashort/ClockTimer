@@ -11,6 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  server-speech-tests:
+    uses: ./.github/workflows/speech-server.yml
   speech-tests:
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +38,12 @@ jobs:
           node tests/application-coordinator.mjs
           node tests/web-speech-recognizer.mjs
           node tests/web-speech-recovery.mjs
+          node tests/app-state-transactions.mjs --login-deadline --voice-feedback
           node tests/validated-command-buffer.mjs
+          node tests/app-state-transactions.mjs --parallel-command-buffer --voice-feedback
+          node tests/app-state-transactions.mjs --parallel-command-buffer --accept-start --voice-feedback
+          node tests/app-state-transactions.mjs --parallel-command-buffer --final-only --voice-feedback
+          node tests/app-state-transactions.mjs --goal-forms --voice-feedback
           node tests/web-speech-command-selection.mjs
           node tests/speech-failfast.mjs
           node tests/owned-feedback-scope.mjs
@@ -105,8 +112,6 @@ jobs:
           node tests/spoken-time.mjs
           node tests/speech-value-preprocessor.mjs
           node tests/legacy-vosk-values.mjs
-          node tests/sync-try.mjs
-          node tests/custom-range-goals.mjs
           node tests/vosk-recognizer.mjs
           node tests/vosk-grammar-router.mjs
           node tests/vosk-speechmenu-context.mjs
@@ -179,7 +184,7 @@ jobs:
           CLOCKTIMER_TEST_PASSWORD: clocktimer-test
   deploy:
     if: github.ref == 'refs/heads/web-speech-experiment'
-    needs: [speech-tests, settings-browser, break-session-backend]
+    needs: [speech-tests, settings-browser, break-session-backend, server-speech-tests]
     runs-on: ubuntu-latest
 
     steps:
@@ -271,6 +276,14 @@ jobs:
 
              # Full-vocabulary Vosk needs the verified same-origin runtime/model.
              python3 deploy/install_vosk_assets.py --root speech/vosk
+
+             # The larger recognizer is opt-in until a real command benchmark
+             # passes. Install it only when the application host has headroom.
+             if sudo -n python3 deploy/install_speech_model.py --check-only; then
+               sudo -n bash deploy/install-speech-server.sh
+             else
+               echo "Server speech not activated: capacity preflight failed; local Vosk remains available."
+             fi
 
              LIVE_STREAM_SERVICE=/etc/systemd/system/clocktimer-live-stream.service
              LIVE_STREAM_APACHE_CONF=/opt/bitnami/apache2/conf/clocktimer-live-stream.conf

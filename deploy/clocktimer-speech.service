@@ -1,0 +1,28 @@
+[Unit]
+Description=ClockTimer language-routed Vosk recognition
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=daemon
+Group=daemon
+WorkingDirectory=/opt/clocktimer-speech/app
+Environment=OMP_NUM_THREADS=1
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/clocktimer-speech/venv/bin/python services/speech/server.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadOnlyPaths=/etc/clocktimer /var/lib/clocktimer/speech/models
+MemoryMax=12G
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

@@ -517,9 +517,10 @@
                             );
                         }
 
-                        if (globalThis.WMOF_SPEECH_BACKEND === "vosk") {
+                        if (["vosk","vosk-server"].includes(globalThis.WMOF_SPEECH_BACKEND)) {
                             await loadClassicScript("speech/VoskTestConfig.js");
                             if (!globalThis.VoskRecognizer) await loadClassicScript("VoskRecognizer.js");
+                            if (globalThis.WMOF_SPEECH_BACKEND === "vosk-server" && !globalThis.VoskServerRecognizer) await loadClassicScript("VoskServerRecognizer.js");
                         }
 
                         if (globalThis.WMOF_SPEECH_BACKEND !== "web-speech" && !globalThis.SherpaRecognizer) {
@@ -3070,6 +3071,7 @@
             }
         }
     }
+    let voiceLoginLease;
     function syncLoginRecognition() {
         if(!loginIsOpen())return;
         const state=readInteractionState().speechRecognition;
@@ -3079,6 +3081,11 @@
         const status=$(loginInputMode === "password" ? "#legacyLoginRecognitionStatus" : "#loginRecognitionStatus");
         const enable=$(loginInputMode === "password" ? "#legacyLoginEnableRecognition" : "#loginEnableRecognition");
         status.textContent=voiceLoginText(key);enable.hidden=state === "listening";enable.disabled=state === "starting";
+        if(voiceLoginLease?.status === "login-countdown")status.textContent += " · " + voiceLoginLease.remaining + "s";
+        if(voiceLoginLease?.status === "login-timeout"){
+            status.textContent="Voice login timed out. Tap the microphone to retry.";
+            enable.hidden=false;enable.disabled=false;
+        }
         refreshLoginBoundary();
     }
 
@@ -22298,6 +22305,7 @@
 
     function onConnected(event) {
         populateProfile(event.detail?.user);
+        void globalThis.SpeechMenu?.setRecognitionAuthenticated?.(true);
         const account=globalThis.WMOFAccountSettings,owner=Number(event.detail?.user?.id);
         if(account&&owner&&(!account.loaded||account.owner!==owner))void (async()=>{
             try {
@@ -22331,6 +22339,7 @@
 
     function onDisconnected(event) {
         if (event.detail?.source === "disconnect") {
+            void globalThis.SpeechMenu?.setRecognitionAuthenticated?.(false);
             if (speechTrainingActive) {
                 stopInAppSpeechTraining({
                     forced: true
@@ -27199,6 +27208,9 @@
             }
         );
 
+    for (const action of ["toggleSync","changeSyncOverride","enableSyncOverride"])
+        globalThis.WMOFActionFunctions.setMetadata(action,{transaction:false,independent:true});
+
     globalThis.WMOFActionFunctions.setMetadata("changeSyncOverride", {
         parameters:[{name:"overrideAction",type:"choice",optional:true,values:["on","off"]}]
     });
@@ -27590,6 +27602,7 @@
                 );
             }
 
+            element.toggleAttribute("speech-independent", globalThis.WMOFActionFunctions.describe?.(actionName)?.independent === true);
             element.toggleAttribute("data-speech-state-command", !String(actionName).startsWith("read"));
             // Range and goal selections also retrieve server totals; they need
             // remote permission even when no trip data is being changed.
@@ -27927,6 +27940,14 @@
 
         syncSpeechTrainingControls();
 
+        SpeechMenu.events.addEventListener("speechRecognitionStatusChanged",event=>{
+            const detail=event.detail;
+            if(["login-countdown","login-timeout"].includes(detail.status)){
+                voiceLoginLease=detail;syncLoginRecognition();
+                if(detail.status === "login-countdown" && detail.remaining === 3 && loginIsOpen())
+                    announceVoiceLogin("Three seconds remaining for voice login.");
+            } else if(detail.status === "authenticated") {voiceLoginLease=undefined;syncLoginRecognition();}
+        });
         SpeechMenu.events.addEventListener(
             "started",
             () =>

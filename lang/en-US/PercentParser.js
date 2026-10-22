@@ -106,6 +106,19 @@ class EnglishSpokenPercentParser {
             return undefined;
         }
 
+        // Colloquial hundreds: "one twelve" = 112, "one twenty two" = 122.
+        // Pure digit sequences ("one two") were handled above and remain 12.
+        const leading = /^\d$/.test(words[0]) ? Number(words[0]) : this.#ones[words[0]];
+        if (leading >= 1 && leading <= 9 && words.length >= 2 && words.length <= 3 &&
+            !words.some(word => ["hundred","thousand"].includes(word))) {
+            const tail = words.slice(1);
+            let remainder;
+            if (tail.length === 1) remainder = /^\d{2}$/.test(tail[0]) ? Number(tail[0]) : this.#ones[tail[0]] ?? this.#tens[tail[0]];
+            else if (this.#tens[tail[0]] && this.#ones[tail[1]] >= 1 && this.#ones[tail[1]] <= 9)
+                remainder = this.#tens[tail[0]] + this.#ones[tail[1]];
+            if (remainder >= 10 && remainder <= 99) return leading * 100 + remainder;
+        }
+
         let total = 0;
         let current = 0;
 
