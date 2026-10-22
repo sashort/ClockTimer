@@ -19,6 +19,12 @@ const assert=require('node:assert/strict'),fixture=require('./order-filler-maste
   }});
   try{
    assert(await f.say('break start short break okay'));
+   // Recognition completion precedes the asynchronous command transaction.
+   // Assert its eventual result, as the full workflow does for this action.
+   await f.page.waitForFunction(()=>{
+    const interval=document.querySelector('#clockTimer').getActiveIntervalState();
+    return interval?.intervalType==='break' && interval?.breakType==='short' && !document.querySelector('#breakDialog').open;
+   });
    const heard=f.audioCases.at(-1).recognized;
    const interval=await f.page.evaluate(()=>document.querySelector('#clockTimer').getActiveIntervalState());
    assert.equal(interval?.intervalType,'break',`${wpm} wpm; heard ${heard}`);
@@ -27,6 +33,10 @@ const assert=require('node:assert/strict'),fixture=require('./order-filler-maste
    assert.equal(await f.page.evaluate(()=>WMOFCoordinator.lockCount),0);
    assert.deepEqual(f.errors,[]);
    console.log(`PASS ${wpm} wpm: short break selected and confirmed; heard ${heard}`);
+  }catch(error){
+   console.error('Short-break audio failure:',JSON.stringify({wpm,clips:f.audioCases.map(({text,recognized,events})=>({text,recognized,
+    events:events.filter((event,index)=>event.type!=='speechTranscriptScoped'||event.isFinal||event.transcript!==events[index-1]?.transcript)}))}));
+   throw error;
   }finally{await f.close();}
  }}finally{if(previous===undefined)delete process.env.CLOCKTIMER_SPEECH_RATE_WPM;else process.env.CLOCKTIMER_SPEECH_RATE_WPM=previous;}
 })().catch(error=>{console.error(error);process.exitCode=1;});
