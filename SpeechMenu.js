@@ -591,6 +591,12 @@ class SpeechMenu {
     static get modelReady() {return SpeechMenu.#modelReady;}
     static get started() { return (Boolean(SpeechMenu.#stream) || SpeechMenu.#externalCapture) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
+    static get captureListening() {
+        return SpeechMenu.started && (SpeechMenu.#recognizerBackend !== "web-speech" || SpeechMenu.#recognizer?.listening === true);
+    }
+
+    static get processingCapturedSpeech() {return SpeechMenu.#recognizer?.processingResult === true;}
+
     static get listeningSuspended() { return SpeechMenu.#listeningSuspensions > 0; }
     static get phrases() { return SpeechMenu.#phrases; }
     static get phraseGroups() { return SpeechMenu.#phraseGroups; }
@@ -3308,7 +3314,8 @@ class SpeechMenu {
             : SpeechMenu.#scopeTranscriptToCommands(rawTranscript, utterance);
 
         SpeechMenu.#emit("speechTranscriptScoped", {
-            utteranceId: id, rawTranscript, transcript, isFinal: Boolean(detail.isFinal)
+            utteranceId: id, rawTranscript, transcript, isFinal: Boolean(detail.isFinal),
+            backend: SpeechMenu.#recognizerBackend
         });
 
         if (!transcript) {
@@ -7133,6 +7140,7 @@ class SpeechMenu {
         recognizer.addEventListener("status",SpeechMenu.#onSherpaStatus);
         recognizer.addEventListener("utteranceEnded",SpeechMenu.#onSherpaUtteranceEnded);
         recognizer.addEventListener("alternatives",event=>SpeechMenu.#emit("speechRecognitionAlternatives",event.detail));
+        recognizer.addEventListener("resultTiming",event=>SpeechMenu.#emit("speechBrowserResultTiming",event.detail));
         recognizer.addEventListener("speechStart",()=>{
             if(SpeechMenu.#stopped || SpeechMenu.listeningSuspended){recognizer.ignoreUtterance();return;}
             if(SpeechMenu.#utterance?.committed || SpeechMenu.#utterance?.recognitionStopped)SpeechMenu.#finishUtterance("committed",false);

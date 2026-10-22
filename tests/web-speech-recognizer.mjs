@@ -5,7 +5,7 @@ class CustomEvent extends Event{constructor(type,{detail}={}){super(type);this.d
 class Native{
  static instances=[];
  constructor(){Native.instances.push(this);this.starts=0;}
- start(){this.starts++;queueMicrotask(()=>this.onstart?.());}
+ start(){this.starts++;queueMicrotask(()=>{this.onstart?.();this.onaudiostart?.();});}
  stop(){this.stopped=true;}
  abort(){this.aborted=true;}
  result(values){this.onresult?.({resultIndex:0,results:values.map(({final,texts})=>Object.assign(texts.map((transcript,i)=>({transcript,confidence:1-i*.1})),{isFinal:final}))});}

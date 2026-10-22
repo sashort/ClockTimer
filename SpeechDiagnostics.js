@@ -231,6 +231,7 @@
                 "utteranceTranscriptChanged",
                 "utteranceFinished",
                 "speechRecognitionTiming",
+                "speechBrowserResultTiming",
                 "speechVadChanged",
                 "speechCommandMatched",
                 "speechCommandExecuted",
@@ -351,6 +352,12 @@
                         detail.transcript || row.transcript;
                     break;
 
+                case "speechBrowserResultTiming":
+                    row.browserResultAt=detail.receivedAt;
+                    row.browserQueueMs=Math.max(row.browserQueueMs||0,Number(detail.queueMilliseconds)||0);
+                    row.browserSelectionMs=Math.max(row.browserSelectionMs||0,Number(detail.selectionMilliseconds)||0);
+                    row.browserAccepted=Boolean(detail.accepted);
+                    break;
                 case "speechRecognitionTiming":
                     if (detail.isFirstTranscript) {
                         row.firstMs =

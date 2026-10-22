@@ -35,6 +35,7 @@ jobs:
           node tests/fsm-loopback-feedback.mjs
           node tests/application-coordinator.mjs
           node tests/web-speech-recognizer.mjs
+          node tests/web-speech-recovery.mjs
           node tests/web-speech-command-selection.mjs
           node tests/speech-failfast.mjs
           node tests/owned-feedback-scope.mjs

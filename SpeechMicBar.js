@@ -9,6 +9,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         "utteranceStarted",
         "utteranceFinished",
         "utteranceTranscriptChanged",
+        "speechTranscriptScoped",
         "utteranceTranscribed",
         "utteranceCommitted",
         "speechCommandDigested",
@@ -5950,11 +5951,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 this.#clearLoadingProgress();
                 this.setAttribute(
                     "state",
-                    globalThis.SpeechMenu?.listeningSuspended
-                        ? "suspended"
-                        : globalThis.SpeechMenu?.muted
-                            ? "muted"
-                            : "listening"
+                    this.#listeningState()
                 );
                 this.clear();
                 break;
@@ -5996,11 +5993,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
             case "listeningResumed":
                 this.setAttribute(
                     "state",
-                    globalThis.SpeechMenu?.started
-                        ? globalThis.SpeechMenu?.muted
-                            ? "muted"
-                            : "listening"
-                        : "stopped"
+                    globalThis.SpeechMenu?.started ? this.#listeningState() : "stopped"
                 );
                 this.#showIdleText();
                 break;
@@ -6014,9 +6007,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 this.#codes.replaceChildren();
                 this.setAttribute(
                     "state",
-                    globalThis.SpeechMenu?.listeningSuspended
-                        ? "suspended"
-                        : "listening"
+                    this.#listeningState()
                 );
                 this.#showIdleText();
                 break;
@@ -6029,10 +6020,17 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 );
                 break;
             case "speechRecognitionStatusChanged":
+                if (["browser-starting", "browser-reconnecting"].includes(detail?.status)) {
+                    this.#clearLoadingProgress();
+                    const state=this.#listeningState();
+                    this.setAttribute("state", ["muted", "suspended"].includes(state) ? state :
+                        detail.status === "browser-starting" ? "starting" : "reconnecting");
+                    this.#showIdleText();
+                    break;
+                }
                 if (detail?.status === "browser-listening") {
                     this.#clearLoadingProgress();
-                    this.setAttribute("state", globalThis.SpeechMenu?.listeningSuspended
-                        ? "suspended" : globalThis.SpeechMenu?.muted ? "muted" : "listening");
+                    this.setAttribute("state", this.#listeningState());
                     const pending = this.#pendingTranscript();
                     if (pending) this.#showStreamingPhrase(pending);
                     else this.#showIdleText();
@@ -6105,11 +6103,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 if (detail?.id === this.#currentUtteranceId) {
                     this.setAttribute(
                         "state",
-                        globalThis.SpeechMenu?.listeningSuspended
-                            ? "suspended"
-                            : globalThis.SpeechMenu?.muted
-                                ? "muted"
-                                : "listening"
+                        this.#listeningState()
                     );
 
                     if (
@@ -6124,6 +6118,16 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                             globalThis.WMOFLanguagePack.text("b3a1644c-9bd5-451e-b159-2dbfb5ffcc18")
                         );
                     }
+                }
+                break;
+            case "speechTranscriptScoped":
+                // Web Speech has already selected a grammar-valid hypothesis.
+                // Publish it before UI/transaction barriers delay live planning.
+                if (detail?.backend === "web-speech" && detail.utteranceId === this.#currentUtteranceId &&
+                    detail.transcript && !globalThis.SpeechMenu?.muted) {
+                    this.#currentTranscript=detail.transcript;
+                    this.#currentTranscriptFinal=Boolean(detail.isFinal);
+                    this.#retainMatchedTranscript(detail);
                 }
                 break;
             case "utteranceTranscriptChanged":
@@ -6182,11 +6186,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
 
                     this.setAttribute(
                         "state",
-                        globalThis.SpeechMenu?.listeningSuspended
-                            ? "suspended"
-                            : globalThis.SpeechMenu?.muted
-                                ? "muted"
-                                : "listening"
+                        this.#listeningState()
                     );
                 }
                 break;
@@ -6442,12 +6442,20 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         );
     }
 
+    #listeningState() {
+        const speech=globalThis.SpeechMenu;
+        return speech?.muted ? "muted" : speech?.listeningSuspended ? "suspended" :
+            speech?.captureListening === false ? "reconnecting" : "listening";
+    }
+
     #showIdleText() {
         if (this.#retainedTranscript && !["muted", "stopped"].includes(this.state)) {
             this.#showStreamingPhrase(this.#retainedTranscript);
             return;
         }
         this.#showStatus(
+            this.state === "starting" ? globalThis.WMOFLanguagePack.text("d6c28b0f-dabd-4a67-9bf3-62209a2ce011") :
+            this.state === "reconnecting" ? globalThis.WMOFLanguagePack.text("ac117311-8c8b-41ac-bcdd-f1d0447a56b4") :
             this.state === "muted"
                 ? (
                     globalThis.WMOFLanguagePack.text("28e1bb49-d720-45b4-839b-aeeedebe3b2f") +

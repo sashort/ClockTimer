@@ -16,13 +16,13 @@ const root=path.resolve(__dirname,'..');
   const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
   const errors=[],requests=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>requests.push(new URL(request.url()).pathname));
   await page.addInitScript(()=>{
-   globalThis.nativeSpeechInstances=[];globalThis.captureCalls=0;
+   globalThis.nativeSpeechInstances=[];globalThis.captureCalls=0;globalThis.webSpeechAudioReady=true;
    globalThis.webSpeechShadows=new WeakMap();const attach=Element.prototype.attachShadow;
    Element.prototype.attachShadow=function(options){const shadow=attach.call(this,options);webSpeechShadows.set(this,shadow);return shadow;};
    if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia=async()=>{captureCalls++;throw Error('Web Speech must own capture');};
    globalThis.SpeechRecognition=class {
     constructor(){nativeSpeechInstances.push(this);this.results=[];}
-    start(){queueMicrotask(()=>this.onstart?.());}
+    start(){queueMicrotask(()=>{this.onstart?.();if(webSpeechAudioReady)this.onaudiostart?.();});}
     stop(){queueMicrotask(()=>this.onend?.());}
     abort(){}
     emit(texts,final=true){
@@ -99,8 +99,32 @@ const root=path.resolve(__dirname,'..');
   assert.equal(await page.evaluate(()=>webSpeechShadows.get(document.querySelector('#speechMicBar')).textContent.includes('browser-listening')),false,'native status is not rendered as a transcript');
   await page.evaluate(()=>SpeechMenu.wake());
   await page.evaluate(()=>nativeSpeechInstances.at(-1).onend?.());
-  await page.waitForTimeout(500);
+  await page.waitForFunction(()=>SpeechMenu.captureListening);
   assert.equal(await page.locator('#speechMicBar').getAttribute('state'),'listening','native restart updates the listening indicator');
+  const beforeRecovery=await page.evaluate(()=>nativeSpeechInstances.length);
+  await page.evaluate(()=>{webSpeechAudioReady=false;nativeSpeechInstances.at(-1).onerror({error:'network'});});
+  assert.equal(await page.locator('#speechMicBar').getAttribute('state'),'reconnecting','capture loss clears the listening indicator immediately');
+  await page.waitForFunction(count=>nativeSpeechInstances.length>count,beforeRecovery);
+  assert.equal(await page.evaluate(()=>SpeechMenu.captureListening),false,'service start without audio is not listening');
+  assert.equal(await page.locator('#speechMicBar').getAttribute('state'),'reconnecting');
+  await page.evaluate(()=>{webSpeechAudioReady=true;nativeSpeechInstances.at(-1).onaudiostart();});
+  await page.waitForFunction(()=>SpeechMenu.captureListening);
+  assert.equal(await page.locator('#speechMicBar').getAttribute('state'),'listening');
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['diagnostic command'],true));
+  await page.waitForFunction(()=>webSpeechTestCalls===3);
+  await page.evaluate(()=>{
+   WebSpeechTest.delayed=()=>new Promise(resolve=>{globalThis.finishDelayedCommand=resolve;});
+   const command=document.createElement('speech-command');
+   command.setAttribute('speech-pattern','^delayed command$');
+   command.setAttribute('speech-function','WebSpeechTest.delayed');
+   command.setAttribute('speech-modal','system');document.body.append(command);SpeechMenu.refresh();
+   nativeSpeechInstances.at(-1).emit(['delayed command'],false);
+  });
+  await page.waitForFunction(()=>typeof finishDelayedCommand==='function');
+  assert(await page.evaluate(()=>webSpeechShadows.get(document.querySelector('#speechMicBar')).querySelector('#activity').textContent.includes('delayed command')),'validated transcript remains visible while action completion is pending');
+  await page.evaluate(()=>{nativeSpeechInstances.at(-1).emit(['delayed command'],true);finishDelayedCommand(true);});
+  await page.waitForTimeout(100);
+  assert(await page.evaluate(()=>webSpeechShadows.get(document.querySelector('#speechMicBar')).querySelector('#activity').textContent.includes('delayed command')),'final transcript is retained after processing completes');
   await page.evaluate(()=>SpeechMenu.stop());
   assert.equal(await page.evaluate(()=>SpeechMenu.started),false);
   assert.deepEqual(requests.filter(p=>/VoskRecognizer|VoskTestConfig|PocketSphinxRecognizer|SherpaRecognizer|SileroVad|SpeechAssetCacheWorker|\.wasm$|vosk-model/.test(p)),[],'no local recognition backend loads');

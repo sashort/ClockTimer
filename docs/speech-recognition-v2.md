@@ -667,3 +667,93 @@ and canonicalization, even when recognition already supplies numeric text.
 spoken, and invalid-value examples above. These probes assess parser behavior,
 not which transcript a real browser will return. The complete rendered attribute
 snapshot is `order-filler-speech-attributes-en-us.html` and its accompanying JSON.
+
+
+### Browser capture recovery contract for V2
+
+`BrowserSpeechSession` (in `WebSpeechRecognizer.js`) owns native capture lifecycle;
+`WebSpeechRecognizer` owns transcript snapshots, selection, and utterance finals;
+SpeechMenu owns command validity, state transitions, and effects. Recovering the
+microphone must never replay a command or bypass a state gate. Browser service
+start and actual audio capture are separate facts. `captureListening` is true
+only for an active service with capture evidence; `onaudiostart` or a current
+recognition result supplies that evidence. A service start by itself is insufficient.
+
+The session handles native `start`, `audiostart`, `audioend`, speech activity,
+results, errors, and end. Each attempt creates a fresh native recognizer and
+installs callbacks tied to that exact instance. Detachment clears callbacks and
+aborts the old instance, so late events cannot restart or feed a replacement.
+Configuration (locale, alternatives, interim/continuous mode, local-processing
+preference) is reapplied on every attempt.
+
+Recovery policy:
+
+- `network`, unexpected `aborted`, `audio-capture`, and `no-speech` recover.
+  An ordinary end also schedules a new session.
+- An audio-end event immediately clears capture readiness. If no end arrives,
+  a 1,000 ms grace watchdog replaces the interrupted session.
+- Every native start, including restarts, has a 10,000 ms capture-start watchdog.
+  Missing audio after a service start therefore cannot strand the adapter.
+- Restart backoff begins at 300 ms, doubles to a 5,000 ms ceiling, and stops
+  after six unsuccessful/unstable recovery attempts. A usable result or five
+  seconds of stable capture resets the failure count. No-speech is a normal
+  inactivity boundary rather than an accumulated service failure.
+- A missing final after an explicit finish has a 7,000 ms deadline; it settles
+  the old utterance and recovers capture. Alternative selection has a 10,000 ms
+  deadline so a stuck planner promise cannot permanently block the result queue.
+- Permission/service denial, unsupported configuration, and exhausted recovery
+  are fatal and visible. They do not loop permission requests. An explicit user
+  restart is needed after those failures.
+- Foreground return and persisted-page restoration replace potentially interrupted
+  sessions. An online event retries a session that is not listening. These hooks
+  are removed on close, and deliberate microphone off cancels all recovery timers.
+
+The Mic Bar maps native startup/recovery to localized starting/reconnecting text;
+raw transport labels are not transcripts. Wake/sleep and announcement suspension
+remain separate states. Neither unmute nor announcement completion can paint
+Listening while capture is unavailable. The application maps recovery to its
+existing starting state, preserving the existing shared FSM vocabulary. Recovery
+status is not proof of successful recognition of a particular spoken command.
+
+`tests/web-speech-recovery.mjs` uses virtual time and injected failures to check
+capture evidence, retries, missing end/final callbacks, restart watchdogs, stale
+callbacks, permissions, retry exhaustion, foreground restoration, deliberate off,
+and stuck selection. Browser integration checks verify the Mic Bar and successful
+command dispatch after recovery, including interruption during the initial login
+prompt. These are deterministic lifecycle tests, not acoustic accuracy evidence.
+The user's exact intermittent trigger remains unconfirmed; permanent closure on
+transient errors and absent restart watchdogs were independently found in code.
+
+
+### Matched browser transcripts and latency diagnosis
+
+The Mic Bar subscribes to `speechTranscriptScoped` for the Web Speech backend.
+Only a hypothesis already accepted by the command selector takes this path.
+Display it immediately, before later live-planning and UI/transaction barriers;
+keep the existing transcript timeout (two seconds by default). Command digestion
+applies any command-specific timeout override. Raw rejected alternatives remain
+out of the Mic Bar. Tests must inspect its visible `#activity` region: `#codes`
+is a separate argument display and is not evidence that a transcript was visible.
+
+Browser result timing is separate from command/announcement completion. The
+adapter emits `resultTiming`, forwarded as `speechBrowserResultTiming`, with the
+native callback receipt timestamp, queue wait, selector time, and acceptance flag.
+Speech Diagnostics retains these values in its exported rows. These measurements
+contain no extra transcript or credentials. They distinguish app-side backlog
+from delays before the browser delivers text. No server upload is added. Android
+may deliver a different sequence of interim/final callbacks than the deterministic
+test double; passing simulated login tests does not establish device latency.
+
+The shared percent row owns four grid tracks. Its Sync button remains positioned
+relative so layered arrows, pause/cloud/X overlays stay local to the fixed 40px
+button. Hidden Sync retains its exit animation while its track collapses to zero;
+text fitting uses the destination dimensions so animation cannot chase intermediate
+measurements. Grid, font-size, and icon transitions respect reduced motion.
+
+Already captured results keep their command eligibility while the adapter selects
+and delivers them, even if the browser has just ended capture. The adapter owns a
+scoped `processingResult` flag; SpeechMenu exposes it as `processingCapturedSpeech`.
+The application uses it only to admit pending captured input during recovery.
+Capture status remains separate: the Mic Bar can be reconnecting while retaining
+validated text until its normal TTL. A final-result-then-native-end login test
+protects this ordering. Deliberate off, sleep, and authorization gates still apply.

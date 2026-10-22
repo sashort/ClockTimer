@@ -23,7 +23,7 @@ const root=path.resolve(__dirname,'..');
    if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia=async()=>{captureCalls++;throw Error('Web Speech must own capture');};
    globalThis.SpeechRecognition=class {
     constructor(){nativeSpeechInstances.push(this);this.results=[];}
-    start(){queueMicrotask(()=>this.onstart?.());}
+    start(){queueMicrotask(()=>{this.onstart?.();this.onaudiostart?.();});}
     stop(){queueMicrotask(()=>this.onend?.());}
     abort(){}
     emit(texts,final=true){
@@ -52,7 +52,10 @@ const root=path.resolve(__dirname,'..');
 
   const id='zero zero four two okay',full=id+' one two three four okay';
   const cases=[
+   {name:'final result immediately followed by native end',endAfterResult:true,chunks:[[full,true]]},
+   {name:'automatic login startup',activate:true,chunks:[[id,false,true],[full,false],[full,true]]},
    {name:'cumulative interims',chunks:[[id,false,true],[full,false],[full,false],[full,true]]},
+   {name:'login prompt interrupted capture',interruptLogin:true,chunks:[[id,false],[full,false],[full,true]]},
    {name:'back-to-back interims',chunks:[[id,false],[full,false],[full,true]]},
    {name:'single final',chunks:[[full,true]]},
    {name:'separate final slots',chunks:[[id,true,true],['one two three four okay',true]]},
@@ -72,17 +75,23 @@ const root=path.resolve(__dirname,'..');
    await page.evaluate(async()=>{
     globalThis.loginSpeechEvents=[];
     for(const type of ['speechCommandDigested','speechCommandSkipped','speechStreamCommitted','speechCommandDispatched','speechCommandExecuted','speechTranscriptScoped','utteranceUnrecognized'])SpeechMenu.events.addEventListener(type,e=>loginSpeechEvents.push({type,utteranceId:e.detail?.utteranceId,reason:e.detail?.reason,commandId:e.detail?.commandId,executionContext:e.detail?.executionContext,transcript:e.detail?.transcript}));
-    await SpeechMenu.start('en-US');await WMOFActions.handleSpeechRuntimeStarted();
-    const bar=document.querySelector('#speechMicBar');bar.hidden=false;bar.promoteTopLayer();
    });
+   if(scenario.activate)await page.waitForFunction(()=>SpeechMenu.started&&!SpeechMenu.listeningSuspended);
+   else await page.evaluate(async()=>{await SpeechMenu.start('en-US');await WMOFActions.handleSpeechRuntimeStarted();const bar=document.querySelector('#speechMicBar');bar.hidden=false;bar.promoteTopLayer();});
    await page.waitForFunction(()=>SpeechMenu.started&&!SpeechMenu.listeningSuspended);
    assertFamily(await page.evaluate(()=>WMOFInteractionState.state),'LOGIN-ID',scenario.name+' starts at ID entry');
+   if(scenario.interruptLogin){
+    const before=await page.evaluate(()=>nativeSpeechInstances.length);
+    await page.evaluate(()=>{globalThis.loginPromptToken=SpeechMenu.registerSynthesizedSpeech('Please login via voice.');nativeSpeechInstances.at(-1).onerror({error:'audio-capture'});});
+    await page.waitForFunction(count=>nativeSpeechInstances.length>count&&SpeechMenu.captureListening,before);
+    await page.evaluate(()=>SpeechMenu.unregisterSynthesizedSpeech(loginPromptToken,{graceMilliseconds:0}));
+   }
    for(const [text,final,waitPin] of scenario.chunks){
-    await page.evaluate(({text,final})=>nativeSpeechInstances.at(-1).emit([text],final),{text,final});
+    await page.evaluate(({text,final,endAfterResult})=>{const native=nativeSpeechInstances.at(-1);native.emit([text],final);if(endAfterResult)native.onend?.();},{text,final,endAfterResult:scenario.endAfterResult});
     if(waitPin)await page.waitForFunction(()=>!document.querySelector('#loginPinRow').hidden,null,{timeout:5000});
    }
    try{await page.waitForFunction(()=>!document.querySelector('#loginDialog').open,null,{timeout:5000});}
-   catch(error){console.error(scenario.name,await page.evaluate(()=>({events:loginSpeechEvents,login:WMOFInteractionState.state.login})));throw error;}
+   catch(error){console.error(scenario.name,await page.evaluate(()=>({events:loginSpeechEvents,state:WMOFInteractionState.state,phrases:SpeechMenu.phraseGroups})));throw error;}
    assert.equal(loginPosts-postsBefore,1,scenario.name+': authenticates once');
    assertState(await page.evaluate(()=>WMOFInteractionState.state),{'login.phase':'closed'},scenario.name+' authentication closes the login state');
    const expectedContexts=scenario.contexts||['id','pin'];

@@ -6908,6 +6908,18 @@
       "id": "cfb701f2-6ad4-59d4-8a0d-e269a122b820",
       "text": "Order Filler Diagnostics",
       "default": "Order Filler Diagnostics"
+    },
+    "d6c28b0f-dabd-4a67-9bf3-62209a2ce011": {
+      "id": "d6c28b0f-dabd-4a67-9bf3-62209a2ce011",
+      "text": "Starting microphone…",
+      "source": "SpeechMicBar.js",
+      "default": "Starting microphone…"
+    },
+    "ac117311-8c8b-41ac-bcdd-f1d0447a56b4": {
+      "id": "ac117311-8c8b-41ac-bcdd-f1d0447a56b4",
+      "text": "Reconnecting microphone…",
+      "source": "SpeechMicBar.js",
+      "default": "Reconnecting microphone…"
     }
   }
 }

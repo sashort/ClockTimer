@@ -16968,7 +16968,7 @@
         const editor = interactionStateReady ? numberPadState : undefined;
         const prompt = interactionStateReady ? speechBreakPromptState : undefined;
         const range = getTripLogRange();
-        const speechRecognition = speechActivationPending || (globalThis.SpeechMenu?.started && !globalThis.SpeechMenu?.modelReady) ? "starting"
+        const speechRecognition = speechActivationPending || (globalThis.SpeechMenu?.started && (!globalThis.SpeechMenu?.modelReady || (globalThis.SpeechMenu?.captureListening === false && !globalThis.SpeechMenu?.processingCapturedSpeech))) ? "starting"
             : !speechRecognitionEnabled() || !globalThis.SpeechMenu?.started ? "off"
             : speechRecognitionSuspended || globalThis.SpeechMenu?.listeningSuspended ||
                 !speechMicBar || speechMicBar.hidden || !popoverIsOpen(speechMicBar) ? "suspended"
