@@ -30,6 +30,7 @@ source=source.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', `
     static testScope(text){return SpeechMenu.#scopeTranscriptToCommands(text);}
     static testActive(){return SpeechMenu.#utterance;}
     static testTranscriptMode(mode){SpeechMenu.#recognizer.transcriptMode=mode;}
+    static testBackend(value){SpeechMenu.#recognizerBackend=value;}
     static testRecover(u,text){return SpeechMenu.#recoverOpenContinuationTranscript(u,text);}
     static testReset(){SpeechMenu.#clearPrimed();SpeechMenu.#finishedUtterances.clear();SpeechMenu.#utterance=undefined;}
     static testPrepare(element){return SpeechMenu.#prepare(element,true);}
@@ -103,6 +104,19 @@ const log=make(document.body,'log','^show log$','showLog',{'speech-modal':'top-l
 const hear=async(...args)=>{await speech.testTranscript(...args);await new Promise(setImmediate);};
 const fresh=()=>{speech.testReset();calls.length=0;errors.length=0;return speech.testBegin();};
 try {
+    speech.testBackend('vosk');
+    const provisional=fresh();
+    await hear(provisional,'show log');await provisional.digestQueue;
+    assert.deepEqual(calls,[],'a provisional terminal Vosk command has no UI effects');
+    await hear(provisional,'show log',true);await provisional.digestQueue;
+    assert.deepEqual(calls,[['log']],'the final terminal command executes once');
+    await speech.sleep();
+    const wake=make(document.body,'wake-test','^wake$','wake',{'speech-function':'SpeechMenu.wake','speech-modal':'system'});
+    const sleeping=fresh();
+    await hear(sleeping,'wake');assert(speech.muted,'a partial wake word cannot cross the sleep boundary');
+    await hear(sleeping,'wake',true);await sleeping.digestQueue;
+    assert.equal(speech.muted,false,'a final wake word can activate recognition');
+    wake.remove();speech.testBackend('sherpa');speech.testReset();
     const revision=fresh();
     revision.streamStack=[{source:'speech',baseTranscript:'three',status:'pending'}];
     speech.testTranscriptMode('cumulative');

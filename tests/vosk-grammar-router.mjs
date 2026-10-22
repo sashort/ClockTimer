@@ -24,7 +24,7 @@ const optionalValue = new Router({records:[{pattern:'^trip goal(?: (?<percent>.+
 await optionalValue.update('trip goal');
 assert(optionalValue.phrases.includes('one hundred ten'),'the matched optional value continuation is available');
 assert(!optionalValue.phrases.includes('four twelve'),'unrelated command captures cannot contaminate the selected continuation');
-assert.equal((await optionalValue.update('trip goal one hundred ten')).grammar,'number');
+assert.equal((await optionalValue.update('one hundred ten')).grammar,'number');
 const latePartial = new Router({records:[{pattern:'^trip goal(?: (?<percent>.+))?$'},
     {pattern:'^ready at (?<spokenTime>.+)$'}],valuePhrases:{number:['one hundred ten'],time:['four twelve']}});
 assert.equal((await latePartial.update('trip goal one hundred ten')).grammar,'number','routing cannot require a separate head-only partial');
@@ -106,8 +106,8 @@ class Decoder {
     on(event, callback) {this.listeners[event] = callback;}
     setWords() {}
     acceptWaveformFloat(pcm, rate) {this.audio.push({pcm: Array.from(pcm), rate});}
-    emit(text, final = false) {this.listeners[final ? 'result' : 'partialresult']({result: final ? {text} : {partial: text}});}
-    retrieveFinalResult() {this.emit(this.finalText ?? 'twenty minutes', true);}
+    emit(text, final = false) {this.lastText=text;this.listeners[final ? 'result' : 'partialresult']({result: final ? {text,result:this.finalWords??text.split(' ').filter(Boolean).map((word,index)=>({word,start:index*.0001,end:(index+1)*.0001}))} : {partial: text}});}
+    retrieveFinalResult() {this.emit(this.finalText ?? this.lastText ?? '', true);}
     remove() {this.removed = true;}
 }
 const recognizer = new Recognizer({model: {KaldiRecognizer: Decoder}, overlapMilliseconds: 1,
@@ -124,14 +124,15 @@ await flush();
 assert.equal(decoders.length, 2);
 assert.equal(decoders[0].removed, true);
 assert.ok(!decoders[1].phrases.includes('microphone'), 'dummy does not expand the time collector');
-assert.deepEqual(decoders[1].audio[0].pcm, Array.from({length: 16}, (_, i) => (i + 16) / 100).map(Math.fround), 'only bounded rolling PCM tail is replayed');
+assert.deepEqual(decoders[1].audio[0].pcm, Array.from({length: 32}, (_, i) => i / 100).map(Math.fround), 'bounded replay preserves complete words instead of clipping a rolling tail');
+assert(decoders[1].phrases.includes('ready at four thirteen'),'the replay grammar includes the validated literal prefix');
 decoders[0].emit('stale old result');
 await flush();
 assert.ok(!transcripts.some(event => event.transcript.includes('stale')));
-decoders.at(-1).emit('four twelve standard time');
+decoders.at(-1).emit('ready at four twelve standard time');
 await flush();
-assert.ok(decoders.at(-1).phrases.includes('twenty minutes'));
-decoders.at(-1).emit('twenty minutes');
+assert.ok(decoders.at(-1).phrases.includes('ready at four twelve standard time twenty minutes'));
+decoders.at(-1).emit('ready at four twelve standard time twenty minutes');
 await flush();
 await recognizer.finishUtterance(42);
 assert.equal(transcripts.at(-1).isFinal, true);
@@ -140,18 +141,18 @@ assert.ok(transcripts.every(event => event.utteranceId === 42));
 assert.ok(switches.every(event => event.utteranceId === 42));
 assert.equal(errors.length, 0);
 await recognizer.beginUtterance(43);
-assert.deepEqual(decoders.at(-1).phrases, ['microphone', 'ready', 'ready at']);
+assert.deepEqual(decoders.at(-1).phrases, ['microphone', 'ready', 'ready at', '[unk]']);
 assert.equal(decoders.at(-1).audio.length, 0, 'overlap never leaks between utterances');
 await recognizer.abortUtterance(43);
 await recognizer.beginUtterance(44);
 await recognizer.accept(44, new Float32Array(32));
 decoders.at(-1).emit('ready at four twelve standard time twenty');
 await flush();
-decoders.at(-1).emit('minutes');
+decoders.at(-1).emit('ready at four twelve standard time twenty minutes');
 await flush();
 assert.equal(transcripts.at(-1).transcript, 'ready at four twelve standard time twenty minutes',
     'next-stage words decoded before the replay window are retained');
-decoders.at(-1).finalText = 'minutes';
+decoders.at(-1).finalText = 'ready at four twelve standard time twenty minutes';
 await recognizer.finishUtterance(44);
 assert.equal(transcripts.at(-1).transcript, 'ready at four twelve standard time twenty minutes');
 
@@ -169,13 +170,23 @@ assert.equal(transcripts.filter(event => event.utteranceId === 45 && event.isFin
     'pending audio endpoints cannot prematurely finalize the utterance');
 recognizer.close();
 
+const literalRecognizer = new Recognizer({model:{KaldiRecognizer:Decoder},
+    contextProvider:async(id,text)=>({records:text?[{pattern:'^log$'}]:[{pattern:'^week mode$'}]})});
+const terminalText=[];literalRecognizer.addEventListener('transcript',event=>terminalText.push(event.detail.transcript));
+await literalRecognizer.beginUtterance(46);decoders.at(-1).emit('week mode');await flush();
+assert(decoders.at(-1).phrases.includes('week mode'),'the original terminal remains available');
+assert(!decoders.at(-1).phrases.includes('week mode log'),'a provisional literal is not forced into replay');
+decoders.at(-1).emit('week');await flush();
+assert.equal(terminalText.at(-1),'week','uncommitted hypotheses remain revisable');
+literalRecognizer.close();
+
 // Sleeping vocabulary can recognize the dummy without translating it to Wake.
 const sleeping = new Recognizer({model:{KaldiRecognizer:Decoder},
     contextProvider:async()=>({records:[{pattern:'^wake$',action:'SpeechMenu.wake'}]})});
 const sleepingText=[];
 sleeping.addEventListener('transcript',event=>sleepingText.push(event.detail.transcript));
 await sleeping.beginUtterance(46);
-assert.deepEqual(decoders.at(-1).phrases,['microphone','wake']);
+assert.deepEqual(decoders.at(-1).phrases,['microphone','wake','[unk]']);
 decoders.at(-1).emit('microphone');await flush();
 assert.equal(sleepingText.at(-1),'microphone','dummy stays literal for the command layer to discard');
 decoders.at(-1).emit('wake');await flush();
@@ -197,7 +208,7 @@ for (const [seed,replayHead,tail,full,repeatedTail,repeatedFull] of [
  decoders.at(-1).emit(seed);await flush();
  const replayDecoder=decoders.at(-1);
  replayDecoder.emit(replayHead,true);await flush();
- assert.equal(replayTranscripts.at(-1),seed,'short replay endpoint preserves carried phrase: '+seed);
+ assert.equal(replayTranscripts.at(-1),replayHead,'a replay hypothesis can revise uncommitted words instead of appending an old seed: '+seed);
  replayDecoder.emit(tail);await flush();
  assert.equal(replayTranscripts.at(-1),full,'endpoint continuation never duplicates the seed: '+seed);
  replayDecoder.emit(tail,true);await flush();
@@ -210,6 +221,21 @@ for (const [seed,replayHead,tail,full,repeatedTail,repeatedFull] of [
  assert.equal(replayTranscripts.at(-1),repeatedFull,'never deduplicate genuine repeated number groups');
  replayRecognizer.close();
 }
+
+const capped = new Recognizer({model:{KaldiRecognizer:Decoder},maxUtteranceMilliseconds:1000,
+    contextProvider:async()=>({records:initial})});
+await capped.beginUtterance(92);
+await assert.rejects(capped.accept(92,new Float32Array(16001)),/bounded replay history/);
+capped.close();
+const badAlignment = new Recognizer({model:{KaldiRecognizer:Decoder},valuePhrases:values,
+    contextProvider:async()=>({records:initial})});
+const alignmentErrors=[];badAlignment.addEventListener('error',event=>alignmentErrors.push(event.detail));
+await badAlignment.beginUtterance(93);await badAlignment.accept(93,new Float32Array(32));
+decoders.at(-1).emit('ready at');await flush();
+decoders.at(-1).emit('wrong prefix');await flush();
+await badAlignment.finishUtterance(93);
+assert(alignmentErrors.some(error=>/revised a consumed prefix/.test(error.message)),'a replay that revises consumed words fails closed instead of splicing a guessed fragment');
+badAlignment.close();
 
 // An upstream worker model-load error must reject startup rather than leave
 // the browser microphone UI indefinitely waiting for a "load" event.

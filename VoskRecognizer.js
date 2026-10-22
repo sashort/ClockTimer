@@ -20,18 +20,22 @@
         #segment = "";
         #lastText = "";
         #pendingAudio = 0;
-        #seed = "";
         #reportedOmissions = 0;
+        #audioHistory = [];
+        #historySamples = 0;
 
         get transcriptMode() { return "cumulative"; }
 
         constructor({ model, modelUrl, runtimeUrl, modelLoadTimeoutMilliseconds = 120000,
-            sampleRate = 16000, overlapMilliseconds = 320,
+            sampleRate = 16000, overlapMilliseconds = 320, maxUtteranceMilliseconds = 60000,
             finalTimeoutMilliseconds = 5000, contextProvider, ...routerOptions } = {}) {
             super();
             if (sampleRate !== 16000) throw new Error("Vosk requires the 16 kHz SpeechAudioWorklet pipeline.");
+            if (!Number.isFinite(maxUtteranceMilliseconds) || maxUtteranceMilliseconds < 1000 || maxUtteranceMilliseconds > 300000)
+                throw new Error("Vosk replay history must be bounded between one second and five minutes.");
             if (typeof contextProvider !== "function") throw new Error("Vosk requires a SpeechMenu context provider.");
             this.sampleRate = sampleRate;
+            this.maxReplaySamples = Math.round(sampleRate * maxUtteranceMilliseconds / 1000);
             this.overlapSamples = Math.round(sampleRate * Math.max(0, Math.min(1000, overlapMilliseconds)) / 1000);
             this.finalTimeoutMilliseconds = finalTimeoutMilliseconds;
             this.contextProvider = contextProvider;
@@ -114,6 +118,7 @@
                 this.#dispose();
                 this.#id = id;
                 this.#overlap = new Float32Array();
+                this.#audioHistory = []; this.#historySamples = 0;
                 this.#segment = this.#lastText = "";
                 this.#finishing = false;
                 this.#reportedOmissions = 0;
@@ -133,9 +138,16 @@
             // Recognition-only dummy: give spoken "microphone" its own acoustic
             // target, including in the sleeping wake grammar. It has no action
             // or routing record, and never expands a numeric/value collector.
-            const phrases = this.#router.grammar === "commands" && !this.#router.confirmationLocked
+            const stagePhrases = this.#router.grammar === "commands" && !this.#router.confirmationLocked
                 ? [...new Set([...routedPhrases, "microphone"])].sort()
                 : routedPhrases;
+            const literalPrefix = this.#router.prefix;
+            const phrases = literalPrefix
+                ? [...new Set([literalPrefix,...stagePhrases.map(phrase => literalPrefix + " " + phrase)])]
+                : [...stagePhrases];
+            // Give out-of-grammar speech a rejection path instead of forcing
+            // every sound into an available command (especially a wake word).
+            if (this.#router.grammar === "commands" && !this.#router.confirmationLocked) phrases.push("[unk]");
             if (this.#router.unsupported.length > this.#reportedOmissions) {
                 this.dispatchEvent(new CustomEvent("status", {detail: {
                     status: "grammar-omissions", utteranceId: this.#id,
@@ -144,9 +156,6 @@
                 this.#reportedOmissions = this.#router.unsupported.length;
             }
             this.#dispose();
-            // Preserve any next-stage words already recognized by the old
-            // decoder. They may lie before the short replay window.
-            this.#seed = replay ? this.#router.text : "";
             this.#signature = JSON.stringify([this.#router.prefix, routedPhrases]);
             const generation = this.#generation;
             const decoder = this.#decoder = new this.#model.KaldiRecognizer(this.sampleRate, JSON.stringify(phrases));
@@ -164,8 +173,14 @@
                 void this.#enqueue(async () => {
                     if (generation !== this.#generation || this.#closed) return;
                     const text = message.result?.partial ?? message.result?.text ?? "";
-                    const stageText = this.#mergeSeed([this.#segment, text].filter(Boolean).join(" "));
-                    const prefix = this.#router.prefix;
+                    const decoderText = [this.#segment, text].filter(Boolean).join(" ");
+                    const consumed = this.#router.prefix;
+                    const agrees = prefix => !prefix || decoderText === prefix || decoderText.startsWith(prefix + " ");
+                    if (!agrees(consumed)) {
+                        if (final) {this.#finalResolve?.();this.dispatchEvent(new CustomEvent("error",{detail:{fatal:true,utteranceId:this.#id,message:"Final speech revised a consumed prefix."}}));}
+                        return;
+                    }
+                    const stageText = consumed ? decoderText.slice(consumed.length).trim() : decoderText;
                     const routed = await this.#router.update(stageText);
                     if (generation !== this.#generation || this.#closed) return;
                     this.#lastText = routed.transcript;
@@ -177,20 +192,10 @@
                         // Replacement caused by a projected vocabulary update
                         // also replays audio; the old decoder is fenced out.
                         this.#replace(true);
-                        this.dispatchEvent(new CustomEvent("status", {detail: {
-                            status: "grammar-switch", grammar: routed.grammar, utteranceId: this.#id,
-                            replaySamples: this.#overlap.length, prefix: this.#router.prefix
-                        }}));
-                    } else if (routed.stableHead && event === "partialresult") {
-                        // A terminal literal can disappear from the next partial
-                        // after rapid speech resumes. Carry that boundary until
-                        // the router consumes it; never deduplicate digit runs.
-                        this.#seed = stageText;
-                    } else if (event === "result" && this.#router.prefix === prefix) {
-                        // Keep endpoint accumulation decoder-local. The carried seed
-                        // may include words that this replay has not reached yet;
-                        // storing the merged text here would count those words
-                        // again when the next endpoint completes them.
+                        this.dispatchEvent(new CustomEvent("status",{detail:{status:"grammar-switch",grammar:routed.grammar,
+                            utteranceId:this.#id,prefix:this.#router.prefix,replaySamples:this.#historySamples}}));
+                    } else if (event === "result") {
+                        // Endpoints are local to this decoder's timed audio span.
                         this.#segment = [this.#segment, text].filter(Boolean).join(" ");
                     }
                 }).catch(() => {});
@@ -200,27 +205,15 @@
                     detail: {fatal: true, message: String(message.error || "Vosk decoder failed"), utteranceId: this.#id}
                 }));
             });
-            if (replay && this.#overlap.length) {
+            if (replay && this.#historySamples) {
+                const audio = new Float32Array(this.#historySamples);
+                let offset = 0;
+                for (const frame of this.#audioHistory) {
+                    audio.set(frame,offset);offset+=frame.length;
+                }
                 this.#pendingAudio++;
-                decoder.acceptWaveformFloat(this.#overlap.slice(), this.sampleRate);
+                decoder.acceptWaveformFloat(audio, this.sampleRate);
             }
-        }
-
-        #mergeSeed(text) {
-            if (!this.#seed) return text;
-            const seed = this.#seed.split(" ").filter(Boolean);
-            const words = text.split(" ").filter(Boolean);
-            // A replay partial/endpoint can stop partway through the seed.
-            // Preserve the known prefix until replay catches up to it.
-            if (words.length < seed.length && words.every((word, index) => word === seed[index]))
-                return this.#seed;
-            // This overlap is only the carried, uncommitted next-stage text,
-            // never the committed prefix (which can contain repeated digits).
-            for (let count = Math.min(seed.length, words.length); count > 0; count--) {
-                if (seed.slice(-count).join(" ") === words.slice(0, count).join(" "))
-                    return [...seed, ...words.slice(count)].join(" ");
-            }
-            return [...seed, ...words].join(" ");
         }
 
         accept(id, samples) {
@@ -228,6 +221,9 @@
             const pcm = new Float32Array(samples);
             return this.#enqueue(() => {
                 if (this.#closed || id !== this.#id || this.#finishing || !this.#decoder) return false;
+                if (this.#historySamples + pcm.length > this.maxReplaySamples)
+                    throw new Error("Vosk utterance exceeded the bounded replay history.");
+                this.#audioHistory.push(pcm); this.#historySamples += pcm.length;
                 const combined = new Float32Array(this.#overlap.length + pcm.length);
                 combined.set(this.#overlap); combined.set(pcm, this.#overlap.length);
                 this.#overlap = combined.slice(Math.max(0, combined.length - this.overlapSamples));
@@ -244,7 +240,7 @@
                 this.#finishing = true;
                 finished = new Promise((resolve, reject) => {
                     this.#finalResolve = resolve;
-                    timer = setTimeout(() => reject(new Error("Vosk final result timed out")), this.finalTimeoutMilliseconds);
+                    timer = setTimeout(() => reject(new Error(`Vosk final result timed out (${this.#pendingAudio} audio responses pending)`)), this.finalTimeoutMilliseconds);
                 });
                 this.#decoder.retrieveFinalResult();
             });
@@ -257,16 +253,17 @@
                 await this.#enqueue(() => {
                     if (id !== this.#id) return;
                     this.#dispose();
+                    this.#audioHistory = []; this.#historySamples = 0;
                     this.dispatchEvent(new CustomEvent("utteranceEnded", {detail: {utteranceId: id}}));
                 });
             }
         }
 
         abortUtterance(id) {
-            return this.#enqueue(() => { if (id === this.#id) { this.#dispose(); this.#overlap = new Float32Array(); } });
+            return this.#enqueue(() => { if (id === this.#id) { this.#dispose(); this.#overlap = new Float32Array(); this.#audioHistory = []; this.#historySamples = 0; } });
         }
         #dispose() { this.#generation++; this.#decoder?.remove(); this.#decoder = undefined; this.#finalResolve?.(); this.#finalResolve = undefined; }
-        close() { this.#closed = true; this.#dispose(); if (this.#ownsModel) this.#model?.terminate(); }
+        close() { this.#closed = true; this.#dispose(); this.#audioHistory = []; this.#historySamples = 0; if (this.#ownsModel) this.#model?.terminate(); }
     }
     globalThis.VoskRecognizer = VoskRecognizer;
 })();

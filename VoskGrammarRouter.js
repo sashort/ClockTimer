@@ -14,10 +14,12 @@
             this.text = "";
             this.unsupported = [];
             this.confirmationLocked = false;
+            this.optionalValue = false;
             this.setRecords(records);
         }
 
         setRecords(records) {
+            this.optionalValue = false;
             const compiled = globalThis.VoskPhraseListCompiler.compileStages(records, this.options);
             this.reportUnsupported(compiled.unsupported);
             this.paths = compiled.paths;
@@ -53,7 +55,7 @@
             return unique([...this.paths.flatMap(initialPhrases),
                 // A value-first command can finish without a pause before its
                 // literal suffix (for example "one hundred ten percent trip").
-                ...this.paths.flatMap(path => path.record.atomic !== "digits" && path.stages[0]?.grammar !== "commands" &&
+                ...this.paths.flatMap(path => path.stages[0]?.grammar !== "commands" &&
                     path.stages[1]?.grammar === "commands" ? path.stages[1].phrases : []),
                 ...continuations.flatMap(initialPhrases)]).sort();
         }
@@ -73,13 +75,13 @@
                 .map(path => ({ ...path, stages: path.stages.slice(1) }));
             // An extendable value is still the same collector, not the next
             // command. Keep compound duration fragments in the current stage.
-            this.continuations = suffixes.length ? suffixes : compiled.paths.filter(next =>
+            this.continuations = [...suffixes, ...compiled.paths.filter(next =>
                 this.grammar === "commands" || next.stages[0]?.grammar === "commands" ||
                 !this.paths.some(current => current.stages.length === 1 &&
                     (current.record.id && next.record.id
                         ? current.record.id === next.record.id
                         : current.record.pattern === next.record.pattern &&
-                            current.record.action === next.record.action && current.record.capture === next.record.capture)));
+                            current.record.action === next.record.action && current.record.capture === next.record.capture)))];
         }
 
         async update(hypothesis) {
@@ -128,7 +130,20 @@
                     const heads = unique(completed.flatMap(path => path.stages[0].phrases.filter(phrase => begins(text, phrase)))).sort((a, b) => b.length - a.length);
                     const head = heads[0];
                     const selected = completed.filter(path => path.stages[0].phrases.includes(head));
+                    // The final digit of an atomic group is still revisable.
+                    // Keep confirmation words audible in this decoder, and
+                    // route only once a following token establishes a boundary.
+                    if (text === head && selected.every(path => path.record.atomic === "digits")) break;
                     const types = unique(selected.map(path => path.stages[1]?.grammar || "terminal"));
+                    const values = types.filter(type => type !== "terminal");
+                    if (types.includes("terminal") && values.length === 1 && values[0] !== "commands") {
+                        this.consume(head);
+                        this.paths = selected.filter(path => path.stages.length > 1).map(path => ({...path,stages:path.stages.slice(1)}));
+                        this.grammar = values[0]; this.optionalValue = true;
+                        text = text.slice(head.length).trim();
+                        await this.project(text);
+                        continue;
+                    }
                     if (types.length !== 1 || types[0] === "terminal") {
                         // Only SpeechMenu can establish a boundary after a
                         // terminal command and choose its next context.
@@ -149,6 +164,7 @@
                     this.consume(head);
                     this.paths = selected.map(path => ({ ...path, stages: path.stages.slice(1) }));
                     this.grammar = types[0];
+                    this.optionalValue = false;
                     this.confirmationLocked = selected.every(path => path.record.atomic === "digits") && types[0] === "commands";
                     text = text.slice(head.length).trim();
                     // Ask SpeechMenu to project the next UI context using a
@@ -160,6 +176,12 @@
                 const values = unique(this.paths.flatMap(path => path.stages[0].phrases));
                 // Longest valid value first keeps teens/compound numbers intact.
                 const valid = values.filter(value => begins(text, value)).sort((a, b) => b.length - a.length);
+                if (this.optionalValue && !valid.length && text && this.continuations.some(path =>
+                    path.stages[0]?.grammar === "commands" && path.stages[0].phrases.some(phrase => begins(text, phrase) || begins(phrase, text)))) {
+                    this.paths = this.continuations.filter(path => path.stages[0]?.grammar === "commands");
+                    this.continuations = []; this.grammar = "commands"; this.optionalValue = false;
+                    continue;
+                }
                 let switched = false;
                 for (const value of valid) {
                     const tail = text.slice(value.length).trim();

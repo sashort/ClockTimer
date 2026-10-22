@@ -94,6 +94,35 @@ confirm in one utterance, checking the selected break type and released locks.
 Master failures also print their expected/heard synthetic phrase evidence in CI
 so failures can be diagnosed without exporting an entire artifact directory.
 
+### Decoder replay boundaries for Version 2
+
+Decoder replacement replays the complete bounded utterance PCM instead of a
+320 ms tail plus a guessed text seed. A tail can start inside a word; merging
+its hypothesis with an older seed can turn 110 into 610 or duplicate a duration.
+The replay grammar includes the consumed literal/value prefix. Decoder-local
+endpoints accumulate once, and the adapter strips the exact consumed prefix
+before passing the remaining hypothesis to the router. A revision of that
+consumed prefix fails closed; uncommitted words remain revisable.
+
+History defaults to 60 seconds (3.84 MB of mono Float32 PCM at 16 kHz), is
+configurable from 1 to 300 seconds, and is released on finish, abort and close.
+Exceeding the bound rejects the utterance. Full replay costs additional decoding
+work at each switch; a future native implementation can replace it with a
+sample-aligned handoff while retaining the same ownership and prefix contracts.
+
+An unambiguous optional-value head opens its typed collector while preserving
+head-only readback. Atomic digit groups stay revisable until a following token
+establishes their boundary. Vosk terminal command effects wait for a final result
+or an explicit following command; opening a declared continuation surface keeps
+its existing behavior. Sleep is an execution boundary: partial wake hypotheses
+cannot activate the UI. `[unk]` gives out-of-grammar sounds a rejection path
+instead of forcing every sound into an available command.
+
+The focused command-head audio regression also checks setting 110 percent and
+reading it back at all three delivery rates. The virtual audio fixture retains
+its AudioContexts throughout browser startup to prevent pending worklet promises
+from being collected; it still processes real PCM through VAD and Vosk.
+
 `CLOCKTIMER_SPEECH_DELIVERY=fast` selects one delivery rate. Voice masters default to
 real audio. `CLOCKTIMER_VOICE_INPUT=transcript` explicitly selects the older growing-
 text simulation for FSM-only debugging; diagnostics workers force `audio` for voice.

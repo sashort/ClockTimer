@@ -20,6 +20,11 @@ const fixture=require('./order-filler-master-fixture.cjs');
    assert(await f.say('trip mode'));
    const heard=f.audioCases.at(-1).recognized;
    assert.equal(await f.page.evaluate(()=>document.querySelector('#clockTimer').percentMode),'trip',`${wpm} wpm: trip mode; heard ${heard}`);
+   assert(await f.say('trip goal one hundred ten percent'));
+   assert.equal(await f.page.evaluate(()=>document.querySelector('#clockTimer').uiState.trip_goal_component.value),1.1,
+    `${wpm} wpm: 110 percent; heard ${f.audioCases.at(-1).recognized}`);
+   assert(await f.say('trip goal'));
+   assert.equal(await f.page.evaluate(()=>document.querySelector('#clockTimer').uiState.trip_goal_component.value),1.1,'goal readback does not change the value');
    assert.equal(await f.page.evaluate(()=>WMOFCoordinator.lockCount),0);
    assert.deepEqual(f.errors,[]);
    console.log(`PASS ${wpm} wpm: trip mode; heard ${heard}`);

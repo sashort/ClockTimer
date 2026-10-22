@@ -3682,6 +3682,10 @@ class SpeechMenu {
 
         SpeechMenu.#continuationSession(utterance).observe(transcript);
 
+        // Sleep is an execution boundary. A revisable partial wake word must
+        // not change the UI or expand recognition into the active commands.
+        if (SpeechMenu.#sleeping && !isFinal) return;
+
         const revision =
             ++utterance.transcriptRevision;
 
@@ -4302,6 +4306,13 @@ class SpeechMenu {
             (SpeechMenu.#isOpenEndedParameter(last.commandElement) &&
                 SpeechMenu.#typedContinuationViable(last.commandElement, last.segmentTranscript, true) !== false)) &&
             (!candidate.pending || !candidate.pending.hasCommandPrefix)) count--;
+        // A terminal command has no collector to open. Let its last words
+        // settle before applying effects; a following command still supplies
+        // an explicit boundary for earlier steps in the same utterance.
+        else if (SpeechMenu.#recognizerBackend === "vosk" && !isFinal && last && !candidate.pending &&
+            !last.commandElement.hasAttribute("speech-chain-next") &&
+            !last.commandElement.hasAttribute("speech-chain-surface") &&
+            !last.commandElement.hasAttribute("speech-chain-transition")) count--;
         if (isFinal && candidate?.invalid && last && SpeechMenu.#isOpenEndedParameter(last.commandElement) &&
             !SpeechMenu.#digestCandidates(last.nextContext, last.nextSurfaceStack).some(element =>
                 SpeechMenu.#hasExplicitCommandAnchor(element, candidate.remainder || ""))) count--;
