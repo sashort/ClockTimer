@@ -245,6 +245,7 @@ class SpeechMenu {
     static #captureNode;
     static #recognizer;
     static #recognizerBackend = "sherpa";
+    static #externalCapture = false;
     static #pocketSphinxGrammarNames = new Set(["commands"]);
     static #vad;
     static #pipeline = "raw";
@@ -586,7 +587,7 @@ class SpeechMenu {
     static get silenceTimeout() { return SpeechMenu.#silenceTimeout; }
     static get commitSilenceTimeout() { return SpeechMenu.#commitSilenceTimeout; }
     static get modelReady() {return SpeechMenu.#modelReady;}
-    static get started() { return Boolean(SpeechMenu.#stream) && !SpeechMenu.#stopped; }
+    static get started() { return (Boolean(SpeechMenu.#stream) || SpeechMenu.#externalCapture) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
     static get listeningSuspended() { return SpeechMenu.#listeningSuspensions > 0; }
     static get phrases() { return SpeechMenu.#phrases; }
@@ -1206,7 +1207,7 @@ class SpeechMenu {
     }
 
     static async start(language = "en-US", listSeparator = ",") {
-        if (!navigator.mediaDevices?.getUserMedia) {
+        if (globalThis.WMOF_SPEECH_BACKEND !== "web-speech" && !navigator.mediaDevices?.getUserMedia) {
             SpeechMenu.#emit("speechRecognitionFailed", {
                 error: "NotSupportedError",
                 message: "Microphone capture is not supported by this browser."
@@ -1237,6 +1238,7 @@ class SpeechMenu {
             let stream;
 
             try {
+                if(globalThis.WMOF_SPEECH_BACKEND === "web-speech")return await SpeechMenu.#startWebSpeech(generation);
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         echoCancellation: false,
@@ -3298,7 +3300,7 @@ class SpeechMenu {
                 [utterance.bargeInSeed, detail.transcript].filter(Boolean).join(" ")
             )
         );
-        const transcript = ["pocketsphinx", "vosk"].includes(SpeechMenu.#recognizerBackend)
+        const transcript = ["pocketsphinx", "vosk", "web-speech"].includes(SpeechMenu.#recognizerBackend)
             ? rawTranscript
             : SpeechMenu.#scopeTranscriptToCommands(rawTranscript, utterance);
 
@@ -4309,7 +4311,7 @@ class SpeechMenu {
         // A terminal command has no collector to open. Let its last words
         // settle before applying effects; a following command still supplies
         // an explicit boundary for earlier steps in the same utterance.
-        else if (SpeechMenu.#recognizerBackend === "vosk" && !isFinal && last && !candidate.pending &&
+        else if (["vosk", "web-speech"].includes(SpeechMenu.#recognizerBackend) && !isFinal && last && !candidate.pending &&
             !last.commandElement.hasAttribute("speech-chain-next") &&
             !last.commandElement.hasAttribute("speech-chain-surface") &&
             !last.commandElement.hasAttribute("speech-chain-transition")) count--;
@@ -6134,6 +6136,8 @@ class SpeechMenu {
                         .continuationPauseTimer =
                         undefined;
 
+                    if(SpeechMenu.#recognizerBackend==="web-speech" && SpeechMenu.#recognizer?.speechActive)return;
+
                     if (
                         SpeechMenu.#stopped ||
                         SpeechMenu.#utterance !==
@@ -7053,6 +7057,69 @@ class SpeechMenu {
                 expect: kind === "clock" ? "time" : kind === "percent" ? "number" : ["duration", "number", "digits", "date", "time"].includes(kind) ? kind : undefined};
         }).filter(record => record.pattern)};
     };
+
+    static async #startWebSpeech(generation) {
+        if(typeof globalThis.WebSpeechRecognizer!=="function")throw Error("The browser speech adapter is not loaded.");
+        const recognizer=new globalThis.WebSpeechRecognizer({language:SpeechMenu.#language,
+            ...globalThis.WMOF_WEB_SPEECH_CONFIG,selectHypothesis:SpeechMenu.#selectWebSpeechHypothesis});
+        SpeechMenu.#recognizer=recognizer;SpeechMenu.#recognizerBackend="web-speech";
+        recognizer.addEventListener("transcript",SpeechMenu.#onSherpaTranscript);
+        recognizer.addEventListener("error",event=>{
+            if(generation!==SpeechMenu.#sessionGeneration)return;
+            SpeechMenu.#onSherpaError(event);
+            if(event.detail?.fatal){
+                SpeechMenu.#externalCapture=false;SpeechMenu.#modelReady=false;SpeechMenu.#stopped=true;
+                void SpeechMenu.#releaseCapture();SpeechMenu.#emit("stopped",{deliberate:false});
+            }
+        });
+        recognizer.addEventListener("status",SpeechMenu.#onSherpaStatus);
+        recognizer.addEventListener("utteranceEnded",SpeechMenu.#onSherpaUtteranceEnded);
+        recognizer.addEventListener("alternatives",event=>SpeechMenu.#emit("speechRecognitionAlternatives",event.detail));
+        recognizer.addEventListener("speechStart",()=>{
+            if(SpeechMenu.#stopped || SpeechMenu.listeningSuspended){recognizer.ignoreUtterance();return;}
+            if(SpeechMenu.#utterance?.committed || SpeechMenu.#utterance?.recognitionStopped)SpeechMenu.#finishUtterance("committed",false);
+            if(!SpeechMenu.#utterance)SpeechMenu.#beginUtterance(performance.now());
+            else SpeechMenu.#cancelContinuationPause(SpeechMenu.#utterance);
+        });
+        recognizer.addEventListener("speechEnd",()=>{
+            const utterance=SpeechMenu.#utterance;if(!utterance)return;
+            utterance.continuationPauseStartedAt=performance.now();
+            if(SpeechMenu.#hasOpenContinuation(utterance))SpeechMenu.#armContinuationPauseDeadline(utterance);
+        });
+        await recognizer.start();
+        if(SpeechMenu.#stopped || generation!==SpeechMenu.#sessionGeneration){recognizer.close();return false;}
+        SpeechMenu.#externalCapture=true;SpeechMenu.#modelReady=true;
+        SpeechMenu.#emit("started",{language:SpeechMenu.#language,recognizer:"web-speech",pipeline:"browser",
+            captureSettings:{capture:"browser-owned"},silenceTimeout:SpeechMenu.#silenceTimeout,
+            commitSilenceTimeout:SpeechMenu.#commitSilenceTimeout,deliberate:true});
+        return true;
+    }
+
+    static async #selectWebSpeechHypothesis(id, hypotheses, {isFinal=false}={}) {
+        const utterance=SpeechMenu.#utterance?.id===id?SpeechMenu.#utterance:SpeechMenu.#finishedUtterances.get(id);
+        if(utterance?.segmentBarrier)await utterance.segmentBarrier;
+        if(!utterance || utterance.chainCanceled || utterance.digestFailed)return;
+        const continuing=Boolean(utterance.digestTranscript),context=continuing?utterance.digestContext:undefined;
+        const frames=continuing?utterance.digestSurfaceStack:SpeechMenu.#surfaceFrames();
+        const candidates=(continuing?SpeechMenu.#digestCandidates(context,frames):SpeechMenu.#availableCandidates())
+            .filter(SpeechMenu.#commandAllowedWhileSleeping);
+        // Sleeping does not search lower-ranked guesses for a way to wake.
+        for(const hypothesis of SpeechMenu.#sleeping?hypotheses.slice(0,1):hypotheses){
+            const normalized=SpeechMenu.#stripSynthesizedSpeech(SpeechMenu.#normalizeTranscript(hypothesis.text));
+            const text=continuing?SpeechMenu.#digestRemainder(utterance,normalized):normalized;
+            if(text===undefined || (!text&&!continuing))continue;
+            const probe={...utterance,digestClosed:true,digestIsFinal:isFinal,chainActive:false,
+                digestContext:context,digestSurfaceStack:frames,valueCollectors:new Map()};
+            const plan=text?await SpeechMenu.#planDigest(candidates,text.split(" ").filter(Boolean),probe):{steps:[],exact:true};
+            if(!plan || plan.invalid || (text&&!plan.steps?.length&&!plan.pending))continue;
+            if(isFinal && !plan.exact)continue;
+            // Alternatives may compete only as complete interpretations, not
+            // by fishing a command out of words discarded as background junk.
+            if(plan.steps?.some(step=>step.ignoredBefore))continue;
+            if(utterance.chainCanceled||utterance.digestFailed)return;
+            return {...hypothesis,text:normalized};
+        }
+    }
 
     static #commandStillAuthorized(element) {
         // Availability is checked before dispatch. A successful operation may
@@ -10160,6 +10227,7 @@ class SpeechMenu {
     }
 
     static async #releaseCapture() {
+        SpeechMenu.#externalCapture=false;
         SpeechMenu.#clearPrimed();
         if (SpeechMenu.#utterance) SpeechMenu.#utterance.chainCanceled = true;
         const captureNode =

@@ -364,6 +364,7 @@
     const speechAssetCacheReady =
         (async () => {
             if (
+                globalThis.WMOF_SPEECH_BACKEND === "web-speech" ||
                 !("serviceWorker" in navigator) ||
                 !globalThis.isSecureContext
             ) {
@@ -514,13 +515,14 @@
                             );
                         }
 
-                        if (!globalThis.SherpaRecognizer) {
+                        if (globalThis.WMOF_SPEECH_BACKEND !== "web-speech" && !globalThis.SherpaRecognizer) {
                             await loadClassicScript(
                                 "SherpaRecognizer.js"
                             );
                         }
 
                         if (
+                            globalThis.WMOF_SPEECH_BACKEND !== "web-speech" &&
                             speechPipeline === "silero" &&
                             !globalThis.SileroVad
                         ) {

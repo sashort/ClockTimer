@@ -3,7 +3,7 @@ name: Deploy to Lightsail
 on:
   push:
     branches:
-      - pocketsphinx-experiment
+      - web-speech-experiment
   workflow_dispatch:
 
 concurrency:
@@ -34,6 +34,8 @@ jobs:
           node tests/order-filler-state-contract.mjs
           node tests/fsm-loopback-feedback.mjs
           node tests/application-coordinator.mjs
+          node tests/web-speech-recognizer.mjs
+          node tests/web-speech-command-selection.mjs
           node tests/speech-failfast.mjs
           node tests/owned-feedback-scope.mjs
           node tests/speech-continuation-session.mjs
@@ -116,18 +118,10 @@ jobs:
         working-directory: tests
       - run: npx playwright install --with-deps chromium
         working-directory: tests
+      - run: node tests/web-speech-browser.cjs
       - run: node tests/login-fullscreen-browser.cjs
       - run: node tests/order-filler-master-touch.cjs
-      - run: python deploy/install_vosk_assets.py
       - run: node tests/diagnostic-speech-audio-test.cjs
-      - run: node tests/order-filler-acoustic-smoke.cjs
-        timeout-minutes: 5
-      - run: node tests/vosk-command-head-browser.cjs
-        timeout-minutes: 5
-      - run: node tests/vosk-break-selection-browser.cjs
-        timeout-minutes: 5
-      - run: node tests/order-filler-master-voice.cjs
-        timeout-minutes: 15
       - run: node tests/speech-continuation-browser.cjs
       - run: node tests/shared-modal-browser.cjs
       - run: node tests/hamburger-menu-coverage-browser.cjs
@@ -174,6 +168,7 @@ jobs:
           CLOCKTIMER_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=clocktimer_test;charset=utf8mb4
           CLOCKTIMER_TEST_PASSWORD: clocktimer-test
   deploy:
+    if: github.ref == 'refs/heads/web-speech-experiment'
     needs: [speech-tests, settings-browser, break-session-backend]
     runs-on: ubuntu-latest
 
@@ -205,7 +200,7 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             "$LAMP_USER@$LAMP_HOST" \
             'set -euo pipefail
-             DEPLOY_BRANCH=pocketsphinx-experiment
+             DEPLOY_BRANCH=web-speech-experiment
 
              if ! sudo -n /opt/bitnami/ctlscript.sh status mariadb; then
                echo "MariaDB is not running; starting it."
@@ -264,75 +259,7 @@ jobs:
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              echo "Database migrations and connectivity check passed."
 
-             python3 deploy/install_vosk_assets.py
-
-             SHERPA_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/runtime
-             SHERPA_VERSION=v1.13.7
-             SHERPA_PACKAGE=sherpa-onnx-wasm-simd-${SHERPA_VERSION}-en-asr-zipformer
-             SHERPA_RELEASE=https://github.com/k2-fsa/sherpa-onnx/releases/download/${SHERPA_VERSION}/${SHERPA_PACKAGE}.tar.bz2
-             mkdir -p "$SHERPA_DIR"
-
-             SHERPA_MISSING=false
-             for SHERPA_FILE in \
-               sherpa-onnx-asr.js \
-               sherpa-onnx-wasm-main-asr.js \
-               sherpa-onnx-wasm-main-asr.wasm \
-               sherpa-onnx-wasm-main-asr.data
-             do
-               if [ ! -s "$SHERPA_DIR/$SHERPA_FILE" ]; then
-                 SHERPA_MISSING=true
-               fi
-             done
-
-             if [ "$SHERPA_MISSING" = true ]; then
-               SHERPA_TMP=$(mktemp -d)
-               echo "Installing Sherpa ${SHERPA_VERSION} English streaming WASM runtime."
-               curl -fL --retry 5 --retry-delay 2 --connect-timeout 20 \
-                 -o "$SHERPA_TMP/${SHERPA_PACKAGE}.tar.bz2" "$SHERPA_RELEASE"
-               tar -xjf "$SHERPA_TMP/${SHERPA_PACKAGE}.tar.bz2" -C "$SHERPA_TMP"
-               for SHERPA_FILE in \
-                 sherpa-onnx-asr.js sherpa-onnx-wasm-main-asr.js \
-                 sherpa-onnx-wasm-main-asr.wasm sherpa-onnx-wasm-main-asr.data
-               do
-                 install -m 644 "$SHERPA_TMP/$SHERPA_PACKAGE/$SHERPA_FILE" "$SHERPA_DIR/$SHERPA_FILE"
-               done
-               rm -rf "$SHERPA_TMP"
-             fi
-
-             echo "Sherpa runtime assets:"
-             ls -lh "$SHERPA_DIR"/sherpa-onnx-*
-
-             VAD_DIR=/opt/bitnami/apache2/htdocs/speech/sherpa/vad
-             VAD_PACKAGE=sherpa-onnx-wasm-simd-${SHERPA_VERSION}-vad
-             VAD_RELEASE=https://github.com/k2-fsa/sherpa-onnx/releases/download/${SHERPA_VERSION}/${VAD_PACKAGE}.tar.bz2
-             mkdir -p "$VAD_DIR"
-
-             VAD_MISSING=false
-             for VAD_FILE in \
-               sherpa-onnx-vad.js sherpa-onnx-wasm-main-vad.js \
-               sherpa-onnx-wasm-main-vad.wasm sherpa-onnx-wasm-main-vad.data
-             do
-               if [ ! -s "$VAD_DIR/$VAD_FILE" ]; then VAD_MISSING=true; fi
-             done
-
-             if [ "$VAD_MISSING" = true ]; then
-               VAD_TMP=$(mktemp -d)
-               echo "Installing Sherpa ${SHERPA_VERSION} Silero VAD WASM runtime."
-               curl -fL --retry 5 --retry-delay 2 --connect-timeout 20 \
-                 -o "$VAD_TMP/${VAD_PACKAGE}.tar.bz2" "$VAD_RELEASE"
-               tar -xjf "$VAD_TMP/${VAD_PACKAGE}.tar.bz2" -C "$VAD_TMP"
-               for VAD_FILE in \
-                 sherpa-onnx-vad.js sherpa-onnx-wasm-main-vad.js \
-                 sherpa-onnx-wasm-main-vad.wasm sherpa-onnx-wasm-main-vad.data
-               do
-                 install -m 644 "$VAD_TMP/$VAD_PACKAGE/$VAD_FILE" "$VAD_DIR/$VAD_FILE"
-               done
-               rm -rf "$VAD_TMP"
-             fi
-
-             echo "Silero VAD runtime assets:"
-             ls -lh "$VAD_DIR"/sherpa-onnx-*
-
+             # Web Speech uses the browser service; no local recognition assets.
 
              LIVE_STREAM_SERVICE=/etc/systemd/system/clocktimer-live-stream.service
              LIVE_STREAM_APACHE_CONF=/opt/bitnami/apache2/conf/clocktimer-live-stream.conf
@@ -391,7 +318,13 @@ jobs:
         run: node tests/order-filler-post-deploy.cjs
         env:
           ORDER_FILLER_TEST_BASE_URL: https://wmof.sashort-apps.com/
+          CLOCKTIMER_DIAGNOSTICS_CATEGORY: press
           CLOCKTIMER_DIAGNOSTICS_TOKEN: ${{ secrets.CLOCKTIMER_DIAGNOSTICS_TOKEN }}
+      - name: Verify deployed Web Speech integration
+        run: node tests/web-speech-browser.cjs
+        env:
+          ORDER_FILLER_TEST_BASE_URL: https://wmof.sashort-apps.com/
+          CLOCKTIMER_TEST_EXPECTED_COMMIT: ${{ github.sha }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

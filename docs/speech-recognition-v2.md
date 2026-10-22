@@ -539,3 +539,26 @@ For an overdue regular break, `down`/`down time` and the new button call the sam
 `startDownTime` operation and backdate to the original buffered end. Availability
 must follow model policy across grammar refreshes, not button visibility. Keep
 intermediate trip-resumed announcements suppressed during this handoff.
+
+
+### Web Speech experiment: shared alternative selection
+
+The `web-speech-experiment` Order Filler page uses browser SpeechRecognition,
+without loading the Vosk recognizer or its model. The adapter requests multiple
+transcripts with one shared `maxAlternatives` limit (default 10, adjustable with
+`?speech-alternatives=10`). The browser may return fewer than requested.
+
+The shared command planner examines the returned hypotheses in rank order and
+selects a valid interpretation for the current application state. For example,
+returned `sink on`, `sync on`, `sink gone` can select `sync on` when available.
+This does not register `sink on` as an alias. Probing does not execute commands;
+normal command dispatch still validates the selected transcript. Sleeping does
+not search lower-ranked hypotheses for a wake command.
+
+There are no per-command alternative limits: `speech-max-alternatives` and
+`commandAlternatives` are not used. One shared limit applies to all commands.
+The adapter preserves interim revisions and consumes final result slots once.
+`tests/web-speech-recognizer.mjs` and `tests/web-speech-command-selection.mjs`
+verify these contracts using simulated browser results; they do not establish
+real acoustic recognition accuracy. Browser recognition may use a remote speech
+service. This adapter uses browser-owned microphone capture, not Vosk PCM input.

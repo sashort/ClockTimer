@@ -1,0 +1,84 @@
+// Integration contract only: native results are simulated, not acoustic evidence.
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const assert=require('node:assert/strict'),{chromium}=require('playwright');
+const root=path.resolve(__dirname,'..');
+(async()=>{
+ const server=http.createServer((req,res)=>{
+  const pathname=new URL(req.url,'http://localhost').pathname;
+  const file=path.resolve(root,'.'+pathname.replace(/\.php$/,'.html'));
+  if(!file.startsWith(root+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}
+  res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.html')?'text/html':'application/json');
+  res.end(fs.readFileSync(file));
+ });
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required']});
+ try{
+  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+  const errors=[],requests=[];page.on('pageerror',error=>errors.push(error.message));page.on('request',request=>requests.push(new URL(request.url()).pathname));
+  await page.addInitScript(()=>{
+   globalThis.nativeSpeechInstances=[];globalThis.captureCalls=0;
+   if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia=async()=>{captureCalls++;throw Error('Web Speech must own capture');};
+   globalThis.SpeechRecognition=class {
+    constructor(){nativeSpeechInstances.push(this);this.results=[];}
+    start(){queueMicrotask(()=>this.onstart?.());}
+    stop(){queueMicrotask(()=>this.onend?.());}
+    abort(){}
+    emit(texts,final=true){
+     this.results.push(Object.assign(texts.map((transcript,i)=>({transcript,confidence:1-i*.1})),{isFinal:final}));
+     this.onresult?.({resultIndex:this.results.length-1,results:this.results});
+    }
+   };
+  });
+  await page.route('**/api/**',async route=>{
+   if(new URL(route.request().url()).pathname.endsWith('.js'))return route.fallback();
+   return route.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[],trips:[],instruments:[],voices:[],accepted:true,tripId:41,eventId:1,events:[]}});
+  });
+  await page.route('**/api/audio/AudioEngine.js*',async route=>{
+   const response=await route.fetch();
+   await route.fulfill({response,body:await response.text()+`\nWMOFAudio.speak=(text,options={})=>{queueMicrotask(()=>options.onEnd?.());return true;};WMOFAudio.startSong=async()=>({hasChime:true,finished:Promise.resolve()});`});
+  });
+  const base=process.env.ORDER_FILLER_TEST_BASE_URL||`http://127.0.0.1:${server.address().port}/`;
+  if(process.env.CLOCKTIMER_TEST_EXPECTED_COMMIT){
+   const response=await page.request.get(new URL('build-version.json',base).href);
+   assert(response.ok());assert.equal((await response.json()).commit,process.env.CLOCKTIMER_TEST_EXPECTED_COMMIT,'deployed commit matches checkout');
+  }
+  await page.goto(new URL('order-filler.php',base).href);
+  await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));
+  assert.equal(await page.evaluate(()=>WMOF_SPEECH_BACKEND),'web-speech');
+  for(let i=0;i<4;i++)await page.locator(`[data-login-digit="id"][data-digit-index="${i}"]`).fill('0042'[i]);
+  await page.locator('#loginButton').click();
+  await page.waitForFunction(()=>!document.querySelector('#loginPinRow').hidden);
+  for(let i=0;i<4;i++)await page.locator(`[data-login-digit="pin"][data-digit-index="${i}"]`).fill('1234'[i]);
+  await page.locator('#loginButton').click();
+  await page.waitForFunction(()=>!document.querySelector('#loginDialog').open);
+
+  assert(await page.evaluate(()=>SpeechMenu.start('en-US')),'browser speech starts');
+  await page.waitForFunction(()=>SpeechMenu.started&&!SpeechMenu.listeningSuspended);
+  assert.equal(await page.evaluate(()=>nativeSpeechInstances.at(-1).maxAlternatives),10);
+  assert.equal(await page.evaluate(()=>captureCalls),0);
+  await page.evaluate(()=>{
+   globalThis.webSpeechTestCalls=0;globalThis.webSpeechTestTranscripts=[];globalThis.webSpeechTestEvents=[];
+   for(const type of ["speechRecognitionAlternatives","utteranceStarted","utteranceUnrecognized","speechMenuCommandError","speechRecognitionFailed","speechTranscriptScoped"])SpeechMenu.events.addEventListener(type,e=>webSpeechTestEvents.push({type,...e.detail}));
+   globalThis.WebSpeechTest={command(){webSpeechTestCalls++;return true;}};
+   const command=document.createElement('speech-command');
+   command.setAttribute('speech-pattern','^diagnostic command$');
+   command.setAttribute('speech-function','WebSpeechTest.command');command.setAttribute('speech-modal','system');document.body.append(command);
+   SpeechMenu.events.addEventListener('utteranceTranscriptChanged',event=>webSpeechTestTranscripts.push(event.detail.transcript));
+   SpeechMenu.refresh();nativeSpeechInstances.at(-1).emit(['diagnostic demand','diagnostic command']);
+  });
+  try{await page.waitForFunction(()=>webSpeechTestCalls===1,null,{timeout:5000});}catch(error){console.error(await page.evaluate(()=>({events:webSpeechTestEvents,enabled:SpeechMenu.executionEnabled,suspended:SpeechMenu.listeningSuspended,muted:SpeechMenu.muted})));throw error;}
+  assert(await page.evaluate(()=>webSpeechTestTranscripts.includes('diagnostic command')),'Mic Bar transcript events use the selected API result');
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).onresult?.({resultIndex:0,results:nativeSpeechInstances.at(-1).results}));
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(()=>webSpeechTestCalls),1,'final result not replayed');
+  await page.evaluate(()=>SpeechMenu.sleep());
+  await page.evaluate(()=>nativeSpeechInstances.at(-1).emit(['diagnostic command']));
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(()=>webSpeechTestCalls),1,'sleep blocks ordinary commands');
+  await page.evaluate(()=>SpeechMenu.stop());
+  assert.equal(await page.evaluate(()=>SpeechMenu.started),false);
+  assert.deepEqual(requests.filter(p=>/VoskRecognizer|VoskTestConfig|PocketSphinxRecognizer|SherpaRecognizer|SileroVad|SpeechAssetCacheWorker|\.wasm$|vosk-model/.test(p)),[],'no local recognition backend loads');
+  assert.deepEqual(errors,[]);
+  console.log('PASS browser-owned Web Speech startup, N-best command selection, Mic Bar transcript, final once, sleep boundary and zero local-model requests (simulated native results)');
+ }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
+})().catch(error=>{console.error(error);process.exitCode=1;});
