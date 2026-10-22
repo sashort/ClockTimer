@@ -31,7 +31,14 @@ class DiagnosticSpeechAudio {
    const NativeAudioContext=globalThis.AudioContext;
    const contexts=globalThis.diagnosticAudioContexts=[];
    globalThis.AudioContext=class extends NativeAudioContext{
-    constructor(options={}){super({...options,sinkId:{type:'none'}});contexts.push(this);}
+    constructor(options={}){
+     super({...options,sinkId:{type:'none'}});
+     // Keep the silent rendering graph alive while addModule initializes its
+     // worklet thread, before SpeechMenu connects the microphone graph.
+     const keepAlive=this.createConstantSource();keepAlive.offset.value=0;
+     keepAlive.connect(this.destination);keepAlive.start();
+     contexts.push({context:this,worklet:this.audioWorklet,keepAlive});
+    }
    };
    let context,destination,silence;
    async function ensure(){

@@ -122,6 +122,12 @@ The focused command-head audio regression also checks setting 110 percent and
 reading it back at all three delivery rates. The virtual audio fixture retains
 its AudioContexts throughout browser startup to prevent pending worklet promises
 from being collected; it still processes real PCM through VAD and Vosk.
+Each fixture context retains its worklet and runs a zero-valued source into the
+silent output sink while the microphone graph initializes. This keeps the
+headless render thread active across consecutive rate runs. The ID/PIN adapter
+fixture sends cumulative hypotheses and explicit final results, matching replay;
+it checks deferred digit boundaries, rejection of invalid confirmations and one
+login submission across repeated results.
 
 `node tests/login-fullscreen-browser.cjs` completes a deferred fullscreen request
 during PIN entry. SharedModal promotes its host without reopening Login, preserving

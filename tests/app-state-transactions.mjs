@@ -620,23 +620,29 @@ if(process.argv.includes('--voice-code-adapter')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
  window.eval(fs.readFileSync(new URL('../VoskRecognizer.js',import.meta.url),'utf8'));
- const decoders=[];class Decoder {constructor(rate,grammar){this.listeners={};this.phrases=JSON.parse(grammar);decoders.push(this);}on(event,fn){this.listeners[event]=fn;}setWords(){}acceptWaveformFloat(){}remove(){}emit(text){this.listeners.partialresult({result:{partial:text}});}}
- const u=window.SpeechMenu.testBegin();const recognizer=new window.VoskRecognizer({model:{KaldiRecognizer:Decoder},contextProvider:(id,text)=>window.SpeechMenu.testVoskContext(id,text)});
+ let acousticText="";const decoders=[];class Decoder {constructor(rate,grammar){this.listeners={};this.phrases=JSON.parse(grammar);decoders.push(this);}on(event,fn){this.listeners[event]=fn;}setWords(){}acceptWaveformFloat(){}remove(){}emit(text){acousticText=text;this.listeners.partialresult({result:{partial:text}});}retrieveFinalResult(){this.listeners.result({result:{text:acousticText}});}}
+ let u=window.SpeechMenu.testBegin();const recognizer=new window.VoskRecognizer({model:{KaldiRecognizer:Decoder},contextProvider:(id,text)=>window.SpeechMenu.testVoskContext(id,text)});
  const observed=[];window.SpeechMenu.testUseRecognizer(recognizer);recognizer.addEventListener('transcript',event=>{observed.push(event.detail.transcript);window.SpeechMenu.testResult(u,event.detail.transcript,event.detail.isFinal);});
  const adapterErrors=[];recognizer.addEventListener('error',event=>adapterErrors.push(event.detail.message));
  await recognizer.beginUtterance(u.id);
  const emit=async text=>{decoders.at(-1).emit(text);for(let i=0;i<20;i++)await new Promise(resolve=>setTimeout(resolve,10));await u.digestQueue;await u.segmentBarrier;await settle();};
  await emit('zero zero four two');
- assert.deepEqual(decoders.at(-1).phrases,['cancel','o k','okay','ok'].sort(),'ID confirmation decoder contains only OK and Cancel');
- await emit('okay');
+ assert(decoders.at(-1).phrases.includes('zero zero four two'),'the last digit remains revisable until a following token');
+ assert(decoders.at(-1).phrases.includes('okay'),'the first decoder can hear the confirmation');
+ await emit('zero zero four two okay');
+ await recognizer.finishUtterance(u.id);await u.digestQueue;await u.segmentBarrier;await settle();
  assert.equal(window.WMOFInteractionState.state.login.stage,'pin','adapter confirms ID');
+ u=window.SpeechMenu.testBegin();await recognizer.beginUtterance(u.id);
  await emit('one two three four day');
- assert.deepEqual(decoders.at(-1).phrases,['cancel','o k','okay','ok'].sort(),'PIN confirmation decoder excludes day and new digit runs');
- assert(!observed.at(-1).endsWith('day'),'unsupported pre-switch confirmation is re-decoded rather than carried into the narrow grammar');
+ const prefix='one two three four';
+ assert(decoders.at(-1).phrases.every(phrase=>phrase===prefix || phrase.startsWith(prefix+' ') && ['cancel','o k','okay','ok'].includes(phrase.slice(prefix.length+1))),
+  'PIN confirmation replay keeps its validated prefix and only OK/Cancel suffixes');
+ assert(!observed.at(-1).endsWith('day'),'unsupported confirmation is re-decoded rather than carried into the narrow grammar');
  assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,0,'day is never accepted as OK');
- await emit('okay');
+ await emit(prefix+' okay');
+ await recognizer.finishUtterance(u.id);await u.digestQueue;await u.segmentBarrier;await settle();
  assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'adapter submits on the first PIN OK');
- await emit('okay');
+ await emit(prefix+' okay');
  assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'duplicate partial cannot submit twice');
  assert.deepEqual(adapterErrors,[]);assert(!u.digestFailed);recognizer.close();
  console.log('PASS Vosk adapter consecutive ID and PIN confirmation');await window.happyDOM.close();process.exit(0);
