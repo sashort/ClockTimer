@@ -19900,7 +19900,7 @@
     function alignStatusIcons() {
         if (!scopeConnectionButton || scopeConnectionButton.hidden) return;
         const reference=scopeConnectionButton.getBoundingClientRect();const center=reference.left+reference.width/2;
-        for(const icon of [toggleSyncGoalButton,$(".deferred-trip-icon"),$("#endTimeGoalLock")]) {
+        for(const icon of [$(".deferred-trip-icon"),$("#endTimeGoalLock")]) {
             if(!icon || icon.hidden) continue;
             const parent=icon.offsetParent;if(!parent) continue;
             icon.style.left=`${center-parent.getBoundingClientRect().left-parent.clientLeft-icon.offsetWidth/2}px`;
