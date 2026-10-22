@@ -2,15 +2,23 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 
 /** Deterministic, audible input corpus; the recognizer never receives expected text. */
 class DiagnosticSpeechAudio {
- constructor({locale='en-US',voice=locale.toLowerCase(),wpm=160,directory}={}){
+ constructor({locale='en-US',voice=locale.toLowerCase(),wpm=160,directory,recordingsDirectory=process.env.CLOCKTIMER_SPEECH_RECORDINGS_DIRECTORY}={}){
   if(![90,160,240].includes(wpm))throw Error('Choose a reviewed speech delivery rate');
   this.locale=locale;this.voice=voice;this.wpm=wpm;
   this.directory=directory||path.join(__dirname,'artifacts/language-tests',locale.toLowerCase(),'audio');
-  this.ready=(async()=>{const {default:initialize}=await import('@echogarden/espeak-ng-emscripten');this.module=await initialize();this.synth=new this.module.eSpeakNGWorker();})();
+  this.recordingsDirectory=recordingsDirectory;
+  this.ready=recordingsDirectory?Promise.resolve():(async()=>{const {default:initialize}=await import('@echogarden/espeak-ng-emscripten');this.module=await initialize();this.synth=new this.module.eSpeakNGWorker();})();
  }
  async render(text){
   if(typeof text!=='string'||!text.trim()||text.length>512)throw Error('Invalid speech fixture text');
   await this.ready;
+  if(this.recordingsDirectory){
+   const delivery=({240:'fast',160:'medium'})[this.wpm];
+   const clip=require('./human-speech-audio.cjs').loadHumanClip({directory:this.recordingsDirectory,locale:this.locale,delivery,text});
+   const identity={format:1,engine:'human-recording',locale:this.locale,voice:this.voice,wpm:this.wpm,text,source:'human',sourceSha256:clip.sha256};
+   const key=crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex');fs.mkdirSync(this.directory,{recursive:true});const file=path.join(this.directory,key+'.wav');fs.writeFileSync(file,clip.wav);fs.writeFileSync(path.join(this.directory,key+'.json'),JSON.stringify({...identity,key,sampleRate:16000},null,2));
+   return {...identity,key,file,...clip};
+  }
   const identity={format:2,engine:'espeak-ng-emscripten',revision:'7ab07eba2d966ce45040c88d9be953e1d68640e7',locale:this.locale,voice:this.voice,wpm:this.wpm,text};
   const key=crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex');
   fs.mkdirSync(this.directory,{recursive:true});const file=path.join(this.directory,key+'.wav');
@@ -22,7 +30,7 @@ class DiagnosticSpeechAudio {
    const header=Buffer.alloc(44);header.write('RIFF');header.writeUInt32LE(pcm.length+36,4);header.write('WAVEfmt ',8);header.writeUInt32LE(16,16);header.writeUInt16LE(1,20);header.writeUInt16LE(1,22);header.writeUInt32LE(22050,24);header.writeUInt32LE(44100,28);header.writeUInt16LE(2,32);header.writeUInt16LE(16,34);header.write('data',36);header.writeUInt32LE(pcm.length,40);
    fs.writeFileSync(file,Buffer.concat([header,pcm]));fs.writeFileSync(path.join(this.directory,key+'.json'),JSON.stringify({...identity,key,sampleRate:22050,paddingMilliseconds:{leading:180,trailing:2000}},null,2));
   }
-  const wav=fs.readFileSync(file);return {...identity,key,file,wav,durationMilliseconds:(wav.length-44)/44100*1000,sha256:crypto.createHash('sha256').update(wav).digest('hex')};
+  const wav=fs.readFileSync(file);return {...identity,key,file,wav,source:'synthetic',durationMilliseconds:(wav.length-44)/44100*1000,sha256:crypto.createHash('sha256').update(wav).digest('hex')};
  }
  static async install(page){
   await page.addInitScript(()=>{

@@ -138,6 +138,8 @@ jobs:
       - run: node tests/login-fullscreen-browser.cjs
       - run: node tests/order-filler-master-touch.cjs
       - run: node tests/diagnostic-speech-audio-test.cjs
+      - run: node tests/human-speech-audio-test.cjs
+      - run: node tests/speech-recordings-browser.cjs
       - run: node tests/speech-continuation-browser.cjs
       - run: node tests/shared-modal-browser.cjs
       - run: node tests/hamburger-menu-coverage-browser.cjs
@@ -170,6 +172,8 @@ jobs:
       - run: php -l api/_core/order_filler_diagnostics.php
       - run: php tests/order-filler-diagnostics.php
       - run: php tests/diagnostics-jobs.php
+      - run: php tests/speech-recordings.php
+      - run: php tests/speech-recordings-api.php
       - run: php -l api/_core/trip_session_timing.php
       - run: php tests/trip-session-timing.php
       - run: php -l api/trips/index.php

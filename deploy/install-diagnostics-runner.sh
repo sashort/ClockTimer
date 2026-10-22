@@ -4,7 +4,7 @@ set -euo pipefail
 root=/var/lib/clocktimer/diagnostics
 node_root=/opt/clocktimer-diagnostics-node
 systemctl stop clocktimer-diagnostics.service 2>/dev/null || true
-install -d -o daemon -g daemon -m 700 "$root" "$root/jobs" "$root/browsers"
+install -d -o daemon -g daemon -m 700 "$root" "$root/jobs" "$root/browsers" "$root/recordings"
 if [ ! -x "$node_root/bin/node" ]; then
   case "$(uname -m)" in x86_64) arch=x64;; aarch64) arch=arm64;; *) echo 'Unsupported runner architecture'; exit 1;; esac
   temporary=$(mktemp -d)

@@ -1,0 +1,17 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__,2).'/api/_core/bootstrap.php';
+if(empty($_SERVER['HTTPS']) || strtolower((string)$_SERVER['HTTPS'])==='off')api_error('HTTPS is required.',403,'https_required');
+$authorization=existing_guarded_access([PERMISSION_DEVELOPER],ACCESS_TOKEN_SCOPE_DIAGNOSTICS);
+if($authorization===null && ($_SERVER['REQUEST_METHOD']??'GET')==='POST')$authorization=authorize_guarded_access([PERMISSION_DEVELOPER],ACCESS_TOKEN_SCOPE_DIAGNOSTICS,true);
+if($authorization===null)render_access_token_prompt('Record speech tests','Sign in as a developer/superuser or use a diagnostics access token.','recordings.php');
+header('Cache-Control: no-store');header('Referrer-Policy: no-referrer');
+if(isset($_GET['access_token']) || ($_SERVER['REQUEST_METHOD']??'GET')==='POST'){header('Location: recordings.php',true,303);exit;}
+header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'");
+header('Permissions-Policy: microphone=(self)');
+?><!doctype html><html lang="en-US"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Record speech tests</title>
+<style>body{margin:0;background:#081522;color:#dfebf7;font:16px system-ui}main{max-width:760px;margin:32px auto;padding:0 20px}section{background:#102235;border:1px solid #29455c;border-radius:10px;padding:22px;margin:20px 0}h1{font-size:27px}label{display:inline-grid;gap:6px;margin:0 15px 12px 0}input,select,button{font:inherit;background:#0b1b2b;color:inherit;border:1px solid #46657c;border-radius:5px;padding:10px}button{cursor:pointer;margin:5px}button:disabled{opacity:.4;cursor:default}#record{background:#7d2938}#save{background:#1b644e}blockquote{font-size:28px;line-height:1.5;margin:20px 0;padding:15px;border-left:3px solid #78c8ec}.muted{color:#a2b7ca}#status{min-height:28px}#status.error{color:#ffb0ba}audio{display:block;width:100%;margin:16px 0}audio[hidden]{display:none}a{color:#8cd1f1}progress{width:100%}.actions{display:flex;flex-wrap:wrap;gap:6px}</style>
+<main><a href="./">← Diagnostics</a><h1>Record speech tests</h1><p>Read each phrase naturally. Replay your take, then save it for recognition tests.</p>
+<section><label>Language / region<input id="locale" value="en-US" autocomplete="off"></label><label>Delivery<select id="delivery"><option value="fast">Fast · naturally quick</option><option value="medium">Medium · comfortable pace</option></select></label><button id="load">Load script</button><p id="instructions" class="muted"></p><div id="coverage"></div><progress id="progress" value="0" max="31"></progress></section>
+<section><div id="position" class="muted">Loading script…</div><blockquote id="prompt"></blockquote><div class="actions"><button id="previous" disabled>Previous</button><button id="next" disabled>Next</button><button id="record" disabled>Record</button><button id="stop" disabled>Stop recording</button></div><audio id="playback" controls hidden></audio><button id="save" disabled>Save take</button><p id="status" role="status" aria-live="polite"></p><p class="muted">Nothing uploads until you press Save take. Saving replaces the approved take for this phrase and delivery; earlier audio is retained privately. Use the displayed fixture ID and PIN, not your personal login.</p></section></main>
+<script src="/speech/RecordingWave.js" defer></script><script src="recordings.js" defer></script></html>
