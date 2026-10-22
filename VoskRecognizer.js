@@ -1,55 +1,34 @@
-/* vosk-browser adapter for SpeechMenu's existing 16 kHz worklet/VAD pipeline.
- * Runtime/model URLs are configured by the deployment, never silently replaced
- * by an unconstrained recognizer. Decoder replacement is an internal boundary. */
+/* Single-decoder Vosk adapter. Capture belongs to SpeechMenu's worklet;
+ * decoder endpoints are source spans, never application command boundaries. */
 (() => {
     "use strict";
     class VoskRecognizer extends EventTarget {
         static #runtimeLoads = new Map();
-        #model;
-        #ownsModel = false;
-        #decoder;
-        #router;
-        #id;
-        #generation = 0;
-        #queue = Promise.resolve();
-        #overlap = new Float32Array();
-        #signature = "";
-        #closed = false;
-        #finishing = false;
-        #finalResolve;
-        #segment = "";
-        #lastText = "";
-        #pendingAudio = 0;
-        #reportedOmissions = 0;
-        #audioHistory = [];
-        #historySamples = 0;
-
+        #model; #ownsModel = false; #decoder; #collector;
+        #id; #generation = 0; #slot = 0; #queue = Promise.resolve();
+        #closed = false; #finishRequested = false; #finishing = false;
+        #pendingAudio = 0; #finalResolve; #lastPartial;
         get transcriptMode() { return "cumulative"; }
-
-        constructor({ model, modelUrl, runtimeUrl, modelLoadTimeoutMilliseconds = 120000,
-            sampleRate = 16000, overlapMilliseconds = 320, maxUtteranceMilliseconds = 60000,
-            finalTimeoutMilliseconds = 5000, contextProvider, ...routerOptions } = {}) {
+        constructor({model, modelUrl, runtimeUrl, sampleRate = 16000,
+            modelLoadTimeoutMilliseconds = 120000, finalTimeoutMilliseconds = 5000,
+            getCollectionSession} = {}) {
             super();
-            if (sampleRate !== 16000) throw new Error("Vosk requires the 16 kHz SpeechAudioWorklet pipeline.");
-            if (!Number.isFinite(maxUtteranceMilliseconds) || maxUtteranceMilliseconds < 1000 || maxUtteranceMilliseconds > 300000)
-                throw new Error("Vosk replay history must be bounded between one second and five minutes.");
-            if (typeof contextProvider !== "function") throw new Error("Vosk requires a SpeechMenu context provider.");
+            if (sampleRate !== 16000) throw Error("Vosk requires the 16 kHz SpeechAudioWorklet pipeline.");
+            if (!Number.isFinite(finalTimeoutMilliseconds) || finalTimeoutMilliseconds <= 0)
+                throw RangeError("Vosk final result timeout must be positive.");
             this.sampleRate = sampleRate;
-            this.maxReplaySamples = Math.round(sampleRate * maxUtteranceMilliseconds / 1000);
-            this.overlapSamples = Math.round(sampleRate * Math.max(0, Math.min(1000, overlapMilliseconds)) / 1000);
             this.finalTimeoutMilliseconds = finalTimeoutMilliseconds;
-            this.contextProvider = contextProvider;
-            this.routerOptions = routerOptions;
+            this.getCollectionSession = getCollectionSession;
             this.ready = (async () => {
                 if (model) this.#model = model;
                 else {
                     if (runtimeUrl && typeof globalThis.Vosk?.createModel !== "function") {
-                        this.dispatchEvent(new CustomEvent("status", {detail: {status: "loading-runtime"}}));
+                        this.dispatchEvent(new CustomEvent("status", {detail:{status:"loading-runtime"}}));
                         await VoskRecognizer.#loadRuntime(runtimeUrl);
                     }
                     if (!modelUrl || typeof globalThis.Vosk?.createModel !== "function")
-                        throw new Error("Configure WMOF_VOSK_CONFIG.modelUrl and load vosk-browser before starting speech.");
-                    this.dispatchEvent(new CustomEvent("status", {detail: {status: "loading-model"}}));
+                        throw Error("Configure WMOF_VOSK_CONFIG.modelUrl and load vosk-browser before starting speech.");
+                    this.dispatchEvent(new CustomEvent("status", {detail:{status:"loading-model"}}));
                     this.#model = await VoskRecognizer.#loadModel(modelUrl, modelLoadTimeoutMilliseconds);
                     this.#ownsModel = true;
                 }
@@ -57,7 +36,6 @@
                 return this;
             })();
         }
-
         static #loadRuntime(url) {
             if (!this.#runtimeLoads.has(url)) {
                 const loading = new Promise((resolve, reject) => {
@@ -103,167 +81,121 @@
             });
         }
 
+
         #enqueue(task) {
             const result = this.#queue.then(task);
-            this.#queue = result.catch(error => {
-                this.dispatchEvent(new CustomEvent("error", {detail: {error, message: error.message, fatal: true, utteranceId: this.#id}}));
-            });
+            this.#queue = result.catch(error => this.dispatchEvent(new CustomEvent("error", {
+                detail:{error, message:error.message, fatal:true, utteranceId:this.#id}
+            })));
             return result;
         }
-
         beginUtterance(id) {
             return this.#enqueue(async () => {
                 await this.ready;
                 if (this.#closed) return;
+                this.#collector?.cancel();
                 this.#dispose();
                 this.#id = id;
-                this.#overlap = new Float32Array();
-                this.#audioHistory = []; this.#historySamples = 0;
-                this.#segment = this.#lastText = "";
-                this.#finishing = false;
-                this.#reportedOmissions = 0;
-                const context = await this.contextProvider(id);
-                this.#router = new globalThis.VoskGrammarRouter({
-                    valuePhrases: globalThis.VoskGrammarRouter.valuePhrases(),
-                    ...this.routerOptions, ...context,
-                    nextRecords: async text => (await this.contextProvider(id, text)).records
+                this.#slot = this.#pendingAudio = 0;
+                this.#finishRequested = this.#finishing = false;
+                this.#lastPartial = undefined;
+                this.#collector = this.getCollectionSession?.(id)?.valueCollector('vosk-segments', {id})
+                    || new globalThis.SpeechValueCollector({id});
+                // Omitting the grammar argument uses the model's full vocabulary.
+                // There is exactly one decoder; PCM is never replayed or merged.
+                const decoder = this.#decoder = new this.#model.KaldiRecognizer(this.sampleRate);
+                const generation = this.#generation;
+                const collector = this.#collector;
+                decoder.setWords(true);
+                for (const event of ['partialresult', 'result']) decoder.on(event, message => {
+                    if (this.#closed || generation !== this.#generation) return;
+                    const audioResponse = this.#pendingAudio > 0;
+                    if (audioResponse) this.#pendingAudio--;
+                    const final = this.#finishing && !audioResponse && event === 'result';
+                    void this.#enqueue(() => {
+                        if (this.#closed || generation !== this.#generation) return;
+                        const text = message.result?.partial ?? message.result?.text ?? '';
+                        if (event === 'partialresult' && text === this.#lastPartial) return;
+                        this.#lastPartial = event === 'partialresult' ? text : undefined;
+                        collector.update([{id:`${generation}:${this.#slot}`, text, final:event === 'result'}]);
+                        if (event === 'result') this.#slot++;
+                        if (final) collector.complete();
+                        this.dispatchEvent(new CustomEvent('transcript', {detail:{
+                            utteranceId:id, transcript:collector.transcript, isFinal:final,
+                            segmentFinal:event === 'result', segments:collector.segments
+                        }}));
+                        if (final) this.#finalResolve?.();
+                    }).catch(() => {});
                 });
-                this.#replace(false);
+                decoder.on('error', message => {
+                    if (!this.#closed && generation === this.#generation)
+                        this.dispatchEvent(new CustomEvent('error', {detail:{fatal:true,
+                            utteranceId:id, message:String(message.error || 'Vosk decoder failed')}}));
+                });
             });
         }
-
-        #replace(replay) {
-            const routedPhrases = this.#router.phrases;
-            if (!routedPhrases.length) throw new Error("No supported active Vosk command grammar.");
-            // Recognition-only dummy: give spoken "microphone" its own acoustic
-            // target, including in the sleeping wake grammar. It has no action
-            // or routing record, and never expands a numeric/value collector.
-            const stagePhrases = this.#router.grammar === "commands" && !this.#router.confirmationLocked
-                ? [...new Set([...routedPhrases, "microphone"])].sort()
-                : routedPhrases;
-            const literalPrefix = this.#router.prefix;
-            const phrases = literalPrefix
-                ? [...new Set([literalPrefix,...stagePhrases.map(phrase => literalPrefix + " " + phrase)])]
-                : [...stagePhrases];
-            // Give out-of-grammar speech a rejection path instead of forcing
-            // every sound into an available command (especially a wake word).
-            if (!literalPrefix && this.#router.grammar === "commands" && !this.#router.confirmationLocked) phrases.push("[unk]");
-            if (this.#router.unsupported.length > this.#reportedOmissions) {
-                this.dispatchEvent(new CustomEvent("status", {detail: {
-                    status: "grammar-omissions", utteranceId: this.#id,
-                    unsupported: this.#router.unsupported.slice(this.#reportedOmissions)
-                }}));
-                this.#reportedOmissions = this.#router.unsupported.length;
-            }
-            this.#dispose();
-            this.#signature = JSON.stringify([this.#router.prefix, routedPhrases]);
-            const generation = this.#generation;
-            const decoder = this.#decoder = new this.#model.KaldiRecognizer(this.sampleRate, JSON.stringify(phrases));
-            this.#segment = "";
-            this.#pendingAudio = 0;
-            decoder.setWords(true);
-            for (const event of ["partialresult", "result"]) decoder.on(event, message => {
-                if (generation !== this.#generation || this.#closed) return;
-                // vosk-browser uses "result" for both audio endpoints and
-                // retrieveFinalResult. Each submitted audio chunk produces one
-                // response; drain those before treating a result as final.
-                const audioResponse = this.#pendingAudio > 0;
-                if (audioResponse) this.#pendingAudio--;
-                const final = this.#finishing && !audioResponse && event === "result";
-                void this.#enqueue(async () => {
-                    if (generation !== this.#generation || this.#closed) return;
-                    const text = message.result?.partial ?? message.result?.text ?? "";
-                    const decoderText = [this.#segment, text].filter(Boolean).join(" ");
-                    const consumed = this.#router.prefix;
-                    const agrees = prefix => !prefix || decoderText === prefix || decoderText.startsWith(prefix + " ");
-                    if (!agrees(consumed)) {
-                        if (final) {this.#finalResolve?.();this.dispatchEvent(new CustomEvent("error",{detail:{fatal:true,utteranceId:this.#id,message:"Final speech revised a consumed prefix."}}));}
-                        return;
-                    }
-                    const stageText = consumed ? decoderText.slice(consumed.length).trim() : decoderText;
-                    const routed = await this.#router.update(stageText);
-                    if (generation !== this.#generation || this.#closed) return;
-                    this.#lastText = routed.transcript;
-                    this.dispatchEvent(new CustomEvent("transcript", {detail: {
-                        utteranceId: this.#id, transcript: this.#lastText, isFinal: final
-                    }}));
-                    if (final) { this.#finalResolve?.(); return; }
-                    if (!this.#finishing && JSON.stringify([this.#router.prefix, routed.phrases]) !== this.#signature) {
-                        // Replacement caused by a projected vocabulary update
-                        // also replays audio; the old decoder is fenced out.
-                        this.#replace(true);
-                        this.dispatchEvent(new CustomEvent("status",{detail:{status:"grammar-switch",grammar:routed.grammar,
-                            utteranceId:this.#id,prefix:this.#router.prefix,replaySamples:this.#historySamples}}));
-                    } else if (event === "result") {
-                        // Endpoints are local to this decoder's timed audio span.
-                        this.#segment = [this.#segment, text].filter(Boolean).join(" ");
-                    }
-                }).catch(() => {});
-            });
-            decoder.on("error", message => {
-                if (generation === this.#generation) this.dispatchEvent(new CustomEvent("error", {
-                    detail: {fatal: true, message: String(message.error || "Vosk decoder failed"), utteranceId: this.#id}
-                }));
-            });
-            if (replay && this.#historySamples) {
-                const audio = new Float32Array(this.#historySamples);
-                let offset = 0;
-                for (const frame of this.#audioHistory) {
-                    audio.set(frame,offset);offset+=frame.length;
-                }
-                this.#pendingAudio++;
-                decoder.acceptWaveformFloat(audio, this.sampleRate);
-            }
-        }
-
         accept(id, samples) {
-            // Copy before queuing: worklet buffers may be reused/transferred.
             const pcm = new Float32Array(samples);
             return this.#enqueue(() => {
-                if (this.#closed || id !== this.#id || this.#finishing || !this.#decoder) return false;
-                if (this.#historySamples + pcm.length > this.maxReplaySamples)
-                    throw new Error("Vosk utterance exceeded the bounded replay history.");
-                this.#audioHistory.push(pcm); this.#historySamples += pcm.length;
-                const combined = new Float32Array(this.#overlap.length + pcm.length);
-                combined.set(this.#overlap); combined.set(pcm, this.#overlap.length);
-                this.#overlap = combined.slice(Math.max(0, combined.length - this.overlapSamples));
+                if (this.#closed || id !== this.#id || !this.#decoder || this.#finishRequested) return false;
                 this.#pendingAudio++;
                 this.#decoder.acceptWaveformFloat(pcm, this.sampleRate);
                 return true;
             });
         }
-
         async finishUtterance(id) {
-            let finished, timer;
+            let finished, timer, resolveFinal;
             await this.#enqueue(() => {
-                if (id !== this.#id || !this.#decoder || this.#finishing) return;
-                this.#finishing = true;
+                if (this.#closed || id !== this.#id || !this.#decoder || this.#finishRequested) return;
+                this.#finishRequested = true;
                 finished = new Promise((resolve, reject) => {
-                    this.#finalResolve = resolve;
-                    timer = setTimeout(() => reject(new Error(`Vosk final result timed out (${this.#pendingAudio} audio responses pending)`)), this.finalTimeoutMilliseconds);
+                    resolveFinal = resolve;
+                    timer = setTimeout(() => reject(Error(`Vosk final result timed out (${this.#pendingAudio} audio responses pending)`)), this.finalTimeoutMilliseconds);
                 });
-                this.#decoder.retrieveFinalResult();
             });
             if (!finished) return;
-            try { await finished; }
+            const drain = async () => {
+                while (!this.#closed && id === this.#id && this.#decoder) {
+                    const ready = await this.#enqueue(() => {
+                        if (this.#closed || id !== this.#id || !this.#decoder) {resolveFinal(); return true;}
+                        if (this.#pendingAudio) return false;
+                        this.#finishing = true;
+                        this.#finalResolve = resolveFinal;
+                        this.#decoder.retrieveFinalResult();
+                        return true;
+                    });
+                    if (ready) return;
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+                resolveFinal();
+            };
+            try {await Promise.race([finished, drain().then(() => finished)]);}
             catch (error) {
-                this.dispatchEvent(new CustomEvent("error", {detail: {error, message: error.message, fatal: true, utteranceId: id}}));
+                this.dispatchEvent(new CustomEvent('error', {detail:{error, message:error.message, fatal:true, utteranceId:id}}));
             } finally {
                 clearTimeout(timer);
                 await this.#enqueue(() => {
                     if (id !== this.#id) return;
                     this.#dispose();
-                    this.#audioHistory = []; this.#historySamples = 0;
-                    this.dispatchEvent(new CustomEvent("utteranceEnded", {detail: {utteranceId: id}}));
+                    this.dispatchEvent(new CustomEvent('utteranceEnded', {detail:{utteranceId:id}}));
                 });
             }
         }
-
         abortUtterance(id) {
-            return this.#enqueue(() => { if (id === this.#id) { this.#dispose(); this.#overlap = new Float32Array(); this.#audioHistory = []; this.#historySamples = 0; } });
+            return this.#enqueue(() => {
+                if (id !== this.#id) return;
+                this.#collector?.cancel(); this.#dispose();
+            });
         }
-        #dispose() { this.#generation++; this.#decoder?.remove(); this.#decoder = undefined; this.#finalResolve?.(); this.#finalResolve = undefined; }
-        close() { this.#closed = true; this.#dispose(); this.#audioHistory = []; this.#historySamples = 0; if (this.#ownsModel) this.#model?.terminate(); }
+        #dispose() {
+            this.#generation++;
+            this.#decoder?.remove(); this.#decoder = undefined;
+            this.#finalResolve?.(); this.#finalResolve = undefined;
+        }
+        close() {
+            this.#closed = true; this.#collector?.cancel(); this.#dispose();
+            if (this.#ownsModel) this.#model?.terminate();
+        }
     }
     globalThis.VoskRecognizer = VoskRecognizer;
 })();

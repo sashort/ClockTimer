@@ -39,28 +39,21 @@ try {
         'new result enters horizontally');
     assert.equal(items()[0].style.zIndex, '1', 'docked results return above later incoming results');
     emit('utteranceStarted', {id: 41});
-    assert.deepEqual(texts(), ['second', 'first'], 'new utterances retain existing results');
-    emit('utteranceTranscriptChanged', {id: 41, transcript: 'show log ready at four', isFinal: false});
-    emit('speechCommandDigested', {utteranceId: 41, transcript: 'show log', consumedTranscript: 'show log'});
-    assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four', 'processed command leaves the active display');
-    emit('utteranceTranscriptChanged', {id: 41, transcript: 'show log ready at four twelve', isFinal: false});
-    assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four twelve', 'cumulative results retain only the unfinished value');
-    emit('speechRecognitionStatusChanged', {status: 'grammar-switch'});
-    assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four twelve', 'decoder grammar switches cannot replace the recognized words');
-    emit('speechRecognitionStatusChanged', {status: 'grammar-omissions'});
-    assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four twelve', 'decoder omission diagnostics cannot replace the recognized words');
-    emit('speechCommandExecuted', {utteranceId: 41, transcript: 'show log'});
-    emit('speechCommandMatched', {utteranceId:41, transcript:'show log', canonicalTranscript:'Log'});
-    emit('speechArgumentsPrepared', {utteranceId:41, arguments:['stale']});
-    assert.equal(shadow.querySelector('#activity').textContent, 'Ready At four twelve', 'late execution feedback cannot restore processed words');
-    assert.equal(shadow.querySelector('#codes').textContent, '', 'processed argument badges cannot return after pruning');
-
-    emit('utteranceStarted', {id: 44});
-    emit('utteranceTranscriptChanged', {id:44,transcript:'background noise'});
-    emit('speechSegmentSkipped', {utteranceId:44,transcript:'background noise',consumedTranscript:'background noise'});
-    emit('utteranceTranscriptChanged', {id:44,transcript:'background noisy words'});
-    assert.equal(shadow.querySelector('#activity').textContent,'','revised discarded noise cannot return as accumulated dictation');
-    assert.deepEqual(texts(),['second','first'],'discarding noise retains unrelated result columns');
+    emit('utteranceTranscriptChanged', {id:41,transcript:'show log ready at four',isFinal:false});
+    assert.equal(shadow.querySelector('#activity').textContent,'','raw hypotheses do not populate the command display');
+    emit('speechCommandBufferChanged',{text:'show log'});
+    assert.equal(shadow.querySelector('#activity').textContent,'show log','accepted command buffer is the displayed transcript');
+    emit('utteranceTranscriptChanged',{id:41,transcript:'show log ready at four twelve'});
+    emit('speechCommandMatched',{utteranceId:41,transcript:'ready at four twelve'});
+    emit('speechRecognitionStatusChanged',{status:'reconnecting'});
+    assert.equal(shadow.querySelector('#activity').textContent,'show log','hypotheses and reconnect status cannot replace accepted work');
+    emit('speechArgumentsPrepared',{utteranceId:41,arguments:['stale']});
+    assert.equal(shadow.querySelector('#codes').textContent,'','speculative argument badges never enter the display');
+    emit('speechCommandBufferChanged',{text:''});
+    emit('utteranceStarted',{id:44});
+    emit('utteranceTranscriptChanged',{id:44,transcript:'background noise'});
+    assert.equal(shadow.querySelector('#activity').textContent,'','discarded noise cannot accumulate');
+    assert.deepEqual(texts(),['second','first'],'noise leaves result columns intact');
 
     hold = true;
     bar.presentResponseTransition(snapshot('before'), snapshot('after'), {resultId: 'transition'});
@@ -79,27 +72,17 @@ try {
     await bar.clearResponse();
     assert.equal(bar.hasAttribute('has-response'), false);
 
-    const matched=window.document.createElement('speech-command');
-    matched.setAttribute('speech-transcript-timeout','30ms');
-    emit('utteranceStarted',{id:50});
-    emit('utteranceTranscriptChanged',{id:50,transcript:'sync on',isFinal:false});
-    emit('speechCommandDigested',{utteranceId:50,transcript:'sync on',consumedTranscript:'sync on',commandElement:matched});
-    assert.match(shadow.querySelector('#activity').textContent,/Sync On/i,'dispatched interim remains visible');
+    emit('speechCommandBufferChanged',{text:'sync on'});
     emit('utteranceTranscribed',{id:50,transcript:'sync on'});
     emit('utteranceCommitted',{id:50,transcript:'sync on'});
     emit('utteranceFinished',{id:50,committed:true});
-    assert.match(shadow.querySelector('#activity').textContent,/Sync On/i,'final and finish do not erase the retained match');
-    assert.equal(bar.getAttribute('transcript-state'),'retained');
-    await new Promise(resolve=>window.setTimeout(resolve,60));
-    assert.equal(bar.hasAttribute('transcript-state'),false,'matched transcript clears on its timeout');
-    assert.doesNotMatch(shadow.querySelector('#activity').textContent,/Sync On/i);
-    matched.setAttribute('speech-transcript-timeout','persistent');
+    assert.match(shadow.querySelector('#activity').textContent,/sync on/i,'final and finish do not erase buffer-owned text');
     emit('utteranceStarted',{id:51});
-    emit('utteranceTranscriptChanged',{id:51,transcript:'sync off'});
-    emit('speechCommandDigested',{utteranceId:51,transcript:'sync off',consumedTranscript:'sync off',commandElement:matched});
-    emit('utteranceStarted',{id:52});
-    assert.match(shadow.querySelector('#activity').textContent,/Sync Off/i,'new utterance retains a match until replaced or cleared');
-    bar.clear();assert.equal(bar.hasAttribute('transcript-state'),false,'explicit clear overrides persistent retention');
+    assert.match(shadow.querySelector('#activity').textContent,/sync on/i,'accepted work survives the next capture');
+    emit('speechCommandBufferChanged',{text:''});
+    assert.doesNotMatch(shadow.querySelector('#activity').textContent,/sync on/i,'buffer expiry clears the transcript');
+    emit('speechCommandBufferChanged',{text:'sync off'});
+    bar.clear();assert.doesNotMatch(shadow.querySelector('#activity').textContent,/sync off/i,'explicit clear overrides retained buffer display');
 
     // The parent schedules one TTL for each result, including dictation.
     const timers = new Map(); let timerId = 0;

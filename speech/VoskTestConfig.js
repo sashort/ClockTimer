@@ -7,7 +7,6 @@
     globalThis.WMOF_VOSK_CONFIG = {
         runtimeUrl: new URL("speech/vosk/runtime/vosk-0.0.8.js", document.baseURI).href,
         modelUrl: new URL("speech/vosk/models/vosk-model-small-en-us-0.15.tar.gz", document.baseURI).href,
-        overlapMilliseconds: 320,
         ...globalThis.WMOF_VOSK_CONFIG
     };
 })();

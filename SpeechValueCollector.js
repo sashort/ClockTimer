@@ -6,15 +6,22 @@
         #segments = new Map();
         #state = 'incomplete';
         #completed = false;
-        constructor({id, classify = () => ({status: 'incomplete'}), maxSegments = 64, continuation} = {}) {
+        #digitRange;
+        constructor({id, classify, maxSegments = 64, continuation, digitRange, toDigits = text => /^\d*$/.test(text.replace(/\s/g,'')) ? text.replace(/\s/g,'') : undefined} = {}) {
+            if (digitRange !== undefined && (!Array.isArray(digitRange) || digitRange.length !== 2 ||
+                !digitRange.every(Number.isInteger) || digitRange[0] < 1 || digitRange[1] < digitRange[0]))
+                throw RangeError('Digit range must be [minimum, maximum] with positive integer counts.');
+            this.#digitRange = digitRange && Object.freeze([...digitRange]);
             this.id = id;
-            this.classify = classify;
+            this.toDigits = toDigits;
+            this.classify = classify || (digitRange ? text => ({status:toDigits(text) == null ? 'malformed' : 'valid',value:toDigits(text)}) : () => ({status:'incomplete'}));
             this.maxSegments = maxSegments;
             this.continuation = continuation;
         }
         get transcript() { return [...this.#segments.values()].map(s => s.text).filter(Boolean).join(' '); }
         get status() { return this.#state; }
         get completed() { return this.#completed; }
+        get digitRange() { return this.#digitRange; }
         get segments() { return [...this.#segments.values()].map(s => Object.freeze({...s})); }
         project(segments) {
             const projected = new Map(this.#segments);
@@ -47,13 +54,24 @@
             for (const segment of this.#segments.values()) segment.sealed = true;
             return true;
         }
-        evaluate({boundary = false, canContinue = true, ...options} = {}) {
+        evaluate({boundary = false, canContinue, ...options} = {}) {
             if (this.#state === 'cancelled' || this.#completed) return Object.freeze({status: this.#state, transcript: this.transcript, settled: this.#completed});
-            const result = this.classify(this.transcript, {final: boundary, ...options}) || {status: 'incomplete'};
+            let result = this.classify(this.transcript, {final: boundary, ...options}) || {status: 'incomplete'};
+            if (this.#digitRange) {
+                const digits = this.toDigits(this.transcript);
+                if (digits !== undefined) {
+                    const [minimum, maximum] = this.#digitRange;
+                    const invalid = digits === null || !/^\d*$/.test(digits) || digits.length > maximum;
+                    const short = !invalid && digits.length < minimum;
+                    result = {...result, digitCount:digits?.length ?? 0,
+                        status:invalid || (short && boundary) ? 'malformed' : short ? 'incomplete' : result.status,
+                        canContinue:!invalid && digits.length < maximum};
+                }
+            }
             if (!['valid', 'incomplete', 'defer', 'malformed'].includes(result.status)) throw TypeError('Unknown value classification.');
             this.#state = result.status;
             return Object.freeze({...result, transcript: this.transcript,
-                settled: boundary || result.status === 'defer' || (result.status === 'valid' && !canContinue)});
+                settled: boundary || result.status === 'defer' || (result.status === 'valid' && !(canContinue ?? result.canContinue ?? true))});
         }
         complete(options = {}) {
             if (this.#completed || this.#state === 'cancelled') return undefined;

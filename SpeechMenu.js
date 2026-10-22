@@ -13,7 +13,7 @@ class SpeechCommandIndex {
         if (typeof Observer === 'function') {
             this.#observer = new Observer(records => this.#reconcile(records));
             this.#observer.observe(root, {subtree: true, childList: true, attributes: true,
-                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-skippable', 'speech-chain-context', 'speech-chain-next', 'speech-chain-surface', 'speech-chain-transition', 'speech-available',
+                attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-skippable', 'speech-chain-context', 'speech-chain-next', 'speech-command-chain-head', 'speech-chain-surface', 'speech-chain-transition', 'speech-available',
                     'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
                     'speech-preproc-field', 'speech-collect', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
         }
@@ -212,6 +212,7 @@ class SpeechMenu {
             onChange: detail => SpeechMenu.#emit("speechCommandBufferChanged",detail)
         });
     }
+    static get commandBufferSnapshot() { return SpeechMenu.#commandBuffer?.snapshot || []; }
     static #bufferTtl(element) {
         const raw=element?.getAttribute("speech-transcript-timeout") ?? element?.getAttribute("speech-response-timeout") ??
             document.querySelector('speech-mic-bar')?.getAttribute("speech-transcript-timeout");
@@ -458,6 +459,7 @@ class SpeechMenu {
                             "speech-open-ended",
                             "speech-chain-context",
                             "speech-chain-next",
+                            "speech-command-chain-head",
                             "speech-chain-surface",
                             "speech-chain-transition",
                             "speech-scope",
@@ -757,22 +759,26 @@ class SpeechMenu {
 
     static #valueContexts = new Map();
 
-    static registerValueContext(kind, classify) {
+    static registerValueContext(kind, classify, constraints = {}) {
         if (!kind || typeof classify !== "function") throw new TypeError("A value context requires a classifier.");
-        SpeechMenu.#valueContexts.set(kind, classify);
+        SpeechMenu.#valueContexts.set(kind, {classify, constraints});
     }
 
     static #classifySpeechValue(element, transcript, final = false, boundary) {
         const kind = element.getAttribute("speech-preproc-context");
-        const classify = SpeechMenu.#valueContexts.get(kind);
+        const registration = SpeechMenu.#valueContexts.get(kind);
+        const classify = registration?.classify;
         const field = element.getAttribute("speech-preproc-field");
         if (!classify || !field) return undefined;
         const pattern = new RegExp(element.getAttribute("speech-pattern"), "i");
         const value = pattern.exec(transcript)?.groups?.[field];
         if (value === undefined) return undefined;
         const prefix = boundary && pattern.exec(boundary.transcript)?.groups?.[field];
-        const result = classify(value, {final, boundary: prefix === undefined ? undefined :
-            {value: prefix, remainder: boundary.remainder}});
+        const collector = new globalThis.SpeechValueCollector({...registration.constraints,
+            classify:(text, options)=>classify(text, {...options,boundary:options.boundaryValue})});
+        collector.update([{id:'value',text:value,final:false}]);
+        const result = collector.evaluate({boundary:final,
+            ...(prefix === undefined ? {} : {boundaryValue:{value:prefix,remainder:boundary.remainder}})});
         if (!["valid", "incomplete", "malformed", "defer"].includes(result?.status))
             throw new TypeError("A value context must classify input as valid, incomplete, malformed or defer.");
         return {...result, element};
@@ -1348,7 +1354,10 @@ class SpeechMenu {
                 const recognizer = useVosk
                     ? new globalThis.VoskRecognizer({
                         ...globalThis.WMOF_VOSK_CONFIG,
-                        contextProvider: SpeechMenu.#voskContext
+                        getCollectionSession: id => {
+                            const owner = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
+                            return owner && SpeechMenu.#continuationSession(owner);
+                        }
                     })
                     : usePocketSphinx
                     ? new globalThis.PocketSphinxRecognizer(globalThis.WMOF_POCKETSPHINX_CONFIG)
@@ -4398,13 +4407,6 @@ class SpeechMenu {
             (SpeechMenu.#isOpenEndedParameter(last.commandElement) &&
                 SpeechMenu.#typedContinuationViable(last.commandElement, last.segmentTranscript, true) !== false)) &&
             (!candidate.pending || !candidate.pending.hasCommandPrefix)) count--;
-        // A terminal command has no collector to open. Let its last words
-        // settle before applying effects; a following command still supplies
-        // an explicit boundary for earlier steps in the same utterance.
-        else if (SpeechMenu.#recognizerBackend === "vosk" && !isFinal && last && !candidate.pending &&
-            !last.commandElement.hasAttribute("speech-chain-next") &&
-            !last.commandElement.hasAttribute("speech-chain-surface") &&
-            !last.commandElement.hasAttribute("speech-chain-transition")) count--;
         if (isFinal && candidate?.invalid && last && SpeechMenu.#isOpenEndedParameter(last.commandElement) &&
             !SpeechMenu.#digestCandidates(last.nextContext, last.nextSurfaceStack).some(element =>
                 SpeechMenu.#hasExplicitCommandAnchor(element, candidate.remainder || ""))) count--;
@@ -7398,6 +7400,11 @@ class SpeechMenu {
     }
 
     static #digestCanContinue(element, segment, candidates) {
+        // A complete opener may still lead into a projected command context.
+        // Only an explicit next command or a logical silence/final boundary
+        // settles a chain head; native decoder endpoints do not.
+        if (element.hasAttribute('speech-command-chain-head') &&
+            new RegExp(element.getAttribute('speech-pattern'), 'i').test(segment)) return true;
         return (SpeechMenu.#typedContinuationViable(element, segment, true) !== false &&
             SpeechMenu.#elementDirectContinuationDepth(element, segment) !== undefined) ||
             candidates.some(other => other !== element &&

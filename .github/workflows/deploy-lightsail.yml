@@ -105,6 +105,7 @@ jobs:
           node tests/spoken-time.mjs
           node tests/speech-value-preprocessor.mjs
           node tests/legacy-vosk-values.mjs
+          node tests/vosk-recognizer.mjs
           node tests/vosk-grammar-router.mjs
           node tests/vosk-speechmenu-context.mjs
           node tests/speech-grammar-context.mjs
@@ -121,6 +122,7 @@ jobs:
         working-directory: tests
       - run: npx playwright install --with-deps chromium
         working-directory: tests
+      - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
       - run: node tests/web-speech-login-browser.cjs
@@ -265,7 +267,8 @@ jobs:
              sudo -n /opt/bitnami/php/bin/php database/apply_admin_permissions.php
              echo "Database migrations and connectivity check passed."
 
-             # Web Speech uses the browser service; no local recognition assets.
+             # Full-vocabulary Vosk needs the verified same-origin runtime/model.
+             python3 deploy/install_vosk_assets.py --root speech/vosk
 
              LIVE_STREAM_SERVICE=/etc/systemd/system/clocktimer-live-stream.service
              LIVE_STREAM_APACHE_CONF=/opt/bitnami/apache2/conf/clocktimer-live-stream.conf

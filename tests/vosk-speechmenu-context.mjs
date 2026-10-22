@@ -107,7 +107,7 @@ try {
     speech.testBackend('vosk');
     const provisional=fresh();
     await hear(provisional,'show log');await provisional.digestQueue;
-    assert.deepEqual(calls,[],'a provisional terminal Vosk command has no UI effects');
+    assert.deepEqual(calls,[['log']],'a complete terminal Vosk command uses shared immediate dispatch');
     await hear(provisional,'show log',true);await provisional.digestQueue;
     assert.deepEqual(calls,[['log']],'the final terminal command executes once');
     await speech.sleep();

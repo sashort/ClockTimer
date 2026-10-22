@@ -73,7 +73,7 @@ const root=path.resolve(__dirname,'..');
   ];
   for(const scenario of cases.filter(c=>!process.env.LOGIN_TEST_CASE||c.name.includes(process.env.LOGIN_TEST_CASE))){
    const postsBefore=loginPosts;
-   await page.goto(new URL('order-filler.php',base).href);
+   await page.goto(new URL('order-filler.php?speech-backend=web-speech',base).href);
    await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));
    assert.equal(await page.evaluate(()=>WMOF_SPEECH_BACKEND),'web-speech');
    await page.evaluate(async()=>{
@@ -125,7 +125,7 @@ const root=path.resolve(__dirname,'..');
    console.log('PASS rapid ID/OK/PIN/OK: '+scenario.name);
   }
   failLogin=true;
-  await page.goto(new URL('order-filler.php',base).href);
+  await page.goto(new URL('order-filler.php?speech-backend=web-speech',base).href);
   await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu);
   await page.evaluate(async()=>{
    globalThis.failedLoginCommands=[];globalThis.failedLoginFinished=false;

@@ -49,6 +49,7 @@
     "test:vosk-phrase-list": "node vosk-phrase-list-compiler.mjs",
     "test:web-speech": "node web-speech-recognizer.mjs && node web-speech-recovery.mjs && node validated-command-buffer.mjs && node web-speech-command-selection.mjs && node web-speech-browser.cjs && node web-speech-login-browser.cjs && node web-speech-value-collection-browser.cjs",
     "test:vosk-router": "node vosk-grammar-router.mjs && node vosk-speechmenu-context.mjs",
+    "test:vosk-recognizer": "node vosk-recognizer.mjs && node vosk-collector-browser.cjs",
     "test:coordinator": "node application-coordinator.mjs && node async-command-lifecycle.mjs && node app-state-transactions.mjs --coordinator-end-trip",
     "test:order-filler:audio": "node order-filler-acoustic-smoke.cjs",
     "test:order-filler:audio-fixtures": "node diagnostic-speech-audio-test.cjs"

@@ -402,11 +402,15 @@ try {
     await longChain.digestQueue;
     assert.equal(calls.length,12,'chains are not limited by the former eight-step depth');
 
-    const breakRoot=make(document.body,'break','^break start$','breakStart',{'speech-chain-next':'break-choice'});
+    const breakRoot=make(document.body,'break','^break start$','breakStart',{'speech-chain-next':'break-choice','speech-command-chain-head':''});
     const choice=make(future,'choice','^(?<breakChoice>long|short|lunch)$','choice',{
-        'speech-chain-context':'break-choice','speech-chain-next':'break-confirm'});
+        'speech-chain-context':'break-choice','speech-chain-next':'break-confirm','speech-command-chain-head':''});
     const okay=make(future,'okay','^ok(?:ay)?$','okay',{'speech-chain-context':'break-confirm'});
     const b=fresh();
+    await hear(b,'break start');await b.digestQueue;
+    assert.deepEqual(calls,[],'explicit chain head waits for continuation or silence');
+    await hear(b,'break start lunch');await b.digestQueue;
+    assert.deepEqual(calls,[['break']],'break type remains a head while confirmation can follow');
     await hear(b,'break start lunch ok',true);await b.digestQueue;
     assert.deepEqual(calls,[['break'],['choice','lunch'],['okay']]);
     assert.equal(document.querySelectorAll('[primed]').length,0);

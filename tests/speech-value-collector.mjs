@@ -57,3 +57,21 @@ assert.equal(settled,0,'stale deadlines cannot complete cancelled values');
 assert.equal(owned.status,'cancelled');
 assert.throws(()=>owner.valueCollector('other'),/cancelled/);
 console.log('PASS shared values: duration, clock, percent, identity, revisions, pure alternatives, settlement, transfer and owned cancellation');
+
+for (const range of [[4,4],[8,8],[1,6],[1,4]]) {
+ const collector=new SpeechValueCollector({digitRange:range});
+ collector.update([{id:1,text:'0'.repeat(range[0]),final:false}]);
+ assert.equal(collector.evaluate().status,'valid','zero digits are structurally valid');
+ assert.equal(collector.evaluate().settled,range[0]===range[1]);
+ collector.update([{id:1,text:'0'.repeat(range[1]+1),final:false}]);
+ assert.equal(collector.evaluate().status,'malformed','overflow rejected');
+}
+const pin=new SpeechValueCollector({digitRange:[4,4]});
+pin.update([{id:1,text:'123',final:false}]);
+assert.equal(pin.evaluate().status,'incomplete');
+assert.equal(pin.evaluate({boundary:true}).status,'malformed');
+pin.update([{id:1,text:'0000',final:false}]);
+assert.equal(pin.evaluate().value,'0000','leading zeroes preserved');
+pin.update([{id:1,text:'hello',final:false}]);
+assert.equal(pin.evaluate().status,'malformed','non-digit input is not valid with undefined value');
+console.log('PASS explicit digit lengths: ID/PIN, credentials, durations, clock values, zeroes and overflow');

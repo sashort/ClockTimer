@@ -5902,6 +5902,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     }
 
     clear() {
+        this.#bufferTranscript = "";
         this.#clearRetainedTranscript();
         clearTimeout(
             this.#rejectedClearTimer
@@ -5927,6 +5928,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
             this.#subscriptions.push([type, listener]);
         }
 
+        this.#bufferTranscript = speechMenu.commandBufferSnapshot?.map(entry => entry.transcript).join(' ') || '';
         if (speechMenu.started) {
             this.setAttribute(
                 "state",
@@ -6041,7 +6043,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                     this.#clearLoadingProgress();
                     this.setAttribute("state", this.#listeningState());
                     const pending = this.#pendingTranscript();
-                    if (pending) this.#showStreamingPhrase(pending);
+                    if (pending) this.#showBufferedCommands(pending);
                     else this.#showIdleText();
                     break;
                 }
@@ -6104,7 +6106,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                         "state",
                         "utterance"
                     );
-                    if (this.#retainedTranscript) this.#showStreamingPhrase(this.#retainedTranscript);
+                    if (this.#bufferTranscript) this.#showBufferedCommands();
                     else this.#showWaveform();
                 }
                 break;
@@ -6129,149 +6131,11 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                     }
                 }
                 break;
-            case "speechTranscriptScoped":
-                // Web Speech has already selected a grammar-valid hypothesis.
-                // Publish it before UI/transaction barriers delay live planning.
-                if (detail?.backend === "web-speech" && detail.utteranceId === this.#currentUtteranceId &&
-                    detail.transcript && !globalThis.SpeechMenu?.muted) {
-                    this.#currentTranscript=detail.transcript;
-                    this.#currentTranscriptFinal=Boolean(detail.isFinal);
-                    this.#retainMatchedTranscript(detail);
-                }
-                break;
-            case "utteranceTranscriptChanged":
-                if (detail?.id === this.#currentUtteranceId) {
-                    this.#currentTranscript =
-                        detail.transcript || "";
-                    this.#currentTranscriptFinal =
-                        Boolean(
-                            detail.isFinal
-                        );
-
-                    if (
-                        !globalThis.SpeechMenu
-                            ?.muted
-                    ) {
-                        this.#showStreamingPhrase(
-                            this.#pendingTranscript()
-                        );
-                    }
-                }
-                break;
-            case "utteranceTranscribed":
-                if (detail?.id === this.#currentUtteranceId) {
-                    this.#currentTranscript =
-                        detail.transcript || "";
-                    this.#currentTranscriptFinal =
-                        true;
-                    if (
-                        !globalThis.SpeechMenu
-                            ?.muted
-                    ) {
-                        this.#showStreamingPhrase(
-                            this.#pendingTranscript()
-                        );
-                    }
-                }
-                break;
-            case "utteranceCommitted":
-                if (detail?.id === this.#currentUtteranceId) {
-                    this.#currentTranscript =
-                        detail.transcript ||
-                        this.#currentTranscript;
-                    this.#currentTranscriptFinal =
-                        true;
-
-                    if (
-                        this.getAttribute(
-                            "phase"
-                        ) !==
-                        "preprocessed"
-                    ) {
-                        this.#showStreamingPhrase(
-                            this.#pendingTranscript()
-                        );
-                    }
-
-                    this.setAttribute(
-                        "state",
-                        this.#listeningState()
-                    );
-                }
-                break;
             case "speechCommandBufferChanged":
                 this.#bufferTranscript=detail?.text||"";
                 if(!["muted","stopped"].includes(this.state)){
-                    if(this.#bufferTranscript)this.#showStreamingPhrase(this.#bufferTranscript);
+                    if(this.#bufferTranscript)this.#showBufferedCommands(this.#bufferTranscript);
                     else this.#showIdleText();
-                }
-                break;
-            case "speechCommandDigested":
-            case "speechSegmentSkipped":
-                if (detail?.utteranceId === this.#currentUtteranceId && detail.consumedTranscript) {
-                    this.#consumedTranscript = detail.consumedTranscript;
-                    // Discarded spans are consumed too. If ASR revises that
-                    // noise later, it must not reappear as pending dictation.
-                    if (detail.transcript) this.#consumedSegments.push(detail.transcript);
-                    this.removeAttribute("phase");
-                    this.#codes.replaceChildren();
-                    const pending = this.#pendingTranscript();
-                    if (pending) this.#showStreamingPhrase(pending);
-                    else if (type === "speechCommandDigested") this.#retainMatchedTranscript(detail);
-                    else this.#showWaveform();
-                }
-                break;
-            case "speechPreprocessed":
-                if (this.#consumedTranscript) break;
-                if (
-                    detail?.utteranceId ===
-                        this.#currentUtteranceId &&
-                    detail?.contextChange
-                ) {
-                    this.#showStreamingContext(
-                        detail
-                    );
-                }
-                break;
-            case "speechCommandMatched":
-            case "speechMenuMatched":
-                if (this.#consumedTranscript) break;
-                if (
-                    detail?.utteranceId ===
-                        this.#currentUtteranceId &&
-                    !detail?.provisional &&
-                    this.getAttribute("phase") !==
-                        "preprocessed"
-                ) {
-                    this.setAttribute(
-                        "phase",
-                        "matched"
-                    );
-
-                    if (
-                        detail
-                            ?.canonicalTranscript &&
-                        detail
-                            .canonicalTranscript !==
-                            detail.transcript
-                    ) {
-                        this.#showStreamingPhrase(
-                            detail
-                                .canonicalTranscript
-                        );
-                    }
-                }
-                break;
-            case "speechArgumentsPrepared":
-                if (this.#consumedTranscript) break;
-                if (
-                    detail?.utteranceId === this.#currentUtteranceId &&
-                    !detail?.provisional
-                ) {
-                    this.#showArguments(
-                        detail.arguments ||
-                        []
-                    );
                 }
                 break;
             case "utteranceUnrecognized":
@@ -6295,45 +6159,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                     );
                 }
                 break;
-            case "speechCommandExecuted":
-                if (this.#consumedTranscript) break;
-                if (
-                    detail?.utteranceId ===
-                    this.#currentUtteranceId
-                ) {
-                    const formatted =
-                        detail
-                            .canonicalTranscript ||
-                        detail.transcript ||
-                        this.#currentTranscript;
 
-                    this.#currentTranscriptFinal =
-                        true;
-
-                    this.setAttribute(
-                        "phase",
-                        "preprocessed"
-                    );
-
-                    if (
-                        detail
-                            ?.canonicalTranscript &&
-                        detail
-                            .canonicalTranscript !==
-                            detail.transcript
-                    ) {
-                        this.#showStreamingPhrase(
-                            formatted
-                        );
-                    }
-                    else {
-                        this.#showPreprocessed(
-                            this.#currentTranscript,
-                            formatted
-                        );
-                    }
-                }
-                break;
         }
 
         if (this.trainingMode) {
@@ -6466,11 +6292,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
 
     #showIdleText() {
         if(this.#bufferTranscript && !["muted","stopped"].includes(this.state)){
-            this.#showStreamingPhrase(this.#bufferTranscript);return;
-        }
-        if (this.#retainedTranscript && !["muted", "stopped"].includes(this.state)) {
-            this.#showStreamingPhrase(this.#retainedTranscript);
-            return;
+            this.#showBufferedCommands(this.#bufferTranscript);return;
         }
         this.#showStatus(
             this.state === "processing" ? globalThis.WMOFLanguagePack.text("b3a1644c-9bd5-451e-b159-2dbfb5ffcc18") :
@@ -6695,7 +6517,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         this.#retainedTranscript=String(detail.transcript || "");
         if (!this.#retainedTranscript) return;
         this.setAttribute("transcript-state", "retained");
-        this.#showStreamingPhrase(this.#retainedTranscript);
+        this.#showBufferedCommands(this.#retainedTranscript);
         const raw=detail.commandElement?.getAttribute("speech-transcript-timeout") ??
             detail.commandElement?.getAttribute("speech-response-timeout") ?? this.getAttribute("speech-transcript-timeout");
         const setting=String(raw ?? "2000").trim().toLowerCase();
@@ -6705,7 +6527,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         this.#transcriptClearTimer=setTimeout(()=>{
             this.#clearRetainedTranscript();
             const pending=this.#pendingTranscript();
-            if(pending)this.#showStreamingPhrase(pending);
+            if(pending)this.#showBufferedCommands(pending);
             else this.#showIdleText();
         },delay);
     }
@@ -6751,6 +6573,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     }
 
     #showWaveform() {
+        if (this.#bufferTranscript && !['muted', 'stopped', 'error'].includes(this.state)) { this.#showBufferedCommands(); return; }
         this.#activity.replaceChildren();
         for (let index = 0; index < 18; index++) {
             const bar = document.createElement("span");
@@ -6759,7 +6582,8 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         }
     }
 
-    #showStatus(text) {
+    #showStatus(text, buffered = false) {
+        if (!buffered && this.#bufferTranscript && !['muted', 'stopped', 'error'].includes(this.state)) { this.#showBufferedCommands(); return; }
         this.#activity.replaceChildren();
         const span = document.createElement("span");
         span.id = "text";
@@ -6878,24 +6702,16 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         return words.slice(offset).join(" ");
     }
 
-    #showStreamingPhrase(
-        text
-    ) {
-        text = text || this.#retainedTranscript;
-        if(this.#bufferTranscript && text!==this.#bufferTranscript){
-            const pending=this.#pendingTranscript();
-            text=pending && !this.#bufferTranscript.endsWith(pending)
-                ?[this.#bufferTranscript,pending].join(" "):this.#bufferTranscript;
-        }
+    #showBufferedCommands() {
+        const text=this.#bufferTranscript;
+        if(!text){this.#showIdleText();return;}
         const parts =
             this.#corePhraseParts(
                 text
             );
 
         if (!parts) {
-            this.#showText(
-                text
-            );
+            this.#showStatus(text, true);
             return;
         }
 

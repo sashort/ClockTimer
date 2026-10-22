@@ -393,21 +393,21 @@ if(process.argv.includes('--mic-wake-grammar')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  window.eval(fs.readFileSync(new URL('../VoskRecognizer.js',import.meta.url),'utf8'));
- const decoders=[];class Decoder {constructor(rate,grammar){this.phrases=JSON.parse(grammar);this.listeners={};decoders.push(this);}on(name,callback){this.listeners[name]=callback;}setWords(){}acceptWaveformFloat(){}remove(){this.removed=true;}}
+ const decoders=[];class Decoder {constructor(...args){assert.equal(args.length,1,'full vocabulary uses no grammar argument');this.listeners={};decoders.push(this);}on(name,callback){this.listeners[name]=callback;}setWords(){}acceptWaveformFloat(){}remove(){this.removed=true;}}
  const recognizer=new window.VoskRecognizer({model:{KaldiRecognizer:Decoder},contextProvider:(id,text)=>window.SpeechMenu.testVoskContext(id,text)});
  window.SpeechMenu.testUseRecognizer(recognizer);
- assert.doesNotThrow(()=>window.SpeechMenu.refresh(),'finite grammar adapters do not require a hotword method');
+ assert.doesNotThrow(()=>window.SpeechMenu.refresh(),'full-vocabulary adapters do not require a hotword method');
  for(let i=0;i<3;i++) {
   await window.SpeechMenu.sleep();await settle();const asleep=window.SpeechMenu.testCapture();await settle();
-  assert(decoders.at(-1).phrases.includes('wake'),'sleep decoder contains wake');assert(!decoders.at(-1).phrases.includes('ready'),'sleep decoder excludes Ready');
+  assert(decoders.at(-1),'sleep capture uses a full-vocabulary decoder; shared eligibility gates wake commands');
   await window.SpeechMenu.wake();await settle();
   assert.equal(window.SpeechMenu.testCurrent(),undefined,'pointer wake retires the idle wake-only capture');
   const awake=window.SpeechMenu.testCapture();await settle();assert.notEqual(awake.id,asleep.id);
-  assert(decoders.at(-1).phrases.includes('ready'),'new capture reloads the active command grammar');
+  assert(!decoders.at(-1).removed,'awake capture uses its active full-vocabulary decoder');
   assert.equal(window.WMOFCoordinator.lockCount,0);
  }
  recognizer.close();assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
- console.log('PASS Vosk without hotwords and repeated idle mute/wake rebuilds current command grammar');await window.happyDOM.close();process.exit(0);
+ console.log('PASS full-vocabulary Vosk idle mute/wake cycles without grammar or hotwords');await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--post-login-ready')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
@@ -632,24 +632,22 @@ if(process.argv.includes('--voice-code-adapter')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
  window.eval(fs.readFileSync(new URL('../VoskRecognizer.js',import.meta.url),'utf8'));
- let acousticText="";const decoders=[];class Decoder {constructor(rate,grammar){this.listeners={};this.phrases=JSON.parse(grammar);decoders.push(this);}on(event,fn){this.listeners[event]=fn;}setWords(){}acceptWaveformFloat(){}remove(){}emit(text){acousticText=text;this.listeners.partialresult({result:{partial:text}});}retrieveFinalResult(){this.listeners.result({result:{text:acousticText}});}}
+ let acousticText="";const decoders=[];class Decoder {constructor(...args){assert.equal(args.length,1,'no grammar argument');this.listeners={};decoders.push(this);}on(event,fn){this.listeners[event]=fn;}setWords(){}acceptWaveformFloat(){}remove(){}emit(text){acousticText=text;this.listeners.partialresult({result:{partial:text}});}retrieveFinalResult(){this.listeners.result({result:{text:acousticText}});}}
  let u=window.SpeechMenu.testBegin();const recognizer=new window.VoskRecognizer({model:{KaldiRecognizer:Decoder},contextProvider:(id,text)=>window.SpeechMenu.testVoskContext(id,text)});
  const observed=[];window.SpeechMenu.testUseRecognizer(recognizer);recognizer.addEventListener('transcript',event=>{observed.push(event.detail.transcript);window.SpeechMenu.testResult(u,event.detail.transcript,event.detail.isFinal);});
  const adapterErrors=[];recognizer.addEventListener('error',event=>adapterErrors.push(event.detail.message));
  await recognizer.beginUtterance(u.id);
  const emit=async text=>{decoders.at(-1).emit(text);for(let i=0;i<20;i++)await new Promise(resolve=>setTimeout(resolve,10));await u.digestQueue;await u.segmentBarrier;await settle();};
  await emit('zero zero four two');
- assert(decoders.at(-1).phrases.includes('zero zero four two'),'the last digit remains revisable until a following token');
- assert(decoders.at(-1).phrases.includes('okay'),'the first decoder can hear the confirmation');
+ assert.equal(observed.at(-1),'zero zero four two','unconfirmed digits remain revisable');
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,0,'digits alone do not authenticate');
  await emit('zero zero four two okay');
  await recognizer.finishUtterance(u.id);await u.digestQueue;await u.segmentBarrier;await settle();
  assert.equal(window.WMOFInteractionState.state.login.stage,'pin','adapter confirms ID');
  u=window.SpeechMenu.testBegin();await recognizer.beginUtterance(u.id);
  await emit('one two three four day');
  const prefix='one two three four';
- assert(decoders.at(-1).phrases.every(phrase=>phrase===prefix || phrase.startsWith(prefix+' ') && ['cancel','o k','okay','ok'].includes(phrase.slice(prefix.length+1))),
-  'PIN confirmation replay keeps its validated prefix and only OK/Cancel suffixes');
- assert(!observed.at(-1).endsWith('day'),'unsupported confirmation is re-decoded rather than carried into the narrow grammar');
+ assert.equal(observed.at(-1),prefix+' day','unrelated words are not forcibly rewritten as confirmation');
  assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,0,'day is never accepted as OK');
  await emit(prefix+' okay');
  await recognizer.finishUtterance(u.id);await u.digestQueue;await u.segmentBarrier;await settle();
@@ -940,12 +938,13 @@ if(process.argv.includes('--break-end-stream')) {
   const intervalKey=timer.getActiveIntervalState().intervalKey,u=window.SpeechMenu.testBegin();
   const question='Are you ready to end your '+label+'?';
   await window.SpeechMenu.testTranscript(u,'break end',false);await u.digestQueue;await u.segmentBarrier;await settle();
-  assert(window.document.querySelector('#speechBreakConfirmDialog').open,'recognized '+kind+' End opens its confirmation without waiting for final feedback');
-  assert.equal(spoken.filter(text=>text===question).length,1,'question is announced immediately');
+  assert(!window.document.querySelector('#speechBreakConfirmDialog').open,'a chain head waits for OK or the logical utterance boundary');
+  assert.equal(spoken.filter(text=>text===question).length,0,'continuable interim does not announce a redundant question');
   assert.equal(timer.getActiveIntervalState().intervalKey,intervalKey,'confirmation waits for OK');
   window.SpeechMenu.testFinish();await settle();
   window.SpeechMenu.testDeliverFinal(u,'break end');await u.digestQueue;await u.segmentBarrier;await settle();
-  assert.equal(spoken.filter(text=>text===question).length,1,'late final feedback cannot repeat the question');
+  assert(window.document.querySelector('#speechBreakConfirmDialog').open,'a settled bare head opens confirmation');
+  assert.equal(spoken.filter(text=>text===question).length,1,'settled bare head asks once');
   assert.equal(window.WMOFCoordinator.lockCount,0);
   if(kind==='lunch') {
    await window.WMOFActions.cancelBreakPrompt();await settle();
@@ -962,7 +961,7 @@ if(process.argv.includes('--break-end-stream')) {
   assert(!spoken.includes(question),'a known OK chain skips the intermediate question');
  }
  assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
- console.log('PASS interim Vosk Break End opens and announces all break confirmations immediately; final feedback, cancellation and direct OK chains remain safe');await window.happyDOM.close();process.exit(0);
+ console.log('PASS Vosk Break End holds its chain head, settled heads ask once, and direct OK chains suppress redundant questions');await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--break-boundaries')) {
  await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();

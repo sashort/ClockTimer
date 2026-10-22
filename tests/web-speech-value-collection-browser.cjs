@@ -45,7 +45,7 @@ const root=path.resolve(__dirname,'..');
    const response=await page.request.get(new URL('build-version.json',base).href);
    assert(response.ok());assert.equal((await response.json()).commit,process.env.CLOCKTIMER_TEST_EXPECTED_COMMIT,'deployed commit matches checkout');
   }
-  await page.goto(new URL('order-filler.php',base).href);
+  await page.goto(new URL('order-filler.php?speech-backend=web-speech',base).href);
   await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));
   assert.equal(await page.evaluate(()=>WMOF_SPEECH_BACKEND),'web-speech');
   for(let i=0;i<4;i++)await page.locator(`[data-login-digit="id"][data-digit-index="${i}"]`).fill('0042'[i]);

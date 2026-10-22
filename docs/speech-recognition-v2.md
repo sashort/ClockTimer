@@ -854,3 +854,25 @@ Existing pads receive settled values through the command queue. This change does
 not introduce a second duration/time parser or move business effects into the
 recognizer. Malformed logical finals still use the common rejection path; stop and
 parent cancellation discard open values and fence late callbacks.
+
+
+## Vosk return: one decoder with shared collectors (22 October 2026)
+
+This supersedes the grammar-switching and parallel-grammar experiment described above. Keep the current application/UI baseline; changing the recognition backend must not restore an older copy of Mic Bar, dialogs, trip log, diagnostics, sync presentation or layout.
+
+The Vosk path now uses the model's complete vocabulary: instantiate `KaldiRecognizer(sampleRate)` without a grammar argument. Do not call the phrase compiler, context router, parallel search factory, grammar replacement, overlap replay or waveform merge code. Feed each worklet PCM block to one decoder once. Ordinary utterance finalization may dispose a decoder; it does not close the microphone stream. Capture remains owned by SpeechMenu until mic-off/stop (or an actual capture failure).
+
+`SpeechValueCollector`, owned by `SpeechContinuationSession`, stores decoder spans. A decoder `result` freezes that span and opens the next span; `partialresult` replaces only the current mutable span. Native endpoints are emitted as `segmentFinal`, with `isFinal: false`. Only the application's silence/explicit boundary requests the logical final result. Thus an endpoint after "an hour" can continue as "and five" without applying an hour and then replacing it with five minutes. Identical text in distinct spans remains valid; never remove words merely because they match an earlier span. No timestamp/audio splice is needed because there are no competing/replayed audio streams.
+
+The existing shared planner still owns command matching, malformed/incomplete handling, expected UI transitions, adaptive silence, execution contexts and interim/final dispatch deduplication. `ValidatedCommandBuffer` owns accepted work and its display lifetime. Mic Bar renders that buffer, rather than decoder hypotheses; lifecycle/status events cannot erase still-visible accepted commands. Reconnecting Mic Bar hydrates the current buffer snapshot. This is separate from the removed audio replay buffer.
+
+Digit-count constraints are independent of numeric value validity: ID and PIN remain exactly four digits, combined credentials eight; raw duration digits allow one to six and hour/minute clock digits one to four. Existing seconds-capable clock parsing and formatted values remain supported. Midnight/leading zeroes can be valid; whether zero duration can start a trip is a business rule, not a digit-count rule.
+
+Vosk is the default backend for this release. `?speech-backend=web-speech` selects the browser-service comparison path; `?speech-backend=vosk` explicitly selects Vosk. The current pinned browser wrapper does not expose Vosk's core `SetMaxAlternatives`; this port uses its single partial/completed hypothesis. Do not claim N-best support until the worker/WASM boundary actually exposes it. Acoustic accuracy and Android performance still require device recordings; deterministic decoder tests establish orchestration only.
+
+Validation: `tests/vosk-recognizer.mjs` checks full-vocabulary construction, one submission per PCM block, endpoint continuations, mutable revisions, repeated digit spans, final response draining, cancellation and stale callbacks. `tests/vosk-collector-browser.cjs` exercises the adapter through the current UI with deterministic decoder words and a real browser capture pipeline. Legacy compiler/router unit tests describe isolated utilities, not the active recognition architecture.
+
+
+### Explicit command-chain heads
+
+`speech-command-chain-head` marks a command that is complete syntactically but can lead into a related command. Declare its next context with `speech-chain-next`; descendants use `speech-chain-context` and may themselves be heads. The planner must consider this metadata when deciding whether an interim is terminal. The application marks each generated command with a declared next context, including both `break start` (next: break-choice) and the break type (next: break-confirm). An evolving partial must not dispatch the last head merely because its regex matches. A subsequent validated command establishes its boundary; application silence/finalization can settle a bare head. `okay` is terminal and may execute immediately when complete. This contract is shared by Vosk and Web Speech. It changes continuation handling, not the list of accepted aliases.

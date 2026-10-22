@@ -378,3 +378,8 @@ Tests are `speech-value-collector.mjs`, `web-speech-recovery.mjs`,
 `web-speech-login-browser.cjs`, and `speech-command-digest.mjs`. Browser result
 fixtures simulate segment timing; physical Android acoustic verification remains
 separate. Load `SpeechValueCollector` before SpeechMenu/browser recognition starts.
+
+
+### Vosk single-decoder adapter (22 October 2026)
+
+`VoskRecognizer` is an audio-to-source-spans adapter, not an application grammar router. `beginUtterance` acquires an owned `SpeechValueCollector` and creates one full-vocabulary decoder; `accept` copies and submits each PCM block once; `finishUtterance` drains responses before requesting its final; `abortUtterance` and `close` fence stale callbacks. Decoder endpoints finalize source spans without completing application values. Microphone ownership stays with SpeechMenu across decoder lifetimes. The current shared planner, command buffer, feedback ownership and Mic Bar remain in use. See the Vosk return section of `speech-recognition-v2.md` for the superseding contract and test boundaries.

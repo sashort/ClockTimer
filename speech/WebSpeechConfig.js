@@ -1,7 +1,8 @@
-/* This experiment uses the browser's recognition service, with no local model. */
+/* Vosk owns continuous capture; Web Speech remains an explicit comparison backend. */
 (() => {
     const requested=Number(new URL(document.URL).searchParams.get("speech-alternatives")||10);
-    globalThis.WMOF_SPEECH_BACKEND="web-speech";
+    const backend = new URL(document.URL).searchParams.get("speech-backend");
+    globalThis.WMOF_SPEECH_BACKEND = ["vosk", "web-speech", "sherpa"].includes(backend) ? backend : "vosk";
     globalThis.WMOF_WEB_SPEECH_CONFIG={
         maxAlternatives:Number.isInteger(requested)&&requested>=1&&requested<=30?requested:10,
         maxCandidates:50,processLocally:false,

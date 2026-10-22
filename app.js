@@ -502,7 +502,8 @@
             speechRuntimePromise =
                 Promise.resolve()
                     .then(async () => {
-                        await speechAssetCacheReady;
+                        // Optional caching must not block capture/runtime startup.
+                        void speechAssetCacheReady;
                         for (const name of ["OwnedFeedbackScope", "SpeechCommandBranchPolicy", "ValidatedCommandBuffer", "SpeechValueCollector", "SpeechContinuationSession", "SpeechRejectionFeedback", "SpeechDurationEstimator", "ToneReferencedAnnouncement"]) {
                             if (!globalThis[name]) await loadClassicScript(name + ".js");
                         }
@@ -513,6 +514,11 @@
                             await loadClassicScript(
                                 "AdaptiveSpeechTiming.js"
                             );
+                        }
+
+                        if (globalThis.WMOF_SPEECH_BACKEND === "vosk") {
+                            await loadClassicScript("speech/VoskTestConfig.js");
+                            if (!globalThis.VoskRecognizer) await loadClassicScript("VoskRecognizer.js");
                         }
 
                         if (globalThis.WMOF_SPEECH_BACKEND !== "web-speech" && !globalThis.SherpaRecognizer) {
@@ -22357,6 +22363,9 @@
             const resolved = kind !== "keypad" ? kind : numberPadState?.mode === "absolute"
                 ? "clock-parts" : numberPadState?.mode === "percent" ? "percent" : "duration";
             return EnglishSpeechValuePreprocessor.classify(text, resolved, options);
+        }, {
+            ...(['duration','clock','clock-parts'].includes(kind) ? {digitRange:kind==='duration'?[1,6]:[1,4],
+                toDigits:text=>DigitSequence.parse(text, englishSpeech.digits || {}) ?? undefined} : {})
         });
     }
 
@@ -27576,6 +27585,7 @@
                 );
             }
 
+            element.toggleAttribute('speech-command-chain-head', Boolean(speechChainNext[key]));
             if (speechChainNext[key]) {
                 element.setAttribute(
                     "speech-chain-next",
