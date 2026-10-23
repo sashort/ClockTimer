@@ -2,6 +2,7 @@
  * decoder endpoints are source spans, never application command boundaries. */
 (() => {
     "use strict";
+    const now=()=>globalThis.performance?.now?.() ?? Date.now();
     class VoskRecognizer extends EventTarget {
         static #runtimeLoads = new Map();
         #model; #ownsModel = false; #decoder; #collector;
@@ -9,9 +10,11 @@
         #closed = false; #finishRequested = false; #finishing = false;
         #responses = Promise.resolve();
         #pendingAudio = 0; #finalResolve; #drainResolve; #lastPartial;
-        #queuedSamples = 0; #submittedSamples = 0; #receivedSamples = 0; #audioSizes = [];
+        #queuedSamples = 0; #submittedSamples = 0; #receivedSamples = 0; #audioSizes = []; #audioTimes=[]; #maximumQueueAge=0;
         get audioDelivery() { return Object.freeze({receivedSamples:this.#receivedSamples,
-            submittedSamples:this.#submittedSamples, queuedSamples:this.#queuedSamples}); }
+            submittedSamples:this.#submittedSamples, queuedSamples:this.#queuedSamples,
+            oldestQueuedAudioMilliseconds:this.#audioTimes.find(t=>t!==null)!==undefined?now()-this.#audioTimes.find(t=>t!==null):0,
+            maximumQueueAgeMilliseconds:this.#maximumQueueAge}); }
         get model() { return this.#model; }
         get continuousInput() { return true; }
         get transcriptMode() { return "cumulative"; }
@@ -166,6 +169,7 @@
                     if (audioResponse) {
                         this.#pendingAudio--;
                         this.#queuedSamples -= this.#audioSizes.shift() || 0;
+                        const receivedAt=this.#audioTimes.shift();if(receivedAt!==null&&receivedAt!==undefined)this.#maximumQueueAge=Math.max(this.#maximumQueueAge,now()-receivedAt);
                     }
                     if (!this.#pendingAudio) this.#drainResolve?.();
                     if (final) this.#finalResolve?.();
@@ -180,6 +184,11 @@
                     this.dispatchEvent(new CustomEvent('error', {detail:{fatal:true,
                         utteranceId:this.#id, message:String(message.error || 'Vosk decoder failed')}}));
             });
+        }
+        async prepare() {
+            await this.ready;
+            await this.acceptAudio(new Float32Array(0));
+            return this.#enqueue(async()=>{await this.#drain();return this;});
         }
         beginUtterance(id) {
             return this.#enqueue(async () => {
@@ -209,7 +218,7 @@
             }
             this.#receivedSamples += samples.length;
             this.#queuedSamples += samples.length;
-            const pcm = new Float32Array(samples);
+            const pcm = new Float32Array(samples),receivedAt=now();
             return this.#enqueue(async () => {
                 await this.ready;
                 if (this.#closed) return false;
@@ -219,7 +228,7 @@
                 }
                 this.#ensureDecoder();
                 this.#pendingAudio++;
-                this.#audioSizes.push(pcm.length);
+                this.#audioSizes.push(pcm.length);this.#audioTimes.push(pcm.length?receivedAt:null);
                 this.#submittedSamples += pcm.length;
                 this.#decoder.acceptWaveformFloat(pcm, this.sampleRate);
                 return true;
@@ -263,7 +272,7 @@
         #dispose() {
             this.#generation++;
             this.#decoder?.remove(); this.#decoder = undefined;
-            this.#queuedSamples = 0; this.#audioSizes = [];
+            this.#queuedSamples = 0; this.#audioSizes = [];this.#audioTimes=[];
             this.#drainResolve?.(); this.#drainResolve = undefined;
             this.#finalResolve?.(); this.#finalResolve = undefined;
         }

@@ -25,6 +25,12 @@ body { margin: 0; background: #061b4f; color: #fff; }
 #mainStatus { flex: none; margin: 0; overflow-wrap: anywhere; }
 #mainStatus:empty { display: none; }
 #appVersion { flex: none; opacity: .65; font-size: .8em; text-align: center; }
+#appVersion { cursor: pointer; }
+#appVersion:focus-visible { outline: 2px solid #8bc5ff; outline-offset: 5px; border-radius: 3px; }
+#versionDetails { max-width: min(340px,calc(100vw - 48px)); padding: 22px; border: 1px solid #7898cc; border-radius: 12px; background: #10295b; color: #fff; text-align: center; box-shadow: 0 8px 32px #0008; }
+#versionDetailsId { font: 700 2rem system-ui; }
+#versionDetailsTime { font-size: .95rem; }
+#versionDetailsStatus:empty { display: none; }
 #mainLoginDialog { box-sizing: border-box; width: min(440px, calc(100% - 24px)); max-height: calc(100dvh - 24px); overflow: auto; }
 #mainLoginForm { display: grid; gap: 16px; padding: 20px; }
 #mainLoginForm label { grid-template-columns: 1fr; text-align: left; gap: 8px; }

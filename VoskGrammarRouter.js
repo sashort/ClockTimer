@@ -6,22 +6,31 @@
     const unique = values => [...new Set(values)];
     const begins = (text, prefix) => text === prefix || text.startsWith(prefix + " ");
 
+    const phraseCaches = new WeakMap(), wordCaches = new WeakMap();
+    const phraseWords = phrases => {
+        let words = wordCaches.get(phrases);
+        if (!words) {
+            words = Object.freeze(unique(phrases.flatMap(phrase => phrase.split(" "))));
+            if (Object.isFrozen(phrases)) wordCaches.set(phrases, words);
+        }
+        return words;
+    };
     class VoskGrammarRouter {
-        constructor({ records = [], capturePhrases = {}, valuePhrases = {}, nextRecords = async () => [] } = {}) {
+        constructor({ records = [], capturePhrases = {}, valuePhrases = {}, nextRecords = async () => [], compiled, compileRecords } = {}) {
             this.options = { capturePhrases, valuePhrases };
-            this.nextRecords = nextRecords;
+            this.nextRecords = nextRecords;this.compileRecords=compileRecords;
             this.prefix = "";
             this.text = "";
             this.unsupported = [];
             this.confirmationLocked = false;
             this.optionalValue = false;
-            this.setRecords(records);
+            this.setRecords(records,compiled);
         }
 
-        setRecords(records) {
+        setRecords(records,prepared) {
             this.optionalValue = false;
             this.digitRecords=records.filter(record=>record.digitCounts?.length);
-            const compiled = globalThis.VoskPhraseListCompiler.compileStages(records, this.options);
+            const compiled = prepared || globalThis.VoskPhraseListCompiler.compileStages(records, this.options);
             this.reportUnsupported(compiled.unsupported);
             this.paths = compiled.paths;
             this.grammar = this.paths[0]?.stages[0]?.grammar || "commands";
@@ -40,6 +49,10 @@
         }
 
         get phrases() {
+            const cached = phraseCaches.get(this);
+            if (cached && cached.paths === this.paths && cached.continuations === this.continuations &&
+                cached.grammar === this.grammar && cached.confirmationLocked === this.confirmationLocked)
+                return cached.value;
             const initialPhrases = path => {
                 const stage = path.stages[0];
                 // Root value-first alternatives need a bootstrap vocabulary,
@@ -47,18 +60,21 @@
                 // overpower literal heads such as "trip mode".
                 return this.grammar === "commands" && stage?.grammar !== "commands" &&
                     path.record.atomic !== "digits" && path.stages[1]?.grammar === "commands"
-                    ? unique(stage.phrases.flatMap(phrase => phrase.split(" ")))
+                    ? phraseWords(stage.phrases)
                     : stage?.phrases || [];
             };
             const continuations = this.confirmationLocked
                 ? this.continuations.filter(path => path.record.action === "SpeechMenu.cancel")
                 : this.continuations;
-            return unique([...this.paths.flatMap(initialPhrases),
+            const value = Object.freeze(unique([...this.paths.flatMap(initialPhrases),
                 // A value-first command can finish without a pause before its
                 // literal suffix (for example "one hundred ten percent trip").
                 ...this.paths.flatMap(path => path.stages[0]?.grammar !== "commands" &&
                     path.stages[1]?.grammar === "commands" ? path.stages[1].phrases : []),
-                ...continuations.flatMap(initialPhrases)]).sort();
+                ...continuations.flatMap(initialPhrases)]).sort());
+            phraseCaches.set(this, {paths:this.paths, continuations:this.continuations, grammar:this.grammar,
+                confirmationLocked:this.confirmationLocked, value});
+            return value;
         }
 
         get transcript() { return [this.prefix, this.text].filter(Boolean).join(" "); }
@@ -70,7 +86,7 @@
         async project(value, paths = this.paths) {
             const full = [this.prefix, value].filter(Boolean).join(" ");
             const records = await this.nextRecords(full);
-            const compiled = globalThis.VoskPhraseListCompiler.compileStages(records, this.options);
+            const compiled = this.compileRecords ? await this.compileRecords(records) : globalThis.VoskPhraseListCompiler.compileStages(records, this.options);
             this.reportUnsupported(compiled.unsupported);
             const suffixes = paths.filter(path => path.stages.length > 1)
                 .map(path => ({ ...path, stages: path.stages.slice(1) }));

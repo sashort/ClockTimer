@@ -64,7 +64,9 @@ class DiagnosticSpeechAudio {
     async play(base64){
      await ensure();const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));const buffer=await context.decodeAudioData(bytes.buffer);
      const source=context.createBufferSource();source.buffer=buffer;source.connect(destination);
-     await new Promise((resolve,reject)=>{source.onended=resolve;try{source.start();}catch(error){reject(error);}});source.disconnect();
+     const scheduledTime=context.currentTime+.05;
+     const playback={startedAt:performance.now()+(scheduledTime-context.currentTime)*1000,sampleRate:buffer.sampleRate,samples:buffer.length,durationMilliseconds:buffer.duration*1000};
+     await new Promise((resolve,reject)=>{source.onended=resolve;try{source.start(scheduledTime);}catch(error){reject(error);}});source.disconnect();return playback;
     }
    };
   });

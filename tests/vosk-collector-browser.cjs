@@ -114,14 +114,18 @@ const root=path.resolve(__dirname,'..');
   assert.equal(await page.locator('#syncOverrideButton').getAttribute('aria-checked'),'true');
   assert(await page.locator('#syncOverrideButton').isDisabled(),'unavailable Sync leaves override visibly disabled');
   await page.waitForFunction(()=>!SpeechMenu.commandBufferSnapshot.some(e=>['queued','executing'].includes(e.status))&&WMOFCoordinator.pending.length===0&&WMOFCoordinator.lockCount===0);
-  await page.evaluate(async()=>{
+  await page.evaluate(()=>{
+   globalThis.testSyncFloorSetup=(async()=>{
    const timer=document.querySelector('#clockTimer');
    timer.configure({trip_goal:'100%',total_goal:'100%'});
    globalThis.testStartPhase='totals';await timer.calculateTripTotals('2026-01-01T00:00:00Z','2027-01-01T00:00:00Z');
    globalThis.testStartPhase='start';await timer.start({standardTime:'0:20:00'});
    globalThis.testStartPhase='started';
    timer.configure({auto_goal:true,sync_override:true});
-  }).catch(async error=>{console.error(await page.evaluate(()=>({phase:testStartPhase,status:document.querySelector('#clockTimer').status,dialogs:[...document.querySelectorAll('dialog[open]')].map(e=>e.id),locks:WMOFCoordinator.lockCount,pending:WMOFCoordinator.pending.map(e=>({action:e.action,name:e.name,status:e.status})),buffer:SpeechMenu.commandBufferSnapshot.map(e=>({text:e.transcript,status:e.status}))})));throw error;});
+   })().then(()=>globalThis.testSyncFloorSetupDone=true,error=>globalThis.testSyncFloorSetupError=error.message);
+  });
+  await page.waitForFunction(()=>globalThis.testSyncFloorSetupDone||globalThis.testSyncFloorSetupError);
+  assert.equal(await page.evaluate(()=>globalThis.testSyncFloorSetupError),undefined);
   await page.waitForFunction(()=>!document.querySelector('#syncOverrideButton').disabled);
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').syncBelowFloor),true);
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),.8);

@@ -47,4 +47,12 @@ debug.log({event:'speechValueValidated',detail:{kind:'duration',components:{hour
 assert.equal(logs[1][1].detail.componentDisplay.minutes,'5','spoken amount stays unbracketed');
 assert.equal(logs[1][1].detail.componentDisplay.seconds,'[0]','defaulted zero is bracketed');
 debug.log({event:'execute arbitrary command'},{console:{log:()=>assert.fail('unsupported event')}});
+debug.log({event:'speechRecognitionSlots',detail:{slots:[{id:'s1',kind:'time',context:'scheduled-start-time',text:'four twelve',
+ startSample:16000,endSample:32000,position:{streamId:'stream-1',startByte:64000,endByte:128000},
+ forecast:{kind:'commands'},arguments:['secret'],audio:new Float32Array(10)}]}},{console:{log:(...args)=>logs.push(args)}});
+const slot=logs.at(-1)[1].detail.slots[0];
+assert.equal(slot.position.startByte,64000);assert.equal(slot.forecast.kind,'commands');
+assert.equal(slot.arguments,undefined);assert.equal(slot.audio,undefined);
+debug.log({event:'speechCommandBufferChanged',detail:{slots:[{id:'ready:value',kind:'value',status:'pending',ownerHeadSlotId:'ready',dependencies:[{id:'login',kind:'command'}],dependencyRanges:[{startSlotId:'login',endSlotId:'login'}],waitingForSlotIds:['login'],secret:'hidden'}]}},{console:{log:(...args)=>logs.push(args)}});
+const execution=logs.at(-1)[1].detail.slots[0];assert.equal(execution.status,'pending');assert.equal(execution.ownerHeadSlotId,'ready');assert.deepEqual(execution.waitingForSlotIds,['login']);assert.equal(execution.dependencyRanges[0].startSlotId,'login');assert.equal(execution.secret,undefined);
 console.log('PASS Drop-In speech diagnostics: opt-in, alternatives, selection, buffer, coalescing, credential exclusion, disconnect and console logging');

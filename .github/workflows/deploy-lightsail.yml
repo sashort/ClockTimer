@@ -40,6 +40,7 @@ jobs:
           node tests/web-speech-recovery.mjs
           node tests/app-state-transactions.mjs --vosk-alternatives --voice-feedback
           node tests/app-state-transactions.mjs --login-deadline --voice-feedback
+          node tests/app-state-transactions.mjs --login-final-tail --voice-feedback
           node tests/validated-command-buffer.mjs
           node tests/app-state-transactions.mjs --parallel-command-buffer --voice-feedback
           node tests/app-state-transactions.mjs --parallel-command-buffer --accept-start --voice-feedback
@@ -118,6 +119,10 @@ jobs:
           node tests/legacy-vosk-values.mjs
           node tests/vosk-recognizer.mjs
           node tests/vosk-grammar-router.mjs
+          node tests/speech-recognition-ledger.mjs
+          node tests/speech-latency-support.mjs
+          node tests/vosk-context-handoff.mjs
+          node tests/vosk-slot-recognizer.mjs
           node tests/vosk-speechmenu-context.mjs
           node tests/speech-grammar-context.mjs
           node tests/pocketsphinx-grammar-catalog.mjs
@@ -133,6 +138,7 @@ jobs:
         working-directory: tests
       - run: npx playwright install --with-deps chromium
         working-directory: tests
+      - run: node tests/main-page-browser.cjs
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs

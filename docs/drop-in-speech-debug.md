@@ -42,3 +42,15 @@ screen sharing: local dialogs and browser console errors are not visually mirror
 Dialog context is logged separately. Network delivery of events and WebRTC audio
 can have different delays; timestamps identify event order but do not guarantee
 synchronized audio playback.
+
+Sequential slot diagnostics include owner/type, context, command ID, decoder
+epoch/origin and absolute sample/byte positions. Forecasts identify the next
+expected type. Preparation metrics report grammar, decoder, replay and queue
+time separately. Full slot history is sent on slot changes, rather than copied
+into every interim transcript. The same opt-in and login privacy guard apply.
+
+Execution slot diagnostics include `status` (`pending`, `executing`, `invalid`,
+`resolved`), `ownerHeadSlotId`, typed dependencies, `dependencyRanges`,
+`waitingForSlotIds`, and invalid dependency IDs. These identify the precise slot
+holding an action rather than labeling the entire command chain blocked. Existing
+login redaction, explicit debug opt-in, bounds, and disconnect rules still apply.

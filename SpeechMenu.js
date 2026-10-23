@@ -14,7 +14,7 @@ class SpeechCommandIndex {
             this.#observer = new Observer(records => this.#reconcile(records));
             this.#observer.observe(root, {subtree: true, childList: true, attributes: true,
                 attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-skippable', 'speech-chain-context', 'speech-chain-next', 'speech-command-chain-head', 'speech-chain-surface', 'speech-chain-transition', 'speech-available',
-                    'speech-independent', 'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
+                    'speech-independent', 'speech-slot-key', 'speech-wait-for-slots', 'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
                     'speech-preproc-field', 'speech-collect', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
         }
     }
@@ -213,6 +213,11 @@ class SpeechMenu {
         });
     }
     static get commandBufferSnapshot() { return SpeechMenu.#commandBuffer?.snapshot || []; }
+    static get commandSlots() { return SpeechMenu.#commandBuffer?.slots || []; }
+    static get recognitionDiagnostics() { return {backend:SpeechMenu.#recognizerBackend,
+        mode:SpeechMenu.#recognizer?.recognitionMode || "continuous",
+        audioDelivery:SpeechMenu.#recognizer?.audioDelivery,preparation:SpeechMenu.#recognizer?.executionDiagnostics,
+        slots:SpeechMenu.#recognizer?.slots || []}; }
     static #bufferTtl(element) {
         const raw=element?.getAttribute("speech-transcript-timeout") ?? element?.getAttribute("speech-response-timeout") ??
             document.querySelector('speech-mic-bar')?.getAttribute("speech-transcript-timeout");
@@ -243,6 +248,8 @@ class SpeechMenu {
     static #vadMinimumSilenceMilliseconds = 220;
     static #maximumCandidateHoldTimeout = 1200;
     static #typedContinuationCache = new WeakMap();
+    static #regexPhraseCache = new Map();
+    static #speechContextRevision=0;
     static #finiteSpeechValues;
     static #languageRevision;
     static #speechVocabulary() {
@@ -1392,11 +1399,19 @@ class SpeechMenu {
                 );
 
                 const recognizer = useVosk
-                    ? new (useVoskServer ? globalThis.VoskServerRecognizer : globalThis.WMOF_VOSK_CONFIG.contextHandoff ? globalThis.VoskContextRecognizer : globalThis.VoskRecognizer)({
+                    ? new (useVoskServer ? globalThis.VoskServerRecognizer : globalThis.WMOF_VOSK_CONFIG.recognitionMode === "parallel" ? globalThis.VoskSlotRecognizer : globalThis.WMOF_VOSK_CONFIG.contextHandoff ? globalThis.VoskContextRecognizer : globalThis.VoskRecognizer)({
                         ...(useVoskServer ? globalThis.WMOF_VOSK_SERVER_CONFIG : globalThis.WMOF_VOSK_CONFIG),
                         selectHypothesis:(id,hypotheses,options)=>SpeechMenu.#selectWebSpeechHypothesis(id,hypotheses,{...options,afterBarrier:true}),
                         language: SpeechMenu.#language,
                         contextProvider:SpeechMenu.#voskContext,
+                        getContextVersion:()=>JSON.stringify([SpeechMenu.#contextGeneration,SpeechMenu.#speechContextRevision,SpeechMenu.#sleeping,
+                            SpeechMenu.#utterance?.id,SpeechMenu.#utterance?.digestTranscript,SpeechMenu.#utterance?.digestContext]),
+                        vocabularyProvider:()=>SpeechMenu.#index().elements().map(element=>{
+                            const kind=SpeechMenu.#speechValueKind(element);
+                            return {pattern:element.getAttribute("speech-pattern"),
+                                expect:kind==="clock"||kind==="clock-parts"?"time":kind==="percent"?"number":kind,
+                                capture:element.getAttribute("speech-preproc-field")};
+                        }),
                         getCollectionSession: id => {
                             const owner = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
                             return owner && SpeechMenu.#continuationSession(owner);
@@ -1415,6 +1430,8 @@ class SpeechMenu {
 
                 if(useVosk)recognizer.addEventListener("alternatives",event=>SpeechMenu.#emit("speechRecognitionAlternatives",event.detail));
                 if(useVosk)recognizer.addEventListener("handoff",event=>SpeechMenu.#emit("speechRecognitionHandoff",event.detail));
+                if(useVosk)for(const [source,target] of [["slots","speechRecognitionSlots"],["candidate","speechRecognitionCandidate"],["metrics","speechRecognitionMetrics"]])
+                    recognizer.addEventListener(source,event=>SpeechMenu.#emit(target,event.detail));
                 recognizer.addEventListener(
                     "transcript",
                     SpeechMenu.#onSherpaTranscript
@@ -2391,6 +2408,7 @@ class SpeechMenu {
     }
 
     static #schedulePhraseRefresh() {
+        SpeechMenu.#speechContextRevision++;
         if (SpeechMenu.#phraseRefreshQueued) {
             return;
         }
@@ -4185,13 +4203,15 @@ class SpeechMenu {
         const remainder=SpeechMenu.#digestRemainder(utterance,normalized);
         if (!remainder) return false;
         const candidates=SpeechMenu.#index().elements().filter(element=>
-            element.hasAttribute("speech-independent") && SpeechMenu.#canAttemptStateCommand(element));
+            (element.hasAttribute("speech-independent")||element.hasAttribute('speech-wait-for-slots')) &&
+            (SpeechMenu.#canAttemptStateCommand(element)||SpeechMenu.#candidateStateAvailable(element,true)));
         if (!candidates.length) return false;
         const plan=await SpeechMenu.#planDigest(candidates,remainder.split(" ").filter(Boolean),
             {...utterance,valueCollectors:new Map()},undefined,0,undefined,
             utterance.digestContext,utterance.digestSurfaceStack);
         if (!plan?.exact || plan.invalid || plan.pending || !plan.steps?.length ||
             (!isFinal && plan.steps.at(-1).canContinue)) return false;
+        if(plan.steps.some(step=>!(step.commandElement.hasAttribute('speech-independent')||step.commandElement.hasAttribute('speech-wait-for-slots'))||step.ignoredBefore))return false;
         // Another interim/final callback may already have accepted these words.
         if (SpeechMenu.#digestRemainder(utterance,normalized)!==remainder) return true;
         utterance.transcript=normalized;
@@ -4238,7 +4258,7 @@ class SpeechMenu {
 
     static #queueDigestStep(utterance, step) {
         SpeechMenu.#continuationSession(utterance);
-        const independent = step.commandElement.hasAttribute("speech-independent");
+        const independent = step.commandElement.hasAttribute("speech-independent")||step.commandElement.hasAttribute('speech-wait-for-slots');
         const segment = step.segmentTranscript;
         utterance.digestTranscript = [utterance.digestTranscript, step.ignoredBefore, segment].filter(Boolean).join(" ");
         (utterance.digestCommandSegments ??= []).push(segment);
@@ -4273,8 +4293,10 @@ class SpeechMenu {
             consumedTranscript: utterance.digestTranscript});
         // Observe the selected value only; speculative planner probes do not
         // represent values accepted into the command buffer.
+        let acceptedValue;
         try {
             const value=SpeechMenu.#classifySpeechValue(step.commandElement,segment,Boolean(utterance.digestIsFinal));
+            if(value?.status==='valid')acceptedValue=value;
             if(value) SpeechMenu.#emit('speechValueValidated', {
                 utteranceId:utterance.id,commandElement:step.commandElement,transcript:segment,
                 kind:step.commandElement.getAttribute('speech-preproc-context'),
@@ -4291,6 +4313,19 @@ class SpeechMenu {
             utterance.bufferChain={id:`${utterance.sessionGeneration}:${utterance.id}:chain:${utterance.bufferChainSequence=(utterance.bufferChainSequence||0)+1}`,status:'active'};
         }
         const bufferId=`${utterance.sessionGeneration}:${utterance.id}:component:${utterance.bufferSequence=(utterance.bufferSequence||0)+1}`;
+        const slotDeclaration=commandElement.getAttribute('speech-slot-key');
+        const slotProvider=slotDeclaration&&SpeechMenu.#resolve(slotDeclaration);
+        const slotKey=slotProvider?slotProvider.fn.call(slotProvider.owner,{commandElement,transcript:segment}):slotDeclaration;
+        if(slotKey!==null&&slotKey!==undefined&&typeof slotKey!=='string')throw TypeError('A command slot key must be a label.');
+        const waitForSlotKeys=(commandElement.getAttribute('speech-wait-for-slots')||'').split(/\s+/).filter(Boolean);
+        const valueRanges=[];
+        if(acceptedValue){
+            buffer.declareCommandSlot({id:bufferId,ownerId:utterance.id});
+            const valueId=bufferId+':value';
+            buffer.declareValueSlot({id:valueId,ownerId:utterance.id,ownerHeadSlotId:bufferId,context:commandElement.getAttribute('speech-preproc-context')});
+            buffer.settleValueSlot(valueId,'resolved');
+            valueRanges.push({startSlotId:valueId,endSlotId:valueId});
+        }
         const predecessor = !independent && utterance.bufferPredecessor;
         const previousStep = !independent && utterance.digestSteps.slice(0,-1).reverse()
             .find(item=>!item.commandElement.hasAttribute("speech-independent"));
@@ -4299,7 +4334,7 @@ class SpeechMenu {
         const work = buffer.enqueue({
             id:bufferId,
             ownerId:utterance.id,owner:utterance,chainId:independent?bufferId:utterance.bufferChain.id,transcript:segment,commandElement,
-            dependsOn:dependency?[dependency]:[],
+            dependsOn:dependency?[dependency]:[],dependsOnRanges:valueRanges,waitForSlotKeys,slotKey,
             commandId:step.commandId||commandElement.getAttribute("data-speech-editor-id")||commandElement.id||commandElement.getAttribute("speech-function"),
             ttl:SpeechMenu.#bufferTtl(commandElement)
         },async () => {
@@ -4313,7 +4348,7 @@ class SpeechMenu {
                 return false;
             }
             // UI visibility may lag; hard gates are always rechecked at execution.
-            if (!((independent || step.optimistic) ? SpeechMenu.#canAttemptStateCommand(step.commandElement) : SpeechMenu.#candidateStateAvailable(step.commandElement, true))) {
+            if (!((independent || step.optimistic) ? SpeechMenu.#canAttemptStateCommand(step.commandElement)||SpeechMenu.#candidateStateAvailable(step.commandElement,true) : SpeechMenu.#candidateStateAvailable(step.commandElement, true))) {
                 if (!independent) {
                     utterance.digestExecutionFailed = true;
                     SpeechMenu.#rejectDigest(utterance, "chain-action-unavailable", segment);
@@ -4552,11 +4587,13 @@ class SpeechMenu {
         if (candidate?.dispatchBoundary && count && tail) {
             SpeechMenu.#commitTerminalStream(utterance);
             void utterance.segmentBarrier.then(accepted => {
-                if (!accepted || SpeechMenu.#utterance !== utterance || utterance.digestFailed || utterance.chainCanceled) return;
+                if (!accepted || utterance.digestFailed || utterance.chainCanceled || utterance.sessionGeneration!==SpeechMenu.#sessionGeneration) return;
                 // Availability is authoritative only after the action settles.
                 utterance.digestSurfaceStack=SpeechMenu.#surfaceFrames();
                 utterance.digestContext=utterance.digestSurfaceStack.at(-1)?.context;
-                return SpeechMenu.#handleLiveTranscript(utterance, utterance.transcript, utterance.digestIsFinal, true);
+                return SpeechMenu.#utterance===utterance
+                    ? SpeechMenu.#handleLiveTranscript(utterance, utterance.transcript, utterance.digestIsFinal, true)
+                    : utterance.digestIsFinal ? SpeechMenu.#handleCompletedTranscript(utterance,utterance.transcript) : undefined;
             });
             return true;
         }
@@ -7302,6 +7339,8 @@ class SpeechMenu {
                 digitContext:element.getAttribute('speech-execution-context'),
                 digitField:element.getAttribute('speech-digit-field'),
                 digitVocabulary:globalThis.WMOFLanguagePack?.language?.speech?.digits,
+                slotContext:element.getAttribute("speech-slot-context"),
+                executionContext:element.getAttribute("speech-execution-context") || element.getAttribute("speech-preproc-context"),
                 action: element.getAttribute("speech-function"),
                 capture: element.getAttribute("speech-preproc-field"),
                 expect: kind === "clock" ? "time" : kind === "percent" ? "number" : ["duration", "number", "digits", "date", "time"].includes(kind) ? kind : undefined};
@@ -7640,7 +7679,8 @@ class SpeechMenu {
         if (!cached || cached.pattern !== pattern || cached.kind !== kind) {
             SpeechMenu.#speechVocabulary();
             const compiled = compiler.compileStages([{pattern, ...(kind ? {expect: kind} : {})}], {valuePhrases: SpeechMenu.#finiteSpeechValues});
-            cached = {pattern, kind, paths: compiled.unsupported.length ? [] : compiled.paths};
+            cached = {pattern, kind, paths: compiled.unsupported.length ? [] : compiled.paths.map(path =>
+                ({...path, stages:path.stages.map(stage => ({...stage, tokenPhrases:stage.phrases.map(phrase => phrase.split(" "))}))}))};
             SpeechMenu.#typedContinuationCache.set(element, cached);
         }
         if (!cached.paths.length) return undefined;
@@ -7650,8 +7690,7 @@ class SpeechMenu {
             const visit = (stage, offset) => {
                 if (offset === words.length) return !strictlyLonger || stage < path.stages.length;
                 if (stage === path.stages.length) return false;
-                return path.stages[stage].phrases.some(phrase => {
-                    const tokens = phrase.split(" ");
+                return path.stages[stage].tokenPhrases.some(tokens => {
                     const length = Math.min(tokens.length, words.length - offset);
                     for (let i = 0; i < length; i++) {
                         const word = words[offset + i];
@@ -9069,7 +9108,20 @@ class SpeechMenu {
         return result;
     }
 
-    static #expandRegexSource(
+    static #expandRegexSource(source, limit = 128) {
+        if (typeof source !== "string") return [];
+        const key = JSON.stringify([source, limit]);
+        let result = SpeechMenu.#regexPhraseCache.get(key);
+        if (!result) {
+            result = SpeechMenu.#expandRegexSourceUncached(source, limit);
+            if (SpeechMenu.#regexPhraseCache.size >= 512)
+                SpeechMenu.#regexPhraseCache.delete(SpeechMenu.#regexPhraseCache.keys().next().value);
+            SpeechMenu.#regexPhraseCache.set(key, result);
+        }
+        return result.slice();
+    }
+
+    static #expandRegexSourceUncached(
         source,
         limit = 128
     ) {

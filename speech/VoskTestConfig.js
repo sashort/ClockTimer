@@ -5,6 +5,11 @@
         (globalThis.WMOF_SPEECH_BACKEND || "vosk");
     const alternatives=Number(new URL(document.URL).searchParams.get("speech-alternatives")||10);
     globalThis.WMOF_VOSK_CONFIG = {
+        // Opt-in comparison: parallel includes the sample-addressed slot ledger.
+        recognitionMode:new URL(document.URL).searchParams.get("speech-recognizers")==="parallel"?"parallel":"sequential",
+        warmDecoders:new URL(document.URL).searchParams.get("speech-warm")!=="off",
+        grammarWorker:new URL(document.URL).searchParams.get("speech-grammar-worker")!=="off",
+        coalescePartials:new URL(document.URL).searchParams.get("speech-coalesce")!=="off",
         requireAlternatives:true,
         contextHandoff:new URL(document.URL).searchParams.get("speech-handoff")!=="off",
         maxAlternatives:Number.isInteger(alternatives)&&alternatives>=1&&alternatives<=30?alternatives:10,

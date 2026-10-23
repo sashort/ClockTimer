@@ -1,6 +1,7 @@
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict');
-const {chromium}=require('playwright'),root=path.resolve(__dirname,'..');
+const {chromium}=require('playwright'),root=path.resolve(process.env.CLOCKTIMER_TEST_SOURCE_ROOT||path.resolve(__dirname,'..'));
 function instrument(pathname,source,acoustic=false){
+ if(acoustic && pathname==='/VoskRecognizer.js' && process.env.CLOCKTIMER_TEST_TRACE_ALTERNATIVES)source=source.toString().replace('this.grammar = grammar && [...grammar];',`this.grammar = grammar && [...grammar];(globalThis.benchmarkGrammars ||= []).push(this.grammar);`);
  if(acoustic && pathname==='/VoskRecognizer.js' && process.env.CLOCKTIMER_TEST_TRACE_ALTERNATIVES)source=source.toString().replace('this.selectHypothesis = selectHypothesis;', `globalThis.voskOptions={configured:typeof selectHypothesis==='function'};globalThis.voskSelections=[];this.selectHypothesis=async(...args)=>{const result=selectHypothesis?await selectHypothesis(...args):args[1][0];voskSelections.push({id:args[0],hypotheses:args[1],result});return result;};`);
 
  if(acoustic && (/^\/speech\/vosk\/runtime\/vosk-[a-zA-Z0-9.-]+\.js$/).test(pathname) && process.env.CLOCKTIMER_TEST_VOSK_RUNTIME)source=fs.readFileSync(process.env.CLOCKTIMER_TEST_VOSK_RUNTIME);
@@ -26,7 +27,7 @@ function createServer(acoustic){return http.createServer((req,res)=>{
  res.end(instrument(pathname,source,acoustic));
 });}
 
-module.exports=async function createMasterFixture({input='transcript',beforeAudioStart}={}){
+module.exports=async function createMasterFixture({input='transcript',beforeAudioStart,recognitionMode,speechOptions={}}={}){
  if(!['audio','transcript'].includes(input))throw Error('Choose audio or explicitly select transcript simulation');
  const acoustic=input==='audio';
  const locale=process.env.CLOCKTIMER_TEST_LOCALE||'en-US',profile=require('./languages/'+locale+'/profile.cjs');
@@ -46,6 +47,11 @@ module.exports=async function createMasterFixture({input='transcript',beforeAudi
   await page.route('**/api/**',r=>new URL(r.request().url()).pathname.endsWith('.js')?r.fallback():r.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions:4},calendars:[{profile:'walmart-us',searchedYear:2026,timezone:'America/New_York',provenance:'manual',rules:{weekStartDay:6,cutoffTime:'00:00:00',payPeriodDays:14,payPeriodAnchorDate:'2026-01-31',payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'2026-01-01',effectiveThrough:'2026-12-31'}}],trips:[],instruments:[],voices:[],accepted:true,tripId:41,eventId:1,events:[]}}));
   const base=process.env.ORDER_FILLER_TEST_BASE_URL||`http://127.0.0.1:${server.address().port}/`;
   const url=new URL('order-filler.php',base);if(process.env.CLOCKTIMER_TEST_LOCALE)url.searchParams.set('lang',process.env.CLOCKTIMER_TEST_LOCALE);
+  if(recognitionMode){if(!['parallel','sequential'].includes(recognitionMode))throw Error('Unknown recognition mode');url.searchParams.set('speech-recognizers',recognitionMode);}
+  for(const [key,value] of Object.entries(speechOptions)){
+   if(!['speech-warm','speech-grammar-worker','speech-coalesce','speech-alternatives'].includes(key))throw Error('Unknown speech comparison option: '+key);
+   url.searchParams.set(key,String(value));
+  }
   await page.goto(url.href);
   if(process.env.CLOCKTIMER_TEST_LOCALE)assert.equal((await page.locator('html').getAttribute('lang')).toLowerCase(),process.env.CLOCKTIMER_TEST_LOCALE.toLowerCase(),'server must render the requested locale');
   await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));

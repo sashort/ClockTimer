@@ -520,8 +520,8 @@
                         if (["vosk","vosk-server"].includes(globalThis.WMOF_SPEECH_BACKEND)) {
                             await loadClassicScript("speech/VoskTestConfig.js");
                             if (!globalThis.VoskRecognizer) await loadClassicScript("VoskRecognizer.js");
-                            if (globalThis.WMOF_SPEECH_BACKEND === 'vosk' && globalThis.WMOF_VOSK_CONFIG.contextHandoff) {
-                                for (const name of ['SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter','PcmSampleBuffer','SpeechBoundaryAnalyzer','VoskContextRecognizer'])
+                            if (globalThis.WMOF_SPEECH_BACKEND === 'vosk' && (globalThis.WMOF_VOSK_CONFIG.contextHandoff || globalThis.WMOF_VOSK_CONFIG.recognitionMode==='parallel')) {
+                                for (const name of ['SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter','PcmSampleBuffer','SpeechBoundaryAnalyzer','SpeechRecognitionLedger','SpeechContextSnapshotCache','SpeechGrammarCompiler','VoskDecoderPool','VoskContextRecognizer','VoskSlotRecognizer'])
                                     if (!globalThis[name]) await loadClassicScript(name+'.js');
                             }
                             if (globalThis.WMOF_SPEECH_BACKEND === "vosk-server" && !globalThis.VoskServerRecognizer) await loadClassicScript("VoskServerRecognizer.js");
@@ -3082,7 +3082,8 @@
     let pinCancelPrimed=false, pendingLoginAnnouncement, pendingVoiceLoginSwitch=false;
     let loginFocusAnnouncementKey;
     let loginDigitSlots = {id:["","","",""],pin:["","","",""]};
-    globalThis.WMOFSpeechExecutionContexts = {login: () => voiceLoginStage};
+    globalThis.WMOFSpeechExecutionContexts = {login: () => voiceLoginStage,
+        loginSlot:()=>voiceLoginStage==='pin'?'authentication':'login-id'};
     function syncLoginDigits() {
         for(const stage of ["id","pin"]){
             $(stage === "id" ? "#loginUsername" : "#loginPassword").value=loginDigitSlots[stage].join("");
@@ -27223,7 +27224,9 @@
         );
 
     for (const action of ["toggleSync","changeSyncOverride","enableSyncOverride"])
-        globalThis.WMOFActionFunctions.setMetadata(action,{transaction:false,independent:true});
+        globalThis.WMOFActionFunctions.setMetadata(action,{transaction:false,independent:true,slotKey:'sync',waitForSlotKeys:['authentication','sync']});
+    for (const action of ['readTripGoal','readScopeGoal','setTripGoal','setTotalGoal','changeGoal'])
+        globalThis.WMOFActionFunctions.setMetadata(action,{transaction:false,independent:true,slotKey:'goal',waitForSlotKeys:['authentication','goal']});
 
     globalThis.WMOFActionFunctions.setMetadata("changeSyncOverride", {
         parameters:[{name:"overrideAction",type:"choice",optional:true,values:["on","off"]}]
@@ -27617,6 +27620,11 @@
             }
 
             element.toggleAttribute("speech-independent", globalThis.WMOFActionFunctions.describe?.(actionName)?.independent === true);
+            const slotPolicy=globalThis.WMOFActionFunctions.describe?.(actionName);
+            if(slotPolicy?.slotKey)element.setAttribute('speech-slot-key',slotPolicy.slotKey);
+            else element.removeAttribute('speech-slot-key');
+            if(Array.isArray(slotPolicy?.waitForSlotKeys))element.setAttribute('speech-wait-for-slots',slotPolicy.waitForSlotKeys.join(' '));
+            else element.removeAttribute('speech-wait-for-slots');
             element.toggleAttribute("data-speech-state-command", !String(actionName).startsWith("read"));
             // Range and goal selections also retrieve server totals; they need
             // remote permission even when no trip data is being changed.
@@ -27688,6 +27696,7 @@
                 element.dataset.speechOptionsCategory = 'system';
                 element.setAttribute('speech-chain-surface', 'pop');
             } else if (key === 'ready') {
+                element.setAttribute('speech-slot-context','scheduled-start-time');
                 element.setAttribute('speech-chain-surface', '#voiceEntrySurface');
                 element.setAttribute('speech-chain-transition', 'WMOFSpeechTransitions.ready');
             }
@@ -27884,6 +27893,7 @@
             const loginCredentialsCommand=installSpeechCommand("loginCredentials", "enterLoginCredentials", loginDialog, false);
             if(loginCredentialsCommand){
                 loginCredentialsCommand.setAttribute("speech-execution-context", "credentials");
+                loginCredentialsCommand.setAttribute('speech-slot-key','authentication');
                 loginCredentialsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLoginCredentials");
                 loginCredentialsCommand.setAttribute("speech-atomic-input", "credentials");
                 loginCredentialsCommand.setAttribute("speech-digit-counts", "8");
@@ -27892,10 +27902,12 @@
                 loginCredentialsCommand.setAttribute("speech-persist", "");
             }
             const loginDigitsCommand = installSpeechCommand("loginDigits", "enterLoginDigits", loginDialog, false);
+            loginDigitsCommand?.setAttribute('speech-slot-key','WMOFSpeechExecutionContexts.loginSlot');
             if(loginDigitsCommand){loginDigitsCommand.setAttribute("speech-dispatch-boundary", "");loginDigitsCommand.setAttribute("speech-execution-context", "WMOFSpeechExecutionContexts.login");loginDigitsCommand.setAttribute("speech-persist", "");loginDigitsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");loginDigitsCommand.setAttribute("speech-atomic-input", "digits");loginDigitsCommand.setAttribute("speech-digit-counts", "4");loginDigitsCommand.setAttribute("speech-digit-field", "digits");}
             const loginReviewCommand = installSpeechCommand("confirm", "confirmLoginDigits", loginDialog, false);
             if(loginReviewCommand){
                 loginReviewCommand.setAttribute("speech-execution-context", "WMOFSpeechExecutionContexts.login");
+                loginReviewCommand.setAttribute('speech-slot-key','WMOFSpeechExecutionContexts.loginSlot');
                 loginReviewCommand.setAttribute("speech-persist", "");
                 loginReviewCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canConfirmLoginReview");
                 loginReviewCommand.dataset.speechTarget="#loginButton";

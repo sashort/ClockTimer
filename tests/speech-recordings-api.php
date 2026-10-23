@@ -15,7 +15,7 @@ checkRecordingResponse(recordingRequest("\$_SERVER['HTTPS']='off'")['error']==='
 checkRecordingResponse(recordingRequest('')['error']==='unauthorized','Anonymous requests are rejected');
 checkRecordingResponse(recordingRequest($grant."\$_SERVER['REQUEST_METHOD']='POST'")['error']==='invalid_csrf','A scoped browser grant still requires CSRF for uploads');
 $result=recordingRequest($grant);
-checkRecordingResponse(count($result['prompts'])===31 && strlen($result['csrfToken'])>=32,'Scoped GET returns script and CSRF');
+checkRecordingResponse(count($result['prompts'])===32 && strlen($result['csrfToken'])>=32,'Scoped GET returns script and CSRF');
 checkRecordingResponse(recordingRequest($grant."\$_GET['locale']='../private'")['error']==='invalid_recording','Path traversal is rejected');
 checkRecordingResponse(recordingRequest($grant."\$_SERVER['REQUEST_METHOD']='DELETE'")['error']==='method_not_allowed','Unsupported methods are rejected');
 echo "PASS production recording route HTTPS, anonymous denial, scoped script, CSRF, locale and method guards\n";
