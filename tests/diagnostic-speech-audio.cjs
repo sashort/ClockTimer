@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 /** Deterministic, audible input corpus; the recognizer never receives expected text. */
 class DiagnosticSpeechAudio {
  constructor({locale='en-US',voice=locale.toLowerCase(),wpm=160,directory,recordingsDirectory=process.env.CLOCKTIMER_SPEECH_RECORDINGS_DIRECTORY}={}){
-  if(![90,160,240].includes(wpm))throw Error('Choose a reviewed speech delivery rate');
+  if(!Object.values(require('./order-filler-master-plan.cjs').rates).includes(wpm))throw Error('Choose a reviewed speech delivery rate');
   this.locale=locale;this.voice=voice;this.wpm=wpm;
   this.directory=directory||path.join(__dirname,'artifacts/language-tests',locale.toLowerCase(),'audio');
   this.recordingsDirectory=recordingsDirectory;
