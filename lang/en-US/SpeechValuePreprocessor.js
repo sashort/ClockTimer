@@ -6,11 +6,11 @@ class EnglishSpeechValuePreprocessor {
         if (boundary?.remainder) {
             const normalized = this.normalize(boundary.value, kind);
             if (normalized !== undefined) return {status: "defer", value: normalized,
-                acceptedTranscript: boundary.value, remainder: boundary.remainder};
+                acceptedTranscript: boundary.value, remainder: boundary.remainder, ...this.describe(boundary.value,kind)};
         }
         const text = String(value ?? "").toLowerCase().trim().replace(/\s+/g, " ");
         const normalized = this.normalize(text, kind);
-        if (normalized !== undefined) return {status: "valid", value: normalized};
+        if (normalized !== undefined) return {status: "valid", value: normalized, ...this.describe(text,kind)};
         if (final) return {status: "malformed", reason: "invalid-value"};
         if (!text) return {status: "incomplete"};
         if (/^(?:hundred|thousand|million)(?:\s|$)/.test(text))
@@ -24,6 +24,13 @@ class EnglishSpeechValuePreprocessor {
         const viable = words.every((word, index) => vocabulary.has(word) || /^\d+(?::\d*)*$/.test(word) ||
             (index === words.length - 1 && [...vocabulary].some(token => token.startsWith(word))));
         return {status: viable ? "incomplete" : "malformed", reason: viable ? "unfinished-value" : "unknown-value-word"};
+    }
+
+    static describe(value,kind) {
+        const phrase=this.#normalizeTimeArticles(value);
+        if (kind==='duration') return EnglishDurationParser.parseComponents(phrase);
+        if (kind==='clock'||kind==='clock-parts') return EnglishSpokenTimeParser.parseComponents(phrase);
+        return undefined;
     }
 
     static #normalizeTimeArticles(value) {

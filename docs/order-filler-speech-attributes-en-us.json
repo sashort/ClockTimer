@@ -1469,7 +1469,7 @@
         "data-speech-editor-id": "builtin:commands:system",
         "data-speech-options-category": "system",
         "data-speech-options-group": "speech-controls",
-        "speech-pattern": "^(?:(?:speech )?commands|choices|options|what)$",
+        "speech-pattern": "^commands$",
         "speech-function": "WMOFActions.openSpeechOptions",
         "data-speech-pattern-id": "f4ed5e9f-e973-4e48-bf16-083c95b55aaf"
       },

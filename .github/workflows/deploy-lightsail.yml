@@ -50,6 +50,9 @@ jobs:
           node tests/owned-feedback-scope.mjs
           node tests/speech-continuation-session.mjs
           node tests/speech-value-collector.mjs
+          node tests/speech-language-controller.mjs
+          node tests/vosk-runtime-integrity.mjs
+          node tests/drop-in-speech-debug.mjs
           node tests/goal-feedback.mjs
           node tests/app-state-transactions.mjs --goal-failure-batch --voice-feedback
           node tests/app-state-transactions.mjs --goal-cascade --voice-feedback
@@ -172,6 +175,7 @@ jobs:
       - run: php -l api/_core/impersonation.php
       - run: php -l admin/impersonation.php
       - run: php -d extension=pdo_sqlite tests/impersonation.php
+      - run: php -d extension=pdo_sqlite tests/live-stream-speech-debug.php
       - run: php -l api/command-check/index.php
       - run: php -l api/diagnostics/order-filler/index.php
       - run: php -l api/_core/order_filler_diagnostics.php

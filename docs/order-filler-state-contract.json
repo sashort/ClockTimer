@@ -419,7 +419,8 @@
         "audio": [
           {
             "kind": "speech",
-            "format": "duration-only"
+            "format": "duration-only",
+            "prefix": "over by "
           },
           {
             "kind": "chime",
@@ -492,7 +493,8 @@
         "audio": [
           {
             "kind": "speech",
-            "format": "duration-only"
+            "format": "duration-only",
+            "prefix": "over by "
           },
           {
             "kind": "chime",

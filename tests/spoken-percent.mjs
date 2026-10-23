@@ -5,6 +5,8 @@ const source = fs.readFileSync(new URL("../lang/en-US/PercentParser.js", import.
 const Parser = Function(`${source}; return EnglishSpokenPercentParser;`)();
 assert.equal(Parser.parse("100"), 100);
 assert.equal(Parser.parse("100 percent"), 100);
+assert.equal(Parser.parse("one ten"), 110);
+assert.equal(Parser.parse("one ten percent"), 110);
 assert.equal(Parser.parse("ninety five"), 95);
 assert.equal(Parser.parse("one hundred and five percent"), 105);
 assert.equal(Parser.parse("102.5%"), 102.5);

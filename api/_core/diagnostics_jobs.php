@@ -1,10 +1,11 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/speech_recordings.php';
 
 /** One private runner queue. Requests carry a session grant, never a reusable access token. */
 final class DiagnosticsJobs
 {
-    public function __construct(private string $directory, private string $corpusDirectory) {}
+    public function __construct(private string $directory, private string $corpusDirectory, private ?string $recordingsDirectory=null) {}
 
     public function handle(array $input, string $principal, array $credentials = []): array
     {
@@ -34,9 +35,17 @@ final class DiagnosticsJobs
                 $matches=array_values(array_filter($available,static fn($value)=>strtolower($value)===strtolower($locale)));
                 if (!$matches || !is_file($this->corpusDirectory.'/'.$matches[0].'/profile.cjs')) throw new InvalidArgumentException('No reviewed test corpus for that language/region.');
                 $suite=$input['suite']??'';
-                if (!in_array($suite,['press','fast','medium','slow','time','duration'],true)) throw new InvalidArgumentException('Invalid test category.');
+                if (!in_array($suite,['press','fast','medium','time','duration'],true)) throw new InvalidArgumentException('Invalid test category.');
                 if (empty($credentials['cookie']) || empty($credentials['csrf'])) throw new RuntimeException('A diagnostics session is required.');
+                $audioSource=$input['audioSource']??'synthetic';
+                if (!in_array($audioSource,['human','synthetic'],true)) throw new InvalidArgumentException('Choose Human recordings or Synthetic audio.');
+                if (in_array($suite,['fast','medium'],true) && $audioSource==='human') {
+                    if ($this->recordingsDirectory===null) throw new RuntimeException('Human recording storage is not configured.');
+                    $script=(new SpeechRecordings($this->recordingsDirectory,dirname($this->corpusDirectory).'/recording-scripts'))->script($matches[0],$suite);
+                    if ($script['recorded']!==count($script['prompts'])) throw new InvalidArgumentException('Record all '.count($script['prompts']).' '.$suite.' prompts first ('.$script['recorded'].' saved).');
+                }
                 $job=['id'=>bin2hex(random_bytes(16)),'status'=>'queued','suite'=>$suite,'locale'=>$matches[0],'principal'=>$principal,'startedAt'=>gmdate('c')];
+                if (in_array($suite,['fast','medium'],true)) $job['audioSource']=$audioSource;
                 $this->write($this->directory.'/'.$job['id'].'.request',$job+['credentials'=>$credentials]);
                 $this->write($active,$job);$state=$job;$busy=true;
             } elseif (in_array($action,['job-stop','job-resume','job-abort'],true)) {

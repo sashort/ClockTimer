@@ -1,8 +1,18 @@
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('assert/strict');
 const {chromium}=require('playwright'),root=path.resolve(__dirname,'..');
 function instrument(pathname,source,acoustic=false){
+ if(acoustic && pathname==='/VoskRecognizer.js' && process.env.CLOCKTIMER_TEST_TRACE_ALTERNATIVES)source=source.toString().replace('this.selectHypothesis = selectHypothesis;', `globalThis.voskOptions={configured:typeof selectHypothesis==='function'};globalThis.voskSelections=[];this.selectHypothesis=async(...args)=>{const result=selectHypothesis?await selectHypothesis(...args):args[1][0];voskSelections.push({id:args[0],hypotheses:args[1],result});return result;};`);
+
+ if(acoustic && (/^\/speech\/vosk\/runtime\/vosk-[a-zA-Z0-9.-]+\.js$/).test(pathname) && process.env.CLOCKTIMER_TEST_VOSK_RUNTIME)source=fs.readFileSync(process.env.CLOCKTIMER_TEST_VOSK_RUNTIME);
+ if(acoustic && pathname==='/VoskRecognizer.js' && process.env.CLOCKTIMER_TEST_VOSK_GRAMMAR){
+  const grammar=JSON.parse(fs.readFileSync(process.env.CLOCKTIMER_TEST_VOSK_GRAMMAR,'utf8'));
+  source=source.toString().replace('new this.#model.KaldiRecognizer(this.sampleRate)',
+   'new this.#model.KaldiRecognizer(this.sampleRate, '+JSON.stringify(JSON.stringify(grammar))+')');
+ }
+
  if(pathname==='/api/audio/AudioEngine.js')source=source.toString()+`\nWMOFAudio.speak=(text,options={})=>{(globalThis.handoffAudio ||= []).push('speech:'+text);queueMicrotask(()=>options.onEnd?.());return true;};WMOFAudio.startSong=async name=>{(globalThis.handoffAudio ||= []).push('chime:'+name);return {hasChime:true,finished:Promise.resolve()};};`;
  if(pathname==='/app.js')source=source.toString().replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;','const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;').replace('    document.dispatchEvent(new Event("clocktimer-app-ready"));','    globalThis.testWaitForFeedback=async()=>{await microphoneFeedbackCompletion;while(semanticAnnouncementDraining || semanticAnnouncementQueue.pointer<semanticAnnouncementQueue.length)await new Promise(resolve=>setTimeout(resolve,10));};\n    document.dispatchEvent(new Event("clocktimer-app-ready"));');
+ if(pathname==='/VoskContextRecognizer.js'&&process.env.CLOCKTIMER_TEST_TRACE_HANDOFF)source=source.toString().replace('super();',`super();const originalProvider=contextProvider;contextProvider=async(...args)=>{const value=await originalProvider(...args);(globalThis.handoffContexts ||= []).push({id:args[0],text:args[1],records:value.records});return value;};`);
  if(pathname==='/SharedModal.js'&&process.env.DISABLE_SHARED_MODAL)source='';
  if(pathname==='/SpeechMenu.js'&&!acoustic)source=source.toString().replace(/\r\n/g,'\n').replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;',()=>`\nstatic testActivate(){SpeechMenu.#modelReady=true;SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={beginUtterance(){},abortUtterance(){},finishUtterance(id){const u=SpeechMenu.#utterance?.id===id?SpeechMenu.#utterance:SpeechMenu.#finishedUtterances.get(id);setTimeout(()=>SpeechMenu.#onSherpaTranscript({detail:{utteranceId:id,transcript:u?.transcript||"",isFinal:true}}),10);}};}\nstatic async testSayAfterSilence(text){SpeechMenu.#beginUtterance(performance.now());const u=SpeechMenu.#utterance;await SpeechMenu.#handleLiveTranscript(u,text,false);await u.digestQueue;u.continuationPauseStartedAt=performance.now()-SpeechMenu.#continuationGraceMilliseconds();SpeechMenu.#armContinuationPauseDeadline(u);await new Promise(resolve=>setTimeout(resolve,250));await u.digestQueue;await u.segmentBarrier;return !u.digestExecutionFailed&&!u.digestFailed;}\nstatic async testSay(text,wpm=0){SpeechMenu.#beginUtterance(performance.now());const u=SpeechMenu.#utterance;const words=text.split(/\\s+/);const trace={text,wpm,partials:[]};(globalThis.masterSpeechInputs ||= []).push(trace);for(let i=0;i<(wpm?words.length:1);i++){const partial=wpm?words.slice(0,i+1).join(" "):text;trace.partials.push({text:partial,at:performance.now()});await SpeechMenu.#handleLiveTranscript(u,partial,!wpm||i===words.length-1);await u.digestQueue;if(wpm&&i<words.length-1)await new Promise(resolve=>setTimeout(resolve,60000/wpm));}await u.segmentBarrier;return !u.digestExecutionFailed;}\n}\n\nglobalThis.SpeechMenu = SpeechMenu;\nSpeechMenu.start=async()=>{SpeechMenu.testActivate();SpeechMenu.events.dispatchEvent(new Event('started'));return true;};`);
  return source;
@@ -72,7 +82,7 @@ module.exports=async function createMasterFixture({input='transcript',beforeAudi
  if(audio)await audio.ready;
  const say=acoustic?async text=>{
   const clip=await audio.render(text),start=await page.evaluate(()=>acousticSpeechEvents.length);
-  const entry={key:clip.key,text,wpm:clip.wpm,file:clip.file,sha256:clip.sha256,durationMilliseconds:clip.durationMilliseconds,events:[],recognized:''};audioCases.push(entry);
+  const entry={key:clip.key,text,wpm:clip.wpm,source:clip.source,file:clip.file,sha256:clip.sha256,durationMilliseconds:clip.durationMilliseconds,events:[],recognized:''};audioCases.push(entry);
   try{
    await page.evaluate(base64=>diagnosticsAudioInput.play(base64),clip.wav.toString('base64'));
    await page.waitForFunction(start=>acousticSpeechEvents.slice(start).some(e=>(e.type==='speechTranscriptScoped'&&e.isFinal)||(e.type==='utteranceFinished'&&e.committed)||e.type==='speechRecognitionFailed'),start,{timeout:15000});

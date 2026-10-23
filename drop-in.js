@@ -1,6 +1,7 @@
 (() => {
     'use strict';
     const $ = id => document.getElementById(id);
+    const debugSpeech = new URL(location.href).searchParams.get('debug') === 'speech';
     const stream = new WMOFLiveTripStream({baseUrl: new URL('./', document.baseURI)});
     const view = new WMOFDropInView({root:$('liveStreamDialog'),stream,text:WMOFDropInText});
     document.addEventListener('graphical-settings-saved', event => {
@@ -265,7 +266,7 @@
             $('liveStreamTrainerMessageText').value = ''; $('liveStreamTrainerMessageStatus').textContent = '';
             identities.set(Number(identity.userId), identity);
             context.select(identity); view.setUser(Number(identity.userId)); renderSettings(); controls();
-            if (watch && request === revision && !exiting) await stream.startViewing(identity.userId);
+            if (watch && request === revision && !exiting) await stream.startViewing(identity.userId,{debugSpeech});
             if (request === revision) status(stream.viewing ? text('5f0f4c0d-61e8-5fae-8051-67b7285bfcaa') : text('bafe351c-ceef-5648-9536-fcf9da113818'));
         } catch (error) { if (request === revision) status(error.message); }
         finally { if (request === revision) {busy = false; controls();} }
@@ -326,6 +327,7 @@
         const detail=event.detail;
         if (Number(detail.targetUserId) !== Number(view.userId)) return;
         if (detail.type === 'microphone.result') remoteMicrophone?.finish(detail.payload?.commandId,detail.payload);
+        if (debugSpeech && detail.type === 'speech.debug') globalThis.WMOFDropInSpeechDebug?.log(detail.payload,{targetUserId:view.userId});
         if (detail.type === 'speech.command') $('liveStreamRemoteSpeech').textContent = detail.payload?.canonicalTranscript || detail.payload?.transcript || '—';
     });
     stream.addEventListener('error', event => status(event.detail?.error?.message || WMOFDropInText('failed')));

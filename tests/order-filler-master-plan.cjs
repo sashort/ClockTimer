@@ -10,5 +10,5 @@ function commands(method){
   ...(method==='voice'?[{id:'speech-response-chain-browser',args:['tests/speech-response-chain-browser.mjs']}]:[])
  ];
 }
-const rates={fast:240,medium:160,slow:90};
+const rates={fast:240,medium:160};
 module.exports={commands,journeyCheckpoints,rates};

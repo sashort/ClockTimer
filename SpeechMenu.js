@@ -244,6 +244,16 @@ class SpeechMenu {
     static #maximumCandidateHoldTimeout = 1200;
     static #typedContinuationCache = new WeakMap();
     static #finiteSpeechValues;
+    static #languageRevision;
+    static #speechVocabulary() {
+        const controller=globalThis.SpeechLanguageController;
+        if(SpeechMenu.#languageRevision!==controller.revision || !SpeechMenu.#finiteSpeechValues){
+            SpeechMenu.#finiteSpeechValues=controller.vocabulary();
+            SpeechMenu.#languageRevision=controller.revision;
+            SpeechMenu.#typedContinuationCache=new WeakMap();
+        }
+        return SpeechMenu.#finiteSpeechValues;
+    }
     static #adaptiveTiming =
         typeof globalThis
             .AdaptiveSpeechTiming ===
@@ -1382,10 +1392,11 @@ class SpeechMenu {
                 );
 
                 const recognizer = useVosk
-                    ? new (useVoskServer ? globalThis.VoskServerRecognizer : globalThis.VoskRecognizer)({
+                    ? new (useVoskServer ? globalThis.VoskServerRecognizer : globalThis.WMOF_VOSK_CONFIG.contextHandoff ? globalThis.VoskContextRecognizer : globalThis.VoskRecognizer)({
                         ...(useVoskServer ? globalThis.WMOF_VOSK_SERVER_CONFIG : globalThis.WMOF_VOSK_CONFIG),
-                        ...(useVoskServer ? {selectHypothesis:(id,hypotheses,options)=>SpeechMenu.#selectWebSpeechHypothesis(id,hypotheses,{...options,afterBarrier:true})} : {}),
+                        selectHypothesis:(id,hypotheses,options)=>SpeechMenu.#selectWebSpeechHypothesis(id,hypotheses,{...options,afterBarrier:true}),
                         language: SpeechMenu.#language,
+                        contextProvider:SpeechMenu.#voskContext,
                         getCollectionSession: id => {
                             const owner = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
                             return owner && SpeechMenu.#continuationSession(owner);
@@ -1402,7 +1413,8 @@ class SpeechMenu {
                 SpeechMenu.#recognizer =
                     recognizer;
 
-                if(useVoskServer)recognizer.addEventListener("alternatives",event=>SpeechMenu.#emit("speechRecognitionAlternatives",event.detail));
+                if(useVosk)recognizer.addEventListener("alternatives",event=>SpeechMenu.#emit("speechRecognitionAlternatives",event.detail));
+                if(useVosk)recognizer.addEventListener("handoff",event=>SpeechMenu.#emit("speechRecognitionHandoff",event.detail));
                 recognizer.addEventListener(
                     "transcript",
                     SpeechMenu.#onSherpaTranscript
@@ -1423,6 +1435,7 @@ class SpeechMenu {
                     SpeechMenu.#onSherpaUtteranceEnded
                 );
 
+                recognizer.addEventListener("alternatives", event => SpeechMenu.#emit("speechRecognitionAlternatives", event.detail));
                 await recognizer.ready;
 
                 if (usePocketSphinx) {
@@ -3317,7 +3330,7 @@ class SpeechMenu {
                 const leadingCapture = /^<([A-Za-z][A-Za-z0-9_]*)>/.exec(String(phrase));
                 if (leadingCapture && globalThis.VoskGrammarRouter && globalThis.SpeechGrammarContext) {
                     const grammar = SpeechGrammarContext.VALUE_CAPTURE_TYPES[leadingCapture[1]];
-                    SpeechMenu.#finiteSpeechValues ??= VoskGrammarRouter.valuePhrases();
+                    SpeechMenu.#speechVocabulary();
                     // Value-first commands have numeric/date/etc. starts too.
                     // Preserve those starts without exempting arbitrary junk.
                     for (const value of SpeechMenu.#finiteSpeechValues[grammar] || [])
@@ -3356,6 +3369,11 @@ class SpeechMenu {
     static #onSherpaTranscript = event => {
         const detail =
             event.detail || {};
+        SpeechMenu.#emit('speechRecognizerTranscript', {
+            utteranceId:detail.utteranceId, transcript:detail.transcript,
+            isFinal:Boolean(detail.isFinal), backend:SpeechMenu.#recognizerBackend,
+            recognitionContext:detail.recognitionContext, decoderEpoch:detail.decoderEpoch
+        });
         const id =
             detail.utteranceId;
         const active =
@@ -3382,7 +3400,8 @@ class SpeechMenu {
 
         SpeechMenu.#emit("speechTranscriptScoped", {
             utteranceId: id, rawTranscript, transcript, isFinal: Boolean(detail.isFinal),
-            backend: SpeechMenu.#recognizerBackend
+            backend: SpeechMenu.#recognizerBackend,
+            recognitionContext:detail.recognitionContext, decoderEpoch:detail.decoderEpoch
         });
 
         if (!transcript) {
@@ -4252,6 +4271,20 @@ class SpeechMenu {
         SpeechMenu.#emit("speechCommandDigested", {utteranceId: utterance.id,
             commandElement: step.commandElement, transcript: segment,
             consumedTranscript: utterance.digestTranscript});
+        // Observe the selected value only; speculative planner probes do not
+        // represent values accepted into the command buffer.
+        try {
+            const value=SpeechMenu.#classifySpeechValue(step.commandElement,segment,Boolean(utterance.digestIsFinal));
+            if(value) SpeechMenu.#emit('speechValueValidated', {
+                utteranceId:utterance.id,commandElement:step.commandElement,transcript:segment,
+                kind:step.commandElement.getAttribute('speech-preproc-context'),
+                field:step.commandElement.getAttribute('speech-preproc-field'),
+                status:value.status,value:value.value,components:value.components,inferred:value.inferred
+            });
+        } catch (error) {
+            // Optional telemetry must never interrupt validated command work.
+            SpeechMenu.#emit('speechValueDiagnosticError',{utteranceId:utterance.id,error});
+        }
         const commandElement=step.commandElement;
         const buffer=SpeechMenu.#validatedBuffer();
         if(utterance.digestSteps.length===1){
@@ -7187,7 +7220,7 @@ class SpeechMenu {
         const match = pattern.exec(transcript);
         const value = match?.groups?.[field];
         if (!value) return undefined;
-        const normalize = globalThis.EnglishSpeechValuePreprocessor?.normalize;
+        const normalize = globalThis.SpeechLanguageController?.normalize;
         if (typeof normalize !== "function") return undefined;
         const canonical = normalize(value, kind === "time" ? "clock" : kind);
         if (typeof canonical !== "string" || !canonical) return undefined;
@@ -7231,6 +7264,8 @@ class SpeechMenu {
         const frames = continuing ? utterance.digestSurfaceStack : utterance.voskInitialFrames;
         let candidates = continuing ? SpeechMenu.#digestCandidates(context, frames) : utterance.voskInitialCandidates;
         candidates = candidates.filter(SpeechMenu.#commandAllowedWhileSleeping);
+        const fullTranscript = transcript;
+        let parallelPrefix = "";
         if (transcript && continuing) {
             const remaining = SpeechMenu.#digestRemainder(utterance, transcript);
             if (remaining === undefined) return {records: []};
@@ -7247,14 +7282,26 @@ class SpeechMenu {
                 SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean), probe);
             if (!plan || plan.invalid) return {records: []};
             const last = plan.steps?.at(-1);
-            if (last) candidates = SpeechMenu.#digestCandidates(last.nextContext, last.nextSurfaceStack);
+            if (last) {
+                candidates = SpeechMenu.#digestCandidates(last.nextContext, last.nextSurfaceStack);
+                const allWords = SpeechMenu.#normalizeTranscript(fullTranscript).split(" ").filter(Boolean);
+                const remainingWords = SpeechMenu.#normalizeTranscript(transcript).split(" ").filter(Boolean);
+                parallelPrefix = allWords.slice(0, allWords.length - remainingWords.length + plan.consumedWords).join(" ");
+            }
             else if (!plan.pending) return {records: []};
         }
-        return {records: candidates.map(element => {
+        return {parallelPrefix,
+            selectHypothesis: (hypotheses, options) => SpeechMenu.#selectVoskHypothesis(id, hypotheses, options),
+            records: candidates.map(element => {
             const kind = SpeechMenu.#speechValueKind(element) || element.getAttribute("speech-preproc-context");
             return {id: element.id || element.getAttribute("data-speech-editor-id"),
                 pattern: element.getAttribute("speech-pattern"),
                 atomic: element.getAttribute("speech-atomic-input"),
+                nextContext:element.getAttribute("speech-chain-next"),
+                digitCounts:element.getAttribute('speech-digit-counts')?.split(/[,\s]+/).filter(Boolean).map(Number),
+                digitContext:element.getAttribute('speech-execution-context'),
+                digitField:element.getAttribute('speech-digit-field'),
+                digitVocabulary:globalThis.WMOFLanguagePack?.language?.speech?.digits,
                 action: element.getAttribute("speech-function"),
                 capture: element.getAttribute("speech-preproc-field"),
                 expect: kind === "clock" ? "time" : kind === "percent" ? "number" : ["duration", "number", "digits", "date", "time"].includes(kind) ? kind : undefined};
@@ -7362,6 +7409,43 @@ class SpeechMenu {
             await utterance.segmentBarrier;
             return SpeechMenu.#selectWebSpeechHypothesis(id,hypotheses,{isFinal,afterBarrier:true});
         }
+    }
+
+    // Competing grammar searches are speculative. Only the existing planner
+    // may decide whether their text fits the session's available continuation.
+    // Probing uses isolated collectors and cannot execute UI/business actions.
+    static async #selectVoskHypothesis(id, hypotheses, {isFinal = false} = {}) {
+        const utterance = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
+        if (utterance?.segmentBarrier) await utterance.segmentBarrier;
+        if (!utterance || utterance.chainCanceled || utterance.digestFailed) return;
+        const continuing = Boolean(utterance.digestTranscript);
+        const context = continuing ? utterance.digestContext : undefined;
+        const frames = continuing ? utterance.digestSurfaceStack : utterance.voskInitialFrames;
+        const candidates = (continuing ? SpeechMenu.#digestCandidates(context, frames)
+            : utterance.voskInitialCandidates || SpeechMenu.#availableCandidates())
+            .filter(SpeechMenu.#commandAllowedWhileSleeping);
+        let selected;
+        for (const hypothesis of hypotheses) {
+            if (!hypothesis.enabled || !hypothesis.precondition_met ||
+                !Number.isFinite(hypothesis.total_cost) || hypothesis.start_frame !== 0) continue;
+            const text = continuing ? SpeechMenu.#digestRemainder(utterance, hypothesis.text) : hypothesis.text;
+            if (text === undefined) continue;
+            const probe = {...utterance, digestClosed: true, digestIsFinal: isFinal,
+                chainActive: false, digestContext: context, digestSurfaceStack: frames,
+                valueCollectors: new Map()};
+            if (text) {
+                const plan = await SpeechMenu.#planDigest(candidates,
+                    SpeechMenu.#normalizeTranscript(text).split(" ").filter(Boolean), probe);
+                if (!plan || plan.invalid || (!plan.steps?.length && !plan.pending)) continue;
+            } else if (!continuing) continue;
+            // Scores can only compete over the same acoustic interval. Never
+            // let a short branch win merely because it accumulated less cost.
+            if (!selected || hypothesis.end_frame > selected.end_frame ||
+                (hypothesis.end_frame === selected.end_frame && hypothesis.total_cost < selected.total_cost))
+                selected = hypothesis;
+        }
+        if (utterance.chainCanceled || utterance.digestFailed) return;
+        return selected;
     }
 
     static #commandStillAuthorized(element) {
@@ -7551,9 +7635,10 @@ class SpeechMenu {
         // An unbounded application collector may accept compound values beyond
         // the decoder's finite phrase list. That list cannot prove terminality.
         if (strictlyLonger && (element.hasAttribute("speech-open-ended") || /\.\+|\.\*/.test(pattern))) return undefined;
+        if(globalThis.SpeechLanguageController)SpeechMenu.#speechVocabulary();
         let cached = SpeechMenu.#typedContinuationCache.get(element);
         if (!cached || cached.pattern !== pattern || cached.kind !== kind) {
-            SpeechMenu.#finiteSpeechValues ??= router.valuePhrases();
+            SpeechMenu.#speechVocabulary();
             const compiled = compiler.compileStages([{pattern, ...(kind ? {expect: kind} : {})}], {valuePhrases: SpeechMenu.#finiteSpeechValues});
             cached = {pattern, kind, paths: compiled.unsupported.length ? [] : compiled.paths};
             SpeechMenu.#typedContinuationCache.set(element, cached);
@@ -10683,3 +10768,4 @@ class SpeechMenu {
 }
 
 globalThis.SpeechMenu = SpeechMenu;
+globalThis.SpeechLanguageController?.refreshCollectors();

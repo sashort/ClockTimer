@@ -66,14 +66,14 @@
                                     const alternatives=result.alternatives.slice(0,30);
                                     const prefix=this.#segments.filter(segment=>segment.final).map(segment=>segment.text).filter(Boolean).join(' ');
                                     const hypotheses=alternatives.map((alternative,index)=>({index,
-                                        text:[prefix,alternative.text].filter(Boolean).join(' '),confidence:alternative.confidence}));
+                                        text:[prefix,alternative.text].filter(Boolean).join(' '),segmentText:alternative.text,confidence:alternative.confidence,words:alternative.result}));
                                     const selected=selectHypothesis && this.#utteranceId!==undefined
                                         ? await selectHypothesis(this.#utteranceId,hypotheses,{isFinal:message.boundary===true}) : hypotheses[0];
                                     if(this.#closed)return;
                                     const choice=alternatives[selected?.index];
                                     result={...(choice||{}),text:choice?.text||''};
                                     this.dispatchEvent(new CustomEvent('alternatives',{detail:{utteranceId:this.#utteranceId,
-                                        count:alternatives.length,selectedIndex:selected?.index??null}}));
+                                        count:alternatives.length,selectedIndex:selected?.index??null,hypotheses}}));
                                 }
                                 emit(message.type==='partial'?'partialresult':'result',{result});
                             }).catch(error=>this.#fail(error.message||'Speech alternative selection failed.'));
@@ -83,7 +83,7 @@
                     socket.onclose=()=>{finish();if(!this.#closed)this.#fail('Speech service disconnected.');};
                 });
                 if(this.#closed)throw Error('Speech session was closed.');
-                this.#adapter=new globalThis.VoskRecognizer({getCollectionSession,model:{KaldiRecognizer:class {
+                this.#adapter=new globalThis.VoskRecognizer({getCollectionSession,maxAlternatives:0,model:{KaldiRecognizer:class {
                     listeners=new Map();
                     constructor(rate){if(rate!==16000 || decoder)throw Error('Speech session requires one 16 kHz decoder.');decoder=this;}
                     on(name,callback){this.listeners.set(name,callback);}

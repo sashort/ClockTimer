@@ -13,10 +13,10 @@ source state, latest speech status and browser exceptions for diagnosis.
 | When | Command | Coverage |
 | --- | --- | --- |
 | Ordinary changes | `npm run test:order-filler:press` | Browser presses, pointer FSM contract cases, supporting UI/model tests |
-| Ordinary changes | `npm run test:order-filler:voice` | Fast → Medium → Slow audio-driven journeys, voice FSM contract cases, supporting speech/UI/model tests |
+| Ordinary changes | `npm run test:order-filler:voice` | Fast → Medium audio-driven journeys, voice FSM contract cases, supporting speech/UI/model tests |
 | Recognizer/language work | `npm run test:order-filler:duration` | Every second through 1:59:59, across applicable duration phrase paths and Numberpad forms |
 | Recognizer/language work | `npm run test:order-filler:time` | Every hour/minute through voice and Numberpad; every second through the absolute Numberpad |
-| After deployment | `npm run test:order-filler:deployed` | Served application assets in an isolated browser, per-locale Press/Fast/Medium/Slow results |
+| After deployment | `npm run test:order-filler:deployed` | Served application assets in an isolated browser, per-locale Press/Fast/Medium results |
 
 ## Workflow and FSM coverage
 
@@ -42,7 +42,7 @@ The inventory and behavioral contract remain incremental. Unreviewed families ar
 included in `fsm-report.json`. Passing these tests does not establish every possible
 combination of states; new states/transitions need reviewed contract cases.
 
-Voice delivery runs Fast (240 words/minute), then Medium (160), then Slow (90).
+Voice delivery runs Fast (240 words/minute), then Medium (160).
 The voice journey now synthesizes audible WAV clips, substitutes only the microphone
 source with a Web Audio MediaStream, and leaves SpeechMenu, its AudioWorklet resampler,
 VAD, grammar selection and recognizer intact. Expected text stays in Node: it is
@@ -81,7 +81,7 @@ revised partials directly instead of appending its segment-recovery prefix. Adap
 that emit segment-local text retain the existing recovery behavior. Model tests
 cover revisions, duplicate prevention, optional values and segment compatibility;
 `node tests/vosk-command-head-browser.cjs` verifies actual Trip mode selection from
-Year mode with audio at 240/160/90 WPM. The virtual audio fixture uses a silent
+Year mode with audio at 240/160 WPM. The virtual audio fixture uses a silent
 Web Audio output sink so headless runs do not depend on speaker hardware; real
 PCM processing and recognition remain active. The full audio workflow remains a
 separate gate and can still report other recognition failures.
@@ -89,7 +89,7 @@ separate gate and can still report other recognition failures.
 The same bootstrap constraint applies to projected continuation grammars. Otherwise
 opening the break selector reintroduces full numeric phrase weights and can turn
 `okay` into a number before confirmation. `node tests/vosk-break-selection-browser.cjs`
-uses real audio at all three rates to open the selector, choose Short break and
+uses real audio at both rates to open the selector, choose Short break and
 confirm in one utterance, checking the selected break type and released locks.
 Master failures also print their expected/heard synthetic phrase evidence in CI
 so failures can be diagnosed without exporting an entire artifact directory.
@@ -119,7 +119,7 @@ cannot activate the UI. At command roots, `[unk]` gives out-of-grammar sounds a 
 instead of forcing every sound into an available command.
 
 The focused command-head audio regression also checks setting 110 percent and
-reading it back at all three delivery rates. The virtual audio fixture retains
+reading it back at both delivery rates. The virtual audio fixture retains
 its AudioContexts throughout browser startup to prevent pending worklet promises
 from being collected; it still processes real PCM through VAD and Vosk.
 Each fixture context retains its worklet and runs a zero-valued source into the
@@ -233,7 +233,6 @@ tests/artifacts/language-tests/
       touch/press/report.json
       voice/fast/audio/report.json
       voice/medium/audio/report.json
-      voice/slow/audio/report.json
 ```
 
 The server uses `/var/lib/clocktimer/diagnostics/summary.log` plus
@@ -255,7 +254,7 @@ append late results. There is no report history archive.
 reader grows its EOF window for a long language summary; it does not scan the whole
 report. Full logs are available through an authenticated GET without `status=1`.
 `/diagnostics/order-filler/` polls status every two seconds and shows the language
-matrix in Press/Fast/Medium/Slow order, live progress, separate numeric results,
+matrix in Press/Fast/Medium order, live progress, separate numeric results,
 log links and stale-update notices. Polling uses `fetch` without document navigation.
 A complete snapshot is fetched before patching stable table/progress nodes; page
 and panel scroll offsets are retained at render time, including scrolling during
@@ -264,15 +263,15 @@ to have passed.
 
 ## Interactive diagnostics controls and result views
 
-The dashboard has six keyboard-accessible result selectors: Press, Fast, Medium,
-Slow, Clock times and Durations. Selecting one filters the individual-results table
+The dashboard has five keyboard-accessible result selectors: Press, Fast, Medium,
+Clock times and Durations. Selecting one filters the individual-results table
 and targets Start, Stop, Resume and Abort at that category and language/region.
 Only one interactive job runs at once to bound server load. Selecting another
 category never changes or interrupts the active job. Return to its selector to
 control it. Only the initiating principal may stop, resume or abort a job.
 
 Start replaces only that category's report. Workflow categories now have independent
-`press-<locale>.log`, `fast-<locale>.log`, `medium-<locale>.log` and `slow-<locale>.log`
+`press-<locale>.log`, `fast-<locale>.log` and `medium-<locale>.log`
 files. Full CI runs retain the combined `order-filler-<locale>.log`; the dashboard
 uses whichever run started most recently for each category. Existing combined
 reports remain readable. Their outcome counts are reconstructed once and cached,
@@ -290,7 +289,7 @@ the job's entire process group, closes open reports as aborted and keeps complet
 rows. It never turns unrun tests into successes. A stopped process survives page
 navigation but not a deployment/service restart; restart marks it incomplete.
 
-`DiagnosticsJobs` owns the private queue, one-job lock, six-category/corpus
+`DiagnosticsJobs` owns the private queue, one-job lock, five-category/corpus
 allowlist, principal checks and stop/resume/abort flags. Its API actions are
 `job-start`, `job-stop`, `job-resume`, `job-abort`; `GET ?job=1` returns sanitized
 status and worker availability. Commands, target hosts and executable paths are
@@ -315,6 +314,46 @@ accommodate exhaustive numeric corpora with full per-case metadata.
 Dedicated checks: `php tests/diagnostics-jobs.php`,
 `php tests/order-filler-diagnostics.php`, `node tests/diagnostics-checkpoint.cjs`,
 `node tests/diagnostics-reporter.mjs` and `node tests/order-filler-status-browser.cjs`.
+
+## Decoder completion after capture
+
+Ending microphone capture does not mean the recognizer worker has processed its
+last PCM frame. The browser adapter stops accepting new frames, then drains
+outstanding audio responses and the grammar changes/replays those responses
+produce before requesting the decoder's final result. The existing final-result
+deadline bounds the entire drain and finalization operation; a stalled worker
+still fails and releases the utterance. V2 should preserve this separation between
+capture completion and recognition completion. `tests/vosk-grammar-router.mjs`
+exercises delayed worker responses that switch two collector stages after capture
+ends and verifies that only the last decoder is finalized.
+
+Ignore unchanged partial hypotheses within one decoder segment. Vosk emits these
+for successive audio frames; repeatedly projecting the same grammar and notifying
+the command planner can backlog recognition completion, especially for duration
+collectors. Reset this comparison when replacing a decoder or receiving an
+endpoint. Always process endpoints and final results, and preserve repeated words
+inside changed hypotheses. The router tests verify that 100 identical partials
+do not repeat projection or notification and that an identical final still arrives.
+`tests/vosk-duration-entry-browser.cjs` exercises Ready, a complete duration final,
+and confirmation at both delivery rates through the real audio pipeline.
+
+This lifecycle regression is separate from acoustic accuracy. The Medium lunch
+confirmation could revise `o k` to `k` in Vosk itself, even when replaying the exact
+captured PCM without capture or grammar switching. Padding with silence did not
+fix it. Removing the redundant letter spelling from the same decoder grammar did.
+
+The generic `grammarSpellingGroups` adapter option declares equivalent spellings,
+with the canonical form first. A stage retains only that form if it is already
+available; otherwise its original vocabulary stays intact. English configuration
+declares `["okay", "ok", "o k"]`. This does not translate recognition output or
+accept `k` as confirmation, and the command parser still owns all validation.
+Other languages must supply their own reviewed groups. V2 should represent these
+as language-specific acoustic spellings rather than adding separate letter words
+for equivalent command forms. `tests/vosk-standalone-lunch-browser.cjs` verifies
+the complete standalone lunch transaction at both speech rates.
+
+Slow `auto mode` remains an accuracy failure in direct complete-WAV recognition;
+it is not considered fixed by these lifecycle or spelling changes.
 
 ## Restricted access and deployment
 
@@ -348,3 +387,50 @@ Ordinary pushes/PRs run both masters. Separate path-filtered jobs run numeric
 matrices for recognizer/language/corpus changes or manual dispatch. PHP diagnostics
 and existing database/access-token checks remain deployment gates. The PHP class,
 report client and status page have dedicated storage/protocol/browser regressions.
+
+Slow (90 WPM) delivery was retired from active diagnostics on 2026-10-22. New workflow runs use Press, Fast and Medium. Existing Slow reports remain readable through the restricted API, but cannot be started, appended to or counted in active dashboard completion. Clock-time and duration categories remain separate. Historical failures recorded above have not been relabeled.
+
+## Human recording ingestion
+
+`/diagnostics/order-filler/recordings.php` prompts for the 31 unique phrases from
+the en-US workflow corpus. Fast and Medium have independent takes and coverage,
+so completing both requires 62 approved recordings. The displayed login phrases
+are fixture ID/PIN values, not the recorder's personal credentials. Other language
+scripts are generated from their reviewed workflow corpora with
+`node scripts/build-recording-scripts.cjs`. Numeric matrices remain separate; these
+31 prompts cover their workflow's fixed values, not every time/duration variation.
+
+Record captures mono microphone PCM through a dedicated AudioWorklet. Stop releases
+the microphone, resamples to 16 kHz and prepares a 16-bit PCM WAV with 180 ms leading
+and 2,000 ms trailing silence. The captured voice is not synthesized or time-stretched.
+Playback stays in a local Blob until Save take is pressed. Retaking or navigating
+without saving does not upload audio. Reloading resumes at the first missing take.
+
+`GET /api/diagnostics/recordings/?locale=en-US&delivery=fast` returns the script,
+approved coverage and CSRF token. `POST` accepts `locale`, `delivery`, `phraseId`
+and base64 `wav`; the phrase ID is SHA-256 of lowercased locale, a newline and the
+exact script text. `GET` with `audio=<phraseId>` replays its approved take. The page
+and API use HTTPS and the existing Developer/Superuser diagnostics-scoped access
+checks, with CSRF for cookie-authenticated saves. Uploads are bounded and checked
+for valid mono 16 kHz/16-bit PCM headers, length and non-silent audio. Files remain
+under `/var/lib/clocktimer/diagnostics/recordings/<locale>/<delivery>/`, outside the
+document root. Saving points the prompt's metadata at a content-addressed WAV;
+previous takes are retained and never uploaded to another service.
+
+The diagnostics page's Audio source selector defaults to Human recordings for voice
+jobs. The queue requires a complete approved corpus for that delivery. The worker
+sets `CLOCKTIMER_SPEECH_RECORDINGS_DIRECTORY` to private recording storage, and
+`DiagnosticSpeechAudio` loads the exact approved WAV with its SHA-256 checked.
+Missing/corrupt takes fail the run; human mode never falls back to synthesized
+speech. Replay evidence identifies Human recording or Synthetic audio. Synthetic
+audio remains explicitly selectable for pipeline regression and remains the CI
+default without the recordings-directory environment variable. It is not evidence
+of real-world human speech accuracy. Fast/Medium labels select recording profiles;
+they do not assert that a person's actual speech rate was measured as 240/160 WPM.
+
+V2 should keep prompt generation, local capture/preview, explicit approval, private
+validated storage and corpus loading separate from recognition. The loader supplies
+audio only; expected words still never enter Vosk as a recognition result. Dedicated
+checks are `php tests/speech-recordings.php`, `node tests/human-speech-audio-test.cjs`
+and `node tests/speech-recordings-browser.cjs`. The browser recording check uses
+Chromium's fake input device to test capture and save controls, not human accuracy.

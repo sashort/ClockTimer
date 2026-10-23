@@ -1,0 +1,52 @@
+name: Build browser Vosk alternatives
+on:
+  push:
+    branches: [vosk-browser-alternatives]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch pinned upstream sources
+        run: |
+          git clone https://github.com/ccoreilly/vosk-browser.git upstream
+          git -C upstream checkout 4b8eb257503108d96819854d3984372903c2259e
+          git -C upstream submodule update --init vosk
+          python3 deploy/vosk-browser/patch.py upstream
+      - name: Build native WebAssembly binding
+        run: |
+          docker pull ghcr.io/ccoreilly/vosk-wasm-builder:0.0.6
+          docker image inspect ghcr.io/ccoreilly/vosk-wasm-builder:0.0.6 --format '{{json .RepoDigests}}' > builder-image.json
+          docker run --rm -v "$PWD/upstream:/io" -w /io ghcr.io/ccoreilly/vosk-wasm-builder:0.0.6 make -C src
+      - name: Build worker and JavaScript API
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" upstream
+          npm ci --prefix upstream/lib --no-audit --no-fund
+          npm run --prefix upstream/lib build
+          mkdir -p artifact
+          cp upstream/lib/dist/vosk.js artifact/vosk-alternatives.js
+          cp upstream/COPYING upstream/NOTICE builder-image.json artifact/
+          sha256sum artifact/vosk-alternatives.js | tee artifact/SHA256SUMS
+          git -C upstream rev-parse HEAD > artifact/upstream-commit.txt
+          git -C upstream submodule status > artifact/vosk-submodule.txt
+      - name: Exercise actual browser N-best output
+        run: |
+          npm install --prefix tests --no-audit --no-fund
+          cd tests && npx playwright install --with-deps chromium && cd ..
+          python3 deploy/install_vosk_assets.py --root speech/vosk
+          revision=$(git -C upstream/vosk rev-parse HEAD)
+          curl --fail --location "https://raw.githubusercontent.com/alphacep/vosk-api/$revision/python/example/test.wav" --output /tmp/vosk-example.wav
+          node tests/vosk-alternatives-runtime-browser.cjs artifact/vosk-alternatives.js /tmp/vosk-example.wav
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vosk-browser-alternatives
+          path: artifact/
+          retention-days: 7

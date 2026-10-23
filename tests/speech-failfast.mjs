@@ -1,3 +1,4 @@
+import {installSpeechLanguage} from './speech-language-fixture.mjs';
 import fs from 'node:fs';
 import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
 installSpeechLifecycle();
@@ -7,6 +8,7 @@ const window=new Window({url:'https://clock.example/'});
 Object.assign(globalThis,{window,document:window.document,Element:window.Element,
     HTMLElement:window.HTMLElement,EventTarget:window.EventTarget,CustomEvent:window.CustomEvent,
     getComputedStyle:window.getComputedStyle.bind(window),requestAnimationFrame:cb=>queueMicrotask(()=>cb(performance.now()))});
+installSpeechLanguage();
 globalThis.ParameterParser=Function(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nreturn ParameterParser;')();
 const parserSource=['DurationParser','SpokenTimeParser','PercentParser','SpeechValuePreprocessor'].map(name=>
     fs.readFileSync(new URL(`../lang/en-US/${name}.js`,import.meta.url),'utf8')).join('\n');

@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {Window} from 'happy-dom';
+import {installSpeechLanguage} from './speech-language-fixture.mjs';
+installSpeechLanguage();
 const window=new Window();
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
 const speechMenuSource=fs.readFileSync(new URL('../SpeechMenu.js',import.meta.url),'utf8');

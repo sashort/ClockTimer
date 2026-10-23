@@ -1,0 +1,6 @@
+{
+  "runtime": "../vosk-alternatives-607b5c3e.js",
+  "sha256": "607b5c3e25af04c7bff0b8b144136357f090e79ae67929dbe2072eb3d337d8bb",
+  "upstreamCommit": "4b8eb257503108d96819854d3984372903c2259e",
+  "patch": "deploy/vosk-browser/patch.py"
+}

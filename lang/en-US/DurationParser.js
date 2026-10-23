@@ -56,7 +56,7 @@ class EnglishDurationParser {
         fifty: 50
     });
 
-    static parse(value) {
+    static parse(value, supplied) {
         const text =
             String(value ?? "")
                 .toLocaleLowerCase("en-US")
@@ -75,6 +75,7 @@ class EnglishDurationParser {
             );
 
         if (clock) {
+            if (supplied) Object.assign(supplied,{hours:clock[1]!==undefined,minutes:true,seconds:true});
             const hours =
                 Number(clock[1] || 0);
             const minutes =
@@ -107,6 +108,7 @@ class EnglishDurationParser {
                 );
 
         if (spokenDigits) {
+            if (supplied) Object.assign(supplied,{hours:spokenDigits.length>4,minutes:spokenDigits.length>2,seconds:true});
             return EnglishDurationParser
                 .#rawDigitDuration(
                     spokenDigits
@@ -124,7 +126,7 @@ class EnglishDurationParser {
         const groupedDuration =
             EnglishDurationParser
                 .#groupedDuration(
-                    text
+                    text, supplied
                 );
 
         if (groupedDuration !== undefined) {
@@ -138,6 +140,7 @@ class EnglishDurationParser {
             /^\d+$/.test(text) &&
             text.length >= 3
         ) {
+            if (supplied) Object.assign(supplied,{hours:text.length>4,minutes:text.length>2,seconds:true});
             return EnglishDurationParser
                 .#rawDigitDuration(
                     text
@@ -147,7 +150,7 @@ class EnglishDurationParser {
         const explicit =
             EnglishDurationParser
                 .#explicitDuration(
-                    text
+                    text, supplied
                 );
 
         if (explicit !== undefined) {
@@ -157,7 +160,7 @@ class EnglishDurationParser {
         const positional =
             EnglishDurationParser
                 .#parsePositionalNumberGroups(
-                    text
+                    text, supplied
                 );
 
         if (positional !== undefined) {
@@ -177,12 +180,15 @@ class EnglishDurationParser {
                 );
 
         // A complete cardinal is one minute quantity, not an hour/minute split.
-        if (Number.isInteger(minutes) && minutes > 0 && minutes <= 59) return minutes * 60000;
+        if (Number.isInteger(minutes) && minutes > 0 && minutes <= 59) {
+            if (supplied) Object.assign(supplied,{hours:false,minutes:true,seconds:false});
+            return minutes * 60000;
+        }
 
         const clockStyleHourMinute =
             EnglishDurationParser
                 .#parseClockStyleHourMinute(
-                    cardinalText
+                    cardinalText, supplied
                 );
 
         if (
@@ -193,6 +199,14 @@ class EnglishDurationParser {
         }
 
         return undefined;
+    }
+
+    static parseComponents(value) {
+        const supplied={}, milliseconds=this.parse(value,supplied);
+        if (!Number.isFinite(milliseconds) || milliseconds<=0) return undefined;
+        const total=Math.round(milliseconds/1000);
+        return {components:{hours:Math.floor(total/3600),minutes:Math.floor(total/60)%60,seconds:total%60},
+            inferred:{hours:!supplied.hours,minutes:!supplied.minutes,seconds:!supplied.seconds}};
     }
 
     static format(milliseconds) {
@@ -344,7 +358,7 @@ class EnglishDurationParser {
     }
 
     static #parsePositionalNumberGroups(
-        value
+        value, supplied
     ) {
         const chunks =
             EnglishDurationParser
@@ -413,13 +427,15 @@ class EnglishDurationParser {
             ) *
             1000;
 
+        if (supplied && total>0) Object.assign(supplied,{hours:chunks.length===3,minutes:true,seconds:true});
+
         return total > 0
             ? total
             : undefined;
     }
 
     static #parseClockStyleHourMinute(
-        value
+        value, supplied
     ) {
         const pieces =
             String(
@@ -457,6 +473,7 @@ class EnglishDurationParser {
                 minutes >= 0 &&
                 minutes < 60
             ) {
+                if (supplied) Object.assign(supplied,{hours:true,minutes:true,seconds:false});
                 return (
                     (
                         hours * 3600 +
@@ -471,7 +488,7 @@ class EnglishDurationParser {
     }
 
     static #groupedDuration(
-        value
+        value, supplied
     ) {
         const tokens =
             String(
@@ -569,6 +586,8 @@ class EnglishDurationParser {
                 seconds
             ) *
             1000;
+
+        if (supplied && total>0) Object.assign(supplied,{hours:rawGroups.length===3,minutes:true,seconds:true});
 
         return total > 0
             ? total
@@ -720,7 +739,7 @@ class EnglishDurationParser {
     }
 
     static #explicitDuration(
-        text
+        text, supplied
     ) {
         const unitPattern =
             /\b(hours?|hrs?|minutes?|mins?|seconds?|secs?)\b/g;
@@ -905,6 +924,8 @@ class EnglishDurationParser {
                 )
             ) *
             1000;
+
+        if (supplied && total>0) for (const unit of ["hours","minutes","seconds"]) supplied[unit]=values[unit]!==undefined;
 
         return total > 0
             ? total

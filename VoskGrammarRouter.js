@@ -20,6 +20,7 @@
 
         setRecords(records) {
             this.optionalValue = false;
+            this.digitRecords=records.filter(record=>record.digitCounts?.length);
             const compiled = globalThis.VoskPhraseListCompiler.compileStages(records, this.options);
             this.reportUnsupported(compiled.unsupported);
             this.paths = compiled.paths;
@@ -86,6 +87,35 @@
 
         async update(hypothesis) {
             let text = normalize(hypothesis);
+            if(this.digitRecords.length && globalThis.DigitSequence && globalThis.SpeechValueCollector){
+                const vocabulary=this.digitRecords.find(record=>record.digitVocabulary)?.digitVocabulary || {};
+                const counts=unique(this.digitRecords.flatMap(record=>record.digitCounts));
+                const contexts=Object.fromEntries(this.digitRecords.flatMap(record=>record.digitCounts.map(count=>[count,record.digitContext || record.id])));
+                const evaluate=digits=>{
+                    const collector=new globalThis.SpeechValueCollector({digitCounts:counts,digitContexts:contexts,toDigits:()=>digits});
+                    collector.update([{id:'digit-probe',text:digits,final:false}]);return collector.evaluate();
+                };
+                const words=text.split(' ');
+                // Longest declared complete field wins. The contract, rather
+                // than a recognizer's four-digit phrase, owns the boundary.
+                for(let end=words.length;end>0;end--){
+                    const head=words.slice(0,end).join(' ');
+                    for(const record of this.digitRecords){
+                        if(!record.digitField)continue;
+                        const match=new RegExp(record.pattern,'i').exec(head);
+                        const raw=match?.groups?.[record.digitField];
+                        if(raw===undefined)continue;
+                        const digits=globalThis.DigitSequence.parse(raw,vocabulary);
+                        if(digits===null)continue;
+                        const state=evaluate(digits);
+                        if(state.status!=='valid' || (!match.groups.confirmation && state.canContinue))continue;
+                        await this.project(head);this.text=text;
+                        return {transcript:this.transcript,grammar:this.grammar,phrases:this.phrases,stableHead:head,digitState:state};
+                    }
+                }
+                const digits=globalThis.DigitSequence.parse(text,vocabulary);
+                if(digits!==null){this.text=text;return {transcript:this.transcript,grammar:this.grammar,phrases:this.phrases,digitState:evaluate(digits)};}
+            }
             let stableHead;
             if (!this.prefix && this.grammar === "commands") {
                 // Locate a literal head before vocabulary routing. This does
@@ -133,7 +163,13 @@
                     // The final digit of an atomic group is still revisable.
                     // Keep confirmation words audible in this decoder, and
                     // route only once a following token establishes a boundary.
-                    if (text === head && selected.every(path => path.record.atomic === "digits")) break;
+                    if (selected.every(path => path.record.atomic === "digits")) {
+                        const tail=text.slice(head.length).trim();
+                        const digitWords=new Set((this.options.valuePhrases.digits || []).filter(phrase=>!phrase.includes(' ')));
+                        // A complete field is not necessarily the end of a digit
+                        // stream. Let the owning collector validate discrete counts.
+                        if (!tail || tail.split(/\s+/).every(word=>digitWords.has(word)||/^[0-9]+$/.test(word))) break;
+                    }
                     const types = unique(selected.map(path => path.stages[1]?.grammar || "terminal"));
                     const values = types.filter(type => type !== "terminal");
                     if (types.includes("terminal") && values.length === 1 && values[0] !== "commands") {
@@ -148,7 +184,7 @@
                         // Only SpeechMenu can establish a boundary after a
                         // terminal command and choose its next context.
                         await this.project(head, selected);
-                        if (text === head && types.length === 1) {
+                        if (types.length === 1) {
                             stableHead = head;
                             this.confirmationLocked = false;
                         }
@@ -209,74 +245,9 @@
             return { transcript: this.transcript, grammar: this.grammar, phrases: this.phrases, stableHead };
         }
 
-        static valuePhrases() {
-            const small = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
-                "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
-            const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
-            const number = n => n >= 100
-                ? [small[Math.floor(n / 100)], "hundred", n % 100 ? number(n % 100) : ""].filter(Boolean).join(" ")
-                : n < 20 ? small[n] : [tens[Math.floor(n / 10)], n % 10 ? small[n % 10] : ""].filter(Boolean).join(" ");
-            const numbers = Array.from({length: 1000}, (_, n) => number(n));
-            const time = ["four twelve", "noon", "midnight"];
-            for (let hour = 1; hour <= 12; hour++) {
-                for (let minute = 0; minute < 60; minute++) {
-                    const phrase = [number(hour), minute ? (minute < 10 ? "oh " : "") + number(minute) : ""].filter(Boolean).join(" ");
-                    time.push(phrase, phrase + " am", phrase + " pm");
-                }
-            }
-            // Preserve the pre-Vosk parser's compositional vocabulary. These
-            // finite pieces let recognition retain articles, omitted units,
-            // connectors and digit aliases; SpeechMenu validates the full value.
-            const aliases = ["oh", "o", "naught", "nought", "tutu"];
-            const duration = ["twenty minutes", ...numbers, "a", "an", "and", "double", "triple", "to", "too", ...aliases];
-            for (const unit of ["hour", "hours", "hr", "hrs", "minute", "minutes", "min", "mins", "second", "seconds", "sec", "secs"]) {
-                // Articles introduce singular units; plural forms such as
-                // "an hours" bias recognition away from "an hour".
-                if (["hour", "minute", "second"].includes(unit)) duration.push("a " + unit, "an " + unit);
-                for (let n = 0; n < 60; n++) duration.push(number(n) + " " + unit);
-            }
-            for (let n = 0; n < 60; n++) duration.push("and " + number(n));
-            for (const article of ["a", "an", "one"]) for (let minute = 0; minute < 60; minute++) {
-                duration.push(article + " hour " + number(minute), article + " hour and " + number(minute));
-            }
-            for (let hour = 1; hour <= 12; hour++) for (let minute = 0; minute < 60; minute++) {
-                duration.push(number(hour) + " hours " + number(minute), number(hour) + " hours and " + number(minute));
-            }
-            // Include unitless minutes/seconds as complete decoder phrases, just
-            // as clock time includes hour/minute pairs. Individual number words
-            // alone do not describe the transitions between spoken groups.
-            for (let minute = 0; minute < 60; minute++) for (let second = 0; second < 60; second++) {
-                duration.push(number(minute) + " " + number(second));
-                if (second < 10) duration.push(number(minute) + " oh " + number(second));
-                duration.push(number(minute) + " minutes " + number(second), number(minute) + " minutes and " + number(second));
-            }
-            // Clock idioms and 24-hour/digit-alias forms accepted before Vosk.
-            for (let hour = 0; hour < 24; hour++) for (let minute = 0; minute < 60; minute++) {
-                time.push(number(hour) + " " + number(minute));
-                if (minute < 10) for (const alias of aliases.slice(0, 4)) time.push(number(hour) + " " + alias + " " + number(minute));
-            }
-            for (let hour = 1; hour <= 12; hour++) {
-                for (const fraction of ["quarter", "half"]) for (const relation of ["past", "after", "to", "till", "until"]) {
-                    for (const article of ["", "a "]) for (const suffix of ["", " am", " pm"])
-                        time.push(article + fraction + " " + relation + " " + number(hour) + suffix);
-                }
-                for (const day of ["today", "tomorrow"]) time.push(day + " at " + number(hour));
-            }
-            time.push("noon tomorrow", "noon today", "midnight tomorrow", "midnight today", "today", "tomorrow", "at", "oclock", "o clock", ...aliases);
-            for (const n of numbers) for (const unit of ["second", "seconds", "minute", "minutes", "hour", "hours"]) duration.push(n + " " + unit);
-            // Bounded vocabularies. Deployments may supply different finite
-            // ranges/capture choices; no catch-all or unknown-word fallback.
-            const digits = small.slice(0, 10);
-            let sequences = [""];
-            const pins = [];
-            for (let length = 1; length <= 4; length++) {
-                sequences = sequences.flatMap(prefix => digits.map(digit => [prefix, digit].filter(Boolean).join(" ")));
-                pins.push(...sequences);
-            }
-            const date = ["today", "tomorrow"];
-            for (const month of ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"])
-                for (let day = 1; day <= 31; day++) date.push(month + " " + number(day));
-            return { time: unique(time), duration: unique(duration), number: numbers, digits: pins, date };
+        static valuePhrases(language) {
+            return globalThis.SpeechLanguageController.vocabulary(language);
+
         }
     }
     globalThis.VoskGrammarRouter = VoskGrammarRouter;

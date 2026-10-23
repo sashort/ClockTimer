@@ -1205,11 +1205,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                         display:
                             "commands",
                         expectedPhrases: [
-                            "commands",
-                            "speech commands",
-                            "choices",
-                            "options",
-                            "what"
+                            "commands"
                         ],
                         required:
                             "commands",

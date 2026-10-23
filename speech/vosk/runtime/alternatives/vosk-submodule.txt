@@ -1,0 +1,1 @@
+ 7012103b3bc7a3da67faf9eb452991e60fcd8af7 vosk (go/v0.3.43)

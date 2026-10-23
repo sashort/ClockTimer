@@ -36,21 +36,21 @@ try {
     $last=$store->last('duration','en-US');
     check($last['progress']==='test 0/2' && $last['runStatus']==='running','Last-line-only in-flight status');
     $summary=['suite'=>'summary','locale'=>'en-US'];
-    $startSummary=$store->apply($summary+['action'=>'start','totalTests'=>4,'languages'=>['en-US']],'developer-1',$build);
+    $startSummary=$store->apply($summary+['action'=>'start','totalTests'=>3,'languages'=>['en-US']],'developer-1',$build);
     $summaryRun=$startSummary['state']['runId'];
     $store->apply($summary+['action'=>'progress','runId'=>$summaryRun,'language'=>'en-US','delivery'=>'fast'],'developer-1',$build);
     check($store->last('summary','en-US')['results']['en-us']['fast']==='running','Summary tracks an active speech rate');
-    foreach(['press','fast','medium','slow'] as $delivery)$store->apply($summary+['action'=>'append','runId'=>$summaryRun,'tests'=>[['label'=>$delivery,'language'=>'en-US','delivery'=>$delivery,'status'=>'passed']]],'developer-1',$build);
+    foreach(['press','fast','medium'] as $delivery)$store->apply($summary+['action'=>'append','runId'=>$summaryRun,'tests'=>[['label'=>$delivery,'language'=>'en-US','delivery'=>$delivery,'status'=>'passed']]],'developer-1',$build);
     $store->apply($summary+['action'=>'end','runId'=>$summaryRun],'developer-1',$build);
     $summaryTail=$store->last('summary','en-US');
-    check($summaryTail['runStatus']==='passed' && $summaryTail['progress']==='test 4/4','Final line carries complete status');
-    check($summaryTail['languages']===['en-us'] && $summaryTail['results']['en-us']['slow']==='passed','Summary retains languages and delivery results');
+    check($summaryTail['runStatus']==='passed' && $summaryTail['progress']==='test 3/3','Final line carries complete status');
+    check($summaryTail['languages']===['en-us'] && $summaryTail['results']['en-us']['medium']==='passed','Summary retains languages and delivery results');
     $store->apply(['suite'=>'order-filler','locale'=>'en-US','action'=>'start','totalTests'=>2],'developer-1',$build);
     $incomplete=$store->last('order-filler','en-US');
     $store->apply(['suite'=>'order-filler','locale'=>'en-US','action'=>'end','runId'=>$incomplete['runId']],'developer-1',$build);
     check($store->last('order-filler','en-US')['runStatus']==='incomplete','Missing planned tests cannot be reported passed');
     $many=[];for($i=0;$i<100;$i++)$many[]='aa-'.str_repeat('abcdefg-',6).sprintf('r%06d',$i);
-    $store->apply(['suite'=>'summary','locale'=>'en-US','action'=>'start','totalTests'=>400,'languages'=>$many],'developer-1',$build);
+    $store->apply(['suite'=>'summary','locale'=>'en-US','action'=>'start','totalTests'=>300,'languages'=>$many],'developer-1',$build);
     check(count($store->last('summary','en-US')['languages'])===100,'Tail reader handles a summary longer than the first read chunk');
     $category=['suite'=>'fast','locale'=>'en-US'];
     $first=$store->apply($category+['action'=>'start','totalTests'=>3,'deliveryTotals'=>['fast'=>3]],'developer-1',$build)['state']['runId'];
@@ -66,17 +66,23 @@ try {
     check($store->results('fast','en-US',$page['nextCursor'],$first)['reset'],'Replaced run resets old page cursor');
     check($store->statistics('duration','en-US')['runId']===$replacement['state']['runId'],'Category runs do not overwrite numeric reports');
     try{$store->results('duration','en-US',1);throw new RuntimeException('Partial line cursor accepted');}catch(InvalidArgumentException){}
-    $large=['suite'=>'slow','locale'=>'en-US'];$largeRun=$store->apply($large+['action'=>'start','totalTests'=>75],'developer-1',$build)['state']['runId'];
+    $large=['suite'=>'medium','locale'=>'en-US'];$largeRun=$store->apply($large+['action'=>'start','totalTests'=>75],'developer-1',$build)['state']['runId'];
     $batch=[];for($i=0;$i<75;$i++)$batch[]=['label'=>'row '.$i,'status'=>'passed'];
     $store->apply($large+['action'=>'append','runId'=>$largeRun,'tests'=>$batch],'developer-1',$build);
-    $one=$store->results('slow','en-US');$two=$store->results('slow','en-US',$one['nextCursor'],$largeRun);
+    $one=$store->results('medium','en-US');$two=$store->results('medium','en-US',$one['nextCursor'],$largeRun);
     check(count($one['rows'])===50&&$one['hasMore']&&count($two['rows'])===25,'Bounded pages cover all individual results without duplication');
     $audio=['suite'=>'medium','locale'=>'en-US'];$audioRun=$store->apply($audio+['action'=>'start','totalTests'=>2],'developer-1',$build)['state']['runId'];
-    $clip=['key'=>str_repeat('a',64),'text'=>'ready','recognized'=>'ready','wpm'=>160];
+    $clip=['key'=>str_repeat('a',64),'text'=>'ready','recognized'=>'ready','wpm'=>160,'source'=>'human'];
     $store->apply($audio+['action'=>'append','runId'=>$audioRun,'tests'=>[['label'=>'real recognition','status'=>'passed','inputLayer'=>'audio','recognizer'=>'vosk','audioClips'=>[$clip]]]],'developer-1',$build);
     $row=$store->results('medium','en-US')['rows'][0];check($row['audioClips']===[$clip]&&$row['inputLayer']==='audio'&&$row['recognizer']==='vosk','Replay evidence and test layer survive storage/pagination');
     try{$store->apply($audio+['action'=>'append','runId'=>$audioRun,'tests'=>[['label'=>'unsafe clip','status'=>'passed','audioClips'=>[array_replace($clip,['key'=>'../private'])]]]],'developer-1',$build);throw new RuntimeException('Unsafe clip key accepted');}catch(InvalidArgumentException){}
     check($store->statistics('medium','en-US')['tests']===1,'Invalid replay evidence cannot append a partial result');
+    $legacyPath=$directory.'/language-tests/en-us/slow-en-us.log';
+    $legacy=json_encode(['type'=>'test-end','runStatus'=>'failed','delivery'=>'slow'])."\n";
+    file_put_contents($legacyPath,$legacy);
+    check($store->last('slow','en-US')['runStatus']==='failed','Historical Slow reports remain readable');
+    try{$store->apply(['suite'=>'slow','locale'=>'en-US','action'=>'start','totalTests'=>1],'developer-1',$build);throw new RuntimeException('Retired Slow suite accepted');}catch(InvalidArgumentException){}
+    check(file_get_contents($legacyPath)===$legacy,'Retiring Slow never overwrites historical results');
     echo "PASS diagnostics numbering, counts, paging, filtering, replacement, abort, privacy and stale/principal fences\n";
 } finally {
     if(is_dir($directory)){

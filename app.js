@@ -520,6 +520,10 @@
                         if (["vosk","vosk-server"].includes(globalThis.WMOF_SPEECH_BACKEND)) {
                             await loadClassicScript("speech/VoskTestConfig.js");
                             if (!globalThis.VoskRecognizer) await loadClassicScript("VoskRecognizer.js");
+                            if (globalThis.WMOF_SPEECH_BACKEND === 'vosk' && globalThis.WMOF_VOSK_CONFIG.contextHandoff) {
+                                for (const name of ['SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter','PcmSampleBuffer','SpeechBoundaryAnalyzer','VoskContextRecognizer'])
+                                    if (!globalThis[name]) await loadClassicScript(name+'.js');
+                            }
                             if (globalThis.WMOF_SPEECH_BACKEND === "vosk-server" && !globalThis.VoskServerRecognizer) await loadClassicScript("VoskServerRecognizer.js");
                         }
 
@@ -690,7 +694,6 @@
         if (event.data?.type === 'identity-changed') location.reload();
     });
 
-
     // Explicit application capability; independent of Trip/Total/Auto and timer
     // presentation modes. Missing or unknown modes never select a fallback.
     class ApplicationMode {
@@ -720,6 +723,11 @@
             .WMOFIdentityContext;
 
     $("#liveStreamButton")?.addEventListener("click", () => window.open(new URL("drop-in.php", API_BASE), "_blank", "noopener"));
+    $("#developerDropInButton")?.addEventListener("click", () => {
+        const url = new URL("drop-in.php", API_BASE);
+        url.searchParams.set("debug", "speech");
+        window.open(url, "_blank", "noopener");
+    });
     const liveStreamDialog =
         $("#liveStreamDialog");
     const liveStreamViewerSection =
@@ -1830,6 +1838,7 @@
 
                 liveSpeechEvents =
                     events;
+                globalThis.WMOFDropInSpeechDebug?.attachPublisher(events, liveTripStream);
 
                 events.addEventListener(
                     "started",
@@ -2016,6 +2025,9 @@
 
         if ($("#accessTokensButton")) $("#accessTokensButton").hidden =
             !canManageTokens;
+
+        if ($("#developerDropInButton")) $("#developerDropInButton").hidden =
+            !(Boolean(permissions & (DEVELOPER_MENU_PERMISSION_MASK | PERMISSION_SUPERUSER)) && canViewLiveStreams && canLookupUsers);
 
         if ($("#liveStreamButton")) $("#liveStreamButton").hidden =
             !(
@@ -7717,6 +7729,9 @@
         if ($("#accessTokensButton")) $("#accessTokensButton").hidden =
             !canManageTokens;
 
+        if ($("#developerDropInButton")) $("#developerDropInButton").hidden =
+            !(Boolean(permissions & (DEVELOPER_MENU_PERMISSION_MASK | PERMISSION_SUPERUSER)) && canViewLiveStreams && canLookupUsers);
+
         if ($("#liveStreamButton")) $("#liveStreamButton").hidden =
             !(
                 canViewLiveStreams &&
@@ -9469,7 +9484,6 @@
 
         const lexicalFamilies = [
             new Set([
-                "ok",
                 "okay"
             ]),
             new Set([
@@ -13911,9 +13925,9 @@
         }
 
         return (
-            EnglishDurationParser
+            SpeechLanguageController
                 ?.format?.(
-                    milliseconds
+                    milliseconds, "duration"
                 ) ||
             formatTimelineMilliseconds(
                 milliseconds
@@ -15751,7 +15765,7 @@
         }
 
         if (
-            /^(?:ok(?:ay)?|o\s+k)$/
+            /^(?:okay)$/
                 .test(command)
         ) {
             if (!numberPadValueValid()) {
@@ -15802,7 +15816,7 @@
                 "percent"
         ) {
             const percent =
-                EnglishSpeechValuePreprocessor
+                SpeechLanguageController
                     .parse(
                         text,
                         "percent"
@@ -15830,7 +15844,7 @@
                 "absolute"
         ) {
             const parts =
-                EnglishSpeechValuePreprocessor
+                SpeechLanguageController
                     .parse(
                         text,
                         "clock-parts"
@@ -15923,7 +15937,7 @@
         }
         else {
             const duration =
-                EnglishSpeechValuePreprocessor
+                SpeechLanguageController
                     .parse(
                         text,
                         "duration"
@@ -22414,16 +22428,11 @@
         clockTimer.addEventListener(eventName, handler);
     }
 
-    for (const kind of ["clock", "clock-parts", "duration", "percent", "keypad"]) {
-        globalThis.SpeechMenu?.registerValueContext(kind, (text, options) => {
-            const resolved = kind !== "keypad" ? kind : numberPadState?.mode === "absolute"
-                ? "clock-parts" : numberPadState?.mode === "percent" ? "percent" : "duration";
-            return EnglishSpeechValuePreprocessor.classify(text, resolved, options);
-        }, {
-            ...(['duration','clock','clock-parts'].includes(kind) ? {digitRange:kind==='duration'?[1,6]:[1,4],
-                toDigits:text=>DigitSequence.parse(text, englishSpeech.digits || {}) ?? undefined} : {})
-        });
-    }
+    SpeechLanguageController.bindCollectors(globalThis.SpeechMenu, {
+        resolveKind:kind=>kind!=="keypad"?kind:numberPadState?.mode==="absolute"
+            ?"clock-parts":numberPadState?.mode==="percent"?"percent":"duration",
+        toDigits:text=>DigitSequence.parse(text, englishSpeech.digits || {}) ?? undefined
+    });
 
     globalThis
         .WMOFSpeechProcessingFunctions
@@ -22486,7 +22495,7 @@
                 }
 
                 const normalized =
-                    EnglishSpeechValuePreprocessor
+                    SpeechLanguageController
                         .normalize(
                             phrase,
                             kind
@@ -23042,17 +23051,17 @@
     let timeReadbackSequence = 0;
     let timeReadbackCoordinator;
     let timeReadbackRequest;
-    const timeReadbackScope=()=>{const interval=clockTimer.getActiveIntervalState();return JSON.stringify([clockTimer.status,clockTimer.percentMode,interval?.intervalKey,interval?.intervalType]);};
+    const timeReadbackScope=()=>{const interval=clockTimer.getActiveIntervalState();return JSON.stringify([clockTimer.status,clockTimer.percentMode,clockTimer.renderedPercentGoal,interval?.intervalKey,interval?.intervalType]);};
 
     // Positional duration only; this readback intentionally ignores formal-time units.
     function formatToneReadback(milliseconds) {
-        const seconds = Math.round(Math.abs(milliseconds) / 1000);
+        const seconds = Math.trunc(Math.abs(milliseconds) / 1000);
         const hours = Math.floor(seconds / 3600), minutes = Math.floor(seconds / 60) % 60, remainder = seconds % 60;
         const position = n => n === 0 ? "oh oh" : n < 10 ? "oh " + goalFailureNumberWords(n) : goalFailureNumberWords(n);
         const words = hours ? [goalFailureNumberWords(hours), position(minutes), position(remainder)]
             : minutes ? [goalFailureNumberWords(minutes), position(remainder)] : [goalFailureNumberWords(remainder)];
         const code = (hours ? hours + ":" + String(minutes).padStart(2,"0") : String(minutes)) + ":" + String(remainder).padStart(2,"0");
-        return {text:(milliseconds < 0 ? "minus " : "") + words.join(" "), code:(milliseconds < 0 ? "-" : "") + code};
+        return {text:(milliseconds < 0 && seconds > 0 ? "over by " : "") + words.join(" "), code:(milliseconds < 0 && seconds > 0 ? "-" : "") + code};
     }
 
     function readTimeAtTone() {
@@ -23064,11 +23073,7 @@
         const wall = Date.now(), origin = performance.now();
         const status = clockTimer.status;
         const valueAt = at => {
-            const snapshot = clockTimer.getSummarySnapshot(new Date(wall + at - origin));
-            const selected = snapshot.selected;
-            if (!selected || !Number.isFinite(selected.standardTimeMilliseconds) ||
-                !Number.isFinite(selected.countedTimeElapsedMilliseconds) || !(selected.percentGoal > 0)) return NaN;
-            return selected.standardTimeMilliseconds / selected.percentGoal - selected.countedTimeElapsedMilliseconds;
+            return clockTimer.getTimeRemainingMilliseconds(new Date(wall + at - origin));
         };
         const initial = valueAt(origin);
         if (!Number.isFinite(initial)) return false;
@@ -23161,7 +23166,7 @@
     const setGlobalAudioRatePercent =
         percent => {
             const value =
-                EnglishSpeechValuePreprocessor
+                SpeechLanguageController
                     .parse(
                         percent,
                         "percent"
@@ -23292,7 +23297,7 @@
     const setGlobalAudioVolumePercent =
         percent => {
             const value =
-                EnglishSpeechValuePreprocessor
+                SpeechLanguageController
                     .parse(
                         percent,
                         "percent"
@@ -23391,7 +23396,7 @@
 
     const setGoalPercentValue = async (scope, percent, feedback = new GoalChangeAnnouncement()) => {
         const normalizedScope = String(scope || "").trim().toLowerCase();
-        const value = EnglishSpeechValuePreprocessor.parse(percent, "percent");
+        const value = SpeechLanguageController.parse(percent, "percent");
         if (!["trip", "total"].includes(normalizedScope) || !Number.isFinite(value) || value <= 0) return false;
         if ((endTimeGoalOverride?.scopes || []).includes(normalizedScope)) {
             flashEndTimeGoalLock();
@@ -23447,21 +23452,21 @@
                 timeValue
             ) {
                 const duration =
-                    EnglishSpeechValuePreprocessor
+                    SpeechLanguageController
                         .parse(
                             timeValue,
                             "duration"
                         );
 
                 const formatted =
-                    EnglishDurationParser
-                        .formatCanonical(
-                            duration
+                    SpeechLanguageController
+                        .format(
+                            duration, "duration", {canonical:true}
                         );
                 const displayFormatted =
-                    EnglishDurationParser
+                    SpeechLanguageController
                         .format(
-                            duration
+                            duration, "duration"
                         );
 
                 if (
@@ -23882,7 +23887,7 @@
                         new Date();
 
                     const target =
-                        EnglishSpeechValuePreprocessor
+                        SpeechLanguageController
                             .parse(
                                 spokenTime,
                                 "clock",
@@ -24858,7 +24863,7 @@
                 }
 
                 const target =
-                    EnglishSpeechValuePreprocessor
+                    SpeechLanguageController
                         .parse(
                             spokenTime,
                             "clock",
@@ -27881,11 +27886,13 @@
                 loginCredentialsCommand.setAttribute("speech-execution-context", "credentials");
                 loginCredentialsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLoginCredentials");
                 loginCredentialsCommand.setAttribute("speech-atomic-input", "credentials");
+                loginCredentialsCommand.setAttribute("speech-digit-counts", "8");
+                loginCredentialsCommand.setAttribute("speech-digit-field", "credentials");
                 loginCredentialsCommand.setAttribute("speech-dispatch-boundary", "");
                 loginCredentialsCommand.setAttribute("speech-persist", "");
             }
             const loginDigitsCommand = installSpeechCommand("loginDigits", "enterLoginDigits", loginDialog, false);
-            if(loginDigitsCommand){loginDigitsCommand.setAttribute("speech-dispatch-boundary", "");loginDigitsCommand.setAttribute("speech-execution-context", "WMOFSpeechExecutionContexts.login");loginDigitsCommand.setAttribute("speech-persist", "");loginDigitsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");loginDigitsCommand.setAttribute("speech-atomic-input", "digits");}
+            if(loginDigitsCommand){loginDigitsCommand.setAttribute("speech-dispatch-boundary", "");loginDigitsCommand.setAttribute("speech-execution-context", "WMOFSpeechExecutionContexts.login");loginDigitsCommand.setAttribute("speech-persist", "");loginDigitsCommand.setAttribute("speech-available", "WMOFSpeechAvailability.canUseLogin");loginDigitsCommand.setAttribute("speech-atomic-input", "digits");loginDigitsCommand.setAttribute("speech-digit-counts", "4");loginDigitsCommand.setAttribute("speech-digit-field", "digits");}
             const loginReviewCommand = installSpeechCommand("confirm", "confirmLoginDigits", loginDialog, false);
             if(loginReviewCommand){
                 loginReviewCommand.setAttribute("speech-execution-context", "WMOFSpeechExecutionContexts.login");
@@ -28213,7 +28220,7 @@
             returnedPrompt();
         };
         if (result === false) {
-            if (action === "handleVoiceEntrySpeech" && /^(?:ok(?:ay)?|o\s+k)$/.test(transcript) && before.voice && !before.valueValid)
+            if (action === "handleVoiceEntrySpeech" && /^(?:okay)$/.test(transcript) && before.voice && !before.valueValid)
                 add("invalidValue", {prompt: before.invalidPrompt});
         } else {
             switch (action) {
@@ -28252,7 +28259,7 @@
                     if (/^(?:touch|keypad|number pad)$/.test(transcript)) add("numberPad");
                     else if (/^(?:cancel|close)$/.test(transcript)) cancelled();
                     else if (transcript === "defer trip") add("deferred");
-                    else if (/^(?:ok(?:ay)?|o\s+k)$/.test(transcript) && !before.startsTrip) {
+                    else if (/^(?:okay)$/.test(transcript) && !before.startsTrip) {
                         add("fieldSaved", {field: before.field, value: before.value}); returnedPrompt();
                     }
                     break;

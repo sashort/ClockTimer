@@ -18,14 +18,19 @@ async function closeReports(request,aborted){
 }
 async function execute(job){
  const prefix=path.join(directory,job.id),request=read(prefix+'.request');
- const commands={press:'order-filler-post-deploy.cjs',fast:'order-filler-post-deploy.cjs',medium:'order-filler-post-deploy.cjs',slow:'order-filler-post-deploy.cjs',time:'order-filler-time-exhaustive.mjs',duration:'order-filler-duration-exhaustive.mjs'};
+ const commands={press:'order-filler-post-deploy.cjs',fast:'order-filler-post-deploy.cjs',medium:'order-filler-post-deploy.cjs',time:'order-filler-time-exhaustive.mjs',duration:'order-filler-duration-exhaustive.mjs'};
  if(!commands[request.suite] || !/^[a-z]{2,8}(?:-[a-z0-9]{2,8})*$/i.test(request.locale))throw Error('Invalid queued suite/locale');
  const env={...process.env,CLOCKTIMER_TEST_LOCALE:request.locale,CLOCKTIMER_DIAGNOSTICS_URL:'https://wmof.sashort-apps.com/api/diagnostics/order-filler/',CLOCKTIMER_DIAGNOSTICS_COOKIE:request.credentials.cookie,CLOCKTIMER_DIAGNOSTICS_CSRF:request.credentials.csrf,ORDER_FILLER_TEST_BASE_URL:'https://wmof.sashort-apps.com/'};
  delete env.CLOCKTIMER_DIAGNOSTICS_TOKEN;
  env.CLOCKTIMER_DIAGNOSTICS_JOB_PREFIX=prefix;
  env.CLOCKTIMER_VOICE_INPUT='audio';
  env.CLOCKTIMER_TEST_EXPECTED_COMMIT=read(path.join(root,'build-version.json')).commit;
- if(['press','fast','medium','slow'].includes(request.suite))env.CLOCKTIMER_DIAGNOSTICS_CATEGORY=request.suite;
+ if(['press','fast','medium'].includes(request.suite))env.CLOCKTIMER_DIAGNOSTICS_CATEGORY=request.suite;
+ delete env.CLOCKTIMER_SPEECH_RECORDINGS_DIRECTORY;
+ if(['fast','medium'].includes(request.suite)){
+  if(!['human','synthetic'].includes(request.audioSource||'synthetic'))throw Error('Invalid audio source');
+  if(request.audioSource==='human')env.CLOCKTIMER_SPEECH_RECORDINGS_DIRECTORY='/var/lib/clocktimer/diagnostics/recordings';
+ }
  write(prefix+'.status',{status:'running',at:new Date().toISOString()});
  let child,aborted=fs.existsSync(prefix+'.abort'),expired=false,exitCode=null;
  try {

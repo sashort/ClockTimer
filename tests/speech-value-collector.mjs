@@ -15,6 +15,13 @@ assert.equal(duration.evaluate().status,'incomplete');
 duration.update([{id:'capture-1:0',text:'an hour',final:true}]);
 duration.update([{id:'capture-2:0',text:'and five',final:false}]);
 assert.equal(duration.evaluate().value,'1:05:00');
+assert.deepEqual(duration.evaluate().components,{hours:1,minutes:5,seconds:0});
+assert.deepEqual(duration.evaluate().inferred,{hours:false,minutes:false,seconds:true},'spoken five stays explicit; omitted seconds are defaulted');
+assert.deepEqual(Values.classify('one hour five minutes zero seconds','duration').inferred,{hours:false,minutes:false,seconds:false},'spoken zero is explicit');
+assert.deepEqual(Values.classify('four zero zero','duration').inferred,{hours:true,minutes:false,seconds:false},'keypad-style zero seconds are explicit');
+assert.deepEqual(Values.classify('four twelve','clock').components,{hours:4,minutes:12,seconds:0});
+assert.deepEqual(Values.classify('four twelve','clock').inferred,{hours:false,minutes:false,seconds:true});
+assert.deepEqual(Values.classify('four','clock').inferred,{hours:false,minutes:true,seconds:true});
 assert.equal(duration.project([{id:'capture-2:0',text:'and six',final:false}]),'an hour and six');
 assert.equal(duration.transcript,'an hour and five','alternative probing is pure');
 duration.update([{id:'capture-2:0',text:'and five',final:true}]);
@@ -75,3 +82,26 @@ assert.equal(pin.evaluate().value,'0000','leading zeroes preserved');
 pin.update([{id:1,text:'hello',final:false}]);
 assert.equal(pin.evaluate().status,'malformed','non-digit input is not valid with undefined value');
 console.log('PASS explicit digit lengths: ID/PIN, credentials, durations, clock values, zeroes and overflow');
+
+const discrete=new SpeechValueCollector({digitCounts:[8,4,4]});
+assert.deepEqual(discrete.digitCounts,[4,8]);
+for(let count=1;count<=9;count++){
+ discrete.update([{id:'digits',text:'0'.repeat(count),final:false}]);
+ assert.equal(discrete.evaluate().status,count>8?'malformed':[4,8].includes(count)?'valid':'incomplete');
+ if(count===4)assert.equal(discrete.evaluate().settled,false,'four remains open for an eight-digit continuation');
+ if(count===8)assert.equal(discrete.evaluate().settled,true);
+ if(count===6)assert.equal(discrete.evaluate({boundary:true}).status,'malformed','silence cannot accept a forbidden length');
+}
+assert.throws(()=>new SpeechValueCollector({digitCounts:[]}),/Digit counts/);
+assert.throws(()=>new SpeechValueCollector({digitCounts:[4,0]}),/Digit counts/);
+assert.throws(()=>new SpeechValueCollector({digitCounts:[4,8],digitRange:[4,8]}),/Choose/);
+console.log('PASS discrete digit counts: four/eight valid, gaps incomplete, boundary rejection, overflow and continuation');
+
+const contextualDigits=new SpeechValueCollector({digitCounts:[4,8],digitContexts:{4:'id',8:'credentials'}});
+for(const [digits,context] of [['0042','id'],['004212','undefined'],['00421234','credentials']]){
+ contextualDigits.update([{id:'stream',text:digits,final:false}]);
+ assert.equal(String(contextualDigits.evaluate().digitContext),context);
+}
+assert.equal(contextualDigits.evaluate().value,'00421234','the collector retains leading zeroes and every digit');
+assert.throws(()=>new SpeechValueCollector({digitCounts:[4,8],digitContexts:{6:'other'}}),/declared/);
+console.log('PASS context descriptors selected by accepted digit count without dispatch side effects');
