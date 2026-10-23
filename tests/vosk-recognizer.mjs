@@ -74,7 +74,7 @@ assert.equal(overlapEvents.find(e=>e.utteranceId==='A'&&e.isFinal).transcript,'r
 assert.equal(shared.audio.length,2);assert.equal(shared.removed,undefined);
 shared.emit('five minutes');await overlapping.finishUtterance('B');
 assert.equal(overlapEvents.at(-1).utteranceId,'B');assert.equal(overlapEvents.at(-1).transcript,'five minutes');
-await overlapping.acceptAudio(new Float32Array([0]));shared.emit('');
+await overlapping.acceptAudio(new Float32Array([0]));shared.emit('');await turns();
 assert.equal(shared.audio.length,3,'idle PCM still reaches the same decoder');
 assert.equal(overlapping.audioDelivery.receivedSamples,3);
 assert.equal(overlapping.audioDelivery.submittedSamples,3);
@@ -87,3 +87,37 @@ assert.equal(overload.length,1,'overload is explicit, never silently drops a fra
 assert.equal(await bounded.acceptAudio(new Float32Array(1)),false);
 assert.equal(overload.length,1,'closed transport cannot grow an unbounded queue');
 console.log('PASS Vosk single decoder: no grammar, no replay, endpoint continuations, revisions, repeated digits, final drain, stale callbacks and abort');
+
+// Native N-best output remains observable, while only one selected span enters collection.
+class AlternativeDecoder extends Decoder {
+ setMaxAlternatives(value){this.maximum=value;}
+ emitAlternatives(alternatives){this.listeners.result({result:{alternatives}});}
+ retrieveFinalResult(){this.emitAlternatives([{text:'',confidence:0}]);}
+}
+const lists=[],multiEvents=[];let releaseSelection;
+const multiple=new context.VoskRecognizer({model:{KaldiRecognizer:AlternativeDecoder},maxAlternatives:10,
+ requireAlternatives:true,selectHypothesis:async(id,hypotheses)=>{
+  if(hypotheses.some(h=>h.segmentText==='sync on'))await new Promise(resolve=>releaseSelection=resolve);
+  return hypotheses.find(h=>h.segmentText==='sync on')||hypotheses[0];
+ }});
+multiple.addEventListener('alternatives',event=>lists.push(event.detail));
+multiple.addEventListener('transcript',event=>multiEvents.push(event.detail));
+await multiple.beginUtterance('ranked');const ranked=decoders.at(-1);assert.equal(ranked.maximum,10);
+await multiple.acceptAudio(new Float32Array([.2]));
+ranked.emitAlternatives([{text:'sink on',confidence:31},{text:'sync on',confidence:29,result:[{word:'sync',start:0,end:.4,conf:.8}]}]);
+await turns();assert(releaseSelection);let settled=false;const endRanked=multiple.finishUtterance('ranked').then(()=>settled=true);
+await turns();assert.equal(settled,false,'final fence waits for native reply selection');
+releaseSelection();await endRanked;
+assert.equal(multiEvents.at(-1).transcript,'sync on');assert.equal(multiEvents.at(-1).isFinal,true);
+assert.equal(multiEvents.at(-1).segments.filter(segment=>segment.text).length,1);
+assert.equal(lists[0].selectedIndex,1);assert.equal(lists[0].count,2);
+assert.deepEqual(Array.from(lists[0].hypotheses,h=>[h.segmentText,h.confidence]),[['sink on',31],['sync on',29]]);
+assert.equal(lists[0].hypotheses[1].words[0].word,'sync');
+assert.equal(multiple.audioDelivery.queuedSamples,0);multiple.close();
+const unsupported=new context.VoskRecognizer({model:{KaldiRecognizer:Decoder},requireAlternatives:true});
+await assert.rejects(unsupported.beginUtterance('unsupported'),/does not support multiple hypotheses/);unsupported.close();
+for(const count of [-1,31,1.5])assert.throws(()=>new context.VoskRecognizer({maxAlternatives:count}),/alternatives must/);
+const closedWhileSelecting=new context.VoskRecognizer({model:{KaldiRecognizer:AlternativeDecoder},selectHypothesis:()=>new Promise(resolve=>releaseSelection=resolve)});
+const stale=[];closedWhileSelecting.addEventListener('alternatives',event=>stale.push(event.detail));
+await closedWhileSelecting.beginUtterance('close');decoders.at(-1).emitAlternatives([{text:'wake',confidence:1}]);await turns();closedWhileSelecting.close();releaseSelection({index:0});await turns();assert.equal(stale.length,0,'late selection cannot publish after close');
+console.log('PASS native N-best API, original rankings/scores/timestamps, selected-only collection, async final fence, capability and stale-selection guards');

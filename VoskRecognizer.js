@@ -7,6 +7,7 @@
         #model; #ownsModel = false; #decoder; #collector;
         #id; #generation = 0; #slot = 0; #queue = Promise.resolve();
         #closed = false; #finishRequested = false; #finishing = false;
+        #responses = Promise.resolve();
         #pendingAudio = 0; #finalResolve; #drainResolve; #lastPartial;
         #queuedSamples = 0; #submittedSamples = 0; #receivedSamples = 0; #audioSizes = [];
         get audioDelivery() { return Object.freeze({receivedSamples:this.#receivedSamples,
@@ -15,7 +16,7 @@
         get transcriptMode() { return "cumulative"; }
         constructor({model, modelUrl, runtimeUrl, sampleRate = 16000,
             modelLoadTimeoutMilliseconds = 120000, finalTimeoutMilliseconds = 5000,
-            getCollectionSession, maxQueuedAudioSeconds = 30} = {}) {
+            getCollectionSession, selectHypothesis, maxAlternatives = 10, requireAlternatives = false, maxQueuedAudioSeconds = 30} = {}) {
             super();
             if (sampleRate !== 16000) throw Error("Vosk requires the 16 kHz SpeechAudioWorklet pipeline.");
             if (!Number.isFinite(finalTimeoutMilliseconds) || finalTimeoutMilliseconds <= 0)
@@ -26,6 +27,11 @@
             this.sampleRate = sampleRate;
             this.finalTimeoutMilliseconds = finalTimeoutMilliseconds;
             this.getCollectionSession = getCollectionSession;
+            if (!Number.isInteger(maxAlternatives) || maxAlternatives < 0 || maxAlternatives > 30)
+                throw RangeError("Vosk alternatives must be an integer from 0 through 30.");
+            this.maxAlternatives = maxAlternatives;
+            this.requireAlternatives = requireAlternatives;
+            this.selectHypothesis = selectHypothesis;
             this.ready = (async () => {
                 if (model) this.#model = model;
                 else {
@@ -101,32 +107,64 @@
             // One full-vocabulary decoder for the whole listening session.
             const decoder = this.#decoder = new this.#model.KaldiRecognizer(this.sampleRate);
             decoder.setWords(true);
+            if (typeof decoder.setMaxAlternatives === 'function') decoder.setMaxAlternatives(this.maxAlternatives);
+            else if (this.maxAlternatives > 0) {
+                if (this.requireAlternatives) throw Error('The Vosk runtime does not support multiple hypotheses.');
+                this.dispatchEvent(new CustomEvent('status', {detail:{status:'alternatives-unavailable'}}));
+            }
             const generation = this.#generation;
             for (const event of ['partialresult', 'result']) decoder.on(event, message => {
-                if (this.#closed || generation !== this.#generation) return;
-                const audioResponse = this.#pendingAudio > 0;
-                if (audioResponse) {
-                    this.#pendingAudio--;
-                    this.#queuedSamples -= this.#audioSizes.shift() || 0;
-                }
-                const final = this.#finishing && !audioResponse && event === 'result';
-                // Worker replies must not wait behind the boundary fence that
-                // is waiting for those very replies.
-                if (this.#collector) {
-                    const text = message.result?.partial ?? message.result?.text ?? '';
-                    if (event !== 'partialresult' || text !== this.#lastPartial) {
-                        this.#lastPartial = event === 'partialresult' ? text : undefined;
-                        this.#collector.update([{id:`${this.#id}:${this.#slot}`, text, final:event === 'result'}]);
-                        if (event === 'result') this.#slot++;
-                        if (final) this.#collector.complete();
-                        this.dispatchEvent(new CustomEvent('transcript', {detail:{
-                            utteranceId:this.#id, transcript:this.#collector.transcript, isFinal:final,
-                            segmentFinal:event === 'result', segments:this.#collector.segments
-                        }}));
+                // Recognition replies have their own queue. Never enqueue them behind
+                // the audio/final fence waiting for those same replies to complete.
+                this.#responses = this.#responses.then(async () => {
+                    if (this.#closed || generation !== this.#generation) return;
+                    const audioResponse = this.#pendingAudio > 0;
+                    const final = this.#finishing && !audioResponse && event === 'result';
+                    if (this.#collector) {
+                        let result = message.result || {}, hypotheses, selectedIndex = null;
+                        if (event === 'result' && Array.isArray(result.alternatives)) {
+                            const prefix = this.#collector.segments.filter(segment => segment.final)
+                                .map(segment => segment.text).filter(Boolean).join(' ');
+                            hypotheses = result.alternatives.slice(0, this.maxAlternatives || 1)
+                                .map((alternative,index) => ({index,
+                                    text:[prefix, typeof alternative.text === 'string' ? alternative.text : ''].filter(Boolean).join(' '),
+                                    segmentText:typeof alternative.text === 'string' ? alternative.text : '',
+                                    confidence:Number.isFinite(alternative.confidence) ? alternative.confidence : undefined,
+                                    words:Array.isArray(alternative.result) ? alternative.result : undefined}));
+                            const selected = this.selectHypothesis
+                                ? await this.selectHypothesis(this.#id, hypotheses, {isFinal:final}) : hypotheses[0];
+                            if (this.#closed || generation !== this.#generation) return;
+                            const choice = hypotheses.find(hypothesis => hypothesis.index === selected?.index);
+                            selectedIndex = choice?.index ?? null;
+                            result = {...result, text:choice?.segmentText || ''};
+                            this.dispatchEvent(new CustomEvent('alternatives', {detail:{utteranceId:this.#id,
+                                segmentId:`${this.#id}:${this.#slot}`, isFinal:final,
+                                count:hypotheses.length, selectedIndex, hypotheses}}));
+                        }
+                        const text = result.partial ?? result.text ?? '';
+                        if (event !== 'partialresult' || text !== this.#lastPartial) {
+                            this.#lastPartial = event === 'partialresult' ? text : undefined;
+                            this.#collector.update([{id:`${this.#id}:${this.#slot}`, text, final:event === 'result'}]);
+                            if (event === 'result') this.#slot++;
+                            if (final) this.#collector.complete();
+                            this.dispatchEvent(new CustomEvent('transcript', {detail:{
+                                utteranceId:this.#id, transcript:this.#collector.transcript, isFinal:final,
+                                segmentFinal:event === 'result', segments:this.#collector.segments,
+                                ...(hypotheses ? {hypotheses, selectedIndex} : {})
+                            }}));
+                        }
                     }
-                }
-                if (!this.#pendingAudio) this.#drainResolve?.();
-                if (final) this.#finalResolve?.();
+                    if (audioResponse) {
+                        this.#pendingAudio--;
+                        this.#queuedSamples -= this.#audioSizes.shift() || 0;
+                    }
+                    if (!this.#pendingAudio) this.#drainResolve?.();
+                    if (final) this.#finalResolve?.();
+                }).catch(error => {
+                    if (this.#closed) return;
+                    this.close();
+                    this.dispatchEvent(new CustomEvent('error', {detail:{error,message:error.message,fatal:true}}));
+                });
             });
             decoder.on('error', message => {
                 if (!this.#closed && generation === this.#generation)
@@ -189,6 +227,7 @@
             if (this.#pendingAudio)
                 await this.#waitForResponse(resolve => {this.#drainResolve = resolve;});
             this.#drainResolve = undefined;
+            await this.#responses;
         }
         #boundary(id, publish) {
             return this.#enqueue(async () => {

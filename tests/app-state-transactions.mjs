@@ -115,6 +115,14 @@ window.eval(appSource);
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
 if(process.argv.includes('--vosk-alternatives')) {
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const loginOwner=window.SpeechMenu.testBegin();
+ const loginChoice=await window.SpeechMenu.testSelect(loginOwner.id,[
+  {index:0,text:'zero zero fourteen okay',confidence:166.834534},
+  {index:1,text:'zero zero four two okay',confidence:166.489227},
+  {index:2,text:'zero zero forty okay',confidence:166.335327}
+ ],{isFinal:true});
+ assert.equal(loginChoice?.index,1,'the login collector rejects spoken teen/tens groups and accepts four literal digits');
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  window.document.querySelector('#speechMicBar').isOpen=true;await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
  const owner=window.SpeechMenu.testBegin();
