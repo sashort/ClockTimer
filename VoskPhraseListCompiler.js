@@ -205,6 +205,9 @@
         });
     }
 
+    // Language vocabularies are immutable; retain only bounded compiled syntax,
+    // never live command availability or action records. Mutable inputs bypass it.
+    const stageCaches = new WeakMap();
     class VoskPhraseListCompiler {
         static normalize(value) { return normalize(value); }
         static compile(patternRecords, options) { return compile(patternRecords, options); }
@@ -240,10 +243,24 @@
         // still goes through the same strict finite compiler.
         static compileStages(records, { capturePhrases = {}, valuePhrases = {} } = {}) {
             const paths = [], unsupported = [];
+            let cache;
+            if (Object.isFrozen(valuePhrases) && Object.values(valuePhrases).every(Object.isFrozen) &&
+                !Object.keys(capturePhrases).length) {
+                cache = stageCaches.get(valuePhrases);
+                if (!cache) stageCaches.set(valuePhrases, cache = new Map());
+            }
+            const captureTypes = JSON.stringify(globalThis.SpeechGrammarContext?.VALUE_CAPTURE_TYPES || {});
             for (const record of records || []) {
                 const pattern = typeof record === "string" ? record : record.pattern;
                 if (typeof pattern !== "string") continue;
+                const key = cache && JSON.stringify([pattern, record.expect, record.capture, captureTypes]);
+                const cached = cache?.get(key);
+                if (cached) {
+                    paths.push(...cached.map(stages => ({record, stages})));
+                    continue;
+                }
                 try {
+                    const firstPath = paths.length;
                     const markers = {}, captures = new Map();
                     let source = "", cursor = 0;
                     for (const match of pattern.matchAll(/\(\?<([A-Za-z][A-Za-z0-9_]*)>/g)) {
@@ -282,6 +299,12 @@
                         }
                         flush();
                         paths.push({ record, stages });
+                    }
+                    if (cache) {
+                        const stages = paths.slice(firstPath).map(path => Object.freeze(path.stages.map(stage =>
+                            Object.freeze({...stage, phrases:Object.freeze([...stage.phrases])}))));
+                        if (cache.size >= 512) cache.delete(cache.keys().next().value);
+                        cache.set(key, Object.freeze(stages));
                     }
                 } catch (error) {
                     unsupported.push({ id: record.id || null, pattern, reason: String(error.message || error) });

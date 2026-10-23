@@ -1,10 +1,14 @@
 (() => {
  'use strict';
  const events=['speechRecognizerTranscript','speechTranscriptScoped','speechValueValidated','speechValueDiagnosticError','speechRecognitionAlternatives','speechRecognitionStatusChanged',
-  'speechRecognitionHandoff','speechCommandBufferChanged','speechCommandDigested','speechCommandDispatched',
+  'speechRecognitionHandoff','speechRecognitionSlots','speechRecognitionMetrics','speechCommandBufferChanged','speechCommandDigested','speechCommandDispatched',
   'speechCommandSkipped','speechAttemptRejected','utteranceUnrecognized','speechMenuCommandError',
   'speechRecognitionFailed','listeningSuspended','listeningResumed','started','stopped'];
  const text=value=>typeof value==='string'?value.slice(0,2048):undefined;
+ const scalars=(source,keys)=>Object.fromEntries(keys.flatMap(key=>{
+  const value=source?.[key];return typeof value==='string'?[[key,text(value)]]:
+   typeof value==='boolean'||(typeof value==='number'&&Number.isFinite(value))?[[key,value]]:[];
+ }));
  // Copy diagnostic primitives only. Never serialize elements, arguments, audio,
  // credentials, or arbitrary objects supplied by command handlers.
  function detail(source={}) {
@@ -22,6 +26,22 @@
   if(Array.isArray(hypotheses))result.alternatives=hypotheses.slice(0,10).map(h=>({index:h.index,text:text(h.text||h.transcript),
    confidence:Number.isFinite(h.confidence)?h.confidence:undefined,selected:typeof h.selected==='boolean'?h.selected:undefined}));
   if(source.error)result.error=text(source.error.message||String(source.error));
+  Object.assign(result,scalars(source,['mode','totalMilliseconds','maximumInputQueueMilliseconds','coalescedPartials',
+   'from','to','boundarySample','replayStartSample','replayEndSample','analysisMilliseconds','finalizationMilliseconds',
+   'handoffMilliseconds','grammarMilliseconds','decoderMilliseconds','replayMilliseconds','warmDecoder']));
+  if(source.stream)result.stream=scalars(source.stream,['streamId','sampleRate','channels','sampleFormat','bytesPerSample']);
+  if(Array.isArray(source.slots))result.slots=source.slots.slice(-128).map(slot=>({
+   ...scalars(slot,['id','owner','ownerId','ownerHeadSlotId','status','key','kind','expectedKind','context','text','state','commandId','startSample','endSample','decoderEpoch','decoderOriginSample']),
+   position:scalars(slot.position,['streamId','sampleRate','channels','sampleFormat','bytesPerSample','startSample','endSample','startByte','endByte']),
+   forecast:scalars(slot.forecast,['kind','context','field']),
+   dependencies:Array.isArray(slot.dependencies)?slot.dependencies.slice(0,128).map(item=>scalars(item,['id','kind'])):[],
+   dependencyRanges:Array.isArray(slot.dependencyRanges)?slot.dependencyRanges.slice(0,128).map(item=>scalars(item,['startSlotId','endSlotId'])):[],
+   waitingForSlotIds:Array.isArray(slot.waitingForSlotIds)?slot.waitingForSlotIds.slice(0,128).map(text):[],
+   invalidDependencySlotIds:Array.isArray(slot.invalidDependencySlotIds)?slot.invalidDependencySlotIds.slice(0,128).map(text):[]
+  }));
+  if(source.delivery)result.delivery=scalars(source.delivery,['receivedSamples','submittedSamples','replayedSamples','queuedSamples',
+   'nativeQueuedSamples','retainedSamples','capacitySamples','oldestQueuedAudioMilliseconds']);
+  if(source.preparation)result.preparation=scalars(source.preparation,['grammar','warmDecoders','contextCacheHits']);
   if(source.components) {
    result.components={};result.inferred={};result.componentDisplay={};
    for(const unit of ['hours','minutes','seconds']) {

@@ -83,6 +83,7 @@ speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', 
     static testTranscript(u,text,final=true){return SpeechMenu.#handleLiveTranscript(u,text,final);}
     static testFinish(){SpeechMenu.#finishUtterance("vad-silence",true);}
     static testDeliverFinal(u,text){SpeechMenu.#onSherpaTranscript({detail:{utteranceId:u.id,transcript:text,isFinal:true}});}
+    static testEndCapture(){SpeechMenu.#utterance=undefined;}
     static testFinal(u,text){return SpeechMenu.#handleCompletedTranscript(u,text);}
     static testAvailable(){return SpeechMenu.#availableCandidates();}
     static testVoskContext(id,text){return SpeechMenu.#voskContext(id,text);}
@@ -169,6 +170,21 @@ if(process.argv.includes('--login-deadline')) {
  assert.equal(errors.length,0,errors.join('\n'));
  console.log('PASS pre-login countdown, preserved credentials and pending HTTP login, late authenticated restart');
  await storage.flush();window.happyDOM.abort();process.exit(0);
+}
+if(process.argv.includes('--login-final-tail')) {
+ window.document.querySelector('#speechMicBar').isOpen=true;
+ const loginDialog=window.document.querySelector('#loginDialog');if(!loginDialog.open)loginDialog.showModal();
+ await window.WMOFActions.handleSpeechRuntimeStarted();
+ await settle();
+ const owner=window.SpeechMenu.testBegin();window.SpeechMenu.testEndCapture();
+ const events=[];window.SpeechMenu.events.addEventListener('speechCommandDigested',event=>events.push(event.detail.transcript));
+ await window.SpeechMenu.testFinal(owner,'zero zero four two one two three four trip goal one twenty sync on ready at four twelve');
+ for(let i=0;i<100&&!window.document.querySelector('#scheduledStartDialog').open;i++){await settle();await new Promise(resolve=>setTimeout(resolve,10));}
+ assert.equal(timer.getAttribute('trip-goal'),'120%',JSON.stringify({events,pending:owner.digestPending,consumed:owner.digestTranscript,failed:owner.digestFailed,login:window.WMOFInteractionState.state.login,errors,consoleErrors}));
+ assert(spoken.includes('Sync On'),'Sync On completes before scheduled-start creates a fresh timer draft');assert(window.document.querySelector('#scheduledStartDialog').open);
+ assert.equal(events.filter(text=>text==='sync on').length,1);assert.equal(errors.length,0);
+ console.log('PASS completed final login preserves and processes goal, sync and scheduled time suffix');
+ await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--goal-forms')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();

@@ -76,6 +76,27 @@
         catch(error){$('mainStatus').textContent=error.message;}
         finally{busy=false;$('homeLogoutButton').disabled=false;}
     });
+    const versionLabel=$('appVersion'),versionPopover=$('versionDetails');
+    if(versionLabel&&versionPopover){
+        versionLabel.setAttribute('role','button');versionLabel.tabIndex=0;
+        versionLabel.setAttribute('aria-controls','versionDetails');versionLabel.setAttribute('aria-expanded','false');
+        let versionRequest;
+        const showVersion=()=>{
+            $('versionDetailsId').textContent=versionLabel.textContent.trim();versionPopover.showPopover();
+            versionRequest??=fetch(new URL('build-version.json',document.baseURI),{cache:'no-store'}).then(response=>{
+                if(!response.ok)throw Error('Build details unavailable.');return response.json();
+            }).then(build=>{
+                const date=new Date(build.builtAt);
+                if(build.version!==versionLabel.textContent.trim()||!Number.isFinite(date.getTime()))throw Error('Deployment time unavailable for this page version.');
+                $('versionDetailsStatus').textContent='';
+                const time=$('versionDetailsTime');time.dateTime=date.toISOString();
+                time.textContent=new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}).format(date);
+            }).catch(error=>{$('versionDetailsTime').textContent='Unavailable';$('versionDetailsStatus').textContent=error.message;versionRequest=undefined;});
+        };
+        versionLabel.addEventListener('click',showVersion);
+        versionLabel.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();showVersion();}});
+        versionPopover.addEventListener('toggle',event=>versionLabel.setAttribute('aria-expanded',String(event.newState==='open')));
+    }
     render();
     const initialRevision=authRevision;
     request().then(result=>{if(authRevision!==initialRevision)return;user=result.user;csrf=result.csrfToken;render(true);}).catch(error=>{if(authRevision===initialRevision&&error.status!==401)$('mainStatus').textContent=error.message;});

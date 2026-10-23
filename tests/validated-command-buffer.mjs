@@ -56,3 +56,42 @@ await flush();dag.cancelOwner(15);assert.equal(await canceledChild,false);finish
 assert.throws(()=>dag.enqueue({id:'unknown',ownerId:17,transcript:'unknown',dependsOn:['missing']},()=>true),/dependency/);
 dag.cancelAll();
 console.log('PASS asynchronous buffer: parallel Start/Sync, explicit multi-parent dependencies, failure and cancellation propagation');
+
+const slots=new Buffer(),order=[];let finishLogin,finishGoal;
+const login=slots.enqueue({id:'login',ownerId:20,slotKey:'authentication',transcript:'fixture login'},()=>new Promise(resolve=>finishLogin=resolve));
+const goal=slots.enqueue({id:'goal',ownerId:20,slotKey:'goal',waitForSlotKeys:['authentication','goal'],transcript:'trip goal 120'},()=>{
+ order.push('goal');return new Promise(resolve=>finishGoal=resolve);
+});
+const syncSlot=slots.enqueue({id:'sync-setting',ownerId:20,slotKey:'sync',waitForSlotKeys:['authentication','sync'],transcript:'sync on'},()=>{order.push('sync');return true;});
+slots.declareCommandSlot({id:'ready',ownerId:20});
+slots.declareValueSlot({id:'ready-time',ownerId:20,ownerHeadSlotId:'ready',context:'scheduled-start-time'});
+const readySlot=slots.enqueue({id:'ready',ownerId:20,transcript:'ready at',dependsOn:['login'],dependsOnRanges:[{startSlotId:'ready-time',endSlotId:'ready-time'}]},()=>{order.push('ready');return true;});
+await flush();
+assert.equal(slots.slots.find(slot=>slot.id==='goal').status,'pending');
+assert.deepEqual(Array.from(slots.slots.find(slot=>slot.id==='goal').waitingForSlotIds),['login']);
+assert.deepEqual(Array.from(slots.slots.find(slot=>slot.id==='sync-setting').waitingForSlotIds),['login']);
+assert.equal(slots.slots.find(slot=>slot.id==='ready-time').ownerHeadSlotId,'ready');
+finishLogin(true);await login;await flush();await syncSlot;
+assert.deepEqual(order,['goal','sync'],'Goal and Sync share only authentication, never each other or the pending time');
+assert.equal(slots.slots.find(slot=>slot.id==='sync-setting').status,'resolved');
+assert.equal(slots.slots.find(slot=>slot.id==='goal').status,'executing');
+slots.settleValueSlot('ready-time','resolved');await readySlot;
+assert.equal(order.at(-1),'ready','Ready waits for its value slot, without waiting for Goal');
+finishGoal(true);await goal;
+assert(slots.slots.every(slot=>slot.status==='resolved'));
+slots.declareValueSlot({id:'bad-value',ownerId:21,ownerHeadSlotId:'blocked-command'});
+const blockedCommand=slots.enqueue({id:'blocked-command',ownerId:21,transcript:'invalid input',dependsOnRanges:[{startSlotId:'bad-value',endSlotId:'bad-value'}]},()=>assert.fail('invalid value dispatched'));
+slots.settleValueSlot('bad-value','invalid');assert.equal(await blockedCommand,false);
+assert.equal(slots.slots.find(slot=>slot.id==='blocked-command').status,'invalid');
+assert.throws(()=>slots.enqueue({id:'bad-range',ownerId:22,transcript:'bad range',dependsOnRanges:[{startSlotId:'missing',endSlotId:'login'}]},()=>true),/endpoints/);
+slots.cancelAll();
+console.log('PASS four slot statuses, typed dependency ranges, variable ownership, shared login with parallel Goal/Sync, pending values and isolated invalidation');
+
+{
+ const buffer=new Buffer({setTimer:()=>0,clearTimer:()=>{}});
+ const skipped=buffer.enqueue({id:'duplicate',ownerId:'owner',transcript:'already dispatched'},()=>Buffer.SKIPPED);
+ let ran=false;const next=buffer.enqueue({id:'different-context',ownerId:'owner',transcript:'next',dependsOn:['duplicate']},()=>{ran=true;return true;});
+ await Promise.all([skipped,next]);assert(ran,'a successfully reconciled duplicate must not invalidate the next context');
+ assert.equal(buffer.slots.find(slot=>slot.id==='duplicate').status,'resolved');buffer.cancelAll();
+}
+

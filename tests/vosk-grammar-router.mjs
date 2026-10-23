@@ -128,3 +128,9 @@ const allEight=await atomicStream.update('zero zero four two one two three four'
 assert.equal(allEight.grammar,firstFour.grammar,'additional digits cannot force a confirmation grammar');
 assert.equal(atomicStream.prefix,'','no digit field is consumed before the stream owner establishes completion');
 console.log('PASS generic digit-stream continuation across complete field lengths');
+
+const cachedRouter=new Router({records:[{pattern:'^wake$'}],valuePhrases:{}});
+assert.deepEqual(Array.from(cachedRouter.phrases),['wake']);
+cachedRouter.setRecords([{pattern:'^sync off$'}]);
+assert.deepEqual(Array.from(cachedRouter.phrases),['sync off'],'a new command context invalidates the phrase cache');
+console.log('PASS phrase caching follows context changes');

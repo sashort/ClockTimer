@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 class CustomEvent extends Event{constructor(type,options){super(type);this.detail=options?.detail;}}
-const context={EventTarget,Event,CustomEvent,Float32Array,setTimeout,clearTimeout,performance};
-for(const name of ['PcmSampleBuffer','SpeechBoundaryAnalyzer'])vm.runInNewContext(fs.readFileSync(new URL(`../${name}.js`,import.meta.url),'utf8'),context);
+const context={EventTarget,Event,CustomEvent,Float32Array,setTimeout,clearTimeout,performance,structuredClone};
+for(const name of ['PcmSampleBuffer','SpeechBoundaryAnalyzer','SpeechRecognitionLedger'])vm.runInNewContext(fs.readFileSync(new URL(`../${name}.js`,import.meta.url),'utf8'),context);
 const ring=new context.PcmSampleBuffer(8),source=new Float32Array([1,2,3,4]);
 ring.append(source);source.fill(99);ring.append(new Float32Array([5,6,7,8,9,10]));
 assert.equal(ring.start,2);assert.equal(ring.end,10);assert.deepEqual([...ring.read(2,10)],[3,4,5,6,7,8,9,10]);
@@ -38,6 +38,10 @@ context.VoskRecognizer=FakeRecognizer;
 vm.runInNewContext(fs.readFileSync(new URL('../VoskContextRecognizer.js',import.meta.url),'utf8'),context);
 class Router{
  grammar='commands';prefix='';phrases=['ready at'];
+ get paths(){return [{record:{id:'ready',slotContext:'scheduled-start-time'},stages:this.grammar==='time'
+  ?[{grammar:'time',phrases:['four twelve']},{grammar:'commands',phrases:['sync off']}]
+  :this.prefix?[{grammar:'commands',phrases:['sync off']}]
+  :[{grammar:'commands',phrases:['ready at']},{grammar:'time',phrases:['four twelve']}]}];}
  async update(text){
   if(this.grammar==='commands'&&text.startsWith('ready at')){this.prefix='ready at';this.grammar='time';this.phrases=['four twelve','sync off'];}
   else if(this.grammar==='time'&&text.includes('sync off')){this.prefix='ready at four twelve';this.grammar='commands';this.phrases=['sync off'];}
@@ -61,6 +65,23 @@ time.emit('at four twelve sync off');
 await adapter.finishUtterance('chain');
 assert.deepEqual(errors,[]);assert.equal(transcripts.at(-1).isFinal,true);assert.equal(transcripts.at(-1).utteranceId,'chain');
 assert.equal(transcripts.at(-1).transcript,'ready at four twelve sync off','every command survives the timed handoffs once');
+assert.equal(adapter.slots[0].text,'ready at','incomplete command heads lock without requiring executable full commands');
+assert.equal(adapter.slots[0].forecast.kind,'time');
+assert.equal(adapter.slots[1].text,'four twelve');
+assert.equal(adapter.slots[1].position.streamId,adapter.slots[0].position.streamId);
 assert.equal(adapter.audioDelivery.receivedSamples,16000);assert(adapter.audioDelivery.replayedSamples>0);assert(adapter.audioDelivery.retainedSamples<=adapter.audioDelivery.capacitySamples);
 adapter.close();assert(instances[0].closed);
 console.log('PASS bounded PCM copy/wrap/expiry; conservative audio analysis; one model and decoder; timed replay; stale result fencing; utterance identity; final settlement');
+vm.runInNewContext(fs.readFileSync(new URL('../DigitSequence.js',import.meta.url),'utf8'),context);
+const digitWords=['zero','zero','four','two','one','two','three','four'];
+const digitRecord={id:'credentials',digitContext:'credentials',digitCounts:[8],digitVocabulary:{zero:'0',one:'1',two:'2',three:'3',four:'4'},pattern:'^(?<credentials>.+)$'};
+const digitRouter={grammar:'commands',prefix:'',phrases:digitWords,paths:[],digitRecords:[digitRecord],async update(){return {grammar:this.grammar};}};
+const digitAdapter=new context.VoskContextRecognizer({contextProvider:async()=>({records:[]}),routerFactory:()=>Object.assign({},digitRouter)});
+await digitAdapter.beginUtterance('bounded-digits');await digitAdapter.accept('bounded-digits',new Float32Array(16000));
+const digitDecoder=instances.at(-1);
+digitDecoder.emit(digitWords.join(' '),{words:digitWords.map((word,index)=>({word,start:index/10,end:(index+1)/10})),final:true});
+await digitAdapter.finishUtterance('bounded-digits');
+assert.equal(digitAdapter.slots.length,1);assert.equal(digitAdapter.slots[0].value,'00421234');
+assert.equal(digitAdapter.slots[0].context,'credentials');assert.equal(digitAdapter.slots[0].kind,'digits');
+digitAdapter.close();
+console.log('PASS bounded digit collectors record semantic slots without expanding every digit sequence');

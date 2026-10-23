@@ -20,6 +20,7 @@ const server=http.createServer((req,res)=>{
    if(body?.action==='connect')signedIn=true;
    return route.fulfill({status:signedIn?200:401,json:signedIn?{user,csrfToken:'a'.repeat(64)}:{message:'Not signed in'}});
   });
+  await page.route('**/build-version.json',route=>route.fulfill({json:{version:'E4GUFA',builtAt:'2026-10-23T16:30:00Z'}}));
   const base=`http://127.0.0.1:${server.address().port}/index.html`;
   const waitView=name=>page.waitForFunction(name=>document.querySelector('#homePane').activeView.dataset.paneView===name&&!document.querySelector('#homePane').dataset.paneTransitioning,name);
   const out=path.join(__dirname,'artifacts/main-page');fs.mkdirSync(out,{recursive:true});
@@ -34,7 +35,17 @@ const server=http.createServer((req,res)=>{
     await page.locator('#homePane [data-pane-view]:not([hidden]) [data-home-back]').click();await waitView('home');
     assert.equal(await page.evaluate(()=>document.activeElement.id),id);
    }
-   if(width===390)await page.screenshot({path:path.join(out,'home.png')});
+   if(width===390){
+    const version=page.locator('#appVersion');await version.click();
+    await page.waitForFunction(()=>document.querySelector('#versionDetails').matches(':popover-open')&&document.querySelector('#versionDetailsTime').dateTime);
+    assert.equal(await page.locator('#versionDetailsId').textContent(),await version.textContent());
+    assert.equal(await page.locator('#versionDetailsTime').getAttribute('datetime'),'2026-10-23T16:30:00.000Z');
+    assert.equal(await version.getAttribute('aria-expanded'),'true');
+    await page.keyboard.press('Escape');assert.equal(await version.getAttribute('aria-expanded'),'false');
+    await version.focus();await page.keyboard.press('Enter');await page.locator('#versionDetails').waitFor({state:'visible'});
+    await page.keyboard.press('Escape');
+    await page.screenshot({path:path.join(out,'home.png')});
+   }
    await page.locator('#homeDev').click();await waitView('dev');
    const before=await page.locator('#homeDevSubmenu .home-pane-header').boundingBox();
    const metrics=await page.locator('#homeDevSubmenu').evaluate(el=>({height:el.clientHeight,content:el.scrollHeight}));
