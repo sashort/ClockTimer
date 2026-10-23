@@ -105,7 +105,7 @@
                     const result=await execute();
                     const canceled=entry.status==='canceled';
                     if(!canceled)entry.status=result===ValidatedCommandBuffer.SKIPPED?'canceled':result===false?'failed':'completed';
-                    this.#settleSlot(entry.slot,entry.status==='completed'?'resolved':'invalid');
+                    this.#settleSlot(entry.slot,!canceled&&(entry.status==='completed'||result===ValidatedCommandBuffer.SKIPPED)?'resolved':'invalid');
                     entry.completedAt=this.now();entry.resolve(canceled?false:result===ValidatedCommandBuffer.SKIPPED?true:result);
                 }catch(error){
                     this.#settleSlot(entry.slot,'invalid');

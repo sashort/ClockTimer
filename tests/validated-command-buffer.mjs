@@ -86,3 +86,12 @@ assert.equal(slots.slots.find(slot=>slot.id==='blocked-command').status,'invalid
 assert.throws(()=>slots.enqueue({id:'bad-range',ownerId:22,transcript:'bad range',dependsOnRanges:[{startSlotId:'missing',endSlotId:'login'}]},()=>true),/endpoints/);
 slots.cancelAll();
 console.log('PASS four slot statuses, typed dependency ranges, variable ownership, shared login with parallel Goal/Sync, pending values and isolated invalidation');
+
+{
+ const buffer=new Buffer({setTimer:()=>0,clearTimer:()=>{}});
+ const skipped=buffer.enqueue({id:'duplicate',ownerId:'owner',transcript:'already dispatched'},()=>Buffer.SKIPPED);
+ let ran=false;const next=buffer.enqueue({id:'different-context',ownerId:'owner',transcript:'next',dependsOn:['duplicate']},()=>{ran=true;return true;});
+ await Promise.all([skipped,next]);assert(ran,'a successfully reconciled duplicate must not invalidate the next context');
+ assert.equal(buffer.slots.find(slot=>slot.id==='duplicate').status,'resolved');buffer.cancelAll();
+}
+
