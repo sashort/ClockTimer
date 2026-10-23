@@ -27,6 +27,8 @@ const root=path.resolve(__dirname,'..');
   page.on('console',message=>{if(message.type()==='error')console.error('BROWSER:',message.text());});
   const errors=[],requests=[];page.on('pageerror',error=>{errors.push(error.message);console.error('PAGE:',error.message);});page.on('request',request=>requests.push(new URL(request.url()).pathname));
   await page.addInitScript(()=>{
+   // Exercise the continuous-adapter collector contract; context routing has its own tests.
+   globalThis.WMOF_VOSK_CONFIG={contextHandoff:false};
    globalThis.voskDecoders=[];globalThis.captureCalls=0;
    if(navigator.serviceWorker)navigator.serviceWorker.register=async()=>{throw Error('Asset cache disabled in deterministic fixture');};
    globalThis.voskShadows=new WeakMap();const attach=Element.prototype.attachShadow;
@@ -37,6 +39,7 @@ const root=path.resolve(__dirname,'..');
     constructor(...args){if(args.length!==1)throw Error('Unexpected grammar');this.listeners={};this.tail='';voskDecoders.push(this);}
     on(event,fn){this.listeners[event]=fn;}
     setWords(){}
+    setMaxAlternatives(){}
     acceptWaveformFloat(){this.listeners.partialresult?.({result:{partial:this.tail}});}
     emit(text,endpoint=false){this.tail=endpoint?'':text;this.listeners[endpoint?'result':'partialresult']({result:endpoint?{text}:{partial:text}});}
     retrieveFinalResult(){this.emit(this.tail,true);}
