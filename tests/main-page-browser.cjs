@@ -41,7 +41,7 @@ const server=http.createServer((req,res)=>{
     assert.equal(await page.locator('#versionDetailsId').textContent(),await version.textContent());
     assert.equal(await page.locator('#versionDetailsTime').getAttribute('datetime'),'2026-10-23T16:30:00.000Z');
     assert.equal(await version.getAttribute('aria-expanded'),'true');
-    await page.keyboard.press('Escape');assert.equal(await version.getAttribute('aria-expanded'),'false');
+    await page.keyboard.press('Escape');await page.waitForFunction(()=>document.querySelector('#appVersion').getAttribute('aria-expanded')==='false'&&!document.querySelector('#versionDetails').matches(':popover-open'));
     await version.focus();await page.keyboard.press('Enter');await page.locator('#versionDetails').waitFor({state:'visible'});
     await page.keyboard.press('Escape');
     await page.screenshot({path:path.join(out,'home.png')});
