@@ -682,6 +682,15 @@
         PERMISSION_DEVELOPER;
 
     const app = $("#app");
+    // A portal identity change also changes this tab's PHP session. Reload
+    // before its old account state can submit work under the new identity.
+    const accountIdentityChannel = typeof BroadcastChannel === 'function'
+        ? new BroadcastChannel('wmof-identity-changed') : null;
+    accountIdentityChannel?.addEventListener('message', event => {
+        if (event.data?.type === 'identity-changed') location.reload();
+    });
+
+
     // Explicit application capability; independent of Trip/Total/Auto and timer
     // presentation modes. Missing or unknown modes never select a fallback.
     class ApplicationMode {

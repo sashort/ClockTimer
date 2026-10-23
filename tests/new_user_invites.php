@@ -21,7 +21,8 @@ const PERMISSION_DEVELOPER = 16;
 const PERMISSION_GRANT_TOKEN_ACCESS = 32;
 const PERMISSION_VIEW_LIVE_STREAMS = 64;
 const PERMISSION_LOOKUP_USERS = 128;
-const PERMISSION_ALL = 255;
+const PERMISSION_IMPERSONATE = 256;
+const PERMISSION_ALL = 511;
 
 require_once __DIR__ . '/../api/_core/access_tokens.php';
 require_once __DIR__ . '/../api/_core/new_user_invites.php';

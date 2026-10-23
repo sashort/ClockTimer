@@ -76,7 +76,8 @@ VALUES
     (16, 'developer', 'Access developer tools and interfaces.'),
     (32, 'grant_token_access', 'Create and manage temporary delegated-access tokens.'),
     (64, 'drop_in', 'Observe another user\'s ClockTimer through Drop-In, including live audio and speech metadata.'),
-    (128, 'lookup_users', 'Search for user identities by ID, username, first name, last name, or preferred name.')
+    (128, 'lookup_users', 'Search for user identities by ID, username, first name, last name, or preferred name.'),
+    (256, 'impersonate', 'Sign in as another account with an audited identity transition.')
 ON DUPLICATE KEY UPDATE
     `name` = VALUES(`name`),
     `description` = VALUES(`description`);
@@ -1051,3 +1052,18 @@ DELIMITER ;
 --   * Reverse an original delete by reinserting before_data, including its ID.
 --   * Process the original change in reverse sequence order so dependencies are
 --     unwound correctly, and let the reversal generate its own audit entries.
+
+-- Identity-transition audit survives deletion of accounts or depleted tokens.
+CREATE TABLE IF NOT EXISTS impersonation_sessions (
+ id CHAR(36) NOT NULL PRIMARY KEY, actor_user_id BIGINT UNSIGNED NULL,
+ target_user_id BIGINT UNSIGNED NOT NULL, token_id BIGINT UNSIGNED NULL,
+ authentication VARCHAR(16) NOT NULL, started_at BIGINT UNSIGNED NOT NULL,
+ ended_at BIGINT UNSIGNED NULL, end_reason VARCHAR(32) NULL,
+ INDEX impersonation_actor (actor_user_id, started_at),
+ INDEX impersonation_target (target_user_id, started_at)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS impersonation_changes (
+ change_id CHAR(36) NOT NULL PRIMARY KEY, impersonation_id CHAR(36) NOT NULL,
+ created_at BIGINT UNSIGNED NOT NULL,
+ INDEX impersonation_changes_session (impersonation_id)
+) ENGINE=InnoDB;

@@ -71,8 +71,11 @@ test('user lookup permission', fn()=>expect(has_permission($lookupUser, PERMISSI
 test('ordinary user cannot lookup users', fn()=>expect(!has_permission($normal, PERMISSION_LOOKUP_USERS)));
 test('superuser implies user lookup permission', fn()=>expect(has_permission($super, PERMISSION_LOOKUP_USERS)));
 foreach ([$normal,$creator,$editor] as $actor) test('cannot assign permissions: '.$actor['id'], fn()=>rejects(fn()=>require_permission_assignment($actor,4),403,'permission_required'));
-foreach ([-1,256,'4',1.5,true] as $value) test('invalid permission mask '.json_encode($value), fn()=>rejects(fn()=>require_permission_assignment($super,$value),422,'invalid_argument'));
+foreach ([-1,512,'4',1.5,true] as $value) test('invalid permission mask '.json_encode($value), fn()=>rejects(fn()=>require_permission_assignment($super,$value),422,'invalid_argument'));
 test('combined permission mask', fn()=>expect(require_permission_assignment($super,255)===255));
+test('impersonate is assignable by superuser', fn()=>expect(require_permission_assignment($super,256)===256));
+test('ordinary account cannot impersonate', fn()=>expect(!has_permission($normal,PERMISSION_IMPERSONATE)));
+test('superuser implies impersonation', fn()=>expect(has_permission($super,PERMISSION_IMPERSONATE)));
 test('revoke permissions', fn()=>expect(require_permission_assignment($super,0)===0));
 $input=['firstName'=>' Test ','lastName'=>'Account','username'=>'temp-account','password'=>' with spaces '];
 $GLOBALS['actorId']=1;
@@ -97,6 +100,7 @@ test('editor updates ordinary account', fn()=>expect(save_user_account($pdo,['us
 test('editor cannot reset superuser password', fn()=>rejects(fn()=>save_user_account($pdo,['userId'=>4,'password'=>'replacement'],false),403,'permission_required'));
 $GLOBALS['actorId']=4;
 test('superuser grants permissions', fn()=>expect(save_user_account($pdo,['userId'=>1,'permissions'=>3],false)['permissions']===3));
+test('superuser creates profile with Impersonate', fn()=>expect(save_user_account($pdo,array_merge($input,['username'=>'impersonator','permissions'=>256]),true)['permissions']===256));
 test('superuser revokes permissions', fn()=>expect(save_user_account($pdo,['userId'=>1,'permissions'=>0],false)['permissions']===0));
 test('unknown user', fn()=>rejects(fn()=>save_user_account($pdo,['userId'=>999,'firstName'=>'No'],false),404,'user_not_found'));
 test('empty patch', fn()=>rejects(fn()=>save_user_account($pdo,[],false),422,'invalid_argument'));

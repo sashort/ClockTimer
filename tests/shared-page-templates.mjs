@@ -24,7 +24,7 @@ for(const page of pages){
  assert.equal(w.document.getElementById('userLookupDialog').dataset.persistenceBehavior,'Wait Async',page+' uses the shared Account Lookup persistence policy');
  assert.equal(w.document.querySelector('#userLookupLiveStream'),null,page+' has no mounted Drop-In action in Account Lookup');
  assert.equal(w.document.querySelector('#userLookupCopySelected'),null,'Copy Identity is removed');
- assert.equal(w.document.querySelectorAll('#editProfilePermissions input[type=checkbox]').length,8,'permissions use named choices');
+ assert.equal(w.document.querySelectorAll('#editProfilePermissions input[type=checkbox]').length,9,'permissions use named choices, including Impersonate');
  assert.equal(Boolean(w.document.getElementById('dropInLookupActionTemplate')),page==='drop-in','only Drop-In owns its action template');
  assert.equal(w.document.querySelectorAll('link[href^="MenuIcons.css"]').length,1);
  const menu=page==='index'?'#homePane button,#homePane a,#signedOutActions button,#signedOutActions a':page==='order-filler'?'#mainMenu button:not(#menuButton),#mainMenu a,#mainMenu summary':'#dropInMenu button:not(#dropInMenuButton),#dropInMenu a';

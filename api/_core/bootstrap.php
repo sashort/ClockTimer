@@ -32,3 +32,5 @@ set_exception_handler(static function (Throwable $error): never {
     error_log($error->__toString());
     api_error('The server could not complete the request.', 500, 'server_error');
 });
+
+require_once __DIR__ . '/impersonation.php';

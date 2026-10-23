@@ -6,6 +6,7 @@ const ACCESS_TOKEN_SCOPE_SPEECH_EDITOR = 'speech_editor';
 const ACCESS_TOKEN_SCOPE_ACCESS_TOKENS = 'access_tokens';
 const ACCESS_TOKEN_SCOPE_NEW_USER = 'new_user';
 const ACCESS_TOKEN_SCOPE_DIAGNOSTICS = 'diagnostics';
+const ACCESS_TOKEN_SCOPE_IMPERSONATION = 'impersonation';
 
 function optional_current_user(): ?array
 {
@@ -202,7 +203,8 @@ function consume_access_token(
     array $requiredPermissions,
     string $scope,
     bool $establishSessionGrant = false,
-    ?string $mode = null
+    ?string $mode = null,
+    ?callable $beforeConsume = null
 ): array {
     if (
         !in_array(
@@ -213,6 +215,7 @@ function consume_access_token(
                 ACCESS_TOKEN_SCOPE_ACCESS_TOKENS,
                 ACCESS_TOKEN_SCOPE_NEW_USER,
                 ACCESS_TOKEN_SCOPE_DIAGNOSTICS,
+                ACCESS_TOKEN_SCOPE_IMPERSONATION,
             ],
             true
         )
@@ -342,6 +345,31 @@ function consume_access_token(
                 ? null
                 : max(0, $usesRemaining - 1);
 
+        $authorization = [
+            'mode' =>
+                $mode ??
+                (
+                    $establishSessionGrant
+                        ? 'token_form'
+                        : 'token_bearer'
+                ),
+            'scope' => $scope,
+            'token_id' => (int) $row['id'],
+            'token_name' => (string) $row['name'],
+            'owner_user_id' => $ownerUserId,
+            'permissions' => $tokenPermissions,
+            'new_user' => $isNewUserToken,
+            'expires_at' => $expiresAt,
+            'requires_authentication' => $requiresAuthentication,
+            'uses_remaining' => $nextCount,
+            'single_use' => $usesRemaining === 1,
+            'user' => $user,
+            'principal_key' => 'token-' . (int) $row['id'],
+        ];
+
+        // Validate and record this login inside the locked token transaction.
+        if ($beforeConsume !== null) $beforeConsume($pdo, $authorization);
+
         if (
             $nextCount !== null &&
             $nextCount === 0 &&
@@ -367,28 +395,6 @@ function consume_access_token(
         }
 
         $pdo->commit();
-
-        $authorization = [
-            'mode' =>
-                $mode ??
-                (
-                    $establishSessionGrant
-                        ? 'token_form'
-                        : 'token_bearer'
-                ),
-            'scope' => $scope,
-            'token_id' => (int) $row['id'],
-            'token_name' => (string) $row['name'],
-            'owner_user_id' => $ownerUserId,
-            'permissions' => $tokenPermissions,
-            'new_user' => $isNewUserToken,
-            'expires_at' => $expiresAt,
-            'requires_authentication' => $requiresAuthentication,
-            'uses_remaining' => $nextCount,
-            'single_use' => $usesRemaining === 1,
-            'user' => $user,
-            'principal_key' => 'token-' . (int) $row['id'],
-        ];
 
         if ($establishSessionGrant) {
             access_token_store_session_grant($scope, $authorization);

@@ -147,6 +147,7 @@ jobs:
       - run: node tests/trip-log-downtime-browser.cjs
       - run: node tests/break-session-browser.cjs
       - run: node tests/break-only-log-browser.cjs
+      - run: node tests/impersonation-portal-browser.cjs
       - run: node tests/application-state-inventory-browser.cjs
       - run: node tests/graphical-settings-browser.cjs
       - run: node tests/radial-fitted-tick-browser.cjs
@@ -167,6 +168,10 @@ jobs:
           --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
+      - run: php -l api/admin/impersonation/index.php
+      - run: php -l api/_core/impersonation.php
+      - run: php -l admin/impersonation.php
+      - run: php -d extension=pdo_sqlite tests/impersonation.php
       - run: php -l api/command-check/index.php
       - run: php -l api/diagnostics/order-filler/index.php
       - run: php -l api/_core/order_filler_diagnostics.php

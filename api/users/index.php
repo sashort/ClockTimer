@@ -5,6 +5,7 @@ require_once dirname(__DIR__) . '/_core/bootstrap.php';
 
 function destroy_current_session(): void
 {
+    impersonation_end(db(), 'logout');
     $_SESSION = [];
 
     if (ini_get('session.use_cookies')) {
@@ -123,6 +124,14 @@ if (!in_array($action, ['connect', 'connect-pin'], true)) {
     api_error('Unknown user action.', 422, 'invalid_action');
 }
 
+$credential = $action === 'connect-pin' ? ($input['pin'] ?? null) : ($input['password'] ?? null);
+$impersonationToken = impersonation_credential_token($credential);
+if ($impersonationToken !== null) {
+    $user = impersonation_token_login($impersonationToken, $input);
+    json_response(['user'=>$user, 'csrfToken'=>csrf_token(), 'impersonating'=>true,
+        'calendars'=>calendar_login_records(db(), api_config())]);
+}
+
 if ($action === 'connect-pin') {
     require_once dirname(__DIR__) . '/_core/voice_login.php';
     $user = authenticate_voice_login(db(), $input, (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
@@ -145,6 +154,7 @@ if (!$user || !password_verify($password, (string) $user['password_hash'])) {
 
 }
 
+impersonation_end(db(), 'login');
 session_regenerate_id(true);
 $_SESSION['user_id'] = (int) $user['id'];
 $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

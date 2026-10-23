@@ -37,7 +37,7 @@ expect_lookup(
     'lookup_users should use bit 128'
 );
 expect_lookup(
-    PERMISSION_ALL === 255,
+    PERMISSION_ALL === 511,
     'all permissions should include lookup_users'
 );
 expect_lookup(

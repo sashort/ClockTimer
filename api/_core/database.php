@@ -112,6 +112,10 @@ function audited_write(callable $callback, ?string $reversalOf = null): mixed
             ':reversal_of' => $reversalOf,
         ]);
 
+        if (isset($_SESSION['impersonation']['id'])) {
+            $pdo->prepare('INSERT INTO impersonation_changes (change_id, impersonation_id, created_at) VALUES (:change,:session,:now)')
+                ->execute([':change'=>$changeId, ':session'=>$_SESSION['impersonation']['id'], ':now'=>time()]);
+        }
         $result = $callback($pdo, $changeId);
         $pdo->commit();
         clear_audit_context($pdo);
