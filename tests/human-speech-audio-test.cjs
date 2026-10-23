@@ -16,7 +16,7 @@ const {encode}=require('../speech/RecordingWave.js'),{loadHumanClip}=require('./
   await assert.rejects(generator.render('cancel'),/Missing human recording/,'missing human takes never fall back to synthetic speech');
   fs.writeFileSync(path.join(folder,sha256+'.wav'),Buffer.from('corrupt'));
   assert.throws(()=>loadHumanClip({directory,locale:'en-US',delivery:'fast',text}),/checksum/);
-  const script=JSON.parse(fs.readFileSync(path.join(__dirname,'recording-scripts/en-us.json'),'utf8')),workflow=require('./languages/en-US/workflows.cjs');assert.deepEqual(script.phrases,[...new Set(Object.values(workflow.phrases))],'prompts stay aligned with the actual workflow corpus');
+  const script=JSON.parse(fs.readFileSync(path.join(__dirname,'recording-scripts/en-us.json'),'utf8')),workflow=require('./languages/en-US/workflows.cjs'),profile=require('./languages/en-US/profile.cjs');assert.deepEqual(script.phrases,[...new Set([...Object.values(workflow.phrases),...(profile.recordingPhrases||[])])],'prompts stay aligned with the workflow corpus and reviewed recording-only phrases');
   console.log('PASS WAV capture encoding, exact human fixture replay, source reporting, missing/corrupt rejection and script coverage');
  }finally{fs.rmSync(directory,{recursive:true,force:true});}
 })().catch(error=>{console.error(error);process.exitCode=1;});
