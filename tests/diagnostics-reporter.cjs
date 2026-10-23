@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path');
 function identity(suite,locale){
- if(!['order-filler','press','fast','medium','slow','time','duration'].includes(suite)||!/^[a-z]{2,8}(?:-[a-z0-9]{2,8})*$/i.test(locale))throw Error('Invalid diagnostics suite/locale');
+ if(!['order-filler','press','fast','medium','time','duration'].includes(suite)||!/^[a-z]{2,8}(?:-[a-z0-9]{2,8})*$/i.test(locale))throw Error('Invalid diagnostics suite/locale');
  return suite+'-'+locale.toLowerCase()+'.log';
 }
 class DiagnosticsClient {

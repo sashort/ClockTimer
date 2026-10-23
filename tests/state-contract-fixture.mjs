@@ -52,7 +52,12 @@ export function assertAudio(actual, expected, label) {
         if (item.name) assert.equal(event.name, item.name, `${label}: chime`);
         if (item.text) assert.equal(event.text, item.text, `${label}: announcement`);
         if (item.format === 'duration-only') {
-            const words = event.text.toLowerCase().trim().split(/[ -]+/);
+            let duration=event.text.toLowerCase().trim();
+            if(item.prefix){
+                assert(duration.startsWith(item.prefix.toLowerCase()),`${label}: required duration prefix`);
+                duration=duration.slice(item.prefix.length).trim();
+            }
+            const words = duration.split(/[ -]+/);
             const numbers = new Set('minus zero oh one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand'.split(' '));
             assert(words.length && words.every(word => numbers.has(word)), `${label}: numeric duration must be spoken`);
             assert(!/at the tone|minutes?|seconds?|hours?/i.test(event.text), `${label}: duration has no preamble or units`);

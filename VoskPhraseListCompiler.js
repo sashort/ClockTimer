@@ -62,6 +62,14 @@
             for (let i = 0; i < input.length;) {
                 const ch = input[i];
                 if (ch === "(") {
+                    if (input.startsWith("(?=", i) || input.startsWith("(?!", i)) {
+                        const end = findGroupEnd(input, i);
+                        if (end < 0) throw new Error("unclosed lookahead");
+                        // Assertions consume no words. Enumerate only finite
+                        // consuming paths, then enforce the original regex.
+                        i = end + 1;
+                        continue;
+                    }
                     if (!input.startsWith("(?:", i)) {
                         throw new Error("only non-capturing groups are supported after named captures are substituted");
                     }
@@ -170,7 +178,9 @@
             recordsSeen++;
             try {
                 const substituted = substituteCaptures(pattern, capturePhrases);
-                const phrases = expandRegex(substituted, maxPhrasesPerPattern);
+                const validator = new RegExp(pattern, "i");
+                const phrases = expandRegex(substituted, maxPhrasesPerPattern)
+                    .filter(phrase => validator.test(phrase));
                 if (!phrases.length) throw new Error("pattern expanded to no phrases");
                 supportedPatterns++;
                 expandedPhraseCount += phrases.length;
@@ -198,6 +208,33 @@
     class VoskPhraseListCompiler {
         static normalize(value) { return normalize(value); }
         static compile(patternRecords, options) { return compile(patternRecords, options); }
+        // Each available command path becomes an independent staged search.
+        // Large capture vocabularies stay separate: no phrase Cartesian product.
+        static compileParallel(records, options = {}, prefix = "") {
+            const compiled = this.compileStages(records, options);
+            const normalizedPrefix = normalize(prefix);
+            const groups = new Map();
+            for (const path of compiled.paths) {
+                const stages = path.stages.map(stage => ({
+                    phrases: [...stage.phrases], literal: stage.grammar === "commands"
+                }));
+                // Share a search among commands with the same continuation.
+                // E.g. every terminal literal belongs to one command grammar,
+                // while equivalent time openers share one time search.
+                const key = JSON.stringify(stages[0]?.literal
+                    ? [true, stages.slice(1)] : [false, stages]);
+                const group = groups.get(key);
+                if (group) {
+                    group.stages[0].phrases = [...new Set([...group.stages[0].phrases, ...stages[0].phrases])];
+                    group.records.push(path.record);
+                } else groups.set(key, {record:path.record, records:[path.record], stages});
+            }
+            const branches = [...groups.values()].map((branch,index)=>{
+                if (normalizedPrefix) branch.stages.unshift({phrases:[normalizedPrefix],literal:true});
+                return {...branch,id:String(index)};
+            });
+            return {branches, unsupported: compiled.unsupported};
+        }
         // Replace typed captures with markers before expansion, avoiding the
         // Cartesian product of large value vocabularies. Literal regex syntax
         // still goes through the same strict finite compiler.

@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const fixture=require('./order-filler-master-fixture.cjs');
 (async()=>{
  const previous=process.env.CLOCKTIMER_SPEECH_RATE_WPM;
- try{for(const wpm of [240,160,90]){
+ try{for(const wpm of Object.values(require('./order-filler-master-plan.cjs').rates)){
   process.env.CLOCKTIMER_SPEECH_RATE_WPM=String(wpm);
   const f=await fixture({input:'audio',beforeAudioStart:async page=>{
    // Touch login isolates root-command recognition from the separate PIN workflow.

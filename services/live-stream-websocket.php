@@ -60,6 +60,21 @@ function live_ws_can_view(array $user): bool
     return has_permission($user, PERMISSION_VIEW_LIVE_STREAMS);
 }
 
+function live_ws_can_debug(array $user): bool
+{
+    return live_ws_can_view($user) && has_any_permission($user, PERMISSION_DEVELOPER, PERMISSION_DEVELOPER_PREVIEW);
+}
+
+function live_ws_debug_subscription(int $publisherId, array $peers, array &$clients): void
+{
+    if (!isset($clients[$publisherId])) return;
+    $enabled = false;
+    foreach ($peers as $peer) {
+        if ((int) $peer['publisherClientId'] === $publisherId && ($peer['debugSpeech'] ?? false)) { $enabled = true; break; }
+    }
+    live_ws_send($clients[$publisherId], ['type'=>'speech.debug.subscription','enabled'=>$enabled]);
+}
+
 function live_ws_can_lookup(array $user): bool
 {
     return has_permission($user, PERMISSION_LOOKUP_USERS);
@@ -617,6 +632,7 @@ function live_ws_close_peer(
     }
 
     unset($peers[$peerId]);
+    if ($peer['debugSpeech'] ?? false) live_ws_debug_subscription((int) $peer['publisherClientId'], $peers, $clients);
 }
 
 function live_ws_disconnect_client(
@@ -791,6 +807,12 @@ function live_ws_handle_message(
             return;
         }
 
+        $debugSpeech = ($message['debugSpeech'] ?? false) === true;
+        if ($debugSpeech && !live_ws_can_debug($user)) {
+            live_ws_send_error($client,$requestId,'permission_required','Developer and Drop-In permissions are required for speech debugging.');
+            return;
+        }
+
         $targetUserId = (int) ($message['targetUserId'] ?? 0);
         $offer = live_ws_validate_description($message['offer'] ?? null, 'offer');
 
@@ -812,6 +834,7 @@ function live_ws_handle_message(
             'publisherClientId' => $publisherClientId,
             'viewerUserId' => (int) $user['id'],
             'targetUserId' => $targetUserId,
+            'debugSpeech' => $debugSpeech,
             'createdAt' => microtime(true),
         ];
 
@@ -833,6 +856,7 @@ function live_ws_handle_message(
                 'offer' => $offer,
             ]
         );
+        if ($debugSpeech) live_ws_debug_subscription($publisherClientId, $peers, $clients);
         return;
     }
 
@@ -1040,6 +1064,8 @@ function live_ws_handle_message(
             if ((int) $peer['publisherClientId'] !== $clientId) {
                 continue;
             }
+
+            if ($eventType === 'speech.debug' && !($peer['debugSpeech'] ?? false)) continue;
 
             $viewerClientId = (int) $peer['viewerClientId'];
 
@@ -1250,11 +1276,11 @@ while (true) {
 
             if (!array_key_exists($viewerUserId, $permissionCache)) {
                 $fresh = live_ws_user($pdo, $viewerUserId);
-                $permissionCache[$viewerUserId] =
-                    $fresh !== null && live_ws_can_view($fresh);
+                $permissionCache[$viewerUserId] = $fresh;
             }
 
-            if (!$permissionCache[$viewerUserId]) {
+            if (!$permissionCache[$viewerUserId] || !live_ws_can_view($permissionCache[$viewerUserId]) ||
+                (($peer['debugSpeech'] ?? false) && !live_ws_can_debug($permissionCache[$viewerUserId]))) {
                 live_ws_close_peer((int) $peerId, $peers, $clients, 'permission_revoked');
             }
         }

@@ -138,11 +138,7 @@ assert.deepEqual(
             )
     ].sort(),
     [
-        "choices",
-        "commands",
-        "options",
-        "speech commands",
-        "what"
+        "commands"
     ]
 );
 assert.deepEqual(
@@ -539,7 +535,7 @@ trainingCommand.dataset
     "commands";
 trainingCommand.setAttribute(
     "speech-pattern",
-    "^(?:speech )?commands$"
+    "^commands$"
 );
 
 const trainingRow =
@@ -1800,11 +1796,11 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /commands\|choices\|options\|what/
+    /patternFor\("system:commands"\)/
 );
 assert.match(
     speechMicBarSource,
-    /"speech commands",[\s\S]{0,120}"choices"[\s\S]{0,120}"options"[\s\S]{0,120}"what"/
+    /expectedPhrases:\s*\[\s*"commands"\s*\]/
 );
 assert.match(
     speechMicBarSource,
@@ -3378,11 +3374,11 @@ assert.match(
 
 assert.match(
     speechMicBarSource,
-    /"commands",[\s\S]*commands\|choices\|options\|what[\s\S]*WMOFActions\.openSpeechOptions/
+    /"commands",[\s\S]*patternFor\("system:commands"\)[\s\S]*WMOFActions\.openSpeechOptions/
 );
 assert.match(
     speechMicBarSource,
-    /expectedPhrases:[\s\S]*"commands"[\s\S]*"speech commands"[\s\S]*"choices"[\s\S]*"options"[\s\S]*"what"/
+    /expectedPhrases:\s*\[\s*"commands"\s*\]/
 );
 
 assert.match(

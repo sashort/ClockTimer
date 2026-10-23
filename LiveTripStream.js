@@ -26,6 +26,7 @@
         #closing = false;
 
         #publishing = false;
+        #speechDebugEnabled = false;
         #publisherPeers = new Map();
         #publisherCandidateQueues = new Map();
         #publisherMicrophoneStream;
@@ -77,6 +78,8 @@
                     ? snapshotProvider
                     : () => undefined;
         }
+
+        get speechDebugEnabled() { return this.#speechDebugEnabled; }
 
         get publishing() {
             return this.#publishing;
@@ -807,6 +810,12 @@
                 return;
             }
 
+            if (message.type === "speech.debug.subscription") {
+                this.#speechDebugEnabled = message.enabled === true;
+                this.#emit("speechDebugChanged", {enabled:this.#speechDebugEnabled});
+                return;
+            }
+
             if (message.type === "trainer.microphone") {
                 this.#emit("publisherMessage",{peerId:Number(message.peerId),type:message.type,payload:{enabled:message.enabled,commandId:message.commandId}});
                 return;
@@ -835,6 +844,8 @@
         }
 
         #handleSocketClose() {
+            this.#speechDebugEnabled = false;
+            this.#emit('speechDebugChanged', {enabled:false});
             const wasPublishing =
                 this.#publishing;
             const wasViewing =
@@ -1649,7 +1660,7 @@
         }
 
         async startViewing(
-            targetUserId
+            targetUserId, {debugSpeech = false} = {}
         ) {
             const target =
                 Number(
@@ -1815,6 +1826,7 @@
                             {
                                 targetUserId:
                                     target,
+                                debugSpeech: debugSpeech === true,
                                 offer:
                                     pc
                                         .localDescription
@@ -2336,6 +2348,8 @@
         }
 
         async stopPublishing() {
+            this.#speechDebugEnabled = false;
+            this.#emit('speechDebugChanged', {enabled:false});
             const wasPublishing =
                 this.#publishing;
 

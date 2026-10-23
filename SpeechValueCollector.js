@@ -7,14 +7,25 @@
         #state = 'incomplete';
         #completed = false;
         #digitRange;
-        constructor({id, classify, maxSegments = 64, continuation, digitRange, toDigits = text => /^\d*$/.test(text.replace(/\s/g,'')) ? text.replace(/\s/g,'') : undefined} = {}) {
+        #digitCounts;
+        constructor({id, classify, maxSegments = 64, continuation, digitRange, digitCounts, digitContexts, toDigits = text => /^\d*$/.test(text.replace(/\s/g,'')) ? text.replace(/\s/g,'') : undefined} = {}) {
             if (digitRange !== undefined && (!Array.isArray(digitRange) || digitRange.length !== 2 ||
                 !digitRange.every(Number.isInteger) || digitRange[0] < 1 || digitRange[1] < digitRange[0]))
                 throw RangeError('Digit range must be [minimum, maximum] with positive integer counts.');
-            this.#digitRange = digitRange && Object.freeze([...digitRange]);
+            if (digitCounts !== undefined && (!Array.isArray(digitCounts) || !digitCounts.length ||
+                !digitCounts.every(count => Number.isSafeInteger(count) && count > 0)))
+                throw RangeError('Digit counts must be a nonempty list of positive integers.');
+            if (digitCounts !== undefined && digitRange !== undefined) throw TypeError('Choose digit counts or a digit range.');
+            this.#digitCounts = digitCounts && Object.freeze([...new Set(digitCounts)].sort((a,b)=>a-b));
+            this.#digitRange = this.#digitCounts ? Object.freeze([this.#digitCounts[0],this.#digitCounts.at(-1)])
+                : digitRange && Object.freeze([...digitRange]);
+            if (digitContexts !== undefined && (!this.#digitCounts || typeof digitContexts!=='object' || digitContexts===null ||
+                Object.keys(digitContexts).some(count=>!this.#digitCounts.includes(Number(count)))))
+                throw TypeError('Digit contexts require declared accepted digit counts.');
+            this.digitContexts=digitContexts && Object.freeze({...digitContexts});
             this.id = id;
             this.toDigits = toDigits;
-            this.classify = classify || (digitRange ? text => ({status:toDigits(text) == null ? 'malformed' : 'valid',value:toDigits(text)}) : () => ({status:'incomplete'}));
+            this.classify = classify || (this.#digitRange ? text => ({status:toDigits(text) == null ? 'malformed' : 'valid',value:toDigits(text)}) : () => ({status:'incomplete'}));
             this.maxSegments = maxSegments;
             this.continuation = continuation;
         }
@@ -22,6 +33,7 @@
         get status() { return this.#state; }
         get completed() { return this.#completed; }
         get digitRange() { return this.#digitRange; }
+        get digitCounts() { return this.#digitCounts; }
         get segments() { return [...this.#segments.values()].map(s => Object.freeze({...s})); }
         project(segments) {
             const projected = new Map(this.#segments);
@@ -62,10 +74,11 @@
                 if (digits !== undefined) {
                     const [minimum, maximum] = this.#digitRange;
                     const invalid = digits === null || !/^\d*$/.test(digits) || digits.length > maximum;
-                    const short = !invalid && digits.length < minimum;
+                    const short = !invalid && (digits.length < minimum || (this.#digitCounts && !this.#digitCounts.includes(digits.length)));
                     result = {...result, digitCount:digits?.length ?? 0,
                         status:invalid || (short && boundary) ? 'malformed' : short ? 'incomplete' : result.status,
-                        canContinue:!invalid && digits.length < maximum};
+                        canContinue:!invalid && digits.length < maximum,
+                        digitContext:!invalid && !short ? this.digitContexts?.[digits.length] : undefined};
                 }
             }
             if (!['valid', 'incomplete', 'defer', 'malformed'].includes(result.status)) throw TypeError('Unknown value classification.');

@@ -109,6 +109,7 @@ final class OrderFillerDiagnostics
     {
         $name = self::basename((string)($input['suite'] ?? ''), (string)($input['locale'] ?? ''));
         $action = $input['action'] ?? '';
+        if ($input['suite'] === 'slow' && $action !== 'read') throw new InvalidArgumentException('Slow speech diagnostics are retired; existing reports are read-only.');
         if (!in_array($action, ['start', 'append', 'end', 'abort', 'read', 'progress'], true)) throw new InvalidArgumentException('Invalid diagnostics action.');
         $path = $this->path($input['suite'], $input['locale']);
         $directory = dirname($path);
@@ -128,7 +129,7 @@ final class OrderFillerDiagnostics
                 if (isset($input['deliveryTotals'])) {
                     $totals = $input['deliveryTotals'];
                     if (!is_array($totals) || array_sum($totals) !== $state['totalTests']) throw new InvalidArgumentException('Delivery totals must match totalTests.');
-                    foreach ($totals as $delivery=>$total) if (!in_array($delivery,['press','fast','medium','slow'],true) || !is_int($total) || $total < 1) throw new InvalidArgumentException('Invalid delivery total.');
+                    foreach ($totals as $delivery=>$total) if (!in_array($delivery,['press','fast','medium'],true) || !is_int($total) || $total < 1) throw new InvalidArgumentException('Invalid delivery total.');
                     $state['deliveryTotals'] = $totals;
                     $state['deliveryCounts'] = array_fill_keys(array_keys($totals),0);
                     $state['deliveryStats'] = array_fill_keys(array_keys($totals), ['passed'=>0,'failed'=>0,'skipped'=>0]);
@@ -144,7 +145,7 @@ final class OrderFillerDiagnostics
                         $state['languages'][] = strtolower($language);
                     }
                     $state['results'] = [];
-                    foreach ($state['languages'] as $language) $state['results'][$language] = ['press'=>'queued','fast'=>'queued','medium'=>'queued','slow'=>'queued'];
+                    foreach ($state['languages'] as $language) $state['results'][$language] = ['press'=>'queued','fast'=>'queued','medium'=>'queued'];
                 }
                 $records = [['type'=>'test-start', 'runId'=>$state['runId'], 'suite'=>$state['suite'],
                     'locale'=>$state['locale'], 'at'=>$now, 'build'=>$build]];
@@ -157,7 +158,7 @@ final class OrderFillerDiagnostics
                 if ($action === 'progress') {
                     $language = strtolower((string)($input['language'] ?? ''));
                     $delivery = $input['delivery'] ?? '';
-                    if ($state['suite'] !== 'summary' || !isset($state['results'][$language][$delivery])) throw new InvalidArgumentException('Unknown language/delivery.');
+                    if ($state['suite'] !== 'summary' || !in_array($delivery,['press','fast','medium'],true) || !isset($state['results'][$language][$delivery])) throw new InvalidArgumentException('Unknown language/delivery.');
                     $state['results'][$language][$delivery] = 'running';
                     $records[] = ['type'=>'progress','at'=>$now,'language'=>$language,'delivery'=>$delivery];
                 } elseif ($action === 'append') {
@@ -186,13 +187,14 @@ final class OrderFillerDiagnostics
                             if(!is_array($test['audioClips']) || !array_is_list($test['audioClips']) || count($test['audioClips'])>25)throw new InvalidArgumentException('Invalid audio evidence.');
                             $clips=[];
                             foreach($test['audioClips'] as $clip){
-                                if(!is_array($clip)||!is_string($clip['key']??null)||!preg_match('/^[a-f0-9]{64}$/D',$clip['key'])||!is_string($clip['text']??null)||strlen($clip['text'])>512||!is_string($clip['recognized']??null)||strlen($clip['recognized'])>2048||!in_array($clip['wpm']??null,[90,160,240],true))throw new InvalidArgumentException('Invalid audio evidence.');
+                                if(!is_array($clip)||!is_string($clip['key']??null)||!preg_match('/^[a-f0-9]{64}$/D',$clip['key'])||!is_string($clip['text']??null)||strlen($clip['text'])>512||!is_string($clip['recognized']??null)||strlen($clip['recognized'])>2048||!in_array($clip['wpm']??null,[160,240],true))throw new InvalidArgumentException('Invalid audio evidence.');
                                 $clips[]=['key'=>$clip['key'],'text'=>$clip['text'],'recognized'=>$clip['recognized'],'wpm'=>$clip['wpm']];
+                                if(isset($clip['source'])){if(!in_array($clip['source'],['human','synthetic'],true))throw new InvalidArgumentException('Invalid recording source.');$clips[array_key_last($clips)]['source']=$clip['source'];}
                             }
                             $records[array_key_last($records)]['audioClips']=$clips;
                         }
                         if (isset($test['delivery'])) {
-                            if (!in_array($test['delivery'],['press','slow','medium','fast'],true)) throw new InvalidArgumentException('Unknown delivery rate.');
+                            if (!in_array($test['delivery'],['press','medium','fast'],true)) throw new InvalidArgumentException('Unknown delivery rate.');
                             $records[array_key_last($records)]['delivery'] = $test['delivery'];
                             if (isset($state['deliveryTotals'][$test['delivery']])) {
                                 $count = ++$state['deliveryCounts'][$test['delivery']];

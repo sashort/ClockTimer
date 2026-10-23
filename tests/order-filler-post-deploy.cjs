@@ -16,14 +16,14 @@ const plan=require('./order-filler-master-plan.cjs');
  if(expectedCommit&&build.commit!==expectedCommit)throw Error('Deployment commit does not match test checkout');
  const env={...process.env,ORDER_FILLER_TEST_BASE_URL:base.href};
  const category=env.CLOCKTIMER_DIAGNOSTICS_CATEGORY;
- if(category&&!['press','fast','medium','slow'].includes(category))throw Error('Invalid workflow category');
+ if(category&&!['press','fast','medium'].includes(category))throw Error('Invalid workflow category');
  const deliveries=category?[category]:['press',...Object.keys(plan.rates)];
  let client,summaryId;const failures=[],results=[];const started=Date.now();
  if(env.CLOCKTIMER_DIAGNOSTICS_TOKEN||env.CLOCKTIMER_DIAGNOSTICS_COOKIE){
   env.CLOCKTIMER_DIAGNOSTICS_URL ||= new URL('api/diagnostics/order-filler/',base).href;
   client=new DiagnosticsClient(env.CLOCKTIMER_DIAGNOSTICS_URL,{token:env.CLOCKTIMER_DIAGNOSTICS_TOKEN,cookie:env.CLOCKTIMER_DIAGNOSTICS_COOKIE,csrf:env.CLOCKTIMER_DIAGNOSTICS_CSRF});
   await client.request({suite:'summary',locale:languages[0]},true);
-  if(!category){const result=await client.request({action:'start',suite:'summary',locale:languages[0],languages,totalTests:languages.length*4});summaryId=result.state.runId;}
+  if(!category){const result=await client.request({action:'start',suite:'summary',locale:languages[0],languages,totalTests:languages.length*deliveries.length});summaryId=result.state.runId;}
   Object.assign(env,{CLOCKTIMER_DIAGNOSTICS_COOKIE:client.cookie,CLOCKTIMER_DIAGNOSTICS_CSRF:client.csrf});delete env.CLOCKTIMER_DIAGNOSTICS_TOKEN;
  }else console.log('No diagnostics credential configured; reports remain in CI artifacts.');
  try{

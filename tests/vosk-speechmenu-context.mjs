@@ -1,3 +1,4 @@
+import {installSpeechLanguage} from './speech-language-fixture.mjs';
 import fs from 'node:fs';
 import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
 installSpeechLifecycle();
@@ -7,6 +8,7 @@ const window=new Window({url:'https://clock.example/'});
 Object.assign(globalThis,{window,document:window.document,Element:window.Element,
     HTMLElement:window.HTMLElement,EventTarget:window.EventTarget,CustomEvent:window.CustomEvent,
     getComputedStyle:window.getComputedStyle.bind(window),requestAnimationFrame:cb=>queueMicrotask(()=>cb(performance.now()))});
+installSpeechLanguage();
 globalThis.ParameterParser=Function(fs.readFileSync(new URL('../ParameterParser.js',import.meta.url),'utf8')+'\nreturn ParameterParser;')();
 const parserSource=['DurationParser','SpokenTimeParser','PercentParser','SpeechValuePreprocessor'].map(name=>
     fs.readFileSync(new URL(`../lang/en-US/${name}.js`,import.meta.url),'utf8')).join('\n');
@@ -132,7 +134,24 @@ try {
     const activeGrammar=await speech.testVoskContext(recognition.id);
     assert(activeGrammar.records.some(record=>record.pattern===ready.getAttribute('speech-pattern')));
     assert(!activeGrammar.records.some(record=>record.id==='future-standard'), 'closed modal commands are not in the initial grammar');
+    const hypothesis=(id,text,total_cost,extra={})=>({id,text,total_cost,enabled:true,
+        precondition_met:true,start_frame:0,end_frame:100,...extra});
+    const allowed=hypothesis('time','ready at four twelve',10);
+    const hidden=hypothesis('hidden','standard time twenty minutes',1);
+    const disabled=hypothesis('disabled','show log',0,{enabled:false});
+    const unopened=hypothesis('unopened','show log',0,{precondition_met:false});
+    assert.equal(await activeGrammar.selectHypothesis([hidden,disabled,unopened,allowed]),allowed,
+        'planner rejects unavailable commands and unmet application/spoken preconditions');
+    const logHypothesis=hypothesis('log','show log',2);
+    assert.equal(await activeGrammar.selectHypothesis([allowed,logHypothesis]),logHypothesis,
+        'parallel selection is generic across unrelated available commands');
+    assert.deepEqual(calls,[],'parallel hypothesis probes never execute actions');
+    assert.equal(recognition.valueCollectors.size,0,'parallel probes never mutate live collectors');
+    recognition.chainCanceled=true;
+    assert.equal(await activeGrammar.selectHypothesis([allowed]),undefined,'cancelled session cannot select a hypothesis');
+    recognition.chainCanceled=false;
     const projectedGrammar=await speech.testVoskContext(recognition.id,'ready at four twelve');
+    assert.equal(projectedGrammar.parallelPrefix,'ready at four twelve','successor grammar has an explicit spoken boundary');
     assert(projectedGrammar.records.some(record=>record.id==='future-standard' && record.expect==='duration'));
     assert.deepEqual(calls,[], 'grammar projection never executes actions');
     assert.equal(recognition.valueCollectors.size,0, 'grammar probes leave live collectors untouched');

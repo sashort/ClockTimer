@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {installSpeechLanguage} from './speech-language-fixture.mjs';
 import {webcrypto} from 'node:crypto';
 import {Window as NativeWindow} from 'happy-dom';
 import {installSpeechLifecycle} from './speech-lifecycle-fixture.mjs';
@@ -11,6 +12,7 @@ export function installEnglishPack(window){
  Object.defineProperty(window,'crypto',{value:webcrypto,configurable:true});
  const script=window.document.createElement('script');script.type='application/json';script.id='language-pack';script.textContent=JSON.stringify(resources);window.document.head.append(script);
  window.eval(source);
+ installSpeechLanguage(window);
  window.eval(fs.readFileSync(new URL("../AnnouncementLanguage.js",import.meta.url),"utf8"));
  return window.WMOFLanguagePack;
 }

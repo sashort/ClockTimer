@@ -1,3 +1,4 @@
+import {installSpeechLanguage} from './speech-language-fixture.mjs';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -7,11 +8,11 @@ import vm from 'node:vm';
 const context={};context.globalThis=context;
 for(const name of ['SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter'])
     vm.runInNewContext(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'),context);
+installSpeechLanguage(context,source=>vm.runInNewContext(source,context));
 const {VoskGrammarRouter:Router,VoskPhraseListCompiler:Compiler,SpeechGrammarContext:Grammar}=context;
 const values=Router.valuePhrases();
 for(const [kind,file] of [['duration','spoken-duration'],['time','spoken-time']]) {
     const parserName=kind==='duration'?'DurationParser':'SpokenTimeParser';
-    vm.runInNewContext(fs.readFileSync(new URL('../lang/en-US/'+parserName+'.js',import.meta.url),'utf8'),context);
     const Parser=context['English'+parserName];
     const oldTests=fs.readFileSync(new URL('./'+file+'.mjs',import.meta.url),'utf8');
     const inputs=[...oldTests.matchAll(/(?:parse|parts)\(\s*"([^"]+)"/g)].map(match=>match[1]);

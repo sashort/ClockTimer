@@ -335,11 +335,11 @@ html[data-trip-log-startup="unpinned"] .app {
 .percent-summary {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr) 40px;
+    grid-template-columns: 40px minmax(0, 1fr) max-content minmax(0, 1fr) 40px;
     align-items: center;
     column-gap: 0;
     --summary-text-gap: 12px;
-    padding-inline-end: var(--summary-sync-inset, 6px);
+    padding-inline: var(--summary-sync-inset, 6px);
     min-width: 0;
     font-size: 48px;
     line-height: 1;
@@ -3982,6 +3982,13 @@ clock-timer[hide-latency] time-range[type="latency"] {
     position: relative;
 }
 
+.percent-summary::before {
+    content: "";
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+}
+
 .percent-summary > :is(strong, span, .percent-value-button) {
     min-width: 0;
     white-space: nowrap;
@@ -3991,19 +3998,23 @@ clock-timer[hide-latency] time-range[type="latency"] {
 }
 
 .percent-summary > #currentPercentValue {
+    grid-column: 2;
     text-align: right;
-    font-size: var(--summary-actual-font-size, 1em);
+}
+
+.percent-summary > span {
+    grid-column: 3;
 }
 
 .percent-summary > #goalPercentValue {
+    grid-column: 4;
     text-align: left;
-    font-size: var(--summary-goal-font-size, 1em);
 }
 
 .percent-summary > .goal-sync-button {
     position: relative;
     inset: auto;
-    grid-column: 4;
+    grid-column: 5;
     justify-self: center;
     width: 40px;
     height: 40px;
@@ -4015,7 +4026,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 }
 
 .percent-summary {
-    transition: grid-template-columns 240ms ease, padding-inline-end 240ms ease;
+    transition: grid-template-columns 240ms ease, padding-inline 240ms ease;
 }
 
 /* Keep the fixed-size icon available for its exit animation; the grid track

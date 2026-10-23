@@ -1,3 +1,4 @@
+import {installSpeechLanguage} from './speech-language-fixture.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -5,6 +6,7 @@ class CustomEvent extends Event { constructor(type, options) {super(type); this.
 const context = {EventTarget, Event, CustomEvent, Float32Array, setTimeout, clearTimeout};
 for (const file of ['SpeechGrammarContext', 'VoskPhraseListCompiler', 'VoskGrammarRouter', 'VoskRecognizer'])
     vm.runInNewContext(fs.readFileSync(new URL(`../${file}.js`, import.meta.url), 'utf8'), context);
+installSpeechLanguage(context,source=>vm.runInNewContext(source,context));
 const {VoskGrammarRouter: Router, VoskPhraseListCompiler: Compiler, VoskRecognizer: Recognizer} = context;
 const mixedRoot = new Router({records:[
     {pattern:'^trip(?: mode)?$'},
@@ -72,8 +74,25 @@ const compiled = Compiler.compileStages([
     {pattern: '^bad [a-z]+$'}, {pattern: '^any .*$'},
     {pattern: '^speech (?!off)(?<percent>.+)$'},
     {pattern: '^empty (?<unknown>.+)$'}], {valuePhrases: {number: ['twenty']}});
-assert.equal(compiled.unsupported.length, 4);
-assert.deepEqual(Array.from(compiled.paths, path => path.stages[0].phrases[0]), ['break lunch', 'break short']);
+assert.equal(compiled.unsupported.length, 3);
+assert.deepEqual(Array.from(compiled.paths, path => path.stages[0].phrases[0]), ['break lunch', 'break short', 'speech']);
+const guarded = Compiler.compile([{pattern:'^(?:off|on)(?! off)(?: off)?$'}]);
+assert.deepEqual(Array.from(guarded.phrases), ['off','on'], 'assertions filter finite expansions without adding words');
+const languagePack=JSON.parse(fs.readFileSync(new URL('../lang/en-US/speech-patterns.json',import.meta.url),'utf8'));
+const goalRecord=Object.values(languagePack.patterns).find(record=>record.pattern.startsWith('^(?<goalScope>day|week|money|month|year)'));
+const goalPaths=Compiler.compileStages([goalRecord],{valuePhrases:{number:['one hundred ten']}});
+assert.equal(goalPaths.unsupported.length,0,'real optional-goal pattern compiles');
+for(const phrase of ['day goal','day goal one hundred ten','day one hundred ten','day goal one hundred ten percent']) {
+ const goals=new Router({records:[goalRecord],valuePhrases:{number:['one hundred ten']}});
+ assert.equal((await goals.update(phrase)).transcript,phrase,'goal wording survives routing: '+phrase);
+}
+const goalVocabulary=Router.valuePhrases();
+for(const value of ['one ten','one twelve','two fifteen','one oh five','a hundred','a hundred and ten','nine hundred and forty two']) {
+ assert(goalVocabulary.number.includes(value),'spoken number vocabulary preserves '+value);
+ const goals=new Router({records:[goalRecord],valuePhrases:goalVocabulary});
+ const phrase='day goal '+value;
+ assert.equal((await goals.update(phrase)).transcript,phrase,'goal routing preserves every numeric word: '+phrase);
+}
 const multiple = new Router({records: [{pattern: '^from (?<time>.+) for (?<duration>.+)$'}], valuePhrases: values});
 await multiple.update('from');
 assert.equal((await multiple.update('four twelve for')).grammar, 'duration');
@@ -100,4 +119,12 @@ for (const [capture, grammar, phrase] of [['percent','number','nineteen'], ['pin
     assert.equal((await r.update(phrase)).transcript, `set ${phrase}`);
 }
 
-console.log('PASS legacy grammar compiler/router utilities (not used by the single-decoder Vosk adapter)');
+console.log('PASS shared grammar compiler/router utilities for sequential Vosk contexts');
+
+const atomicStream=new Router({records:[{atomic:'digits',pattern:'^(?<digits>.+) (?<confirmation>okay)$'}],
+ valuePhrases:{digits:['zero','one','two','three','four','zero zero four two']}});
+const firstFour=await atomicStream.update('zero zero four two');
+const allEight=await atomicStream.update('zero zero four two one two three four');
+assert.equal(allEight.grammar,firstFour.grammar,'additional digits cannot force a confirmation grammar');
+assert.equal(atomicStream.prefix,'','no digit field is consumed before the stream owner establishes completion');
+console.log('PASS generic digit-stream continuation across complete field lengths');

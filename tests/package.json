@@ -47,12 +47,17 @@
     "test:pocketsphinx-grammar": "node pocketsphinx-grammar-catalog.mjs",
     "test:pocketsphinx-recognizer": "node pocketsphinx-recognizer.mjs",
     "test:vosk-phrase-list": "node vosk-phrase-list-compiler.mjs",
-    "test:web-speech": "node web-speech-recognizer.mjs && node web-speech-recovery.mjs && node validated-command-buffer.mjs && node web-speech-command-selection.mjs && node web-speech-browser.cjs && node web-speech-login-browser.cjs && node web-speech-value-collection-browser.cjs",
     "test:vosk-router": "node vosk-grammar-router.mjs && node vosk-speechmenu-context.mjs",
     "test:vosk-recognizer": "node vosk-recognizer.mjs && node vosk-collector-browser.cjs",
+    "test:vosk-duration-entry": "node vosk-duration-entry-browser.cjs",
+    "test:vosk-standalone-lunch": "node vosk-standalone-lunch-browser.cjs",
+    "test:web-speech": "node web-speech-recognizer.mjs && node web-speech-recovery.mjs && node validated-command-buffer.mjs && node web-speech-command-selection.mjs && node web-speech-browser.cjs && node web-speech-login-browser.cjs && node web-speech-value-collection-browser.cjs",
+    "test:speech-recordings": "node human-speech-audio-test.cjs && node speech-recordings-browser.cjs",
     "test:coordinator": "node application-coordinator.mjs && node async-command-lifecycle.mjs && node app-state-transactions.mjs --coordinator-end-trip",
     "test:order-filler:audio": "node order-filler-acoustic-smoke.cjs",
-    "test:order-filler:audio-fixtures": "node diagnostic-speech-audio-test.cjs"
+    "test:order-filler:audio-fixtures": "node diagnostic-speech-audio-test.cjs",
+    "test:speech-handoff": "node speech-value-collector.mjs && node speech-confirmation-token.mjs && node vosk-recognizer.mjs && node vosk-grammar-router.mjs && node vosk-context-handoff.mjs && node vosk-speechmenu-context.mjs",
+    "test:speech-language": "node speech-language-controller.mjs"
   },
   "dependencies": {
     "happy-dom": "20.14.5"

@@ -93,11 +93,11 @@
     },
     "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012": {
       "id": "a1c4aca2-4c4e-5760-ad2e-97d9ee5dc012",
-      "pattern": "^(?:ok(?:ay)?|o\\s+k)$"
+      "pattern": "^(?:okay)$"
     },
     "408a0105-d07e-50d7-865a-f91f02112ac6": {
       "id": "408a0105-d07e-50d7-865a-f91f02112ac6",
-      "pattern": "^(?:ok(?:ay)?|o\\s+k)$"
+      "pattern": "^(?:okay)$"
     },
     "92d60ea1-eca5-5dfa-9662-15ebe254e3f1": {
       "id": "92d60ea1-eca5-5dfa-9662-15ebe254e3f1",
@@ -177,7 +177,7 @@
     },
     "772e6012-32b8-5baa-bc6a-24e7a15119a2": {
       "id": "772e6012-32b8-5baa-bc6a-24e7a15119a2",
-      "pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+      "pattern": "^(?:okay)$",
       "command": "confirm"
     },
     "1dffbcc6-dfcd-5681-bd6d-e44e0804ecc7": {
@@ -207,7 +207,7 @@
     },
     "315ffc8d-05f8-5beb-a900-33a0be0b2213": {
       "id": "315ffc8d-05f8-5beb-a900-33a0be0b2213",
-      "pattern": "^(?:ok(?:ay)?|o\\s+k)$",
+      "pattern": "^(?:okay)$",
       "command": "voiceEntryConfirm"
     },
     "9e012b55-1e73-51a3-b8c4-e90181485523": {
@@ -343,7 +343,7 @@
     },
     "b39573f3-0017-5efe-a07c-be22ff010b6f": {
       "id": "b39573f3-0017-5efe-a07c-be22ff010b6f",
-      "pattern": "^(?:(?:speech )?commands|choices|options|what)$",
+      "pattern": "^commands$",
       "source": "SpeechMicBar.js:49001"
     },
     "f2987a12-d8f5-5fab-b3e9-b8b84784e87b": {
@@ -418,7 +418,7 @@
     },
     "ca8315b4-5d42-4aa7-9987-e0edbfe08048": {
       "id": "ca8315b4-5d42-4aa7-9987-e0edbfe08048",
-      "pattern": "^(?<digits>(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3}))\\s+(?<confirmation>ok|okay|o\\s+k)$"
+      "pattern": "^(?<digits>(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3}))\\s+(?<confirmation>okay)$"
     },
     "6554460d-3a71-486e-baae-6388767527d9": {
       "id": "6554460d-3a71-486e-baae-6388767527d9",
@@ -430,7 +430,7 @@
     },
     "05a71e25-9753-42c4-a7f7-d7d4a94dac73": {
       "id": "05a71e25-9753-42c4-a7f7-d7d4a94dac73",
-      "pattern": "^(?<credentials>(?:[0-9]{8}|(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})\\s+(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})))(?:\\s+(?<confirmation>ok|okay|o\\s+k))?$"
+      "pattern": "^(?<credentials>(?:[0-9]{8}|(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})\\s+(?:[0-9]{4}|(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)(?:\\s+(?:[0-9]|zero|oh|one|two|three|four|five|six|seven|eight|nine)){3})))(?:\\s+(?<confirmation>okay))?$"
     },
     "5531e024-c7e4-50ab-b658-ce855b6908fc": {
       "id": "5531e024-c7e4-50ab-b658-ce855b6908fc",
@@ -495,6 +495,10 @@
     "c9cef33b-fe91-5d89-8912-ee3ae040bf8a": {
       "id": "c9cef33b-fe91-5d89-8912-ee3ae040bf8a",
       "implementation": "lang/en-US/SpeechValuePreprocessor.js"
+    },
+    "eec77388-e715-4987-a15c-d5474c9ac00f": {
+      "id": "eec77388-e715-4987-a15c-d5474c9ac00f",
+      "implementation": "lang/en-US/SpeechLanguageContract.js"
     }
   },
   "language": {

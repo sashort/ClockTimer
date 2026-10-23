@@ -44,15 +44,12 @@
     return Math.max(1,this.context.measureText(cell.textContent).width+spacing*cell.textContent.length);
    });
    const gap=parseFloat(style.getPropertyValue('--summary-text-gap'))||12;
-   const available=Math.max(1,row.clientWidth-parseFloat(style.paddingLeft)-inset-badgeWidth-2*gap);
-   // Both percentage tracks stay equal. Fit each value independently so a
-   // long actual value cannot shrink the goal's column or its readable font.
-   const separatorWidth=Math.min(widths[1],available/5);
-   const valueWidth=Math.max(1,(available-separatorWidth-1)/2);
-   row.style.setProperty('--summary-actual-font-size',`${base*Math.min(1,Math.max(1,valueWidth-1)/widths[0])}px`);
-   row.style.setProperty('--summary-goal-font-size',`${base*Math.min(1,Math.max(1,valueWidth-1)/widths[2])}px`);
-   row.style.setProperty('--summary-percent-font-size',`${base*separatorWidth/widths[1]}px`);
-   row.style.gridTemplateColumns=`minmax(0, 1fr) ${separatorWidth+1+2*gap}px minmax(0, 1fr) ${badgeWidth}px`;
+   const available=Math.max(1,row.clientWidth-2*inset-2*badgeWidth-2*gap-3);
+   // Equal outer tracks and insets keep the slash centered, including during
+   // Sync transitions. The longer percentage determines one font for all text.
+   const scale=Math.min(1,available/(2*Math.max(widths[0],widths[2])+widths[1]));
+   row.style.setProperty('--summary-percent-font-size',`${base*scale}px`);
+   row.style.gridTemplateColumns=`${badgeWidth}px minmax(0, 1fr) ${widths[1]*scale+1+2*gap}px minmax(0, 1fr) ${badgeWidth}px`;
   }
  }
  globalThis.WMOFTimerSummaryView={render(root,state){

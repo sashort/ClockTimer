@@ -7062,6 +7062,24 @@
             return this.uiState;
         }
 
+        // Authoritative signed remaining balance, independent of the displayed time mode.
+        // Speech and presentation must use the same goal and productive-time accounting.
+        getTimeRemainingMilliseconds(now = new Date()) {
+            if (!(now instanceof Date) || !Number.isFinite(now.getTime()))
+                throw new TypeError("now must be a valid Date.");
+            const timelineNow = this.#getSummaryTimelineNow(now);
+            if (this.#getRenderedPercentScope() === "total") {
+                const total = this.#getTotalSummary(timelineNow, now, "remaining");
+                return Number.isFinite(total?.remainingTimeMilliseconds)
+                    ? total.remainingTimeMilliseconds : undefined;
+            }
+            const goal = Number(this.#renderedPercentGoal);
+            if (this.#breakOnly || !this.#hasStartProperties() ||
+                !Number.isFinite(this.#standardDuration) || !(goal > 0)) return undefined;
+            return this.#standardDuration / goal -
+                this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds());
+        }
+
         getSummarySnapshot(now = new Date()) {
             if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
                 throw new TypeError("now must be a valid Date.");
@@ -33148,6 +33166,9 @@
                 allowanceCreditMilliseconds,
                 countedPercent,
                 percentGoal,
+                remainingTimeMilliseconds: activeTrip && Number.isFinite(activeTripRemainingMilliseconds)
+                    ? activeTripRemainingMilliseconds
+                    : standardTimeMilliseconds / percentGoal - countedTimeMilliseconds,
                 netTimeMilliseconds:
                     completedNetMilliseconds,
                 renderedTime,

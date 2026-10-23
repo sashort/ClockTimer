@@ -54,6 +54,27 @@ class EnglishSpokenPercentParser {
         ninety: 90
     });
 
+    // The recognizer contract uses the same lexical tables and supported
+    // number forms as this parser. Meanings remain authoritative here.
+    static spokenForms(value) {
+        if (!Number.isInteger(value)||value<0||value>999) throw RangeError('Finite English number range is 0–999.');
+        const small=Array.from({length:20},(_,n)=>Object.keys(this.#ones).find(word=>this.#ones[word]===n));
+        const tens=Object.fromEntries(Object.entries(this.#tens).map(([word,n])=>[n,word]));
+        const spell=n=>n>=100?[small[Math.floor(n/100)],'hundred',n%100?spell(n%100):''].filter(Boolean).join(' ')
+            :n<20?small[n]:[tens[Math.floor(n/10)*10],n%10?small[n%10]:''].filter(Boolean).join(' ');
+        const forms=[spell(value)];
+        if(value>=100){
+            const head=small[Math.floor(value/100)],rest=value%100;
+            if(rest){
+                forms.push(`${head} hundred and ${spell(rest)}`);
+                forms.push(rest>=10?`${head} ${spell(rest)}`:`${head} oh ${spell(rest)}`);
+            }
+            if(value<200){forms.push(['a hundred',rest?spell(rest):''].filter(Boolean).join(' '));
+                if(rest)forms.push(`a hundred and ${spell(rest)}`);}
+        }
+        return forms;
+    }
+
     static parse(value) {
         const phrase =
             String(value ?? "")
@@ -62,6 +83,7 @@ class EnglishSpokenPercentParser {
                 )
                 .trim()
                 .replace(/\btutu\b/g, "22")
+                .replace(/\ba(?=\s+hundred\b)/g, "one")
                 .replace(
                     /\s*(?:percent|per cent|%)\s*$/,
                     ""

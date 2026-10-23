@@ -27,7 +27,7 @@ try {
         session_write_close();readfile($audio);exit;
     }
     if (($method==='GET' && ($_GET['job']??'')==='1') || ($method==='POST' && str_starts_with((string)($input['action']??''),'job-'))) {
-        $jobs=new DiagnosticsJobs('/var/lib/clocktimer/diagnostics/jobs',dirname(__DIR__,3).'/tests/languages');
+        $jobs=new DiagnosticsJobs('/var/lib/clocktimer/diagnostics/jobs',dirname(__DIR__,3).'/tests/languages','/var/lib/clocktimer/diagnostics/recordings');
         $result=$jobs->handle($method==='GET'?['action'=>'job-status']:$input,guarded_access_principal_key($authorization),['cookie'=>session_name().'='.session_id(),'csrf'=>csrf_token()]);
         json_response($result+['csrfToken'=>csrf_token()]);
     }

@@ -34,9 +34,11 @@ assert.ok(result.phrases.includes("resume"));
 assert.ok(result.phrases.includes("resumed"));
 assert.ok(!result.phrases.includes("ready at"));
 assert.equal(result.recordsSeen, 5);
-assert.equal(result.supportedPatterns, 4);
-assert.equal(result.unsupported.length, 1);
-assert.match(result.unsupported[0].reason, /unsupported regex|only non-capturing/);
+assert.equal(result.supportedPatterns, 5);
+assert.equal(result.unsupported.length, 0);
+assert.ok(result.phrases.includes('speech twenty'),'assertion-bearing finite patterns compile');
+const excluded=Compiler.compile([{pattern:'^speech (?!on$|off$)(?<percent>.+)$'}],{capturePhrases:{percent:['on','off','twenty']}});
+assert.deepEqual(Array.from(excluded.phrases),['speech twenty'],'lookahead still excludes reserved control words');
 
 const missingCapture = Compiler.compile([
     { pattern: "^ready at (?<spokenTime>.+)$" }

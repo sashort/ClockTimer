@@ -44,7 +44,15 @@ class EnglishSpokenTimeParser {
     }
 
     /** Return normalized clock components without choosing a calendar date. */
-    static parseParts(value) {
+    static parseComponents(value) {
+        const supplied={}, parts=this.parseParts(value,supplied);
+        if (!parts) return undefined;
+        return {components:{hours:parts.hour,minutes:parts.minute,seconds:0},
+            inferred:{hours:false,minutes:!supplied.minutes,seconds:true},
+            meridiem:parts.meridiem,day:parts.day};
+    }
+
+    static parseParts(value, supplied) {
         let text = String(value ?? "").toLocaleLowerCase("en-US").trim().replace(/\btutu\b/g, "twenty two");
         if (!text) return undefined;
         text = text
@@ -71,6 +79,7 @@ class EnglishSpokenTimeParser {
 
         const relative = text.match(/^(quarter|half|\w+(?:\s+\w+)?)\s+(past|after|to|till|until)\s+(.+)$/);
         if (relative) {
+            if (supplied) supplied.minutes=true;
             const minute = relative[1] === "quarter" ? 15 : relative[1] === "half" ? 30 : EnglishSpokenTimeParser.#wordsToNumber(relative[1]);
             const hour = EnglishSpokenTimeParser.#parseHour(relative[3]);
             if (!Number.isInteger(minute) || minute < 0 || minute > 59 || hour === undefined) return undefined;
@@ -86,8 +95,12 @@ class EnglishSpokenTimeParser {
         }
 
         const numeric = text.match(/^(\d{1,2})(?::|\s)(\d{1,2})$/);
-        if (numeric) return EnglishSpokenTimeParser.#validate(Number(numeric[1]), Number(numeric[2]), meridiem, day);
+        if (numeric) {
+            if (supplied) supplied.minutes=true;
+            return EnglishSpokenTimeParser.#validate(Number(numeric[1]), Number(numeric[2]), meridiem, day);
+        }
         if (/^\d{3,4}$/.test(text)) {
+            if (supplied) supplied.minutes=true;
             const digits = text.padStart(4, "0");
             return EnglishSpokenTimeParser.#validate(Number(digits.slice(0, 2)), Number(digits.slice(2)), meridiem, day);
         }
@@ -99,7 +112,10 @@ class EnglishSpokenTimeParser {
             const minuteText = tokens.slice(split).join(" ");
             const minute = minuteText ? EnglishSpokenTimeParser.#minuteWords(minuteText) : 0;
             const result = EnglishSpokenTimeParser.#validate(hour, minute, meridiem, day);
-            if (result) return result;
+            if (result) {
+                if (supplied) supplied.minutes=Boolean(minuteText);
+                return result;
+            }
         }
         return undefined;
     }

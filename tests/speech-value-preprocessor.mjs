@@ -41,4 +41,5 @@ assert.equal(Preprocessor.classify('twenty five minutes thirty s', 'duration').s
 assert.equal(Preprocessor.classify('quarter to', 'clock', {final:true}).status, 'malformed');
 assert.deepEqual(Preprocessor.classify('four twelve sync on', 'duration', {
     boundary: {value: 'four twelve', remainder: 'sync on'}
-}), {status:'defer', value:'0:04:12', acceptedTranscript:'four twelve', remainder:'sync on'});
+}), {status:'defer', value:'0:04:12', acceptedTranscript:'four twelve', remainder:'sync on',
+    components:{hours:0,minutes:4,seconds:12},inferred:{hours:true,minutes:false,seconds:false}});

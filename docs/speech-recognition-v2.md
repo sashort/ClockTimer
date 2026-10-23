@@ -1,5 +1,19 @@
 # Version 2 speech recognition contract
 
+## Shared language controller (23 October 2026)
+
+Use [SpeechLanguageController](speech-language-controller.md) as the entry point
+for value normalization, parsing, classification, recognition vocabulary and
+collector policies. The locale contract owns language-specific forms. Do not
+maintain an independent English vocabulary in the recognizer. The generated
+parity suite must pass when changing number forms, units or omissions.
+Recognition context is a type hint; the receiving field supplies purpose and
+validates the value. Preserve supplied-component provenance for Drop-In debug
+output: omitted values are bracketed, while explicitly spoken amounts remain
+unbracketed even if their unit was omitted. Stop recognition before activating
+a different locale contract; its revision invalidates continuation caches.
+
+
 Updated 16 October 2026. This is the implementation guide for the Version 2
 replacement, alongside [command chains](speech-command-chains.md), the
 [FSM reference](clock-timer-fsm.md), and [behavioral scenarios](fsm-v2-cases.json).
@@ -9,6 +23,48 @@ behavior from live reports and future architecture.
 The [class contracts](class-architecture-v2.md) specify the extracted lifecycle,
 branch-policy and feedback classes, their APIs, dependency order, ownership rules,
 examples, tests, and remaining integration gaps.
+
+## Parallel Vosk integration
+
+The optional `WMOF_VOSK_CONFIG.parallelFactory` connects the shared-acoustic
+parallel recognizer in `sashort/vosk-api`. It is a backend factory, not a set of
+independent stock recognizers. A factory returns methods `addGrammar(id, stages,
+startFrame)`, `removeGrammar(id)`, `setEnabled(id, enabled)`, `accept(Float32Array)`,
+`snapshot(final)`, and `close()`. Methods may return promises. The Vosk repository
+provides a persistent module-worker client and C API bridge. The existing
+vosk-browser adapter remains available when no parallel backend is configured.
+
+`VoskPhraseListCompiler.compileParallel` derives ordered literal and vocabulary
+stages from arbitrary available command records. Commands with equivalent
+continuations share a search, including terminal commands in one literal search.
+Literal openers are mandatory acoustic preconditions; no workflow names are
+hard-coded. SpeechMenu supplies application availability and probes competing
+hypotheses through isolated planner/collector state. It chooses only hypotheses
+that fit the owned continuation, comparing costs over the same frame interval.
+Selection does not execute actions; the existing transcript pipeline retains
+ownership of validation and effects. Search costs are not calibrated confidence.
+
+Successor contexts are prepared with an exact spoken prefix supplied by the
+planner. They catch up from cached acoustic scores without resubmitting waveform
+audio. The first implementation anchors these speculative paths at frame zero
+of the current acoustic utterance. If that frame is outside retained history,
+registration fails explicitly: it does not silently discard speech. Frame-boundary
+handoff beyond the retained window remains a follow-up optimization.
+
+Configure `maxParallelBranches` (default 32) and `historyFrames` (default 500
+subsampled frames, usually about 15 seconds). Root searches stay resident and
+old speculative successors can be evicted when the branch limit is reached.
+Audio capture can continue while worker requests are serialized. Finalization
+drains accepted audio, flushes every native search, and fences closed/stale
+utterances. Missing native capabilities or an unavailable model are errors.
+
+The Vosk fork must be compiled for WebAssembly with matching Kaldi/OpenFst
+dependencies before this path can be enabled in a deployed browser. Source and
+mock protocol tests do not substitute for native model tests or browser latency,
+accuracy, and memory measurements. No deployment configuration is enabled here.
+
+Checks: `node tests/vosk-parallel.mjs`, `node tests/vosk-grammar-router.mjs`, and
+`node tests/vosk-speechmenu-context.mjs`.
 
 ## Separate capture, interpretation, effects, and display
 
@@ -988,3 +1044,8 @@ native endpoint is still not a logical continuation boundary. Partial results
 remain single-best. Selection must not wait for command execution while audio
 reply fences await selection. Keep the existing interim/final dispatch guard.
 Restrict sleeping wake detection to the top hypothesis to prevent command fishing.
+
+
+## Client-side sequential Vosk handoffs (2026-10-23)
+
+The client-only handoff design and current implementation contract are documented in [vosk-context-handoffs.md](vosk-context-handoffs.md). One capture feeds a bounded PCM timeline and one active decoder sharing a loaded model. This supersedes the full-vocabulary-only restriction for the local handoff path; the original continuous adapter remains available with `?speech-handoff=off`. Adaptive silence ownership, generic collector states and the validated command buffer remain authoritative. Digit collectors now support discrete accepted counts and count-selected context metadata. Production English confirmation is `okay` only.

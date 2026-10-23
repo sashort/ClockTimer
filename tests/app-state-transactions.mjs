@@ -110,11 +110,22 @@ if(process.argv.includes('--voice-feedback') || process.argv.includes('--interva
 if(process.argv.includes('--pointer-mode') || process.argv.includes('--range-permissions'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 if(process.argv.includes('--exhaustive-values'))appSource=appSource.replace('    document.dispatchEvent(new Event("clocktimer-app-ready"));',`    globalThis.testValueSnapshot=()=>{const p=splitAbsoluteDigits(numberPadState?.pending);return {pending:numberPadState?.pending,date:numberPadState?.pendingDate,meridiem:numberPadState?.meridiem,valid:numberPadValueValid(),value:numberPadState?.mode==='absolute'?(p?absoluteHour24(numberPadState)*3600000+p.minute*60000+p.second*1000:undefined):timeDigitsToMilliseconds(numberPadState?.pending),voice:voiceEntryValue.textContent,touch:numberPadDisplay?.textContent};};
     document.dispatchEvent(new Event("clocktimer-app-ready"));`);
+if(process.argv.includes('--time-reference-goal') || process.argv.includes('--time-reference-overtime'))
+ appSource=appSource.replace('function readTimeAtTone() {','globalThis.testToneReadback=formatToneReadback; function readTimeAtTone() {');
 window.eval(appSource);
 
 const settle=()=>new Promise(resolve=>setTimeout(resolve,150));await settle();
 const timer=window.document.querySelector('#clockTimer');
 if(process.argv.includes('--vosk-alternatives')) {
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const loginOwner=window.SpeechMenu.testBegin();
+ const loginChoice=await window.SpeechMenu.testSelect(loginOwner.id,[
+  {index:0,text:'zero zero fourteen okay',confidence:166.834534},
+  {index:1,text:'zero zero four two okay',confidence:166.489227},
+  {index:2,text:'zero zero forty okay',confidence:166.335327}
+ ],{isFinal:true});
+ assert.equal(loginChoice?.index,1,'the login collector rejects spoken teen/tens groups and accepts four literal digits');
+
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  window.document.querySelector('#speechMicBar').isOpen=true;await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
  const owner=window.SpeechMenu.testBegin();
@@ -1049,11 +1060,11 @@ if(process.argv.includes('--break-end-stream')) {
    assert.equal(timer.getActiveIntervalState().intervalKey,intervalKey,'cancel preserves the break');
    await say('break end');
   } else assert(window.document.querySelector('#speechBreakConfirmDialog').open,'confirmation remains open after the final transcript');
-  await say('ok');assert(!timer.getActiveIntervalState());
+  await say('okay');assert(!timer.getActiveIntervalState());
   assert.equal(timer.uiState.trip_active,true);assert.equal(timer.currentTripId,tripId);
   assert(!window.document.querySelector('#tripTransitionOverlay').open);
   window.__testTime+=60000;await window.WMOFActions.startBreak(kind);await settle();spoken.length=0;
-  await say('break end ok');assert(!timer.getActiveIntervalState());
+  await say('break end okay');assert(!timer.getActiveIntervalState());
   assert(!spoken.includes(question),'a known OK chain skips the intermediate question');
  }
  assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
@@ -1080,14 +1091,14 @@ if(process.argv.includes('--break-boundaries')) {
    for(const path of ['separate','chained','pointer']) {
      window.__testTime+=60000;assert.equal(await window.WMOFActions.startBreak(kind),true);await settle();
      const interval=timer.getActiveIntervalState();
-     if(path==='chained')await say('break end ok');
+     if(path==='chained')await say('break end okay');
      else {
        spoken.length=0;await say('break end');
        assert(window.document.querySelector('#speechBreakConfirmDialog').open);
        assert.equal(timer.getActiveIntervalState().intervalKey,interval.intervalKey,'break end waits for OK');
        if(process.argv.includes('--voice-feedback'))assert(spoken.some(text=>text.startsWith('Are you ready to end your ')),JSON.stringify(spoken));
        if(path==='pointer') {window.document.querySelector('#speechBreakConfirmYes').click();await settle();}
-       else await say('ok');
+       else await say('okay');
      }
      assert(!timer.getActiveIntervalState(),kind+' ends through '+path);assertResumed();
      assert.equal(stored.filter(event=>event.event==='interval.ended'&&event.value.intervalKey===interval.intervalKey).length,1);
@@ -1259,9 +1270,17 @@ if(process.argv.includes('--mic-feedback')) {
  console.log('PASS local and voice mic feedback: dedicated activation/deactivation chimes, announcements and duplicate suppression');
  await window.happyDOM.close();process.exit(0);
 }
-if(process.argv.includes('--time-reference')||process.argv.includes('--time-reference-voice')||process.argv.includes('--time-reference-paused')||process.argv.includes('--deferred-readback')) {
+if(process.argv.includes('--time-reference-goal')||process.argv.includes('--time-reference-overtime')||process.argv.includes('--time-reference')||process.argv.includes('--time-reference-voice')||process.argv.includes('--time-reference-paused')||process.argv.includes('--deferred-readback')) {
  const say=async(text)=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;await settle();return u;};
  await say('ready');await say('thirty minutes okay');assert.equal(timer.status,'running');
+ if(process.argv.includes('--time-reference-goal'))timer.configure({trip_goal:'125%',goal_type:'trip'});
+ if(process.argv.includes('--time-reference-overtime')) {
+  window.__testTime+=1801500;
+  assert.equal(window.testToneReadback(-1999).text,'over by one');
+  assert.equal(window.testToneReadback(-1999).code,'-0:01');
+  assert.equal(window.testToneReadback(-999).code,'0:00','no negative zero before a complete overtime second');
+ }
+
  const calls=[];let speaking=false;
  window.WMOFAudio.speak=(text,options={})=>{speaking=true;calls.push({type:'speech',text,options});queueMicrotask(()=>{speaking=false;options.onEnd?.();});return true;};
  window.WMOFAudio.startSong=async(name,options={})=>{assert(!speaking,'reference chime must follow actual speech completion');calls.push({type:'chime',name,options});return {hasChime:true,finished:Promise.resolve({reason:'completed'})};};
@@ -1304,8 +1323,17 @@ if(process.argv.includes('--time-reference')||process.argv.includes('--time-refe
  const utterance=calls.find(c=>c.type==='speech'),cue=calls.find(c=>c.name==='time-reference');
  assert(utterance&&cue,JSON.stringify(calls));
  assert(!/at the tone|minutes?|seconds?|hours?/i.test(utterance.text),'duration has no preamble or units');
- assert.match(utterance.text,/^twenty[- ]nine /,'spoken duration accounts for time spent speaking');
- if(result)assert.match((await result.speechResponse).value,/^29:/);
+ if(process.argv.includes('--time-reference-overtime')) {
+  assert.match(utterance.text,/^over by /,'overtime keeps its announced sign');
+  const target=timer.getTimeRemainingMilliseconds(new window.Date(window.__testTime+cue.options.startAtPerformanceMs-performance.now()));
+  assert(target<0);
+ } else if(process.argv.includes('--time-reference-goal')) {
+  assert.match(utterance.text,/^twenty[- ]three /,'125% goal announces less than 24 minutes, not 30 standard minutes');
+  if(result)assert.match((await result.speechResponse).value,/^23:/);
+ } else {
+  assert.match(utterance.text,/^twenty[- ]nine /,'spoken duration accounts for time spent speaking');
+  if(result)assert.match((await result.speechResponse).value,/^29:/);
+ }
  assert.equal(calls.filter(c=>c.type==='speech').length,1,'one Time command produces one spoken readback');
  assert(Number.isFinite(cue.options.startAtPerformanceMs),'tone is scheduled against the monotonic clock');
  assert.equal(cue.options.useSelectedInstrument,false,'approved time instrument is retained');
@@ -1398,7 +1426,7 @@ if(process.argv.includes('--ready-handoff')) {
  const confirmation=await window.SpeechMenu.testVoskContext(b.id,'break start lunch');
  assert(confirmation.records.some(r=>/ok/.test(r.pattern)),'consumed break choice hands grammar ownership to confirmation');
  assert(!timer.getActiveIntervalState(),'handoff does not manufacture confirmation');
- await say(b,'break start lunch ok',true);
+ await say(b,'break start lunch okay',true);
  assert.equal(timer.getActiveIntervalState()?.intervalType,'lunch');
  assert.equal(window.WMOFCoordinator.lockCount,0);
  console.log('PASS shared Ready value and Break choice/confirmation grammar handoffs through state changes');await window.happyDOM.close();process.exit(0);
@@ -1414,12 +1442,12 @@ if(process.argv.includes('--decoder-final-boundaries')) {
  await say(duration,'twenty two fifty');
  window.SpeechMenu.testPause(duration);await new Promise(resolve=>setTimeout(resolve,450));await duration.digestQueue;await settle();
  assert.equal(finalRequests,1,'silence requests the decoder final before committing a partial duration');
- const ok=window.SpeechMenu.testBegin();await say(ok,'ok',true);
+ const ok=window.SpeechMenu.testBegin();await say(ok,'okay',true);
  assert.equal(accepted,1376000,'the final word six survives silence settlement');
  await window.WMOFCoordinator.run('test-start',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
  for(const choice of ['break','short break','lunch']) {
   const u=window.SpeechMenu.testBegin();let finishes=0;
-  window.SpeechMenu.testUseRecognizer({finishUtterance(){finishes++;setTimeout(()=>window.SpeechMenu.testDeliverFinal(u,'break start '+choice+' ok'),20);},abortUtterance(){},setHotwords(){}});
+  window.SpeechMenu.testUseRecognizer({finishUtterance(){finishes++;setTimeout(()=>window.SpeechMenu.testDeliverFinal(u,'break start '+choice+' okay'),20);},abortUtterance(){},setHotwords(){}});
   await say(u,'break start');await say(u,'break start '+choice);
   window.SpeechMenu.testPause(u);await new Promise(resolve=>setTimeout(resolve,450));await u.digestQueue;await u.segmentBarrier;await settle();
   assert.equal(finishes,1,'break confirmation waits for the decoder final: '+choice);
@@ -1465,7 +1493,7 @@ if(process.argv.includes('--voicepad-continuation')) {
  await say(u,'twenty five minutes thirty seconds',true);
  assert(!u.digestExecutionFailed,'full compound duration is accepted');
  assert.equal(u.digestSteps.length,1,'value executes once');
- const ok=window.SpeechMenu.testBegin();await say(ok,'ok',true);
+ const ok=window.SpeechMenu.testBegin();await say(ok,'okay',true);
  assert.equal(timer.standardTimeMilliseconds,1530000,'OK commits the whole duration including seconds');
  assert.equal(timer.status,'running');
  let absolute;
@@ -1497,7 +1525,7 @@ if(process.argv.includes('--voicepad-continuation')) {
  window.SpeechMenu.testPause(percent);await new Promise(resolve=>setTimeout(resolve,250));await percent.digestQueue;await settle();
  assert(percent.hadCommittedCommand,'actual silence completes a valid value');
  assert.equal(percentage,undefined,'silence alone cannot press OK');
- const percentOK=window.SpeechMenu.testBegin();await say(percentOK,'ok',true);assert.equal(percentage,75);
+ const percentOK=window.SpeechMenu.testBegin();await say(percentOK,'okay',true);assert.equal(percentage,75);
  let combinedDuration;
  await window.WMOFVoiceEntry.open({mode:'duration',source:'test-duration',confirmTarget:'home',cancelTarget:'home',onConfirm:value=>{combinedDuration=value;return true;}});await settle();
  const combined=window.SpeechMenu.testBegin();await say(combined,'thirty five minutes seventeen seconds okay',true);
@@ -1560,7 +1588,7 @@ if(process.argv.includes('--break-session-controls')) {
    window.__testTime+=40*60000;timer.configure({});await settle();
    assert.equal(timer.getBreakTransitionState().canStartDown,false);
    assert.equal(control('breakEndRow').dataset.downAvailable,'false');
-   await say('break end ok');
+   await say('break end okay');
    assert.equal(timer.uiState.trip_active,false,'ending standalone break ends its owner');
    assert.equal(timer.breakOnly,false);
    const stopped=requests.map(request=>request.options.body?JSON.parse(request.options.body):null).findLast(body=>body?.action==='stop');
@@ -1612,7 +1640,7 @@ if(process.argv.includes('--down-break')) {
      } else if(mode==='separate') {
        await say('break start');assert(window.document.querySelector('#breakDialog').open);
        await say(choice);assert.equal(timer.getActiveIntervalState().intervalKey,down.intervalKey,'spoken type waits for OK');
-       await say('ok');
+       await say('okay');
      } else {
        const u=window.SpeechMenu.testBegin();
        const grammar=await window.SpeechMenu.testVoskContext(u.id,'break start');
@@ -1621,13 +1649,13 @@ if(process.argv.includes('--down-break')) {
          await say('break start',false,u);await say('break start '+choice,false,u);
          assert.equal(timer.getActiveIntervalState().intervalKey,down.intervalKey,'unfinished chain keeps Down');
        }
-       await say('break start '+choice+' ok',true,u);
+       await say('break start '+choice+' okay',true,u);
      }
      assert.equal(timer.getActiveIntervalState()?.intervalType,type,choice+' starts from Down via '+mode);
      assert.equal(stored.filter(e=>e.event==='interval.started').length,starts+1,'break starts exactly once: '+JSON.stringify(stored));
      assert.equal(stored.filter(e=>e.event==='interval.ended'&&e.value.intervalKey===down.intervalKey).length,1,'Down ends exactly once');
      assert.equal(window.WMOFCoordinator.lockCount,0);
-     await say('break end ok');assert(!timer.getActiveIntervalState(),'ending the break resumes the trip');
+     await say('break end okay');assert(!timer.getActiveIntervalState(),'ending the break resumes the trip');
    }
  }
  await window.WMOFActions.startDownTime();await settle();const down=timer.getActiveIntervalState();
@@ -1678,26 +1706,26 @@ if(process.argv.includes('--interval-actions')) {
        assert(!timer.getActiveIntervalState(),'type without OK waits');
      }
      spoken.length=0;
-     await say('break start '+choice+' ok',true,u);
+     await say('break start '+choice+' okay',true,u);
      assert.equal(timer.getActiveIntervalState()?.intervalType,type,choice+' chained OK starts');
      assert.equal(stored.filter(e=>e.event==='interval.started').length,before+1,'persists once');
      assert(!window.document.querySelector('#breakDialog').open,'complete chain skips selector');
      assert(spoken.includes(label+' started. Say break end to end your '+choice+'.'),'selected type announcement '+JSON.stringify({choice,spoken,chimes,consoleErrors,errors}));
      const key=timer.getActiveIntervalState().intervalKey;
      for(const invalidEnd of (incremental ? [] : ['lunch end','short break end','end lunch','end short break','end break'])) {
-       const rejected=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(rejected,invalidEnd+' ok',true);await rejected.digestQueue;await settle();assert.equal(timer.getActiveIntervalState()?.intervalKey,key,invalidEnd+' is not an end command');
+       const rejected=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(rejected,invalidEnd+' okay',true);await rejected.digestQueue;await settle();assert.equal(timer.getActiveIntervalState()?.intervalKey,key,invalidEnd+' is not an end command');
      }
-     await say('break end ok');assert(!timer.getActiveIntervalState(),'Break End ends '+choice);
+     await say('break end okay');assert(!timer.getActiveIntervalState(),'Break End ends '+choice);
      window.__testTime+=60000;
    }
    await say('break start');assert(window.document.querySelector('#breakDialog').open,'standalone root opens type selector');
    assert.equal(window.document.querySelector('#breakTypeOK').disabled,true,'OK requires type');
    assert(spoken.includes('Say/press break type then OK.'),'standalone prompt');
    await say(choice);assert(!timer.getActiveIntervalState(),'separate choice waits');
-   await say('ok');assert.equal(timer.getActiveIntervalState()?.intervalType,type,'separate OK starts');
-   await say('break end ok');assert(!timer.getActiveIntervalState());window.__testTime+=60000;
+   await say('okay');assert.equal(timer.getActiveIntervalState()?.intervalType,type,'separate OK starts');
+   await say('break end okay');assert(!timer.getActiveIntervalState());window.__testTime+=60000;
  }
- const invalid=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(invalid,'break start ok',true);await invalid.digestQueue;await settle();
+ const invalid=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(invalid,'break start okay',true);await invalid.digestQueue;await settle();
  assert(!timer.getActiveIntervalState(),'missing type cannot start a break');
  if(window.document.querySelector('#breakDialog').open) await say('cancel');
  await say('break start cancel');assert(!window.document.querySelector('#breakDialog').open,'canceled chain cannot reopen deferred selector');
@@ -2103,7 +2131,7 @@ assert.equal(window.document.querySelector('#voiceEntryValue').hidden,false,'the
 window.document.querySelector('#numberPadDialog')?.dispatchEvent(new window.Event('close'));
 assert.equal(window.document.querySelector('#voiceEntryValue').textContent,'0:20:00','a previous editor close preserves the acknowledged voice input');
 const nextOk=window.SpeechMenu.testBegin();
-await window.SpeechMenu.testTranscript(nextOk,'o k',true);await nextOk.digestQueue;await settle();
+await window.SpeechMenu.testTranscript(nextOk,'okay',true);await nextOk.digestQueue;await settle();
 assert(!nextOk.digestExecutionFailed,'the next trip confirmation succeeds after finishing a trip');
 assert.equal(timer.status,'running','the second trip starts without restarting the app');
 rejectTripStop=true;
@@ -2129,7 +2157,7 @@ const hear=async(text)=>{
     assert.equal(window.WMOFStateTransactions.active,undefined,text+' leaves no unfinished transaction');
     return utterance;
 };
-for(const [cycle,[value,confirmation]] of [['tutu minutes','okay'],['ten minutes','o k'],['five minutes','ok']].entries()) {
+for(const [cycle,[value,confirmation]] of [['tutu minutes','okay'],['ten minutes','okay'],['five minutes','okay']].entries()) {
     window.__testTime+=60000;
     await window.WMOFActions.endTrip();await settle();
     if(cycle===0) {
@@ -2174,7 +2202,7 @@ await hear('twenty minutes');
 rejectTripStart=true;holdTripCheck=true;
 const writesBeforeRejection=requests.filter(r=>r.options.method==='POST'&&r.path.endsWith('/trips/')).length;
 const rejected=window.SpeechMenu.testBegin();
-const rejectionWork=window.SpeechMenu.testTranscript(rejected,'ok',true);await settle();
+const rejectionWork=window.SpeechMenu.testTranscript(rejected,'okay',true);await settle();
 assert(releaseTripCheck,'confirmation reaches server validation');
 assert.equal(timer.status,'ready','draft preparation waits for validation before starting the trip');
 assert.equal(requests.filter(r=>r.options.method==='POST'&&r.path.endsWith('/trips/')).length,writesBeforeRejection,'pending validation does not write a trip');
@@ -2256,17 +2284,17 @@ if(process.argv.includes('--voice-feedback')) {
         assert(!timer.getActiveIntervalState(),'without OK, no interval starts');
 
         await speakCommand('cancel');assert(!timer.getActiveIntervalState(),'Cancel leaves the trip running');
-        await speakCommand(phrase);await speakCommand('ok');
+        await speakCommand(phrase);await speakCommand('okay');
         assert.equal(timer.getActiveIntervalState()?.intervalType,type,'a separate OK starts the selected interval');
         assert(spoken.includes(summary+' started. Say break end to end your '+label+'.'),'the final start announcement is preserved');
         const beforeWrongEnd=timer.getActiveIntervalState().intervalKey;
-        const wrongEnd=await speakCommand(label==='break'?'end lunch ok':'end break ok');
+        const wrongEnd=await speakCommand(label==='break'?'end lunch okay':'end break okay');
         assert(!wrongEnd.hadCommittedCommand && timer.getActiveIntervalState()?.intervalKey===beforeWrongEnd,'a mismatched end command cannot end the active interval');
         await speakCommand('break end');
         assert(dialog.open && spoken.includes('Are you ready to end your '+label+'?'),'standalone Break end asks its question');
         const key=timer.getActiveIntervalState().intervalKey;
         await speakCommand('cancel');assert.equal(timer.getActiveIntervalState()?.intervalKey,key,'end Cancel retains the interval');
-        await speakCommand('break end ok');assert(!timer.getActiveIntervalState(),'combined end ends it');
+        await speakCommand('break end okay');assert(!timer.getActiveIntervalState(),'combined end ends it');
         for(const incremental of [false,true]) {
             spoken.length=0;
             const before=animationCalls.filter(c=>c.target?.id==='speechBreakConfirmDialog').length;
@@ -2275,7 +2303,7 @@ if(process.argv.includes('--voice-feedback')) {
                 await window.SpeechMenu.testTranscript(chain,phrase,false);await chain.digestQueue;await settle();
                 assert(!dialog.open,'interim start defers confirmation');
             }
-            await window.SpeechMenu.testTranscript(chain,phrase+' ok',true);await chain.digestQueue;await settle();
+            await window.SpeechMenu.testTranscript(chain,phrase+' okay',true);await chain.digestQueue;await settle();
             assert(!chain.digestExecutionFailed && timer.getActiveIntervalState(),phrase+' OK starts the interval');
             assert(!dialog.open && !window.document.querySelector('#breakDialog').open,'combined start skips both dialogs');
             assert(!spoken.some(t=>t.startsWith('Are you ready')||t.includes('selected. Say OK')||t.includes('Choose Short Break')),'combined start skips intermediate feedback');
@@ -2285,7 +2313,7 @@ if(process.argv.includes('--voice-feedback')) {
                 await window.SpeechMenu.testTranscript(end,'break end',false);await end.digestQueue;await settle();
                 assert(dialog.open,'interim end opens confirmation while waiting for OK');
             }
-            await window.SpeechMenu.testTranscript(end,'break end ok',true);await end.digestQueue;await settle();
+            await window.SpeechMenu.testTranscript(end,'break end okay',true);await end.digestQueue;await settle();
             assert(!end.digestExecutionFailed && !timer.getActiveIntervalState(),'combined end completes');
             if(!incremental)assert(!spoken.includes('Are you ready to end your '+label+'?'),'combined end skips its question');
             if(!incremental)assert.equal(animationCalls.filter(c=>c.target?.id==='speechBreakConfirmDialog').length,before,'combined commands do not flash a dialog');
@@ -2307,11 +2335,11 @@ if(process.argv.includes('--voice-feedback')) {
     translatedStart.setAttribute('speech-pattern',startPattern);translatedOK.setAttribute('speech-pattern',okPattern);window.SpeechMenu.refresh();await settle();
     const choiceCommand=window.document.querySelector('[data-speech-editor-id="builtin:breakChoice:breakDialog"]');
     choiceCommand.setAttribute('speech-skippable','false');spoken.length=0;
-    await speakCommand('break start lunch ok');
+    await speakCommand('break start lunch okay');
     assert(spoken.some(text=>text.includes('Lunch selected. Say OK')),'Skippable=false retains choice feedback');
     assert(!dialog.open,'the combined utterance still skips the dialog');
     choiceCommand.setAttribute('speech-skippable','');
-    await speakCommand('break end ok');
+    await speakCommand('break end okay');
     await speakCommand('sync off');const beforeSyncLoop=chimes.length;await speakCommand('sync off');assert(spoken.includes('Sync already off.'));if(process.argv.includes('--setting-chimes'))assert.deepEqual(chimes.slice(beforeSyncLoop),['setting-unchanged'],'unchanged sync loopback gets exactly one neutral chime');
     if(process.argv.includes('--setting-chimes')) {
         for(const mode of ['trip','auto','total','year','money','week','day']) {

@@ -12,7 +12,7 @@ module.exports = async function runMaster(method) {
  let currentStep='initialization';
  let audioStart=0;
  let failure=null;
- const evidence=()=>({inputLayer:method==='touch'?'press':f.input,recognizer:f.recognizer||undefined,audioClips:f.audioCases.slice(audioStart).map(({key,text,wpm,recognized})=>({key,text,wpm,recognized}))});
+ const evidence=()=>({inputLayer:method==='touch'?'press':f.input,recognizer:f.recognizer||undefined,audioClips:f.audioCases.slice(audioStart).map(({key,text,wpm,recognized,source})=>({key,text,wpm,recognized,source}))});
  const delivery=process.env.CLOCKTIMER_SPEECH_DELIVERY||'press';
  const requestedLocale=process.env.CLOCKTIMER_TEST_LOCALE||'en-US';
  const profile=require(path.join(__dirname,'languages',requestedLocale,'profile.cjs'));
