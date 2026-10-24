@@ -1,5 +1,31 @@
 # Version 2 speech recognition contract
 
+## Current stable implementation: I0462X
+
+[Current speech implementation](speech-current-implementation.md) records the deployed
+architecture and defaults. [The stable release reference](stable-release-reference.md)
+pins the production commit the user reported as very stable with almost no lag.
+Historical Web Speech and optional parallel-backend sections below apply to their
+explicit modes, not the default sequential local Vosk adapter.
+
+Carry these invariants into Version 2:
+
+- Grammar projection cannot wait on command completion; that command may require
+  the decoder final. Acoustic lookahead follows declared context links.
+- Release a final-result fence on receipt, before awaiting action/segment barriers.
+  Preserve requested finals across new captures, including captures with no accepted
+  command yet, while retaining session and authorization fences.
+- Execute accepted commands through typed slot dependencies with `pending`,
+  `executing`, `invalid`, and `resolved` statuses. Independent ready commands may run
+  concurrently; a value links to its owning head. Goal and Sync share an authentication
+  prerequisite but do not depend on each other.
+- Decoder readiness, microphone capture, command availability, and command execution
+  are separate states. Presentation must not mutate recognition eligibility.
+- Use compact shared vocabulary tables for worker grammar results, with explicit
+  protocol negotiation and compatibility with cached callers/workers.
+- Mic Bar command text is a view of the validated buffer, with its normal idle timeout.
+
+
 ## Shared language controller (23 October 2026)
 
 Use [SpeechLanguageController](speech-language-controller.md) as the entry point
@@ -74,7 +100,7 @@ internal grammar/decoder boundary. A UI state or surface is an effect of the
 workflow. These identities must not be treated as interchangeable.
 
 Use this processing order: audio -> recognizer hypotheses -> root planner and
-collectors -> serialized actions and transaction settlement -> presentation.
+collectors -> dependency-aware asynchronous command buffer -> transaction settlement -> presentation.
 Recognition adapters supply text, finality, and identity; they do not execute
 commands or decide business validity. UI rendering must not own collection.
 
