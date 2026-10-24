@@ -25,6 +25,6 @@ self.onmessage=({data})=>{
  try{
   if(!valuePhrases)throw Error('Worker vocabulary is not initialized.');
   const result=VoskPhraseListCompiler.compileStages(data.records,{valuePhrases});
-  self.postMessage({id:data.id,result:pack(result)});
+  self.postMessage({id:data.id,result:data.format===2?pack(result):result});
  }catch(error){self.postMessage({id:data.id,error:String(error.message||error)});}
 };
