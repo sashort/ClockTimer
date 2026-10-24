@@ -6,6 +6,7 @@
     const copyRouter = router => Object.assign(Object.create(Object.getPrototypeOf(router)), router);
     let streamSequence=0;
     class VoskContextRecognizer extends EventTarget {
+        #phase='idle';#phaseAt=0;#ending=false;
         #loader; #decoder; #buffer; #router; #id; #closed=false; #epoch=0;
         #queue=Promise.resolve(); #analysis=Promise.resolve(); #flushing=false; #flushResult;
         #origin=0; #boundary=0; #fed=0; #words=new Map(); #prefix='';
@@ -43,9 +44,12 @@
             this.#loader.addEventListener('status',e=>this.#emit('status',e.detail));
             this.ready=this.#loader.ready.then(()=>this);
         }
+        #setPhase(phase){if(this.#phase===phase)return;this.#phase=phase;this.#phaseAt=performance.now();this.#emit('status',{status:this.processing?'recognition-processing':'recognition-listening',phase,utteranceId:this.#id});}
+        get processing(){return !['idle','decoding','closed'].includes(this.#phase);}
+        get listening(){return !this.#closed&&!this.processing;}
         get recognitionMode(){return "sequential";}
         get slots(){return this.ledger?.slots || [];}
-        get executionDiagnostics(){return {grammar:this.#compiler?.execution || 'main-thread',warmDecoders:this.#pool?.size || 0,contextCacheHits:this.#contextCache?.hits || 0};}
+        get executionDiagnostics(){return {phase:this.#phase,phaseMilliseconds:performance.now()-this.#phaseAt,grammar:this.#compiler?.execution || 'main-thread',warmDecoders:this.#pool?.size || 0,contextCacheHits:this.#contextCache?.hits || 0};}
         get continuousInput(){return true;}
         get transcriptMode(){return 'cumulative';}
         get audioDelivery(){return Object.freeze({receivedSamples:this.#buffer.end,submittedSamples:this.#submitted,
@@ -63,7 +67,7 @@
             await this.ready;
             if(this.#closed)return;
             if(this.#id!==undefined)throw Error('Previous Vosk utterance must settle before beginning another.');
-            this.#id=id;this.#prefix='';this.#hops=0;this.#lastProbe='';this.#prepared.clear();this.#contextCache?.clear();this.ledger?.begin(id);this.#startedAt=performance.now();
+            this.#setPhase('preparing-grammar');this.#id=id;this.#prefix='';this.#hops=0;this.#lastProbe='';this.#prepared.clear();this.#contextCache?.clear();this.ledger?.begin(id);this.#startedAt=performance.now();
             this.#metrics={utteranceId:id,mode:'sequential',maximumInputQueueMilliseconds:0,coalescedPartials:0,handoffs:[]};
             this.#boundary=Math.max(this.#buffer.start,this.#fed-this.preRollSamples);
             const request=await this.contextProvider(id,'');
@@ -97,13 +101,18 @@
         }
         async #lookahead(router){
             const phrases=new Set(router.phrases),visited=new Set();
+            const installed=this.options.vocabularyProvider?await (this.installedVocabulary ||= Promise.resolve(this.options.vocabularyProvider()).then(records=>this.#compile(records))):undefined;
             if(!globalThis.VoskPhraseListCompiler)return [...phrases];
             if(router.digitRecords?.some(record=>record.digitCounts?.includes(8))&&this.options.vocabularyProvider){
-                this.authenticationVocabulary ||= this.#compile(await this.options.vocabularyProvider()).then(compiled=>{
-                    const vocabulary=new Set();
-                    for(const path of compiled.paths)for(const stage of path.stages)for(const phrase of stage.phrases){
-                        for(const part of phrase.split(' '))if(/^\p{L}[\p{L}'’-]*$/u.test(part))vocabulary.add(part);
-                        if(stage.grammar==='commands'&&!path.record.atomic&&phrase.split(' ').length<=6&&/^[\p{L}'’ -]+$/u.test(phrase))vocabulary.add(phrase);
+                this.authenticationVocabulary ||= Promise.resolve(installed).then(compiled=>{
+                    const vocabulary=new Set(),seenPhrases=new Set();
+                    for(const path of compiled.paths)for(const stage of path.stages){
+                        if(!seenPhrases.has(stage.phrases)){
+                            seenPhrases.add(stage.phrases);
+                            for(const phrase of stage.phrases)for(const part of phrase.split(' '))if(/^\p{L}[\p{L}'’-]*$/u.test(part))vocabulary.add(part);
+                        }
+                        if(stage.grammar==='commands'&&!path.record.atomic)for(const phrase of stage.phrases)
+                            if(phrase.split(' ').length<=6&&/^[\p{L}'’ -]+$/u.test(phrase))vocabulary.add(phrase);
                     }
                     return [...vocabulary];
                 });
@@ -118,8 +127,10 @@
                         const full=[prefix,head].filter(Boolean).join(' ');
                         if(visited.has(full))continue;
                         visited.add(full);
-                        const records=(await this.contextProvider(this.#id,[router.prefix,full].filter(Boolean).join(' ')))?.records || [];
-                        const next=await this.#compile(records);
+                        // Acoustic lookahead follows declared context links; it never needs to
+                        // execute the full application planner for every possible future head.
+                        const next=installed?{paths:installed.paths.filter(next=>next.record.contexts?.includes(path.record.nextContext))}:
+                            await this.#compile((await this.contextProvider(this.#id,[router.prefix,full].filter(Boolean).join(' ')))?.records || []);
                         for(const following of next.paths){
                             if(following.stages[0]?.grammar!=='commands')continue;
                             for(const phrase of following.stages[0].phrases)phrases.add(full+' '+phrase);
@@ -136,9 +147,9 @@
             if(this.#closed)return;
             const epoch=this.#epoch;
             const grammarStarted=performance.now();
-            const prepared=await this.#grammar(this.#router);
+            this.#setPhase('preparing-grammar');const prepared=await this.#grammar(this.#router);
             const grammarMilliseconds=performance.now()-grammarStarted;
-            const decoderStarted=performance.now();
+            this.#setPhase('preparing-decoder');const decoderStarted=performance.now();
             const warmed=await this.#pool?.take(prepared.key);
             const decoder=this.#decoder=warmed || this.#createDecoder(prepared.phrases);
             if(!warmed)await decoder.prepare?.();
@@ -157,9 +168,9 @@
                 this.#scheduleInspection(detail,epoch);
             });
             await decoder.beginUtterance(this.#id);
-            const replayStarted=performance.now();
+            this.#setPhase('replaying');const replayStarted=performance.now();
             if(end>start)await this.#feed(this.#buffer.read(start,end),true);
-            this.#lastReplacement={grammarMilliseconds,decoderMilliseconds,replayMilliseconds:performance.now()-replayStarted,warmDecoder:Boolean(warmed)};
+            this.#lastReplacement={grammarMilliseconds,decoderMilliseconds,replayMilliseconds:performance.now()-replayStarted,warmDecoder:Boolean(warmed)};if(!this.#ending)this.#setPhase('decoding');
         }
         #createDecoder(phrases){
             return new globalThis.VoskRecognizer({...this.options,model:this.#loader.model,grammar:phrases,getCollectionSession:undefined,
@@ -309,7 +320,7 @@
         }
         async #checkpoint(ending){
             for(let turn=0;turn<this.maxHandoffs;turn++){
-                const checkpointStarted=performance.now();
+                this.#setPhase('finalizing');const checkpointStarted=performance.now();
                 this.#flushing=true;this.#flushResult=undefined;
                 try{await this.#decoder.finishUtterance(this.#id);}finally{this.#flushing=false;}
                 const finalizationMilliseconds=performance.now()-checkpointStarted;
@@ -357,14 +368,14 @@
         }
         finishUtterance(id){return this.#enqueue(async()=>{
             if(id!==this.#id)return;
-            await this.#checkpoint(true);
+            this.#ending=true;try{await this.#checkpoint(true);}finally{this.#ending=false;}
             this.#emit('metrics',{...this.#metrics,totalMilliseconds:performance.now()-this.#startedAt,delivery:this.audioDelivery,preparation:this.executionDiagnostics});
             this.#epoch++;this.#decoder?.close();this.#decoder=undefined;
-            this.#id=undefined;this.#words.clear();this.#emit('utteranceEnded',{utteranceId:id});
+            this.#id=undefined;this.#words.clear();this.#setPhase('idle');this.#emit('utteranceEnded',{utteranceId:id});
         });}
         abortUtterance(id){return this.#enqueue(()=>{
             if(id!==this.#id)return;
-            this.boundaryAnalyzer.cancel();this.#epoch++;this.#decoder?.close();this.#decoder=undefined;this.#id=undefined;this.#words.clear();this.ledger?.clear();this.#contextCache?.clear();
+            this.boundaryAnalyzer.cancel();this.#epoch++;this.#decoder?.close();this.#decoder=undefined;this.#id=undefined;this.#words.clear();this.ledger?.clear();this.#contextCache?.clear();this.#setPhase('idle');
         });}
         close(){this.boundaryAnalyzer.cancel();this.#pool?.close();this.#compiler?.close();this.ledger?.clear();this.#contextCache?.clear();this.#closed=true;this.#epoch++;this.#decoder?.close();this.#loader.close();this.#words.clear();}
     }

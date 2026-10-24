@@ -77,6 +77,8 @@ jobs:
           node tests/speech-response-chain.mjs
           node tests/observer-microphone.mjs
           node tests/app-state-transactions.mjs --speech-boundaries
+          node tests/app-state-transactions.mjs --decoder-readiness-ui --voice-feedback
+          node tests/app-state-transactions.mjs --delayed-final-owner --voice-feedback
           node tests/app-state-transactions.mjs --decoder-final-boundaries --voice-feedback
           node tests/app-state-transactions.mjs --ready-handoff --voice-feedback
           node tests/app-state-transactions.mjs --post-login-ready --voice-feedback

@@ -7,7 +7,12 @@
    this.#values=valuePhrases;this.timeout=timeoutMilliseconds;this.execution='main-thread';
    if(enabled&&typeof Worker==='function'){
     this.#worker=new Worker(workerUrl||new URL('speech/SpeechGrammarWorker.js',document.baseURI));this.execution='worker';
-    this.#worker.onmessage=({data})=>{const item=this.#pending.get(data.id);if(!item)return;clearTimeout(item.timer);this.#pending.delete(data.id);data.error?item.reject(Error(data.error)):item.resolve(data.result);};
+    this.#worker.onmessage=({data})=>{const item=this.#pending.get(data.id);if(!item)return;clearTimeout(item.timer);this.#pending.delete(data.id);if(data.error){item.reject(Error(data.error));return;}
+     try{
+      const {phraseTables,paths,unsupported}=data.result;
+      const tables=phraseTables.map(table=>{const phrases=table.vocabulary?this.#values[table.vocabulary]:table.phrases;if(!Array.isArray(phrases))throw Error('Invalid grammar phrase table.');return Object.isFrozen(phrases)?phrases:Object.freeze(phrases);});
+      item.resolve({unsupported,paths:paths.map(path=>({...path,stages:path.stages.map(({phraseTable,...stage})=>{if(!Number.isInteger(phraseTable)||!tables[phraseTable])throw Error('Invalid grammar phrase reference.');return {...stage,phrases:tables[phraseTable]};})}))});
+     }catch(error){item.reject(error);}};
     this.#worker.onerror=()=>this.#fail(Error('Speech grammar worker failed.'));
     this.#worker.postMessage({type:'initialize',valuePhrases});
    }

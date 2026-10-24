@@ -162,3 +162,26 @@ speech-end timestamp, using the playback AudioContext/monotonic clock anchor. Ne
 values are retained. WAV end, action completion and announcement timing are different
 measurements and must not substitute for planner latency. The benchmark also requires
 one dispatch each for credentials, Trip Goal, Sync and Ready At.
+
+
+## Version 2: completion and readiness invariants
+
+Grammar projection must never await the command's `segmentBarrier`: the command may
+be waiting for that recognizer's final result. Resolve an owned final-result fence at
+receipt of the final, before awaiting action dependencies or continuation barriers.
+A new utterance must preserve an older requested final result even when that older
+capture has not yet produced a validated command. Its final stays tied to its capture
+ID and executes once. Explicit cancellation and session/authorization fences still apply.
+
+Acoustic lookahead follows the installed grammar's declared context links. It does
+not call the full application planner for every hypothetical head and continuation.
+The live planner still validates availability and execution; a grammar phrase grants
+no permission. Worker compilation sends shared phrase-table references, reusing the
+client's existing finite vocabularies instead of cloning large arrays per path.
+
+Keep microphone capture state separate from decoder readiness. Preparing grammar,
+preparing a decoder, replaying buffered PCM, and finalizing are Processing phases;
+actual decoding or ready idle capture returns the Mic Bar to Listening. These status
+updates must not change application command availability or invalidate login grammar.
+`executionDiagnostics` exposes the phase and its age. CPU-throttled human-audio replays
+are useful for reproducing backlog, but are not a substitute for testing the user's device.

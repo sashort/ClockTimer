@@ -14,7 +14,7 @@
  function detail(source={}) {
   const result={};
   for(const key of ['id','utteranceId','commandId','executionContext','transcript','rawTranscript',
-   'canonicalTranscript','consumedTranscript','status','reason','backend','recognitionContext','decoderEpoch','isFinal','selectedIndex','pending','text','kind','field','value']) {
+   'canonicalTranscript','consumedTranscript','status','phase','reason','backend','recognitionContext','decoderEpoch','isFinal','selectedIndex','pending','text','kind','field','value']) {
    const value=source[key];
    if(['string','number','boolean'].includes(typeof value))result[key]=typeof value==='string'?text(value):value;
   }
@@ -41,7 +41,7 @@
   }));
   if(source.delivery)result.delivery=scalars(source.delivery,['receivedSamples','submittedSamples','replayedSamples','queuedSamples',
    'nativeQueuedSamples','retainedSamples','capacitySamples','oldestQueuedAudioMilliseconds']);
-  if(source.preparation)result.preparation=scalars(source.preparation,['grammar','warmDecoders','contextCacheHits']);
+  if(source.preparation)result.preparation=scalars(source.preparation,['phase','phaseMilliseconds','grammar','warmDecoders','contextCacheHits']);
   if(source.components) {
    result.components={};result.inferred={};result.componentDisplay={};
    for(const unit of ['hours','minutes','seconds']) {
