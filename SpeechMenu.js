@@ -1409,6 +1409,7 @@ class SpeechMenu {
                         vocabularyProvider:()=>SpeechMenu.#index().elements().map(element=>{
                             const kind=SpeechMenu.#speechValueKind(element);
                             return {pattern:element.getAttribute("speech-pattern"),
+                                contexts:SpeechMenu.#chainContextTokens(element),nextContext:element.getAttribute("speech-chain-next"),atomic:element.getAttribute("speech-atomic-input"),
                                 expect:kind==="clock"||kind==="clock-parts"?"time":kind==="percent"?"number":kind,
                                 capture:element.getAttribute("speech-preproc-field")};
                         }),
@@ -3165,7 +3166,7 @@ class SpeechMenu {
             // Capture has ended, but its requested final decode still owns the
             // accepted command transaction. A new utterance must not discard
             // that result and leave later state changes waiting forever.
-            if (utterance.bargeInPending || SpeechMenu.#commandBuffer?.hasPendingOwner(utterance.id)) continue;
+            if (utterance.recognitionFinalPending || utterance.bargeInPending || SpeechMenu.#commandBuffer?.hasPendingOwner(utterance.id)) continue;
             if (utterance.chainActive && !utterance.chainCanceled &&
                 !utterance.digestFailed && !utterance.digestCommitted) continue;
             SpeechMenu
@@ -3406,6 +3407,7 @@ class SpeechMenu {
         if (!utterance) {
             return;
         }
+        if(detail.isFinal){utterance.recognitionFinalPending=false;utterance.releaseFinalResult?.();}
 
         const rawTranscript = SpeechMenu.#stripSynthesizedSpeech(
             SpeechMenu.#normalizeTranscript(
@@ -3652,6 +3654,7 @@ class SpeechMenu {
 
         utterance.recognitionStopped =
             true;
+        utterance.recognitionFinalPending=finalize;
 
         if (finalize) {
             SpeechMenu.#recognizer
@@ -3768,6 +3771,7 @@ class SpeechMenu {
         isFinal,
         replan = false
     ) {
+        if(isFinal)utterance?.releaseFinalResult?.();
         if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
         if (utterance?.segmentBarrier) {
             if (await SpeechMenu.#queueIndependentTail(utterance,transcript,isFinal)) return;
@@ -4944,6 +4948,7 @@ class SpeechMenu {
         utterance,
         transcript
     ) {
+        utterance?.releaseFinalResult?.();
         if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
         if (utterance?.segmentBarrier) {
             // Accept independent final-only results before waiting for state work.
@@ -7288,7 +7293,8 @@ class SpeechMenu {
 
     static #voskContext = async (id, transcript) => {
         const utterance = SpeechMenu.#utterance?.id === id ? SpeechMenu.#utterance : SpeechMenu.#finishedUtterances.get(id);
-        if (utterance?.segmentBarrier) await utterance.segmentBarrier;
+        // Grammar projection must not wait for command completion: that command
+        // may itself be awaiting this decoder's final result.
         if (!utterance || utterance.chainCanceled || utterance.digestFailed) return {records: []};
         const available = SpeechMenu.#availableCandidates();
         utterance.voskInitialCandidates ??= available;

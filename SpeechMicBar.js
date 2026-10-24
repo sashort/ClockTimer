@@ -6020,6 +6020,9 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 );
                 break;
             case "speechRecognitionStatusChanged":
+                if(['recognition-processing','recognition-listening'].includes(detail?.status)){
+                    this.setAttribute('state',this.#listeningState());this.#showIdleText();break;
+                }
                 if (["browser-starting", "browser-reconnecting"].includes(detail?.status)) {
                     this.#clearLoadingProgress();
                     const state=this.#listeningState();

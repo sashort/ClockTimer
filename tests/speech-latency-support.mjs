@@ -29,8 +29,9 @@ class Worker {
 }
 context.Worker=Worker;
 vm.runInNewContext(fs.readFileSync(new URL('SpeechGrammarCompiler.js',root),'utf8'),context);
-const compiler=new context.SpeechGrammarCompiler({workerUrl:'worker.js',valuePhrases:{time:['four twelve']}});
+const compilerValues={time:['four twelve']};const compiler=new context.SpeechGrammarCompiler({workerUrl:'worker.js',valuePhrases:compilerValues});
 const result=await compiler.compile([{id:'ready',pattern:'^ready at (?<spokenTime>.+)$'}]);
 assert.equal(compiler.execution,'worker');assert.equal(result.unsupported.length,0);assert.equal(result.paths[0].stages[1].grammar,'time');
-assert.deepEqual(Array.from(result.paths[0].stages[0].phrases),['ready at']);compiler.close();await assert.rejects(compiler.compile([]),/closed/);
+assert.deepEqual(Array.from(result.paths[0].stages[0].phrases),['ready at']);assert.equal(result.paths[0].stages[1].phrases,compilerValues.time,'worker binds the existing local vocabulary without cloning it per path');
+compiler.close();await assert.rejects(compiler.compile([]),/closed/);
 console.log('PASS versioned/in-flight context snapshots, failure retries, bounded warm idle decoders, no audio fanout and actual worker grammar messages');

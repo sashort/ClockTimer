@@ -85,3 +85,14 @@ assert.equal(digitAdapter.slots.length,1);assert.equal(digitAdapter.slots[0].val
 assert.equal(digitAdapter.slots[0].context,'credentials');assert.equal(digitAdapter.slots[0].kind,'digits');
 digitAdapter.close();
 console.log('PASS bounded digit collectors record semantic slots without expanding every digit sequence');
+
+for(const name of ['SpeechGrammarContext','VoskPhraseListCompiler','VoskGrammarRouter'])vm.runInNewContext(fs.readFileSync(new URL(`../${name}.js`,import.meta.url),'utf8'),context);
+context.SpeechLanguageController={vocabulary:()=>Object.freeze({})};
+const rootRecord={pattern:'^break start$',nextContext:'choice'},installed=[rootRecord,{pattern:'^lunch$',contexts:['choice'],nextContext:'confirm'},{pattern:'^okay$',contexts:['confirm']}];
+let providerCalls=0;const declarative=new context.VoskContextRecognizer({warmDecoders:false,vocabularyProvider:()=>installed,contextProvider:async()=>{providerCalls++;return {records:[rootRecord]};}});
+const phases=[];declarative.addEventListener('status',e=>phases.push(e.detail.status));
+await declarative.beginUtterance('declared-contexts');
+assert.equal(providerCalls,1,'future grammar heads must not invoke the full application planner');
+assert(instances.at(-1).options.grammar.includes('break start lunch okay'),'declared continuations remain audible');
+assert.equal(declarative.processing,false);assert.equal(declarative.listening,true);assert(phases.includes('recognition-processing'));assert(phases.includes('recognition-listening'));declarative.close();
+console.log('PASS declarative lookahead retains multi-command context chains without speculative planner calls and reports decoder readiness');

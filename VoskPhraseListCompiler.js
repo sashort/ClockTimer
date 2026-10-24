@@ -301,8 +301,12 @@
                         paths.push({ record, stages });
                     }
                     if (cache) {
-                        const stages = paths.slice(firstPath).map(path => Object.freeze(path.stages.map(stage =>
-                            Object.freeze({...stage, phrases:Object.freeze([...stage.phrases])}))));
+                        const frozenPhrases=new WeakMap();
+                        const stages = paths.slice(firstPath).map(path => Object.freeze(path.stages.map(stage => {
+                            let phrases=frozenPhrases.get(stage.phrases);
+                            if(!phrases){phrases=Object.freeze([...stage.phrases]);frozenPhrases.set(stage.phrases,phrases);}
+                            return Object.freeze({...stage,phrases});
+                        })));
                         if (cache.size >= 512) cache.delete(cache.keys().next().value);
                         cache.set(key, Object.freeze(stages));
                     }

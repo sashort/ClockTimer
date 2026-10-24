@@ -171,6 +171,18 @@ if(process.argv.includes('--login-deadline')) {
  console.log('PASS pre-login countdown, preserved credentials and pending HTTP login, late authenticated restart');
  await storage.flush();window.happyDOM.abort();process.exit(0);
 }
+if(process.argv.includes('--decoder-readiness-ui')) {
+ const loginDialog=window.document.querySelector('#loginDialog');if(!loginDialog.open)loginDialog.showModal();
+ const bar=window.document.querySelector('#speechMicBar');bar.isOpen=true;await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+ const owner=window.SpeechMenu.testBegin();let preparing=true;
+ window.SpeechMenu.testUseRecognizer({get processing(){return preparing;},get listening(){return !preparing;},finishUtterance(){},abortUtterance(){},setHotwords(){}});
+ window.SpeechMenu.testStatus({status:'recognition-processing',phase:'preparing-decoder'});await settle();
+ assert.equal(bar.state,'processing');assert.equal(window.SpeechMenu.captureListening,true,'microphone capture stays active during decoder preparation');
+ const context=await window.SpeechMenu.testVoskContext(owner.id,'');assert(context.records.some(record=>record.digitCounts?.includes(8)),'readiness display cannot remove login credentials from grammar');
+ preparing=false;window.SpeechMenu.testStatus({status:'recognition-listening',phase:'idle'});await settle();assert.equal(bar.state,'listening');
+ console.log('PASS Mic Bar follows actual decoder readiness without changing microphone capture or login availability');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--login-final-tail')) {
  window.document.querySelector('#speechMicBar').isOpen=true;
  const loginDialog=window.document.querySelector('#loginDialog');if(!loginDialog.open)loginDialog.showModal();
@@ -1446,6 +1458,25 @@ if(process.argv.includes('--ready-handoff')) {
  assert.equal(timer.getActiveIntervalState()?.intervalType,'lunch');
  assert.equal(window.WMOFCoordinator.lockCount,0);
  console.log('PASS shared Ready value and Break choice/confirmation grammar handoffs through state changes');await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--delayed-final-owner')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ window.document.querySelector('#speechMicBar').isOpen=true;await window.WMOFActions.handleSpeechRuntimeStarted();await settle();
+ await window.WMOFActions.toggleSync('on');await settle();
+ const owner=window.SpeechMenu.testBegin();
+ window.SpeechMenu.testUseRecognizer({finishUtterance(){},abortUtterance(){},setHotwords(){}});
+ window.SpeechMenu.testFinish();
+ let release;owner.segmentBarrier=new Promise(resolve=>release=()=>resolve(true));owner.releaseFinalResult=release;
+ let grammarTimeout;try{const projection=await Promise.race([window.SpeechMenu.testVoskContext(owner.id,''),new Promise((_,reject)=>grammarTimeout=setTimeout(()=>reject(Error('grammar projection blocked behind command completion')),250))]);assert(projection.records.length);}finally{clearTimeout(grammarTimeout);}
+ const next=window.SpeechMenu.testBegin();const dispatched=[];
+ window.SpeechMenu.events.addEventListener('speechCommandDispatched',e=>dispatched.push(e.detail.transcript));
+ window.SpeechMenu.testDeliverFinal(owner,'sync off');
+ let timeout;try{await Promise.race([(async()=>{while(!owner.hadCommittedCommand)await new Promise(resolve=>setTimeout(resolve,10));await owner.digestQueue;})(),new Promise((_,reject)=>timeout=setTimeout(()=>reject(Error('final waits for its own completion fence or was discarded by next capture')),1500))]);}finally{clearTimeout(timeout);}
+ assert.equal(timer.autoSyncTripGoal,false);assert.equal(window.SpeechMenu.testCurrent(),next,'new capture remains active');
+ window.SpeechMenu.testDeliverFinal(owner,'sync off');await settle();assert.equal(dispatched.filter(text=>text==='sync off').length,1);
+ assert.equal(owner.recognitionFinalPending,false);assert.equal(window.WMOFCoordinator.lockCount,0);
+ console.log('PASS late decoder final survives next capture, releases its own fence before awaiting dependencies, and executes once');
+ await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--decoder-final-boundaries')) {
  const say=async(u,text,final=false)=>{await window.SpeechMenu.testTranscript(u,text,final);await u.digestQueue;await u.segmentBarrier;await settle();};
