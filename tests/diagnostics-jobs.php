@@ -25,8 +25,9 @@ try{
         file_put_contents($directory.'/'.$run['job']['id'].'.status',json_encode(['status'=>'passed']));
     }
     foreach(['../time','order-filler','slow']as$suite){try{$jobs->handle(['action'=>'job-start','suite'=>$suite,'locale'=>'en-US'],'one',$credentials);throw new RuntimeException('Invalid suite accepted');}catch(InvalidArgumentException){}}
+    $promptCount=count(json_decode(file_get_contents(__DIR__.'/recording-scripts/en-us.json'),true,512,JSON_THROW_ON_ERROR)['phrases']);
     $humanJobs=new DiagnosticsJobs($directory,__DIR__.'/languages',$directory.'/recordings');
-    try{$humanJobs->handle(['action'=>'job-start','suite'=>'fast','locale'=>'en-US','audioSource'=>'human'],'one',$credentials);throw new RuntimeException('Incomplete human corpus accepted');}catch(InvalidArgumentException $error){assertJob(str_contains($error->getMessage(),'32'),'Human runs identify missing approved prompts');}
+    try{$humanJobs->handle(['action'=>'job-start','suite'=>'fast','locale'=>'en-US','audioSource'=>'human'],'one',$credentials);throw new RuntimeException('Incomplete human corpus accepted');}catch(InvalidArgumentException $error){assertJob(str_contains($error->getMessage(),(string)$promptCount),'Human runs identify missing approved prompts');}
     try{$humanJobs->handle(['action'=>'job-start','suite'=>'fast','locale'=>'en-US','audioSource'=>'unknown'],'one',$credentials);throw new RuntimeException('Unknown audio source accepted');}catch(InvalidArgumentException){}
     $recordings=new SpeechRecordings($directory.'/recordings',__DIR__.'/recording-scripts');
     $pcm=str_repeat(pack('v',1200),8000);$wave='RIFF'.pack('V',strlen($pcm)+36).'WAVEfmt '.pack('VvvVVvv',16,1,1,16000,32000,2,16).'data'.pack('V',strlen($pcm)).$pcm;
