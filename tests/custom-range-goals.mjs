@@ -45,6 +45,18 @@ await c.calculateTripTotals('2026-09-03T04:00:00Z','2026-09-19T03:59:59.999Z');
 assert.equal(c.getSummarySnapshot().trip.percentGoal,manualGoal);
 console.log('PASS manual goal is preserved when automatic goal sync is disabled');
 c.remove();
+for (const override of [false,true]) {
+ const fresh=window.document.createElement('clock-timer');window.document.body.append(fresh);
+ await fresh.connect('test','test');counted=300000;
+ fresh.configure({trip_goal:'110%',total_goal:'100%',auto_goal:true,sync_override:override});
+ await fresh.calculateTripTotals('2026-09-01T04:00:00Z','2026-09-19T03:59:59.999Z');
+ await fresh.start({standardTime:'00:20:00'});
+ assert.equal(fresh.getSummarySnapshot().trip.percentGoal,override?.8:1.1,'trip start honors Sync Override and manual floor');
+ assert.equal(fresh.rawSyncTripGoal,.8,'trip start retains raw Sync requirement for override diagnostics');
+ assert.equal(fresh.syncBelowFloor,true);
+ fresh.remove();
+}
+console.log('PASS trip-start Sync uses the same override/floor policy as later recalculations');
 const resumed=window.document.createElement('clock-timer');window.document.body.append(resumed);
 await resumed.connect('test','test');
 const reservation=await resumed.prepareTrip({at:'2026-09-16T12:00:00Z'});

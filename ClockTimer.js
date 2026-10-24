@@ -4671,15 +4671,14 @@
                 !Number.isFinite(requirements.tripGoal) ||
                 requirements.tripGoal <= 0
             ) {
-                this.#calculatedTripGoal = undefined;
+                this.#applySyncTripGoal(undefined);
                 return this.#goalChangeFailure("insufficient-time");
             }
 
             const previousCalculatedTripGoal =
                 this.#calculatedTripGoal;
 
-            this.#calculatedTripGoal =
-                requirements.tripGoal;
+            this.#applySyncTripGoal(requirements.tripGoal);
 
             this.#handleTripGoalChange(
                 this.#renderedPercentGoalSourceOverride === "start"
@@ -23838,6 +23837,13 @@
             return previous !== this.#calculatedTripGoal;
         }
 
+        #applySyncTripGoal(value) {
+            this.#rawSyncTripGoal = Number.isFinite(value) && value > 0 ? value : undefined;
+            this.#calculatedTripGoal = this.#rawSyncTripGoal === undefined ? undefined :
+                this.#syncOverride ? this.#rawSyncTripGoal :
+                Math.max(this.#getUserTripGoal(), this.#rawSyncTripGoal);
+        }
+
         #syncGoal_on({ source, forceEvent }) {
             const previous =
                 this.#calculatedTripGoal;
@@ -23847,14 +23853,7 @@
                     allowMissed: true
                 });
 
-            this.#rawSyncTripGoal =
-                Number.isFinite(requirements.tripGoal) &&
-                requirements.tripGoal > 0
-                    ? requirements.tripGoal
-                    : undefined;
-            this.#calculatedTripGoal = this.#rawSyncTripGoal === undefined ? undefined :
-                this.#syncOverride ? this.#rawSyncTripGoal :
-                Math.max(this.#getUserTripGoal(), this.#rawSyncTripGoal);
+            this.#applySyncTripGoal(requirements.tripGoal);
 
             this.#calculatedGoalSource =
                 "sync";
