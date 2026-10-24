@@ -21,7 +21,7 @@ await pool.prepare('duration',factory);await pool.prepare('number',factory);awai
 pool.close();await Promise.resolve();assert.equal(closed,3);leased.close();
 // Execute the actual worker message handler in an isolated worker-like realm.
 class Worker {
- constructor(){this.realm={self:{},postMessage:data=>queueMicrotask(()=>this.onmessage?.({data:structuredClone(data)}))};
+ constructor(){this.realm={self:{},postMessage:data=>{this.lastMessage=data;queueMicrotask(()=>this.onmessage?.({data:structuredClone(data)}));}};
   this.realm.self=this.realm;this.realm.importScripts=(...files)=>{for(const file of files)vm.runInNewContext(fs.readFileSync(new URL(file.replace('../',''),root),'utf8'),this.realm);};
   vm.runInNewContext(fs.readFileSync(new URL('speech/SpeechGrammarWorker.js',root),'utf8'),this.realm);}
  postMessage(data){queueMicrotask(()=>this.realm.onmessage({data:structuredClone(data)}));}
@@ -33,5 +33,8 @@ const compilerValues={time:['four twelve']};const compiler=new context.SpeechGra
 const result=await compiler.compile([{id:'ready',pattern:'^ready at (?<spokenTime>.+)$'}]);
 assert.equal(compiler.execution,'worker');assert.equal(result.unsupported.length,0);assert.equal(result.paths[0].stages[1].grammar,'time');
 assert.deepEqual(Array.from(result.paths[0].stages[0].phrases),['ready at']);assert.equal(result.paths[0].stages[1].phrases,compilerValues.time,'worker binds the existing local vocabulary without cloning it per path');
+const legacyWorker=new Worker();const legacyReply=new Promise(resolve=>legacyWorker.onmessage=({data})=>resolve(data));
+legacyWorker.postMessage({type:'initialize',valuePhrases:compilerValues});legacyWorker.postMessage({type:'compile',id:99,records:[{pattern:'^ready at (?<spokenTime>.+)$'}]});
+const legacy=await legacyReply;assert.equal(legacy.result.paths[0].stages[1].phrases[0],'four twelve','old pages receive the legacy wire format from a new worker');legacyWorker.terminate();
 compiler.close();await assert.rejects(compiler.compile([]),/closed/);
 console.log('PASS versioned/in-flight context snapshots, failure retries, bounded warm idle decoders, no audio fanout and actual worker grammar messages');
