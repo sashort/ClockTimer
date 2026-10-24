@@ -1,5 +1,9 @@
 # Client-side Vosk context handoffs
 
+For the deployed component map, completion rules, defaults, and stable baseline, see
+[Current speech implementation](speech-current-implementation.md). Performance figures
+below include historical development experiments; they are not current device guarantees.
+
 ## Ownership
 
 The implementation runs on each client. SpeechMenu owns the existing microphone, 16 kHz worklet, voice-activity detection and adaptive silence timeout. VoskContextRecognizer never calls getUserMedia and never sends audio to a speech server. It owns one bounded PCM ring and one active native decoder at a time. VoskRecognizer's lazy loader owns the shared model; retired decoders are removed before their successors are created.

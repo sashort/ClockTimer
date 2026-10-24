@@ -4,7 +4,7 @@ The [Version 2 speech recognition contract](speech-recognition-v2.md) records th
 shared lifecycle, continuation handoff, final-decode rules, display requirements,
 and regression evidence for a clean replacement implementation.
 
-SpeechMenu consumes utterances from left to right. `#planDigest` probes prefixes against eligible DOM speech items, then follows `speech-chain-next` to items with matching `speech-chain-context`. `#queueDigestStep` serializes accepted actions; `#processElement` invokes the resolved `speech-function` with parsed arguments.
+SpeechMenu consumes utterances from left to right. `#planDigest` probes prefixes against eligible DOM speech items, then follows `speech-chain-next` to items with matching `speech-chain-context`. `#queueDigestStep` submits accepted actions to the validated command buffer, which waits for declared slot prerequisites and permits independent commands to run concurrently; `#processElement` invokes the resolved `speech-function` with parsed arguments.
 
 For example, “ready at four fifteen standard time one hour” schedules Ready before applying Standard Time. Follow-up items receive temporary `primed` attributes while their projected workflow is valid, allowing recognition before the associated dialog renders. Disabled actions and authorization checks remain enforced. Priming is cleared when the utterance finishes, fails, or is canceled.
 
@@ -77,7 +77,7 @@ Trip Log and the speech pad are native dialogs. Opening Trip Log preserves the u
 
 ## Optimistic state changes and persistence
 
-Every registered state-changing action participates in the shared `StateTransactions` checkpoint and rollback mechanism. UI changes occur before the asynchronous result. A rejection or persistence failure restores the checkpoint and cancels dependent actions.
+Registered state-changing actions use the shared `StateTransactions` checkpoint and rollback policy when enabled by action metadata. UI changes can occur before the asynchronous result; rejection or persistence failure restores the applicable checkpoint and cancels dependent actions. Independent Goal and Sync settings opt out of the compound transaction so unrelated rollback cannot undo them. See [Current speech implementation](speech-current-implementation.md) for slot dependencies and current execution policies.
 
 `speech-persist` declares that a speech command may access the server. Omission or `speech-persist="false"` keeps the command client-only; the flag does not itself cause a request. Opening a local menu or selecting a value needs no server check. A command that actually persists a trip change calls `api/command-check/` with its request payload, waits for the server's explicit read-only decision, and sends the write only after acceptance. Event writes validate authoritative state again under the trip lock before inserting, covering changes between the check and write. The server owns business validation; the client enforces only the declared routing boundary.
 
