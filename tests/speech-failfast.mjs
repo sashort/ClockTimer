@@ -233,7 +233,8 @@ try {
  u=fresh();await speech.testTranscript(u,'noise show log');
  await new Promise(setImmediate);assert.equal(coordinator.pending.length,1,'terminal stream is awaiting its actual operation');
  let planned=false;const grammar=speech.testVoskContext(u.id,'noise show log').then(result=>{planned=true;return result;});
- await new Promise(setImmediate);assert.equal(planned,false,'next grammar waits for the earlier operation to settle');
+ await new Promise(setImmediate);assert.equal(planned,true,'recognition grammar must not wait for a command that may need the decoder final');
+ assert.equal(coordinator.pending.length,1,'grammar projection cannot finish the pending action');assert.deepEqual(calls,[],'projecting vocabulary does not execute or complete a command');
  release();await u.segmentBarrier;await grammar;
  assert.equal(coordinator.pending.length,0,'terminal operation commits before decoder final');assert.equal(u.completedStreams,1);
  assert.equal(speech.testActive(),u,'audio capture and utterance ID survive terminal command boundaries');assert.deepEqual(aborts,[],'command stream truncation keeps buffered audio');
