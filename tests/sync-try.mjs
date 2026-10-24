@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../ClockTimer.js',import.meta.url),'utf8');
-const method=source.slice(source.indexOf('        #syncGoal_on('),source.indexOf('        #handleTripGoalChange(',source.indexOf('        #syncGoal_on('))).replace('#syncGoal_on','syncGoal_on').replaceAll('.#','.');
+const method=source.slice(source.indexOf('        #applySyncTripGoal('),source.indexOf('        #handleTripGoalChange(',source.indexOf('        #syncGoal_on('))).replace('#applySyncTripGoal','applySyncTripGoal').replace('#syncGoal_on','syncGoal_on').replaceAll('.#','.');
 const ctx=vm.createContext({});vm.runInContext('globalThis.SyncHarness=class {'+method+'}',ctx);
 for(const valid of [true,false]){
  const timer=new ctx.SyncHarness();const events=[];

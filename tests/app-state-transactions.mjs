@@ -893,6 +893,22 @@ if(process.argv.includes('--pin-editing')) {
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  console.log('PASS empty login slot Backspace deletes the previous digit for keyboard and mobile input');await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--voice-login-confirmed-chain')) {
+ await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
+ const u=window.SpeechMenu.testBegin();
+ if(!process.argv.includes('--final-only')) {
+  await window.SpeechMenu.testTranscript(u,'zero zero four two okay',false);await u.digestQueue;await u.segmentBarrier;await settle();
+  assert.equal(window.WMOFInteractionState.state.login.stage,'pin');
+ }
+ await window.SpeechMenu.testTranscript(u,'zero zero four two okay one two three four okay',true);
+ await u.digestQueue;await u.segmentBarrier;await settle();
+ assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'ID OK PIN OK authenticates exactly once in one utterance');
+ assert(!u.digestExecutionFailed,'both contextual credential commands complete');
+ assert.equal(window.WMOFCoordinator.lockCount,0);
+ console.log('PASS ID OK PIN OK in one utterance ('+(process.argv.includes('--final-only')?'final':'interim then final')+')');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--voice-code')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();

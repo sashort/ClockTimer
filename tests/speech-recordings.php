@@ -6,8 +6,9 @@ function testWave(int $amplitude=1200):string{$pcm=str_repeat(pack('v',$amplitud
 $directory=sys_get_temp_dir().'/speech-recordings-'.bin2hex(random_bytes(6));
 $store=new SpeechRecordings($directory,__DIR__.'/recording-scripts');
 try{
- $script=$store->script('en-US','fast');recordingCheck(count($script['prompts'])===32&&$script['recorded']===0,'Reviewed recording script contains 32 prompts');
+ $script=$store->script('en-US','fast');recordingCheck(count($script['prompts'])===33&&$script['recorded']===0,'Reviewed recording script contains 33 prompts');
  recordingCheck($script['prompts'][31]['text']==='zero zero four two one two three four trip goal one twenty sync on ready at four twelve','Continuous login/goal/sync/time benchmark uses fixture credentials');
+ $confirmed='zero zero four two okay one two three four okay';recordingCheck($script['prompts'][32]['text']===$confirmed,'Confirmed ID/PIN chain is a separate natural recording prompt');
  $corpus=file_get_contents(__DIR__.'/recording-scripts/en-us.json');recordingCheck(str_contains($corpus,'one two three four okay'),'The script uses fixture credentials');
  $prompt=$script['prompts'][0];$input=['locale'=>'en-US','delivery'=>'fast','phraseId'=>$prompt['id'],'wav'=>base64_encode(testWave())];
  foreach ([array_replace($input,['locale'=>'../en-us']),array_replace($input,['delivery'=>'slow']),array_replace($input,['phraseId'=>str_repeat('a',64)]),array_replace($input,['wav'=>'invalid!']),array_replace($input,['wav'=>base64_encode(testWave(0))]),array_replace($input,['wav'=>base64_encode(substr_replace(testWave(),pack('V',48000),24,4))])] as $bad){try{$store->save($bad);throw new RuntimeException('Invalid recording accepted');}catch(InvalidArgumentException){}}

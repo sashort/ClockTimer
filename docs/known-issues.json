@@ -23,6 +23,31 @@
         "Record actual capture settings, recognition accuracy in background noise, and latency."
       ],
       "note": "Noise suppression and echo cancellation are separate settings. Keep the current working defaults until this test is completed."
+    },
+    {
+      "id": "TRIP-END-REVERT-001",
+      "title": "End Trip may revert to a running trip",
+      "priority": "low",
+      "status": "investigating",
+      "reported": "2026-10-24",
+      "scope": "Trip completion / persistence",
+      "verification": [
+        "Delayed End Trip persistence and late voice cancellation regression passes.",
+        "A rejected trip-stop save intentionally restores the running trip so unsaved work remains available."
+      ],
+      "next_step": "Capture the persistence error or operation trace from the reported edge case; cause is not yet established."
+    },
+    {
+      "id": "SPEECH-LOGIN-CONFIRMED-CHAIN-001",
+      "title": "Continuous ID okay PIN okay may fill the ID without the PIN",
+      "status": "awaiting-human-recording",
+      "reported": "2026-10-24",
+      "scope": "Client-side sequential Vosk / login credential handoff",
+      "verification": [
+        "Complete final transcript and interim-ID/final-chain planner regressions pass.",
+        "Joining separately recorded credential clips created two logical utterances and does not reproduce the reported natural continuous flow."
+      ],
+      "next_step": "Record phrase 33 in one natural take, replay it through the production recognizer and inspect audio boundaries, context transitions, alternatives and dispatch for ID and PIN."
     }
   ]
 }

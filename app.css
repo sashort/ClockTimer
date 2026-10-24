@@ -7629,6 +7629,10 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 /* Standalone breaks are log entries, never performance rows. Keep the selected
    sweep color; light/dark edges make its motion visible for any break palette. */
 .trip-log-trip.is-break-only {border:2px solid #b7d7ed;background:#dce7f2;color:#001e60;}
+.trip-log-trip.is-break-only .trip-log-entry,
+.trip-log-trip.is-break-only .trip-log-menu>button,
+.trip-log-trip.is-break-only .trip-log-entry-heading button,
+.trip-log-trip.is-break-only .trip-log-add {color:#001e60;}
 .trip-log-trip.is-break-only>summary {grid-template-columns:minmax(0,1fr) auto minmax(65px,1fr) 24px;}
 .trip-log-break-only-badge {padding:3px 7px;border:1px solid #001e60;border-radius:5px;background:#fff;color:#001e60;font-size:12px;font-weight:700;white-space:nowrap;}
 .trip-log-break-only-duration {font-variant-numeric:tabular-nums;white-space:nowrap;}
