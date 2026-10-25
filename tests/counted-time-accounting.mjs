@@ -228,7 +228,9 @@ try {
     total.configure({goal_type:'auto',trip_goal:'110%'});
     assert.equal(total.getSummarySnapshot().scope,'total');
     total.configure({trip_goal:'125%'});
-    assert.equal(total.getSummarySnapshot().scope,'trip');
+    assert.equal(total.getSummarySnapshot().scope,'total','20-minute Total budget precedes the 24-minute Trip budget despite its higher percentage');
+    total.configure({trip_goal:'160%'});
+    assert.equal(total.getSummarySnapshot().scope,'trip','18.75-minute Trip budget now precedes the 20-minute Total budget');
     assert.equal(counted(total),600000,'goal selection does not reset counted time');
     total.remove();
     console.log('PASS counted accounting: delayed/repeated ticks, no visual rings, pauses, approvals, cancel, start edits, stop/reset, early break, and Total goal');
