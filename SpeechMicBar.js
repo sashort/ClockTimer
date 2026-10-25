@@ -25,6 +25,9 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
         "speechRecognitionStreamingFailed",
         "speechRecognitionStatusChanged",
         "speechCaptureEnded",
+        "speechCaptureInterrupted",
+        "speechCaptureRecovered",
+        "speechCaptureRecoveryFailed",
         "utteranceUnrecognized",
         "audioLevelChanged",
         "phrasesChanged"
@@ -66,7 +69,6 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     #systemSpeechMenu;
     #wakeCommand;
     #sleepCommand;
-    #offCommand;
     #commandsCommand;
     #trainingSelection;
     #optionCategories = [
@@ -1368,12 +1370,6 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 globalThis.WMOFLanguagePack.patternFor("system:sleep"),
                 "SpeechMenu.sleep"
             );
-        this.#offCommand =
-            ensureCommand(
-                "off",
-                globalThis.WMOFLanguagePack.patternFor("system:off"),
-                "WMOFActions.disableSpeechRecognition"
-            );
         this.#commandsCommand =
             ensureCommand(
                 "commands",
@@ -1519,8 +1515,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
     setSystemSpeechPatterns(
         {
             wake,
-            sleep,
-            off
+            sleep
         } = {}
     ) {
         this.#ensureSystemSpeechMenu();
@@ -1537,10 +1532,6 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 [
                     this.#sleepCommand,
                     sleep
-                ],
-                [
-                    this.#offCommand,
-                    off
                 ]
             ]
         ) {
@@ -5954,6 +5945,19 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                     this.#listeningState()
                 );
                 this.clear();
+                break;
+            case "speechCaptureInterrupted":
+                this.#clearLoadingProgress();
+                this.setAttribute("state", "reconnecting");
+                this.#showIdleText();
+                break;
+            case "speechCaptureRecovered":
+                this.setAttribute("state", this.#listeningState());
+                this.#showIdleText();
+                break;
+            case "speechCaptureRecoveryFailed":
+                this.setAttribute("state", "reconnecting");
+                this.#showStatus(detail?.message || globalThis.WMOFLanguagePack.text("ac117311-8c8b-41ac-bcdd-f1d0447a56b4"));
                 break;
             case "stopped":
             case "speechCaptureEnded":

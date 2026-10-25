@@ -60,7 +60,7 @@
     });
     const language = JSON.parse(JSON.stringify(pack['speech-patterns'].language));
     for (const [key, id] of Object.entries(language.speech.commands)) language.speech.commands[key] = pattern(id);
-    for (const key of ['wakePhrase','sleepPhrase','offPhrase']) language.speech[key] = pattern(language.speech[key]);
+    for (const key of ['wakePhrase','sleepPhrase']) language.speech[key] = pattern(language.speech[key]);
     globalThis.WMOFLanguages ||= Object.create(null);
     globalThis.WMOFLanguages[locale] = language;
 

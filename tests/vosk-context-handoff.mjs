@@ -96,3 +96,26 @@ assert.equal(providerCalls,1,'future grammar heads must not invoke the full appl
 assert(instances.at(-1).options.grammar.includes('break start lunch okay'),'declared continuations remain audible');
 assert.equal(declarative.processing,false);assert.equal(declarative.listening,true);assert(phases.includes('recognition-processing'));assert(phases.includes('recognition-listening'));declarative.close();
 console.log('PASS declarative lookahead retains multi-command context chains without speculative planner calls and reports decoder readiness');
+
+vm.runInNewContext(fs.readFileSync(new URL('../SpeechValueCollector.js',import.meta.url),'utf8'),context);
+const credentials={id:'credentials',atomic:'credentials',digitCounts:[8],digitField:'credentials',digitVocabulary:{zero:'0',one:'1',two:'2',three:'3',four:'4'},pattern:'^(?<credentials>.+)$'};
+const credentialText='zero zero four two one two three four';
+const noisyAdapter=new context.VoskContextRecognizer({warmDecoders:false,
+ valuePhrases:{digits:['zero','one','two','three','four']},
+ contextProvider:async(id,text)=>({records:text.endsWith('sync off')?[]:text.endsWith(credentialText)?[{pattern:'^sync off$'}]:[credentials,{pattern:'^cancel$'}]})});
+const noisyErrors=[],noisyResults=[],noisyHandoffs=[];
+noisyAdapter.addEventListener('error',e=>noisyErrors.push(e.detail));
+noisyAdapter.addEventListener('transcript',e=>noisyResults.push(e.detail));
+noisyAdapter.addEventListener('handoff',e=>noisyHandoffs.push(e.detail));
+await noisyAdapter.beginUtterance('noisy-credentials');await noisyAdapter.acceptAudio(new Float32Array(32000));
+const noisyWords=('background chatter '+credentialText+' sync off').split(' ');
+instances.at(-1).emit(noisyWords.join(' '),{words:noisyWords.map((word,i)=>({word,start:i/10,end:(i+1)/10})),final:true});
+await noisyAdapter.finishUtterance('noisy-credentials');
+assert.deepEqual(noisyErrors,[],'leading speech must not kill the sequential decoder');
+assert.equal(noisyResults.at(-1).transcript,credentialText+' sync off','credentials and the following command survive exactly once');
+assert.equal(noisyHandoffs[0].boundarySample,16000,'credential boundary includes the two discarded audio words');
+assert.equal(noisyHandoffs[0].discardedPrefix.endSample,3200);
+assert.equal(noisyAdapter.slots[0].value,'00421234');
+assert.equal(noisyAdapter.slots[0].startSample,3200,'junk never becomes part of the credential slot');
+noisyAdapter.close();
+console.log('PASS timed leading-noise discard preserves credential ownership and subsequent commands');

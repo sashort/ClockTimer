@@ -280,17 +280,26 @@ is generated.
 
 ## Goals and percentage ordering
 
-Configured goal mode and selected current goal are distinct. Auto filters out
-unavailable or unattainable candidates, then chooses the first available candidate
-in the percentage order. An explicit calculated end-time goal retains its existing
-Trip priority. Fixed Trip and Total modes retain their selected scope even after a
-goal is missed.
+Configured goal mode and selected current goal are distinct. Auto compares the
+current-trip counted-time allowance derived from each candidate's percentage,
+then chooses the shortest available time. Total includes the selected range's
+logged standard/counted time, so its raw percentage cannot be compared directly
+with Trip's percentage. For example, Total 120% can imply 20 minutes while Trip
+140% implies about 21 minutes 26 seconds; Total is the first target in that case.
 
-The ordering uses effective Trip and Total percentages and Standard = 100%.
-Sync's calculated Trip percentage therefore participates in the ordering. The
-ordering is cached until either effective percentage changes.
+Missed, unavailable, and non-positive allowances cannot win Auto. As each target
+is missed, the next longer available time is used. Equal derived times keep Trip,
+then Total, then Standard priority. Goal-failure fallback announcements likewise
+choose the earliest remaining deadline. Fixed Trip and Total modes retain their
+selected scope after a goal is missed. Explicit calculated end-time goals retain
+their existing Trip priority.
 
-The six orders, highest percentage first, are:
+The cached ordering key contains all three derived allowances, including their
+availability, rather than the raw goal percentages. Updating logged aggregates,
+Sync, Override, standard duration, or elapsed time therefore refreshes selection
+when those derived values change. The legacy `percentageOrder` diagnostic and
+six scope-order handler names remain compatible; their ordering now means
+shortest time first:
 
 - `trip_total_standard`
 - `trip_standard_total`
@@ -298,9 +307,6 @@ The six orders, highest percentage first, are:
 - `total_standard_trip`
 - `standard_trip_total`
 - `standard_total_trip`
-
-Equal percentages keep Trip, then Total, then Standard priority. Numerical values
-remain available to the calculation helpers, so ties do not imply separate ranges.
 
 Sync dispatch is `on` only when enabled and an active trip has usable start
 properties. Otherwise its `off` handler removes stale Sync-derived Trip goals
@@ -324,6 +330,23 @@ or `none`; approval decisions remain on their interval records.
 
 The established ring animation, collision, and geometry helpers are retained
 behind the handler families.
+
+Rendering lifecycle invariants:
+
+- Model-removed `time-range` views are hidden and must compute to `display: none`,
+  even though ordinary slotted ranges use `display: block`. Removing their clip
+  path must never expose an unclipped Down fill across the clock face.
+- An animated exit owns DOM removal. Canceling its animation during a disconnect
+  or a replacement geometry commit must complete that removal exactly once.
+  Reconnecting a ring must not revive an obsolete overtime arc.
+- Normal hour-boundary ring reordering is distinct from an obsolete arc. The
+  October 25 Down → Lunch restore and fitted/overflow replay did not reproduce
+  the reported screenshot's exact ring arrangement; interrupted exit removal and
+  hidden-view painting were reproduced independently.
+
+`node tests/ring-hidden-range-browser.cjs` checks these visibility and exit
+invariants in Chromium. `node tests/radial-fitted-tick-browser.cjs` checks that
+Down and overtime arcs share the fitted projection across successive ticks.
 
 ## Verification
 
@@ -519,3 +542,7 @@ preflight rule can reject an otherwise valid break before persistence and revert
 its UI transaction. `tests/trip-session-timing.php` covers that distinction.
 The browser regression now selects and confirms a break through the actual idle
 selector and compares computed New Trip/Start Break typography across viewports.
+
+The Auto selector displays its current target in brackets, such as `[Trip]`,
+`[Week]`, or `[Standard]`, with a light-blue tint. It refreshes with summary
+updates as the active goal changes; the configured mode remains Auto.

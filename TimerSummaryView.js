@@ -44,12 +44,12 @@
     return Math.max(1,this.context.measureText(cell.textContent).width+spacing*cell.textContent.length);
    });
    const gap=parseFloat(style.getPropertyValue('--summary-text-gap'))||12;
-   const available=Math.max(1,row.clientWidth-2*inset-2*badgeWidth-2*gap-3);
-   // Equal outer tracks and insets keep the slash centered, including during
-   // Sync transitions. The longer percentage determines one font for all text.
-   const scale=Math.min(1,available/(2*Math.max(widths[0],widths[2])+widths[1]));
+   // Reserve only the real Sync track plus its cloud-aligned right inset.
+   // Two equal flexible spaces center the entire expression before that track.
+   const available=Math.max(1,row.clientWidth-inset-badgeWidth-4*gap-3);
+   const scale=Math.min(1,available/widths.reduce((sum,width)=>sum+width,0));
    row.style.setProperty('--summary-percent-font-size',`${base*scale}px`);
-   row.style.gridTemplateColumns=`${badgeWidth}px minmax(0, 1fr) ${widths[1]*scale+1+2*gap}px minmax(0, 1fr) ${badgeWidth}px`;
+   row.style.gridTemplateColumns=`minmax(0, 1fr) ${widths[0]*scale+1}px ${widths[1]*scale+1+2*gap}px ${widths[2]*scale+1}px minmax(0, 1fr) ${badgeWidth}px`;
   }
  }
  globalThis.WMOFTimerSummaryView={render(root,state){

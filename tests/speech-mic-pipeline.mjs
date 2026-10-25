@@ -101,7 +101,7 @@ const commandsSystemCommand =
 assert.ok(systemSpeechMenu);
 assert.ok(wakeSystemCommand);
 assert.ok(sleepSystemCommand);
-assert.ok(offSystemCommand);
+assert.equal(offSystemCommand, null, "no system voice command may stop capture");
 assert.ok(commandsSystemCommand);
 assert.equal(
     wakeSystemCommand.getAttribute(
@@ -115,12 +115,7 @@ assert.equal(
     ),
     "SpeechMenu.sleep"
 );
-assert.equal(
-    offSystemCommand.getAttribute(
-        "speech-function"
-    ),
-    "WMOFActions.disableSpeechRecognition"
-);
+
 assert.equal(
     commandsSystemCommand.getAttribute(
         "speech-function"
@@ -169,20 +164,7 @@ assert.deepEqual(
         "sleep"
     ]
 );
-assert.deepEqual(
-    [
-        ...SpeechMenu
-            .extrapolatePattern(
-                offSystemCommand
-                    .getAttribute(
-                        "speech-pattern"
-                    )
-            )
-    ],
-    [
-        "off"
-    ]
-);
+
 
 globalThis.ChainTestActions =
     window.ChainTestActions = {
@@ -989,10 +971,7 @@ assert.match(
     app,
     /if \(enabled\) \{[\s\S]*await disableSpeechRecognitionRuntime\(\)[\s\S]*return;/
 );
-assert.match(
-    app,
-    /disableSpeechRecognition\(\) \{[\s\S]*return disableSpeechRecognitionRuntime\(\)/
-);
+assert.doesNotMatch(app, /disableSpeechRecognition\(\)/);
 assert.match(app, /ensureSpeechRuntime/);
 assert.match(app, /speech-editor-preview/);
 assert.match(app, /function showInitialLoginDialog\(\)[\s\S]*if \(speechEditorPreview\)[\s\S]*return false;/);
@@ -2514,17 +2493,14 @@ assert.match(
     languageSource,
     /sleepPhrase:\s*"\^sleep\$"/
 );
-assert.match(
-    languageSource,
-    /offPhrase:\s*"\^off\$"/
-);
+assert.doesNotMatch(languageSource, /offPhrase/);
 assert.doesNotMatch(
     speechMenuSource,
     /#wakePhrase|#sleepPhrase|#controlCandidatePool/
 );
 assert.match(
     app,
-    /setSystemSpeechPatterns\?\.\([\s\S]*wake:[\s\S]*wakePhrase[\s\S]*sleep:[\s\S]*sleepPhrase[\s\S]*off:[\s\S]*offPhrase/
+    /setSystemSpeechPatterns\?\.\([\s\S]*wake:[\s\S]*wakePhrase[\s\S]*sleep:[\s\S]*sleepPhrase/
 );
 assert.match(
     speechMenuSource,

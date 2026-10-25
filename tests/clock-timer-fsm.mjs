@@ -8,7 +8,8 @@ const orderings = [
     [1.2,1.4,'total_trip_standard'], [.8,1.2,'total_standard_trip'],
     [.9,.8,'standard_trip_total'], [.8,.9,'standard_total_trip'],
     [1,1,'trip_total_standard'], [1.2,1.2,'trip_total_standard'],
-    [.8,1,'total_standard_trip']
+    [.8,1,'total_standard_trip'], [1.4,1.1,'derived-trip-total-standard'],
+    [.6,.95,'derived-standard-total-trip'], [1.5,1.2,'derived-trip-total-tie']
 ];
 
 async function exercise(core, checkFSM) {
@@ -23,14 +24,14 @@ async function exercise(core, checkFSM) {
     Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});
     Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
     window.Element.prototype.animate=()=>({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
-    let eventId=1;
+    let eventId=1,aggregateCounted=4800000;
     window.fetch=async(url)=>{
         const path=new URL(url,'https://clock.example/').pathname;
         const data=path.endsWith('/command-check/') ? {accepted:true} : path.endsWith('/users/')
             ? {csrfToken:'a'.repeat(64),user:{id:2},calendars:[]}
             : {tripId:999,eventId:eventId++,trips:[],aggregateBreakdown:{production:{tripCount:2,
                 standardTimeMilliseconds:5400000,actualTimeMilliseconds:4800000,
-                countedTimeMilliseconds:4800000},nonProduction:{trips:[]}}};
+                countedTimeMilliseconds:aggregateCounted},nonProduction:{trips:[]}}};
         return {ok:true,status:200,json:async()=>data,clone(){return this;}};
     };
     for (const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement']) {
@@ -61,13 +62,16 @@ async function exercise(core, checkFSM) {
             timer.autoSyncTripGoal=sync;
             await timer.start({standardTime:'0:30:00'});
             const activeTrip=sync?timer.calculatedTripGoal:trip;
-            const expectedOrder=['trip','total','standard'].sort((a,b)=>
-                ({trip:activeTrip,total,standard:1})[b]-({trip:activeTrip,total,standard:1})[a]).join('_');
+            const totalBudget=7200000/total-4800000;
+            const requiredTripGoal=totalBudget>0?Math.ceil(1800000/totalBudget*100-1e-9)/100:undefined;
+            const budgets={trip:Math.round(1800000/activeTrip),
+                total:requiredTripGoal?Math.round(1800000/requiredTripGoal):Infinity,standard:1800000};
+            const expectedOrder=['trip','total','standard'].sort((a,b)=>budgets[a]-budgets[b]).join('_');
             assert.equal(timer.getSummarySnapshot().scope,expectedOrder.split('_')[0]);
             if (checkFSM) {
                 const flags=timer.getDispatchState(new window.Date());
                 assert(Object.isFrozen(flags));
-                assert.equal(flags.percentageOrder,sync?expectedOrder:order);
+                assert.equal(flags.percentageOrder,expectedOrder,'Auto order follows derived current-trip time, not raw percentage');
                 assert.equal(timer.getUIState(new window.Date()).auto_goal_order.join('_'),flags.percentageOrder,'goal sequence is ready in every mode');
                 assert.equal(flags.state,'running');
                 assert.equal(flags.sync,sync?'on':'off');
@@ -104,6 +108,24 @@ async function exercise(core, checkFSM) {
             if(checkFSM) assert.equal(timer.getDispatchState(new window.Date()).state,'ready');
             timer.remove();
         }
+        // Total 120% implies 20 minutes here: earlier than Trip 140% (21m 26s).
+        window.__testTime=epoch;
+        const fallback=window.document.createElement('clock-timer');timers.push(fallback);window.document.body.append(fallback);
+        await fallback.connect('test','test');
+        await fallback.calculateTripTotals('2026-09-18T00:00:00Z','2026-09-20T00:00:00Z');
+        fallback.configure({goal_type:'auto',trip_goal:'140%',total_goal:'120%'});
+        await fallback.start({standardTime:'0:30:00'});
+        assert.equal(fallback.getSummarySnapshot().scope,'total');
+        window.__testTime=epoch+1200001;
+        assert.equal(fallback.getSummarySnapshot().scope,'trip','missed shortest time falls back to the next longer allowance');
+        window.__testTime=epoch+Math.round(1800000/1.4)+1;
+        assert.equal(fallback.getSummarySnapshot().scope,'standard','the next missed allowance falls back to Standard');
+        window.__testTime=epoch;
+        aggregateCounted=4200000;
+        await fallback.calculateTripTotals('2026-09-17T00:00:00Z','2026-09-20T00:00:00Z');
+        assert.equal(fallback.getSummarySnapshot().scope,'trip','aggregate changes reorder Auto without changing goal percentages');
+        assert.equal(fallback.getDispatchState().percentageOrder,'trip_total_standard');
+        aggregateCounted=4800000;fallback.remove();
         // A Total goal with a negative current-trip budget cannot win Auto.
         window.__testTime=epoch;
         const unavailable=window.document.createElement('clock-timer');
@@ -171,4 +193,4 @@ if(process.env.CLOCK_TIMER_BASELINE) {
     }
     console.log(`PASS ${results.length} FSM snapshots match the previous implementation`);
 }
-console.log('PASS all six percentage orders, ties, Sync on/off, Trip/Total/Auto, unavailable candidates, fit/overflow, Down and reset');
+console.log('PASS derived time orders, equal-time ties, Sync on/off, Trip/Total/Auto, unavailable candidates, fit/overflow, Down and reset');

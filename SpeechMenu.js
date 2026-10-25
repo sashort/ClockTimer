@@ -290,6 +290,9 @@ class SpeechMenu {
     static #preRollFrames = [];
     static #preRollSamples = 0;
     static #startPromise;
+    static #captureRecoveryPending = false;
+    static #captureRecoveryPromise;
+    static #captureFrameReady;
     static #sessionGeneration = 0;
     static #contextGeneration = 0;
     static #lastLevelEventAt = 0;
@@ -374,14 +377,12 @@ class SpeechMenu {
         ]);
 
     static {
+        const resumeCapture = () => { void SpeechMenu.#recoverCapture(); };
         document.addEventListener("visibilitychange", () => {
-            if (
-                document.visibilityState === "visible" &&
-                SpeechMenu.#audioContext?.state === "suspended"
-            ) {
-                void SpeechMenu.#audioContext.resume().catch(() => {});
-            }
+            if (document.visibilityState === "visible") resumeCapture();
         });
+        window.addEventListener("pageshow", resumeCapture);
+        window.addEventListener("focus", resumeCapture);
 
         const refreshPhrases =
             () => SpeechMenu.#schedulePhraseRefresh();
@@ -624,7 +625,7 @@ class SpeechMenu {
     static get modelReady() {return SpeechMenu.#modelReady;}
     static #preloginExpired = false;
     static #loginResumePromise;
-    static get started() { return !SpeechMenu.#preloginExpired && (Boolean(SpeechMenu.#stream) || SpeechMenu.#externalCapture) && !SpeechMenu.#stopped; }
+    static get started() { return !SpeechMenu.#preloginExpired && (Boolean(SpeechMenu.#stream) || SpeechMenu.#externalCapture || SpeechMenu.#captureRecoveryPending) && !SpeechMenu.#stopped; }
     static get muted() { return SpeechMenu.#sleeping; }
     static async setRecognitionAuthenticated(enabled) {
         try {
@@ -649,7 +650,10 @@ class SpeechMenu {
         })().finally(()=>{SpeechMenu.#loginResumePromise=undefined;});
     }
     static get captureListening() {
-        return SpeechMenu.started && (SpeechMenu.#recognizerBackend !== "web-speech" || SpeechMenu.#recognizer?.listening === true);
+        return SpeechMenu.started && !SpeechMenu.#captureRecoveryPending &&
+            (!SpeechMenu.#audioContext || SpeechMenu.#audioContext.state === "running") &&
+            (!SpeechMenu.#micTrack || SpeechMenu.#micTrack.readyState !== "ended" && !SpeechMenu.#micTrack.muted) &&
+            (SpeechMenu.#recognizerBackend !== "web-speech" || SpeechMenu.#recognizer?.listening === true);
     }
 
     static get captureProcessing() {return SpeechMenu.#recognizer?.processing === true;}
@@ -1287,6 +1291,7 @@ class SpeechMenu {
         }
 
         if (SpeechMenu.#startPromise) return SpeechMenu.#startPromise;
+        if (SpeechMenu.#captureRecoveryPending) return SpeechMenu.#recoverCapture();
         if (SpeechMenu.started && SpeechMenu.#modelReady) return true;
 
         if(SpeechMenu.#preloginExpired){
@@ -1538,69 +1543,7 @@ class SpeechMenu {
                     await vad.ready;
                 }
 
-                SpeechMenu.#stream =
-                    stream;
-
-                SpeechMenu.#micTrack =
-                    stream.getAudioTracks()[0];
-
-                if (!SpeechMenu.#micTrack) {
-                    throw new Error(
-                        "No microphone audio track was available."
-                    );
-                }
-
-                SpeechMenu.#audioContext =
-                    context;
-
-                SpeechMenu.#sourceNode =
-                    context.createMediaStreamSource(
-                        stream
-                    );
-
-                SpeechMenu.#captureNode =
-                    new AudioWorkletNodeCtor(
-                        context,
-                        "wmof-speech-capture",
-                        {
-                            numberOfInputs: 1,
-                            numberOfOutputs: 1,
-                            outputChannelCount: [1]
-                        }
-                    );
-
-                SpeechMenu.#silentGain =
-                    context.createGain();
-
-                SpeechMenu.#silentGain.gain.value =
-                    0;
-
-                SpeechMenu.#captureNode.port
-                    .addEventListener(
-                        "message",
-                        SpeechMenu.#onAudioWorkletMessage
-                    );
-
-                SpeechMenu.#captureNode.port
-                    .start?.();
-
-                SpeechMenu.#sourceNode.connect(
-                    SpeechMenu.#captureNode
-                );
-
-                SpeechMenu.#captureNode.connect(
-                    SpeechMenu.#silentGain
-                );
-
-                SpeechMenu.#silentGain.connect(
-                    context.destination
-                );
-
-                SpeechMenu.#micTrack.addEventListener(
-                    "ended",
-                    SpeechMenu.#onTrackEnded,
-                    {once: true}
-                );
+                SpeechMenu.#connectCaptureGraph(context, stream);
 
                 SpeechMenu.#modelReady = true;
                 SpeechMenu.#emit("started", {
@@ -1710,8 +1653,11 @@ class SpeechMenu {
         if (!wasActive) return false;
 
         SpeechMenu.#stopped = true;
+        SpeechMenu.#captureRecoveryPending = false;
+        SpeechMenu.#captureFrameReady?.(new DOMException("Microphone stopped.", "AbortError"));
         SpeechMenu.#sleeping = false;
         SpeechMenu.#sessionGeneration++;
+        SpeechMenu.#captureRecoveryPromise = undefined;
         SpeechMenu.#commandBuffer?.cancelAll();
 
         if (SpeechMenu.#utterance) {
@@ -2437,23 +2383,134 @@ class SpeechMenu {
         );
     }
 
-    static #onTrackEnded = () => {
-        if (SpeechMenu.#stopped || SpeechMenu.#preloginExpired) return;
+    static #connectCaptureGraph(context, stream) {
+        const track = stream.getAudioTracks()[0];
+        if (!track || track.readyState === "ended") throw Error("No live microphone audio track was available.");
+        SpeechMenu.#stream = stream;
+        SpeechMenu.#micTrack = track;
+        SpeechMenu.#audioContext = context;
+        SpeechMenu.#sourceNode = context.createMediaStreamSource(stream);
+        SpeechMenu.#captureNode = new globalThis.AudioWorkletNode(context, "wmof-speech-capture", {
+            numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1]
+        });
+        SpeechMenu.#silentGain = context.createGain();
+        SpeechMenu.#silentGain.gain.value = 0;
+        SpeechMenu.#captureNode.port.addEventListener("message", SpeechMenu.#onAudioWorkletMessage);
+        SpeechMenu.#captureNode.port.start?.();
+        SpeechMenu.#sourceNode.connect(SpeechMenu.#captureNode);
+        SpeechMenu.#captureNode.connect(SpeechMenu.#silentGain);
+        SpeechMenu.#silentGain.connect(context.destination);
+        track.addEventListener("ended", SpeechMenu.#onTrackEnded, {once: true});
+    }
 
-        SpeechMenu.#stopped =
-            true;
+    static #detachCaptureGraph() {
+        SpeechMenu.#micTrack?.removeEventListener("ended", SpeechMenu.#onTrackEnded);
+        SpeechMenu.#captureNode?.port.removeEventListener("message", SpeechMenu.#onAudioWorkletMessage);
+        for (const node of [SpeechMenu.#captureNode, SpeechMenu.#sourceNode, SpeechMenu.#silentGain]) {
+            try { node?.disconnect(); } catch {}
+        }
+        for (const track of SpeechMenu.#stream?.getTracks() || []) track.stop();
+        const context = SpeechMenu.#audioContext;
+        SpeechMenu.#captureNode = SpeechMenu.#sourceNode = SpeechMenu.#silentGain = undefined;
+        SpeechMenu.#stream = SpeechMenu.#micTrack = SpeechMenu.#audioContext = undefined;
+        if (context && context.state !== "closed") void context.close().catch(() => {});
+    }
 
-        SpeechMenu.#emit(
-            "speechCaptureEnded",
-            {
-                deliberate: false
+    static #markCaptureInterrupted() {
+        if (SpeechMenu.#captureRecoveryPending) return;
+        SpeechMenu.#captureRecoveryPending = true;
+        if (SpeechMenu.#utterance) SpeechMenu.#finishUtterance("capture-interrupted", true);
+        SpeechMenu.#emit("speechCaptureInterrupted", {deliberate: false});
+    }
+
+    static async #resumeCaptureContext(context) {
+        let timer;
+        try {
+            await Promise.race([context.resume(), new Promise((_, reject) => {
+                timer = setTimeout(() => reject(Error("Microphone capture could not resume. Tap the microphone to retry.")), 5000);
+            })]);
+            if (context.state !== "running") throw Error("Microphone capture could not resume. Tap the microphone to retry.");
+        } finally { clearTimeout(timer); }
+    }
+
+    static #waitForCaptureFrame() {
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                SpeechMenu.#captureFrameReady = undefined;
+                reject(Error("Microphone recovery did not receive audio. Tap the microphone to retry."));
+            }, 5000);
+            SpeechMenu.#captureFrameReady = error => {
+                clearTimeout(timer); SpeechMenu.#captureFrameReady = undefined;
+                if (error) reject(error); else resolve();
+            };
+        });
+    }
+
+    static #recoverCapture() {
+        if (SpeechMenu.#captureRecoveryPromise) return SpeechMenu.#captureRecoveryPromise;
+        if (SpeechMenu.#stopped || SpeechMenu.#preloginExpired || !SpeechMenu.#modelReady ||
+            SpeechMenu.#externalCapture || SpeechMenu.#recognizerBackend === "web-speech" ||
+            (!SpeechMenu.#micTrack && !SpeechMenu.#captureRecoveryPending) ||
+            document.visibilityState === "hidden") return Promise.resolve(false);
+        const track = SpeechMenu.#micTrack, context = SpeechMenu.#audioContext;
+        const replace = !track || track.readyState === "ended" || track.muted || !context || context.state === "closed";
+        if (!replace && context.state === "running" && !SpeechMenu.#captureRecoveryPending) return Promise.resolve(true);
+        const generation = SpeechMenu.#sessionGeneration;
+        SpeechMenu.#markCaptureInterrupted();
+        const recovery = (async () => {
+            let nextStream, nextContext;
+            const current = () => !SpeechMenu.#stopped && generation === SpeechMenu.#sessionGeneration;
+            try {
+                if (replace) {
+                    SpeechMenu.#detachCaptureGraph();
+                    nextStream = await navigator.mediaDevices.getUserMedia({audio: {
+                        echoCancellation: false, noiseSuppression: false, autoGainControl: false
+                    }});
+                    if (!current()) return false;
+                    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+                    nextContext = new AudioContextCtor();
+                    await SpeechMenu.#resumeCaptureContext(nextContext);
+                    await nextContext.audioWorklet.addModule(globalThis.SherpaRecognizer?.assetUrl
+                        ? globalThis.SherpaRecognizer.assetUrl("speech/SpeechAudioWorklet.js")
+                        : new URL("speech/SpeechAudioWorklet.js", document.baseURI).href);
+                    if (!current()) return false;
+                    SpeechMenu.#connectCaptureGraph(nextContext, nextStream);
+                } else {
+                    await SpeechMenu.#resumeCaptureContext(context);
+                }
+                if (!current()) return false;
+                await SpeechMenu.#waitForCaptureFrame();
+                if (!current()) return false;
+                SpeechMenu.#captureRecoveryPending = false;
+                SpeechMenu.#emit("speechCaptureRecovered", {deliberate: false, muted: SpeechMenu.#sleeping});
+                return true;
+            } catch (error) {
+                if (nextStream && SpeechMenu.#stream === nextStream) SpeechMenu.#detachCaptureGraph();
+                if (current()) SpeechMenu.#emit("speechCaptureRecoveryFailed", {message: error.message, error: error.name});
+                return false;
+            } finally {
+                if (!current() || nextStream && nextStream !== SpeechMenu.#stream) {
+                    for (const oldTrack of nextStream?.getTracks() || []) if (oldTrack.readyState !== "ended") oldTrack.stop();
+                    if (nextContext && nextContext.state !== "closed") void nextContext.close().catch(() => {});
+                }
             }
-        );
+        })().finally(() => {
+            if (SpeechMenu.#captureRecoveryPromise === recovery) SpeechMenu.#captureRecoveryPromise = undefined;
+        });
+        SpeechMenu.#captureRecoveryPromise = recovery;
+        return recovery;
+    }
 
-        void SpeechMenu.#releaseCapture();
+    static #onTrackEnded = event => {
+        if (SpeechMenu.#stopped || SpeechMenu.#preloginExpired || event?.target && event.target !== SpeechMenu.#micTrack) return;
+        SpeechMenu.#markCaptureInterrupted();
+        void SpeechMenu.#recoverCapture();
     };
 
     static #onAudioWorkletMessage = event => {
+        if (event.data?.type === "audio" && event.data.samples instanceof Float32Array && event.data.samples.length &&
+            !SpeechMenu.#micTrack?.muted && SpeechMenu.#micTrack?.readyState !== "ended")
+            SpeechMenu.#captureFrameReady?.();
         if (
             SpeechMenu.#stopped || SpeechMenu.#preloginExpired ||
             SpeechMenu.listeningSuspended ||

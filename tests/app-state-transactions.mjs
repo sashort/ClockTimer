@@ -79,7 +79,7 @@ speechSource=speechSource.replace('\n}\n\nglobalThis.SpeechMenu = SpeechMenu;', 
     static testResume(){const pipeline=SpeechMenu.#pipeline;SpeechMenu.#pipeline="silero";try{SpeechMenu.#onVadSpeechStart({detail:{}});}finally{SpeechMenu.#pipeline=pipeline;}}
     static testBackend(name){SpeechMenu.#recognizerBackend=name;}
     static testModelReady(ready){SpeechMenu.#modelReady=ready;}
-    static testBegin(){SpeechMenu.#modelReady=true;SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={beginUtterance(){},abortUtterance(){},finishUtterance(){}};SpeechMenu.#beginUtterance(window.__testTime-performance.timeOrigin);return SpeechMenu.#utterance;}
+    static testBegin(){SpeechMenu.#modelReady=true;SpeechMenu.#executionEnabled=true;SpeechMenu.#sleeping=false;SpeechMenu.#stopped=false;SpeechMenu.#stream={getTracks(){return [];}};SpeechMenu.#recognizer={listening:true,beginUtterance(){},abortUtterance(){},finishUtterance(){}};SpeechMenu.#beginUtterance(window.__testTime-performance.timeOrigin);return SpeechMenu.#utterance;}
     static testTranscript(u,text,final=true){return SpeechMenu.#handleLiveTranscript(u,text,final);}
     static testFinish(){SpeechMenu.#finishUtterance("vad-silence",true);}
     static testDeliverFinal(u,text){SpeechMenu.#onSherpaTranscript({detail:{utteranceId:u.id,transcript:text,isFinal:true}});}
@@ -109,6 +109,7 @@ let appSource=fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../a
 // so its frozen wall clock cannot accumulate an artificial playback backlog.
 if(process.argv.includes('--voice-feedback') || process.argv.includes('--interval-actions')) appSource=appSource.replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;', 'const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;');
 if(process.argv.includes('--pointer-mode') || process.argv.includes('--range-permissions'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
+if(process.argv.includes('--mic-feedback'))appSource=appSource.replace('    let microphoneReminderTimer=null,microphoneReminderGeneration=0;', '    let microphoneReminderTimer=null,microphoneReminderGeneration=0;globalThis.testMicrophoneReminder=()=>microphoneReminderTimer;');
 if(process.argv.includes('--exhaustive-values'))appSource=appSource.replace('    document.dispatchEvent(new Event("clocktimer-app-ready"));',`    globalThis.testValueSnapshot=()=>{const p=splitAbsoluteDigits(numberPadState?.pending);return {pending:numberPadState?.pending,date:numberPadState?.pendingDate,meridiem:numberPadState?.meridiem,valid:numberPadValueValid(),value:numberPadState?.mode==='absolute'?(p?absoluteHour24(numberPadState)*3600000+p.minute*60000+p.second*1000:undefined):timeDigitsToMilliseconds(numberPadState?.pending),voice:voiceEntryValue.textContent,touch:numberPadDisplay?.textContent};};
     document.dispatchEvent(new Event("clocktimer-app-ready"));`);
 if(process.argv.includes('--time-reference-goal') || process.argv.includes('--time-reference-overtime'))
@@ -897,14 +898,18 @@ if(process.argv.includes('--voice-login-confirmed-chain')) {
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
  const dialog=window.document.querySelector('#loginDialog');if(!dialog.open)dialog.showModal();await window.WMOFActions.cancelLoginDigits();
  const u=window.SpeechMenu.testBegin();
- if(!process.argv.includes('--final-only')) {
-  await window.SpeechMenu.testTranscript(u,'zero zero four two okay',false);await u.digestQueue;await u.segmentBarrier;await settle();
+ const noise=process.argv.includes('--invalid-prefix')?'sync on background chatter ':process.argv.includes('--leading-junk')?'background chatter ':'';
+ if(!process.argv.includes('--final-only') && !process.argv.includes('--eight-digits')) {
+  await window.SpeechMenu.testTranscript(u,noise+'zero zero four two okay',false);await u.digestQueue;await u.segmentBarrier;await settle();
   assert.equal(window.WMOFInteractionState.state.login.stage,'pin');
  }
- await window.SpeechMenu.testTranscript(u,'zero zero four two okay one two three four okay',true);
+ const credentials=process.argv.includes('--eight-digits')?'zero zero four two one two three four':'zero zero four two okay one two three four okay';
+ await window.SpeechMenu.testTranscript(u,noise+credentials+' trip goal one twenty sync off',true);
  await u.digestQueue;await u.segmentBarrier;await settle();
  assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'ID OK PIN OK authenticates exactly once in one utterance');
  assert(!u.digestExecutionFailed,'both contextual credential commands complete');
+ assert.equal(timer.getSummarySnapshot().trip.percentGoal,1.2,'commands after login remain executable');
+ assert.equal(timer.autoSyncTripGoal,false);
  assert.equal(window.WMOFCoordinator.lockCount,0);
  console.log('PASS ID OK PIN OK in one utterance ('+(process.argv.includes('--final-only')?'final':'interim then final')+')');
  await window.happyDOM.close();process.exit(0);
@@ -1214,9 +1219,19 @@ if(process.argv.includes('--commands-close')) {
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  console.log('PASS Commands open/close settles orchestration and re-enables controls');await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--auto-selector')) {
+ for(const mode of ['auto','trip','total','auto']) {
+  timer.configure({goal_type:mode});await settle();
+  const target=timer.getUIState().effective_goal_type;
+  const button=window.document.querySelector('#scopeToggle');
+  if(mode==='auto')assert.equal(button.textContent,`[${target==='total'?'Day':target==='standard'?'Standard':'Trip'}]`);
+  else assert.equal(button.textContent,mode==='total'?'Day':'Trip');
+ }
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS Auto selector follows the active target and manual scopes retain their labels');
+ await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--sync-voice')) {
- const system=window.document.createElement('speech-menu');system.setAttribute('speech-modal','system');
- const off=window.document.createElement('speech-command');off.setAttribute('speech-pattern','^off$');off.setAttribute('speech-function','WMOFActions.disableSpeechRecognition');system.append(off);window.document.body.append(system);
  const menu=window.document.querySelector('#toggleSyncMenuButton');const goal=window.document.querySelector('#toggleSyncGoalButton');
  const dispatched=[];window.SpeechMenu.events.addEventListener('speechCommandDispatched',e=>dispatched.push(e.detail.commandElement.getAttribute('speech-function')));
  const receive=async(u,text,final=false)=>{window.SpeechMenu.testResult(u,text,final);await settle();await u.digestQueue;await u.segmentBarrier;await settle();};
@@ -1247,9 +1262,10 @@ if(process.argv.includes('--sync-voice')) {
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  await window.WMOFActions.toggleSync('on');await settle();
  const standaloneOff=window.SpeechMenu.testBegin();await receive(standaloneOff,'off',true);
- assert.equal(window.SpeechMenu.started,false,'standalone Off still stops recognition');
+ assert.equal(window.SpeechMenu.started,true,'standalone Off must leave recognition running');
+ assert.equal(window.document.querySelector('#speechMicBar').hidden,false,'standalone Off cannot close the mic bar');
  assert.equal(timer.autoSyncTripGoal,true,'standalone Off leaves Sync unchanged');
- console.log('PASS Sync Off changes and persists the hidden menu setting without stopping Sherpa/Vosk; standalone Off still works');
+ console.log('PASS Sync Off changes and persists the hidden menu setting without stopping Sherpa/Vosk; standalone Off cannot stop recognition');
  await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--speech-boundaries')) {
@@ -1311,6 +1327,28 @@ if(process.argv.includes('--mic-feedback')) {
  assert.equal(spoken.filter(s=>s==='Microphone deactivated.').length,2,'voice sleep announces once through the same runtime path');
  assert.equal(chimes.filter(s=>s==='microphone-deactivated').length,2,'voice feedback cannot duplicate the runtime chime');
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ window.SpeechMenu.events.dispatchEvent(new window.CustomEvent('speechCaptureInterrupted'));
+ assert.equal(window.document.querySelector('#speechMicBar').hidden,false,'capture interruption preserves the bar');
+ const previousReminder=window.testMicrophoneReminder();assert(previousReminder,'Sleep has an active reminder cadence');
+ const priorSpeak=window.WMOFAudio.speak;let finishRecoverySpeech;
+ window.WMOFAudio.speak=(text,options={})=>{if(text==='Microphone deactivated.'){spoken.push(text);finishRecoverySpeech=options.onEnd;return true;}return priorSpeak(text,options);};
+ window.SpeechMenu.events.dispatchEvent(new window.CustomEvent('speechCaptureRecovered',{detail:{muted:true}}));await settle();
+ assert.equal(spoken.at(-1),'Microphone deactivated.','sleeping recovery restarts deactivation feedback');
+ assert.equal(window.testMicrophoneReminder(),null,'old reminder stops while the recovery announcement is speaking');
+ assert(finishRecoverySpeech);finishRecoverySpeech();await settle();window.WMOFAudio.speak=priorSpeak;
+ assert(window.testMicrophoneReminder() && window.testMicrophoneReminder()!==previousReminder,'a fresh minute cadence starts after the announcement finishes');
+ const recoveryReminder=window.testMicrophoneReminder();let foregroundState='hidden';
+ Object.defineProperty(window.document,'visibilityState',{configurable:true,get:()=>foregroundState});
+ window.document.dispatchEvent(new window.Event('visibilitychange'));assert.equal(window.testMicrophoneReminder(),null);
+ foregroundState='visible';window.document.dispatchEvent(new window.Event('visibilitychange'));await settle();await settle();
+ assert.equal(spoken.at(-1),'Microphone deactivated.','returning with healthy sleeping capture also announces deactivation');
+ assert(window.testMicrophoneReminder() && window.testMicrophoneReminder()!==recoveryReminder,'foreground return starts a fresh reminder loop '+JSON.stringify({started:window.SpeechMenu.started,muted:window.SpeechMenu.muted,listening:window.SpeechMenu.captureListening,spoken:spoken.slice(-4)}));
+ const spokenBeforePageShow=spoken.length;window.dispatchEvent(new window.Event('pageshow'));await settle();
+ assert.equal(spoken.length,spokenBeforePageShow,'visibility and pageshow cannot duplicate return feedback');
+ await window.SpeechMenu.wake();await settle();
+ window.SpeechMenu.events.dispatchEvent(new window.CustomEvent('speechCaptureRecovered',{detail:{muted:false}}));await settle();
+ assert.equal(spoken.at(-1),'Microphone reactivated.','awake recovery announces the confirmed capture restart');
+ assert.equal(chimes.at(-1),'microphone-activated');
  console.log('PASS local and voice mic feedback: dedicated activation/deactivation chimes, announcements and duplicate suppression');
  await window.happyDOM.close();process.exit(0);
 }
@@ -2019,8 +2057,6 @@ const retryReady=window.SpeechMenu.testBegin();
 await window.SpeechMenu.testTranscript(retryReady,'ready',true);await retryReady.digestQueue;await settle();
 assert(retryReady.hadCommittedCommand,'rudd is a direct Ready variant');
 assert.equal(window.document.querySelector('#voiceEntrySurface').open,true,'Ready works after cancellation');
-const systemMenu=window.document.createElement('speech-menu');systemMenu.setAttribute('speech-modal','system');
-const off=window.document.createElement('speech-command');off.setAttribute('speech-pattern','^off$');off.setAttribute('speech-function','WMOFActions.disableSpeechRecognition');systemMenu.append(off);window.document.body.append(systemMenu);
 await window.WMOFActions.toggleSync(true);await settle();
 const syncAttempt=window.SpeechMenu.testBegin();
 const syncDigested=[];const recordSync=event=>{if(event.detail.utteranceId===syncAttempt.id)syncDigested.push(event.detail.commandElement.getAttribute('speech-function'));};
@@ -2038,7 +2074,6 @@ const repeatedOff=window.SpeechMenu.testBegin();
 await window.SpeechMenu.testTranscript(repeatedOff,'sync off',true);await repeatedOff.digestQueue;await settle();
 assert.equal(timer.autoSyncTripGoal,false,'a repeated sync off must remain off');
 assert.equal(window.SpeechMenu.started,true,'repeated sync off keeps recognition active');
-systemMenu.remove();
 if(process.argv.includes('--pointer-confirmation')) {
     window.document.querySelector('#voiceEntryTouch').click();await settle();
     assert(window.document.querySelector('#numberPadDialog')?.open,'touch opens the start numberpad');

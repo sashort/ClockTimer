@@ -3160,6 +3160,11 @@ class RingContainer extends HTMLElement {
         this.#rangeAnimations.delete(
             range
         );
+
+        // An exit owns structural cleanup as well as its visual tween.
+        // Disconnects and replacement geometry can cancel a frame before its
+        // final step; obsolete arcs must still leave the DOM in that case.
+        state.removeAfter?.();
     }
 
     #cancelRangeAnimations() {
@@ -3285,11 +3290,18 @@ class RingContainer extends HTMLElement {
             return true;
         }
 
+        let removalFinished = false;
+        const finishRemoval = () => {
+            if (removalFinished) return;
+            removalFinished = true;
+            removeAfter?.();
+        };
         const state = {
             frame:
                 undefined,
             startedAt:
-                undefined
+                undefined,
+            removeAfter: removeAfter ? finishRemoval : undefined
         };
 
         this.#rangeAnimations.set(
@@ -3357,7 +3369,7 @@ class RingContainer extends HTMLElement {
                         range
                     );
 
-                    removeAfter?.();
+                    finishRemoval();
 
                     return;
                 }
@@ -5043,6 +5055,12 @@ class RingContainer extends HTMLElement {
 
                 box-sizing: border-box;
                 transform-origin: 50% 50%;
+            }
+
+            /* Removed model ranges are reflected as hidden views. Author
+               display:block above must not expose their now-unclipped fill. */
+            ::slotted(time-range[hidden]) {
+                display: none !important;
             }
 
             ::slotted(time-range.elapsed),

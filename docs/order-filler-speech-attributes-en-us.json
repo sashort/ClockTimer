@@ -1443,23 +1443,6 @@
       "initialAttributes": {}
     },
     {
-      "element": "[data-speech-editor-id=\"builtin:off:system\"]",
-      "tag": "speech-command",
-      "surface": "speechMicBar",
-      "label": "",
-      "attributes": {
-        "data-speech-system-command": "off",
-        "data-speech-editor-id": "builtin:off:system",
-        "data-speech-options-category": "system",
-        "data-speech-options-group": "speech-controls",
-        "speech-pattern": "^off$",
-        "speech-function": "WMOFActions.disableSpeechRecognition",
-        "data-speech-pattern-id": "f6f45f28-dd5b-4a59-8807-b6026bb7ef2f"
-      },
-      "source": "JavaScript / component",
-      "initialAttributes": {}
-    },
-    {
       "element": "[data-speech-editor-id=\"builtin:commands:system\"]",
       "tag": "speech-command",
       "surface": "speechMicBar",
