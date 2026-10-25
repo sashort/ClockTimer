@@ -905,7 +905,15 @@ if(process.argv.includes('--voice-login-confirmed-chain')) {
  }
  const credentials=process.argv.includes('--eight-digits')?'zero zero four two one two three four':'zero zero four two okay one two three four okay';
  await window.SpeechMenu.testTranscript(u,noise+credentials+' trip goal one twenty sync off',true);
- await u.digestQueue;await u.segmentBarrier;await settle();
+ // Each completed login field can create a successor stream asynchronously.
+ // A promise captured from the first stream does not drain its successors.
+ let chainSettled=false;
+ for(let attempt=0;attempt<40;attempt++) {
+  const work=window.SpeechMenu.commandBufferSnapshot.filter(entry=>entry.ownerId===u.id);
+  if(u.digestTranscript.endsWith('sync off') && ['builtin:tripGoal:page','builtin:sync:page'].every(id=>work.some(entry=>entry.commandId===id)) && work.every(entry=>entry.status==='completed')) {chainSettled=true;break;}
+  await settle();
+ }
+ assert(chainSettled,'login and both dependent settings must complete within the bounded buffer-drain deadline');
  assert.equal(requests.filter(r=>r.path.endsWith('/users/')&&r.options.method==='POST').length,1,'ID OK PIN OK authenticates exactly once in one utterance');
  assert(!u.digestExecutionFailed,'both contextual credential commands complete');
  assert.equal(timer.getSummarySnapshot().trip.percentGoal,1.2,'commands after login remain executable');
