@@ -322,10 +322,6 @@
       "id": "2fa0573b-b083-5f96-9926-66809b55af14",
       "pattern": "^sleep$"
     },
-    "6b82de7a-8fee-53e4-b37a-bbc852613b31": {
-      "id": "6b82de7a-8fee-53e4-b37a-bbc852613b31",
-      "pattern": "^off$"
-    },
     "41c21000-4282-5a5d-8559-ec0c2bf150cc": {
       "id": "41c21000-4282-5a5d-8559-ec0c2bf150cc",
       "pattern": "^wake$",
@@ -335,11 +331,6 @@
       "id": "e17ba51f-4dde-5502-97ef-95955ac66b37",
       "pattern": "^sleep$",
       "source": "SpeechMicBar.js:48665"
-    },
-    "7071dc27-7d1d-567d-8feb-d187438a869c": {
-      "id": "7071dc27-7d1d-567d-8feb-d187438a869c",
-      "pattern": "^off$",
-      "source": "SpeechMicBar.js:48819"
     },
     "b39573f3-0017-5efe-a07c-be22ff010b6f": {
       "id": "b39573f3-0017-5efe-a07c-be22ff010b6f",
@@ -617,7 +608,6 @@
       ],
       "wakePhrase": "8488608f-bc9a-54b4-94a1-1e5fa0801771",
       "sleepPhrase": "2fa0573b-b083-5f96-9926-66809b55af14",
-      "offPhrase": "6b82de7a-8fee-53e4-b37a-bbc852613b31",
       "nouns": {
         "showTripLog": "log|trip log"
       },
@@ -698,7 +688,6 @@
   "sourceKeys": {
     "system:wake": "41c21000-4282-5a5d-8559-ec0c2bf150cc",
     "system:sleep": "e17ba51f-4dde-5502-97ef-95955ac66b37",
-    "system:off": "7071dc27-7d1d-567d-8feb-d187438a869c",
     "system:commands": "b39573f3-0017-5efe-a07c-be22ff010b6f",
     "system:speech": "f2987a12-d8f5-5fab-b3e9-b8b84784e87b",
     "system:chime": "f9f54c7c-2128-5895-9be2-8d9cff354aed",

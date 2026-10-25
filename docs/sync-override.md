@@ -22,9 +22,13 @@ goal when it changes; suppress duplicate automatic feedback during that operatio
 The initial login Sync announcement remains suppressed.
 
 The shared percentage layout in TimerSummaryView.js and app.css remains common to
-Order Filler and Drop-In: four columns, equal percentage track widths, independently
-fitted fonts, fixed-size Sync aligned to the cloud, and an animated zero-width Sync
-track when hidden.
+Order Filler and Drop-In: the complete Actual / Goal expression centers in the
+available area before the fixed-size Sync button, with equal left/right free space.
+Without Sync, the complete expression centers across the row. Actual and Goal
+tracks follow their text widths; all three text components share one fitted font.
+Sync remains aligned to the cloud. Its track and right inset animate to zero while
+the icon fades/slides out and the expression shifts/resizes into the released space.
+The reverse transition restores the same layout; reduced-motion preferences apply.
 
 Validation: sync-try.mjs, custom-range-goals.mjs, vosk-collector-browser.cjs and
 percent-summary-layout-browser.cjs in tests/ cover floor calculation, override

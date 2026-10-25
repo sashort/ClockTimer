@@ -299,7 +299,7 @@
             const aligned=this.#aligned(detail),probe=copyRouter(this.#router);
             const decision=await this.#project(probe,aligned.text);
             if(this.#closed || epoch!==this.#epoch)return;
-            const changes=probe.prefix!==this.#router.prefix || decision.grammar!==this.#router.grammar;
+            const changes=probe.prefix!==this.#router.prefix || decision.grammar!==this.#router.grammar || Boolean(probe.ignoredPrefix);
             const key=this.#prefix+'|'+decision.grammar+'|'+probe.prefix;
             if(changes && !this.#switchQueued && key!==this.#lastProbe){
                 this.#switchQueued=true;this.#lastProbe=key;
@@ -328,8 +328,21 @@
                 const detail=this.#flushResult || {transcript:'',segmentFinal:true};
                 const aligned=this.#aligned(detail),next=copyRouter(this.#router);
                 await this.#project(next,aligned.text);
+                // Router text pruning must advance by native timed words too.
+                // Otherwise a valid head is compared with the discarded noise,
+                // or replay repeatedly feeds that noise into the value decoder.
+                let discardedWords=[];
+                if(next.ignoredPrefix){
+                    const normalize=globalThis.SpeechGrammarContext.normalize;
+                    const end=aligned.words.findIndex((_,index)=>
+                        normalize(aligned.words.slice(0,index+1).map(word=>word.word).join(' '))===next.ignoredPrefix);
+                    if(end<0)throw Error('Vosk discarded prefix has no complete word timing.');
+                    discardedWords=aligned.words.slice(0,end+1);
+                    aligned.words=aligned.words.slice(end+1);
+                    aligned.text=aligned.words.map(word=>word.word).join(' ');
+                }
                 const consumed=tokens(next.prefix).length-tokens(this.#prefix).length;
-                const changed=next.grammar!==this.#router.grammar || consumed>0;
+                const changed=next.grammar!==this.#router.grammar || consumed>0 || discardedWords.length>0;
                 if(consumed<0 || consumed>aligned.words.length)throw Error('Vosk handoff boundary has no complete word timing.');
                 if(consumed && tokens(next.prefix).slice(-consumed).join(' ')!==aligned.words.slice(0,consumed).map(w=>w.word).join(' '))
                     throw Error('Vosk handoff revised its proposed command boundary.');
@@ -340,7 +353,7 @@
                     return;
                 }
                 if(++this.#hops>this.maxHandoffs)throw Error('Too many recognizer handoffs in one utterance.');
-                const boundary=consumed?aligned.words[consumed-1].endSample:this.#boundary;
+                const boundary=consumed?aligned.words[consumed-1].endSample:discardedWords.at(-1)?.endSample ?? this.#boundary;
                 if(boundary<this.#boundary || boundary>this.#fed)throw Error('Vosk supplied an out-of-range handoff boundary.');
                 const from=this.#router.grammar;
                 if(consumed)await this.#lockSlots(aligned.words.slice(0,consumed),this.#router,true);
@@ -359,6 +372,7 @@
                 if(boundary<this.#buffer.start)throw Error('Vosk handoff audio expired.');
                 this.#emit('handoff',{utteranceId:this.#id,from,to:next.grammar,boundarySample:boundary,
                     replayStartSample:start,replayEndSample:this.#fed,decoderEpoch:this.#epoch,
+                    ...(discardedWords.length?{discardedPrefix:{text:next.ignoredPrefix,startSample:discardedWords[0].startSample,endSample:discardedWords.at(-1).endSample}}:{}),
                     boundaryAnalysis:positioning,analysisMilliseconds,finalizationMilliseconds,
                     handoffMilliseconds:performance.now()-checkpointStarted,...this.#lastReplacement});
                 this.#metrics?.handoffs.push({from,to:next.grammar,finalizationMilliseconds,analysisMilliseconds,...this.#lastReplacement,totalMilliseconds:performance.now()-checkpointStarted});

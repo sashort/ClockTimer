@@ -432,13 +432,18 @@
             return Object.freeze(handlers);
         }
 
-        #getPercentageOrder() {
-            const percentages = { trip: this.#getTripGoal(), total: this.#getTotalGoal(), standard: 1 };
-            const key = `${percentages.trip}/${percentages.total}`;
+        #getPercentageOrder(candidates = this.#getGoalCandidates()) {
+            // The legacy dispatch key names scopes, but priority comes from
+            // their current-trip counted-time allowances, not raw percentages.
+            const scopes = ["trip", "total", "standard"];
+            const times = Object.fromEntries(scopes.map(scope => {
+                const time = candidates[scope].requirements.adjustedTimeElapsed;
+                return [scope, Number.isFinite(time) && time > 0 ? time : Infinity];
+            }));
+            const key = scopes.map(scope => times[scope]).join("/");
             if (key !== this.#percentageOrderKey) {
-                // Stable sorting supplies Trip > Total > Standard tie priority.
-                this.#percentageOrder = Object.keys(percentages)
-                    .sort((a, b) => percentages[b] - percentages[a]).join("_");
+                // Equal derived times retain Trip > Total > Standard priority.
+                this.#percentageOrder = scopes.sort((a, b) => times[a] - times[b]).join("_");
                 this.#percentageOrderKey = key;
             }
             return this.#percentageOrder;
@@ -27528,11 +27533,8 @@
                 );
             }
 
-            candidates.sort(
-                (left, right) =>
-                    right.percent -
-                    left.percent
-            );
+            candidates.sort((left, right) =>
+                Date.parse(left.deadline) - Date.parse(right.deadline));
 
             return candidates[0];
         }
@@ -28057,7 +28059,8 @@
                 return { scope: "trip", goal: this.#calculatedTripGoal,
                     requirements: this.#calculateTripGoalRequirements({ allowMissed: true }) };
             }
-            return this.#dispatch("selectGoal", ["auto", this.#getPercentageOrder()], this.#getGoalCandidates());
+            const candidates = this.#getGoalCandidates();
+            return this.#dispatch("selectGoal", ["auto", this.#getPercentageOrder(candidates)], candidates);
         }
 
         #resolveGoalSelection() {

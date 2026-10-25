@@ -204,6 +204,7 @@
       "off": "Microphone deactivated.",
       "microphoneDeactivated": "Microphone deactivated.",
       "microphoneActivated": "Microphone activated.",
+      "microphoneReactivated": "Microphone reactivated.",
       "syncAlready": "Sync already {state}.",
       "modeAlready": "Already in {mode} mode.",
       "standardAlready": "Standard time is already {duration}.",

@@ -11,4 +11,4 @@ export async function englishLanguage() {
 const speech = JSON.parse(fs.readFileSync(new URL('../lang/en-US/speech-patterns.json', import.meta.url), 'utf8'));
 export const englishSpeechLanguage = structuredClone(speech.language);
 for (const [key, id] of Object.entries(englishSpeechLanguage.speech.commands)) englishSpeechLanguage.speech.commands[key] = speech.patterns[id].pattern;
-for (const key of ['wakePhrase','sleepPhrase','offPhrase']) englishSpeechLanguage.speech[key] = speech.patterns[englishSpeechLanguage.speech[key]].pattern;
+for (const key of ['wakePhrase','sleepPhrase']) englishSpeechLanguage.speech[key] = speech.patterns[englishSpeechLanguage.speech[key]].pattern;

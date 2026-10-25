@@ -31,6 +31,7 @@ console.log('PASS changing aggregate range recalculates calculated end time');
 c.renderedTimeMode='remaining';const after=c.getSummarySnapshot();
 assert.equal(after.trip.percentGoal,1);assert.equal(after.trip.renderedTime,'0:20:00');
 assert.equal(c.syncBelowFloor,true);assert.equal(c.rawSyncTripGoal,0.8);
+c.percentMode='trip'; // Verify the Sync floor itself independently of Auto's shorter Standard target.
 const protectedState=c.captureState();
 c.configure({sync_override:true});
 assert.equal(c.getSummarySnapshot().trip.percentGoal,.8);

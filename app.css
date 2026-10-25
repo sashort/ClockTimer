@@ -335,11 +335,11 @@ html[data-trip-log-startup="unpinned"] .app {
 .percent-summary {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: 40px minmax(0, 1fr) max-content minmax(0, 1fr) 40px;
+    grid-template-columns: minmax(0, 1fr) max-content max-content max-content minmax(0, 1fr) 40px;
     align-items: center;
     column-gap: 0;
     --summary-text-gap: 12px;
-    padding-inline: var(--summary-sync-inset, 6px);
+    padding-inline: 0 var(--summary-sync-inset, 6px);
     min-width: 0;
     font-size: 48px;
     line-height: 1;
@@ -4014,8 +4014,8 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .percent-summary > .goal-sync-button {
     position: relative;
     inset: auto;
-    grid-column: 5;
-    justify-self: center;
+    grid-column: 6;
+    justify-self: start;
     width: 40px;
     height: 40px;
     margin: 0;
@@ -7649,3 +7649,6 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .sync-override-toggle::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform 180ms ease; }
 #syncOverrideButton[aria-checked="true"] .sync-override-toggle { background:#239c92; }
 #syncOverrideButton[aria-checked="true"] .sync-override-toggle::after { transform:translateX(16px); }
+
+/* Brackets and tint identify the automatically selected target. */
+#scopeToggle[data-percent-mode="auto"] { color: #a9ddf7; }

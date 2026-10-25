@@ -29,12 +29,12 @@ const root=path.resolve(__dirname,'..');
   await page.addInitScript(()=>{
    // Exercise the continuous-adapter collector contract; context routing has its own tests.
    globalThis.WMOF_VOSK_CONFIG={contextHandoff:false};
-   globalThis.voskDecoders=[];globalThis.captureCalls=0;
+   globalThis.voskDecoders=[];globalThis.captureCalls=0;globalThis.capturedTracks=[];
    if(navigator.serviceWorker)navigator.serviceWorker.register=async()=>{throw Error('Asset cache disabled in deterministic fixture');};
    globalThis.voskShadows=new WeakMap();const attach=Element.prototype.attachShadow;
    Element.prototype.attachShadow=function(options){const shadow=attach.call(this,options);voskShadows.set(this,shadow);return shadow;};
    const getUserMedia=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-   navigator.mediaDevices.getUserMedia=async constraints=>{captureCalls++;return getUserMedia(constraints);};
+   navigator.mediaDevices.getUserMedia=async constraints=>{captureCalls++;const stream=await getUserMedia(constraints);capturedTracks.push(...stream.getAudioTracks());return stream;};
    globalThis.Vosk={createModel:async()=>({terminate(){},KaldiRecognizer:class {
     constructor(...args){if(args.length!==1)throw Error('Unexpected grammar');this.listeners={};this.tail='';voskDecoders.push(this);}
     on(event,fn){this.listeners[event]=fn;}
@@ -150,6 +150,23 @@ const root=path.resolve(__dirname,'..');
   await page.waitForFunction(()=>document.querySelector('#clockTimer').breakOnly);
   assert.equal(await page.evaluate(()=>captureCalls),tracks,'capture survives break chain UI transitions');
   assert(!requests.some(path=>/VoskGrammarRouter|VoskPhraseListCompiler/.test(path)),'no grammar router loads');
+  // Exercise real browser capture graph replacement without losing the Mic Bar.
+  for(const sleeping of [false,true]){
+   if(sleeping)await page.evaluate(()=>SpeechMenu.sleep());
+   const count=await page.evaluate(()=>captureCalls);
+   await page.evaluate(()=>{
+    globalThis.recoveryVisibility='hidden';
+    Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>recoveryVisibility});
+    document.dispatchEvent(new Event('visibilitychange'));
+    const track=capturedTracks.at(-1);track.stop();track.dispatchEvent(new Event('ended'));
+   });
+   await page.waitForFunction(()=>document.querySelector('#speechMicBar').state==='reconnecting');
+   assert.equal(await page.evaluate(()=>captureCalls),count,'background interruption does not request capture');
+   assert.equal(await page.locator('#speechMicBar').evaluate(e=>e.hidden),false,'Mic Bar stays open');
+   await page.evaluate(()=>{recoveryVisibility='visible';document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('pageshow'));window.dispatchEvent(new Event('focus'));});
+   await page.waitForFunction(({count,sleeping})=>captureCalls===count+1&&SpeechMenu.captureListening&&document.querySelector('#speechMicBar').state===(sleeping?'muted':'listening'),{count,sleeping});
+   assert.equal(await page.evaluate(()=>SpeechMenu.muted),sleeping,'foreground recovery preserves Sleep');
+  }
   assert.deepEqual(errors,[]);
   await page.evaluate(()=>SpeechMenu.stop());
   console.log('PASS Vosk in current UI: persistent capture, Ready handoff, endpoint continuation, shared duration collector and single dispatch, adaptive silence and Sync Override voice/touch recalculation');

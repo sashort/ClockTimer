@@ -29,6 +29,7 @@
 
         setRecords(records,prepared) {
             this.optionalValue = false;
+            this.ignoredPrefix = "";
             this.digitRecords=records.filter(record=>record.digitCounts?.length);
             const compiled = prepared || globalThis.VoskPhraseListCompiler.compileStages(records, this.options);
             this.reportUnsupported(compiled.unsupported);
@@ -103,6 +104,24 @@
 
         async update(hypothesis) {
             let text = normalize(hypothesis);
+            this.ignoredPrefix = "";
+            if (!this.prefix && (this.grammar === "commands" || this.digitRecords.length)) {
+                // Prune only before the earliest declared command/value start.
+                // Never slide into a digit run to manufacture a valid field length.
+                const heads = this.paths.flatMap(path => path.stages[0]?.phrases || []);
+                const vocabulary = this.digitRecords.find(record => record.digitVocabulary)?.digitVocabulary || {};
+                const words = text.split(" ").filter(Boolean);
+                const start = words.findIndex((word, offset) => {
+                    const tail = words.slice(offset).join(" ");
+                    const digitStart=this.digitRecords.length && globalThis.DigitSequence &&
+                        globalThis.DigitSequence.parse(word, vocabulary)!==null;
+                    return digitStart || heads.some(head => begins(tail, head) || begins(head, tail));
+                });
+                if (start > 0) {
+                    this.ignoredPrefix = words.slice(0, start).join(" ");
+                    text = words.slice(start).join(" ");
+                }
+            }
             if(this.digitRecords.length && globalThis.DigitSequence && globalThis.SpeechValueCollector){
                 const vocabulary=this.digitRecords.find(record=>record.digitVocabulary)?.digitVocabulary || {};
                 const counts=unique(this.digitRecords.flatMap(record=>record.digitCounts));
@@ -125,6 +144,7 @@
                         if(digits===null)continue;
                         const state=evaluate(digits);
                         if(state.status!=='valid' || (!match.groups.confirmation && state.canContinue))continue;
+                        if(!match.groups.confirmation && end<words.length && globalThis.DigitSequence.parse(words[end],vocabulary)!==null)continue;
                         await this.project(head);this.text=text;
                         return {transcript:this.transcript,grammar:this.grammar,phrases:this.phrases,stableHead:head,digitState:state};
                     }
@@ -133,18 +153,6 @@
                 if(digits!==null){this.text=text;return {transcript:this.transcript,grammar:this.grammar,phrases:this.phrases,digitState:evaluate(digits)};}
             }
             let stableHead;
-            if (!this.prefix && this.grammar === "commands") {
-                // Locate a literal head before vocabulary routing. This does
-                // not grant a command context or reinterpret a value fragment;
-                // SpeechMenu still validates every resulting segment.
-                const heads = this.paths.flatMap(path => path.stages[0]?.phrases || []);
-                const words = text.split(" ").filter(Boolean);
-                const start = words.findIndex((word, offset) => {
-                    const tail = words.slice(offset).join(" ");
-                    return heads.some(head => begins(tail, head) || begins(head, tail));
-                });
-                if (start > 0) text = words.slice(start).join(" ");
-            }
             // Decoder stages report only their own text. Never deduplicate
             // numbers: "one one" can be a PIN or a legitimate time value.
             for (let iteration = 0; iteration < 16; iteration++) {

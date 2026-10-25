@@ -44,7 +44,7 @@ try{
  for(const resource of Object.values(alternate))resource.locale='xx-XX';
  alternate['speech-patterns'].language.code='xx-XX';alternate['speech-patterns'].language.speechRecognitionLanguage='xx-XX';
  for(const [key,id]of Object.entries(alternate['speech-patterns'].language.speech.commands))alternate['speech-patterns'].language.speech.commands[key]=idMap.get(id);
- for(const key of ['wakePhrase','sleepPhrase','offPhrase'])alternate['speech-patterns'].language.speech[key]=idMap.get(alternate['speech-patterns'].language.speech[key]);
+ for(const key of ['wakePhrase','sleepPhrase'])alternate['speech-patterns'].language.speech[key]=idMap.get(alternate['speech-patterns'].language.speech[key]);
  for(const [key,id]of Object.entries(alternate['speech-patterns'].sourceKeys))alternate['speech-patterns'].sourceKeys[key]=idMap.get(id);
  for(const record of Object.values(alternate['speech-patterns'].patterns))if(record.preprocessorId)record.preprocessorId=idMap.get(record.preprocessorId);
  for(const association of Object.values(alternate.associations.elements)){

@@ -134,3 +134,25 @@ assert.deepEqual(Array.from(cachedRouter.phrases),['wake']);
 cachedRouter.setRecords([{pattern:'^sync off$'}]);
 assert.deepEqual(Array.from(cachedRouter.phrases),['sync off'],'a new command context invalidates the phrase cache');
 console.log('PASS phrase caching follows context changes');
+
+for(const file of ['DigitSequence','SpeechValueCollector'])vm.runInNewContext(fs.readFileSync(new URL(`../${file}.js`,import.meta.url),'utf8'),context);
+const credentialRecord={id:'credentials',atomic:'credentials',digitCounts:[8],digitField:'credentials',digitVocabulary:{zero:'0',one:'1',two:'2',three:'3',four:'4'},pattern:'^(?<credentials>.+)$'};
+const noisyCredentials=new Router({records:[credentialRecord,{pattern:'^cancel$'}],valuePhrases:{digits:['zero','one','two','three','four']},nextRecords:async()=>[{pattern:'^sync off$'}]});
+const credentialText='zero zero four two one two three four';
+const recovered=await noisyCredentials.update('background chatter '+credentialText+' sync off');
+assert.equal(recovered.stableHead,credentialText,'leading junk cannot hide a complete credential field');
+assert.equal(noisyCredentials.ignoredPrefix,'background chatter','discarded text is explicit for sample-aligned handoff');
+console.log('PASS leading unmatched speech retains the full bounded credential field and audio-prefix metadata');
+
+const extraDigit=new Router({records:[credentialRecord,{pattern:'^cancel$'}],valuePhrases:{digits:['zero','one','two','three','four']}});
+assert.equal((await extraDigit.update('background chatter one '+credentialText)).stableHead,undefined,'a ninth digit cannot be discarded to fit an eight-digit login');
+assert.equal(extraDigit.ignoredPrefix,'background chatter','only non-digit noise is discarded');
+
+const firstDigit=new Router({records:[credentialRecord,{pattern:'^cancel$'}],valuePhrases:{digits:['zero','one','two','three','four']}});
+const partialDigit=await firstDigit.update('sync on background chatter zero');
+assert.equal(firstDigit.ignoredPrefix,'sync on background chatter');
+assert.equal(partialDigit.digitState.status,'incomplete','the first digit starts a bounded collector immediately');
+assert.equal(firstDigit.text,'zero','unmatched earlier input is not fed into the credential value');
+const validPrefix=new Router({records:[credentialRecord,{pattern:'^cancel$'}],valuePhrases:{digits:['zero','one','two','three','four']}});
+await validPrefix.update('cancel '+credentialText);
+assert.equal(validPrefix.ignoredPrefix,'','an available command ahead of the digits must not be thrown away as noise');

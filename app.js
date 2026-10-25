@@ -1840,23 +1840,17 @@
                     events;
                 globalThis.WMOFDropInSpeechDebug?.attachPublisher(events, liveTripStream);
 
-                events.addEventListener(
-                    "started",
-                    () => {
-                        if (
-                            liveTripStream
-                                .publishing
-                        ) {
-                            void liveTripStream
-                                .refreshPublisherMicrophone?.();
-                        }
-                    }
-                );
+                const refreshCapture = () => {
+                    if (liveTripStream.publishing) void liveTripStream.refreshPublisherMicrophone?.();
+                };
+                for (const eventName of ["started", "speechCaptureRecovered"])
+                    events.addEventListener(eventName, refreshCapture);
 
                 for (
                     const eventName of [
                         "stopped",
-                        "speechCaptureEnded"
+                        "speechCaptureEnded",
+                        "speechCaptureInterrupted"
                     ]
                 ) {
                     events.addEventListener(
@@ -8822,25 +8816,27 @@
             : "trip";
     }
 
+    function updateScopeTargetLabel(state) {
+        const mode = normalizePercentMode(clockTimer.percentMode);
+        const target = state?.effective_goal_type;
+        const targetLabel = target === "total" ? totalScopeLabel()
+            : target === "standard" ? "Standard" : "Trip";
+        const label = mode === "auto" ? `[${targetLabel}]`
+            : mode === "total" ? totalScopeLabel() : "Trip";
+        scopeToggle.textContent = label;
+        scopeToggle.setAttribute("aria-label", globalThis.WMOFLanguagePack.text(
+            "ecd0c7da-90cb-5248-9723-f38b68114550", {value0: label}));
+    }
+
     function syncScopeUI(persist = false) {
         const actual =
             normalizePercentMode(
                 clockTimer.percentMode
             );
 
-        const label =
-            actual === "total"
-                ? totalScopeLabel()
-                : actual === "auto"
-                    ? "Auto"
-                    : "Trip";
+        updateScopeTargetLabel(clockTimer.getUIState());
 
-        scopeToggle.textContent = label;
         scopeToggle.dataset.percentMode = actual;
-        scopeToggle.setAttribute(
-            "aria-label",
-            globalThis.WMOFLanguagePack.text("ecd0c7da-90cb-5248-9723-f38b68114550", {value0: (label)})
-        );
 
         syncScopeConnectionCloud();
         updateSummaryValues();
@@ -9155,6 +9151,7 @@
 
     function renderClockTimerUIState(state) {
         if (!state?.time_component || !state?.standard_time_component) return false;
+        updateScopeTargetLabel(state);
         const tripStateChanged = app.dataset.tripState !== (state.trip_active ? "running" : "ready");
         if (tripStateChanged) {
             app.classList.add("trip-state-snap");
@@ -23419,11 +23416,11 @@
 
     let microphoneFeedbackEnabled = Boolean(globalThis.SpeechMenu?.started && !globalThis.SpeechMenu?.muted);
     let microphoneFeedbackCompletion=Promise.resolve();
-    function announceMicrophoneState(enabled) {
-        if (microphoneFeedbackEnabled === enabled) return microphoneFeedbackCompletion;
+    function announceMicrophoneState(enabled, {reactivated = false} = {}) {
+        if (microphoneFeedbackEnabled === enabled && !reactivated) return microphoneFeedbackCompletion;
         microphoneFeedbackEnabled = enabled;
         microphoneFeedbackCompletion=microphoneFeedbackCompletion.catch(()=>{}).then(()=>playSemanticSongThenSpeak(enabled ? "setting-on" : "setting-off",
-            announcementText(`messages.voiceFeedback.${enabled ? "microphoneActivated" : "microphoneDeactivated"}`),
+            announcementText(`messages.voiceFeedback.${enabled ? reactivated ? "microphoneReactivated" : "microphoneActivated" : "microphoneDeactivated"}`),
             {song: enabled ? "microphone-activated" : "microphone-deactivated", useSelectedInstrument: false}));
         return microphoneFeedbackCompletion;
     }
@@ -23441,7 +23438,21 @@
                 [announcementText('messages.voiceFeedback.microphoneDeactivated')],audioAnnouncementOutput('setting-off'),()=>active()&&speechGuard())).catch(console.error);
         },60000);
     }
-    window.addEventListener('pagehide',()=>updateMicrophoneReminder(false));
+    let microphoneReturnPending = false;
+    function resumeSleepingMicrophoneReminder() {
+        if (!microphoneReturnPending || document.visibilityState === 'hidden') return;
+        const speech = globalThis.SpeechMenu;
+        if (speech?.started && speech.muted && speech.captureListening) {
+            microphoneReturnPending = false;
+            void globalThis.WMOFActions.handleSpeechRuntimeRecovered();
+        } else if (!speech?.started || !speech.muted) microphoneReturnPending = false;
+    }
+    window.addEventListener('pagehide',()=>{microphoneReturnPending=true;updateMicrophoneReminder(false);});
+    window.addEventListener('pageshow',resumeSleepingMicrophoneReminder);
+    document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState==='hidden'){microphoneReturnPending=true;updateMicrophoneReminder(false);}
+        else resumeSleepingMicrophoneReminder();
+    });
 
     const actions =
         globalThis.WMOFActions;
@@ -23608,10 +23619,6 @@
                 return prepareReadyWorkflow();
             },
 
-            disableSpeechRecognition() {
-                return disableSpeechRecognitionRuntime();
-            },
-
             setSpeechMaster() {
                 const transcript =
                     String(
@@ -23767,6 +23774,27 @@
                         true
                     );
 
+                    return true;
+                }
+            },
+
+            handleSpeechRuntimeRecovered: {
+                metadata: {transaction: false},
+                implementation() {
+                    const muted = Boolean(globalThis.SpeechMenu?.muted);
+                    microphoneReturnPending = false;
+                    updateMicrophoneReminder(false);
+                    const reminderGeneration = microphoneReminderGeneration;
+                    const feedback = announceMicrophoneState(!muted, {reactivated: true});
+                    void feedback.then(() => {
+                        if (reminderGeneration === microphoneReminderGeneration &&
+                            document.visibilityState !== "hidden" &&
+                            globalThis.SpeechMenu?.started && globalThis.SpeechMenu?.muted)
+                            updateMicrophoneReminder(true);
+                    });
+                    setSpeechButtonState(true, muted);
+                    setSpeechLayoutState(true);
+                    queueMicrotask(syncLoginRecognition);
                     return true;
                 }
             },
@@ -27953,10 +27981,7 @@
                             .wakePhrase,
                     sleep:
                         englishSpeech
-                            .sleepPhrase,
-                    off:
-                        englishSpeech
-                            .offPhrase
+                            .sleepPhrase
                 });
             SpeechMenu.refresh();
         }
@@ -27996,6 +28021,8 @@
                 actions
                     .handleSpeechRuntimeStopped()
         );
+
+        SpeechMenu.events.addEventListener("speechCaptureRecovered", () => actions.handleSpeechRuntimeRecovered());
 
         SpeechMenu.events.addEventListener(
             "speechCaptureEnded",
@@ -28194,7 +28221,7 @@
         if (!before) return;
         const action = element.getAttribute("speech-function")?.split(".").at(-1);
         // Runtime transitions announce once for voice, pointer and remote input.
-        if (["sleep", "wake", "disableSpeechRecognition"].includes(action)) return;
+        if (["sleep", "wake"].includes(action)) return;
         const transcript = String(context.transcript || "").trim().toLowerCase();
         if (["openBreakEndMenu", "openShortBreakEndMenu", "openLunchEndMenu"].includes(action) && result !== false && speechBreakPromptState?.hidden &&
             speechBreakPromptState.utteranceId === context.utteranceId && context.isFinal?.() === true && !context.hasContinuation?.()) {
@@ -28258,7 +28285,6 @@
                 case "saveTripSettings": if (!before.startsTrip) add("settingsSaved"); break;
                 case "sleep": if (!before.voice) add("sleeping"); break;
                 case "wake": add("listening"); break;
-                case "disableSpeechRecognition": if (!before.voice) add("off"); break;
                 case "toggleSync":
                     if (before.announcementCount === commandAnnouncementCount && before.sync === after.sync) add("syncAlready", {state: after.sync ? "on" : "off"}); break;
                 case "changeGoalMode":

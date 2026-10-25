@@ -10,6 +10,14 @@ Keep [the stable release reference](stable-release-reference.md) as the exact
 comparison point for future changes. Implementation history and detailed audio
 boundary rules are in [Vosk context handoffs](vosk-context-handoffs.md).
 
+## Microphone controls
+
+There is no voice command to stop recognition or close the Mic Bar. Standalone
+`off` is retired from the system menu and language pack. The microphone button
+still explicitly stops capture. `sleep` keeps capture running for `wake`.
+`speech off` only disables spoken announcements; `sync off` changes Sync. Neither
+stops recognition. Background recovery must continue to preserve that intent.
+
 ## Active architecture
 
 The default backend is local, client-side Vosk with sequential context recognition.
@@ -95,6 +103,21 @@ A complete value may still have continuations. For example, “an hour” can gr
 Speech activity and adaptive silence determine the logical boundary. On timeout,
 the processor assumes no further continuations and drains the decoder before settling
 the remaining input; it does not pretend the last partial was the final result.
+
+Before login, unmatched leading speech must not poison the credential collector.
+The router preserves the earliest available command head or digit start. Unmatched
+command words and chatter before that point may be discarded; available commands
+retain normal eligibility and effects. The first digit begins incomplete bounded
+collection immediately. Extra digits in one continuous run must not be trimmed to
+manufacture an accepted field length.
+
+Discarded prefixes are reconciled against native final word timings before the
+sequential adapter advances the stream boundary. Credential slots begin at their
+actual audio samples, excluding discarded words. Handoff diagnostics include
+`discardedPrefix` text and sample bounds. Following credentials and commands stay
+on the active stream; Sleep, Cancel, authorization and duplicate checks retain
+their existing rules. This primary-transcript resynchronization does not allow
+searching lower-ranked alternatives for otherwise invalid commands.
 
 ## Alternatives and duplicate reconciliation
 
@@ -216,6 +239,34 @@ without a follow-up utterance. Keep source recordings outside Git. For the full-
 benchmark, measure the validated time's planner event relative to an independently
 reviewed speech-end sample; WAV trailing silence, playback end, action completion,
 and announcement completion are different measurements.
+
+## Pending local update: returning from the background
+
+An ended client-owned microphone track is an interruption, not an intentional Off.
+The Mic Bar stays open in Reconnecting. Foreground visibility, pageshow, and focus
+coalesce recovery; capture is not reacquired while the document is hidden. Resume
+a live suspended/interrupted AudioContext, or replace an ended/muted track and its
+capture graph. Keep the existing recognition model, decoder and validated command
+buffer. A partial capture is finalized before the next capture begins.
+
+Readiness is confirmed by PCM delivery from a live, unmuted track before emitting
+`speechCaptureRecovered`. Permission or delivery failure keeps the bar open with
+retry feedback. Explicit Off and pre-login expiry prevent automatic recovery;
+session-generation checks dispose of late capture results. The browser-owned Web
+Speech adapter retains its separate recovery path.
+
+Awake recovery announces “Microphone reactivated.” Sleeping recovery remains asleep
+and announces “Microphone deactivated.” Stop the old reminder timer while that
+announcement plays, then start a fresh 60-second cadence after it finishes. A normal
+return with healthy sleeping capture follows the same announcement/timer reset.
+Visibility/pageshow events are deduplicated; leaving again or waking cancels stale
+reminder scheduling. Drop-In releases the old microphone clone on interruption and
+refreshes it after capture recovers.
+
+`tests/microphone-background-recovery.mjs` covers frame-backed readiness, retained
+decoder/Sleep, event coalescing, permission retry and explicit-Off fencing.
+`tests/app-state-transactions.mjs --mic-feedback --voice-feedback` verifies the
+announcements and that the reminder restarts after speech completion.
 
 ## Configuration and experimental paths
 
