@@ -1017,11 +1017,11 @@
         "audio": [
           {
             "kind": "chime",
-            "name": "setting-on"
+            "name": "scope-change"
           },
           {
             "kind": "speech",
-            "text": "Auto Mode"
+            "text": "Viewing Auto"
           }
         ],
         "dispatches": 0,
@@ -1070,11 +1070,11 @@
         "audio": [
           {
             "kind": "chime",
-            "name": "setting-on"
+            "name": "scope-change"
           },
           {
             "kind": "speech",
-            "text": "Auto Mode"
+            "text": "Viewing Auto"
           }
         ],
         "committed": true,
