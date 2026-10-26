@@ -38,7 +38,9 @@ for(const page of pages){
    const button=w.document.getElementById(id),submenu=w.document.getElementById(button.getAttribute('aria-controls'));
    assert.equal(button.getAttribute('aria-expanded'),'false');assert(submenu.hidden,'Order Filler parent sub-items must start collapsed');
   }
-  for(const id of ['tripListMenuButton','tripProductionFilter','tripLogRangeSelect','tripLogStartDate','tripLogEndDate'])assert(w.document.getElementById('tripLogSubmenu').contains(w.document.getElementById(id)),'Trip Log action and filters belong inside its collapsed submenu');
+  for(const id of ['tripProductionFilter','tripLogRangeSelect','tripLogStartDate','tripLogEndDate'])assert(w.document.getElementById('tripLogSubmenu').contains(w.document.getElementById(id)),'Trip Log action and filters belong inside its collapsed submenu');
+  assert.equal(w.document.getElementById('tripListMenuButton'),null,'no redundant Open Trip Log row');
+  assert.equal(w.document.getElementById('tripLogPinButton').parentElement,w.document.getElementById('tripLogMenuParentButton').parentElement,'pin is beside the parent, outside its submenu');
   assert.equal(w.document.querySelector('#mainMenu details'),null,'menu parents use shared animation, not native details');
   for(const id of ['adminMenuGroup','trainerMenuGroup'])assert.equal(w.document.getElementById(id),null,'landing page owns admin and trainer categories');
   assert.equal(w.document.getElementById('easterEggMenuButton').dataset.menuIcon,'music');

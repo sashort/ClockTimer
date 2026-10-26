@@ -17541,6 +17541,30 @@
         },
         "approvedSolo": "api/audio/instruments/neon-solo-insert.json"
       }
+    },
+    "scope-change": {
+      "bpm": 300,
+      "instrument": "cinematic-pulse-bass",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2/3",
+          "tone": "E2",
+          "length": "2/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "1 1/3",
+          "tone": "D2",
+          "length": "2/3",
+          "dynamic": "p"
+        }
+      ]
     }
   }
 }

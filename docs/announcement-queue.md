@@ -15,3 +15,17 @@ IDs enter announced when the first component starts. Duplicates stay blocked whi
 The margin between consecutive components of the same announcement is 300 ms divided by its speech rate. Switching announcements uses twice the previous announcement's component margin, including when resuming a suspended announcement. Time already spent idle counts toward the margin. The queue rechecks priorities and cancellation after waiting.
 
 Verification: `announcement-priority.mjs`, `announcement-queue.mjs`, `announcement-phases.mjs`, `announcement-pauses.mjs`, `sync-try.mjs`, and `speech-trip-transition.mjs` under `tests/`.
+
+## Scope and range selection
+
+The `range-change` family covers date scopes and the Trip/Auto view modes. Both
+pointer and voice selection announce `Viewing {scope}` once, even when switching
+to Trip/Auto leaves the date filter unchanged. Pointer selection suppresses the
+underlying date-filter announcement and emits feedback after the mode is applied.
+Trip Log filter changes continue to use this same family independently.
+
+Its `scope-change` song uses the existing Cinematic Pulse Bass instrument:
+C2 → E2 → D2 at 300 BPM, each lasting two-thirds of a beat (0.4 seconds plus
+natural release/effect tails). It uses the approved audition's instrument and
+score. Ordinary setting on/off songs remain separate. Unchanged voice selections
+use `setting-unchanged`; reselecting a pointer option produces no duplicate cue.

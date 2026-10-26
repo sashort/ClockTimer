@@ -1826,6 +1826,9 @@
                 sync_enabled: this.#autoSyncTripGoal,
                 sync_override: this.#syncOverride,
                 sync_below_floor: this.syncBelowFloor,
+                sync_override_in_use: this.#started && this.#autoSyncTripGoal && this.#syncOverride &&
+                    this.syncBelowFloor && this.#calculatedGoalSource === "sync" && scope === "trip" &&
+                    Number.isFinite(this.#calculatedTripGoal) && Math.abs(goal-this.#calculatedTripGoal)<1e-9,
                 auto_goal_order: Object.freeze(this.#getPercentageOrder().split("_")),
                 active_break_type: interval?.breakType || null,
                 standard_time_header_text: `${scopeLabel} Standard Time`,
