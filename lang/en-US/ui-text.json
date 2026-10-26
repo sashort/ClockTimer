@@ -6928,8 +6928,13 @@
     },
     "46dea09b-4cc5-50ee-bf99-e944e84b6f59": {
       "id": "46dea09b-4cc5-50ee-bf99-e944e84b6f59",
-      "text": "Available when Sync can calculate a trip goal.",
-      "default": "Available when Sync can calculate a trip goal."
+      "text": "Sync normally keeps the trip goal at or above your manual/default goal. Sync Override allows a calculated goal below that floor. You can change this option at any time; it applies when Sync calculates a goal. Changing it may recalculate your trip goal and remaining time.",
+      "default": "Sync normally keeps the trip goal at or above your manual/default goal. Sync Override allows a calculated goal below that floor. You can change this option at any time; it applies when Sync calculates a goal. Changing it may recalculate your trip goal and remaining time."
+    },
+    "1f8d9e5f-bb50-5bc2-b591-783995c8e0a1": {
+      "id": "1f8d9e5f-bb50-5bc2-b591-783995c8e0a1",
+      "text": "About Sync Override",
+      "default": "About Sync Override"
     }
   }
 }

@@ -2117,6 +2117,7 @@
             if (
                 !mainMenu ||
                 !event?.target ||
+                event.target.closest?.("#syncOverrideButton") ||
                 !mainMenu.contains(
                     event.target
                 )
@@ -2831,7 +2832,6 @@
     );
     const scopeToggle = $("#scopeToggle");
     const scopeConnectionButton = $("#scopeConnectionButton");
-    const tripListMenuButton = $("#tripListMenuButton");
     const tripLogPinButton = $("#tripLogPinButton");
     const tripLogRangeSelect = $("#tripLogRangeSelect");
     const tripLogStartDate = $("#tripLogStartDate");
@@ -3110,7 +3110,14 @@
         const top=viewport?.offsetTop ?? 0, bottom=top+(viewport?.height ?? globalThis.innerHeight);
         const micVisible=speechRecognitionEnabled() && speechMicBar && !speechMicBar.hidden && popoverIsOpen(speechMicBar);
         const micTop=micVisible ? Number(speechMicBar.getSafeTop?.() ?? speechMicBar.getBoundingClientRect().top) : bottom;
-        const safeBottom=Number.isFinite(micTop) ? Math.min(bottom,micTop) : bottom;
+        // The Mic Bar reports visual geometry, including its slide-in transform.
+        // Reserve its settled footprint so login and capture move together rather
+        // than retaining the first off-screen animation frame as the boundary.
+        const transform=micVisible ? getComputedStyle(speechMicBar).transform : "none";
+        const translateY=transform && transform !== "none" && typeof DOMMatrixReadOnly === "function"
+            ? new DOMMatrixReadOnly(transform).m42 : 0;
+        const settledMicTop=micTop-(Number.isFinite(translateY)?translateY:0);
+        const safeBottom=Number.isFinite(settledMicTop) ? Math.min(bottom,settledMicTop) : bottom;
         for(const dialog of [loginDialog,legacyLoginDialog,$("#liveStreamDialog"),$("#userLookupDialog")]){
             dialog.style.setProperty("--login-safe-top",top+"px");
             dialog.style.setProperty("--login-safe-height",Math.max(0,safeBottom-top)+"px");
@@ -7072,10 +7079,10 @@
         } finally {goalChangeFeedbackDepth--;}
         renderSyncGoalsState(); setSyncAnnouncementBaseline(); queueSummaryRefresh();
         let message = announcementText("announcements.syncTry.override", {state:enabled ? "on" : "off"});
-        if (enableSync) message = announcementText("announcements.syncTry.on") + ". " + message;
+        if (enableSync) message += " " + announcementText("announcements.syncTry.on") + ".";
         const goal = currentCalculatedSyncGoal();
         if (Number.isFinite(goal) && !syncGoalMatches(oldGoal,goal))
-            message += " " + announcementText("announcements.syncTry.newTripGoal", {percent:formatSummaryPercent(goal)});
+            message += " " + announcementText("announcements.syncTry.newTripGoal", {percent:formatSummaryPercent(goal).replace(/%$/, "")});
         return confirmSettingChange(message, {previous,next:enabled});
     }
 
@@ -7235,8 +7242,7 @@
         const overrideButton = $("#syncOverrideButton");
         if (overrideButton) {
             overrideButton.setAttribute("aria-checked", String(clockTimer.syncOverride));
-            overrideButton.disabled = getSyncRuntimeState() !== "active";
-            $("#syncOverrideHelp").hidden = !overrideButton.disabled;
+            overrideButton.disabled = false;
         }
 
         const runtimeState =
@@ -8849,6 +8855,14 @@
         }
 
         return actual;
+    }
+
+    function announceScopeSelection(mode, {unchanged = false} = {}) {
+        const label = mode === "total" ? totalScopeLabel()
+            : announcementText(`messages.scope.${mode === "auto" ? "auto" : "trip"}`);
+        return confirmInformationalChange("range-change",
+            announcementText("messages.settings.viewing", {scope:label}),
+            {feedbackSong:unchanged ? "setting-unchanged" : "scope-change"});
     }
 
     function applyScope(mode, persist = true) {
@@ -12057,8 +12071,12 @@
         getDates: () => ({start:tripLogStartDate.value,end:tripLogEndDate.value}),
         onSelect: (value,dates) => {
             if(dates){tripLogStartDate.value=dates.start;tripLogEndDate.value=dates.end;safeStorageSet(STORAGE.customTripLogDates,JSON.stringify(dates));}
+            const previousMode = normalizePercentMode(clockTimer.percentMode);
+            const previousRange = getTripLogRange();
             if (['trip','auto'].includes(value)) applyScope(value);
-            else {setTripLogRange(value);applyScope('total');}
+            else {setTripLogRange(value, {announce:false});applyScope('total');}
+            if (dates || previousMode !== normalizePercentMode(clockTimer.percentMode) || previousRange !== getTripLogRange())
+                announceScopeSelection(normalizePercentMode(clockTimer.percentMode));
         }
     });
 
@@ -12284,25 +12302,6 @@
             preventDefault:
                 true
         });
-
-    tripListMenuButton?.addEventListener(
-        "click",
-        globalThis
-            .WMOFInteractionFunctions
-            .define(
-                "openTripLogMenuClick",
-                () => {
-                    mainMenu
-                        ?.hidePopover?.();
-
-                    return globalThis
-                        .WMOFActions
-                        .openTripLog(
-                            "menu"
-                        );
-                }
-            )
-    );
 
     globalThis
         .WMOFInteractionFunctions
@@ -12603,6 +12602,9 @@
     for(const type of ["muted","unmuted"])globalThis.SpeechMenu?.events?.addEventListener?.(type,()=>queueMicrotask(syncLoginRecognition));
     document.addEventListener("speech-runtime-ready",syncLoginRecognition);
     speechMicBar?.addEventListener("speech-surface-boundary-change",refreshLoginBoundary);
+    for(const type of ["transitionend","transitioncancel"])speechMicBar?.addEventListener(type,event=>{
+        if(event.target===speechMicBar)refreshLoginBoundary();
+    });
     for(const type of ["resize","scroll"])globalThis.visualViewport?.addEventListener(type,refreshLoginBoundary);
     globalThis.addEventListener("resize",refreshLoginBoundary);
     for(const dialog of [loginDialog,legacyLoginDialog,$("#liveStreamDialog"),$("#userLookupDialog")])dialog.addEventListener("opening",refreshLoginBoundary);
@@ -23018,7 +23020,7 @@
 
             void runSemanticAnnouncement(
                 eventName,
-                announcementComponents(audio, feedbackSong || (["goal-change","range-change"].includes(announcement) ? settingChimeOutcome() : announcementSongName(announcement)), chime.perform,
+                announcementComponents(audio, feedbackSong || (announcement === "goal-change" ? settingChimeOutcome() : announcementSongName(announcement)), chime.perform,
                 summary.perform ? spokenResponse : "", output, speechGuard),
                 {
                     exclusive,
@@ -24641,9 +24643,7 @@
                     getTripLogRange();
 
                 if (previousMode === requestedMode && (!requestedRange || requestedRange === previousRange)) {
-                    return requestedRange
-                        ? confirmInformationalChange("range-change", announcementText("messages.settings.viewing", {scope:totalScopeLabel()}), {feedbackSong:"setting-unchanged"})
-                        : confirmSettingChange(announcementText("messages.voiceFeedback.modeAlready", {mode:previousMode}), {previous:previousMode,next:previousMode});
+                    return announceScopeSelection(requestedMode, {unchanged:true});
                 }
                 if (requestedRange) {
                     setTripLogRange(requestedRange, {announce: false});
@@ -24668,39 +24668,7 @@
                     return false;
                 }
 
-                const rangeChanged =
-                    getTripLogRange() !==
-                    previousRange;
-                const modeChanged =
-                    previousMode !==
-                    appliedMode;
-
-                if (requestedRange) {
-                    return confirmInformationalChange("range-change",
-                        announcementText("messages.settings.viewing", {scope: totalScopeLabel()}),
-                        {feedbackSong:settingChimeOutcome({previous:previousMode+":"+previousRange,next:appliedMode+":"+getTripLogRange()})});
-                }
-                if (
-                    !rangeChanged &&
-                    !modeChanged
-                ) {
-                    return true;
-                }
-
-                const label =
-                    appliedMode ===
-                        "total"
-                        ? totalScopeLabel()
-                        : appliedMode
-                            .charAt(0)
-                            .toUpperCase() +
-                            appliedMode
-                                .slice(1);
-
-                return confirmSettingChange(
-                    announcementText("messages.settings.mode", { scope: label }),
-                    {previous:previousMode,next:appliedMode}
-                );
+                return announceScopeSelection(appliedMode);
             },
 
             cycleGoalMode() {
@@ -24728,19 +24696,7 @@
                         next
                     );
 
-                const label =
-                    applied ===
-                        "total"
-                        ? totalScopeLabel()
-                        : applied
-                            .charAt(0)
-                            .toUpperCase() +
-                            applied
-                                .slice(1);
-
-                return confirmSettingChange(
-                    announcementText("messages.settings.mode", { scope: label })
-                );
+                return announceScopeSelection(applied);
             },
 
             readSyncStatus() {
@@ -27489,8 +27445,8 @@
                 startBreak:"#idleBreakButton:enabled, #breakButton:enabled", startShortBreak:"#idleBreakButton:enabled, #breakButton:enabled", startLunch:"#idleBreakButton:enabled, #breakButton:enabled", down:"#breakDownButton:enabled, #downButton:enabled", endBreak:"#breakButton", endShortBreak:"#breakButton", endLunch:"#breakButton",
                 resume:"#downResumeButton",
                 changeGoal:"#goalPercentValue",
-                sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripListMenuButton",
-                hideTripLog:"#tripListMenuButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
+                sync:"#toggleSyncMenuButton,#toggleSyncGoalButton", howLong:"#toggleRenderedTimeButton", when:"#toggleRenderedTimeButton", lockEndTime:"#toggleRenderedTimeButton", showTripLog:"#tripLogMenuParentButton",
+                hideTripLog:"#tripLogMenuParentButton", deferTrip:"#tripDefer", renderedTimeMode:"#toggleRenderedTimeButton",
                 breakChoice:"#breakDialog [data-break-type]", confirm:"#breakDialog [data-break-type]",
                 yes:"#speechBreakConfirmYes", no:"#speechBreakConfirmNo", cancel:globalThis.WMOFLanguagePack.text("fc22edac-745f-58af-bb71-5ad273c14a68"),
                 standardTimeEditor:'#tripSettingsDialog [data-trip-time-field="standard-time"]',

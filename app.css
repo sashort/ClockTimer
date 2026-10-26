@@ -1,4 +1,6 @@
 :root {
+    /* Log surfaces retain this after promotion out of the app into a dialog. */
+    --trip-log-shell-radius: 14px;
     --wm-blue: #0053e2;
     --wm-blue-dark: #001e60;
     --wm-blue-mid: #0053e2;
@@ -43,7 +45,6 @@ button {
     --speech-mic-row-height: 0px;
     --home-clock-preferred-size: 56vw;
     --trip-log-layout-duration: 1000ms;
-    --trip-log-shell-radius: 14px;
 
     width: var(--app-viewport-width, 100vw);
     height: var(--app-viewport-height, 100dvh);
@@ -587,7 +588,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
     font-size: 48px;
     font-weight: 700;
     transform: translateY(0);
-    transition: transform 1000ms ease-in-out;
+    transition: transform 1000ms ease-in-out, visibility 0s;
     will-change: transform;
 }
 
@@ -595,6 +596,9 @@ clock-timer[hide-second-hand]::part(second-hand) {
 .app[data-trip-log-pinned="false"] .trip-log-button:not(.trip-log-floating) {
     visibility: hidden;
     pointer-events: none;
+    /* Keep painting while the app's reserved Log row contracts. */
+    transition: transform var(--trip-log-layout-duration, 1000ms) ease-in-out,
+        visibility 0s var(--trip-log-layout-duration, 1000ms);
 }
 
 html[data-trip-log-startup="unpinned"] .trip-log-button:not(.trip-log-floating) {
@@ -640,6 +644,9 @@ html[data-trip-log-startup="unpinned"] .clock-region > clock-timer {
 }
 
 hamburger-menu.main-menu {
+    /* The wrapper must not paint a square behind its rounded trigger. */
+    background: transparent;
+    box-shadow: none;
     height: 100%;
     align-self: stretch;
     justify-self: start;
@@ -818,10 +825,6 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='7' r='4' fill='black'/%3E%3Cpath d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8H4Z' fill='black'/%3E%3C/svg%3E");
 }
 
-#tripListMenuButton::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='3' width='16' height='18' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M8 8h8M8 12h8M8 16h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='3' width='16' height='18' rx='2' fill='none' stroke='black' stroke-width='2'/%3E%3Cpath d='M8 8h8M8 12h8M8 16h8' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
-}
 
 #tripLogPinButton::before {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 3h6l-1 5 3 3v2h-4v8l-1 1-1-1v-8H7v-2l3-3-1-5Z' fill='black'/%3E%3C/svg%3E");
@@ -4658,8 +4661,19 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .sync-pause-badge::after {content:"";position:absolute;inset:4px;background:linear-gradient(to right,white 0 30%,transparent 30% 70%,white 70%);}
 .sync-paused .sync-pause-badge {opacity:1;transform:scale(1);}
 .trip-menu-group {position:relative;}
+.trip-menu-group > #tripLogSubmenu {grid-column:1 / -1;}
+
 .trip-menu-group:has(> #tripLogSubmenu:not([hidden]))::before {content:"";position:absolute;left:56px;top:10px;bottom:0;width:1px;background:rgb(255 255 255 / 75%);pointer-events:none;}
 .trip-menu-group .trip-log-range-menu,.trip-menu-group .trip-log-date-menu {margin-left:64px;padding-left:0;grid-template-columns:100px minmax(0,1fr);gap:10px;}
+/* Decorative icons do not consume a label/control grid cell. */
+.trip-menu-group .trip-log-range-menu {position:relative;}
+.trip-menu-group .trip-log-range-menu[data-menu-icon]::before {
+    position:absolute;
+    inset-inline-start:-40px;
+    top:50%;
+    transform:translateY(-50%);
+}
+
 .trip-settings-dialog .trip-defer-option,.trip-settings-dialog .trip-productive-option {display:flex;gap:10px;align-items:center;margin:0;padding:4px 0;}
 .trip-settings-dialog .trip-defer-option input,.trip-settings-dialog .trip-productive-option input {width:20px;height:20px;}
 
@@ -7475,6 +7489,21 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
     overflow:auto;
     overscroll-behavior:contain;
 }
+/* Order Filler login aligns with the app's full-width Log and Mic controls. */
+#loginDialog,
+#legacyLoginDialog {
+    width: calc(100vw - 2 * var(--app-document-padding, 8px));
+    max-width: none;
+    transition-property: opacity, top, max-height, width;
+    transition-duration: var(--app-dialog-transition-duration, 250ms),
+        var(--trip-log-layout-duration, 1000ms),
+        var(--trip-log-layout-duration, 1000ms),
+        var(--trip-log-layout-duration, 1000ms);
+    transition-timing-function: linear, ease-in-out, ease-in-out, ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+    #loginDialog, #legacyLoginDialog { transition-duration: 0ms; }
+}
 .login-dialog .login-digit-sequence {gap:clamp(4px,2vw,12px);max-width:100%;}
 .login-dialog .login-digit-sequence input {min-width:0;width:clamp(42px,14vw,64px);}
 .login-dialog .login-legacy-switch {margin-bottom:16px;}
@@ -7571,12 +7600,14 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 100dvh);}
 
 /* Trip summary: three measurements, last/active rows share one column grid. */
-.trip-summary-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:clamp(12px,3.3vw,20px)}
-.trip-summary-table th,.trip-summary-table td{padding:12px 8px;border-bottom:1px solid rgb(255 255 255 / 18%);text-align:right;white-space:nowrap}
+.trip-summary-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:clamp(15px,4.5vw,26px);line-height:1.35}
+.trip-summary-table th,.trip-summary-table td{padding:12px 2px;border-bottom:1px solid rgb(255 255 255 / 18%);text-align:right;white-space:nowrap}
 .trip-summary-table th:first-child{text-align:left;white-space:normal}
-.trip-summary-table thead th{color:var(--wm-blue-light)}
+.trip-summary-table thead th{color:var(--wm-blue-light);font-size:.9em}
 .trip-summary-table [data-trip-summary-row="active"]{background:rgb(37 116 183 / 20%)}
-#tripTransitionSummaryActions{justify-content:center}
+#tripTransitionSummaryActions:not([hidden]){display:grid;grid-template-columns:minmax(0,1fr);width:100%}
+#tripTransitionSummaryOk{width:100%;min-height:56px;font-size:clamp(20px,5vw,28px)}
+.trip-transition-overlay-panel:has(.trip-summary-table){padding:clamp(12px,3vw,24px)}
 #tripTransitionSummaryCancel[hidden]{display:none}
 
 /* Downtime remains subordinate to the existing performance columns. */
@@ -7641,10 +7672,8 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .trip-log-trip.is-break-only .trip-log-menu-actions {color:#fff;}
 
 /* Sync keeps the existing arrow and badge artwork; Override is a separate switch. */
-.sync-override-menu-row { flex-wrap: wrap; }
-#syncOverrideButton { display:flex; align-items:center; justify-content:space-between; gap:1rem; width:100%; }
-#syncOverrideButton:disabled { opacity:.45; }
-#syncOverrideHelp { flex-basis:100%; color:var(--muted, #9ab2c6); }
+.sync-override-menu-row { grid-template-columns:minmax(0,1fr) 42px; }
+#syncOverrideButton { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; }
 .sync-override-toggle { display:inline-block; position:relative; flex:0 0 38px; height:22px; border-radius:12px; background:#425466; }
 .sync-override-toggle::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform 180ms ease; }
 #syncOverrideButton[aria-checked="true"] .sync-override-toggle { background:#239c92; }
@@ -7652,3 +7681,11 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 
 /* Brackets and tint identify the automatically selected target. */
 #scopeToggle[data-percent-mode="auto"] { color: #a9ddf7; }
+
+/* Shared lower-goal marker for Order Filler and Drop-In. */
+.goal-sync-button {position:relative;}
+.sync-override-badge {position:absolute;right:0;bottom:0;width:14px;height:14px;z-index:6;pointer-events:none;filter:drop-shadow(0 0 1px #001e60) drop-shadow(0 0 1px #001e60);}
+.sync-override-badge::before {content:"";position:absolute;inset:3px 1px 1px;background:var(--wm-blue-light,#a9ddf7);clip-path:polygon(0 0,100% 0,50% 100%);}
+.sync-override-badge[hidden] {display:none;}
+/* Preserve network status when a cached lower Sync goal is also being used. */
+.goal-sync-button.sync-override-in-use .sync-offline-cloud {bottom:auto;top:-2px;}

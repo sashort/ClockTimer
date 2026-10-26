@@ -93,8 +93,10 @@ jobs:
           node tests/app-state-transactions.mjs --coordinator-end-trip
           node tests/app-state-transactions.mjs --commands-close
           node tests/app-state-transactions.mjs --sync-availability --voice-feedback
+          node tests/app-state-transactions.mjs --sync-override-feedback --voice-feedback
           node tests/app-state-transactions.mjs --sync-voice
           node tests/app-state-transactions.mjs --auto-selector
+          node tests/app-state-transactions.mjs --scope-feedback --voice-feedback
           node tests/app-state-transactions.mjs --range-permissions
           node tests/app-state-transactions.mjs --voicepad-continuation
           node tests/app-state-transactions.mjs --interval-actions
@@ -155,6 +157,7 @@ jobs:
       - run: node tests/web-speech-login-browser.cjs
       - run: node tests/web-speech-value-collection-browser.cjs
       - run: node tests/login-fullscreen-browser.cjs
+      - run: node tests/order-filler-layout-browser.cjs
       - run: node tests/order-filler-master-touch.cjs
       - run: node tests/diagnostic-speech-audio-test.cjs
       - run: node tests/human-speech-audio-test.cjs

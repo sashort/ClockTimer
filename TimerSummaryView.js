@@ -58,6 +58,14 @@
    const sync=row?.querySelector('.goal-sync-button');
    if(sync)sync.hidden=state.effective_goal_type!=='trip';
   }
+  const syncButton=row?.querySelector('.goal-sync-button');
+  if(syncButton){
+   let badge=syncButton.querySelector(':scope > .sync-override-badge');
+   if(!badge){badge=syncButton.ownerDocument.createElement('span');badge.className='sync-override-badge';badge.setAttribute('aria-hidden','true');syncButton.append(badge);}
+   const usingOverride=state?.sync_override_in_use===true;
+   badge.hidden=!usingOverride;
+   syncButton.classList.toggle('sync-override-in-use',usingOverride);
+  }
   PercentSummaryLayout.attach(row);
   for(const [id,text] of [['standardTimeValue',state?.standard_time_component?.text],['renderedTimeValue',state?.time_component?.text],['currentPercentValue',state?.current_percent_component?.text],['goalPercentValue',state?.goal_component?.text]]){const e=root.querySelector('#'+id);if(e)e.textContent=text||'-';}
   for(const [id,key] of [['standardTimeLabel','standard_time_header_text'],['renderedTimeLabel','time_header_text']]){const e=root.querySelector('#'+id);if(e&&state?.[key])e.textContent=state[key];}

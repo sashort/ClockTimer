@@ -815,6 +815,7 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
         const ids = {
             speechRecognition: "settingsHelpSpeechRecognition",
             syncGoals: "settingsHelpSyncGoals",
+            syncOverride: "settingsHelpSyncOverride",
             tolerance: "settingsHelpTolerance",
             toleranceColor: "settingsHelpTolerance",
             overtimeColor: "settingsHelpOvertime",

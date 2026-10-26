@@ -112,7 +112,7 @@ const root=path.resolve(__dirname,'..');
   await speak('sync on override');await page.evaluate(()=>SpeechMenu.testVoskFinish());
   await page.waitForFunction(()=>document.querySelector('#clockTimer').syncOverride&&document.querySelector('#clockTimer').autoSyncTripGoal);
   assert.equal(await page.locator('#syncOverrideButton').getAttribute('aria-checked'),'true');
-  assert(await page.locator('#syncOverrideButton').isDisabled(),'unavailable Sync leaves override visibly disabled');
+  assert(await page.locator('#syncOverrideButton').isEnabled(),'override remains configurable while Sync is unavailable');
   await page.waitForFunction(()=>!SpeechMenu.commandBufferSnapshot.some(e=>['queued','executing'].includes(e.status))&&WMOFCoordinator.pending.length===0&&WMOFCoordinator.lockCount===0);
   await page.evaluate(()=>{
    globalThis.testSyncFloorSetup=(async()=>{

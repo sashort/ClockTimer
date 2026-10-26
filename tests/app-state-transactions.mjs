@@ -44,7 +44,7 @@ window.fetch=async(url,options={})=>{
  path.endsWith('/trip-editor/')?{tripId,events:structuredClone(stored),settings:structuredClone(stored.find(e=>e.event==='trip.started')?.value||{}),revision:'test-revision'}:
  path.endsWith('/trips/')&&new URL(url,'https://clock.example/').searchParams.get('result')==='active'
     ? {activeTripId: stored.findLast(e=>['trip.started','trip.stopped'].includes(e.event))?.event==='trip.started' ? tripId : null} :
- {tripId, trips:summaryTrips,activeTrip:summaryAssignedTrip,aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}};
+ {tripId, trips:summaryTrips,activeTrip:summaryAssignedTrip,aggregateBreakdown:{production:{tripCount:process.argv.includes('--sync-override-feedback')?1:0,standardTimeMilliseconds:process.argv.includes('--sync-override-feedback')?600000:0,actualTimeMilliseconds:process.argv.includes('--sync-override-feedback')?300000:0,countedTimeMilliseconds:process.argv.includes('--sync-override-feedback')?300000:0},nonProduction:{trips:[]}}};
  return {ok:true,status:200,json:async()=>data,text:async()=>path.endsWith('numberpad.html')?fs.readFileSync(new URL('../numberpad.html',import.meta.url),'utf8'):JSON.stringify(data),clone(){return this;}};
 };
 window.document.write(fs.readFileSync(new URL('../order-filler.html',import.meta.url),'utf8').replace(/<script\b[^>]*\bsrc=[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<link\b[^>]*rel="stylesheet"[^>]*>/gi,''));
@@ -108,7 +108,7 @@ let appSource=fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../a
 // The fixture freezes Date.now for trip boundaries; eliminate audio pauses
 // so its frozen wall clock cannot accumulate an artificial playback backlog.
 if(process.argv.includes('--voice-feedback') || process.argv.includes('--interval-actions')) appSource=appSource.replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;', 'const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;');
-if(process.argv.includes('--pointer-mode') || process.argv.includes('--range-permissions'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
+if(process.argv.includes('--pointer-mode') || process.argv.includes('--range-permissions') || process.argv.includes('--scope-feedback'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 if(process.argv.includes('--mic-feedback'))appSource=appSource.replace('    let microphoneReminderTimer=null,microphoneReminderGeneration=0;', '    let microphoneReminderTimer=null,microphoneReminderGeneration=0;globalThis.testMicrophoneReminder=()=>microphoneReminderTimer;');
 if(process.argv.includes('--exhaustive-values'))appSource=appSource.replace('    document.dispatchEvent(new Event("clocktimer-app-ready"));',`    globalThis.testValueSnapshot=()=>{const p=splitAbsoluteDigits(numberPadState?.pending);return {pending:numberPadState?.pending,date:numberPadState?.pendingDate,meridiem:numberPadState?.meridiem,valid:numberPadValueValid(),value:numberPadState?.mode==='absolute'?(p?absoluteHour24(numberPadState)*3600000+p.minute*60000+p.second*1000:undefined):timeDigitsToMilliseconds(numberPadState?.pending),voice:voiceEntryValue.textContent,touch:numberPadDisplay?.textContent};};
     document.dispatchEvent(new Event("clocktimer-app-ready"));`);
@@ -441,6 +441,8 @@ if(process.argv.includes('--sync-availability')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await window.WMOFActions.toggleSync('on');await settle();
  const menu=window.document.querySelector('#toggleSyncMenuButton');
+ const override=window.document.querySelector('#syncOverrideButton');
+ assert.equal(override.disabled,false,'override is enabled while idle');
  timer.configure({total_goal:'100%'});
  await window.WMOFCoordinator.run('sync-empty-test',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
  assert(timer.hasAggregateData,'successfully loaded zero-trip aggregate is usable');
@@ -450,6 +452,7 @@ if(process.argv.includes('--sync-availability')) {
  const reportSync=async()=>{timer.dispatchEvent(new window.CustomEvent('syncTry',{detail:{source:'test',operation:'sync'}}));await settle();};
  spoken.length=0;await reportSync();
  assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncRuntimeState,'data-unavailable');
+ assert.equal(override.disabled,false,'override remains enabled across Sync runtime states');
  assert.equal(menu.title,'Cannot sync: trip totals are unavailable');
  assert.equal(menu.getAttribute('aria-label'),menu.title);
  assert(spoken.includes('Cannot sync: trip totals are unavailable'));
@@ -459,11 +462,13 @@ if(process.argv.includes('--sync-availability')) {
  timer.calculateTotalGoalRequirements=()=>({tripGoal:null,adjustedTimeElapsed:null});
  spoken.length=0;await reportSync();
  assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncRuntimeState,'time-blocked');
+ assert.equal(override.disabled,false,'override remains enabled across Sync runtime states');
  assert.equal(menu.title,'Not enough time to sync');
  assert(spoken.includes('Not enough time to sync'));delete timer.calculateTotalGoalRequirements;
  Object.defineProperty(timer,'networkStatus',{configurable:true,get:()=> 'offline'});
  timer.dispatchEvent(new window.CustomEvent('networkStatusChanged'));await settle();
  assert.equal(menu.querySelector('.sync-goals-menu-icon').dataset.syncRuntimeState,'offline','offline retains its distinct cloud state');
+ assert.equal(override.disabled,false,'override remains enabled across Sync runtime states');
  delete timer.networkStatus;timer.dispatchEvent(new window.CustomEvent('networkStatusChanged'));await settle();
  assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
  console.log('PASS Sync empty totals, unavailable totals, impossible target, offline cloud state and recovery feedback');
@@ -1226,6 +1231,55 @@ if(process.argv.includes('--commands-close')) {
  assert.equal(window.SpeechMenu.started,true,'closing Commands keeps recognition active');
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  console.log('PASS Commands open/close settles orchestration and re-enables controls');await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--sync-override-feedback')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();await settle();
+ const button=window.document.querySelector('#syncOverrideButton');
+ await window.WMOFActions.toggleSync('off');await settle();
+ for(const enabled of [true,false]) {
+  assert.equal(button.disabled,false,'Sync off cannot disable Override');spoken.length=0;button.click();await settle();
+  assert.equal(timer.syncOverride,enabled);assert.deepEqual(spoken,[`Sync override ${enabled?'on':'off'}.`]);
+ }
+ await timer.start({standardTime:'00:20:00'});await window.WMOFActions.toggleSync('on');await settle();
+ timer.configure({goal_type:'trip',auto_goal:true,trip_goal:'100%',total_goal:'100%',external_standard_time:600000,external_counted_time:300000});await settle();
+ assert.equal(timer.calculatedTripGoal,1,'floor initially applies');spoken.length=0;button.click();await settle();
+ assert.equal(timer.calculatedTripGoal,.8,'enabling override recalculates below the floor');
+ assert.deepEqual(spoken,['Sync override on. New trip goal 80 percent.'],'override state precedes recalculation');
+ spoken.length=0;button.click();await settle();assert.equal(timer.calculatedTripGoal,1);
+ assert.deepEqual(spoken,['Sync override off. New trip goal 100 percent.']);
+ await window.WMOFActions.toggleSync('off');await settle();spoken.length=0;
+ await window.WMOFActions.enableSyncOverride();await settle();
+ assert(spoken.length===1&&spoken[0].startsWith('Sync override on. Sync On.'),'compound command also puts override state first: '+JSON.stringify(spoken));
+ assert.equal(window.document.querySelector('#syncOverrideHelp'),null,'removed disabled explanation is absent');
+ assert.equal(window.document.querySelector('#syncOverrideHelpButton').textContent.trim(),'?');
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS always-enabled Override, state-first confirmations, preserved goal recalculation and question-mark help');await window.happyDOM.close();process.exit(0);
+}
+if(process.argv.includes('--scope-feedback')) {
+ await timer.connect('test','password');await settle();window.document.querySelector('#loginDialog').close();await settle();
+ const select=async(value,label,{pointer=false,unchanged=false,keepRange=false}={})=>{
+  const previousRange=window.WMOFInteractionState.state.tripLogRange;
+  chimes.length=0;spoken.length=0;
+  if(pointer)window.document.querySelector(`#scopeToggleDropdown [data-mode="${value}"]`).click();
+  else {
+   const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,value+' mode',true);await u.digestQueue;await u.segmentBarrier;
+   assert(u.hadCommittedCommand&&!u.digestExecutionFailed,value+' voice mode executes');
+  }
+  await settle();
+  assert.deepEqual(spoken,['Viewing '+label],value+' announces one scope change');
+  assert.deepEqual(chimes,[unchanged?'setting-unchanged':'scope-change'],value+' uses the approved view cue');
+  if(keepRange)assert.equal(window.WMOFInteractionState.state.tripLogRange,previousRange,value+' must not alter the date filter');
+ };
+ await select('day','Day');await select('trip','Trip',{keepRange:true});await select('auto','Auto',{keepRange:true});
+ await select('week','Week');await select('trip','Trip',{pointer:true,keepRange:true});
+ await select('auto','Auto',{pointer:true,keepRange:true});await select('pay-period','Money',{pointer:true});
+ await select('trip','Trip',{pointer:true,keepRange:true});await select('trip','Trip',{unchanged:true,keepRange:true});
+ await select('month','Month');await select('year','Year');await select('auto','Auto',{keepRange:true});
+ chimes.length=0;spoken.length=0;window.document.querySelector('#scopeToggleDropdown [data-mode="auto"]').click();await settle();
+ assert.deepEqual(chimes,[],'reselecting the current pointer option does not duplicate feedback');assert.deepEqual(spoken,[]);
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS scope feedback for voice/pointer Trip, Auto and date scopes, retained filters, unchanged cue and no duplicates');
+ await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--auto-selector')) {
  for(const mode of ['auto','trip','total','auto']) {

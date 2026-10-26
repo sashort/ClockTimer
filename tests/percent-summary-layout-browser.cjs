@@ -37,6 +37,12 @@ const root=path.resolve(__dirname,'..');
      for(let i=1;i<4;i++)assert.ok(layout.cells[i].left>=layout.cells[i-1].right,`${name} columns cannot overlap`);
     }
    }
+   for(const active of [true,false]){
+    await page.evaluate(active=>WMOFTimerSummaryView.render(document,{effective_goal_type:'trip',sync_override_in_use:active,current_percent_component:{text:'109.8%'},goal_component:{text:active?'80%':'110%'}}),active);
+    await page.waitForTimeout(650);
+    assert.equal(await page.locator('.sync-override-badge').evaluate(e=>!e.hidden),active,name+' triangle follows applied override state');
+    if(active)assert(await page.locator('.sync-override-badge').evaluate(e=>{const a=e.getBoundingClientRect(),b=e.parentElement.getBoundingClientRect();return Math.abs(a.right-b.right)<2&&Math.abs(a.bottom-b.bottom)<2;}),name+' triangle sits at lower right');
+   }
    await page.setViewportSize({width:320,height:400});
    await page.evaluate(()=>WMOFTimerSummaryView.render(document,{current_percent_component:{text:'1234.5%'},goal_component:{text:'1234.5%'}}));
    await page.waitForTimeout(650);

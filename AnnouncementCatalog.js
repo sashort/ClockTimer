@@ -237,11 +237,11 @@
         "range-change",
         {
             label:
-                "Range Changed",
+                "View Changed",
             group:
                 "Settings",
             song:
-                "setting-on",
+                "scope-change",
             layers: [
                 "chime",
                 "summary"
