@@ -109,7 +109,8 @@ const server=http.createServer((req,res)=>{
   const viewportSession=await page.context().newCDPSession(page);
   for(const height of [600,844,720,844]){
    // Simulate mobile viewport changes without resizing a fullscreen desktop window.
-   await viewportSession.send("Emulation.setDeviceMetricsOverride",{width:390,height,deviceScaleFactor:1,mobile:true});await page.waitForTimeout(200);
+   await viewportSession.send("Emulation.setDeviceMetricsOverride",{width:390,height,deviceScaleFactor:1,mobile:true});
+   await page.waitForFunction(()=>{const dialog=document.querySelector('#loginDialog'),bar=document.querySelector('#speechMicBar');return !dialog.getAnimations().some(animation=>animation.playState==='running')&&dialog.getBoundingClientRect().bottom<=bar.getSafeTop()+2;});
    const m=await page.evaluate(()=>{const app=document.querySelector('#app'),d=document.querySelector('#loginDialog'),bar=document.querySelector('#speechMicBar');return {height:app.getBoundingClientRect().height,viewport:visualViewport.height,bottom:d.getBoundingClientRect().bottom,safe:bar.getSafeTop(),micWidth:bar.getBoundingClientRect().width,width:visualViewport.width};});
    assert(Math.abs(m.height-m.viewport)<1,JSON.stringify(m));
    assert(m.bottom<=m.safe-7,JSON.stringify(m));
