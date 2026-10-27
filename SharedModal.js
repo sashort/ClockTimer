@@ -67,6 +67,8 @@
             this.register(dialog);
             if(dialog.open){if(this.#open.includes(dialog))return;throw new DOMException('The dialog is already open.','InvalidStateError');}
             this.#dialogs.get(dialog).focus=this.ownerDocument.activeElement;
+            this.#measure();
+            dialog.style.setProperty('--shared-modal-entry-height',this.style.getPropertyValue('--shared-modal-safe-height'));
             this.#open.push(dialog);
             this.append(dialog);dialog.inert=false;
             dialog.style.setProperty('--shared-modal-order',String(this.#open.length));
@@ -100,7 +102,14 @@
             // Opening calls sync before show() so keep newly enrolled children;
             // native close events remove entries through #restore instead.
             const active=this.#open.length>0;
+            const speechSuppressed=this.#open.at(-1)?.dataset.speechInput==='disabled';
             for(const [control,home] of this.#controls){
+                const suppressed=String(speechSuppressed);
+                if(control.dataset.surfaceSuppressed!==suppressed){
+                    control.dataset.surfaceSuppressed=suppressed;
+                    if(speechSuppressed)control.collapseOptions?.();
+                }
+
                 const host=active?this:home.parent;
                 if(control.parentNode===host)continue;
                 const style=this.ownerDocument.defaultView.getComputedStyle(home.parent);
@@ -127,7 +136,7 @@
             const viewport=this.ownerDocument.defaultView.visualViewport;
             const top=viewport?.offsetTop || 0;
             let bottom=top+(viewport?.height || this.ownerDocument.defaultView.innerHeight);
-            for(const control of this.#controls.keys())if(!control.hidden && control.matches(':popover-open')){
+            for(const control of this.#controls.keys())if(!control.hidden && control.dataset.surfaceSuppressed!=='true' && control.matches(':popover-open')){
                 const safe=Number(control.getSafeTop?.());if(Number.isFinite(safe))bottom=Math.min(bottom,safe);
             }
             this.style.setProperty('--shared-modal-safe-height',Math.max(0,bottom-top)+'px');

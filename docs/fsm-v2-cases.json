@@ -1274,6 +1274,33 @@
         "goalBudgetMinutes": 24,
         "goalAccountingUnchanged": true
       }
+    },
+    {
+      "id": "COMPACT-PRESENTATION",
+      "contract": "COMPACT-ACTIONS",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "actionDisplay": "compact",
+        "trip": "running",
+        "logPinned": true
+      },
+      "when": {
+        "startInterval": "down"
+      },
+      "expect": {
+        "left": [
+          "resume",
+          "break",
+          "cancel"
+        ],
+        "right": [
+          "details",
+          "log"
+        ],
+        "clock": "centered horizontally; each rail centered on its axis",
+        "timer": "Down elapsed above clock",
+        "eligibleActionsUnchanged": true
+      }
     }
   ]
 }

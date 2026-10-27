@@ -15,7 +15,7 @@ class SpeechCommandIndex {
             this.#observer.observe(root, {subtree: true, childList: true, attributes: true,
                 attributeFilter: ['speech-noun', 'speech-modal', 'speech-scope', 'popover', 'speech-pattern', 'speech-persist', 'speech-skippable', 'speech-chain-context', 'speech-chain-next', 'speech-command-chain-head', 'speech-chain-surface', 'speech-chain-transition', 'speech-available',
                     'speech-independent', 'speech-slot-key', 'speech-wait-for-slots', 'speech-authorized', 'speech-function', 'speech-preproc', 'speech-preproc-context',
-                    'speech-preproc-field', 'speech-collect', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
+                    'speech-preproc-field', 'speech-collect', 'data-speech-input', 'hidden', 'disabled', 'inert', 'aria-hidden', 'open', 'primed']});
         }
     }
 
@@ -52,7 +52,7 @@ class SpeechCommandIndex {
 
     #register(element) {
         const pattern = element.getAttribute('speech-pattern');
-        if (!pattern || !this.root.contains(element)) {this.#remove(element); return;}
+        if (!pattern || element.closest('[data-speech-input=disabled]') || !this.root.contains(element)) {this.#remove(element); return;}
         const modalMode = element.getAttribute('speech-modal') ?? element.closest('speech-menu')?.getAttribute('speech-modal');
         const reserved = ['SpeechMenu.close', 'SpeechMenu.cancel'].includes(element.getAttribute('speech-function'));
         const scope = reserved ? 'system' : ['system', 'top-level', 'default', ''].includes(modalMode) ? modalMode || 'default'
@@ -3829,6 +3829,12 @@ class SpeechMenu {
         replan = false
     ) {
         if(isFinal)utterance?.releaseFinalResult?.();
+        // Touch-only editors own input until explicitly switched to Voice.
+        if (utterance?.inputSuppressed || globalThis.document?.querySelector?.('dialog[open][data-speech-input="disabled"]')) {
+            if (utterance) utterance.inputSuppressed = true;
+            if (isFinal && SpeechMenu.#utterance === utterance) SpeechMenu.#finishUtterance("touch-only-editor", false);
+            return;
+        }
         if (utterance?.bargeInBarrier) await utterance.bargeInBarrier;
         if (utterance?.segmentBarrier) {
             if (await SpeechMenu.#queueIndependentTail(utterance,transcript,isFinal)) return;

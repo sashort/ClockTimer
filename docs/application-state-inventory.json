@@ -4185,6 +4185,10 @@
     {
       "id": "BAR-ANIMATION-STATUS",
       "requirement": "Existing node movement, failure exit, fitting and reduced motion are implemented. Load/start/end choreography is specified in goal-bar.md but remains proposed; do not infer deployed animation states from the specification."
+    },
+    {
+      "id": "compact-action-presentation",
+      "rule": "Settings Action buttons Full/Compact reuses existing control identities and action eligibility. Left actions/right details and pinned Log center independently on clock. Numberpad is touch-only, takes visual viewport and suppresses mic presentation until close; recognition intent is preserved."
     }
   ],
   "transitionPolicies": [

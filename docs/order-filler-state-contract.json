@@ -2761,6 +2761,7 @@
       "node tests/app-state-transactions.mjs --goal-limit --voice-feedback",
       "node tests/drop-in-page.mjs",
       "node tests/drop-in-view.mjs"
-    ]
+    ],
+    "compactActions": "Full/Compact account preference; same control IDs and existing FSM eligibility. Independent centered action/info rails, shared Compact pause timer. Compact pinned Log uses top-entry animation. Numberpad is touch-only, fullscreen with mic suppressed and restored on close."
   }
 }

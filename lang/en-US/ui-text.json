@@ -654,8 +654,8 @@
     },
     "c8628253-a583-5b80-be6e-c5b8d7be6ad6": {
       "id": "c8628253-a583-5b80-be6e-c5b8d7be6ad6",
-      "text": "Choose Your Goal",
-      "default": "Choose Your Goal"
+      "text": "Goals",
+      "default": "Goals"
     },
     "15031bf1-1272-5267-acd0-3be62ce1ed45": {
       "id": "15031bf1-1272-5267-acd0-3be62ce1ed45",
@@ -6978,8 +6978,38 @@
     },
     "f5fe1d41-f859-4869-ac1e-e361598373fc": {
       "id": "f5fe1d41-f859-4869-ac1e-e361598373fc",
-      "text": "Inferred trip goal: {value}",
-      "default": "Inferred trip goal: {value}"
+      "text": "Inferred Trip Goal: {value}",
+      "default": "Inferred Trip Goal: {value}"
+    },
+    "a63d5a6f-a680-487d-8fdd-6822b629d3eb": {
+      "id": "a63d5a6f-a680-487d-8fdd-6822b629d3eb",
+      "text": "{scope} Goal: {value}",
+      "default": "{scope} Goal: {value}"
+    },
+    "ec17b0a9-6479-4d5d-869e-e8246108dd79": {
+      "id": "ec17b0a9-6479-4d5d-869e-e8246108dd79",
+      "text": "Trip",
+      "default": "Trip"
+    },
+    "1952deaa-76f6-48fa-bb18-83d88c39717d": {
+      "id": "1952deaa-76f6-48fa-bb18-83d88c39717d",
+      "text": "Action buttons",
+      "default": "Action buttons"
+    },
+    "afc4c85f-5629-4762-9414-c66fc6fbfc0b": {
+      "id": "afc4c85f-5629-4762-9414-c66fc6fbfc0b",
+      "text": "Full",
+      "default": "Full"
+    },
+    "8ba6b8cf-ef58-4e94-b1e8-7150e652e3af": {
+      "id": "8ba6b8cf-ef58-4e94-b1e8-7150e652e3af",
+      "text": "Compact",
+      "default": "Compact"
+    },
+    "672c73e3-0abd-428d-bf2d-0c87500fa495": {
+      "id": "672c73e3-0abd-428d-bf2d-0c87500fa495",
+      "text": "Time Remaining",
+      "default": "Time Remaining"
     }
   }
 }

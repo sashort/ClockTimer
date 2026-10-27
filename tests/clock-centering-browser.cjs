@@ -4,10 +4,10 @@ const fixture = require('./order-filler-master-fixture.cjs');
  const f = await fixture({input:'transcript'});
  try {
   const p = f.page;
-  await p.evaluate(async () => {
+  await p.evaluate(() => window.centeringSetup = (async () => {
    await document.querySelector('#clockTimer').connect('test','test');
    document.querySelector('#loginDialog').close();
-  });
+  })());
   async function centered(label) {
    await p.waitForTimeout(2300);
    const geometry = await p.evaluate(() => {
@@ -41,7 +41,8 @@ const fixture = require('./order-filler-master-fixture.cjs');
   await p.evaluate(async()=>{document.querySelector('#app').dataset.tripLogPinned='true';await WMOFActions.handleSpeechRuntimeStopped();await document.querySelector('#clockTimer').start({standardTime:'0:30:00'});});
   for (const interval of [null,'down','lunch']) {
    await p.evaluate(async interval=>{const t=document.querySelector('#clockTimer');if(interval==='lunch')await t.endInterval();if(interval)await t.startInterval(interval);},interval);
-   await centered('active '+(interval||'production'));
+   if(interval==='down')assert.equal(await p.locator('.clock-region').isVisible(),false,'Full Down hides the clock');
+   else await centered('active '+(interval||'production'));
   }
   assert.deepEqual(f.errors,[]);
   console.log('PASS clock centered between controls and Log/Mic/content boundary in both displays, short screens and active intervals');

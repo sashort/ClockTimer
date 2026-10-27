@@ -90,3 +90,12 @@ The main active time value and bar Current now share the same formatter and
 interval annotation in Remaining, Elapsed and End Time. Aggregate selection and
 goal changes cannot change this Current readout. Goal deadlines and budgets remain
 separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.
+
+
+## Compact actions and fullscreen touch numberpad
+
+Settings → Action buttons provides Full (default) / Compact through the account setting `wmof.clock.actionDisplay`. Compact reuses the existing buttons, IDs, handlers and eligibility; it does not introduce another trip FSM. Action buttons stay left, Details and pinned Trip Log right; each column centers independently on the clock axis and animates additions/removals. Down is gray; Log is near-white. Compact retains the Down clock animation and uses the same timer placement for break remaining and Down elapsed. Full Down hides the clock and expands its controls. Compact Log pin does not reserve a footer; open/close uses top-entry geometry without rewriting the saved pin state.
+
+The entire bar still has one action. A single applicable goal now goes directly to its numberpad; Auto with two goals uses the selector. Configured goal labels are larger than inferred trip labels; Trip has only its configured goal. Idle omits inference. Aggregate mode titles include configured percentages, while idle Auto remains `[Auto]`.
+
+Numberpad is touch-only. It registers no speech commands, ignores new transcripts while open, and offers an explicit Switch to Voice button. The mic bar slides out without changing recognition intent, and returns on close only if still active. Shared-modal bounds remove the mic reservation; the editor animates height to occupy the visual viewport. Keypad sizing uses its own content height, with no square intrinsic clear/reset tile forcing overflow. Header, value and bottom keys are tested at normal/short heights.
