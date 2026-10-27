@@ -45,6 +45,11 @@ try {
     normal.configure({rendered_time_type:'calculated_start_time'});
     assert.equal(normal.uiState.time_component.value,601500,'elapsed uses the same authoritative counted time');
     normal.remove();
+    const autoStandard = await fresh();
+    autoStandard.configure({goal_type:'auto',trip_goal:'80%'});
+    assert.equal(autoStandard.getUIState().effective_goal_type,'standard');
+    assert.equal(autoStandard.getUIState().goal_component.value,1,'Auto Standard renders its 100% trip requirement');
+    autoStandard.remove();
 
     const down = await fresh();
     advance(10000);
@@ -225,14 +230,33 @@ try {
     assert.equal(summary.total.countedTimeElapsedMilliseconds,5400000);
     assert.equal(summary.total.renderedTime,'0:10:00');
     assert.equal(summary.trip.allottedTimeMilliseconds,1200000,'Total derives a 20-minute current-trip budget');
+    assert.equal(total.getUIState().goal_component.value,1.2,'manual aggregate mode keeps its aggregate target');
     total.configure({goal_type:'auto',trip_goal:'110%'});
+    assert.equal(total.getUIState().goal_component.value,1.5,'Auto renders 150% trip requirement for the 120% aggregate target');
+    assert.equal(total.getUIState().goal_component.text,'150%');
     assert.equal(total.getSummarySnapshot().scope,'total');
     total.configure({trip_goal:'125%'});
     assert.equal(total.getSummarySnapshot().scope,'total','20-minute Total budget precedes the 24-minute Trip budget despite its higher percentage');
     total.configure({trip_goal:'160%'});
     assert.equal(total.getSummarySnapshot().scope,'trip','18.75-minute Trip budget now precedes the 20-minute Total budget');
+    assert.equal(total.getUIState().goal_component.value,1.6,'Auto Trip renders the selected trip target');
     assert.equal(counted(total),600000,'goal selection does not reset counted time');
+    let latestGoalState;
+    total.addEventListener('uiStateChanged',event=>{latestGoalState=event.detail;});
+    for(const type of ['down','break','lunch']) {
+        await total.startInterval(type,type==='down'?undefined:600000,{breakType:type});
+        for(const [target,required,text] of [['125%',1.88,'188%'],['120%',1.5,'150%']]) {
+            total.configure({trip_goal:'110%',total_goal:target});
+            assert.equal(total.getUIState().effective_goal_type,'total',type+' retains aggregate Auto target');
+            assert.equal(total.getUIState().goal_component.value,required,type+' recalculates trip requirement immediately');
+            assert.equal(latestGoalState.goal_component.text,text,type+' publishes the recalculated display without waiting for time to resume');
+            assert.equal(total.getUIState().total_goal_component.text,target,type+' keeps the overarching editor goal separate');
+        }
+        await total.endInterval();
+        assert.equal(total.getUIState().goal_component.value,1.5,type+' resume preserves the current requirement');
+    }
     total.remove();
+    console.log('PASS goal changes refresh Auto requirement during Down, Break and Lunch and after resume');
     console.log('PASS counted accounting: delayed/repeated ticks, no visual rings, pauses, approvals, cancel, start edits, stop/reset, early break, and Total goal');
 }
 finally {

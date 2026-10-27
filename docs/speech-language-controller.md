@@ -50,3 +50,10 @@ When adding a language, register its own contract and generated cases through it
 language manifest. Do not add locale branches to the controller, Vosk router,
 SpeechMenu or app value collectors. New accepted forms must be provided by the
 locale parser/contract and pass the parity suite before deployment.
+
+Goal parsing and the UI goal limit are separate contracts. The controller can
+parse a valid positive percentage above 150; the shared app goal setter/pad then
+caps user entry to 150, updates the display and emits localized correction feedback.
+Do not truncate the grammar vocabulary to enforce this UI rule, and do not cap
+calculated inferred trip requirements. Labels, captions and number/time formatting
+are presentation data; opening a node editor must use its configured goal value.

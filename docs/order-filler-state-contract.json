@@ -116,6 +116,64 @@
         "simulation"
       ],
       "notes": "Current implementation explicitly declares debug. No missing-mode fallback. Production and Simulation are reserved future modes, not enabled runtime options. Simulation behavior is unspecified."
+    },
+    "percentageDisplay": {
+      "source": "app.dataset.percentageDisplay / applyPercentageDisplay()",
+      "values": [
+        "classic",
+        "bar"
+      ]
+    },
+    "goalBarContext": {
+      "source": "getGoalBarSnapshot().active / break_only",
+      "values": [
+        "idle",
+        "active",
+        "break-only"
+      ]
+    },
+    "goalBarFailures": {
+      "source": "getGoalBarSnapshot().nodes[].failed / all_failed",
+      "values": [
+        "none",
+        "some",
+        "all"
+      ]
+    },
+    "goalBarLeftCompression": {
+      "source": "goal-bar-svg.dataset.compressedLeft",
+      "values": [
+        "hidden",
+        "visible"
+      ]
+    },
+    "goalBarRightCompression": {
+      "source": "goal-bar-svg.dataset.compressedRight",
+      "values": [
+        "hidden",
+        "visible"
+      ]
+    },
+    "goalSelectorChoices": {
+      "source": "openAutoGoalDialog({choices})",
+      "values": [
+        "normal",
+        "failed-subset"
+      ]
+    },
+    "mainStandardAvailability": {
+      "source": "standard_time_component / standard_time_header_text",
+      "values": [
+        "trip",
+        "unavailable"
+      ]
+    },
+    "goalInputLimit": {
+      "source": "setGoalPercentValue() / commitNumberPad()",
+      "values": [
+        "within-limit",
+        "capped"
+      ]
     }
   },
   "invariants": [
@@ -141,6 +199,52 @@
       "id": "AUTO-DEFAULTS",
       "requirement": "Unspecified Total is Day and unspecified goals are 100%. Touch and voice can enter Auto without any setup selector or goal editor.",
       "evidence": "node tests/order-filler-state-contract.mjs"
+    },
+    {
+      "id": "MAIN-STANDARD-TRIP",
+      "requirement": "Main standard_time_component is trip-only and its label is Standard Time in every scope. Header edit remains available during a normal active trip, including Down/Break/Lunch; standalone breaks have no standard. Aggregate accounting is unchanged.",
+      "evidence": "node tests/goal-bar-interactions-browser.cjs"
+    },
+    {
+      "id": "BAR-TIME-BASES",
+      "requirement": "Goal-bar Remaining = trip standard minus node counted position. Standard is 0:00 at 100%; Current is 0:00 at counted trip standard. Elapsed uses counted trip time, without prior aggregate elapsed history. Current End Time retains the existing deadline readout.",
+      "evidence": "node tests/goal-bar.mjs"
+    },
+    {
+      "id": "BAR-CONFIGURED-INFERRED",
+      "requirement": "Idle nodes use configured goals. Active aggregate nodes use inferred current-trip requirements. Every goal editor edits configured non-inferred values; Standard edits time, not 100%.",
+      "evidence": "node tests/goal-bar-interactions-browser.cjs"
+    },
+    {
+      "id": "BAR-FAILURE-COLOR",
+      "requirement": "Missed labels disappear and goals exit right; all failed retains final goal at right on a zero-based scale. Elapsed color occupies the right segment; all-failed Overtime runs from Current to final failed goal. Down uses its configured color; Break/Lunch colors do not replace productive bar colors.",
+      "evidence": "node tests/goal-bar-browser.cjs"
+    },
+    {
+      "id": "BAR-OPAQUE-GEOMETRY",
+      "requirement": "Circles are opaque and packed using radius plus half each computed stroke width. Borders touch without overlap; miss pulses expand inward. Ticks travel with nodes. Labels have independent collision packing and leaders. Times/percentages share preferred 16px sizing.",
+      "evidence": "node tests/goal-bar-browser.cjs"
+    },
+    {
+      "id": "BAR-SHARED-ACTION",
+      "requirement": "Circle, time, percentage, caption and name share one touch/click/keyboard action. Right triangle opens a single failed editor directly, or a configurable selector for multiple failures. Selector has no entry-origin memory; ordinary label opening supplies normal choices again.",
+      "evidence": "node tests/goal-bar-interactions-browser.cjs"
+    },
+    {
+      "id": "GOAL-CAP-FIRST",
+      "requirement": "Above-150 user goal input becomes 150 before UI feedback. Correction sentence precedes recalculation and later chain announcements. Speech-passive notice never takes command ownership; audio batching does not serialize independent command slots.",
+      "evidence": "node tests/app-state-transactions.mjs --goal-limit --voice-feedback"
+    },
+    {
+      "id": "BAR-OBSERVER-PERMISSIONS",
+      "requirement": "Drop-In shares rendering and configured-goal selection. Observer permissions remain unchanged; publisher Standard Time is read-only. Raw configured publisher attributes take precedence over inferred UI goal components.",
+      "evidence": "node tests/drop-in-page.mjs"
+    },
+    {
+      "id": "BAR-ANIMATION-STATUS",
+      "requirement": "Existing node movement, failure exit, fitting and reduced motion are implemented. Load/start/end choreography is specified in goal-bar.md but remains proposed; do not infer deployed animation states from the specification.",
+      "evidence": "node tests/fsm-reference.mjs",
+      "verificationScope": "Documentation status and parity only; lifecycle choreography is proposed, not runtime evidence."
     }
   ],
   "cases": [
@@ -2617,5 +2721,31 @@
     "editor.mode": "editorKind",
     "editor.source": "editorField",
     "login.phase": "login"
+  },
+  "presentationRevision": {
+    "date": "2026-10-27",
+    "deployment": "Local working changes, not a production-version claim",
+    "implemented": [
+      "trip-only Standard Time",
+      "Classic / Goal bar preference",
+      "idle configured / active inferred goal nodes",
+      "Standard-zero Remaining and trip-counted Elapsed",
+      "failed-goal color/geometry/triangles",
+      "configurable selector and shared hit targets",
+      "150 percent user-input cap with passive notice",
+      "idle Auto label and clock centering"
+    ],
+    "proposed": [
+      "cold-load/start/end animation choreography"
+    ],
+    "runtimeEvidence": [
+      "node tests/goal-bar.mjs",
+      "node tests/goal-bar-browser.cjs",
+      "node tests/goal-bar-interactions-browser.cjs",
+      "node tests/clock-centering-browser.cjs",
+      "node tests/app-state-transactions.mjs --goal-limit --voice-feedback",
+      "node tests/drop-in-page.mjs",
+      "node tests/drop-in-view.mjs"
+    ]
   }
 }

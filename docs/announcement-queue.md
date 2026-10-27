@@ -29,3 +29,12 @@ C2 → E2 → D2 at 300 BPM, each lasting two-thirds of a beat (0.4 seconds plus
 natural release/effect tails). It uses the approved audition's instrument and
 score. Ordinary setting on/off songs remain separate. Unchanged voice selections
 use `setting-unchanged`; reselecting a pointer option produces no duplicate cue.
+
+## Goal limit correction
+
+Goal input above 150% is clamped before feedback. A `goal-limit` batch holds audio
+while scope totals settle; the correction and its recalculation feedback use
+priority 1000 so the cap sentence precedes later chain announcements. The batch
+only holds audio dispatch. Independent command slots continue executing. The
+notice is speech-passive and does not become an active command surface. See
+[goal-bar.md](goal-bar.md).

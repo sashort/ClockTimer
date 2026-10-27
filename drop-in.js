@@ -93,6 +93,17 @@
         }
         updateModeButton();renderSettingSources(record);
     }
+    document.querySelector('.percent-summary')?.addEventListener('goal-bar-edit',event=>{
+        const scope=event.detail?.scope;
+        if(scope==='current'){const control=$('toggleRenderedTimeButton');if(!control.disabled)control.click();return;}
+        if(busy||!permission(64))return;
+        if(scope==='standard')return; // Publisher Standard Time is read-only in Drop-In.
+        if(scope==='failed'){
+            const choices=(view.displayState?.goal_bar?.nodes||[]).filter(node=>node.failed).map(node=>node.id);
+            if(choices.length===1){if(choices[0]!=='standard')openGoal(choices[0]);}
+            else if(choices.length>1)openGoalSelector({choices});
+        }else if(['trip','total'].includes(scope))openGoal(scope);
+    });
     function updateModeButton() {
         const mode=$('liveStreamViewMode'),button=$('scopeToggle'),mirrored=mode.value==='user';
         const label=document.createElement('span');label.className='mode-button-label';label.textContent=mirrored && !view.userId ? text('b11c3a59-8432-515c-b361-acabaf1e7a88') : mirrored
@@ -185,17 +196,30 @@
     const configuredGoal=scope=>{
         const custom=currentSettings(),config=custom.settingsSource==='default'?preferences.defaults.view:custom.custom.view,override=!custom.mirror&&config[scope==='total'?'totalGoal':'tripGoal'];
         if(override && override!=='mirror')return Number(override);
+        const attributes=view.snapshot?.viewData?.model?.attributes;
+        const raw=Array.isArray(attributes)?attributes.find(([name])=>name===(scope==='total'?'total-goal':'trip-goal'))?.[1]:undefined;
+        const configured=typeof raw==='string'?(raw.trim().endsWith('%')?parseFloat(raw):Number(raw)*100):NaN;
+        if(Number.isFinite(configured)&&configured>0)return configured;
         return Number(goalNumber(view.snapshot?.uiState?.[scope==='total'?'total_goal_component':'trip_goal_component']))||100;
     };
     const goalLabel=scope=>{const selected=$('liveStreamViewMode').value;const range=['user','auto','trip'].includes(selected)?view.snapshot?.viewData?.range||'week':selected;return $('liveStreamViewMode').querySelector('option[value="'+(scope==='trip'?'trip':range)+'"]')?.textContent||'-';};
     const openGoal=scope=>{if(!permission(64)||!goalPad)return;void goalPad.open(scope,configuredGoal(scope),goalLabel(scope)).catch(error=>status(error.message));};
+    function openGoalSelector({choices=['trip','total']}={}) {
+        const offered=new Set(choices),dialog=$('autoGoalDialog');
+        for(const button of dialog.querySelectorAll('[data-auto-goal-scope]')){
+            const scope=button.dataset.autoGoalScope;button.hidden=!offered.has(scope);button.disabled=scope==='standard';
+            if(scope==='standard'){$('autoStandardTimeValue').textContent=view.displayState?.standard_time_component?.text||'---';}
+            else {button.querySelector('strong').textContent=configuredGoal(scope)+'%';button.querySelector('span').textContent=goalLabel(scope);}
+        }
+        dialog.showModal();
+    }
     $('goalPercentValue').addEventListener('click',()=>{
         if(!permission(64))return;
         const mode=$('liveStreamViewMode').value==='user'?view.snapshot?.viewData?.mode:$('liveStreamViewMode').value;
-        if(mode==='auto'){$('autoTripGoalValue').textContent=configuredGoal('trip')+'%';$('autoTotalGoalValue').textContent=configuredGoal('total')+'%';$('autoGoalDialog').showModal();}
+        if(mode==='auto')openGoalSelector();
         else openGoal(['trip','user'].includes(mode)?'trip':'total');
     });
-    for(const button of $('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]'))button.addEventListener('click',()=>{$('autoGoalDialog').close();openGoal(button.dataset.autoGoalScope);});
+    for(const button of $('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]'))button.addEventListener('click',()=>{if(button.hidden||button.disabled)return;$('autoGoalDialog').close();openGoal(button.dataset.autoGoalScope);});
     $('autoGoalDialog').querySelector('[data-close-dialog]').addEventListener('click',()=>$('autoGoalDialog').close());
     timeMenu=globalThis.WMOFModeMenu.bind($('toggleRenderedTimeButton'),{getValue:()=>$('liveStreamViewTime').value,
         extraOptions:[['user','b11c3a59-8432-515c-b361-acabaf1e7a88']],

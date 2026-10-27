@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
+import {createRequire} from 'node:module';
 const root=new URL('../',import.meta.url);
 const read=file=>fs.readFileSync(new URL(file,root),'utf8');
 const model=JSON.parse(read('docs/mainline-fsm-draft.json'));
 const html=read('docs/mainline-fsm-draft.html');
 const embedded=JSON.parse(html.match(/<script id="fsm-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
 assert.deepEqual(embedded,model,'Interactive graph must embed the exact machine-readable reference');
+const goalEditorSVG=createRequire(import.meta.url)('../scripts/goal-editor-fsm-svg.cjs');assert.equal(read('docs/goal-display-fsm.svg'),goalEditorSVG(model),'Focused goal/editor SVG must match the current working states');
 const ids=new Set();
 for(const edge of model.transitions){
  assert(!ids.has(edge.id),'Stable transition IDs are unique: '+edge.id);ids.add(edge.id);

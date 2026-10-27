@@ -1,0 +1,44 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {Window} from 'happy-dom';
+const window=new Window({url:'https://clock.example/'});
+window.__testTime=Date.parse('2026-09-18T16:00:00Z');
+window.eval(`const RealTestDate=Date;window.Date=class extends RealTestDate {constructor(...args){super(...(args.length?args:[window.__testTime]));}static now(){return window.__testTime;}};`);
+const css=window.CSS;css.registerProperty=()=>{};Object.defineProperty(window,'CSS',{value:css});
+Object.defineProperty(window,'AbortController',{value:globalThis.AbortController});Object.defineProperty(window,'AbortSignal',{value:globalThis.AbortSignal});
+window.Element.prototype.animate=()=>({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return {progress:1}}}});
+let standard=2160000,counted=2160000,id=1;
+const empty={tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0};
+window.fetch=async(url,options={})=>{
+ const path=new URL(url,'https://clock.example/').pathname;
+ const data=path.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2},calendars:[]}:path.endsWith('/trip-events/')?{eventId:id++}:{tripId:1,aggregateBreakdown:{production:{...empty,tripCount:1,standardTimeMilliseconds:standard,actualTimeMilliseconds:counted,countedTimeMilliseconds:counted},nonProduction:{trips:[]}}};
+ return {ok:true,status:200,json:async()=>({...data,accepted:true}),clone(){return this;}};
+};
+for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+const c=window.document.createElement('clock-timer');window.document.body.append(c);
+await c.connect('test','test');
+c.configure({goal_type:'auto',trip_goal:'110%',total_goal:'110%',auto_goal:false});
+await c.calculateTripTotals('2026-09-01T04:00:00Z','2026-09-19T03:59:59.999Z');
+c.setAttribute('goal-bar','');
+const idle=c.getUIState().goal_bar;assert.equal(idle.active,false);assert.deepEqual(Array.from(idle.nodes,n=>Number(n.percent.toFixed(6))),[100,110,110]);assert.equal(idle.scale_min,0);assert(Math.abs(idle.scale_max-110)<1e-9);assert(idle.nodes.every(n=>n.time===null&&!n.failed&&!n.current));
+await c.start({standardTime:'0:30:00'});window.__testTime+=1200000;c.setAttribute('goal-bar','');
+let state=c.getUIState(),bar=state.goal_bar;assert.equal(bar.available,true);
+assert.equal(bar.nodes.find(n=>n.id==='total').percent,125,'Day 110% infers 125% trip requirement');
+assert.deepEqual(Array.from(bar.nodes,n=>Number(n.percent.toFixed(6))),[100,110,125,150]);
+assert.deepEqual(Array.from(bar.nodes,n=>n.time),['0:00:00','0:02:43','0:06:00','0:10:00']);
+for(const mode of ['elapsed','calculated-end','remaining']){
+ c.renderedTimeMode=mode;state=c.getUIState();bar=state.goal_bar;
+ assert.equal(bar.nodes.find(n=>n.current).time,mode==='remaining'?'0:10:00':mode==='elapsed'?'0:20:00':state.time_component.text,'Current uses Standard remaining or existing '+mode+' readout');
+ if(mode==='elapsed')assert.equal(bar.nodes.find(n=>n.id==='standard').time,'0:30:00','Standard elapsed is trip standard, without aggregate history');
+ assert(bar.nodes.every(n=>typeof n.time==='string'&&n.time.length>0),'all '+mode+' positions have a time');
+}
+await c.startInterval('down');window.__testTime+=180000;
+state=c.getUIState();assert.equal(state.goal_bar.down,true);assert.equal(state.goal_bar.nodes.find(n=>n.current).percent,150,'Down does not advance counted percentage');
+c.configure({total_goal:'115%'});state=c.getUIState();assert.notEqual(state.goal_bar.nodes.find(n=>n.id==='total').percent,125,'goal edits recalculate during Down');
+await c.endInterval();window.__testTime+=600000;
+state=c.getUIState();assert.equal(state.goal_bar.nodes.find(n=>n.current).percent,100);assert.equal(state.goal_bar.nodes.find(n=>n.current).time,'0:00:00');assert.equal(state.goal_bar.nodes.find(n=>n.id==='standard').time,'0:00:00','Standard is always zero remaining');
+c.renderedTimeMode='elapsed';state=c.getUIState();assert.equal(state.goal_bar.nodes.find(n=>n.current).time,'0:30:00');assert.equal(state.goal_bar.nodes.find(n=>n.id==='standard').time,'0:30:00','Current and Standard elapsed coincide at 100%');c.renderedTimeMode='remaining';
+window.__testTime+=600000;c.configure({goal_type:'trip',trip_goal:'110%'});
+bar=c.getUIState().goal_bar;assert.equal(bar.all_failed,true);assert.equal(bar.phase,'overtime');
+await c.stop();const ended=c.getUIState().goal_bar;assert.equal(ended.active,false);assert(ended.nodes.every(n=>n.time===null&&!n.failed&&!n.current),'ending restores configured nodes without stale failure/time state');assert.deepEqual(Array.from(ended.nodes,n=>Number(n.percent.toFixed(6))),[100,110,115]);
+c.remove();await window.happyDOM.close();console.log('PASS inferred nodes, counted positions, all display modes, paused goal edits and all-failed overtime');

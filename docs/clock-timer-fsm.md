@@ -4,7 +4,7 @@
 
 Use the [searchable state map](application-state-inventory.html) and its
 [machine-readable inventory](application-state-inventory.json) for enumeration.
-The map currently records 116 regions with 448 named values, 32 surface types
+The map currently records 126 regions with 470 named values, 33 surface types
 with four lifecycle states each, nine aliases for useful combined states, and
 11 explicitly Debug-only manual-trip workflow entries. These are vocabulary
 counts, **not** the number of unique reachable application states or test cases.
@@ -176,7 +176,7 @@ The reconciliation inventories every one of the 281 intervening commits from
 reversions and tests. The current login changes are identified as working changes.
 The latest separate approved-model update, `1020a029`, is recorded independently.
 
-Eight structured `v2_contracts` cover speech planning, recognizer routing,
+Ten structured `v2_contracts` now cover speech planning, recognizer routing,
 operation ownership and UI lockouts, breaks and Down, range/Sync reads,
 replay/rendering, standalone settings, and authentication. Stable state and edge
 IDs are retained; superseded inputs are retired rather than silently reused.
@@ -277,6 +277,28 @@ private method references because JavaScript cannot access `#methods` through
 bracket notation. Missing handlers throw immediately. States with identical
 behavior deliberately share a handler; no full cross product of unrelated flags
 is generated.
+
+## Current presentation and editor addendum, 27 October 2026
+
+The [goal-bar contract](goal-bar.md) and [today’s change audit](2026-10-27-ui-changes.md)
+are the current rules for presentation and goal editing. The working FSM adds
+`GOAL-SELECT` and `GOAL-PERCENT`, guarded header/node/triangle edges, two structured
+contracts, and fourteen v2 vectors. `GOAL-DISPLAY` covers implemented local behavior;
+`GOAL-BAR-LIFECYCLE-ANIMATION` is explicitly proposed. No production deployment or
+new graph approval is implied. The previous commit reconciliation remains a
+historical audit through 16 October, not an audit of uncommitted working changes.
+
+Presentation mode, goal failure/compression state and selector configuration are
+orthogonal to trip phase. Numerical percentages, time strings and configured
+choice lists are payload, not a Cartesian expansion of focused-surface states.
+The passive goal-limit notice is a registered surface but never command focus.
+Main Standard Time is always trip-only; aggregate mode does not disable its editor.
+
+The shared inventory includes Classic/Bar mode, idle/active/break-only projection,
+failure set, left/right triangle visibility, selector choice class, Standard Time
+availability and input-limit status. Its generated HTML embeds the same inventory
+and coupled-state contract. Stable graph IDs are preserved; the separately
+approved graph points to this addendum without changing its historical approval.
 
 ## Goals and percentage ordering
 
@@ -546,3 +568,12 @@ selector and compares computed New Trip/Start Break typography across viewports.
 The Auto selector displays its current target in brackets, such as `[Trip]`,
 `[Week]`, or `[Standard]`, with a light-blue tint. It refreshes with summary
 updates as the active goal changes; the configured mode remains Auto.
+
+Idle Auto renders `[Auto]` until an active production trip has a target.
+The optional shared goal-bar projection and its geometry, failure states, input
+limit and time semantics are documented in [goal-bar.md](goal-bar.md).
+
+The main `standard_time_component` always represents the trip, never the selected
+aggregate. `standard_time_header_text` is “Standard Time” in every scope. The
+main Standard Time edit action remains available throughout an active production
+trip, including Down/Break/Lunch; aggregate selection is not an edit guard.

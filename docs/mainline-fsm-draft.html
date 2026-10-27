@@ -5,7 +5,7 @@
 .gesture-menu{position:absolute;top:70px;left:18px;z-index:10;width:min(390px,calc(100vw - 36px));padding:18px;background:white;border:1px solid #bccedd;border-radius:10px;box-shadow:0 8px 24px #18314925}.gesture-menu h2{font-size:17px;margin:0 0 10px}.gesture-menu dl{margin:0}.gesture-menu dt{font-weight:700;margin-top:8px}.gesture-menu dd{margin:2px 0 8px;font-size:13px}.test-dot{width:11px;height:11px;border-radius:50%;display:inline-block}.test-control{width:100%;padding:6px;margin:5px 0}.test-evidence{width:100%;min-height:75px;font:inherit;padding:8px;border:1px solid #bccedd;border-radius:6px}.status-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px}.status-legend span{display:flex;align-items:center;gap:5px}
 @media(max-width:950px){.layout{grid-template-columns:1fr;height:auto;min-height:0}.map{height:68vh;min-height:510px}.sidebar{max-height:60vh;border-left:0;border-top:1px solid #ccd9e4}.guide-grid{grid-template-columns:1fr}.toolbar{gap:4px}header{padding:12px 16px}h1{font-size:20px}}@media print{header,nav,.toolbar,.help,.sidebar{display:none}.layout{display:block;height:950px}.map{height:950px}.guide{break-before:page}.guide-grid{grid-template-columns:1fr}}
 pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:top}.audio-policy small{line-height:1.4}hr{border:0;border-top:1px solid #ddd}</style></head><body>
-<header><button id="gestureToggle" aria-label="Show gestures" aria-expanded="false" aria-controls="gestureMenu" style="font-size:24px;line-height:1">☰</button><div><h1>ClockTimer · Mainline FSM <span class="draft">DRAFT · 16 Oct 2026</span></h1><p class="subtitle">Focus + trip phase · a touch and pointer controlled SVG reference</p></div><div class="wide"><div class="status-legend"><span><i class="test-dot" style="background:#198754"></i>Passed</span><span><i class="test-dot" style="background:#c83545"></i>Failed</span><span><i class="test-dot" style="background:#7b8794"></i>Untested</span></div><span class="muted">Implementation reconciliation: 281 commits · version 2 test contracts · 16 Oct 2026</span></div></header>
+<header><button id="gestureToggle" aria-label="Show gestures" aria-expanded="false" aria-controls="gestureMenu" style="font-size:24px;line-height:1">☰</button><div><h1>ClockTimer · Mainline FSM <span class="draft">DRAFT · 27 Oct 2026</span></h1><p class="subtitle">Focus + trip phase · a touch and pointer controlled SVG reference</p></div><div class="wide"><div class="status-legend"><span><i class="test-dot" style="background:#198754"></i>Passed</span><span><i class="test-dot" style="background:#c83545"></i>Failed</span><span><i class="test-dot" style="background:#7b8794"></i>Untested</span></div><span class="muted">Historical reconciliation: 281 commits through 16 Oct 2026 · local UI/goal addendum 27 Oct 2026</span></div></header>
 <section id="gestureMenu" class="gesture-menu" hidden aria-label="Gesture guide"><h2>Pointer and touch gestures</h2><dl><dt>Rotate</dt><dd>Pointer: drag the diagram. Touch: drag with one finger.</dd><dt>Zoom</dt><dd>Pointer: scroll the wheel. Touch: pinch with two fingers.</dd><dt>Pan</dt><dd>Pointer: Shift-drag or right-drag. Touch: move two fingers together.</dd><dt>Inspect</dt><dd>Click or tap a state or edge.</dd><dt>Expand / collapse speech</dt><dd>Click or tap the small + / − box on a voice transition.</dd><dt>Restore the view</dt><dd>Use Reset view. Flat view removes perspective.</dd></dl></section><nav id="groups" aria-label="FSM mode groups"></nav>
 <nav id="transitionFilters" aria-label="Transition filters"><span style="align-self:center">Show transitions:</span><label><input type="checkbox" data-transition-mode="pointer" checked> Pointer</label><label><input type="checkbox" data-transition-mode="voice" checked> Voice</label><label><input type="checkbox" data-transition-mode="failure" checked> Persistence rollback</label><label><input type="checkbox" data-transition-mode="automatic" checked> System automatic</label><button id="allTransitions">Show all</button></nav><div class="layout"><section class="map" aria-label="Interactive 3D state diagram"><div class="toolbar"><button id="reset">Reset view</button><button id="flat">Flat view</button><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button><button id="svgExport">Export SVG</button><button id="jsonExport">Reference data</button><button id="htmlExport">Save HTML</button><label><input type="checkbox" id="showAudio" > Voice tables</label><label><input type="checkbox" id="allLabels"> All labels / tables</label><span id="counts" class="counter"></span></div><svg id="graph" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ClockTimer mainline state machine"></svg><div class="help"><div class="legend" style="margin:0 0 6px"><span><i class="line"></i>Valid touch / keyboard</span><span><i class="line invalid"></i>Invalid touch / keyboard</span><span><i class="line voice"></i>Valid speech</span><span><i class="line voice invalid"></i>Invalid speech</span><span><i class="line auto"></i>System event</span><span><i class="line fail"></i>Persistence rollback</span></div>Pointer: drag rotates · wheel zooms · Shift/right-drag pans · click a state/edge inspects.<br>Touch: one finger rotates · pinch zooms · two fingers pan · tap inspects. Boxes group modes; depth separates branches.</div></section><aside class="sidebar" aria-label="Selected state or transition"><input id="search" class="search" placeholder="Find a state, command or transition ID…" aria-label="Search FSM"><div id="results" class="search-results"></div><div id="inspector"></div></aside></div>
 <section class="guide"><h2>How to read and use this reference</h2><div class="status-legend"><span><i class="test-dot" style="background:#198754"></i>Tested · passed</span><span><i class="test-dot" style="background:#c83545"></i>Tested · failed</span><span><i class="test-dot" style="background:#7b8794"></i>Untested</span></div><div class="legend"><span><i class="line"></i>Valid touch / keyboard</span><span><i class="line invalid"></i>Invalid touch / keyboard</span><span><i class="line voice"></i>Valid speech</span><span><i class="line voice invalid"></i>Invalid speech</span><span><i class="line auto"></i>System event</span><span><i class="line fail"></i>Persistence rollback</span><span>◇ Optional component</span><span>† Queue / suppression rules</span></div><div class="guide-grid"><div><h3>States and mode boxes</h3><p>Each state names the <b>focused surface</b> and <b>trip phase</b>. Empty/valid input and unselected/selected choice are substates because their available commands differ. Voice is above pointer interaction in the reset view.</p><p>Lifecycle, scheduling, intervals, editors, goal modes, Sync, microphone and persistence have separate boxes. Their depth separates branches; changing the camera does not change the FSM.</p><p><b>T</b> is the captured trip phase; <b>P</b> is the return surface; <b>F</b> is the field being edited. These are explicit state families. Instantiate their captured values in each test; never treat every return as Running.</p></div><div><h3>Commands and speech</h3><p>Commands are underneath each state, highest interruption/continuation priority first. Availability remains conditional on the actual focus, valid input, permissions, connection and recognizer state.</p><p>A fully formed continuation owns its prefix before shorter conflicting commands. The list does not introduce a new global numeric priority scheme. Cancel/Close resolves the actual top surface; Off/Sleep applies only when recognition permits it.</p><p>Skippable feedback is omitted when the same utterance continues into another valid command. B01–B04 are skippable, so “start break lunch ok” announces the final outcome. UI actions still execute immediately. Click the small + box on a double line to expand its chime / summary / details table and suppression footer; − collapses it. Click the line to inspect its full details. Audio rows follow playback order, from top to bottom. Optional components use ◇; queue priority and suppression exceptions are in the footer. Select “All labels / tables” to show every visible voice table. Chime note names are in the inspector.</p></div><div><h3>Testing contract</h3><ol id="invariants"></ol><p class="review-note">Working implementation reference reconciled through 831745d, plus the current login changes. Historical chart approval does not establish coverage of these updates. Line patterns describe valid and invalid paths independently of input type. Separate labeled badges report test results. Every transition starts untested. Record the tested version and evidence in the inspector, then use Save HTML to keep a shareable copy with those results. Reference data exports the structured model. Changes stay in this open page until saved or exported. The separately approved chart remains available as a historical reference. Stable transition IDs connect this reference to future tests and implementation changes.</p></div></div><details><summary>Complete transition register · stable IDs for test and implementation references</summary><p class="muted">Includes transitions hidden by the current view. Repeated arrows can be different guards for the same action. A ✓ after Server indicates a server-bound state mutation; local async saves can also fail.</p><table><thead><tr><th>ID</th><th>From → To</th><th>Trigger</th><th>Interaction</th><th>Skippable</th><th>Guard / checkpoint</th><th>Server</th></tr></thead><tbody id="register"></tbody></table></details><details style="margin-top:20px"><summary>Implementation notes and source locations</summary><ul id="review"></ul><ul id="sources"></ul><p class="muted">Retain mainline-fsm.html and mainline-fsm.json together as the chart's durable versioned reference; keep their embedded and standalone models consistent. State IDs and transition IDs must stay stable when labels are edited.</p></details></section>
@@ -122,7 +122,16 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
     "Trip summary stays until OK/Cancel; no automatic editor open.",
     "A spoken range command announces Viewing once and suppresses mode feedback.",
     "Selecting a range updates the current range, label and calculations immediately; a pending asynchronous settings save must not restore the previous range.",
-    "Every suppressed component identifies its rule and suppressing owner; optional is not the same as skippable."
+    "Every suppressed component identifies its rule and suppressing owner; optional is not the same as skippable.",
+    "Main standard_time_component is trip-only and its label is Standard Time in every scope. Header edit remains available during a normal active trip, including Down/Break/Lunch; standalone breaks have no standard. Aggregate accounting is unchanged.",
+    "Goal-bar Remaining = trip standard minus node counted position. Standard is 0:00 at 100%; Current is 0:00 at counted trip standard. Elapsed uses counted trip time, without prior aggregate elapsed history. Current End Time retains the existing deadline readout.",
+    "Idle nodes use configured goals. Active aggregate nodes use inferred current-trip requirements. Every goal editor edits configured non-inferred values; Standard edits time, not 100%.",
+    "Missed labels disappear and goals exit right; all failed retains final goal at right on a zero-based scale. Elapsed color occupies the right segment; all-failed Overtime runs from Current to final failed goal. Down uses its configured color; Break/Lunch colors do not replace productive bar colors.",
+    "Circles are opaque and packed using radius plus half each computed stroke width. Borders touch without overlap; miss pulses expand inward. Ticks travel with nodes. Labels have independent collision packing and leaders. Times/percentages share preferred 16px sizing.",
+    "Circle, time, percentage, caption and name share one touch/click/keyboard action. Right triangle opens a single failed editor directly, or a configurable selector for multiple failures. Selector has no entry-origin memory; ordinary label opening supplies normal choices again.",
+    "Above-150 user goal input becomes 150 before UI feedback. Correction sentence precedes recalculation and later chain announcements. Speech-passive notice never takes command ownership; audio batching does not serialize independent command slots.",
+    "Drop-In shares rendering and configured-goal selection. Observer permissions remain unchanged; publisher Standard Time is read-only. Raw configured publisher attributes take precedence over inferred UI goal components.",
+    "Existing node movement, failure exit, fitting and reduced motion are implemented. Load/start/end choreography is specified in goal-bar.md but remains proposed; do not infer deployed animation states from the specification."
   ],
   "review_points": [
     "Audit all legacy transition guards against implementation; a prose guard is not an executable predicate.",
@@ -1443,6 +1452,36 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "binding": {
         "breakDialog.open": true,
         "breakDialog.allowOk": true
+      }
+    },
+    "GOAL-SELECT": {
+      "id": "GOAL-SELECT",
+      "title": "Choose goal",
+      "focus": "autoGoalDialog",
+      "trip": "T unchanged",
+      "facet": "Configured scope is an editor parameter; no entry-origin memory",
+      "commands": [
+        "Choose offered goal",
+        "Cancel / Close"
+      ],
+      "family": "modes",
+      "binding": {
+        "focus": "autoGoalDialog"
+      }
+    },
+    "GOAL-PERCENT": {
+      "id": "GOAL-PERCENT",
+      "title": "Edit configured goal",
+      "focus": "numberPadDialog",
+      "trip": "T unchanged",
+      "facet": "Configured scope is an editor parameter; no entry-origin memory",
+      "commands": [
+        "Enter positive goal percentage; above 150 is capped",
+        "Cancel / Close"
+      ],
+      "family": "modes",
+      "binding": {
+        "focus": "numberPadDialog"
       }
     }
   },
@@ -10884,6 +10923,615 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "verification": "node tests/app-state-transactions.mjs --pin-review --voice-feedback; node tests/app-state-transactions.mjs --pin-return; node tests/app-state-transactions.mjs --pin-editing; node tests/app-state-transactions.mjs --voice-code; node tests/app-state-transactions.mjs --voice-code-adapter"
       },
       "outcome": "invalid"
+    },
+    {
+      "id": "UI-STANDARD-R1",
+      "source": "R1",
+      "target": "TS",
+      "label": "Standard Time header / Standard node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Active non-break-only trip, every selected scope; no aggregate edit restriction.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Standard Time header / Standard node / labels",
+        "guard": "Active non-break-only trip, every selected scope; no aggregate edit restriction.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-TRIP-GOAL-R1",
+      "source": "R1",
+      "target": "GOAL-PERCENT",
+      "label": "Trip node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Configured Trip goal is editable; honor its own End Time lock.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Trip node / labels",
+        "guard": "Configured Trip goal is editable; honor its own End Time lock.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-TOTAL-GOAL-R1",
+      "source": "R1",
+      "target": "GOAL-PERCENT",
+      "label": "Aggregate node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Configured aggregate goal is editable; inferred display value is not the stored input.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Aggregate node / labels",
+        "guard": "Configured aggregate goal is editable; inferred display value is not the stored input.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-FAILED-ONE-R1",
+      "source": "R1",
+      "target": "GOAL-PERCENT",
+      "label": "Right triangle: one failed percentage goal",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Exactly one failed Trip/aggregate goal; Standard instead routes to TS.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Right triangle: one failed percentage goal",
+        "guard": "Exactly one failed Trip/aggregate goal; Standard instead routes to TS.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-FAILED-MANY-R1",
+      "source": "R1",
+      "target": "GOAL-SELECT",
+      "label": "Right triangle: multiple failed goals",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Two or more failed goal nodes; configure only their choices.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Right triangle: multiple failed goals",
+        "guard": "Two or more failed goal nodes; configure only their choices.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-STANDARD-DOWN",
+      "source": "DOWN",
+      "target": "TS",
+      "label": "Standard Time header / Standard node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Active non-break-only trip, every selected scope; no aggregate edit restriction.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Standard Time header / Standard node / labels",
+        "guard": "Active non-break-only trip, every selected scope; no aggregate edit restriction.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-TRIP-GOAL-DOWN",
+      "source": "DOWN",
+      "target": "GOAL-PERCENT",
+      "label": "Trip node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Configured Trip goal is editable; honor its own End Time lock.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Trip node / labels",
+        "guard": "Configured Trip goal is editable; honor its own End Time lock.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-TOTAL-GOAL-DOWN",
+      "source": "DOWN",
+      "target": "GOAL-PERCENT",
+      "label": "Aggregate node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Configured aggregate goal is editable; inferred display value is not the stored input.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Aggregate node / labels",
+        "guard": "Configured aggregate goal is editable; inferred display value is not the stored input.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-FAILED-ONE-DOWN",
+      "source": "DOWN",
+      "target": "GOAL-PERCENT",
+      "label": "Right triangle: one failed percentage goal",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Exactly one failed Trip/aggregate goal; Standard instead routes to TS.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Right triangle: one failed percentage goal",
+        "guard": "Exactly one failed Trip/aggregate goal; Standard instead routes to TS.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-FAILED-MANY-DOWN",
+      "source": "DOWN",
+      "target": "GOAL-SELECT",
+      "label": "Right triangle: multiple failed goals",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Two or more failed goal nodes; configure only their choices.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Right triangle: multiple failed goals",
+        "guard": "Two or more failed goal nodes; configure only their choices.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-STANDARD-BL",
+      "source": "BL",
+      "target": "TS",
+      "label": "Standard Time header / Standard node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Active non-break-only trip, every selected scope; no aggregate edit restriction.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Standard Time header / Standard node / labels",
+        "guard": "Active non-break-only trip, every selected scope; no aggregate edit restriction.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-TRIP-GOAL-BL",
+      "source": "BL",
+      "target": "GOAL-PERCENT",
+      "label": "Trip node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Configured Trip goal is editable; honor its own End Time lock.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Trip node / labels",
+        "guard": "Configured Trip goal is editable; honor its own End Time lock.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-TOTAL-GOAL-BL",
+      "source": "BL",
+      "target": "GOAL-PERCENT",
+      "label": "Aggregate node / labels",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Configured aggregate goal is editable; inferred display value is not the stored input.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Aggregate node / labels",
+        "guard": "Configured aggregate goal is editable; inferred display value is not the stored input.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-FAILED-ONE-BL",
+      "source": "BL",
+      "target": "GOAL-PERCENT",
+      "label": "Right triangle: one failed percentage goal",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Exactly one failed Trip/aggregate goal; Standard instead routes to TS.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Right triangle: one failed percentage goal",
+        "guard": "Exactly one failed Trip/aggregate goal; Standard instead routes to TS.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-FAILED-MANY-BL",
+      "source": "BL",
+      "target": "GOAL-SELECT",
+      "label": "Right triangle: multiple failed goals",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Two or more failed goal nodes; configure only their choices.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Right triangle: multiple failed goals",
+        "guard": "Two or more failed goal nodes; configure only their choices.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-STANDARD-IDLE",
+      "source": "R0",
+      "target": "N0",
+      "label": "Idle Standard node",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "No active trip or standalone break; use existing New Trip duration workflow.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Idle Standard node",
+        "guard": "No active trip or standalone break; use existing New Trip duration workflow.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-GOAL-LABEL",
+      "source": "R1",
+      "target": "GOAL-SELECT",
+      "label": "Auto goal label",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Configured Auto mode; supply normal Trip/aggregate choices.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Auto goal label",
+        "guard": "Configured Auto mode; supply normal Trip/aggregate choices.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-GOAL-CHOOSE-TRIP",
+      "source": "GOAL-SELECT",
+      "target": "GOAL-PERCENT",
+      "label": "Choose Trip",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Choice offered and not scope-locked; configured non-inferred value.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Choose Trip",
+        "guard": "Choice offered and not scope-locked; configured non-inferred value.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-GOAL-CHOOSE-TOTAL",
+      "source": "GOAL-SELECT",
+      "target": "GOAL-PERCENT",
+      "label": "Choose Total",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Choice offered and not scope-locked; configured non-inferred value.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Choose Total",
+        "guard": "Choice offered and not scope-locked; configured non-inferred value.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-GOAL-CHOOSE-STANDARD",
+      "source": "GOAL-SELECT",
+      "target": "TS",
+      "label": "Choose Standard Time",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Standard choice offered for an active normal trip; value is time, not percent.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Choose Standard Time",
+        "guard": "Standard choice offered for an active normal trip; value is time, not percent.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
+    },
+    {
+      "id": "UI-GOAL-SELECT-CANCEL",
+      "source": "GOAL-SELECT",
+      "target": "R1",
+      "label": "Cancel goal selector",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "Active trip; retain current interval and mode.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Cancel goal selector",
+        "guard": "Active trip; retain current interval and mode.",
+        "state_changes": "Open existing editor; preserve current trip and configured mode.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
     }
   ],
   "audio": {
@@ -12655,8 +13303,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "order_note": "Required playback order."
     }
   },
-  "chart_revision": "15 / implementation reconciliation through 16 October 2026",
-  "implementation_status": "Implementation delta audited from the last working FSM update. Contracts distinguish required outcomes, automated evidence, and unresolved reports. Graph approval is separate from test evidence.",
+  "chart_revision": "16 / UI and goal-display working addendum, 27 October 2026",
+  "implementation_status": "Historical commit audit remains through 16 October 2026. The 27 October local working addendum documents tested goal-display and editor behavior separately from proposed lifecycle animations. No deployment or renewed approval is claimed.",
   "state_contract": {
     "focus": {
       "meaning": "Current focused dialog or main surface",
@@ -13852,6 +14500,26 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "evidence_rule": "A listed test is a scenario source, not proof that every chart edge passed. Preserve status and test/version evidence; unresolved baseline contracts remain explicit gaps.",
       "precedence": "Structured v2_contracts and v2_test_vectors specify the reconciled areas. Earlier explanatory prose is historical where it conflicts. Retired edges are not valid version 2 inputs. Unresolved baseline contracts outside the reconciled areas remain explicit test-coverage gaps."
+    },
+    "goal-display-20261027": {
+      "status": "implemented-local; lifecycle animation sequence remains proposed",
+      "source": "docs/goal-bar.md",
+      "mainStandard": "Always the trip standard, labelled Standard Time, editable in every active-trip scope and pause state except standalone break.",
+      "classic": "Default saved display; Auto goal label shows inferred trip requirement but editor uses configured goal. Idle selector is [Auto].",
+      "idleBar": "0 to max configured goal, up to 150%; no inferred values, Current or times.",
+      "activeBar": "Standard 100%, manual Trip goal, selected aggregate inferred trip requirement, and Current counted trip percent.",
+      "remaining": "tripStandard - countedPosition; Standard 100% = 0 remaining",
+      "elapsed": "counted trip position; Standard 100% = trip standard duration; exclude aggregate history",
+      "endTime": "Existing deadline semantics and formatter; Current retains main readout.",
+      "geometry": "Opaque nodes; sum of outer radii including strokes; labels pack separately; ticks move inside node groups; preferred time/percent 16px.",
+      "failure": "Failed goals lose labels and exit right; retain last failed goal at right only when all failed. All-failed Current = currentPercent / lastGoalPercent on zero-based scale. Overtime segment is right of Current to last failed goal.",
+      "compression": "Left triangle only for compressed leading range; right triangle when one or more goals fail. Right triangle is an editable control.",
+      "selector": "openGoalEditor({scope, choices}); one failed goal routes directly, multiple failures configure existing selector; ordinary Auto label supplies Trip/aggregate. No origin tracking.",
+      "cap": "User input >150 becomes 150; first correction sentence has audio priority 1000. Passive notice does not change command focus or serialize independent execution.",
+      "dropIn": "Same model/renderer and raw configured goal values; existing permissions retained and publisher Standard read-only.",
+      "clockLayout": "Center between visible controls above and Log/Mic/content boundary below; zero-minimum grid tracks preserve alignment during resizing.",
+      "animations": "Only movement/failure/mode/refit effects implemented. Proposed cold idle load, cold active restore, committed start/end and rejection sequences are in goal-bar.md.",
+      "localVerification": "Automated browser/model evidence; no physical-device or production-deployment claim."
     }
   },
   "unresolved_contracts": [
@@ -17407,6 +18075,110 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "node tests/graphical-settings-browser.cjs",
         "node tests/shared-page-templates.mjs"
       ]
+    },
+    "GOAL-DISPLAY": {
+      "id": "GOAL-DISPLAY",
+      "scope": [
+        "R0",
+        "R1",
+        "DOWN",
+        "BL",
+        "TS",
+        "GA",
+        "GT",
+        "GL",
+        "GOAL-SELECT",
+        "GOAL-PERCENT"
+      ],
+      "preconditions": {
+        "trip": "No trip, active production trip or standalone break; preserve independent interval/mode state",
+        "display": "Classic default or saved Bar preference",
+        "goal": "Configured value differs from inferred trip requirement where prior aggregates require it"
+      },
+      "inputs": [
+        "select Classic/Bar",
+        "trip lifecycle/tick/pause/goal edit",
+        "node or its caption/time/percent/name activation",
+        "left/right compression triangles",
+        "normal goal label",
+        "goal input above 150"
+      ],
+      "postconditions": {
+        "standard": "Main display is always trip-only, Standard Time label, active editor available in every scope",
+        "bar": "Idle configured values; active inferred requirements; Standard-based remaining and trip-counted elapsed",
+        "editing": "Underlying goals and existing time editor; configurable failed-only choices with no origin memory",
+        "failure": "Right-hand elapsed color, border-aware opaque geometry and travelling ticks",
+        "feedback": "150 cap applies before first announcement; notice is passive"
+      },
+      "controls": {
+        "equivalence": "Touch/click/keyboard and all label subparts invoke the same scoped action",
+        "observer": "Existing permission gates; Standard remains read-only in Drop-In"
+      },
+      "audio": {
+        "cap": "Scope goal changed to 150 percent precedes Auto/Sync recalculation and subsequent chain audio",
+        "entry": "Opening an editor adds no goal-change success feedback"
+      },
+      "forbidden": [
+        "Aggregate Standard Time replacing main trip value",
+        "Editing inferred percentage as stored aggregate goal",
+        "Transparent/overlapping node borders",
+        "Detached ticks",
+        "Failed-label values remaining visible",
+        "Whole-chain lock for a passive notice",
+        "Entry-origin history in selector",
+        "Historical failure pulses on first restored projection"
+      ],
+      "evidence": [
+        "node tests/goal-bar.mjs",
+        "node tests/goal-bar-browser.cjs",
+        "node tests/goal-bar-interactions-browser.cjs",
+        "node tests/clock-centering-browser.cjs",
+        "node tests/app-state-transactions.mjs --goal-limit --voice-feedback",
+        "node tests/drop-in-page.mjs",
+        "node tests/drop-in-view.mjs",
+        "node tests/clock-timer-ui-state.mjs --standard-time"
+      ]
+    },
+    "GOAL-BAR-LIFECYCLE-ANIMATION": {
+      "id": "GOAL-BAR-LIFECYCLE-ANIMATION",
+      "implementation": "proposed, not implemented or deployed",
+      "scope": [
+        "R0",
+        "R1",
+        "ST"
+      ],
+      "preconditions": {
+        "hydration": "Authoritative settings and session restoration determine initial projection"
+      },
+      "inputs": [
+        "cold idle load",
+        "cold active-trip load",
+        "committed start/end",
+        "rejected start/end",
+        "interrupted movement",
+        "reduced motion"
+      ],
+      "postconditions": {
+        "idleLoad": "200ms fade at final configured positions, no Current/times",
+        "activeLoad": "200ms direct fade at restored inferred positions; no idle flash/start replay",
+        "start": "400ms node movement/value crossfade plus Current/time introduction",
+        "end": "180ms time/Current fade then 350ms return to configured positions",
+        "rejection": "Retain active layout; do not animate before commit"
+      },
+      "controls": {
+        "motion": "Retarget from visible positions; do not await animation in command/persistence execution"
+      },
+      "audio": {
+        "restoration": "No historical start/failure replay"
+      },
+      "forbidden": [
+        "Claiming these sequences are already implemented",
+        "Invented idle time values",
+        "Animating a rejected transition as successful"
+      ],
+      "evidence": [
+        "Specification: docs/goal-bar.md; automated acceptance cases remain to be implemented"
+      ]
     }
   },
   "v2_test_vectors": {
@@ -18247,6 +19019,329 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           "activationAnnouncements": 1,
           "activationChimes": 1
         }
+      },
+      {
+        "id": "BAR-IDLE-CONFIGURED",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripActive": false,
+          "tripGoal": 110,
+          "dayGoal": 110
+        },
+        "when": {
+          "display": "bar"
+        },
+        "expect": {
+          "scale": [
+            0,
+            110
+          ],
+          "values": [
+            100,
+            110,
+            110
+          ],
+          "times": false,
+          "current": false,
+          "leftTriangle": false
+        }
+      },
+      {
+        "id": "BAR-ACTIVE-INFERRED",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripStandardMinutes": 30,
+          "priorStandardMinutes": 36,
+          "priorCountedMinutes": 36,
+          "tripGoal": 110,
+          "dayGoal": 110,
+          "tripCountedMinutes": 20
+        },
+        "when": {
+          "timeDisplay": "remaining"
+        },
+        "expect": {
+          "percents": [
+            100,
+            110,
+            125,
+            150
+          ],
+          "times": [
+            "0:00:00",
+            "0:02:43",
+            "0:06:00",
+            "0:10:00"
+          ],
+          "leftTriangle": true,
+          "rightTriangle": false
+        }
+      },
+      {
+        "id": "BAR-ELAPSED-STANDARD",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripStandardMinutes": 30,
+          "tripCountedMinutes": 30,
+          "priorCountedMinutes": 36
+        },
+        "when": {
+          "timeDisplay": "elapsed"
+        },
+        "expect": {
+          "standardPercent": 100,
+          "currentPercent": 100,
+          "standardTime": "0:30:00",
+          "currentTime": "0:30:00",
+          "borders": "touch without overlap"
+        }
+      },
+      {
+        "id": "BAR-ALL-FAILED",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripStandardMinutes": 30,
+          "tripCountedMinutes": 40,
+          "lastGoalPercent": 100
+        },
+        "when": {
+          "display": "bar"
+        },
+        "expect": {
+          "currentPercent": 75,
+          "currentRemaining": "-0:10:00",
+          "currentXFraction": 0.75,
+          "rightGoalLabels": false,
+          "overtimeSegment": "Current to right failed Standard",
+          "leftTriangle": false,
+          "rightTriangle": true
+        }
+      },
+      {
+        "id": "BAR-MAIN-STANDARD-ALL-SCOPES",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripStandardMinutes": 30,
+          "aggregateStandardMinutes": 66
+        },
+        "when": {
+          "scope": [
+            "trip",
+            "auto",
+            "day",
+            "week",
+            "money",
+            "month",
+            "year"
+          ],
+          "interval": [
+            "running",
+            "down",
+            "break",
+            "lunch"
+          ]
+        },
+        "expect": {
+          "label": "Standard Time",
+          "mainStandardMinutes": 30,
+          "headerEdit": "existing trip standard editor",
+          "aggregateAccountingStandardMinutes": 66
+        }
+      },
+      {
+        "id": "BAR-NODE-EDIT-CONFIGURED",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "dayGoal": 110,
+          "inferredDayTripGoal": 125
+        },
+        "when": {
+          "activate": [
+            "circle",
+            "caption",
+            "time",
+            "percent",
+            "name"
+          ]
+        },
+        "expect": {
+          "source": "total-goal",
+          "editorValue": 110,
+          "modeChanged": false
+        }
+      },
+      {
+        "id": "BAR-FAILED-CHOICES",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "failedGoals": [
+            "trip",
+            "total"
+          ]
+        },
+        "when": {
+          "activate": "right triangle"
+        },
+        "expect": {
+          "selectorChoices": [
+            "trip",
+            "total"
+          ],
+          "editorValues": "configured values",
+          "entryOriginMemory": false,
+          "nextNormalLabelChoices": [
+            "trip",
+            "total"
+          ]
+        }
+      },
+      {
+        "id": "BAR-SINGLE-FAILED",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "failedGoals": [
+            "total"
+          ],
+          "dayGoal": 110
+        },
+        "when": {
+          "activate": "right triangle"
+        },
+        "expect": {
+          "selectorOpened": false,
+          "editorScope": "total",
+          "editorValue": 110
+        }
+      },
+      {
+        "id": "GOAL-CAP-PASSIVE-NOTICE",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "focus": "main",
+          "sync": false
+        },
+        "when": {
+          "voice": "day goal one seventy five sync on"
+        },
+        "expect": {
+          "storedGoal": 150,
+          "notice": "speech-passive",
+          "firstAnnouncement": "Day goal changed to 150 percent.",
+          "independentCommands": "not blocked by notice",
+          "lockedOwners": 0
+        }
+      },
+      {
+        "id": "BAR-OBSERVER-CONFIGURED",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "publisherTripGoal": 105,
+          "publisherDayGoal": 110,
+          "displayedInferredDay": 125
+        },
+        "when": {
+          "observerActivate": "Day node"
+        },
+        "expect": {
+          "editorValue": 110,
+          "publisherStandardEditable": false,
+          "remotePermissionEscalation": false
+        }
+      },
+      {
+        "id": "BAR-ANIMATION-COLD-ACTIVE",
+        "contract": "GOAL-BAR-LIFECYCLE-ANIMATION",
+        "implementationStatus": "proposed",
+        "given": {
+          "restoredTripActive": true,
+          "interval": "lunch"
+        },
+        "when": {
+          "event": "cold load"
+        },
+        "expect": {
+          "projection": "restored active inferred state",
+          "idleFlash": false,
+          "startAnimationReplay": false,
+          "historicalFailurePulse": false
+        }
+      },
+      {
+        "id": "BAR-ANIMATION-COMMIT",
+        "contract": "GOAL-BAR-LIFECYCLE-ANIMATION",
+        "implementationStatus": "proposed",
+        "given": {
+          "display": "bar"
+        },
+        "when": {
+          "events": [
+            "start accepted",
+            "end accepted",
+            "end rejected"
+          ]
+        },
+        "expect": {
+          "startMilliseconds": 400,
+          "endMilliseconds": 530,
+          "reject": "retain active state",
+          "animationsBlockCommands": false
+        }
+      },
+      {
+        "id": "BAR-RECALC-DURING-PAUSE",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripActive": true,
+          "tripStandardMinutes": 30,
+          "dayGoal": 110,
+          "interval": [
+            "down",
+            "break",
+            "lunch"
+          ]
+        },
+        "when": {
+          "changeConfiguredDayGoal": 115
+        },
+        "expect": {
+          "inferredGoal": "refreshes immediately",
+          "mainStandardMinutes": 30,
+          "countedTime": "remains paused",
+          "configuredEditorValue": 115
+        }
+      },
+      {
+        "id": "BAR-SINGLE-FAILED-STANDARD",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripStandardMinutes": 30,
+          "countedTripMinutes": 31,
+          "tripGoal": 90,
+          "dayGoal": 90,
+          "failedGoals": [
+            "standard"
+          ]
+        },
+        "when": {
+          "activate": "right triangle"
+        },
+        "expect": {
+          "selectorOpened": false,
+          "editor": "trip Standard Time settings",
+          "editablePercent100": false
+        }
       }
     ]
   },
@@ -18262,8 +19357,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
 'use strict';
 const M=JSON.parse(document.getElementById('fsm-data').textContent);
 const $=id=>document.getElementById(id), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const positions={"DROP-IN-TARGET":[950,1220,-2450],"DI-APPLY":[-900,-650,-5200],"DI-DATES":[0,-650,-5200],"DI-LOG":[900,-650,-5200],"DI-CONNECTING":[-600,0,-5200],"DI-LIVE":[0,0,-5200],"DI-INTERRUPTED":[600,0,-5200],"DI-DISCONNECTED":[600,650,-5200],"DI-REJECTED":[-600,650,-5200],"HOME-OUT":[-800,0,-4200],"HOME-LOGIN":[-250,-500,-4200],"HOME-ERROR":[400,-500,-4200],"HOME-IN":[650,200,-4200],"ADM-LOOKUP":[-850,650,-2450],"ADM-LOAD":[-280,650,-2450],"ADM-EDIT":[290,650,-2450],"ADM-SAVE":[-850,1220,-2450],"ADM-ERROR":[-280,1220,-2450],"DROP-IN":[290,1220,-2450],"LOGIN-PIN-CANCEL":[800,-650,-3350],"LOGIN-USER":[0,650,-3350],"LOGIN-ID":[-800,0,-3350],"LOGIN-PIN":[0,0,-3350],"LOGIN-WAIT":[800,0,-3350],"MS":[800,650,-780],"PREV":[1300,650,-780],"VRQ":[-1050,-650,0],"SET-G":[-850,0,-2450],"SET-A":[-280,0,-2450],"SET-P":[290,0,-2450],"SET-R":[860,0,-2450],"CLK-R":[-850,0,3250],"CLK-N":[-280,0,3250],"CLK-O":[290,0,3250],"CLK-OB":[-850,550,3250],"CLK-B":[-280,550,3250],"CLK-EB":[290,550,3250],"CLK-D":[860,550,3250],"RETRY":[0,650,-1550],"R0":[-1000,0,0],"V0":[-560,-260,0],"V1":[-70,-260,0],"N0":[-560,260,0],"N1":[-70,260,0],"R1":[680,0,0],"W":[320,0,260],"ST":[-600,0,260],"D":[-980,0,760],"S0":[-530,-260,760],"S1":[0,-260,760],"SR":[600,-260,760],"SE":[0,260,760],"B0":[-620,-260,1550],"B1":[-100,-260,1550],"B10":[450,-440,1550],"B15":[960,-440,1550],"BL":[1470,-440,1550],"BUF":[960,220,1550],"OTHER":[1470,220,1550],"DOWN":[-620,240,1550],"CD":[-100,240,1550],"BE":[960,740,1550],"BS":[-620,-790,1550],"TS":[-500,0,-780],"EV":[70,-260,-780],"EN":[70,260,-780],"LOG":[620,-260,-780],"HT":[-1000,0,-780],"RP":[620,260,-780],"GA":[-580,-520,2380],"GT":[0,-520,2380],"GL":[580,-520,2380],"SO":[-580,0,2380],"SI":[0,0,2380],"MIC":[750,0,2380],"SLEEP":[1250,0,2380],"OFF":[1750,0,2380],"P":[0,0,-1550],"C":[580,0,-1550],"F":[-580,0,-1550],"LOGIN-REVIEW":[600,300,-3350],"BSELECT":[-120,-650,1550],"STARTUP-AUDIO":[-1500,-650,-3350]};
-const cfg={stream:{label:"Drop-In stream / Recovery",families:["stream"],context:["DROP-IN"]},landing:{label:"Landing / Pages",families:["landing"],context:["R0","R1","LOGIN-ID","DROP-IN"]},login:{label:"Login",families:["login"],context:["R0"]},settings:{label:"Settings",families:["settings"],context:["R0","R1","V0","N0"]},clock:{label:"Clock phases",families:["clock"],context:[]},mainline:{label:'Mainline',families:['mainline'],context:[]},scheduling:{label:'Scheduled / Deferred',families:['scheduling'],context:['R0','V0','V1','N0','N1','R1']},intervals:{label:'Break / Lunch / Down',families:['intervals'],context:['R1','W']},ancillary:{label:'Editors / Trip Log',families:['ancillary'],context:['R1','S1','D']},modes:{label:'Goal / Sync / Mic modes',families:['modes'],context:['HT']},validation:{label:'Persistence / Rollback',families:['validation'],context:[]},all:{label:'All states in 3D',families:null,context:[]}};
+const positions={"DROP-IN-TARGET":[950,1220,-2450],"DI-APPLY":[-900,-650,-5200],"DI-DATES":[0,-650,-5200],"DI-LOG":[900,-650,-5200],"DI-CONNECTING":[-600,0,-5200],"DI-LIVE":[0,0,-5200],"DI-INTERRUPTED":[600,0,-5200],"DI-DISCONNECTED":[600,650,-5200],"DI-REJECTED":[-600,650,-5200],"HOME-OUT":[-800,0,-4200],"HOME-LOGIN":[-250,-500,-4200],"HOME-ERROR":[400,-500,-4200],"HOME-IN":[650,200,-4200],"ADM-LOOKUP":[-850,650,-2450],"ADM-LOAD":[-280,650,-2450],"ADM-EDIT":[290,650,-2450],"ADM-SAVE":[-850,1220,-2450],"ADM-ERROR":[-280,1220,-2450],"DROP-IN":[290,1220,-2450],"LOGIN-PIN-CANCEL":[800,-650,-3350],"LOGIN-USER":[0,650,-3350],"LOGIN-ID":[-800,0,-3350],"LOGIN-PIN":[0,0,-3350],"LOGIN-WAIT":[800,0,-3350],"MS":[800,650,-780],"PREV":[1300,650,-780],"VRQ":[-1050,-650,0],"SET-G":[-850,0,-2450],"SET-A":[-280,0,-2450],"SET-P":[290,0,-2450],"SET-R":[860,0,-2450],"CLK-R":[-850,0,3250],"CLK-N":[-280,0,3250],"CLK-O":[290,0,3250],"CLK-OB":[-850,550,3250],"CLK-B":[-280,550,3250],"CLK-EB":[290,550,3250],"CLK-D":[860,550,3250],"RETRY":[0,650,-1550],"R0":[-1000,0,0],"V0":[-560,-260,0],"V1":[-70,-260,0],"N0":[-560,260,0],"N1":[-70,260,0],"R1":[680,0,0],"W":[320,0,260],"ST":[-600,0,260],"D":[-980,0,760],"S0":[-530,-260,760],"S1":[0,-260,760],"SR":[600,-260,760],"SE":[0,260,760],"B0":[-620,-260,1550],"B1":[-100,-260,1550],"B10":[450,-440,1550],"B15":[960,-440,1550],"BL":[1470,-440,1550],"BUF":[960,220,1550],"OTHER":[1470,220,1550],"DOWN":[-620,240,1550],"CD":[-100,240,1550],"BE":[960,740,1550],"BS":[-620,-790,1550],"TS":[-500,0,-780],"EV":[70,-260,-780],"EN":[70,260,-780],"LOG":[620,-260,-780],"HT":[-1000,0,-780],"RP":[620,260,-780],"GA":[-580,-520,2380],"GT":[0,-520,2380],"GL":[580,-520,2380],"SO":[-580,0,2380],"SI":[0,0,2380],"MIC":[750,0,2380],"SLEEP":[1250,0,2380],"OFF":[1750,0,2380],"P":[0,0,-1550],"C":[580,0,-1550],"F":[-580,0,-1550],"LOGIN-REVIEW":[600,300,-3350],"BSELECT":[-120,-650,1550],"STARTUP-AUDIO":[-1500,-650,-3350],"GOAL-SELECT":[-550,650,2380],"GOAL-PERCENT":[100,650,2380]};
+const cfg={stream:{label:"Drop-In stream / Recovery",families:["stream"],context:["DROP-IN"]},landing:{label:"Landing / Pages",families:["landing"],context:["R0","R1","LOGIN-ID","DROP-IN"]},login:{label:"Login",families:["login"],context:["R0"]},settings:{label:"Settings",families:["settings"],context:["R0","R1","V0","N0"]},clock:{label:"Clock phases",families:["clock"],context:[]},mainline:{label:'Mainline',families:['mainline'],context:[]},scheduling:{label:'Scheduled / Deferred',families:['scheduling'],context:['R0','V0','V1','N0','N1','R1']},intervals:{label:'Break / Lunch / Down',families:['intervals'],context:['R1','W']},ancillary:{label:'Editors / Trip Log',families:['ancillary'],context:['R1','S1','D']},modes:{label:'Goal / Sync / Mic modes',families:['modes'],context:['HT','R0','R1','TS','DOWN','BL']},validation:{label:'Persistence / Rollback',families:['validation'],context:[]},all:{label:'All states in 3D',families:null,context:[]}};
 let viewInitialized=false;let group='mainline', selected={kind:'state',id:'R0'}, camera={yaw:.22,pitch:-.11,zoom:.75,panX:0,panY:0,target:[0,0,0]}, width=1200,height=900,frame,visibleNodes=[],visibleEdges=[],projected=new Map();
 const modeLabel=mode=>({pointer:'Pointer',voice:'Voice',automatic:'System automatic',failure:'Persistence rollback'})[mode]||mode;
 const expandedEdges=new Set(), collapsedEdges=new Set();

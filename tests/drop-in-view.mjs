@@ -24,7 +24,7 @@ const stream = {fetchViewerTotals(window,options) {
 const controller = new w.WMOFDropInView({root:$('liveStreamDialog'), stream, text:key=>key});
 controller.setGraphicalSettings(w.WMOFTimerAppearance.normalizeGraphicalSettings({tripColor:'#abcdef'}));
 const snapshot = {timestamp:'2026-10-07T12:00:00Z',userId:42,uiState:{state:'trip_running',effective_goal_type:'trip',sync_enabled:false,
-    standard_time_component:{text:'USER STANDARD'},standard_time_header_text:'Trip Standard Time',time_header_text:'Remaining',time_component:{text:'USER EXACT TIME'}, current_percent_component:{text:'200%'},goal_component:{text:'100%'},
+    standard_time_component:{text:'USER STANDARD'},standard_time_header_text:'Standard Time',time_header_text:'Remaining',time_component:{text:'USER EXACT TIME'}, current_percent_component:{text:'200%'},goal_component:{text:'100%'},
     trip_goal_component:{text:'100%'},total_goal_component:{text:'110%'}},viewData:{
     mode:'trip',range:'week',active:true,tripId:19,tripStart:'2026-10-07T11:00:00Z',productionFilter:'all',
     summary:{trip:{available:true,standardTimeMilliseconds:600000,countedTimeElapsedMilliseconds:300000,percentGoal:1},
@@ -44,7 +44,7 @@ w.fetch = async () => { apiCalls++; throw new Error('Observer attempted an API r
 controller.update(snapshot);
 assert.equal($('liveStreamRemoteTime').textContent,'USER EXACT TIME','default view mirrors the user component verbatim');
 assert.equal($('liveStreamStandardTime').textContent,'USER STANDARD','shared summary mirrors publisher standard time');
-assert.equal($('liveStreamStandardLabel').textContent,'Trip Standard Time');
+assert.equal($('liveStreamStandardLabel').textContent,'Standard Time');
 assert.equal($('liveStreamTimeLabel').textContent,'Remaining');
 assert.equal($('liveStreamViewingMode').textContent,'User view (mirror)');
 assert.equal($('liveStreamPublisherMode').textContent,'Trip');
@@ -55,7 +55,9 @@ $('liveStreamViewPercent').value='150';$('liveStreamViewPercent').dispatchEvent(
 assert.match($('liveStreamRemoteTime').textContent,/1:40/,'local goal changes remaining time');
 assert.equal($('liveStreamUserTripGoal').textContent,'100%','user goal remains intact');
 $('liveStreamViewSync').value='on';$('liveStreamViewSync').dispatchEvent(new w.Event('change'));
-assert.match($('liveStreamRemainingTime').textContent,/3:07/,'local Sync uses ClockTimer’s rounded Trip goal for the total target');
+assert.match($('liveStreamRemainingTime').textContent,/1:40/,'local Sync respects the 150% manual floor with Override off');
+const overrideSnapshot=structuredClone(snapshot);overrideSnapshot.viewData.model.syncOverride=true;controller.update(overrideSnapshot);
+assert.match($('liveStreamRemainingTime').textContent,/3:07/,'Override permits the lower rounded Sync requirement');controller.update(snapshot);
 assert.equal($('liveStreamUserSync').textContent,'off','local Sync never changes user Sync');
 $('liveStreamResetPercent').click();
 assert.equal($('liveStreamRemoteTime').textContent,'USER EXACT TIME','reset restores exact mirror');
@@ -67,6 +69,7 @@ await select('day'); assert.equal(requests.length,1);
 assert.equal(requests[0].options.excludeTripId,19,'active trip excluded from persisted totals');
 requests[0].resolve({standardTimeMilliseconds:600000,countedTimeMilliseconds:600000});await tick();
 assert.match($('liveStreamRemoteTime').textContent,/15:00/,'active trip included exactly once');
+assert.equal($('liveStreamStandardTime').textContent,'10:00','aggregate view keeps the active trip standard');assert.equal($('liveStreamStandardLabel').textContent,'Standard Time');
 assert.match($('liveStreamViewingMode').textContent,/Day.*2026-10-07/);
 await select('week'); const old=requests.at(-1);
 await select('year'); const recent=requests.at(-1);

@@ -44,6 +44,7 @@ button {
     --speech-command-row-height: 0px;
     --speech-mic-row-height: 0px;
     --home-clock-preferred-size: 56vw;
+    --timer-summary-row-height: 142px;
     --trip-log-layout-duration: 1000ms;
 
     width: var(--app-viewport-width, 100vw);
@@ -53,9 +54,9 @@ button {
     display: grid;
     grid-template-rows:
         52px
-        142px
+        var(--timer-summary-row-height)
         62px
-        29px
+        0px
         1fr
         calc(
             var(--trip-log-row-height) +
@@ -381,7 +382,7 @@ html[data-trip-log-startup="unpinned"] .app {
 
 .app[data-trip-state="running"], .app[data-trip-transition="pending"] {
     grid-template-rows:
-        52px 142px 122px 0 1fr
+        52px var(--timer-summary-row-height) 122px 0 1fr
         calc(
             var(--trip-log-row-height) +
             var(--speech-command-row-height)
@@ -471,6 +472,7 @@ html[data-trip-log-startup="unpinned"] .app {
 .clock-region {
     min-height: 0;
     display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     place-items: center;
     overflow: hidden;
     container-type: size;
@@ -2166,7 +2168,7 @@ button:active:not(:disabled):not(#toggleSyncGoalButton) {
 .app[data-interval-state="down"] {
     grid-template-rows:
         52px
-        142px
+        var(--timer-summary-row-height)
         230px
         0
         1fr
@@ -7366,7 +7368,7 @@ speech-command {
         --speech-command-row-height: 0px;
         --trip-log-row-height: 48px;
         --home-clock-preferred-size: 56vw;
-        grid-template-rows: 42px 100px 54px 0 minmax(0, 1fr)
+        grid-template-rows: 42px var(--timer-summary-row-height) 54px 0 minmax(0, 1fr)
             calc(var(--trip-log-row-height) + var(--speech-command-row-height))
             var(--speech-mic-row-height);
     }
@@ -7375,12 +7377,12 @@ speech-command {
         --speech-mic-row-height: 44px;
     }
     .app[data-trip-state="running"] {
-        grid-template-rows: 42px 100px 94px 0 minmax(0, 1fr)
+        grid-template-rows: 42px var(--timer-summary-row-height) 94px 0 minmax(0, 1fr)
             calc(var(--trip-log-row-height) + var(--speech-command-row-height))
             var(--speech-mic-row-height);
     }
     .app[data-interval-state="down"] {
-        grid-template-rows: 42px 100px 156px 0 minmax(0, 1fr)
+        grid-template-rows: 42px var(--timer-summary-row-height) 156px 0 minmax(0, 1fr)
             calc(var(--trip-log-row-height) + var(--speech-command-row-height))
             var(--speech-mic-row-height);
     }
@@ -7643,7 +7645,7 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .trip-action-controls > .new-trip-button { grid-row: 1; }
 .idle-break-button { grid-row: 2; min-height: 0; }
 .trip-action-controls > .active-trip-controls { grid-row: 1 / -1; }
-.app[data-trip-state="ready"] { grid-template-rows: 52px 142px 126px 29px minmax(0, 1fr) calc(var(--trip-log-row-height) + var(--speech-command-row-height)) var(--speech-mic-row-height); }
+.app[data-trip-state="ready"] { grid-template-rows: 52px var(--timer-summary-row-height) 126px 0px minmax(0, 1fr) calc(var(--trip-log-row-height) + var(--speech-command-row-height)) var(--speech-mic-row-height); }
 .break-end-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0fr); gap: 0; min-width: 0; min-height: 0; overflow: hidden; transition: grid-template-columns 400ms ease-out, gap 400ms ease-out; }
 .break-end-row > button { min-width: 0; overflow: hidden; }
 .break-end-row .break-down-button { visibility: hidden; opacity: 0; pointer-events: none; white-space: nowrap; }
@@ -7689,3 +7691,55 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .sync-override-badge[hidden] {display:none;}
 /* Preserve network status when a cached lower Sync goal is also being used. */
 .goal-sync-button.sync-override-in-use .sync-offline-cloud {bottom:auto;top:-2px;}
+
+/* Percentage presentation is shared by Order Filler and Drop-In. */
+.percentage-display-setting {margin:4px 8px 12px 64px;padding:12px 0;border-block:1px solid #456b9b;}
+.percentage-display-label {display:block;margin-bottom:12px;font-size:16px;font-weight:600;}
+.percentage-display-options {display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.percentage-display-options > button {display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin:0!important;padding:12px 8px!important;min-height:76px;width:100%;border:1px solid #87a7ce!important;border-radius:10px;background:#001e60;font-size:16px;}
+.percentage-display-options > button::before {display:none!important;}
+.percentage-display-options > button[aria-checked=true] {background:#28558f;border:2px solid #d4ebff!important;}
+.percentage-display-options small {font-size:12px;color:#c1def5;font-weight:400;}
+.percentage-bar-miniature {display:flex;justify-content:space-between;align-items:center;width:78px;height:5px;background:#ffc220;margin:6px 0;}
+.percentage-bar-miniature i {display:block;width:10px;height:10px;border-radius:50%;border:2px solid white;background:#001e60;}
+.percentage-bar-miniature i:last-child {background:white;}
+.app[data-percentage-display=bar] {--timer-summary-row-height:190px;}
+.app[data-percentage-display=bar] .trip-summary {grid-template-rows:78px 112px;}
+.trip-summary {transition:grid-template-rows 300ms ease;}
+.goal-bar-svg {position:absolute;pointer-events:none;opacity:0;visibility:hidden;width:100%;height:112px;overflow:hidden;transition:opacity 250ms ease,visibility 0s 250ms;}
+.percent-summary.is-goal-bar > .goal-bar-svg {position:relative;grid-column:1;grid-row:1;display:block;min-width:0;pointer-events:auto;opacity:1;visibility:visible;transition-delay:0s;}
+.percent-summary.is-goal-bar > :is(#currentPercentValue,span,#goalPercentValue) {position:absolute;visibility:hidden;opacity:0;pointer-events:none;}
+.percent-summary.is-goal-bar::before {display:none;}
+.percent-summary.is-goal-bar > .goal-sync-button {grid-column:2;grid-row:1;}
+.goal-bar-track {fill:#001e60;stroke:rgb(169 221 247 / 50%);stroke-width:1;}
+.goal-bar-node {cursor:pointer;opacity:1;}
+.goal-bar-node circle {fill:#001e60;stroke:var(--goal-node-color,#fff);stroke-width:2;}
+.goal-bar-node.is-current circle {fill:#fff;}
+.goal-bar-node.is-failed circle {fill:#a92e40;}
+.goal-bar-node:focus-visible circle {stroke-width:4;}
+.goal-bar-glyph {fill:#fff;font-size:11px;font-weight:700;}
+.goal-bar-node.is-current .goal-bar-glyph {fill:#001e60;}
+.goal-bar-time,.goal-bar-percent {fill:#fff;font-family:Arial,sans-serif;font-weight:700;font-variant-numeric:tabular-nums;transition:opacity 180ms ease;}
+.goal-bar-label,.goal-bar-caption,.goal-bar-zero {fill:#c6def5;font:10px Arial,sans-serif;}
+.goal-bar-label {font-size:11px;}
+.goal-bar-node.is-failed .goal-bar-label {fill:#ffb5bd;}
+@media (orientation:portrait) and (max-width:520px) and (max-height:720px) {
+ .app {--timer-summary-row-height:100px;}
+ .app[data-percentage-display=bar] {--timer-summary-row-height:167px;}
+ .app[data-percentage-display=bar] .trip-summary {grid-template-rows:55px 112px;}
+}
+@media (prefers-reduced-motion:reduce) {.trip-summary,.goal-bar-svg{transition:none;}}
+
+@media (orientation:portrait) and (max-width:520px) and (max-height:720px) {
+ .app[data-trip-state=ready] {grid-template-rows:42px var(--timer-summary-row-height) 110px 0px minmax(0,1fr) calc(var(--trip-log-row-height) + var(--speech-command-row-height)) var(--speech-mic-row-height);}
+}
+
+.goal-limit-dialog{width:min(calc(100vw - 16px),440px);border-radius:14px;}
+.goal-limit-dialog p{padding:16px;line-height:1.5;}
+.goal-limit-ok{width:calc(100% - 32px);min-height:52px;margin:0 16px 16px;border:2px solid #ffdf7d;border-radius:10px;background:#ffc220;color:#001e60;font-size:22px;font-weight:700;}
+
+.goal-bar-compression-right {cursor:pointer;}
+.goal-bar-compression-right:focus-visible > path {stroke:#fff;stroke-width:2;}
+.auto-goal-options > [hidden] {display:none!important;}
+
+.goal-bar-node[aria-disabled=true],.goal-bar-compression-right[aria-disabled=true] {cursor:default;}

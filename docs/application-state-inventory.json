@@ -3507,6 +3507,176 @@
         }
       ],
       "notes": "Touch and down/down time share the policy. The End Break row splits horizontally with Down entering from the right."
+    },
+    {
+      "id": "percentageDisplay",
+      "source": {
+        "file": "app.js",
+        "owner": "app.dataset.percentageDisplay / applyPercentageDisplay()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "classic",
+          "meaning": "Existing Actual / Goal expression, default",
+          "id": "PERCENTAGEDISPLAY-CLASSIC"
+        },
+        {
+          "value": "bar",
+          "meaning": "Shared graphical goal bar",
+          "id": "PERCENTAGEDISPLAY-BAR"
+        }
+      ]
+    },
+    {
+      "id": "goalBarContext",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getGoalBarSnapshot().active / break_only"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "idle",
+          "meaning": "Configured goal percentages, zero-based scale, no Current or time labels",
+          "id": "GOAL-BARCONTEXT-IDLE"
+        },
+        {
+          "value": "active",
+          "meaning": "Inferred trip requirements and counted trip Current",
+          "id": "GOAL-BARCONTEXT-ACTIVE"
+        },
+        {
+          "value": "break-only",
+          "meaning": "No trip standard; use the idle bar projection",
+          "id": "GOAL-BARCONTEXT-BREAK-ONLY"
+        }
+      ]
+    },
+    {
+      "id": "goalBarFailures",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "getGoalBarSnapshot().nodes[].failed / all_failed"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "none",
+          "meaning": "All available goals still attainable",
+          "id": "GOAL-BARFAILURES-NONE"
+        },
+        {
+          "value": "some",
+          "meaning": "At least one failed goal removed; other goals remain",
+          "id": "GOAL-BARFAILURES-SOME"
+        },
+        {
+          "value": "all",
+          "meaning": "Retain last failed goal at right; Current proportional on zero-based scale",
+          "id": "GOAL-BARFAILURES-ALL"
+        }
+      ]
+    },
+    {
+      "id": "goalBarLeftCompression",
+      "source": {
+        "file": "TimerSummaryView.js",
+        "owner": "goal-bar-svg.dataset.compressedLeft"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "hidden",
+          "meaning": "Idle/all-failed zero-based range",
+          "id": "GOAL-BARLEFTCOMPRESSION-HIDDEN"
+        },
+        {
+          "value": "visible",
+          "meaning": "Left triangle marks compressed unused lower range",
+          "id": "GOAL-BARLEFTCOMPRESSION-VISIBLE"
+        }
+      ]
+    },
+    {
+      "id": "goalBarRightCompression",
+      "source": {
+        "file": "TimerSummaryView.js",
+        "owner": "goal-bar-svg.dataset.compressedRight"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "hidden",
+          "meaning": "No failed goals",
+          "id": "GOAL-BARRIGHTCOMPRESSION-HIDDEN"
+        },
+        {
+          "value": "visible",
+          "meaning": "Right triangle shows failed goals and is their edit access point",
+          "id": "GOAL-BARRIGHTCOMPRESSION-VISIBLE"
+        }
+      ]
+    },
+    {
+      "id": "goalSelectorChoices",
+      "source": {
+        "file": "app.js",
+        "owner": "openAutoGoalDialog({choices})"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "normal",
+          "meaning": "Configured Trip and selected aggregate goals",
+          "id": "GOALSELECTORCHOICES-NORMAL"
+        },
+        {
+          "value": "failed-subset",
+          "meaning": "Only currently failed goals; may include Standard Time",
+          "id": "GOALSELECTORCHOICES-FAILED-SUBSET"
+        }
+      ]
+    },
+    {
+      "id": "mainStandardAvailability",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "standard_time_component / standard_time_header_text"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "trip",
+          "meaning": "Only the trip standard, labelled Standard Time, independent of selected scope",
+          "id": "MAINSTANDARDAVAILABILITY-TRIP"
+        },
+        {
+          "value": "unavailable",
+          "meaning": "No valid trip standard, including standalone break",
+          "id": "MAINSTANDARDAVAILABILITY-UNAVAILABLE"
+        }
+      ]
+    },
+    {
+      "id": "goalInputLimit",
+      "source": {
+        "file": "app.js",
+        "owner": "setGoalPercentValue() / commitNumberPad()"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "value": "within-limit",
+          "meaning": "Positive user goal up to 150 percent",
+          "id": "GOALINPUTLIMIT-WITHIN-LIMIT"
+        },
+        {
+          "value": "capped",
+          "meaning": "User entry above 150 becomes 150 before feedback; inferred calculations are exempt",
+          "id": "GOALINPUTLIMIT-CAPPED"
+        }
+      ]
     }
   ],
   "surfaces": [
@@ -3592,7 +3762,8 @@
         "closing"
       ],
       "stateIdPrefix": "SURFACE-AUTO-GOAL-DIALOG",
-      "kind": "dialog"
+      "kind": "dialog",
+      "notes": "Configurable choices: normal Trip/aggregate or a failed-goal subset including Standard Time. No origin memory."
     },
     {
       "id": "profileDialog",
@@ -3899,6 +4070,19 @@
         "closing"
       ],
       "stateIdPrefix": "SURFACE-MODE-DROPDOWN"
+    },
+    {
+      "id": "goalLimitDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-GOAL-LIMIT-DIALOG",
+      "kind": "dialog",
+      "notes": "Speech-passive informational notice; does not acquire command focus or block later commands."
     }
   ],
   "constraints": [
@@ -3965,6 +4149,42 @@
     {
       "id": "VALID-COMBINATIONS",
       "requirement": "Do not treat arbitrary Cartesian products as valid. Reachability and transition coverage are separate from enumerating region vocabulary."
+    },
+    {
+      "id": "MAIN-STANDARD-TRIP",
+      "requirement": "Main standard_time_component is trip-only and its label is Standard Time in every scope. Header edit remains available during a normal active trip, including Down/Break/Lunch; standalone breaks have no standard. Aggregate accounting is unchanged."
+    },
+    {
+      "id": "BAR-TIME-BASES",
+      "requirement": "Goal-bar Remaining = trip standard minus node counted position. Standard is 0:00 at 100%; Current is 0:00 at counted trip standard. Elapsed uses counted trip time, without prior aggregate elapsed history. Current End Time retains the existing deadline readout."
+    },
+    {
+      "id": "BAR-CONFIGURED-INFERRED",
+      "requirement": "Idle nodes use configured goals. Active aggregate nodes use inferred current-trip requirements. Every goal editor edits configured non-inferred values; Standard edits time, not 100%."
+    },
+    {
+      "id": "BAR-FAILURE-COLOR",
+      "requirement": "Missed labels disappear and goals exit right; all failed retains final goal at right on a zero-based scale. Elapsed color occupies the right segment; all-failed Overtime runs from Current to final failed goal. Down uses its configured color; Break/Lunch colors do not replace productive bar colors."
+    },
+    {
+      "id": "BAR-OPAQUE-GEOMETRY",
+      "requirement": "Circles are opaque and packed using radius plus half each computed stroke width. Borders touch without overlap; miss pulses expand inward. Ticks travel with nodes. Labels have independent collision packing and leaders. Times/percentages share preferred 16px sizing."
+    },
+    {
+      "id": "BAR-SHARED-ACTION",
+      "requirement": "Circle, time, percentage, caption and name share one touch/click/keyboard action. Right triangle opens a single failed editor directly, or a configurable selector for multiple failures. Selector has no entry-origin memory; ordinary label opening supplies normal choices again."
+    },
+    {
+      "id": "GOAL-CAP-FIRST",
+      "requirement": "Above-150 user goal input becomes 150 before UI feedback. Correction sentence precedes recalculation and later chain announcements. Speech-passive notice never takes command ownership; audio batching does not serialize independent command slots."
+    },
+    {
+      "id": "BAR-OBSERVER-PERMISSIONS",
+      "requirement": "Drop-In shares rendering and configured-goal selection. Observer permissions remain unchanged; publisher Standard Time is read-only. Raw configured publisher attributes take precedence over inferred UI goal components."
+    },
+    {
+      "id": "BAR-ANIMATION-STATUS",
+      "requirement": "Existing node movement, failure exit, fitting and reduced motion are implemented. Load/start/end choreography is specified in goal-bar.md but remains proposed; do not infer deployed animation states from the specification."
     }
   ],
   "transitionPolicies": [
@@ -4163,7 +4383,8 @@
     "ModeMenu custom dates and Down Details create unnamed dialogs. Their selectors/creator owners are registered here; future runtime FSM work should give them stable surface IDs.",
     "Domain labels include canonical derived boundary classes as well as literal runtime enums. No claim is made that every combined state is reachable or every transition has been tested.",
     "New custom callback editor sources, surfaces and providers require explicit inventory registration.",
-    "Numerical equality/ties are represented by independent goal/standard relations. No priority-based performance-band enum is used, since goals can be below, equal to or above 100%."
+    "Numerical equality/ties are represented by independent goal/standard relations. No priority-based performance-band enum is used, since goals can be below, equal to or above 100%.",
+    "Goal-bar presentation is opt-in via goal-bar. Its snapshot and SVG datasets expose active/failure/compression state; selector choices remain DOM configuration. Lifecycle choreography is proposed, not a new runtime state machine."
   ],
   "exclusions": [
     "Server-assigned trips and assignment handling",
@@ -5053,6 +5274,25 @@
       "disposition": "mapped",
       "regions": [
         "breakSelection"
+      ]
+    },
+    {
+      "legacyId": "GOAL-SELECT",
+      "title": "Choose goal",
+      "disposition": "mapped",
+      "regions": [
+        "goalSelectorChoices",
+        "goalMode"
+      ]
+    },
+    {
+      "legacyId": "GOAL-PERCENT",
+      "title": "Edit configured goal",
+      "disposition": "mapped",
+      "regions": [
+        "editorSurface",
+        "editorField",
+        "goalInputLimit"
       ]
     }
   ]
