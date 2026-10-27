@@ -20624,8 +20624,15 @@
     function tripTimingSpeech(detail, announcement) {
         const milliseconds = Number(detail?.timeDifferenceMilliseconds);
         const parts = ["", ""];
-        if (consumeAnnouncementAction(announcement, "summary").perform)
-            parts[0] = announcementText(`announcements.${announcement}.summary`);
+        if (consumeAnnouncementAction(announcement, "summary").perform) {
+            if (detail?.breakOnly === true && ["trip-resumed-early", "trip-resumed-after-break", "trip-resumed-automatically"].includes(announcement)) {
+                const kind = String(detail.breakType || detail.intervalType || "break").toLowerCase();
+                const type = ["short", "short-break", "short_break"].includes(kind) ? "short-break" : kind === "lunch" ? "lunch" : "break";
+                const completion = milliseconds === 0 || announcement === "trip-resumed-automatically" ? "normal"
+                    : announcement === "trip-resumed-early" ? "early" : "late";
+                parts[0] = announcementText(`messages.standaloneBreakEnd.${completion}.${type}`);
+            } else parts[0] = announcementText(`announcements.${announcement}.summary`);
+        }
         if (detail?.breakOnly !== true && Number.isFinite(milliseconds) && consumeAnnouncementAction(announcement, "details").perform)
             parts[1] = announcementText(`announcements.${announcement}.details`, {
                 duration: formatGoalFailureDuration(Math.abs(milliseconds))
@@ -21599,7 +21606,9 @@
 
     function onBreakEndedAutomatically(event) {
         reserveSemanticEvent(event, "Break or lunch automatically ended at the end-buffer boundary");
-        playSemanticSong("trip-resumed-automatically");
+        if (event.detail?.breakOnly === true)
+            void playSemanticSongThenSpeak("trip-resumed-automatically", tripTimingSpeech(event.detail, "trip-resumed-automatically"));
+        else playSemanticSong("trip-resumed-automatically");
         finishLunchClockCues(
             event.detail
         );

@@ -293,6 +293,23 @@
       "enableAudioPrompt": "Press OK to enable audio.",
       "enableAudioAction": "OK",
       "legacyFailed": "Login failed."
+    },
+    "standaloneBreakEnd": {
+      "normal": {
+        "break": "Break ended.",
+        "short-break": "Short break ended.",
+        "lunch": "Lunch ended."
+      },
+      "early": {
+        "break": "Break ended early.",
+        "short-break": "Short break ended early.",
+        "lunch": "Lunch ended early."
+      },
+      "late": {
+        "break": "Break ended late.",
+        "short-break": "Short break ended late.",
+        "lunch": "Lunch ended late."
+      }
     }
   }
 }

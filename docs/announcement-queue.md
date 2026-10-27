@@ -39,6 +39,11 @@ only holds audio dispatch. Independent command slots continue executing. The
 notice is speech-passive and does not become an active command surface. See
 [goal-bar.md](goal-bar.md).
 
-Standalone-break timing feedback retains its normal summary but suppresses the
+Standalone-break timing feedback uses type-specific completion wording and suppresses the
 saved/lost detail. The semantic event captures breakOnly at emission; queued audio
 must not infer the old session from the current timer after it has been cleared.
+
+Standalone break completion uses the recorded type (Break, Short break or Lunch)
+followed by ended, ended early or ended late. Exact boundary and automatic
+completion use ended. Regular trip pause completion keeps its Trip resumed
+wording and saved/lost details. Speech and chime settings remain unchanged.
