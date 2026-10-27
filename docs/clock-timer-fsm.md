@@ -594,3 +594,7 @@ Standalone-break UI has no ⁺/⁻ timing suffix. Interval completion events cap
 breakOnly ownership, and saved/lost timing feedback is suppressed for that owner.
 Regular trip pauses retain their timing feedback. Percentage display is a direct
 Settings item aligned with Clock/Timer Settings, not a nested Clock/Timer option.
+
+Standalone completion speech uses the interval type: Break, Short break or Lunch
+ended / ended early / ended late. Regular trip intervals keep their Trip resumed
+announcements and timing details. This changes wording, not lifecycle transitions.

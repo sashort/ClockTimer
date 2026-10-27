@@ -10,6 +10,11 @@ vm.runInContext(app.slice(app.indexOf('    function tripTimingSpeech('),app.inde
 assert.deepEqual(Array.from(ctx.timing({timeDifferenceMilliseconds:60000},'trip-started-early')),['Trip started early.','60000 ms saved.']);
 assert.deepEqual(Array.from(ctx.timing({timeDifferenceMilliseconds:-60000},'trip-started-late')),['Trip started late.','60000 ms lost.']);
 for(const type of ['trip-started-early','trip-resumed-early','trip-resumed-after-break']){const parts=Array.from(ctx.timing({breakOnly:true,timeDifferenceMilliseconds:60000},type));assert.equal(parts[1],'','standalone breaks never announce time saved/lost');assert(parts[0]);}
+for(const [kind,label] of [['break','Break'],['short','Short break'],['short-break','Short break'],['lunch','Lunch']]){
+ for(const [announcement,milliseconds,suffix] of [['trip-resumed-early',60000,' early'],['trip-resumed-after-break',-60000,' late'],['trip-resumed-automatically',0,''],['trip-resumed-early',0,'']])
+  assert.deepEqual(Array.from(ctx.timing({breakOnly:true,breakType:kind,timeDifferenceMilliseconds:milliseconds},announcement)),[label+' ended'+suffix+'.','']);
+}
+assert.deepEqual(Array.from(ctx.timing({breakOnly:false,breakType:'lunch',timeDifferenceMilliseconds:60000},'trip-resumed-early')),['Trip resumed early.','60000 ms saved.']);
 const trip={summary:{scope:'trip',trip:{standardTimeMilliseconds:3600000,countedTimeElapsedMilliseconds:600000,percentGoal:1},total:{countedPercent:1.1}}};
 assert.equal(ctx.start(trip),'3000000 ms until Standard Goal.');
 assert.deepEqual(Array.from(ctx.end(trip)),['Trip ended. Day percent: 110 percent.','3000000 ms banked toward Standard Goal.','Say OK to start a new trip.']);
