@@ -65,17 +65,21 @@
   static attach(row){if(!this.instances.has(row))this.instances.set(row,new this(row));return this.instances.get(row);}
   constructor(row){
    this.row=row;this.nodes=new Map();this.previous=new Map();this.motion=new Map();
-   this.svg=svgElement('svg',{class:'goal-bar-svg',role:'group','aria-label':'Goal bar',viewBox:'0 0 300 112'});
+   this.svg=svgElement('svg',{class:'goal-bar-svg',role:'button',tabindex:0,'aria-label':'Goal bar · Edit goals',viewBox:'0 0 300 112'});
    this.track=svgElement('rect',{rx:7,y:51,height:14,class:'goal-bar-track'});
    this.fill=svgElement('rect',{rx:7,y:51,height:14,class:'goal-bar-fill'});
    this.segment=svgElement('rect',{y:51,height:14,class:'goal-bar-segment'});
    this.ticks=svgElement('g',{'aria-hidden':'true'});this.layer=svgElement('g');
    this.leftCompression=svgElement('path',{class:'goal-bar-compression goal-bar-compression-left',fill:'#c6def5','aria-hidden':'true'});
-   this.rightCompression=svgElement('g',{class:'goal-bar-compression goal-bar-compression-right',role:'button',tabindex:0,'aria-label':'Edit missed goals'});
+   this.rightCompression=svgElement('g',{class:'goal-bar-compression goal-bar-compression-right','aria-hidden':'true'});
    this.rightCompression.append(svgElement('rect',{x:-12,y:-20,width:24,height:40,fill:'transparent'}),svgElement('path',{d:'M -6 -7 L 7 0 L -6 7 Z',fill:'#c6def5'}));
-   const editFailed=()=>{if(this.rightCompression.getAttribute('aria-disabled')!=='true')this.row.dispatchEvent(new CustomEvent('goal-bar-edit',{bubbles:true,detail:{scope:'failed'}}));};
-   this.rightCompression.addEventListener('click',editFailed);
-   this.rightCompression.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();editFailed();}});
+   const activate=()=>{
+    const mode=this.state?.goal_type;
+    const choices=mode==='trip'?['trip']:mode==='total'?['total']:['trip','total'];
+    this.row.dispatchEvent(new CustomEvent('goal-bar-edit',{bubbles:true,detail:{choices}}));
+   };
+   this.svg.addEventListener('click',activate);
+   this.svg.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();activate();}});
    this.svg.append(this.track,this.fill,this.segment,this.ticks,this.layer,this.leftCompression,this.rightCompression);row.append(this.svg);
    this.resize=new ResizeObserver(()=>this.schedule());this.resize.observe(this.svg);
   }
@@ -94,7 +98,7 @@
   }
   node(id){
    if(this.nodes.has(id))return this.nodes.get(id);
-   const group=svgElement('g',{class:'goal-bar-node',role:'button',tabindex:0,'data-node-id':id});
+   const group=svgElement('g',{class:'goal-bar-node','data-node-id':id});
    const circle=svgElement('circle',{r:10,cx:0,cy:0});
    const glyph=svgElement('text',{y:4,'text-anchor':'middle',class:'goal-bar-glyph'});
    const time=svgElement('text',{y:-22,'text-anchor':'middle',class:'goal-bar-time'});
@@ -103,9 +107,6 @@
    const caption=svgElement('text',{y:-39,'text-anchor':'middle',class:'goal-bar-caption'});
    const tick=svgElement('path',{class:'goal-bar-tick','data-node-id':id,d:'M 0 15 v 6',opacity:.7,'aria-hidden':'true'});
    const title=svgElement('title');group.append(circle,glyph,caption,time,percent,label,tick,title);this.layer.append(group);
-   const activate=()=>{if(group.getAttribute('aria-disabled')!=='true')this.row.dispatchEvent(new CustomEvent('goal-bar-edit',{bubbles:true,detail:{scope:id}}));};
-   group.addEventListener('focus',()=>this.schedule());group.addEventListener('blur',()=>this.schedule());
-   group.addEventListener('click',activate);group.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();activate();}});
    const value={group,circle,glyph,caption,time,percent,label,tick,title};this.nodes.set(id,value);return value;
   }
   draw(){
@@ -156,10 +157,7 @@
    this.leftCompression.style.display=leftCompressed?'':'none';
    this.leftCompression.setAttribute('d',`M ${left-17} 51 L ${left-30} 58 L ${left-17} 65 Z`);
    this.rightCompression.style.display=rightCompressed?'':'none';
-   this.rightCompression.setAttribute('aria-hidden',String(!rightCompressed));
-   const canEditFailed=this.state?.goal_bar_standard_editable!==false||goals.some(node=>node.failed&&node.id!=='standard');
-   this.rightCompression.setAttribute('aria-disabled',String(!canEditFailed));
-   this.rightCompression.setAttribute('tabindex',rightCompressed&&canEditFailed?'0':'-1');
+   this.rightCompression.setAttribute('aria-hidden','true');
    this.rightCompression.style.transform=`translate(${right+24}px, 58px)`;
    const showing=new Set(ordered.map(n=>n.id));
    for(const [id,parts] of this.nodes){if(showing.has(id))continue;const old=this.previous.get(id),latest=data?.nodes?.find(n=>n.id===id),exiting=latest?.failed&&!old?.failed&&!this.initial;parts.time.style.opacity='0';parts.percent.style.opacity='0';parts.group.setAttribute('aria-hidden','true');parts.group.setAttribute('tabindex','-1');parts.group.style.pointerEvents='none';
@@ -168,7 +166,7 @@
    }
    this.displaying=showing;
    ordered.forEach((node,index)=>{
-    const parts=this.node(node.id),old=this.previous.get(node.id),editable=node.id!=='standard'||this.state?.goal_bar_standard_editable!==false;parts.group.removeAttribute('aria-hidden');parts.group.setAttribute('aria-disabled',String(!editable));parts.group.setAttribute('tabindex',editable?'0':'-1');parts.group.style.pointerEvents='';
+    const parts=this.node(node.id),old=this.previous.get(node.id);parts.group.removeAttribute('aria-hidden');parts.group.style.pointerEvents='';
     parts.group.classList.toggle('is-current',Boolean(node.current));parts.group.classList.toggle('is-failed',Boolean(node.failed));
     const label=node.id==='total'?(this.state?.goal_bar_total_label||node.label):node.label;
     parts.caption.style.fontSize=`${Math.min(10,font*.625)}px`;
@@ -195,12 +193,19 @@
     }
     parts.tick.setAttribute('stroke',stroke);
    });
-   this.svg.setAttribute('aria-label',[data?.available?'Goal bar · '+(data.time_mode||''):'Goal bar',leftCompressed?'Scale compressed on left':'',rightCompressed?'Missed goals compressed on right':''].filter(Boolean).join(' · '));
+   this.svg.setAttribute('aria-label',[data?.available?'Goal bar · Edit goals · '+(data.time_mode||''):'Goal bar · Edit goals',leftCompressed?'Scale compressed on left':'',rightCompressed?'Missed goals compressed on right':''].filter(Boolean).join(' · '));
    this.order=ordered.map(n=>n.id);this.previous=new Map((data?.nodes||[]).map(n=>[n.id,n]));this.initial=false;
   }
  }
  function displayApp(root){return root.matches?.('.app')?root:root.querySelector('.app')||root.querySelector('.percent-summary')?.closest('.app');}
- globalThis.WMOFTimerSummaryView={setMode(root,mode){
+ globalThis.WMOFTimerSummaryView={renderGoalDetails(host,details){
+  if(!host)return;
+  let box=host.querySelector(':scope > .goal-details');
+  if(!box){box=document.createElement('div');box.className='goal-details';host.append(box);}
+  box.hidden=!details;if(!details)return;
+  const format=value=>Number.isFinite(value)?`${Number(value.toFixed(2))}%`:'—';
+  box.replaceChildren(...[['actual','67ef1f5b-6dc4-49ad-a50e-f98a170a3e12',details.actual_percent],['inferred','f5fe1d41-f859-4869-ac1e-e361598373fc',details.inferred_percent]].map(([key,id,value])=>{const line=document.createElement('div');line.dataset.goalDetail=key;line.textContent=WMOFLanguagePack.text(id,{value:format(value)});return line;}));
+ },setMode(root,mode){
   const app=displayApp(root),row=root.querySelector('.percent-summary');if(!app||!row)return;
   const normalized=mode==='bar'?'bar':'classic';if(row.dataset.percentageDisplay!==normalized)GoalBar.instances.get(row)?.reset();
   app.dataset.percentageDisplay=normalized;row.dataset.percentageDisplay=normalized;

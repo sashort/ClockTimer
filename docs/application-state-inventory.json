@@ -3628,13 +3628,13 @@
       "values": [
         {
           "value": "normal",
-          "meaning": "Configured Trip and selected aggregate goals",
+          "meaning": "Auto selector offers configured Trip and selected aggregate goals, including failed goals",
           "id": "GOALSELECTORCHOICES-NORMAL"
         },
         {
-          "value": "failed-subset",
-          "meaning": "Only currently failed goals; may include Standard Time",
-          "id": "GOALSELECTORCHOICES-FAILED-SUBSET"
+          "value": "mode-scoped",
+          "meaning": "Trip mode offers Trip only; aggregate mode offers selected aggregate only; Standard excluded",
+          "id": "GOALSELECTORCHOICES-MODE-SCOPED"
         }
       ]
     },
@@ -3763,7 +3763,7 @@
       ],
       "stateIdPrefix": "SURFACE-AUTO-GOAL-DIALOG",
       "kind": "dialog",
-      "notes": "Configurable choices: normal Trip/aggregate or a failed-goal subset including Standard Time. No origin memory."
+      "notes": "Whole-bar selector follows configured mode, includes failed goals and excludes Standard Time. Classic/Bar details show actual and inferred percentages. No origin memory."
     },
     {
       "id": "profileDialog",

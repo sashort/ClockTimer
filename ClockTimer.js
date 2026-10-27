@@ -1903,6 +1903,17 @@
 
         // Goal-bar durations use counted trip time: Standard is zero Remaining
         // and the standard duration in Elapsed mode. All labels stay trip-scoped.
+        getGoalEditorSnapshot(scope, percent) {
+            const total = scope === "total";
+            const actual = percent === undefined ? (total ? this.#getUserTotalGoal() : this.#getUserTripGoal()) * 100 : Number(percent);
+            const active = this.#started && !this.#breakOnly && this.#standardDuration > 0;
+            const inferred = active && Number.isFinite(actual) && actual > 0
+                ? total ? this.#calculateTripGoalFromTotalDuration(this.#standardDuration, actual / 100).tripGoal * 100 : actual
+                : null;
+            return Object.freeze({actual_percent:Number.isFinite(actual)&&actual>0?Number(actual.toFixed(6)):null,
+                inferred_percent:Number.isFinite(inferred)&&inferred>0?inferred:null});
+        }
+
         getGoalBarSnapshot(now = new Date(), {summary = this.#buildSummarySnapshot(now)} = {}) {
             const standard = Number(summary.trip?.standardTimeMilliseconds);
             const counted = Number(summary.trip?.countedTimeElapsedMilliseconds);
@@ -27925,15 +27936,13 @@
         }
 
         #calculateTripGoalFromTotalDuration(
-            standardDuration = this.#standardDuration
+            standardDuration = this.#standardDuration,
+            totalGoal = this.#getTotalGoal()
         ) {
             const empty = {
                 tripGoal: null,
                 adjustedTimeElapsed: null
             };
-
-            const totalGoal =
-                this.#getTotalGoal();
 
             const totals =
                 this.#tripTotals;

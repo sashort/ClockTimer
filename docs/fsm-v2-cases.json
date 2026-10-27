@@ -985,12 +985,16 @@
           "time",
           "percent",
           "name"
-        ]
+        ],
+        "choose": "total"
       },
       "expect": {
         "source": "total-goal",
         "editorValue": 110,
-        "modeChanged": false
+        "modeChanged": false,
+        "selectorOpened": true,
+        "displayActual": 110,
+        "displayInferred": 125
       }
     },
     {
@@ -1033,9 +1037,13 @@
         "activate": "right triangle"
       },
       "expect": {
-        "selectorOpened": false,
-        "editorScope": "total",
-        "editorValue": 110
+        "selectorOpened": true,
+        "selectorChoices": [
+          "trip",
+          "total"
+        ],
+        "failureCountFiltersChoices": false,
+        "actualValue": 110
       }
     },
     {
@@ -1155,9 +1163,12 @@
         "activate": "right triangle"
       },
       "expect": {
-        "selectorOpened": false,
-        "editor": "trip Standard Time settings",
-        "editablePercent100": false
+        "selectorOpened": true,
+        "standardOffered": false,
+        "selectorChoices": [
+          "trip",
+          "total"
+        ]
       }
     },
     {
@@ -1203,6 +1214,30 @@
         "sharedNodeValues": "identical trip-based values across modes",
         "hiddenFailures": "excluded from marker and selector",
         "mainTime": "Trip label and current-trip readout in every active mode; elapsed excludes aggregate history"
+      }
+    },
+    {
+      "id": "GOAL-DETAIL-PREVIEW",
+      "contract": "GOAL-DISPLAY",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "standardMinutes": 30,
+        "priorStandardMinutes": 36,
+        "priorCountedMinutes": 36,
+        "actualDayGoal": 110
+      },
+      "when": {
+        "openFrom": [
+          "classic",
+          "bar"
+        ],
+        "editActualTo": 120
+      },
+      "expect": {
+        "initialInferred": 125,
+        "previewInferred": 158,
+        "savedActualBeforeConfirm": 110,
+        "idleInferred": "unavailable"
       }
     }
   ]

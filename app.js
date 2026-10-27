@@ -12263,8 +12263,7 @@
             const next=event.key === "Home" ? choices[0] : event.key === "End" ? choices.at(-1) : choices.find(choice=>choice!==button);
             next.focus();next.click();});}
     document.querySelector(".percent-summary")?.addEventListener("goal-bar-edit", event => {
-        if (event.detail?.scope === "current") globalThis.WMOFActions.toggleRenderedTime();
-        else globalThis.WMOFActions.openGoalEditor({scope:event.detail?.scope});
+        globalThis.WMOFActions.openGoalEditor({choices:event.detail?.choices});
     });
 
     $("#syncOverrideButton")?.addEventListener("click", () => {
@@ -14281,6 +14280,9 @@
         const percentMode = numberPadState.mode === "percent";
         const absoluteMode = numberPadState.mode === "absolute";
         numberPadContext.textContent = numberPadState.title;
+        const goalScope = numberPadState.source === "total-goal" ? "total" : numberPadState.source === "trip-goal" ? "trip" : null;
+        globalThis.WMOFTimerSummaryView?.renderGoalDetails(numberPadContext,
+            goalScope ? clockTimer.getGoalEditorSnapshot(goalScope, Number(numberPadState.pending)) : null);
         numberPadContext.classList.toggle("absolute-mode", absoluteMode);
         numberPadReadout.classList.toggle("absolute-mode", absoluteMode);
         numberPadDisplay.textContent = percentMode
@@ -16666,6 +16668,8 @@
         const lockedScopes = new Set(endTimeGoalOverride?.scopes || []);
         for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")) {
             const scope = button.dataset.autoGoalScope;
+            globalThis.WMOFTimerSummaryView?.renderGoalDetails(button, scope === "standard" ? null : clockTimer.getGoalEditorSnapshot(scope));
+            const percentValue=button.querySelector('strong');if(percentValue)percentValue.hidden=scope!=="standard";
             const locked = scope === "standard" ? Boolean(clockTimer.getUIState().break_only) : lockedScopes.has(scope);
             const scopeLabel =
                 scope === "total" ? totalScopeLabel() : scope === "standard" ? "Standard Time" : "Trip";
@@ -25264,13 +25268,6 @@
             },
 
             openGoalEditor({scope, choices} = {}) {
-                if (scope === "failed") {
-                    choices = clockTimer.getGoalBarSnapshot().nodes.filter(node => node.failed).map(node => node.id);
-                    if (!choices.length) return false;
-                    if (choices.length === 1) return globalThis.WMOFActions.openGoalEditor({scope:choices[0]});
-                    return openAutoGoalDialog({choices});
-                }
-                if (scope === "standard") return globalThis.WMOFActions.openStandardTimeSettings({tripScope:true});
                 if (["trip", "total"].includes(scope)) {
                     if ((endTimeGoalOverride?.scopes || []).includes(scope)) {flashEndTimeGoalLock();return false;}
                     void openPercentGoalNumberPad(scope).catch(() => {});

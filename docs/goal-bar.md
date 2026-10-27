@@ -95,7 +95,7 @@ animate height/opacity; Sync's fixed column enters/leaves and the bar refits.
 Reduced-motion preferences suppress node travel and pulses.
 
 The bar model is opt-in via the timer's `goal-bar` attribute. Classic ticks do
-not calculate the extra snapshot. Both views retain existing goal/time actions;
+not calculate the extra snapshot. Both views share the whole-bar goal-selector action;
 Drop-In actions remain subject to its existing control permissions.
 
 ## Goal input limit
@@ -172,28 +172,22 @@ screens; Sync appearing/disappearing; Drop-In attaching midway through a trip;
 and reduced motion. Assert no idle time labels, no active-load idle flash, no
 historical failure replay, and final positions matching the model snapshot.
 
-## Node actions and configurable goal selection
+## Whole-bar goal selection
 
-The circle, caption, time, percentage and name belong to one activation target.
-Click, touch and Enter/Space invoke the same action. Standard opens the existing
-trip Standard Time workflow even while viewing an aggregate scope. When idle it
-opens the existing New Trip standard-duration entry; standalone breaks have no
-editable standard. Trip and aggregate nodes edit their configured, non-inferred
-goals directly, independent of the displayed percent mode. Current retains the
-existing time-display action.
+The entire bar is one click/touch/Enter/Space action. Track, blank area, Standard,
+Current, labels and both compression triangles all open the existing goal selector.
+Trip offers Trip only; aggregate modes offer that aggregate only; Auto offers both.
+Failed goals remain selectable. Failure count does not change the offered choices.
+The separate Sync button retains its own action. Standard Time is never offered
+here and Current no longer changes time mode. Standard Time editing remains on its
+existing main control. The bar has one keyboard focus target.
 
-The right-pointing triangle activates the current list of failed nodes. One
-failed node opens its editor directly. Several failed nodes open the existing
-selector configured with that list; Standard is a standard-time choice, never an
-editable 100% goal. The ordinary Auto goal label opens the selector with Trip and
-the selected aggregate. Each opening supplies `choices`; it stores no entry-point
-identity or history. Closing and reopening from the label resets the offered list.
-End-time goal locks still apply to their own scopes.
-
-Drop-In routes its goal choices to its existing observer goal editor and retains
-its permission gates. Publisher Standard Time remains read-only there, matching
-the existing disabled Standard Time control; it is disabled in a multi-choice
-selector. These interactions grant no new remote trip-edit permission.
+The selector and following number pad show Actual goal and Inferred trip goal.
+Classic uses the same details. Actual is the stored, editable percentage; inferred
+is the current-trip requirement, not the stored aggregate goal. Editing previews
+inference without changing stored settings; confirmation uses existing persistence,
+locks, 150% input cap and announcements. No active trip means no inferred value.
+Drop-In uses the same model and details with existing observer permissions.
 
 ## Main Standard Time display
 
@@ -209,19 +203,11 @@ shared state projection while retaining its existing read-only publisher control
 
 ```mermaid
 flowchart TD
-    H[Main Standard Time header] --> T[Existing trip Standard Time settings]
-    N[Node circle or any label] --> S{Node scope}
-    S -->|Standard| T
-    S -->|Trip or aggregate| P[Configured goal percentage editor]
-    S -->|Current| D[Existing time-display action]
-    R[Right triangle] --> F{Failed node count}
-    F -->|One Standard| T
-    F -->|One percentage goal| P
-    F -->|Several| C[Selector configured with failed choices]
-    L[Classic Auto goal label] --> A[Selector configured with Trip and aggregate]
-    C -->|Standard choice| T
-    C -->|Goal choice| P
-    A --> P
+    H[Main Standard Time header] --> T[Trip Standard Time settings]
+    B[Whole bar: nodes, labels, track, triangles] --> C[Goal selector: applicable goals]
+    L[Classic Auto goal label] --> C
+    C --> P[Edit actual configured goal]
+    P --> I[Show inferred trip requirement preview]
 ```
 
 This graph describes action routing, not new persistence semantics. The
@@ -232,3 +218,13 @@ Active main time readouts also stay trip-scoped in every percentage mode: Trip
 Time Elapsed, Trip Time Remaining and Trip End Time. Remaining retains the active
 goal-based trip budget; the bar retains Standard-based Remaining. Idle aggregate
 banked/over summaries and aggregate accounting remain unchanged.
+
+## Counted-time motion proposal (not implemented)
+
+Use counted trip time as the motion coordinate and keep the scale stable between
+semantic transitions. Freeze the visible animation immediately on interval entry.
+Prepare/revise keyframes during the interval; resume from the frozen position with
+a fresh counted-time anchor. Goal, mode and layout changes invalidate stale plans.
+During Down, a future End Time presentation can use end-at-pause plus elapsed
+Down duration, derived from timestamps so backgrounding cannot accumulate drift.
+These motion and Down End Time proposals are not in the current implementation.

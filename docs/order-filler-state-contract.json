@@ -227,7 +227,7 @@
     },
     {
       "id": "BAR-SHARED-ACTION",
-      "requirement": "Circle, time, percentage, caption and name share one touch/click/keyboard action. Right triangle opens a single failed editor directly, or a configurable selector for multiple failures. Selector has no entry-origin memory; ordinary label opening supplies normal choices again.",
+      "requirement": "Whole bar, including nodes, labels, background and compression triangles, opens the existing selector: Trip only in Trip mode, selected aggregate only in aggregate mode, both in Auto. Failure count does not filter choices. No Standard Time edit or Current time-mode action from the bar. Classic and Bar goal dialogs and pads show actual configured and inferred trip values; only actual is edited.",
       "evidence": "node tests/goal-bar-interactions-browser.cjs"
     },
     {
@@ -248,7 +248,7 @@
     },
     {
       "id": "BAR-MODE-VISIBILITY",
-      "requirement": "Trip mode shows Standard, Trip and active Current; aggregate modes show Standard, selected aggregate and active Current; Auto shows both goal types. Idle follows the same goal visibility without Current. Hidden goals cannot enter failure markers or failed-goal choices. All active values are trip-based; aggregate goals are inferred trip requirements.",
+      "requirement": "Trip mode shows Standard, Trip and active Current; aggregate modes show Standard, selected aggregate and active Current; Auto shows both goal types. Idle follows the same goal visibility without Current. Hidden modes cannot enter bar nodes or goal-selector choices. All active values are trip-based; aggregate goals are inferred trip requirements.",
       "evidence": "node tests/goal-bar.mjs"
     },
     {
@@ -258,7 +258,7 @@
     },
     {
       "id": "BAR-TARGET-DETAILS",
-      "requirement": "Only the next target (highest unfailed visible goal) and Current show times and percentages. Other unfailed nodes retain circles, names and editing actions. All-failed retains Standard at the right with its time and 100% reference details, and Current on a zero-to-100% scale.",
+      "requirement": "Only the next target (highest unfailed visible goal) and Current show times and percentages. Other unfailed nodes retain circles, names; the whole bar opens the goal selector. All-failed retains Standard at the right with its time and 100% reference details, and Current on a zero-to-100% scale.",
       "evidence": "node tests/goal-bar-browser.cjs"
     }
   ],

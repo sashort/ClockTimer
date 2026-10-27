@@ -7743,3 +7743,12 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .auto-goal-options > [hidden] {display:none!important;}
 
 .goal-bar-node[aria-disabled=true],.goal-bar-compression-right[aria-disabled=true] {cursor:default;}
+
+/* The goal bar is one keyboard and pointer target; Sync remains separate. */
+.percent-summary.is-goal-bar > .goal-bar-svg {cursor:pointer;}
+.goal-bar-svg:focus-visible {outline:2px solid currentColor;outline-offset:-2px;border-radius:8px;}
+
+.goal-details {display:grid;gap:6px;font-size:15px;line-height:1.3;font-weight:600;text-align:center;}
+.auto-goal-option > .goal-details {grid-column:1 / -1;}
+.goal-details [data-goal-detail=inferred] {color:#a9e9ff;}
+.number-pad-context > .goal-details {margin-top:8px;font-size:14px;}
