@@ -38,3 +38,7 @@ priority 1000 so the cap sentence precedes later chain announcements. The batch
 only holds audio dispatch. Independent command slots continue executing. The
 notice is speech-passive and does not become an active command surface. See
 [goal-bar.md](goal-bar.md).
+
+Standalone-break timing feedback retains its normal summary but suppresses the
+saved/lost detail. The semantic event captures breakOnly at emission; queued audio
+must not infer the old session from the current timer after it has been cleared.

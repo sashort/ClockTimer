@@ -7693,7 +7693,7 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .goal-sync-button.sync-override-in-use .sync-offline-cloud {bottom:auto;top:-2px;}
 
 /* Percentage presentation is shared by Order Filler and Drop-In. */
-.percentage-display-setting {margin:4px 8px 12px 64px;padding:12px 0;border-block:1px solid #456b9b;}
+.percentage-display-setting {margin:4px 8px 12px;padding:12px 14px;border-block:1px solid #456b9b;}
 .percentage-display-label {display:block;margin-bottom:12px;font-size:16px;font-weight:600;}
 .percentage-display-options {display:grid;grid-template-columns:1fr 1fr;gap:7px;}
 .percentage-display-options > button {display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin:0!important;padding:12px 8px!important;min-height:76px;width:100%;border:1px solid #87a7ce!important;border-radius:10px;background:#001e60;font-size:16px;}

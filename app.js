@@ -20626,7 +20626,7 @@
         const parts = ["", ""];
         if (consumeAnnouncementAction(announcement, "summary").perform)
             parts[0] = announcementText(`announcements.${announcement}.summary`);
-        if (Number.isFinite(milliseconds) && consumeAnnouncementAction(announcement, "details").perform)
+        if (detail?.breakOnly !== true && Number.isFinite(milliseconds) && consumeAnnouncementAction(announcement, "details").perform)
             parts[1] = announcementText(`announcements.${announcement}.details`, {
                 duration: formatGoalFailureDuration(Math.abs(milliseconds))
             });

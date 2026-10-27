@@ -27,5 +27,11 @@ try {
     assert.equal(timer.getUIState().clock_phase,'closing-buffer');
     assert(Object.isFrozen(timer.getUIState().interval_state));
     assert(Object.isFrozen(timer.getUIState().dispatch_state));
+    await timer.endInterval();await timer.stop();await timer.clear();
+    await timer.startBreakSession('break',600000,{breakType:'break'},15000,15000);
+    window.__testTime+=60000;
+    for(const mode of ['remaining','elapsed']){timer.renderedTimeMode=mode;const view=timer.getUIState();assert.equal(view.break_only,true);assert(!/[⁺⁻]$/.test(view.time_component.text),'standalone '+mode+' has no timing-gain/loss suffix');}
+    let breakEnd;timer.addEventListener('breakEndedEarly',event=>breakEnd=event.detail,{once:true});
+    await timer.endInterval();assert.equal(breakEnd.breakOnly,true,'completion captures break-only ownership before later cleanup');
     console.log('PASS full clock state, overtime, opening/closing buffers, owning interval and always-ready goal sequence');
 } finally {timer.remove();await window.happyDOM.abort();}

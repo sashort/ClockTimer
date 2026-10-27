@@ -9,6 +9,7 @@ const ctx=vm.createContext({announcementText:language.text,goalFailureNumberWord
 vm.runInContext(app.slice(app.indexOf('    function tripTimingSpeech('),app.indexOf('    let lunchClockCueState;'))+app.slice(app.indexOf('    function buildGoalFailureSpeech('),app.indexOf('    async function speakGoalFailure('))+'\nglobalThis.timing=tripTimingSpeech;globalThis.start=tripStartGoalDetailSpeech;globalThis.end=tripEndTotalSpeech;globalThis.failure=buildGoalFailureSpeech;',ctx);
 assert.deepEqual(Array.from(ctx.timing({timeDifferenceMilliseconds:60000},'trip-started-early')),['Trip started early.','60000 ms saved.']);
 assert.deepEqual(Array.from(ctx.timing({timeDifferenceMilliseconds:-60000},'trip-started-late')),['Trip started late.','60000 ms lost.']);
+for(const type of ['trip-started-early','trip-resumed-early','trip-resumed-after-break']){const parts=Array.from(ctx.timing({breakOnly:true,timeDifferenceMilliseconds:60000},type));assert.equal(parts[1],'','standalone breaks never announce time saved/lost');assert(parts[0]);}
 const trip={summary:{scope:'trip',trip:{standardTimeMilliseconds:3600000,countedTimeElapsedMilliseconds:600000,percentGoal:1},total:{countedPercent:1.1}}};
 assert.equal(ctx.start(trip),'3000000 ms until Standard Goal.');
 assert.deepEqual(Array.from(ctx.end(trip)),['Trip ended. Day percent: 110 percent.','3000000 ms banked toward Standard Goal.','Say OK to start a new trip.']);
