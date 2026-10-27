@@ -84,3 +84,5 @@ banked/over summaries and aggregate accounting remain unchanged.
 Shared bar detail consolidation: only the next target and Current show time and
 percentage labels. Other unfailed nodes retain names and click targets. All-failed
 state restores Standard at the right with its time and 100% reference details.
+
+Current bar interaction supersedes the earlier per-node routes: Whole bar, including nodes, labels, background and compression triangles, opens the existing selector: Trip only in Trip mode, selected aggregate only in aggregate mode, both in Auto. Failure count does not filter choices. No Standard Time edit or Current time-mode action from the bar. Classic and Bar goal dialogs and pads show actual configured and inferred trip values; only actual is edited.

@@ -6970,6 +6970,16 @@
       "id": "ed9a0779-1be2-589f-ad51-951e6129ba66",
       "text": "---",
       "default": "---"
+    },
+    "67ef1f5b-6dc4-49ad-a50e-f98a170a3e12": {
+      "id": "67ef1f5b-6dc4-49ad-a50e-f98a170a3e12",
+      "text": "Actual goal: {value}",
+      "default": "Actual goal: {value}"
+    },
+    "f5fe1d41-f859-4869-ac1e-e361598373fc": {
+      "id": "f5fe1d41-f859-4869-ac1e-e361598373fc",
+      "text": "Inferred trip goal: {value}",
+      "default": "Inferred trip goal: {value}"
     }
   }
 }

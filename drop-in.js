@@ -94,15 +94,8 @@
         updateModeButton();renderSettingSources(record);
     }
     document.querySelector('.percent-summary')?.addEventListener('goal-bar-edit',event=>{
-        const scope=event.detail?.scope;
-        if(scope==='current'){const control=$('toggleRenderedTimeButton');if(!control.disabled)control.click();return;}
         if(busy||!permission(64))return;
-        if(scope==='standard')return; // Publisher Standard Time is read-only in Drop-In.
-        if(scope==='failed'){
-            const choices=(view.displayState?.goal_bar?.nodes||[]).filter(node=>node.failed).map(node=>node.id);
-            if(choices.length===1){if(choices[0]!=='standard')openGoal(choices[0]);}
-            else if(choices.length>1)openGoalSelector({choices});
-        }else if(['trip','total'].includes(scope))openGoal(scope);
+        openGoalSelector({choices:event.detail?.choices||['trip','total']});
     });
     function updateModeButton() {
         const mode=$('liveStreamViewMode'),button=$('scopeToggle'),mirrored=mode.value==='user';
@@ -189,7 +182,7 @@
     goalPad=globalThis.WMOFObserverGoalPad?new WMOFObserverGoalPad({getChoices:scope=>{
         const field=scope==='total'?'totalGoal':'tripGoal',record=currentSettings();
         return [...new Set([preferences.defaults.view[field],record.custom.view[field],publisherValues()[field]])].filter(value=>/^\d+$/.test(String(value))).map(value=>({value,source:optionDetails(field,value).source}));
-    },getDetails:(scope,value)=>optionDetails(scope==='total'?'totalGoal':'tripGoal',String(value)),onConfirm:(scope,value)=>{
+    },getGoalDetails:(scope,value)=>view.timer?.getGoalEditorSnapshot(scope,value),getDetails:(scope,value)=>optionDetails(scope==='total'?'totalGoal':'tripGoal',String(value)),onConfirm:(scope,value)=>{
         const patch={percent:'',percentScope:null,[scope==='total'?'totalGoal':'tripGoal']:String(value)};
         if(scope==='trip'&&value!=='mirror')patch.sync='off';changeSettings({view:patch,mirror:false});
     }}):null;
@@ -208,6 +201,8 @@
         const offered=new Set(choices),dialog=$('autoGoalDialog');
         for(const button of dialog.querySelectorAll('[data-auto-goal-scope]')){
             const scope=button.dataset.autoGoalScope;button.hidden=!offered.has(scope);button.disabled=scope==='standard';
+            globalThis.WMOFTimerSummaryView?.renderGoalDetails(button,scope==='standard'?null:view.timer?.getGoalEditorSnapshot(scope,configuredGoal(scope)));
+            const percentValue=button.querySelector('strong');if(percentValue)percentValue.hidden=scope!=='standard';
             if(scope==='standard'){$('autoStandardTimeValue').textContent=view.displayState?.standard_time_component?.text||'---';}
             else {button.querySelector('strong').textContent=configuredGoal(scope)+'%';button.querySelector('span').textContent=goalLabel(scope);}
         }

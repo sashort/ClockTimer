@@ -583,3 +583,5 @@ modes exclude Trip, and Auto retains both. Failure routing uses only these visib
 goals. All active bar values and main time readouts remain current-trip based;
 main labels are Trip Time Elapsed, Trip Time Remaining or Trip End Time. Main
 Remaining uses the active goal budget; bar Remaining uses Standard as zero.
+
+Current bar interaction supersedes the earlier per-node routes: Whole bar, including nodes, labels, background and compression triangles, opens the existing selector: Trip only in Trip mode, selected aggregate only in aggregate mode, both in Auto. Failure count does not filter choices. No Standard Time edit or Current time-mode action from the bar. Classic and Bar goal dialogs and pads show actual configured and inferred trip values; only actual is edited.

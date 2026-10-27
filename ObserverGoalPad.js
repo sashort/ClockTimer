@@ -1,7 +1,7 @@
 (() => {
  'use strict';
  class ObserverGoalPad {
-  constructor({onConfirm,getDetails=()=>null,getChoices=()=>[]}) {this.onConfirm=onConfirm;this.getDetails=getDetails;this.getChoices=getChoices;this.loading=null;this.dialog=null;this.revision=0;}
+  constructor({onConfirm,getDetails=()=>null,getChoices=()=>[],getGoalDetails=()=>null}) {this.getGoalDetails=getGoalDetails;this.onConfirm=onConfirm;this.getDetails=getDetails;this.getChoices=getChoices;this.loading=null;this.dialog=null;this.revision=0;}
   async load() {
    if(this.dialog)return;
    if(!this.loading)this.loading=(async()=>{
@@ -34,7 +34,7 @@
    for(const choice of choices){const button=document.createElement('button');button.type='button';button.dataset.menuIcon='settings';button.textContent=WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:choice.value});globalThis.WMOFObserverSettingBadge?.render(button,choice.source);button.addEventListener('click',()=>{this.value=String(choice.value);this.replace=true;this.paint();});host.append(button);}
   }
 
-  paint(){this.refresh();this.dialog.querySelector('#numberPadDisplay').textContent=this.value?WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:Number(this.value)}):'---';this.dialog.querySelector('#numberPadConfirm').disabled=!this.valid();this.dialog.querySelector('#numberPadBackspace').disabled=!this.value;}
+  paint(){this.refresh();globalThis.WMOFTimerSummaryView?.renderGoalDetails(this.dialog.querySelector('#numberPadContext'),this.getGoalDetails(this.scope,Number(this.value)));this.dialog.querySelector('#numberPadDisplay').textContent=this.value?WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:Number(this.value)}):'---';this.dialog.querySelector('#numberPadConfirm').disabled=!this.valid();this.dialog.querySelector('#numberPadBackspace').disabled=!this.value;}
   async open(scope,value,label){const request=++this.revision;await this.load();if(request!==this.revision)return;this.scope=scope;this.initial=String(Math.round(Number(value)||100));this.value=this.initial;this.replace=true;this.dialog.querySelector('#numberPadContext').textContent=WMOFLanguagePack.text('36e3b3a0-c2ea-5f66-81c2-2ea8b4005ab6',{scope:label});this.paint();this.dialog.showModal();this.dialog.querySelector('#numberPadConfirm').focus();}
   cancel(){this.revision++;this.dialog?.close();}
  }
