@@ -13,14 +13,16 @@ const fixture=require('./order-filler-master-fixture.cjs');
  assert.equal(await p.evaluate(()=>document.querySelector('#clockTimer').getUIState().goal_bar.nodes.find(n=>n.id==='total').percent),125);
  for(const mode of ['trip','total','auto']){
   await p.evaluate(mode=>document.querySelector('#clockTimer').configure({goal_type:mode}),mode);await p.waitForTimeout(600);
+  assert.deepEqual(await p.locator('.goal-bar-node').evaluateAll(es=>es.map(e=>e.dataset.nodeId).sort()),(mode==='trip'?['standard','trip','current']:mode==='total'?['standard','total','current']:['standard','trip','total','current']).sort(),'rendered nodes follow '+mode+' mode');
+  assert.equal(await p.locator('#renderedTimeLabel').textContent(),'Trip Time Remaining','main readout label stays trip-scoped in '+mode);
   assert.equal(await p.locator('#standardTimeLabel').textContent(),'Standard Time');assert.equal(await p.locator('#standardTimeValue').textContent(),'30:00','main standard ignores aggregate totals in '+mode);
   await p.locator('#standardTimeButton').click();await p.waitForFunction(()=>document.querySelector('#tripSettingsDialog')?.open);await p.locator('#tripSettingsDialog [data-close-dialog]').first().click();await p.waitForTimeout(400);
  }
  for(const part of ['circle','.goal-bar-percent','.goal-bar-time','.goal-bar-label']){
   await node('total',part).click();await p.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open);const e=await editor();assert.equal(e.source,'total-goal');assert.equal(e.value,'110','Day edits configured 110, not inferred 125');await cancelPad();
  }
- await node('trip','.goal-bar-percent').tap();await p.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open);assert.equal((await editor()).source,'trip-goal');assert.equal((await editor()).value,'110');await cancelPad();
- await node('standard','.goal-bar-time').click();await p.waitForFunction(()=>document.querySelector('#tripSettingsDialog')?.open);assert.equal(await p.locator('#tripStandardTime').textContent(),'30:00');await p.locator('#tripSettingsDialog [data-close-dialog]').first().click();await p.waitForTimeout(500);
+ await node('trip','circle').tap();await p.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open);assert.equal((await editor()).source,'trip-goal');assert.equal((await editor()).value,'110');await cancelPad();
+ await node('standard','circle').click();await p.waitForFunction(()=>document.querySelector('#tripSettingsDialog')?.open);assert.equal(await p.locator('#tripStandardTime').textContent(),'30:00');await p.locator('#tripSettingsDialog [data-close-dialog]').first().click();await p.waitForTimeout(500);
  async function advance(minutes){await p.evaluate(minutes=>{nodeTestNow=nodeTestStart+minutes*60000;document.querySelector('#clockTimer').configure({goal_type:'auto'});},minutes);await p.waitForTimeout(700);}
  await advance(25);await p.locator('.goal-bar-compression-right').tap();await p.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open);assert.equal((await editor()).source,'total-goal','one missed Day opens direct editor');await cancelPad();
  await advance(28);await p.locator('.goal-bar-compression-right').click();await p.waitForFunction(()=>document.querySelector('#autoGoalDialog')?.open);assert.deepEqual(await p.locator('#autoGoalDialog [data-auto-goal-scope]:visible').evaluateAll(es=>es.map(e=>e.dataset.autoGoalScope)),['trip','total']);await p.locator('#autoGoalDialog [data-auto-goal-scope=total]').click();await p.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open);assert.equal((await editor()).value,'110');await cancelPad();

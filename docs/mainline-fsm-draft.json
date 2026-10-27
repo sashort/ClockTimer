@@ -78,14 +78,17 @@
     "Selecting a range updates the current range, label and calculations immediately; a pending asynchronous settings save must not restore the previous range.",
     "Every suppressed component identifies its rule and suppressing owner; optional is not the same as skippable.",
     "Main standard_time_component is trip-only and its label is Standard Time in every scope. Header edit remains available during a normal active trip, including Down/Break/Lunch; standalone breaks have no standard. Aggregate accounting is unchanged.",
-    "Goal-bar Remaining = trip standard minus node counted position. Standard is 0:00 at 100%; Current is 0:00 at counted trip standard. Elapsed uses counted trip time, without prior aggregate elapsed history. Current End Time retains the existing deadline readout.",
+    "Goal-bar Remaining = trip standard minus node counted position. Standard is 0:00 at 100%; Current is 0:00 at counted trip standard. Elapsed uses counted trip time, without prior aggregate elapsed history. End Time for every node, including Current, uses its trip counted position and the existing trip deadline formatter.",
     "Idle nodes use configured goals. Active aggregate nodes use inferred current-trip requirements. Every goal editor edits configured non-inferred values; Standard edits time, not 100%.",
-    "Missed labels disappear and goals exit right; all failed retains final goal at right on a zero-based scale. Elapsed color occupies the right segment; all-failed Overtime runs from Current to final failed goal. Down uses its configured color; Break/Lunch colors do not replace productive bar colors.",
+    "Missed labels disappear and goals exit right; all failed retains Standard at right on a zero-to-100% scale with its time and percent details restored. Elapsed color occupies the right segment; all-failed Overtime runs from Current to final failed goal. Down uses its configured color; Break/Lunch colors do not replace productive bar colors.",
     "Circles are opaque and packed using radius plus half each computed stroke width. Borders touch without overlap; miss pulses expand inward. Ticks travel with nodes. Labels have independent collision packing and leaders. Times/percentages share preferred 16px sizing.",
     "Circle, time, percentage, caption and name share one touch/click/keyboard action. Right triangle opens a single failed editor directly, or a configurable selector for multiple failures. Selector has no entry-origin memory; ordinary label opening supplies normal choices again.",
     "Above-150 user goal input becomes 150 before UI feedback. Correction sentence precedes recalculation and later chain announcements. Speech-passive notice never takes command ownership; audio batching does not serialize independent command slots.",
     "Drop-In shares rendering and configured-goal selection. Observer permissions remain unchanged; publisher Standard Time is read-only. Raw configured publisher attributes take precedence over inferred UI goal components.",
-    "Existing node movement, failure exit, fitting and reduced motion are implemented. Load/start/end choreography is specified in goal-bar.md but remains proposed; do not infer deployed animation states from the specification."
+    "Existing node movement, failure exit, fitting and reduced motion are implemented. Load/start/end choreography is specified in goal-bar.md but remains proposed; do not infer deployed animation states from the specification.",
+    "Trip mode shows Standard, Trip and active Current; aggregate modes show Standard, selected aggregate and active Current; Auto shows both goal types. Idle follows the same goal visibility without Current. Hidden goals cannot enter failure markers or failed-goal choices. All active values are trip-based; aggregate goals are inferred trip requirements.",
+    "Active main Time Elapsed, Time Remaining and End Time readouts use the current trip and Trip labels in every percentage mode. Aggregate reporting remains unchanged.",
+    "Only the next target (highest unfailed visible goal) and Current show times and percentages. Other unfailed nodes retain circles, names and editing actions. All-failed retains Standard at the right with its time and 100% reference details, and Current on a zero-to-100% scale."
   ],
   "review_points": [
     "Audit all legacy transition guards against implementation; a prose guard is not an executable predicate.",
@@ -14461,12 +14464,12 @@
       "mainStandard": "Always the trip standard, labelled Standard Time, editable in every active-trip scope and pause state except standalone break.",
       "classic": "Default saved display; Auto goal label shows inferred trip requirement but editor uses configured goal. Idle selector is [Auto].",
       "idleBar": "0 to max configured goal, up to 150%; no inferred values, Current or times.",
-      "activeBar": "Standard 100%, manual Trip goal, selected aggregate inferred trip requirement, and Current counted trip percent.",
+      "activeBar": "Standard and Current in all modes; Trip mode adds Trip only, aggregate modes add inferred aggregate only, Auto includes both. Details appear only on next target and Current.",
       "remaining": "tripStandard - countedPosition; Standard 100% = 0 remaining",
       "elapsed": "counted trip position; Standard 100% = trip standard duration; exclude aggregate history",
-      "endTime": "Existing deadline semantics and formatter; Current retains main readout.",
+      "endTime": "Existing deadline semantics and formatter; Current uses its own trip counted position.",
       "geometry": "Opaque nodes; sum of outer radii including strokes; labels pack separately; ticks move inside node groups; preferred time/percent 16px.",
-      "failure": "Failed goals lose labels and exit right; retain last failed goal at right only when all failed. All-failed Current = currentPercent / lastGoalPercent on zero-based scale. Overtime segment is right of Current to last failed goal.",
+      "failure": "Failed goals exit right. All-failed retains Standard at right with its time and 100% reference details. Current is proportional on a zero-to-100% scale; Overtime is right of Current.",
       "compression": "Left triangle only for compressed leading range; right triangle when one or more goals fail. Right triangle is an editable control.",
       "selector": "openGoalEditor({scope, choices}); one failed goal routes directly, multiple failures configure existing selector; ordinary Auto label supplies Trip/aggregate. No origin tracking.",
       "cap": "User input >150 becomes 150; first correction sentence has audio priority 1000. Passive notice does not change command focus or serialize independent execution.",
@@ -18091,7 +18094,9 @@
         "node tests/drop-in-page.mjs",
         "node tests/drop-in-view.mjs",
         "node tests/clock-timer-ui-state.mjs --standard-time"
-      ]
+      ],
+      "activeBar": "Standard and Current in all modes; Trip mode adds Trip only, aggregate modes add inferred aggregate only, Auto includes both. Details appear only on next target and Current.",
+      "detailVisibility": "Only the next target (highest unfailed visible goal) and Current show times and percentages. Other unfailed nodes retain circles, names and editing actions. All-failed retains Standard at the right with its time and 100% reference details, and Current on a zero-to-100% scale."
     },
     "GOAL-BAR-LIFECYCLE-ANIMATION": {
       "id": "GOAL-BAR-LIFECYCLE-ANIMATION",
@@ -19295,6 +19300,51 @@
           "selectorOpened": false,
           "editor": "trip Standard Time settings",
           "editablePercent100": false
+        }
+      },
+      {
+        "id": "BAR-MODE-SCOPED-NODES",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripStandardMinutes": 30,
+          "countedTripMinutes": 20,
+          "aggregateStandardMinutes": 66,
+          "tripGoal": 110,
+          "inferredAggregateTripGoal": 125
+        },
+        "when": {
+          "mode": [
+            "trip",
+            "total",
+            "auto"
+          ],
+          "timeMode": [
+            "remaining",
+            "elapsed",
+            "calculated-end"
+          ]
+        },
+        "expect": {
+          "tripNodes": [
+            "standard",
+            "trip",
+            "current"
+          ],
+          "totalNodes": [
+            "standard",
+            "total",
+            "current"
+          ],
+          "autoNodes": [
+            "standard",
+            "trip",
+            "total",
+            "current"
+          ],
+          "sharedNodeValues": "identical trip-based values across modes",
+          "hiddenFailures": "excluded from marker and selector",
+          "mainTime": "Trip label and current-trip readout in every active mode; elapsed excludes aggregate history"
         }
       }
     ]

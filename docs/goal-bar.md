@@ -20,14 +20,25 @@ must select the active projection after restoration, not treat it as a new start
 
 ## Model and time meaning
 
-`ClockTimer.getGoalBarSnapshot()` supplies Standard (100%), the manual Trip goal,
-the selected aggregate's inferred trip requirement, and Current's counted trip
-percentage. The configured aggregate goal and its inferred trip requirement are
+`ClockTimer.getGoalBarSnapshot()` always supplies Standard (100%) and, during an
+active trip, Current's counted trip percentage. Trip mode adds only the manual Trip
+goal. Day/Week/Money/Month/Year/Custom modes add only the selected aggregate's
+inferred trip requirement, with no Trip goal node. Auto includes both Trip and the
+selected aggregate. The same visibility rules apply to idle configured goals.
+Hidden goals do not participate in failure markers, retained failed nodes or the
+failed-goal selector. All active node percentages and times describe the current
+trip, never aggregate elapsed history or raw aggregate percentages. The configured aggregate goal and its inferred trip requirement are
 different: a Day goal of 110% can require 125% on this trip. Editors retain the
 configured overarching value. Calculated requirements may exceed 150%; do not
 clamp those calculations to the input limit.
 
-Time strings sit above nodes; exact percentages sit below them. Both use the
+Only the next target (highest unfailed visible goal) and Current show detailed
+values. Other unfailed nodes retain their circles and names, with no time caption,
+time or percentage. Idle shows the highest configured visible goal percentage
+without times or Current. When all goals have failed, retain Standard at the right
+with its time and 100% reference values alongside Current.
+
+Time strings sit above detailed nodes; exact percentages sit below them. Both use the
 approved 16px preferred font, shrinking together only when space requires it.
 Mode captions use 10px and goal names 11px. Each goal's
 counted position is `tripStandard / (inferredTripPercent / 100)`.
@@ -47,7 +58,9 @@ The existing formatter supplies the exact displayed rounding and sign. Below
 Elapsed mode shows counted trip positions, without aggregate elapsed history.
 Standard's 100% node shows the trip standard duration (30:00 in this example);
 Current shows counted trip elapsed and coincides with Standard at 100%.
-End Time retains existing deadline semantics and Current's main readout.
+End Time uses each node's trip counted position and the existing trip deadline
+formatter. Current uses its own counted trip position, not the main selected
+scope's goal deadline.
 Elapsed/end values increase right to left; Standard-based remaining values
 decrease right to left. Break and Down pauses retain counted positions while
 deadlines account for the pause.
@@ -70,8 +83,8 @@ a detached tick at the original mathematical position.
 On failure, labels fade and the failed node moves off the right edge. Stable
 node IDs preserve motion through recalculation; interrupted animations start
 from visible positions. When every goal fails, retain the last goal at the right
-without its time/percentage labels. That scale runs from zero at the left to the
-last goal's inferred percentage at the right, with Current placed proportionally.
+with Standard's time/percentage labels restored. That scale runs from zero at the
+left to Standard's 100% at the right, with Current placed proportionally.
 
 The bar uses the user's productive Trip/B-game/Overtime colors, ignoring Break
 and Lunch colors. Down colors the segment to the right of the next target.
@@ -214,3 +227,8 @@ flowchart TD
 This graph describes action routing, not new persistence semantics. The
 [working FSM](mainline-fsm-draft.html) includes guarded editor states and the
 [goal/editor SVG flow](goal-display-fsm.svg) is its generated visual projection.
+
+Active main time readouts also stay trip-scoped in every percentage mode: Trip
+Time Elapsed, Trip Time Remaining and Trip End Time. Remaining retains the active
+goal-based trip budget; the bar retains Standard-based Remaining. Idle aggregate
+banked/over summaries and aggregate accounting remain unchanged.

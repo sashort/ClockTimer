@@ -59,7 +59,7 @@ assert.equal(configured.time_component.text,'---','Total End Time is unavailable
 assert.equal(timer.getSummarySnapshot().total.renderedTime,undefined,'idle aggregate totals do not synthesize an end time from the wall clock');
 timer.configure({trip_goal:'107%'});assert.equal(timer.getAttribute('trip-goal'),'107%');assert.equal(timer.getAttribute('total-goal'),'110%');assert.equal(timer.renderedTimeMode,'calculated-end');
 await timer.start({standardTime:'0:30:00'});
-const state=timer.uiState;assert.equal(state.state,'running');assert.equal(state.standard_time_header_text,'Standard Time');assert.equal(state.time_header_text,'Total End Time');assert.equal(state.standard_time_component.value,1800000);assert.equal(state.trip_goal_component.text,'107%');if(process.argv.includes('--standard-time')){
+const state=timer.uiState;assert.equal(state.state,'running');assert.equal(state.standard_time_header_text,'Standard Time');assert.equal(state.time_header_text,'Trip End Time');assert.equal(state.standard_time_component.value,1800000);assert.equal(state.trip_goal_component.text,'107%');if(process.argv.includes('--standard-time')){
  assert.equal(timer.getSummarySnapshot().total.standardTimeMilliseconds,5400000,'aggregate accounting keeps its own standard');
  for(const mode of ['trip','total','auto']){timer.configure({goal_type:mode});const view=timer.getUIState();assert.equal(view.standard_time_header_text,'Standard Time');assert.equal(view.standard_time_component.value,1800000,'main standard is trip-only in '+mode);}
  timer.remove();await window.happyDOM.close();console.log('PASS trip-only Standard Time in all goal modes; aggregate standard retained separately');process.exit(0);

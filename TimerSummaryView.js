@@ -115,7 +115,8 @@
    const goals=(data?.nodes||[]).filter(n=>!n.current&&Number.isFinite(n.percent)&&n.percent>0);
    const current=data?.nodes?.find(n=>n.current),active=data?.active!==false;
    const available=goals.filter(n=>!n.failed);
-   const last=goals.toSorted((a,b)=>a.percent-b.percent)[0];
+   const target=available.toSorted((a,b)=>b.percent-a.percent)[0];
+   const last=(!available.length&&goals.find(n=>n.id==='standard'))||goals.toSorted((a,b)=>a.percent-b.percent)[0];
    const displayed=data?.available?[...available,...(!available.length&&last?[last]:[]),...(current?[current]:[])]:[];
    const number=value=>Number.isFinite(value)?`${Number(value.toFixed(2))}%`:'—';
    const count=displayed.length||1,font=Math.max(9,Math.min(16,(width-12)/(count*4.8+1)));
@@ -146,7 +147,7 @@
    this.track.setAttribute('x',left);this.track.setAttribute('width',Math.max(0,right-left));
    const currentX=active?(ordered.find(n=>n.current)?.x??left):right;
    this.fill.setAttribute('x',data?.all_failed?currentX:left);this.fill.setAttribute('width',Math.max(0,data?.all_failed?right-currentX:currentX-left));this.fill.style.fill=data?.all_failed?(data?.down?color('--timer-down-color')||'#5f6772':overtime):trip;
-   const target=available.toSorted((a,b)=>b.percent-a.percent)[0];const targetX=ordered.find(n=>n.id===target?.id)?.x??right;
+   const targetX=ordered.find(n=>n.id===target?.id)?.x??right;
    this.segment.setAttribute('x',targetX);this.segment.setAttribute('width',Math.max(0,currentX-targetX));this.segment.style.fill=segment;
    this.ticks.replaceChildren();if((!active||allFailed)&&data?.available){const zero=svgElement('text',{x:left,y:84,'text-anchor':'middle',class:'goal-bar-zero'});zero.textContent='0%';this.ticks.append(zero);}
    const leftCompressed=Boolean(data?.available&&active&&min>0&&!allFailed);
@@ -171,13 +172,15 @@
     parts.group.classList.toggle('is-current',Boolean(node.current));parts.group.classList.toggle('is-failed',Boolean(node.failed));
     const label=node.id==='total'?(this.state?.goal_bar_total_label||node.label):node.label;
     parts.caption.style.fontSize=`${Math.min(10,font*.625)}px`;
-    parts.caption.textContent=active&&!node.failed?({'elapsed':'Time Elapsed','remaining':'Time Remaining','calculated-end':'End Time'}[data.time_mode]||''):'';
-    parts.time.textContent=!active||node.failed?'':node.time||'—';parts.percent.textContent=node.failed?'':number(node.percent);parts.label.textContent=node.failed?`${label} ×`:label;
-    parts.time.style.opacity=!active||node.failed?'0':'1';parts.percent.style.opacity=node.failed?'0':'1';parts.time.style.fontSize=parts.percent.style.fontSize=`${font}px`;
+    const detailed=Boolean(node.current||node.id===target?.id||(allFailed&&node.id==='standard'));
+    parts.group.dataset.details=String(detailed);
+    parts.caption.textContent=active&&detailed?({'elapsed':'Time Elapsed','remaining':'Time Remaining','calculated-end':'End Time'}[data.time_mode]||''):'';
+    parts.time.textContent=!active||!detailed?'':node.time||'—';parts.percent.textContent=detailed?number(node.percent):'';parts.label.textContent=node.failed?`${label} ×`:label;
+    parts.time.style.opacity=!active||!detailed?'0':'1';parts.percent.style.opacity=detailed?'1':'0';parts.time.style.fontSize=parts.percent.style.fontSize=`${font}px`;
     const labelOffset=node.labelX-node.x;
     for(const text of [parts.caption,parts.time,parts.percent,parts.label])text.setAttribute('x',labelOffset);
     if(Math.abs(labelOffset)>1&&!node.failed){
-     if(active)this.ticks.append(svgElement('path',{d:`M ${node.x} ${58-r} L ${node.labelX} 40`,fill:'none',stroke:'#c6def5',opacity:.65}));
+     if(active&&detailed)this.ticks.append(svgElement('path',{d:`M ${node.x} ${58-r} L ${node.labelX} 40`,fill:'none',stroke:'#c6def5',opacity:.65}));
      this.ticks.append(svgElement('path',{d:`M ${node.x} ${58+r} L ${node.labelX} 76`,fill:'none',stroke:'#c6def5',opacity:.65}));
     }
     parts.circle.setAttribute('r',r);parts.glyph.textContent=node.current?'●':node.failed?'×':node.id==='standard'?'S':node.id==='trip'?'T':label?.[0]||'G';

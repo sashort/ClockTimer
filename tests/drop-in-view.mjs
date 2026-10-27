@@ -61,14 +61,16 @@ assert.match($('liveStreamRemainingTime').textContent,/3:07/,'Override permits t
 assert.equal($('liveStreamUserSync').textContent,'off','local Sync never changes user Sync');
 $('liveStreamResetPercent').click();
 assert.equal($('liveStreamRemoteTime').textContent,'USER EXACT TIME','reset restores exact mirror');
-// Aggregation assertions use elapsed display independently of the remaining-time control.
+// Aggregate accounting remains scoped; the main elapsed readout always shows the active trip.
 $('liveStreamViewTime').value='elapsed';$('liveStreamViewTime').dispatchEvent(new w.Event('change'));
 const tick=async()=>{for(let i=0;i<5;i++) await Promise.resolve();};
 const select=async(mode)=>{$('liveStreamViewMode').value=mode;$('liveStreamViewMode').dispatchEvent(new w.Event('change'));await tick();};
 await select('day'); assert.equal(requests.length,1);
 assert.equal(requests[0].options.excludeTripId,19,'active trip excluded from persisted totals');
 requests[0].resolve({standardTimeMilliseconds:600000,countedTimeMilliseconds:600000});await tick();
-assert.match($('liveStreamRemoteTime').textContent,/15:00/,'active trip included exactly once');
+assert.match($('liveStreamRemoteTime').textContent,/5:00/,'Day main elapsed is current-trip only');
+assert.equal(controller.timer.getSummarySnapshot().total.countedTimeElapsedMilliseconds,900000,'aggregate accounting includes active trip exactly once');
+assert.equal($('liveStreamTimeLabel').textContent,'Trip Time Elapsed');
 assert.equal($('liveStreamStandardTime').textContent,'10:00','aggregate view keeps the active trip standard');assert.equal($('liveStreamStandardLabel').textContent,'Standard Time');
 assert.match($('liveStreamViewingMode').textContent,/Day.*2026-10-07/);
 await select('week'); const old=requests.at(-1);
@@ -76,13 +78,15 @@ await select('year'); const recent=requests.at(-1);
 old.resolve({standardTimeMilliseconds:1,countedTimeMilliseconds:9999999});await tick();
 assert.equal($('liveStreamRemoteTime').textContent,'—','stale range request never updates current readout');
 recent.resolve({standardTimeMilliseconds:600000,countedTimeMilliseconds:1200000});await tick();
-assert.match($('liveStreamRemoteTime').textContent,/25:00/);
+assert.match($('liveStreamRemoteTime').textContent,/5:00/,'Year main elapsed remains current-trip only');
+assert.equal(controller.timer.getSummarySnapshot().total.countedTimeElapsedMilliseconds,1500000,'Year accounting remains aggregate-scoped');
 await select('custom'); assert.equal($('liveStreamViewStatus').textContent,'invalidRange');
 $('liveStreamViewStart').value='2026-10-01'; $('liveStreamViewEnd').value='2026-10-02'; controller.select();await tick();
 assert.equal(requests.at(-1).window.startTime,'2026-10-01T04:00:00.000Z');
 assert.equal(requests.at(-1).window.endTime,'2026-10-03T03:59:59.999Z','custom end day is included');
 requests.at(-1).resolve({standardTimeMilliseconds:120000,countedTimeMilliseconds:60000});await tick();
-assert.match($('liveStreamRemoteTime').textContent,/1:00/,'active trip outside dates is excluded');
+assert.match($('liveStreamRemoteTime').textContent,/1:00/,'historical-only observer has no active trip and retains its historical elapsed summary');
+assert.equal(controller.timer.getSummarySnapshot().total.countedTimeElapsedMilliseconds,60000,'active trip outside dates is excluded from aggregate accounting');
 await select('month');requests.at(-1).reject(new Error('denied'));await tick();
 assert.equal($('liveStreamRemoteTime').textContent,'—');assert.equal($('liveStreamViewStatus').textContent,'failed');
 await select('week'); const leaving=requests.at(-1);controller.clear();leaving.resolve({standardTimeMilliseconds:1,countedTimeMilliseconds:99999});await tick();

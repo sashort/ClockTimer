@@ -207,7 +207,7 @@
     },
     {
       "id": "BAR-TIME-BASES",
-      "requirement": "Goal-bar Remaining = trip standard minus node counted position. Standard is 0:00 at 100%; Current is 0:00 at counted trip standard. Elapsed uses counted trip time, without prior aggregate elapsed history. Current End Time retains the existing deadline readout.",
+      "requirement": "Goal-bar Remaining = trip standard minus node counted position. Standard is 0:00 at 100%; Current is 0:00 at counted trip standard. Elapsed uses counted trip time, without prior aggregate elapsed history. End Time for every node, including Current, uses its trip counted position and the existing trip deadline formatter.",
       "evidence": "node tests/goal-bar.mjs"
     },
     {
@@ -217,7 +217,7 @@
     },
     {
       "id": "BAR-FAILURE-COLOR",
-      "requirement": "Missed labels disappear and goals exit right; all failed retains final goal at right on a zero-based scale. Elapsed color occupies the right segment; all-failed Overtime runs from Current to final failed goal. Down uses its configured color; Break/Lunch colors do not replace productive bar colors.",
+      "requirement": "Missed labels disappear and goals exit right; all failed retains Standard at right on a zero-to-100% scale with its time and percent details restored. Elapsed color occupies the right segment; all-failed Overtime runs from Current to final failed goal. Down uses its configured color; Break/Lunch colors do not replace productive bar colors.",
       "evidence": "node tests/goal-bar-browser.cjs"
     },
     {
@@ -245,6 +245,21 @@
       "requirement": "Existing node movement, failure exit, fitting and reduced motion are implemented. Load/start/end choreography is specified in goal-bar.md but remains proposed; do not infer deployed animation states from the specification.",
       "evidence": "node tests/fsm-reference.mjs",
       "verificationScope": "Documentation status and parity only; lifecycle choreography is proposed, not runtime evidence."
+    },
+    {
+      "id": "BAR-MODE-VISIBILITY",
+      "requirement": "Trip mode shows Standard, Trip and active Current; aggregate modes show Standard, selected aggregate and active Current; Auto shows both goal types. Idle follows the same goal visibility without Current. Hidden goals cannot enter failure markers or failed-goal choices. All active values are trip-based; aggregate goals are inferred trip requirements.",
+      "evidence": "node tests/goal-bar.mjs"
+    },
+    {
+      "id": "MAIN-TIME-TRIP",
+      "requirement": "Active main Time Elapsed, Time Remaining and End Time readouts use current-trip time and Trip labels in all percentage modes. Idle aggregate banked/over summaries and aggregate accounting remain unchanged.",
+      "evidence": "node tests/goal-bar.mjs"
+    },
+    {
+      "id": "BAR-TARGET-DETAILS",
+      "requirement": "Only the next target (highest unfailed visible goal) and Current show times and percentages. Other unfailed nodes retain circles, names and editing actions. All-failed retains Standard at the right with its time and 100% reference details, and Current on a zero-to-100% scale.",
+      "evidence": "node tests/goal-bar-browser.cjs"
     }
   ],
   "cases": [
