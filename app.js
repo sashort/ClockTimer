@@ -60,6 +60,7 @@
         renderedTimeMode: "wmof.clock.renderedTimeMode",
         graphicalSettings: "wmof.clock.graphicalSettings",
         tripPreferences: "wmof.clock.tripPreferences",
+        percentageDisplay: "wmof.clock.percentageDisplay",
         tripLogPinned: "wmof.clock.tripLogPinned",
         tripLogRange: "wmof.clock.tripLogRange",
         tripLogIncludeCurrent: "wmof.clock.tripLogIncludeCurrent",
@@ -828,6 +829,7 @@
                     allowanceCreditMilliseconds:summary.total?.allowanceCreditMilliseconds} : null
             },
             microphone:globalThis.WMOFMicrophoneControl?.read(globalThis.SpeechMenu),
+            percentageDisplay:app.dataset.percentageDisplay || "classic",
             timeDisplay:clockTimer.renderedTimeMode,
             model:clockTimer.exportObserverSnapshot(),
             appearance:globalThis.WMOFTimerAppearance?.capture(clockTimer),
@@ -2583,7 +2585,7 @@
                             "open" &&
                         record.target
                             ?.matches?.(
-                                "dialog[open]"
+                                "dialog[open]:not([data-speech-passive])"
                             )
                 )
             ) {
@@ -6831,6 +6833,17 @@
         }
     }
 
+    function applyPercentageDisplay(mode = safeStorageGet(STORAGE.percentageDisplay), {persist = false} = {}) {
+        const value = mode === "bar" ? "bar" : "classic";
+        if (persist) safeStorageSet(STORAGE.percentageDisplay, value);
+        app.dataset.percentageDisplay = value;
+        clockTimer?.toggleAttribute("goal-bar", value === "bar");
+        globalThis.WMOFTimerSummaryView?.setMode(document, value);
+        for (const button of document.querySelectorAll("[data-percentage-display]"))
+            button.setAttribute("aria-checked", String(button.dataset.percentageDisplay === value));
+        if (clockTimer) renderClockTimerUIState(clockTimer.getUIState());
+    }
+
     function getTripPreferences() {
         let stored = {};
 
@@ -6875,6 +6888,7 @@
     function fillTripPreferencesForm(
         preferences = getTripPreferences()
     ) {
+        applyPercentageDisplay();
         const form =
             $("#stateSettingsForm");
 
@@ -8827,7 +8841,7 @@
         const target = state?.effective_goal_type;
         const targetLabel = target === "total" ? totalScopeLabel()
             : target === "standard" ? "Standard" : "Trip";
-        const label = mode === "auto" ? `[${targetLabel}]`
+        const label = mode === "auto" ? `[${state?.trip_active && !state?.break_only ? targetLabel : "Auto"}]`
             : mode === "total" ? totalScopeLabel() : "Trip";
         scopeToggle.textContent = label;
         scopeToggle.setAttribute("aria-label", globalThis.WMOFLanguagePack.text(
@@ -9207,11 +9221,14 @@
                     state.time_header_text
                 );
         }
-        if (globalThis.WMOFTimerSummaryView) WMOFTimerSummaryView.render(document,state);
+        if (globalThis.WMOFTimerSummaryView) WMOFTimerSummaryView.render(document,
+            {...state, goal_bar_total_label:totalScopeLabel()});
         else { $("#standardTimeValue").textContent = state.standard_time_component.text;
         $("#renderedTimeValue").textContent = state.time_component.text;
         $("#currentPercentValue").textContent = state.current_percent_component.text;
         $("#goalPercentValue").textContent = state.goal_component.text; }
+        const classicPreview = $("#percentageClassicPreview");
+        if (classicPreview) classicPreview.textContent = `${state.current_percent_component.text} / ${state.goal_component.text}`;
         $("#goalPercentValue").setAttribute(
             "aria-label",
             state.goal_type === globalThis.WMOFLanguagePack.text("137eb683-b835-5fb1-a76a-a840dcd2a563")
@@ -12237,6 +12254,17 @@
             },
             CLOCK_TIMER_DOUBLE_PRESS
         );
+    });
+
+    for (const button of document.querySelectorAll("[data-percentage-display]"))
+        {button.addEventListener("click", () => applyPercentageDisplay(button.dataset.percentageDisplay, {persist:true}));
+        button.addEventListener("keydown", event => {if (!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
+            event.preventDefault();const choices=[...document.querySelectorAll("[data-percentage-display]")];
+            const next=event.key === "Home" ? choices[0] : event.key === "End" ? choices.at(-1) : choices.find(choice=>choice!==button);
+            next.focus();next.click();});}
+    document.querySelector(".percent-summary")?.addEventListener("goal-bar-edit", event => {
+        if (event.detail?.scope === "current") globalThis.WMOFActions.toggleRenderedTime();
+        else globalThis.WMOFActions.openGoalEditor({scope:event.detail?.scope});
     });
 
     $("#syncOverrideButton")?.addEventListener("click", () => {
@@ -16608,6 +16636,8 @@
             return;
         }
 
+        const standardValue = $("#autoStandardTimeValue");
+        if (standardValue) standardValue.textContent = formatDuration(clockTimer.getSummarySnapshot()?.trip?.standardTimeMilliseconds || 0);
         if (autoTripGoalValue) {
             autoTripGoalValue.textContent =
                 getConfiguredGoalDisplay("trip");
@@ -16635,12 +16665,10 @@
 
         const lockedScopes = new Set(endTimeGoalOverride?.scopes || []);
         for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")) {
-            const scope = button.dataset.autoGoalScope === "total" ? "total" : "trip";
-            const locked = lockedScopes.has(scope);
+            const scope = button.dataset.autoGoalScope;
+            const locked = scope === "standard" ? Boolean(clockTimer.getUIState().break_only) : lockedScopes.has(scope);
             const scopeLabel =
-                scope === "total"
-                    ? totalScopeLabel()
-                    : "Trip";
+                scope === "total" ? totalScopeLabel() : scope === "standard" ? "Standard Time" : "Trip";
             button.disabled = locked;
             button.setAttribute(
                 "aria-label",
@@ -16651,11 +16679,14 @@
         }
     }
 
-    function openAutoGoalDialog() {
+    function openAutoGoalDialog({choices = ["trip", "total"]} = {}) {
         if (!autoGoalDialog) {
             return false;
         }
 
+        const offered = new Set(choices);
+        for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]"))
+            button.hidden = !offered.has(button.dataset.autoGoalScope);
         refreshAutoGoalDialog();
 
         return openDialogElement(
@@ -16731,8 +16762,13 @@
             );
         }
         if (state.mode === "percent") {
-            const percent =
-                Number(state.pending);
+            const percent = Number(state.pending);
+            if (percent > 150 && ["trip-goal","total-goal"].includes(state.source)) {
+                numberPadState.pending = "150";
+                refreshNumberPad();
+                if (voiceEntryState) renderVoiceEntry({value:"150"});
+                return setGoalPercentValue(state.source === "total-goal" ? "total" : "trip", percent);
+            }
 
             const attribute =
                 state.source === "total-goal"
@@ -17037,7 +17073,7 @@
         const kind = interval === "lunch" ? "lunch" : interval === "break"
             ? ["short", "short-break"].includes(timerState.active_break_type) ? "short-break" : "break" : null;
         const paused = interval === "break" || interval === "lunch" || interval === "down";
-        const surfaces = [...document.querySelectorAll('dialog[open]')].map(element=>element.id);
+        const surfaces = [...document.querySelectorAll('dialog[open]:not([data-speech-passive])')].map(element=>element.id);
         const focus = globalThis.SpeechMenu?.activeSurface?.id || surfaces.at(-1) || "main";
         const editor = interactionStateReady ? numberPadState : undefined;
         const prompt = interactionStateReady ? speechBreakPromptState : undefined;
@@ -19237,14 +19273,10 @@
         )
         .forEach(button => {
             button.addEventListener(
-                "pointerup",
+                "click",
                 () => {
-                    const scope =
-                        button.dataset.autoGoalScope ===
-                            "total"
-                            ? "total"
-                            : "trip";
-
+                    if (button.hidden || button.disabled) return;
+                    const scope = button.dataset.autoGoalScope;
                     closeDialog(
                         autoGoalDialog,
                         {
@@ -19254,9 +19286,7 @@
                         }
                     );
 
-                    void openPercentGoalNumberPad(
-                        scope
-                    ).catch(() => {});
+                    void globalThis.WMOFActions.openGoalEditor({scope});
                 }
             );
         });
@@ -22703,7 +22733,7 @@
                 [
                     ...document
                         .querySelectorAll(
-                            "dialog[open]"
+                            "dialog[open]:not([data-speech-passive])"
                         )
                 ].at(-1);
 
@@ -22808,7 +22838,7 @@
         const switches = {sync:getSyncGoalsState(), recognition:speechRecognitionEnabled(),
             awake:!globalThis.SpeechMenu?.muted, chime:audioSettings.masters.chime,
             speech:audioSettings.masters.summary, details:audioSettings.masters.details};
-        const values = {switches, surfaces:[...document.querySelectorAll('dialog[open]')].map(el=>el.id),
+        const values = {switches, surfaces:[...document.querySelectorAll('dialog[open]:not([data-speech-passive])')].map(el=>el.id),
             trip:clockTimer.currentTripId ?? null, active:Boolean(state?.trip_active),
             interval:state?.interval_state?.intervalType || state?.active_interval_type,
             breakType:state?.active_break_type, mode:clockTimer.percentMode,
@@ -22948,7 +22978,8 @@
                     false,
                 eventName = announcement,
                 feedbackSong,
-                ignoreChimeMaster = false
+                ignoreChimeMaster = false,
+                priority
             } = {}
         ) => {
             const response =
@@ -23024,6 +23055,7 @@
                 summary.perform ? spokenResponse : "", output, speechGuard),
                 {
                     exclusive,
+                    priority,
                     id: nextSemanticAnnouncementId++
                 }
             )
@@ -23377,9 +23409,9 @@
                 if (!goalChangeFeedbackDepth) setSyncAnnouncementBaseline();
             }
         }
-        message(scope, after) {
+        message(scope, after, {capped = false} = {}) {
             const sentences = [];
-            if (after !== this.goals[scope] || (scope === "total" && this.range !== getTripLogRange()))
+            if (!capped && (after !== this.goals[scope] || (scope === "total" && this.range !== getTripLogRange())))
                 sentences.push(announcementText("messages.settings.goalChanged", {
                     scope: scope === "total" ? totalScopeLabel() : "Trip", percent: after.replace(/%$/, "")
                 }));
@@ -23396,13 +23428,15 @@
 
     const setGoalPercentValue = async (scope, percent, feedback = new GoalChangeAnnouncement()) => {
         const normalizedScope = String(scope || "").trim().toLowerCase();
-        const value = SpeechLanguageController.parse(percent, "percent");
-        if (!["trip", "total"].includes(normalizedScope) || !Number.isFinite(value) || value <= 0) return false;
+        const requested = SpeechLanguageController.parse(percent, "percent");
+        if (!["trip", "total"].includes(normalizedScope) || !Number.isFinite(requested) || requested <= 0) return false;
+        const value = Math.min(150, requested), capped = requested > 150;
         if ((endTimeGoalOverride?.scopes || []).includes(normalizedScope)) {
             flashEndTimeGoalLock();
             return false;
         }
-        return feedback.run(async () => {
+        const releaseCapBatch = capped ? beginAnnouncementBatch("goal-limit") : () => {};
+        try { return await feedback.run(async () => {
             const state = clockTimer.configure({
                 [normalizedScope === "total" ? "total_goal" : "trip_goal"]: `${value}%`
             });
@@ -23411,9 +23445,17 @@
             queueSummaryRefresh();
             await Promise.resolve();
             const after = goalPercentForScope(normalizedScope);
-            const message = after && feedback.message(normalizedScope, after);
-            return message ? confirmInformationalChange("goal-change", message) : true;
-        });
+            const prefix = capped ? announcementText("messages.settings.goalCapped", {scope:normalizedScope === "total" ? totalScopeLabel() : "Trip"}) : "";
+            if (capped) {
+                const notice = $("#goalLimitDialog");
+                $("#goalLimitMessage").textContent = announcementText("messages.settings.goalCappedNotice", {
+                    scope:normalizedScope === "total" ? totalScopeLabel() : "Trip", requested});
+                // Informational notice: never waits for acknowledgement to resolve the command slot.
+                if (!notice.open) notice.show();
+            }
+            const message = [prefix, after && feedback.message(normalizedScope, after, {capped})].filter(Boolean).join(" ");
+            return message ? confirmInformationalChange("goal-change", message, {priority:capped?1000:undefined}) : true;
+        }); } finally {releaseCapBatch();}
     };
 
     let microphoneFeedbackEnabled = Boolean(globalThis.SpeechMenu?.started && !globalThis.SpeechMenu?.muted);
@@ -24499,7 +24541,9 @@
                 const range = globalThis.WMOFLanguagePack.language.speech.ranges?.[goalScope];
                 if (!range) return false;
                 const feedback = new GoalChangeAnnouncement();
-                return feedback.run(async () => {
+                const requested = SpeechLanguageController.parse(percent, "percent");
+                const releaseCapBatch = requested > 150 ? beginAnnouncementBatch("goal-limit") : () => {};
+                try { return await feedback.run(async () => {
                     if (getTripLogRange() !== range) {
                         setTripLogRange(range, {announce: false});
                         await tripRangeRefreshCompletion;
@@ -24511,7 +24555,7 @@
                         announcementText("messages.goal.label", {scope: totalScopeLabel()}),
                         goalPercentForScope("total")
                     );
-                });
+                }); } finally {releaseCapBatch();}
             },
 
             readTotalGoal() {
@@ -25200,25 +25244,12 @@
                 );
             },
 
-            openStandardTimeSettings() {
-                let summary;
-
-                try {
-                    summary =
-                        clockTimer
-                            .getSummarySnapshot
-                            ?.(
-                                new Date()
-                            );
-                }
-                catch {}
-
-                if (
-                    !tripIsLive() ||
-                    summary?.scope ===
-                        "total"
-                ) {
-                    return false;
+            openStandardTimeSettings({tripScope = false} = {}) {
+                if (clockTimer.getUIState().break_only) return false;
+                if (!tripIsLive()) {
+                    return tripScope
+                        ? beginNewTripWorkflow({inputMode:"touch", signal:currentActionSignal()})
+                        : false;
                 }
 
                 resetTripSettingsNavigation();
@@ -25232,7 +25263,20 @@
                 );
             },
 
-            openGoalEditor() {
+            openGoalEditor({scope, choices} = {}) {
+                if (scope === "failed") {
+                    choices = clockTimer.getGoalBarSnapshot().nodes.filter(node => node.failed).map(node => node.id);
+                    if (!choices.length) return false;
+                    if (choices.length === 1) return globalThis.WMOFActions.openGoalEditor({scope:choices[0]});
+                    return openAutoGoalDialog({choices});
+                }
+                if (scope === "standard") return globalThis.WMOFActions.openStandardTimeSettings({tripScope:true});
+                if (["trip", "total"].includes(scope)) {
+                    if ((endTimeGoalOverride?.scopes || []).includes(scope)) {flashEndTimeGoalLock();return false;}
+                    void openPercentGoalNumberPad(scope).catch(() => {});
+                    return true;
+                }
+                if (Array.isArray(choices)) return openAutoGoalDialog({choices});
                 if (
                     endTimeGoalLockedForMode()
                 ) {
@@ -27830,12 +27874,12 @@
             SpeechMenu.registerSurface(document.body, {
                 isOpen: () => true,
                 close: () => speechMicBar?.optionsOpen ? actions.closeSpeechOptions() : actions.closeActiveSurface(),
-                cancel: () => speechMicBar?.optionsOpen ? actions.closeSpeechOptions() : !document.querySelector('dialog[open]') && !voiceEntryState && getTripListState() !== 'open' &&
+                cancel: () => speechMicBar?.optionsOpen ? actions.closeSpeechOptions() : !document.querySelector('dialog[open]:not([data-speech-passive])') && !voiceEntryState && getTripListState() !== 'open' &&
                     globalThis.WMOFSpeechAvailability.canCancelDownTime()
                     ? actions.cancelDownTime() : actions.closeActiveSurface()
             });
             for (const surface of document.querySelectorAll('dialog, [popover]')) {
-                if (surface === speechMicBar || surface === sharedModal || surface.getAttribute('role') === 'status') continue;
+                if (surface === speechMicBar || surface === sharedModal || surface.hasAttribute('data-speech-passive') || surface.getAttribute('role') === 'status') continue;
                 const dismiss = async () => {
                     if (speechMicBar?.optionsOpen) return actions.closeSpeechOptions();
                     const result = surface === voiceEntrySurface ? await closeVoiceEntry({cancel: true})

@@ -1281,15 +1281,44 @@ if(process.argv.includes('--scope-feedback')) {
  console.log('PASS scope feedback for voice/pointer Trip, Auto and date scopes, retained filters, unchanged cue and no duplicates');
  await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--goal-limit')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();await settle();
+ spoken.length=0;await window.WMOFActions.changeGoal('175','trip');await settle();
+ assert.equal(timer.getAttribute('trip-goal'),'150%');assert(window.document.querySelector('#goalLimitDialog').open);
+ assert.match(window.document.querySelector('#goalLimitMessage').textContent,/175.*150/);
+ assert(spoken[0].startsWith('Trip goal changed to 150 percent.'),'cap notice is first: '+JSON.stringify(spoken));
+ assert.equal(window.WMOFCoordinator.lockCount,0,'notice does not hold the command slot');
+ window.document.querySelector('#goalLimitDialog').close();await settle();
+ window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await settle();spoken.length=0;const limitChain=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(limitChain,'day goal one seventy five sync on',true);await limitChain.digestQueue;await limitChain.segmentBarrier;await settle();
+ assert(spoken[0]?.startsWith('Day goal changed to 150 percent.'),'cap precedes later chain announcements: '+JSON.stringify(spoken));
+ if(window.document.querySelector('#goalLimitDialog').open)window.document.querySelector('#goalLimitDialog').close();
+ await window.WMOFActions.changeGoal('110','trip');await settle();
+ await window.WMOFActions.openGoalEditor();await settle();
+ if(window.document.querySelector('#autoGoalDialog').open){window.document.querySelector('[data-auto-goal-scope=trip]').click();await settle();}
+ assert.equal(window.WMOFInteractionState.state.editor.mode,'percent');
+ for(const digit of '175')await window.WMOFActions.enterNumberPadDigit(digit);
+ spoken.length=0;await window.WMOFActions.confirmNumberPad();await settle();
+ assert.equal(timer.getAttribute('trip-goal'),'150%','touch entry uses the same cap');
+ assert(spoken[0].startsWith('Trip goal changed to 150 percent.'),'touch cap precedes confirmation');
+ assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ console.log('PASS capped direct and pad goals, UI notice, state update and announcement priority');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--auto-selector')) {
  for(const mode of ['auto','trip','total','auto']) {
   timer.configure({goal_type:mode});await settle();
   const target=timer.getUIState().effective_goal_type;
   const button=window.document.querySelector('#scopeToggle');
-  if(mode==='auto')assert.equal(button.textContent,`[${target==='total'?'Day':target==='standard'?'Standard':'Trip'}]`);
+  if(mode==='auto')assert.equal(button.textContent,'[Auto]','idle Auto does not expose its fallback Standard target');
   else assert.equal(button.textContent,mode==='total'?'Day':'Trip');
  }
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
+ timer.configure({goal_type:'auto',trip_goal:'110%',total_goal:'120%'});await settle();
+ await window.WMOFActions.openGoalEditor();await settle();
+ assert(window.document.querySelector('#autoGoalDialog').open,'pressing Auto goal keeps the existing chooser');
+ assert.equal(window.document.querySelector('#autoTripGoalValue').textContent,'110%');
+ assert.equal(window.document.querySelector('#autoTotalGoalValue').textContent,'120%','chooser retains overarching goal rather than inferred trip requirement');
+ window.document.querySelector('[data-auto-goal-scope=total]').click();await settle();
+ assert.equal(window.WMOFInteractionState.state.editor.value,'120','goal editor edits the overarching target');
  console.log('PASS Auto selector follows the active target and manual scopes retain their labels');
  await window.happyDOM.close();process.exit(0);
 }

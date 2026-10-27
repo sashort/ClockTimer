@@ -173,7 +173,9 @@
       "goalChanged": "{scope} goal set to {percent} percent.",
       "autoGoalRecalculated": "Auto goal recalculated.",
       "syncValueChanged": "Sync value changed.",
-      "newTripGoal": "New trip goal {percent} percent."
+      "newTripGoal": "New trip goal {percent} percent.",
+      "goalCapped": "{scope} goal changed to 150 percent.",
+      "goalCappedNotice": "{scope} goal changed from {requested} percent to 150 percent."
     },
     "readback": {
       "metric": "{label} {value}",

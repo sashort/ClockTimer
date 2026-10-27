@@ -304,8 +304,8 @@
     },
     "89bde4b2-b28d-5ed9-8307-78612b549eab": {
       "id": "89bde4b2-b28d-5ed9-8307-78612b549eab",
-      "text": "Trip Standard Time",
-      "default": "Trip Standard Time"
+      "text": "Standard Time",
+      "default": "Standard Time"
     },
     "497172e5-334d-595e-b923-354179ba0a09": {
       "id": "497172e5-334d-595e-b923-354179ba0a09",
@@ -6935,6 +6935,41 @@
       "id": "1f8d9e5f-bb50-5bc2-b591-783995c8e0a1",
       "text": "About Sync Override",
       "default": "About Sync Override"
+    },
+    "b4ddfd1d-1282-5dd0-99e8-64faed3a9871": {
+      "id": "b4ddfd1d-1282-5dd0-99e8-64faed3a9871",
+      "text": "Percentage display",
+      "default": "Percentage display"
+    },
+    "2fe66d18-0939-55b5-ab6b-8338bdf29ece": {
+      "id": "2fe66d18-0939-55b5-ab6b-8338bdf29ece",
+      "text": "Classic",
+      "default": "Classic"
+    },
+    "828a8e60-b8ee-5bc6-8bd0-093c233c0b4e": {
+      "id": "828a8e60-b8ee-5bc6-8bd0-093c233c0b4e",
+      "text": "Goal bar",
+      "default": "Goal bar"
+    },
+    "359b97a5-0153-5bc4-a494-88c55aacd72f": {
+      "id": "359b97a5-0153-5bc4-a494-88c55aacd72f",
+      "text": "Goal adjusted",
+      "default": "Goal adjusted"
+    },
+    "30af89a0-13f3-5351-948e-952373fbc8d5": {
+      "id": "30af89a0-13f3-5351-948e-952373fbc8d5",
+      "text": "OK",
+      "default": "OK"
+    },
+    "26fe3f43-0213-5b89-81af-3bcfd6a82e72": {
+      "id": "26fe3f43-0213-5b89-81af-3bcfd6a82e72",
+      "text": "Standard Time",
+      "default": "Standard Time"
+    },
+    "ed9a0779-1be2-589f-ad51-951e6129ba66": {
+      "id": "ed9a0779-1be2-589f-ad51-951e6129ba66",
+      "text": "---",
+      "default": "---"
     }
   }
 }

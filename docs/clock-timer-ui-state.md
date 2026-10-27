@@ -82,8 +82,8 @@ The symbol means follow the corresponding observed-user setting. It is independe
 of the current setting being on or off, and its label comes from the language pack.
 
 For Sync, retain the circular Sync arrows and render the same Mirror glyph as a
-13-pixel badge at the lower-left (`left: -2px; bottom: -2px`). Existing cloud/error
-status badges retain the lower-right corner. Mirror can coexist with an off Sync
+13-pixel badge at the lower-left (`left: -2px; bottom: -2px`). The below-floor Override triangle occupies the lower right when in use;
+cloud/error status moves above it so both remain readable. Mirror can coexist with an off Sync
 state; it does not imply Sync is on.
 
 Mode, Sync and Goal changes share the Default/User apply confirmation. Matching
@@ -111,3 +111,46 @@ including colors, range visibility, hand visibility, formats and timer layout.
 Appearance follows every publisher snapshot independently of viewer mode/goals.
 Migration `011_user_settings` adds the JSON object and revision; the existing
 ordered deployment migration runner applies it before the new app is activated.
+
+## Current presentation contract, 27 October 2026
+
+| Field or control | Current rule |
+| --- | --- |
+| `standard_time_header_text` | Always `Standard Time`. |
+| `standard_time_component` | The current trip standard in every goal/range mode; no aggregate standard. Standalone breaks remain unavailable. |
+| `goal_component` in Auto | Inferred current-trip requirement for the selected target; goal editors retain configured values. |
+| Idle Auto selector | `[Auto]`; active normal trip shows its target in brackets. |
+| `goal_bar` | Opt-in projection when the timer has `goal-bar`; see below. |
+| `sync_override_in_use` | Existing below-floor indicator at Sync’s lower right; cloud moves above it when necessary. |
+
+Aggregate standard/counting data remains in summary/accounting APIs and reports.
+The main Standard Time header opens the existing trip settings editor throughout
+an active production trip, including aggregate modes, Down and scheduled breaks.
+Drop-In retains its read-only publisher Standard Time control.
+
+`getGoalBarSnapshot()` returns immutable `available`, `active`, `nodes`, failure,
+phase and Down data. Idle also supplies `scale_min: 0` and `scale_max` up to 150.
+Each node identifies `standard`, `trip`, `total` or `current`, its label, percentage,
+formatted time and failure status. Active nodes include counted-time positions.
+Idle nodes are configured goals, have null times and contain no Current node.
+Classic remains the default saved `wmof.clock.percentageDisplay` preference;
+publisher `viewData.percentageDisplay` selects the same renderer in Drop-In.
+
+For an active trip, aggregate nodes show inferred trip percentages. Remaining
+uses Standard as zero, while Elapsed uses counted trip duration without aggregate
+history. With a 30-minute standard, Standard is 0:00 Remaining or 30:00 Elapsed.
+Current at 150% is 20 counted minutes: 10:00 Remaining or 20:00 Elapsed. End Time
+retains the existing deadline formatter and Current readout. These bar duration
+rules are deliberately distinct from the main goal-based time readout.
+
+A circle and its caption/time/percentage/name form one action target.
+`WMOFActions.openGoalEditor({scope})` accepts Standard, Trip, Total or failed-node
+routing; ordinary no-argument entry preserves the Classic selector behavior.
+Multiple failures supply `choices` to the existing selector; no entry-origin
+history is stored. Direct goal edits use non-inferred values. Input above 150 is
+capped with a speech-passive notice and correction-first announcement order;
+calculated inferred values are not capped.
+
+Geometry, typography, triangles, colors and the proposed load/start/end motion
+sequences are specified in [goal-bar.md](goal-bar.md). Existing fit/movement effects
+must not be confused with that unimplemented lifecycle choreography.

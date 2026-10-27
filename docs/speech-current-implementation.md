@@ -287,3 +287,20 @@ Dynamic activation/deactivation of selected parallel recognizers was discussed a
 future option. It is distinct from the current pool of idle prepared decoders and from
 the experimental all-decoder mode. It has not been implemented in I0462X. Server-side
 recognition remains a [deferred experiment](speech-experiments.md).
+
+## UI integration addendum, 27 October 2026
+
+The stable decoder/capture architecture above remains the comparison baseline.
+Today’s local working changes add a speech-passive goal-limit notice, not a new
+recognizer or command-execution path. `dialog[open]` command-surface discovery
+excludes `data-speech-passive`; the notice cannot retain focus/ownership or block
+later accepted commands. The existing announcement batch holds only audio while
+a capped scope goal resolves, then emits its correction before recalculation and
+later chain feedback. Command-slot independence and duplicate guards remain.
+
+Node/label/triangle pointer actions reuse existing scoped goal and standard-time
+editors. The configurable selector has no entry-origin memory. Goal read/edit
+values remain configured percentages; inferred bar values are display payload.
+See [goal-bar.md](goal-bar.md) and [the UI change audit](2026-10-27-ui-changes.md).
+This addendum records the release changes without asserting a deployed build or
+changing the recorded stability observation for I0462X.

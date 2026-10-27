@@ -123,6 +123,18 @@ assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'di
 w.testStream.dispatchEvent(new w.CustomEvent('viewerChanged',{detail:{state:'connected'}}));
 w.testStream.dispatchEvent(new w.CustomEvent('snapshot',{detail:{targetUserId:3,snapshot:{userId:3}}}));
 assert.equal(events.filter(value=>value==='snapshot:3').length,7);
+// Bar entry targets configured values and supplies its own failed-goal choices.
+await chooseSource('user');
+w.testView.snapshot={...live,viewData:{...live.viewData,mode:'auto',model:{attributes:[['trip-goal','105%'],['total-goal','110%']]}},uiState:{...live.uiState,trip_goal_component:{value:1.5,text:'150%'},total_goal_component:{value:1.25,text:'125%'}}};
+w.testView.displayState={goal_bar:{nodes:[{id:'standard',percent:100,failed:false},{id:'trip',percent:105,failed:false},{id:'total',percent:125,failed:true}]}};
+const barAction=scope=>w.document.querySelector('.percent-summary').dispatchEvent(new w.CustomEvent('goal-bar-edit',{bubbles:true,detail:{scope}}));
+barAction('total');assert.deepEqual(w.goalOpened,{scope:'total',value:110},'bar edits raw publisher goal, not inferred 125%');
+barAction('failed');assert.deepEqual(w.goalOpened,{scope:'total',value:110},'single failed goal goes directly to its editor');
+w.testView.displayState.goal_bar.nodes.forEach(n=>n.failed=true);barAction('failed');
+assert.equal($('autoGoalDialog').open,true);assert.deepEqual([...$('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]')].filter(e=>!e.hidden).map(e=>e.dataset.autoGoalScope),['standard','trip','total']);assert.equal($('autoGoalDialog').querySelector('[data-auto-goal-scope=standard]').disabled,true,'publisher standard stays read-only');
+$('autoGoalDialog').querySelector('[data-auto-goal-scope=trip]').click();assert.deepEqual(w.goalOpened,{scope:'trip',value:105});
+$('goalPercentValue').click();assert.deepEqual([...$('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]')].filter(e=>!e.hidden).map(e=>e.dataset.autoGoalScope),['trip','total'],'normal label entry resets selector choices');$('autoGoalDialog').close();
+w.testView.snapshot=live;await chooseSource('custom');
 // Full peer loss clears the mirror and disables messaging, then Watch reauthorizes.
 await w.testStream.stopViewing();await tick();
 assert.equal(w.document.getElementById('liveStreamViewerStatus').textContent,'Not viewing.');

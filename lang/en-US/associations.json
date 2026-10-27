@@ -6784,6 +6784,62 @@
         "text0": "46dea09b-4cc5-50ee-bf99-e944e84b6f59"
       },
       "attributes": {}
+    },
+    "c9eaad81-ec2f-5f02-8f80-aacc4f7b7f33": {
+      "elementId": "c9eaad81-ec2f-5f02-8f80-aacc4f7b7f33",
+      "source": "percentageDisplayLabel",
+      "texts": {
+        "text0": "b4ddfd1d-1282-5dd0-99e8-64faed3a9871"
+      },
+      "attributes": {}
+    },
+    "57b7ec0c-1ac5-56e2-ba6b-98beeb8aef93": {
+      "elementId": "57b7ec0c-1ac5-56e2-ba6b-98beeb8aef93",
+      "source": "percentageDisplayClassic",
+      "texts": {
+        "text0": "2fe66d18-0939-55b5-ab6b-8338bdf29ece"
+      },
+      "attributes": {}
+    },
+    "3687a456-c951-53f3-a7e9-5bc8bc305407": {
+      "elementId": "3687a456-c951-53f3-a7e9-5bc8bc305407",
+      "source": "percentageDisplayBar",
+      "texts": {
+        "text0": "828a8e60-b8ee-5bc6-8bd0-093c233c0b4e"
+      },
+      "attributes": {}
+    },
+    "a56623a0-0264-5979-bfaf-f57634db28d6": {
+      "elementId": "a56623a0-0264-5979-bfaf-f57634db28d6",
+      "source": "goalLimitTitle",
+      "texts": {
+        "text0": "359b97a5-0153-5bc4-a494-88c55aacd72f"
+      },
+      "attributes": {}
+    },
+    "9a39f2ce-8373-5c05-aa08-b571058c2074": {
+      "elementId": "9a39f2ce-8373-5c05-aa08-b571058c2074",
+      "source": "goalLimitOk",
+      "texts": {
+        "text0": "30af89a0-13f3-5351-948e-952373fbc8d5"
+      },
+      "attributes": {}
+    },
+    "a2adeaa4-c0d3-57b2-9b8e-056785f8c17e": {
+      "elementId": "a2adeaa4-c0d3-57b2-9b8e-056785f8c17e",
+      "source": "autoGoalDialog/standard/label",
+      "texts": {
+        "text0": "26fe3f43-0213-5b89-81af-3bcfd6a82e72"
+      },
+      "attributes": {}
+    },
+    "ceb85171-fde4-578b-a487-ecb05eb99ccc": {
+      "elementId": "ceb85171-fde4-578b-a487-ecb05eb99ccc",
+      "source": "autoGoalDialog/standard/value",
+      "texts": {
+        "text0": "ed9a0779-1be2-589f-ad51-951e6129ba66"
+      },
+      "attributes": {}
     }
   },
   "selects": {

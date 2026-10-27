@@ -103,7 +103,9 @@
                 .map(value => String(value).padStart(2, '0')).join(':');
         }
         showComponents(state) {
-            this.displayState=state;globalThis.WMOFTimerSummaryView?.render(this.root,state);
+            this.displayState=state;
+            globalThis.WMOFTimerSummaryView?.setMode(this.root,this.snapshot?.viewData?.percentageDisplay || 'classic');
+            globalThis.WMOFTimerSummaryView?.render(this.root,state ? {...state,goal_bar_standard_editable:false} : state);
             this.root.dispatchEvent(new CustomEvent("observer-summary-changed",{detail:state}));
             const standard = this.root.querySelector('#liveStreamStandardTime');
             if (standard) standard.textContent = state?.standard_time_component?.text || '-';
@@ -141,6 +143,7 @@
             const goal = this.percent.value && this.percent.checkValidity() ? Number(this.percent.value) : undefined;
             const goalScope = this.percentScope || (mode === 'user' || mode === 'auto'
                 ? this.snapshot.uiState?.effective_goal_type : mode === 'trip' ? 'trip' : 'total');
+            this.timer.toggleAttribute('goal-bar', this.snapshot?.viewData?.percentageDisplay === 'bar');
             const result = this.timer.applyObserverSnapshot(model, {
                 totals:aggregate, mode:mode === 'user' ? this.snapshot.viewData.mode : ['trip','auto'].includes(mode) ? mode : 'total',
                 goal, goalScope, goals:this.goals,

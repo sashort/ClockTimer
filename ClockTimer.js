@@ -1738,7 +1738,7 @@
                     ? "End Time"
                     : "Time Remaining";
             const interval = this.getActiveIntervalState?.(now);
-            const standardText = this.#breakOnly ? undefined : selected?.standardTime;
+            const standardText = this.#breakOnly ? undefined : summary.trip?.standardTime;
             const effectiveTimeState =
                 this.#getEffectiveTimeState(
                     now,
@@ -1758,9 +1758,13 @@
                 effectiveTimeState
                     ?.date;
             const countedPercent = this.#breakOnly ? NaN : Number(selected?.countedPercent);
-            const ordinaryGoal = scope === "standard"
-                ? Number(this.#getTripGoal())
-                : Number(selected?.percentGoal);
+            // Auto presents the current-trip requirement of its selected target,
+            // rather than the aggregate target percentage itself.
+            const ordinaryGoal = this.#percentMode === "auto"
+                ? this.#calculateRenderedPercentGoal()
+                : scope === "standard"
+                    ? Number(this.#getTripGoal())
+                    : Number(selected?.percentGoal);
             const goal = this.#breakOnly ? NaN : ordinaryGoal;
             const intervalType = String(interval?.intervalType || "").trim().toLowerCase();
             const tripActive = this.#hasStartProperties() && this.status !== "stopped";
@@ -1831,10 +1835,10 @@
                     Number.isFinite(this.#calculatedTripGoal) && Math.abs(goal-this.#calculatedTripGoal)<1e-9,
                 auto_goal_order: Object.freeze(this.#getPercentageOrder().split("_")),
                 active_break_type: interval?.breakType || null,
-                standard_time_header_text: `${scopeLabel} Standard Time`,
+                standard_time_header_text: "Standard Time",
                 standard_time_component: this.#component(
                     standardText,
-                    Number(selected?.standardTimeMilliseconds),
+                    this.#breakOnly ? NaN : Number(summary.trip?.standardTimeMilliseconds),
                     null,
                     typeof standardText === "string" && Boolean(standardText)
                 ),
@@ -1892,7 +1896,54 @@
                 available_actions: availableActions,
                 controls
             };
+            if (this.hasAttribute("goal-bar")) values.goal_bar = this.getGoalBarSnapshot(now, {summary, uiState:values});
             return new ClockTimerUIState(values);
+        }
+
+        // Goal-bar durations use counted trip time: Standard is zero Remaining
+        // and the standard duration in Elapsed mode. End Time retains UI semantics.
+        getGoalBarSnapshot(now = new Date(), {summary = this.#buildSummarySnapshot(now), uiState} = {}) {
+            const standard = Number(summary.trip?.standardTimeMilliseconds);
+            const counted = Number(summary.trip?.countedTimeElapsedMilliseconds);
+            if (!this.#started || this.#breakOnly || !(standard > 0)) {
+                const goals = [
+                    {id:"standard", label:"Standard", percent:100},
+                    {id:"trip", label:"Trip", percent:this.#getUserTripGoal()*100},
+                    {id:"total", label:this.getAttribute("total-label") || "Total", percent:this.#getUserTotalGoal()*100}
+                ].map(node => Object.freeze({...node, time:null, failed:false}));
+                return Object.freeze({available:true, active:false, phase:"idle", all_failed:false, down:false,
+                    scale_min:0, scale_max:Math.min(150, Math.max(...goals.map(node=>node.percent))), nodes:Object.freeze(goals)});
+            }
+            const current = Number(summary.trip?.countedPercent);
+            const goalValues = [
+                {id:"standard", label:"Standard", percent:100},
+                {id:"trip", label:"Trip", percent:this.#getUserTripGoal()*100}
+            ];
+            const total = this.#calculateTotalGoalRequirements({allowMissed:true});
+            if (Number.isFinite(total.tripGoal) && total.tripGoal > 0)
+                goalValues.push({id:"total", label:this.getAttribute("total-label") || "Total", percent:total.tripGoal*100});
+            const duration = value => this.#formatRemainingRenderedDuration(value);
+            const mode = this.#renderedTimeMode;
+            const nodes = goalValues.map(node => {
+                const position = standard/(node.percent/100);
+                const end = this.#calculateTripGoalRequirementsForGoal(node.percent/100, {allowMissed:true}).adjustedEndTime;
+                const text = mode === "elapsed" ? this.#formatElapsedRenderedDuration(position)
+                    : mode === "calculated-end" ? this.#formatSummaryEndTime(end ? new Date(end) : undefined)
+                    : duration(standard-position);
+                return Object.freeze({...node, counted_position:position, time:text,
+                    failed:Number.isFinite(current) && current*100 < node.percent-1e-7});
+            });
+            nodes.push(Object.freeze({id:"current", label:"Current", current:true,
+                percent:Number.isFinite(current)?current*100:null, counted_position:counted,
+                time:mode === "remaining" ? duration(standard-counted)
+                    : mode === "elapsed" ? this.#formatElapsedRenderedDuration(counted)
+                    : uiState?.time_component?.text ?? this.getRenderedTime(mode,now), failed:false}));
+            const failed = nodes.filter(node=>!node.current).every(node=>node.failed);
+            return Object.freeze({available:true, active:true, time_mode:mode, nodes:Object.freeze(nodes),
+                all_failed:failed,
+                phase:failed || (Number.isFinite(current) && current<1) ? "overtime"
+                    : Number.isFinite(current) && current<this.#renderedPercentGoal ? "b-game" : "trip",
+                down:this.getActiveIntervalState(now)?.intervalType === "down"});
         }
 
         get uiState() {
@@ -1920,7 +1971,7 @@
                 transitionId: this.#uiTransitionId
             });
             const comparable = ["state", "rendered_time_type", "goal_type", "effective_goal_type",
-                "standard_time_component", "time_component", "current_percent_component", "goal_component"];
+                "standard_time_component", "time_component", "current_percent_component", "goal_component", "goal_bar"];
             const changedFields = comparable.filter(key =>
                 JSON.stringify(previous?.[key]) !== JSON.stringify(active[key]));
             this.#uiState = new ClockTimerUIState({...active, changed_fields: Object.freeze(changedFields)});

@@ -581,7 +581,7 @@ class SpeechMenu {
         SpeechMenu.activeSurface;
         const surfaces = SpeechMenu.#surfaceOrder.filter(element => element !== document.body)
             .toSorted((a, b) => (SpeechMenu.#surfaceHandlers.get(a)?.priority || 0) - (SpeechMenu.#surfaceHandlers.get(b)?.priority || 0));
-        if (!surfaces.length) surfaces.push(...document.querySelectorAll('dialog[open]'));
+        if (!surfaces.length) surfaces.push(...document.querySelectorAll('dialog[open]:not([data-speech-passive])'));
         const items = SpeechMenu.#index().elements();
         return surfaces.map(surface => ({surface, context: SpeechMenu.#chainContextTokens(items.find(element =>
             element.closest('dialog, [popover], [speech-scope]') === surface && element.hasAttribute('speech-chain-context')))[0]}));
@@ -2271,7 +2271,7 @@ class SpeechMenu {
         const chains = [SpeechMenu.#utterance, ...SpeechMenu.#finishedUtterances.values()]
             .filter(utterance => utterance?.chainActive && !utterance.chainCanceled && !utterance.digestFailed);
         if (chains.length && !SpeechMenu.#stopped) {
-            const activeSurface = (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll('dialog[open]')].at(-1);
+            const activeSurface = (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll('dialog[open]:not([data-speech-passive])')].at(-1);
             for (const chain of chains) {
                 if (activeSurface && !chain.expectedSurfaces?.has(activeSurface)) {
                     // A single surface-opening action may introduce its own
@@ -3135,7 +3135,7 @@ class SpeechMenu {
             transcript: "",
             transcriptRevision: 0,
             discardedTranscriptPrefixWords: 0,
-            expectedSurfaces: new Set([...document.querySelectorAll('dialog[open]')].slice(-1)),
+            expectedSurfaces: new Set([...document.querySelectorAll('dialog[open]:not([data-speech-passive])')].slice(-1)),
             valueCollectors: new Map(),
             digestTranscript: "",
             digestContext: undefined,
@@ -3599,7 +3599,7 @@ class SpeechMenu {
             else await utterance.digestQueue;
             if (next.sessionGeneration === SpeechMenu.#sessionGeneration) {
                 next.contextGeneration = SpeechMenu.#contextGeneration;
-                next.expectedSurfaces = new Set([...document.querySelectorAll('dialog[open]')].slice(-1));
+                next.expectedSurfaces = new Set([...document.querySelectorAll('dialog[open]:not([data-speech-passive])')].slice(-1));
             }
         })().catch(error => {SpeechMenu.#emit("speechMenuCommandError", {utteranceId:utterance.id,error});})
             .finally(() => {next.bargeInPending = false;});
@@ -4507,7 +4507,7 @@ class SpeechMenu {
             utterance.digestQueue = Promise.resolve();
             utterance.digestPending = "";
             utterance.contextGeneration = SpeechMenu.#contextGeneration;
-            utterance.expectedSurfaces = new Set([...document.querySelectorAll('dialog[open]')].slice(-1));
+            utterance.expectedSurfaces = new Set([...document.querySelectorAll('dialog[open]:not([data-speech-passive])')].slice(-1));
             utterance.voskInitialCandidates = SpeechMenu.#digestCandidates(utterance.digestContext, utterance.digestSurfaceStack);
             utterance.voskInitialFrames = SpeechMenu.#surfaceFrames();
             SpeechMenu.#clearPrimed(utterance);
@@ -8856,7 +8856,7 @@ class SpeechMenu {
 
     static #selectAvailableCandidates(projectedSurface) {
         const dialog = projectedSurface === undefined
-            ? (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll("dialog[open]")].at(-1)
+            ? (SpeechMenu.activeSurface !== document.body ? SpeechMenu.activeSurface : undefined) || [...document.querySelectorAll("dialog[open]:not([data-speech-passive])")].at(-1)
             : projectedSurface;
         const openContainers = dialog ? [] : [
             ...document.querySelectorAll("details[open]"),

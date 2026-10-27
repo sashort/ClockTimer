@@ -40,3 +40,26 @@ applies, it moves above the triangle so both remain readable.
 Validation: sync-try.mjs, custom-range-goals.mjs, vosk-collector-browser.cjs and
 percent-summary-layout-browser.cjs in tests/ cover floor calculation, override
 recalculation/rollback, voice forms, touch switch behavior and both page layouts.
+
+In Auto mode, the displayed goal percentage is the calculated current-trip
+percentage required for the selected target. An aggregate target of 120% that
+allows 20 minutes for a 30-minute standard trip therefore displays a 150% goal.
+The bracketed selector still identifies the targeted scope. Manual scope displays
+retain their own goal percentages. This UI-state rule is shared with Drop-In.
+Pressing the goal still opens the existing Auto goal chooser; its values and
+percentage editor retain the configured Trip and overarching aggregate goals,
+not the inferred current-trip requirement shown on the main display.
+Goal edits must refresh this calculated display immediately during running,
+Down, Break and Lunch, even while counted time is paused; returning to production
+uses the same current requirement. The goal chooser continues to show the
+overarching configured target throughout these recalculations.
+
+The optional [Goal bar](goal-bar.md) shares these Sync column and Override badge
+rules. Classic remains the default and keeps the expression layout above.
+
+The Goal bar’s elapsed/state color belongs on the right of the next target.
+When every goal has failed, Overtime spans Current to the final failed goal at
+the right edge; it does not fill the unused left range. Break/Lunch colors are
+ignored by this bar and active Down uses its own saved color. The Sync column
+continues to enter/leave without scaling its badges. Main Standard Time always
+belongs to the trip, even while Auto/Sync targets an aggregate.

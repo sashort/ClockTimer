@@ -118,6 +118,9 @@ jobs:
           TZ=UTC node tests/clock-timer-fsm.mjs
           TZ=America/New_York node tests/clock-timer-fsm.mjs
           TZ=UTC node tests/counted-time-accounting.mjs
+          node tests/goal-bar.mjs
+          node tests/clock-timer-ui-state.mjs --standard-time
+          node tests/app-state-transactions.mjs --goal-limit --voice-feedback
           node tests/trip-log.mjs
           node tests/trip-summary.mjs
           node tests/trip-summary-presentation.mjs
@@ -154,6 +157,8 @@ jobs:
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
+      - run: node tests/goal-bar-browser.cjs
+      - run: node tests/goal-bar-interactions-browser.cjs
       - run: node tests/web-speech-login-browser.cjs
       - run: node tests/web-speech-value-collection-browser.cjs
       - run: node tests/login-fullscreen-browser.cjs

@@ -4241,5 +4241,12 @@
         "surface_specific": true
       }
     }
+  },
+  "runtime_supersession": {
+    "date": "2026-10-27",
+    "status": "Historical approved baseline; approval is unchanged",
+    "currentWorkingModel": "mainline-fsm-draft.json",
+    "currentRules": "goal-bar.md",
+    "note": "Current Standard Time, goal-bar, configurable selector and passive-cap behavior is specified in the working addendum, not in this historical graph."
   }
 }
