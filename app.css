@@ -7752,3 +7752,94 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .auto-goal-option > .goal-details {grid-column:1 / -1;}
 .goal-details [data-goal-detail=inferred] {color:#a9e9ff;}
 .number-pad-context > .goal-details {margin-top:8px;font-size:14px;}
+
+.goal-details [hidden] {display:none!important;}
+
+.auto-goal-option {place-content:center;gap:0;}
+.auto-goal-option > [hidden] {display:none!important;}
+.auto-goal-option .goal-details {width:100%;justify-items:center;align-content:center;gap:6px;text-align:center;}
+.auto-goal-option .goal-details [data-goal-detail=actual] {font-size:clamp(18px,5.2vw,22px);font-weight:800;white-space:nowrap;}
+.auto-goal-option .goal-details [data-goal-detail=inferred] {font-size:clamp(12px,3.2vw,14px);font-weight:500;white-space:nowrap;}
+
+/* Full and Compact use the same action elements and event handlers. */
+.compact-action-rail, .compact-interval-timer { display:none; }
+.app[data-action-display="compact"] {
+    --compact-action-size:52px;
+    --compact-action-step:62px;
+    --compact-timer-space:0px;
+    --trip-log-row-height:0px;
+    grid-template-columns:66px minmax(0,1fr) 66px;
+    grid-template-rows:42px var(--timer-summary-row-height) 0 0 minmax(0,1fr) var(--speech-command-row-height) var(--speech-mic-row-height);
+}
+.app[data-action-display="compact"] > :is(.app-header,.trip-summary,.summary-spacer,speech-mic-bar,.speech-commands-menu) {grid-column:1 / -1;}
+.app[data-action-display="compact"] > .app-header {grid-row:1;}
+.app[data-action-display="compact"] > .trip-summary {grid-row:2;}
+.app[data-action-display="compact"] > .trip-action-controls,
+.app[data-action-display="compact"] > #tripLogPlaceholder {display:none!important;}
+.app[data-action-display="compact"] > .clock-region {grid-row:5;grid-column:2;padding-top:var(--compact-timer-space);}
+.app[data-action-display="compact"][data-compact-timed="true"] {--compact-timer-space:76px;}
+.app[data-action-display="compact"] > .compact-action-rail {
+    display:block;grid-row:5;position:relative;min-height:0;align-self:stretch;
+}
+.compact-action-left {grid-column:1;}.compact-action-right {grid-column:3;}
+.app[data-action-display="compact"] .compact-action-rail > button {
+    display:grid!important;place-items:center;position:absolute;left:50%;top:calc(50% + var(--compact-timer-space)/2);
+    width:var(--compact-action-size);height:var(--compact-action-size);min-width:0;min-height:0;
+    margin:0;padding:0;border:2px solid var(--wm-white);border-radius:12px;
+    font-size:0!important;line-height:1;grid-row:auto;
+    transform:translate(-50%,calc(-50% + var(--compact-offset,0)*var(--compact-action-step))) scale(1);
+    transition:transform 400ms ease,opacity 250ms ease,visibility 250ms;
+    opacity:1;visibility:visible;z-index:1;
+}
+.app[data-action-display="compact"] .compact-action-rail > button::before {content:attr(data-compact-glyph);font-size:29px;line-height:1;}
+.app[data-action-display="compact"] .compact-action-rail > #endTripButton:not(:has(.break-action-label))::before {
+    content:"";width:26px;height:24px;clip-path:polygon(0 0,100% 0,100% 75%,8% 75%,8% 100%,0 100%);
+    background:conic-gradient(currentColor 25%,transparent 0 50%,currentColor 0 75%,transparent 0) 0 0 / 12px 12px;
+}
+.app[data-action-display="compact"] .compact-action-rail > button > :is(.break-action-label,.break-action-clock,.deferred-trip-icon) {display:none;}
+.app[data-action-display="compact"] .compact-action-rail > button[data-compact-visible="false"] {opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,-50%) scale(.7);}
+.app[data-action-display="compact"] .compact-action-rail > #tripLogButton {background:#f5f6f7;color:var(--wm-blue-dark);}
+.app[data-action-display="compact"] .compact-action-rail > :is(#downButton,#breakDownButton) {background:var(--wm-gray);color:var(--wm-blue-dark);}
+.app[data-action-display="compact"] #downDetailsButton svg {width:30px;height:30px;}
+.app[data-action-display="compact"] #downDetailsButton::before {display:none;}
+.app[data-action-display="compact"] > .compact-interval-timer:not([hidden]) {
+    display:grid;grid-row:5;grid-column:2;align-self:start;justify-items:center;gap:4px;padding:8px 0;z-index:1;
+}
+.compact-interval-timer > span {font-size:16px;}
+.compact-interval-timer > output {font-size:clamp(28px,8vw,42px);line-height:1;font-weight:800;}
+.app[data-action-display="compact"][data-interval-state="down"] > :is(.compact-action-rail,.compact-interval-timer) {z-index:3001;}
+.app[data-action-display="full"][data-interval-state="down"] {
+    grid-template-rows:42px var(--timer-summary-row-height) minmax(0,1fr) 0 0 calc(var(--trip-log-row-height) + var(--speech-command-row-height)) var(--speech-mic-row-height);
+}
+.app[data-action-display="full"][data-interval-state="down"] .clock-region {visibility:hidden;}
+.app[data-action-display="full"][data-interval-state="down"] .clock-region > clock-timer {transform:none!important;}
+@media(max-height:650px) {
+    .app[data-action-display="compact"] {--compact-action-size:42px;--compact-action-step:50px;grid-template-columns:52px minmax(0,1fr) 52px;}
+    .app[data-action-display="compact"][data-compact-timed="true"] {--compact-timer-space:64px;}
+    .compact-interval-timer > output {font-size:28px;}
+}
+@media(prefers-reduced-motion:reduce) {
+    .app[data-action-display="compact"], .app[data-action-display="compact"] .compact-action-rail > button {transition:none;}
+}
+
+/* Size keypad contents from the editor's usable region, including mic reservation. */
+.number-pad-shell {container-type:size;min-height:0;}
+.number-pad-header {min-height:clamp(80px,20cqh,132px);}
+.number-pad-key {min-height:0;font-size:clamp(28px,11cqh,64px);}
+.number-pad-clear-reset {min-height:0;height:100%;aspect-ratio:auto;}
+.number-pad-context:has(> .goal-details:not([hidden])) {padding:10px 54px;}
+.number-pad-context > .goal-details {margin:0;justify-items:center;align-content:center;gap:6px;}
+.number-pad-context [data-goal-detail=actual] {font-size:22px;font-weight:800;white-space:nowrap;}
+.number-pad-context [data-goal-detail=inferred] {font-size:14px;font-weight:500;white-space:nowrap;}
+
+.number-pad-shell {grid-template-rows:auto auto 44px minmax(0,1fr);}
+/* Suppression preserves recognition intent; leaving the touch editor restores the bar. */
+speech-mic-bar[data-surface-suppressed="true"],speech-mic-bar[data-surface-suppressed="true"][popover]:popover-open {
+    transform:translateY(calc(100% + 60px))!important;opacity:0!important;pointer-events:none!important;
+}
+shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-duration,1000ms) ease-in-out,opacity 250ms linear,transform 280ms ease;}
+.app[data-action-display="compact"] #downBreakButton {color:var(--wm-white);background:var(--wm-blue-dark);}
+
+@starting-style {
+    shared-modal-host > .number-pad-dialog[open] {height:var(--shared-modal-entry-height,100dvh);}
+}

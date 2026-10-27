@@ -175,18 +175,18 @@ historical failure replay, and final positions matching the model snapshot.
 ## Whole-bar goal selection
 
 The entire bar is one click/touch/Enter/Space action. Track, blank area, Standard,
-Current, labels and both compression triangles all open the existing goal selector.
+Current, labels and both compression triangles all use the same shared action. A single applicable goal opens its numberpad directly; Auto with multiple goals opens the existing configurable selector.
 Trip offers Trip only; aggregate modes offer that aggregate only; Auto offers both.
 Failed goals remain selectable. Failure count does not change the offered choices.
 The separate Sync button retains its own action. Standard Time is never offered
 here and Current no longer changes time mode. Standard Time editing remains on its
 existing main control. The bar has one keyboard focus target.
 
-The selector and following number pad show Actual goal and Inferred trip goal.
+The selector and numberpad show the configured goal in larger type and Inferred Trip Goal in smaller type.
 Classic uses the same details. Actual is the stored, editable percentage; inferred
 is the current-trip requirement, not the stored aggregate goal. Editing previews
 inference without changing stored settings; confirmation uses existing persistence,
-locks, 150% input cap and announcements. No active trip means no inferred value.
+locks, 150% input cap and announcements. In the selector, aggregate options show “Day Goal: 110%” and, during an active trip, a smaller “Inferred Trip Goal: 125%” line. Trip options show only “Trip Goal: 110%”. With no active trip the inferred line is omitted entirely, and the remaining text stays vertically centered.
 Drop-In uses the same model and details with existing observer permissions.
 
 ## Main Standard Time display
@@ -232,3 +232,5 @@ The main active time value and bar Current now share the same formatter and
 interval annotation in Remaining, Elapsed and End Time. Aggregate selection and
 goal changes cannot change this Current readout. Goal deadlines and budgets remain
 separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.
+
+Aggregate selector titles include the configured percentage: `Day - 115%` or `[Week] - 120%` when targeted by Auto. Idle Auto remains `[Auto]`. The numberpad is touch-only and fills the visual viewport; the mic bar slides out on entry and back on exit if previously active. Switch to Voice explicitly leaves touch input.

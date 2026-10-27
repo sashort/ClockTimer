@@ -1926,7 +1926,7 @@
             const inferred = active && Number.isFinite(actual) && actual > 0
                 ? total ? this.#calculateTripGoalFromTotalDuration(this.#standardDuration, actual / 100).tripGoal * 100 : actual
                 : null;
-            return Object.freeze({actual_percent:Number.isFinite(actual)&&actual>0?Number(actual.toFixed(6)):null,
+            return Object.freeze({trip_active:active,actual_percent:Number.isFinite(actual)&&actual>0?Number(actual.toFixed(6)):null,
                 inferred_percent:Number.isFinite(inferred)&&inferred>0?inferred:null});
         }
 

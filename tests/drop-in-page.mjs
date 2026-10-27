@@ -127,8 +127,7 @@ assert.equal(events.filter(value=>value==='snapshot:3').length,7);
 await chooseSource('user');
 w.testView.snapshot={...live,viewData:{...live.viewData,mode:'auto',model:{attributes:[['trip-goal','105%'],['total-goal','110%']]}},uiState:{...live.uiState,trip_goal_component:{value:1.5,text:'150%'},total_goal_component:{value:1.25,text:'125%'}}};
 const barAction=choices=>w.document.querySelector('.percent-summary').dispatchEvent(new w.CustomEvent('goal-bar-edit',{bubbles:true,detail:{choices}}));
-barAction(['total']);assert.equal($('autoGoalDialog').open,true);assert.deepEqual([...$('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]')].filter(e=>!e.hidden).map(e=>e.dataset.autoGoalScope),['total']);
-$('autoGoalDialog').querySelector('[data-auto-goal-scope=total]').click();assert.deepEqual(w.goalOpened,{scope:'total',value:110},'selector edits raw publisher goal');
+barAction(['total']);assert.equal($('autoGoalDialog').open,false);assert.deepEqual(w.goalOpened,{scope:'total',value:110},'single aggregate opens its raw goal pad directly');
 barAction(['trip','total']);assert.deepEqual([...$('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]')].filter(e=>!e.hidden).map(e=>e.dataset.autoGoalScope),['trip','total']);$('autoGoalDialog').close();
 w.testView.snapshot=live;await chooseSource('custom');
 // Full peer loss clears the mirror and disables messaging, then Watch reauthorizes.
@@ -160,7 +159,7 @@ assert.equal($('dropInMicrophoneButton').hidden,true,'no selected user hides the
 change('liveStreamViewMode','year');assert.equal($('dropInTargetDefault').checked,true);assert.equal($('dropInTargetUser').disabled,true);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetCancel').click();assert.equal($('liveStreamViewMode').value,'trip','cancel restores defaults');
 change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.mode,'day');
 change('liveStreamViewMode','user');$('dropInTargetApply').click();await tick();assert.equal($('scopeToggle').querySelector('.mode-button-label').textContent,'Mirror','Mirror without a selected user must not display Trip');assert($('scopeToggle').querySelector('[data-menu-icon=mirror]'),'Mirror shows its symbol');
-change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();assert.equal($('scopeToggle').querySelector('.mode-button-label').textContent,'Day');assert.equal($('scopeToggle').querySelector('[data-menu-icon=mirror]'),null);
+change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();assert.equal($('scopeToggle').querySelector('.mode-button-label').textContent,'Day - 110%');assert.equal($('scopeToggle').querySelector('[data-menu-icon=mirror]'),null);
 $('toggleSyncMenuButton').click();$('dropInSyncPopover').querySelector('[data-sync=on]').click();assert.equal($('dropInTargetUser').disabled,true);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.sync,'on');
 $('goalPercentValue').click();await tick();assert.equal(w.goalOpened.scope,'total');w.testGoalPad.onConfirm('total',125);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.totalGoal,'125');assert.equal($('goalPercentValue').textContent,'125%');
 rejectSave=true;change('liveStreamViewMode','year');$('dropInTargetApply').click();await tick();assert.equal($('liveStreamViewMode').value,'day','failed default save restores accepted mode');rejectSave=false;

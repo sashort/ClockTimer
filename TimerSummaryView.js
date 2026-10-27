@@ -197,14 +197,27 @@
    this.order=ordered.map(n=>n.id);this.previous=new Map((data?.nodes||[]).map(n=>[n.id,n]));this.initial=false;
   }
  }
+ const goalDetailObservers=new WeakMap();
+ function fitGoalDetails(host){
+  if(!host.isConnected)return;
+  const style=getComputedStyle(host),available=host.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+  for(const line of host.querySelectorAll('.goal-details > div:not([hidden])')){
+   line.style.fontSize='';const size=parseFloat(getComputedStyle(line).fontSize),range=document.createRange();range.selectNodeContents(line);
+   const width=range.getBoundingClientRect().width;if(width>available&&available>0)line.style.fontSize=`${Math.floor(size*available/width*10)/10}px`;
+  }
+ }
  function displayApp(root){return root.matches?.('.app')?root:root.querySelector('.app')||root.querySelector('.percent-summary')?.closest('.app');}
  globalThis.WMOFTimerSummaryView={renderGoalDetails(host,details){
   if(!host)return;
   let box=host.querySelector(':scope > .goal-details');
   if(!box){box=document.createElement('div');box.className='goal-details';host.append(box);}
   box.hidden=!details;if(!details)return;
-  const format=value=>Number.isFinite(value)?`${Number(value.toFixed(2))}%`:'—';
-  box.replaceChildren(...[['actual','67ef1f5b-6dc4-49ad-a50e-f98a170a3e12',details.actual_percent],['inferred','f5fe1d41-f859-4869-ac1e-e361598373fc',details.inferred_percent]].map(([key,id,value])=>{const line=document.createElement('div');line.dataset.goalDetail=key;line.textContent=WMOFLanguagePack.text(id,{value:format(value)});return line;}));
+  const format=value=>Number.isFinite(value)?`${Number(value.toFixed(2))}%`:'---';
+  const option=host.matches('.auto-goal-option'),pad=host.id==='numberPadContext';
+  if(pad)for(const node of [...host.childNodes])if(node.nodeType===Node.TEXT_NODE)node.remove();
+  const heading=option&&host.querySelector(':scope > span');if(heading)heading.hidden=true;
+  box.replaceChildren(...[['actual','67ef1f5b-6dc4-49ad-a50e-f98a170a3e12',details.actual_percent],['inferred','f5fe1d41-f859-4869-ac1e-e361598373fc',details.inferred_percent]].map(([key,id,value])=>{const line=document.createElement('div');line.dataset.goalDetail=key;line.textContent=(option||pad)&&key==='actual'?WMOFLanguagePack.text('a63d5a6f-a680-487d-8fdd-6822b629d3eb',{scope:details.scope_label,value:format(value)}):WMOFLanguagePack.text(id,{value:format(value)});line.hidden=key==='inferred'&&(option||pad)&&(details.scope==='trip'||!details.trip_active);return line;}));
+  if(option||pad){if(!goalDetailObservers.has(host)){const observer=new ResizeObserver(()=>requestAnimationFrame(()=>fitGoalDetails(host)));observer.observe(host);goalDetailObservers.set(host,observer);}requestAnimationFrame(()=>fitGoalDetails(host));}
  },setMode(root,mode){
   const app=displayApp(root),row=root.querySelector('.percent-summary');if(!app||!row)return;
   const normalized=mode==='bar'?'bar':'classic';if(row.dataset.percentageDisplay!==normalized)GoalBar.instances.get(row)?.reset();

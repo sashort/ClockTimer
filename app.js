@@ -61,6 +61,7 @@
         graphicalSettings: "wmof.clock.graphicalSettings",
         tripPreferences: "wmof.clock.tripPreferences",
         percentageDisplay: "wmof.clock.percentageDisplay",
+        actionDisplay: "wmof.clock.actionDisplay",
         tripLogPinned: "wmof.clock.tripLogPinned",
         tripLogRange: "wmof.clock.tripLogRange",
         tripLogIncludeCurrent: "wmof.clock.tripLogIncludeCurrent",
@@ -5677,6 +5678,7 @@
             );
         }
 
+        globalThis.WMOFCompactActions?.render(app);
         return pinned;
     }
 
@@ -6605,9 +6607,10 @@
         const pinned =
             tripLogIsPinned();
 
+        const docked = pinned && app.dataset.actionDisplay !== "compact";
         const sourceRect = tripLogButton.getBoundingClientRect();
         setFloatingTripLogRect(sourceRect);
-        if (tripLogPlaceholder && pinned) {
+        if (tripLogPlaceholder && docked) {
             tripLogPlaceholder.style.height = `${sourceRect.height}px`;
             tripLogPlaceholder.hidden = false;
         }
@@ -6632,7 +6635,7 @@
             "true"
         );
 
-        if (pinned) {
+        if (pinned && app.dataset.actionDisplay !== "compact") {
             setFloatingTripLogRect(sourceRect);
             await animateTripLogButton(
                 "translateY(0px)",
@@ -6768,7 +6771,7 @@
             TRIP_LIST_BODY_DELAY
         );
 
-        if (pinned) {
+        if (pinned && app.dataset.actionDisplay !== "compact") {
             const destination = getTripLogBottomRect();
             await animateTripLogButton(
                 "translateY(0px)",
@@ -6844,6 +6847,16 @@
         if (clockTimer) renderClockTimerUIState(clockTimer.getUIState());
     }
 
+    function applyActionDisplay(mode = safeStorageGet(STORAGE.actionDisplay), {persist = false} = {}) {
+        const value = mode === "compact" ? "compact" : "full";
+        if (persist) safeStorageSet(STORAGE.actionDisplay, value);
+        app.dataset.actionDisplay = value;
+        for (const button of document.querySelectorAll("button[data-action-display]"))
+            button.setAttribute("aria-checked", String(button.dataset.actionDisplay === value));
+        globalThis.WMOFCompactActions?.render(app);
+        requestAnimationFrame(() => clockTimer?.refreshLayout?.());
+    }
+
     function getTripPreferences() {
         let stored = {};
 
@@ -6889,6 +6902,7 @@
         preferences = getTripPreferences()
     ) {
         applyPercentageDisplay();
+        applyActionDisplay();
         const form =
             $("#stateSettingsForm");
 
@@ -8841,8 +8855,12 @@
         const target = state?.effective_goal_type;
         const targetLabel = target === "total" ? totalScopeLabel()
             : target === "standard" ? "Standard" : "Trip";
-        const label = mode === "auto" ? `[${state?.trip_active && !state?.break_only ? targetLabel : "Auto"}]`
+        let label = mode === "auto" ? `[${state?.trip_active && !state?.break_only ? targetLabel : "Auto"}]`
             : mode === "total" ? totalScopeLabel() : "Trip";
+        if (mode === "total" || (mode === "auto" && state?.trip_active && !state?.break_only && target === "total")) {
+            const percent = clockTimer.getGoalEditorSnapshot("total").actual_percent;
+            if (Number.isFinite(percent)) label += ` - ${Number(percent.toFixed(2))}%`;
+        }
         scopeToggle.textContent = label;
         scopeToggle.setAttribute("aria-label", globalThis.WMOFLanguagePack.text(
             "ecd0c7da-90cb-5248-9723-f38b68114550", {value0: label}));
@@ -9242,6 +9260,7 @@
             const interval = clockTimer.getActiveIntervalState?.(new Date());
             downElapsedValue.value = formatDuration(interval?.elapsedMilliseconds || 0).replace(/^0(?=\d:)/, "");
             downElapsedValue.textContent = downElapsedValue.value;
+            globalThis.WMOFCompactActions?.render(app);
         }
         renderEndTimeGoalLock();
         renderSyncGoalsState(state);
@@ -12262,8 +12281,19 @@
             event.preventDefault();const choices=[...document.querySelectorAll("[data-percentage-display]")];
             const next=event.key === "Home" ? choices[0] : event.key === "End" ? choices.at(-1) : choices.find(choice=>choice!==button);
             next.focus();next.click();});}
+    for (const button of document.querySelectorAll("button[data-action-display]")) {
+        button.addEventListener("click", () => applyActionDisplay(button.dataset.actionDisplay, {persist:true}));
+        button.addEventListener("keydown", event => {
+            if (!["ArrowLeft","ArrowRight","Home","End"].includes(event.key)) return;
+            event.preventDefault();
+            const choices = [...document.querySelectorAll("button[data-action-display]")];
+            const next = event.key === "Home" ? choices[0] : event.key === "End" ? choices.at(-1) : choices.find(choice => choice !== button);
+            next.focus();next.click();
+        });
+    }
     document.querySelector(".percent-summary")?.addEventListener("goal-bar-edit", event => {
-        globalThis.WMOFActions.openGoalEditor({choices:event.detail?.choices});
+        const choices = event.detail?.choices;
+        globalThis.WMOFActions.openGoalEditor(choices?.length === 1 ? {scope:choices[0]} : {choices});
     });
 
     $("#syncOverrideButton")?.addEventListener("click", () => {
@@ -13717,36 +13747,6 @@
             }));
     }
 
-    function installNumberPadSpeechCommands() {
-        if (
-            !numberPadDialog
-                ?.isConnected ||
-            !englishSpeech ||
-            typeof installSpeechCommand !==
-                "function"
-        ) {
-            return false;
-        }
-
-        globalThis.SpeechMenu?.registerSurface?.(numberPadDialog, {
-            priority: 100, isOpen: () => numberPadDialog.open,
-            close: () => actions.cancelNumberPadEdit(), cancel: () => actions.cancelNumberPadEdit()
-        });
-
-        installSpeechCommand(
-            "voice",
-            "switchNumberPadToVoice",
-            numberPadDialog,
-            false
-        );
-
-        globalThis
-            .SpeechMenu
-            ?.refresh?.();
-
-        return true;
-    }
-
     function installVoiceEntrySpeechCommands() {
         if (
             !voiceEntrySurface
@@ -13859,7 +13859,6 @@
                     false
                 );
 
-                installNumberPadSpeechCommands();
             })().catch(error => {
                 numberPadLoadPromise = undefined;
                 throw error;
@@ -14282,7 +14281,7 @@
         numberPadContext.textContent = numberPadState.title;
         const goalScope = numberPadState.source === "total-goal" ? "total" : numberPadState.source === "trip-goal" ? "trip" : null;
         globalThis.WMOFTimerSummaryView?.renderGoalDetails(numberPadContext,
-            goalScope ? clockTimer.getGoalEditorSnapshot(goalScope, Number(numberPadState.pending)) : null);
+            goalScope ? {...clockTimer.getGoalEditorSnapshot(goalScope, Number(numberPadState.pending)),scope:goalScope,scope_label:goalScope === "total" ? totalScopeLabel() : WMOFLanguagePack.text("ec17b0a9-6479-4d5d-869e-e8246108dd79")} : null);
         numberPadContext.classList.toggle("absolute-mode", absoluteMode);
         numberPadReadout.classList.toggle("absolute-mode", absoluteMode);
         numberPadDisplay.textContent = percentMode
@@ -16668,7 +16667,7 @@
         const lockedScopes = new Set(endTimeGoalOverride?.scopes || []);
         for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")) {
             const scope = button.dataset.autoGoalScope;
-            globalThis.WMOFTimerSummaryView?.renderGoalDetails(button, scope === "standard" ? null : clockTimer.getGoalEditorSnapshot(scope));
+            globalThis.WMOFTimerSummaryView?.renderGoalDetails(button, scope === "standard" ? null : {...clockTimer.getGoalEditorSnapshot(scope),scope,scope_label:scope === "total" ? totalScopeLabel() : WMOFLanguagePack.text("ec17b0a9-6479-4d5d-869e-e8246108dd79")});
             const percentValue=button.querySelector('strong');if(percentValue)percentValue.hidden=scope!=="standard";
             const locked = scope === "standard" ? Boolean(clockTimer.getUIState().break_only) : lockedScopes.has(scope);
             const scopeLabel =
@@ -17243,6 +17242,7 @@
         setInteractionDisabled($("#tripTransitionSummaryOk"), controls.busy || !actions.confirmSummary);
         setInteractionDisabled($("#tripTransitionSummaryCancel"), controls.busy);
         setEndTripButtonIntervalPalette(state.interval);
+        globalThis.WMOFCompactActions?.render(app, state);
     }
 
     // Planning and execution must select the same branch before the action
@@ -19343,6 +19343,7 @@
             const interval = clockTimer.getActiveIntervalState?.(now);
             downElapsedValue.value = formatDuration(interval?.elapsedMilliseconds || 0).replace(/^0(?=\d:)/, "");
             downElapsedValue.textContent = downElapsedValue.value;
+            globalThis.WMOFCompactActions?.render(app);
         }
     }
 
@@ -27978,7 +27979,6 @@
             SpeechMenu.events.addEventListener("listeningSuspended", event => {
                 if (event.detail?.reason === "speech-recognition-disabled") void reconcileVoicePadRecognition().catch(console.error);
             });
-            installNumberPadSpeechCommands();
             installVoiceEntrySpeechCommands();
             speechMicBar
                 ?.setSystemSpeechPatterns?.({

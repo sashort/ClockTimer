@@ -72,3 +72,6 @@ assert(index.activeElements(null,[details]).includes(current),'open container co
 assert(!index.activeElements(null,[]).includes(current),'closed container commands unload');
 foreground.append(current);assert(index.activeElements(foreground).includes(current),'moving a command updates its scope immediately');
 console.log('PASS centralized active scope loading, unloading, global commands, projection and scope migration');
+
+const touch=window.document.createElement('dialog');touch.dataset.speechInput='disabled';root.append(touch);const touchCommand=add('^touch only$');touch.append(touchCommand);
+assert(!index.candidates(['touch']).has(touchCommand),'touch-only editor commands are never indexed');

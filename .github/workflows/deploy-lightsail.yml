@@ -159,6 +159,8 @@ jobs:
       - run: node tests/percent-summary-layout-browser.cjs
       - run: node tests/goal-bar-browser.cjs
       - run: node tests/goal-bar-interactions-browser.cjs
+      - run: node tests/compact-actions-browser.cjs
+      - run: node tests/goal-pad-layout-browser.cjs
       - run: node tests/web-speech-login-browser.cjs
       - run: node tests/web-speech-value-collection-browser.cjs
       - run: node tests/login-fullscreen-browser.cjs

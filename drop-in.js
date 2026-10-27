@@ -95,13 +95,23 @@
     }
     document.querySelector('.percent-summary')?.addEventListener('goal-bar-edit',event=>{
         if(busy||!permission(64))return;
-        openGoalSelector({choices:event.detail?.choices||['trip','total']});
+        const choices=event.detail?.choices||['trip','total'];
+        if(choices.length===1)openGoal(choices[0]);else openGoalSelector({choices});
     });
     function updateModeButton() {
         const mode=$('liveStreamViewMode'),button=$('scopeToggle'),mirrored=mode.value==='user';
         const label=document.createElement('span');label.className='mode-button-label';label.textContent=mirrored && !view.userId ? text('b11c3a59-8432-515c-b361-acabaf1e7a88') : mirrored
             ? (view.snapshot?.viewData?.mode==='total' ? mode.querySelector('option[value="'+view.snapshot.viewData.range+'"]')?.textContent : mode.querySelector('option[value="'+(view.snapshot?.viewData?.mode||'trip')+'"]')?.textContent) || mode.selectedOptions[0]?.textContent
             : mode.querySelector('option[value="'+mode.value+'"]')?.textContent;
+        const effectiveMode=mirrored?(view.userId?view.snapshot?.viewData?.mode:'user'):mode.value;
+        const state=view.timer?.getUIState?.()||view.snapshot?.uiState;
+        const active=state?.trip_active && !state?.break_only;
+        if(effectiveMode==='auto') {
+            label.textContent=active?`[${state.effective_goal_type==='total'?goalLabel('total'):state.effective_goal_type==='standard'?'Standard':'Trip'}]`:'[Auto]';
+            if(active&&state.effective_goal_type==='total')label.textContent+=` - ${configuredGoal('total')}%`;
+        } else if(effectiveMode==='total'||(!mirrored&&!['trip','user','auto'].includes(effectiveMode))) {
+            label.textContent+=` - ${configuredGoal('total')}%`;
+        }
         button.replaceChildren(label);
         if(mirrored){const icon=document.createElement('span');icon.dataset.menuIcon='mirror';icon.setAttribute('aria-hidden','true');button.prepend(icon);}
     }
@@ -182,7 +192,7 @@
     goalPad=globalThis.WMOFObserverGoalPad?new WMOFObserverGoalPad({getChoices:scope=>{
         const field=scope==='total'?'totalGoal':'tripGoal',record=currentSettings();
         return [...new Set([preferences.defaults.view[field],record.custom.view[field],publisherValues()[field]])].filter(value=>/^\d+$/.test(String(value))).map(value=>({value,source:optionDetails(field,value).source}));
-    },getGoalDetails:(scope,value)=>view.timer?.getGoalEditorSnapshot(scope,value),getDetails:(scope,value)=>optionDetails(scope==='total'?'totalGoal':'tripGoal',String(value)),onConfirm:(scope,value)=>{
+    },getGoalDetails:(scope,value)=>({...view.timer?.getGoalEditorSnapshot(scope,value),scope,scope_label:goalLabel(scope)}),getDetails:(scope,value)=>optionDetails(scope==='total'?'totalGoal':'tripGoal',String(value)),onConfirm:(scope,value)=>{
         const patch={percent:'',percentScope:null,[scope==='total'?'totalGoal':'tripGoal']:String(value)};
         if(scope==='trip'&&value!=='mirror')patch.sync='off';changeSettings({view:patch,mirror:false});
     }}):null;
@@ -201,7 +211,7 @@
         const offered=new Set(choices),dialog=$('autoGoalDialog');
         for(const button of dialog.querySelectorAll('[data-auto-goal-scope]')){
             const scope=button.dataset.autoGoalScope;button.hidden=!offered.has(scope);button.disabled=scope==='standard';
-            globalThis.WMOFTimerSummaryView?.renderGoalDetails(button,scope==='standard'?null:view.timer?.getGoalEditorSnapshot(scope,configuredGoal(scope)));
+            globalThis.WMOFTimerSummaryView?.renderGoalDetails(button,scope==='standard'?null:{...view.timer?.getGoalEditorSnapshot(scope,configuredGoal(scope)),scope,scope_label:goalLabel(scope)});
             const percentValue=button.querySelector('strong');if(percentValue)percentValue.hidden=scope!=='standard';
             if(scope==='standard'){$('autoStandardTimeValue').textContent=view.displayState?.standard_time_component?.text||'---';}
             else {button.querySelector('strong').textContent=configuredGoal(scope)+'%';button.querySelector('span').textContent=goalLabel(scope);}

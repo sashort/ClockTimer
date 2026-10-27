@@ -562,7 +562,7 @@ if(process.argv.includes('--post-login-ready')) {
   window.SpeechMenu.testResult(u,'ready',false);await settle();
   assert(!window.WMOFVoiceEntry.active,'partial Ready waits for its branch boundary');
   window.SpeechMenu.testPause(u);await new Promise(r=>setTimeout(r,450));await u.digestQueue;await u.segmentBarrier;await settle();
-  assert.equal(finishes,1,source+' requests the decoder final after silence');
+  assert.equal(finishes,1,source+' requests the decoder final after silence '+JSON.stringify({touch:window.document.querySelector('#numberPadDialog')?.open,surfaces:[...window.document.querySelectorAll('dialog[open]')].map(d=>d.id),suppressed:u.inputSuppressed,committed:u.committed,failed:u.digestExecutionFailed,final:u.digestIsFinal,transcript:u.transcript}));
   assert(window.WMOFVoiceEntry.active,source+' opens Voicepad on the first Ready');
   assert.equal(window.WMOFCoordinator.lockCount,0,source+' completes Ready instead of holding Applying');
   assert.equal(window.WMOFStateTransactions.pending.length,0);
@@ -578,6 +578,9 @@ if(process.argv.includes('--post-login-ready')) {
    window.SpeechMenu.testResult(ending,'ready',false);await settle();window.SpeechMenu.testPause(ending);await new Promise(r=>setTimeout(r,450));await ending.digestQueue;await ending.segmentBarrier;await settle();
    assert(ending.hadCommittedCommand&&!ending.digestExecutionFailed,'partial Ready settles after silence during the active trip');
    assert.equal(timer.status,'ready','Ready ends the active trip without holding Applying');assert.equal(window.WMOFCoordinator.lockCount,0);await window.WMOFActions.confirmTripSummary();await settle();
+   // Summary may asynchronously prepare the next touch editor; Ready is tested from home.
+   await new Promise(resolve=>setTimeout(resolve,800));
+   if(window.document.querySelector('#numberPadDialog')?.open){await window.WMOFActions.cancelNumberPadEdit();while(window.document.querySelector('#numberPadDialog')?.open)await new Promise(resolve=>setTimeout(resolve,20));await settle();}
   }
  }
  assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
@@ -1309,7 +1312,7 @@ if(process.argv.includes('--auto-selector')) {
   const target=timer.getUIState().effective_goal_type;
   const button=window.document.querySelector('#scopeToggle');
   if(mode==='auto')assert.equal(button.textContent,'[Auto]','idle Auto does not expose its fallback Standard target');
-  else assert.equal(button.textContent,mode==='total'?'Day':'Trip');
+  else assert.equal(button.textContent,mode==='total'?'Day - 100%':'Trip');
  }
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  timer.configure({goal_type:'auto',trip_goal:'110%',total_goal:'120%'});await settle();

@@ -11244,6 +11244,35 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
         "verification": "node tests/goal-bar-interactions-browser.cjs"
       }
+    },
+    {
+      "id": "UI-GOAL-BAR-SINGLE",
+      "source": "R1",
+      "target": "GOAL-PERCENT",
+      "label": "Bar: single applicable goal",
+      "mode": "pointer",
+      "audio": null,
+      "guard": "One applicable configured goal: Trip or selected aggregate.",
+      "persist": false,
+      "restore": null,
+      "skippable": false,
+      "v2_contract": "GOAL-DISPLAY",
+      "outcome": "valid",
+      "test": {
+        "status": "passed",
+        "version": "local 2026-10-27",
+        "evidence": "node tests/goal-bar-interactions-browser.cjs"
+      },
+      "contract": {
+        "trigger": "Bar: single applicable goal",
+        "guard": "One applicable configured goal: Trip or selected aggregate.",
+        "state_changes": "Directly open the configured goal numberpad; keep trip, scope and inferred value unchanged.",
+        "discard": "No valid unrelated command slot or trip state is discarded.",
+        "timing": "Use existing editor and transaction lifecycle; no wait for presentation animation.",
+        "persistence": "Existing goal/time confirmation policy only; opening performs no trip write.",
+        "audio": "Opening has no goal-change confirmation. A >150 correction precedes recalculation feedback.",
+        "verification": "node tests/goal-bar-interactions-browser.cjs"
+      }
     }
   ],
   "audio": {
@@ -17818,7 +17847,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "postconditions": {
         "standard": "Main display is always trip-only, Standard Time label, active editor available in every scope",
         "bar": "Idle configured values; active inferred requirements; Standard-based remaining and trip-counted elapsed",
-        "editing": "Whole bar, including nodes, labels, background and compression triangles, opens the existing selector: Trip only in Trip mode, selected aggregate only in aggregate mode, both in Auto. Failure count does not filter choices. No Standard Time edit or Current time-mode action from the bar. Classic and Bar goal dialogs and pads show actual configured and inferred trip values; only actual is edited.",
+        "editing": "Whole bar uses the shared goal action: one applicable goal (Trip or selected aggregate) directly opens its numberpad; Auto with multiple goals opens configurable selector. Failure count does not filter choices. No Standard editor or time-mode action from bar. Configured goal is editable; inference informational. Aggregate selector/pad has larger configured goal line and smaller inferred line only during active trip; Trip has a single line.",
         "failure": "Right-hand elapsed color, border-aware opaque geometry and travelling ticks",
         "feedback": "150 cap applies before first announcement; notice is passive",
         "currentTime": "Main readout exactly equals bar Current in all three time modes, including interval annotations; Remaining is Standard minus counted trip elapsed, not goal or aggregate budget."
@@ -17854,7 +17883,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "node tests/clock-timer-ui-state.mjs --standard-time"
       ],
       "activeBar": "Standard and Current in all modes; Trip mode adds Trip only, aggregate modes add inferred aggregate only, Auto includes both. Details appear only on next target and Current.",
-      "detailVisibility": "Only the next target (highest unfailed visible goal) and Current show times and percentages. Other unfailed nodes retain circles, names; whole bar opens selector. All-failed retains Standard at the right with its time and 100% reference details, and Current on a zero-to-100% scale."
+      "detailVisibility": "Only the next target (highest unfailed visible goal) and Current show times and percentages. Other unfailed nodes retain circles, names; whole bar opens the shared goal action. All-failed retains Standard at the right with its time and 100% reference details, and Current on a zero-to-100% scale."
     },
     "GOAL-BAR-LIFECYCLE-ANIMATION": {
       "id": "GOAL-BAR-LIFECYCLE-ANIMATION",
@@ -17895,6 +17924,49 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       ],
       "evidence": [
         "Specification: docs/goal-bar.md; automated acceptance cases remain to be implemented"
+      ]
+    },
+    "COMPACT-ACTIONS": {
+      "id": "COMPACT-ACTIONS",
+      "scope": [
+        "SETTINGS",
+        "RUN",
+        "DOWN",
+        "GOAL-SELECT",
+        "GOAL-PERCENT"
+      ],
+      "preconditions": {
+        "state": "Existing FSM owns eligibility; presentation never grants an action"
+      },
+      "inputs": {
+        "setting": "Full or Compact; account persisted",
+        "goal": "Single applicable goal directly opens pad; Auto with multiple goals opens selector"
+      },
+      "postconditions": {
+        "preference": "wmof.clock.actionDisplay: full (default) | compact",
+        "actions": "Existing control IDs and handlers; presentation does not change trip/interval eligibility. Left: trip actions. Right: Details and pinned Log. Each stack centered on clock axis.",
+        "intervals": "Compact retains Down clock animation; Break and Down use one timer location. Standalone never offers Down. Full Down hides clock and expands controls.",
+        "log": "Compact pin controls side button only. Open and close use top-entry unpinned animation while preserving actual saved pin.",
+        "numberpad": "Touch-only data-speech-input=disabled; no command registrations or transcript dispatch. Mic slides out, editor fills visual viewport, mic restores previous runtime intent on close.",
+        "goals": "One applicable goal opens numberpad directly; multiple use configurable selector. Configured goal is larger, inferred smaller and omitted when idle or Trip. Aggregate mode title includes configured percentage; idle Auto is [Auto]."
+      },
+      "controls": {
+        "identity": "Existing button IDs and handlers; no action proxies",
+        "numberpad": "Touch only; explicit Switch to Voice"
+      },
+      "audio": {
+        "mode": "Existing business-action announcements only; hiding mic is not microphone deactivation"
+      },
+      "forbidden": [
+        "Down during a standalone break",
+        "Speech command dispatch while numberpad open",
+        "Changing saved Log pin to implement Compact geometry",
+        "Showing undefined idle inference"
+      ],
+      "evidence": [
+        "node tests/compact-actions-browser.cjs",
+        "node tests/goal-pad-layout-browser.cjs",
+        "node tests/goal-bar-interactions-browser.cjs"
       ]
     }
   },
@@ -19173,6 +19245,33 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           "elapsedMinutes": 20,
           "goalBudgetMinutes": 24,
           "goalAccountingUnchanged": true
+        }
+      },
+      {
+        "id": "COMPACT-PRESENTATION",
+        "contract": "COMPACT-ACTIONS",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "actionDisplay": "compact",
+          "trip": "running",
+          "logPinned": true
+        },
+        "when": {
+          "startInterval": "down"
+        },
+        "expect": {
+          "left": [
+            "resume",
+            "break",
+            "cancel"
+          ],
+          "right": [
+            "details",
+            "log"
+          ],
+          "clock": "centered horizontally; each rail centered on its axis",
+          "timer": "Down elapsed above clock",
+          "eligibleActionsUnchanged": true
         }
       }
     ]
