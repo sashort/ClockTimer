@@ -28,10 +28,26 @@ assert.deepEqual(Array.from(bar.nodes,n=>Number(n.percent.toFixed(6))),[100,110,
 assert.deepEqual(Array.from(bar.nodes,n=>n.time),['0:00:00','0:02:43','0:06:00','0:10:00']);
 for(const mode of ['elapsed','calculated-end','remaining']){
  c.renderedTimeMode=mode;state=c.getUIState();bar=state.goal_bar;
- assert.equal(bar.nodes.find(n=>n.current).time,mode==='remaining'?'0:10:00':mode==='elapsed'?'0:20:00':state.time_component.text,'Current uses Standard remaining or existing '+mode+' readout');
+ const now=new window.Date();const tripEnd=[now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+ assert.equal(bar.nodes.find(n=>n.current).time,mode==='remaining'?'0:10:00':mode==='elapsed'?'0:20:00':tripEnd,'Current uses trip '+mode+' readout');
  if(mode==='elapsed')assert.equal(bar.nodes.find(n=>n.id==='standard').time,'0:30:00','Standard elapsed is trip standard, without aggregate history');
  assert(bar.nodes.every(n=>typeof n.time==='string'&&n.time.length>0),'all '+mode+' positions have a time');
 }
+// Mode changes affect visibility, never the units or historical scope of labels.
+for (const timeMode of ['remaining','elapsed','calculated-end']) {
+ c.configure({goal_type:'auto'});c.renderedTimeMode=timeMode;
+ const baseline=c.getUIState().goal_bar;
+ for (const [goalMode,ids] of [['trip',['standard','trip','current']],['total',['standard','total','current']],['auto',['standard','trip','total','current']]]) {
+  c.configure({goal_type:goalMode});const ui=c.getUIState(),projected=ui.goal_bar;
+  const trip=c.getSummarySnapshot().trip;
+  assert.equal(ui.time_header_text,timeMode==='remaining'?'Trip Time Remaining':timeMode==='elapsed'?'Trip Time Elapsed':'Trip End Time');
+  assert.equal(ui.time_component.text,trip.renderedTime,'main '+timeMode+' readout is current-trip based in '+goalMode);
+  if(timeMode==='elapsed')assert.equal(ui.time_component.value,1200000,'main elapsed excludes prior aggregate trips');
+  assert.deepEqual(Array.from(projected.nodes,n=>n.id),ids,goalMode+' visible nodes');
+  for(const node of projected.nodes){const original=baseline.nodes.find(n=>n.id===node.id);assert.equal(node.percent,original.percent);assert.equal(node.time,original.time,'trip-based '+timeMode+' label survives scope change');}
+ }
+}
+c.renderedTimeMode='remaining';
 await c.startInterval('down');window.__testTime+=180000;
 state=c.getUIState();assert.equal(state.goal_bar.down,true);assert.equal(state.goal_bar.nodes.find(n=>n.current).percent,150,'Down does not advance counted percentage');
 c.configure({total_goal:'115%'});state=c.getUIState();assert.notEqual(state.goal_bar.nodes.find(n=>n.id==='total').percent,125,'goal edits recalculate during Down');
@@ -39,6 +55,7 @@ await c.endInterval();window.__testTime+=600000;
 state=c.getUIState();assert.equal(state.goal_bar.nodes.find(n=>n.current).percent,100);assert.equal(state.goal_bar.nodes.find(n=>n.current).time,'0:00:00');assert.equal(state.goal_bar.nodes.find(n=>n.id==='standard').time,'0:00:00','Standard is always zero remaining');
 c.renderedTimeMode='elapsed';state=c.getUIState();assert.equal(state.goal_bar.nodes.find(n=>n.current).time,'0:30:00');assert.equal(state.goal_bar.nodes.find(n=>n.id==='standard').time,'0:30:00','Current and Standard elapsed coincide at 100%');c.renderedTimeMode='remaining';
 window.__testTime+=600000;c.configure({goal_type:'trip',trip_goal:'110%'});
-bar=c.getUIState().goal_bar;assert.equal(bar.all_failed,true);assert.equal(bar.phase,'overtime');
-await c.stop();const ended=c.getUIState().goal_bar;assert.equal(ended.active,false);assert(ended.nodes.every(n=>n.time===null&&!n.failed&&!n.current),'ending restores configured nodes without stale failure/time state');assert.deepEqual(Array.from(ended.nodes,n=>Number(n.percent.toFixed(6))),[100,110,115]);
+bar=c.getUIState().goal_bar;assert.deepEqual(Array.from(bar.nodes.filter(n=>n.failed),n=>n.id),['standard','trip'],'hidden aggregate never enters failed-goal choices');assert.equal(bar.all_failed,true);assert.equal(bar.phase,'overtime');
+await c.stop();const ended=c.getUIState().goal_bar;assert.equal(ended.active,false);assert(ended.nodes.every(n=>n.time===null&&!n.failed&&!n.current),'ending restores configured nodes without stale failure/time state');assert.deepEqual(Array.from(ended.nodes,n=>Number(n.percent.toFixed(6))),[100,110]);
+for(const [mode,ids] of [['total',['standard','total']],['auto',['standard','trip','total']]]){c.configure({goal_type:mode});assert.deepEqual(Array.from(c.getUIState().goal_bar.nodes,n=>n.id),ids,'idle '+mode+' visibility');}
 c.remove();await window.happyDOM.close();console.log('PASS inferred nodes, counted positions, all display modes, paused goal edits and all-failed overtime');

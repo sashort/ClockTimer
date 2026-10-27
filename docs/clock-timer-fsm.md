@@ -577,3 +577,9 @@ The main `standard_time_component` always represents the trip, never the selecte
 aggregate. `standard_time_header_text` is “Standard Time” in every scope. The
 main Standard Time edit action remains available throughout an active production
 trip, including Down/Break/Lunch; aggregate selection is not an edit guard.
+
+The goal bar filters goals by configured mode: Trip excludes aggregates, aggregate
+modes exclude Trip, and Auto retains both. Failure routing uses only these visible
+goals. All active bar values and main time readouts remain current-trip based;
+main labels are Trip Time Elapsed, Trip Time Remaining or Trip End Time. Main
+Remaining uses the active goal budget; bar Remaining uses Standard as zero.

@@ -136,11 +136,15 @@ Idle nodes are configured goals, have null times and contain no Current node.
 Classic remains the default saved `wmof.clock.percentageDisplay` preference;
 publisher `viewData.percentageDisplay` selects the same renderer in Drop-In.
 
+Trip mode excludes aggregate nodes; aggregate modes exclude Trip. Auto shows
+both. This applies to idle and active states and failed-goal routing. Standard
+and active Current remain available in every mode.
+
 For an active trip, aggregate nodes show inferred trip percentages. Remaining
 uses Standard as zero, while Elapsed uses counted trip duration without aggregate
 history. With a 30-minute standard, Standard is 0:00 Remaining or 30:00 Elapsed.
 Current at 150% is 20 counted minutes: 10:00 Remaining or 20:00 Elapsed. End Time
-retains the existing deadline formatter and Current readout. These bar duration
+uses trip counted positions with the existing deadline formatter, including Current. These bar duration
 rules are deliberately distinct from the main goal-based time readout.
 
 A circle and its caption/time/percentage/name form one action target.
@@ -154,3 +158,8 @@ calculated inferred values are not capped.
 Geometry, typography, triangles, colors and the proposed load/start/end motion
 sequences are specified in [goal-bar.md](goal-bar.md). Existing fit/movement effects
 must not be confused with that unimplemented lifecycle choreography.
+
+Active main time readouts also stay trip-scoped in every percentage mode: Trip
+Time Elapsed, Trip Time Remaining and Trip End Time. Remaining retains the active
+goal-based trip budget; the bar retains Standard-based Remaining. Idle aggregate
+banked/over summaries and aggregate accounting remain unchanged.

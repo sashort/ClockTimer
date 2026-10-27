@@ -1159,6 +1159,51 @@
         "editor": "trip Standard Time settings",
         "editablePercent100": false
       }
+    },
+    {
+      "id": "BAR-MODE-SCOPED-NODES",
+      "contract": "GOAL-DISPLAY",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "tripStandardMinutes": 30,
+        "countedTripMinutes": 20,
+        "aggregateStandardMinutes": 66,
+        "tripGoal": 110,
+        "inferredAggregateTripGoal": 125
+      },
+      "when": {
+        "mode": [
+          "trip",
+          "total",
+          "auto"
+        ],
+        "timeMode": [
+          "remaining",
+          "elapsed",
+          "calculated-end"
+        ]
+      },
+      "expect": {
+        "tripNodes": [
+          "standard",
+          "trip",
+          "current"
+        ],
+        "totalNodes": [
+          "standard",
+          "total",
+          "current"
+        ],
+        "autoNodes": [
+          "standard",
+          "trip",
+          "total",
+          "current"
+        ],
+        "sharedNodeValues": "identical trip-based values across modes",
+        "hiddenFailures": "excluded from marker and selector",
+        "mainTime": "Trip label and current-trip readout in every active mode; elapsed excludes aggregate history"
+      }
     }
   ]
 }

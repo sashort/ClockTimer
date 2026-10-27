@@ -65,3 +65,22 @@ node tests/fsm-reference.mjs
 node tests/application-state-inventory.mjs
 node tests/order-filler-state-contract.mjs --validate-only
 ```
+
+## Follow-up: mode-specific bar nodes
+
+Trip mode now excludes aggregate nodes; aggregate modes exclude Trip. Auto
+retains both. Idle follows the same visibility rule. Failure markers and editor
+choices use only visible goals. Active values remain trip-based: inferred
+aggregate requirements, counted trip elapsed and Standard-based Remaining.
+Current End Time now derives from its own trip position instead of copying the
+main selected-scope deadline. Model and rendered interaction regressions cover
+mode changes, idle reset and shared-node value parity.
+
+Active main time readouts also stay trip-scoped in every percentage mode: Trip
+Time Elapsed, Trip Time Remaining and Trip End Time. Remaining retains the active
+goal-based trip budget; the bar retains Standard-based Remaining. Idle aggregate
+banked/over summaries and aggregate accounting remain unchanged.
+
+Shared bar detail consolidation: only the next target and Current show time and
+percentage labels. Other unfailed nodes retain names and click targets. All-failed
+state restores Standard at the right with its time and 100% reference details.

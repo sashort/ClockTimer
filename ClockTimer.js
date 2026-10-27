@@ -1541,8 +1541,9 @@
             now = new Date(),
             summary = this.#buildSummarySnapshot(now)
         ) {
+            // Active time readouts describe this trip, independent of the percent scope.
             const scope =
-                summary.scope ||
+                this.#started && !this.#breakOnly ? "trip" : summary.scope ||
                 (
                     this.#percentMode ===
                         "total"
@@ -1851,7 +1852,7 @@
                             : `${scopeLabel} ${suffix}`
                     ),
                 time_header_short_text:
-                    scope === "standard" &&
+                    effectiveTimeState?.scope === "standard" &&
                     !effectiveTimeState
                         ?.virtual
                         ? `Std. ${suffix}`
@@ -1896,21 +1897,25 @@
                 available_actions: availableActions,
                 controls
             };
-            if (this.hasAttribute("goal-bar")) values.goal_bar = this.getGoalBarSnapshot(now, {summary, uiState:values});
+            if (this.hasAttribute("goal-bar")) values.goal_bar = this.getGoalBarSnapshot(now, {summary});
             return new ClockTimerUIState(values);
         }
 
         // Goal-bar durations use counted trip time: Standard is zero Remaining
-        // and the standard duration in Elapsed mode. End Time retains UI semantics.
-        getGoalBarSnapshot(now = new Date(), {summary = this.#buildSummarySnapshot(now), uiState} = {}) {
+        // and the standard duration in Elapsed mode. All labels stay trip-scoped.
+        getGoalBarSnapshot(now = new Date(), {summary = this.#buildSummarySnapshot(now)} = {}) {
             const standard = Number(summary.trip?.standardTimeMilliseconds);
             const counted = Number(summary.trip?.countedTimeElapsedMilliseconds);
+            const showTrip = this.#percentMode !== "total";
+            const showTotal = this.#percentMode !== "trip";
+            const visibleGoal = node => node.id === "standard"
+                || (node.id === "trip" ? showTrip : showTotal);
             if (!this.#started || this.#breakOnly || !(standard > 0)) {
                 const goals = [
                     {id:"standard", label:"Standard", percent:100},
                     {id:"trip", label:"Trip", percent:this.#getUserTripGoal()*100},
                     {id:"total", label:this.getAttribute("total-label") || "Total", percent:this.#getUserTotalGoal()*100}
-                ].map(node => Object.freeze({...node, time:null, failed:false}));
+                ].filter(visibleGoal).map(node => Object.freeze({...node, time:null, failed:false}));
                 return Object.freeze({available:true, active:false, phase:"idle", all_failed:false, down:false,
                     scale_min:0, scale_max:Math.min(150, Math.max(...goals.map(node=>node.percent))), nodes:Object.freeze(goals)});
             }
@@ -1918,9 +1923,9 @@
             const goalValues = [
                 {id:"standard", label:"Standard", percent:100},
                 {id:"trip", label:"Trip", percent:this.#getUserTripGoal()*100}
-            ];
-            const total = this.#calculateTotalGoalRequirements({allowMissed:true});
-            if (Number.isFinite(total.tripGoal) && total.tripGoal > 0)
+            ].filter(visibleGoal);
+            const total = showTotal ? this.#calculateTotalGoalRequirements({allowMissed:true}) : null;
+            if (Number.isFinite(total?.tripGoal) && total.tripGoal > 0)
                 goalValues.push({id:"total", label:this.getAttribute("total-label") || "Total", percent:total.tripGoal*100});
             const duration = value => this.#formatRemainingRenderedDuration(value);
             const mode = this.#renderedTimeMode;
@@ -1933,11 +1938,13 @@
                 return Object.freeze({...node, counted_position:position, time:text,
                     failed:Number.isFinite(current) && current*100 < node.percent-1e-7});
             });
+            const currentEnd = mode === "calculated-end" && Number.isFinite(current) && current > 0
+                ? this.#calculateTripGoalRequirementsForGoal(current, {allowMissed:true}).adjustedEndTime : null;
             nodes.push(Object.freeze({id:"current", label:"Current", current:true,
                 percent:Number.isFinite(current)?current*100:null, counted_position:counted,
                 time:mode === "remaining" ? duration(standard-counted)
                     : mode === "elapsed" ? this.#formatElapsedRenderedDuration(counted)
-                    : uiState?.time_component?.text ?? this.getRenderedTime(mode,now), failed:false}));
+                    : this.#formatSummaryEndTime(currentEnd ? new Date(currentEnd) : undefined), failed:false}));
             const failed = nodes.filter(node=>!node.current).every(node=>node.failed);
             return Object.freeze({available:true, active:true, time_mode:mode, nodes:Object.freeze(nodes),
                 all_failed:failed,
