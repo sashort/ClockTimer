@@ -110,7 +110,15 @@ const server=http.createServer((req,res)=>{
   for(const height of [600,844,720,844]){
    // Simulate mobile viewport changes without resizing a fullscreen desktop window.
    await viewportSession.send("Emulation.setDeviceMetricsOverride",{width:390,height,deviceScaleFactor:1,mobile:true});
-   await page.waitForFunction(()=>{const dialog=document.querySelector('#loginDialog'),bar=document.querySelector('#speechMicBar');return !dialog.getAnimations().some(animation=>animation.playState==='running')&&dialog.getBoundingClientRect().bottom<=bar.getSafeTop()+2;});
+   await page.waitForFunction(expectedHeight=>{
+    const dialog=document.querySelector('#loginDialog'),bar=document.querySelector('#speechMicBar'),app=document.querySelector('#app');
+    // CDP acknowledges before visualViewport and the app's resize listener settle.
+    // The old dialog geometry may already be valid for the previous viewport.
+    return Math.abs(visualViewport.height-expectedHeight)<1&&
+     Math.abs(app.getBoundingClientRect().height-visualViewport.height)<1&&
+     !dialog.getAnimations().some(animation=>animation.playState==='running')&&
+     dialog.getBoundingClientRect().bottom<=bar.getSafeTop()-7;
+   },height);
    const m=await page.evaluate(()=>{const app=document.querySelector('#app'),d=document.querySelector('#loginDialog'),bar=document.querySelector('#speechMicBar');return {height:app.getBoundingClientRect().height,viewport:visualViewport.height,bottom:d.getBoundingClientRect().bottom,safe:bar.getSafeTop(),micWidth:bar.getBoundingClientRect().width,width:visualViewport.width};});
    assert(Math.abs(m.height-m.viewport)<1,JSON.stringify(m));
    assert(m.bottom<=m.safe-7,JSON.stringify(m));
