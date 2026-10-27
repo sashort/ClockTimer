@@ -1310,6 +1310,7 @@
 
             return {
                 ...detail,
+                breakOnly: this.#breakOnly,
                 intervalType: record?.type,
                 breakType:
                     breakType === undefined
@@ -1552,7 +1553,7 @@
 
         #decorateTripTimeText(text, now) {
             const interval = this.getActiveIntervalState?.(now);
-            return typeof text === "string" && interval?.open === false &&
+            return !this.#breakOnly && typeof text === "string" && interval?.open === false &&
                 (this.#renderedTimeMode === "remaining" || this.#renderedTimeMode === "elapsed")
                 ? `${text}${this.#renderedTimeMode === "remaining" ? "⁺" : "⁻"}` : text;
         }

@@ -168,3 +168,7 @@ The main active time value and bar Current now share the same formatter and
 interval annotation in Remaining, Elapsed and End Time. Aggregate selection and
 goal changes cannot change this Current readout. Goal deadlines and budgets remain
 separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.
+
+Standalone breaks suppress the ⁺/⁻ time suffixes. Their semantic interval events
+carry breakOnly ownership so queued feedback cannot announce time saved or lost
+after session cleanup. Regular trips retain both behaviors.

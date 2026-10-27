@@ -589,3 +589,8 @@ The main active time value and bar Current now share the same formatter and
 interval annotation in Remaining, Elapsed and End Time. Aggregate selection and
 goal changes cannot change this Current readout. Goal deadlines and budgets remain
 separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.
+
+Standalone-break UI has no ⁺/⁻ timing suffix. Interval completion events capture
+breakOnly ownership, and saved/lost timing feedback is suppressed for that owner.
+Regular trip pauses retain their timing feedback. Percentage display is a direct
+Settings item aligned with Clock/Timer Settings, not a nested Clock/Timer option.

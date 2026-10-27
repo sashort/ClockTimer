@@ -8,6 +8,7 @@ const fixture=require('./order-filler-master-fixture.cjs');
  await p.waitForFunction(()=>document.querySelector('#scopeToggle').textContent==='[Auto]');
  await p.locator('#menuButton').click();await p.waitForTimeout(500);await p.locator('#settingsMenuButton').click();await p.waitForTimeout(500);await p.locator('#percentageDisplayBar').click();
  await p.waitForFunction(()=>document.querySelector('#app').dataset.percentageDisplay==='bar');
+ const settingsIndent=await p.evaluate(()=>{const group=document.querySelector('.percentage-display-setting'),peer=document.querySelector('#openGraphicalSettingsFrame');return {sameParent:group.parentElement===peer.parentElement,left:parseFloat(getComputedStyle(group).marginLeft),right:parseFloat(getComputedStyle(group).marginRight)};});assert(settingsIndent.sameParent);assert.equal(settingsIndent.left,settingsIndent.right,'Percentage display is a peer Settings group, without nested left indent');
  assert.equal(await p.locator('#percentageDisplayBar').getAttribute('aria-checked'),'true');
  assert.equal(await p.evaluate(async()=>{await WMOFPersistence.flush();return WMOFPersistence.peek('wmof.clock.percentageDisplay');}),'bar','display preference is persisted');
  assert.equal(settings.orderFiller['wmof.clock.percentageDisplay'],'bar','server received the account preference');
