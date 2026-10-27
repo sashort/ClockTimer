@@ -46,8 +46,8 @@ counted position is `tripStandard / (inferredTripPercent / 100)`.
 **Remaining mode uses Standard as zero**, independently of the active goal:
 `nodeRemaining = tripStandard - nodeCountedPosition`. Current uses
 `tripStandard - tripCountedElapsed`. Standard is therefore always 0:00 remaining;
-Current reaches 0:00 when its percentage reaches 100%. The main timer retains its
-existing goal-based remaining readout; that string can differ from the bar.
+Current reaches 0:00 when its percentage reaches 100%. The main time readout uses this same calculation and exactly matches Current
+in the selected time mode.
 
 For a 30-minute standard, 100%, 110% and 125% correspond to counted positions
 30:00, 27:16 and 24:00. Their bar Remaining values are 0:00, approximately 2:43 and
@@ -215,8 +215,7 @@ This graph describes action routing, not new persistence semantics. The
 [goal/editor SVG flow](goal-display-fsm.svg) is its generated visual projection.
 
 Active main time readouts also stay trip-scoped in every percentage mode: Trip
-Time Elapsed, Trip Time Remaining and Trip End Time. Remaining retains the active
-goal-based trip budget; the bar retains Standard-based Remaining. Idle aggregate
+Time Elapsed, Trip Time Remaining and Trip End Time. Remaining uses Standard as zero in both the main readout and bar Current. Idle aggregate
 banked/over summaries and aggregate accounting remain unchanged.
 
 ## Counted-time motion proposal (not implemented)
@@ -228,3 +227,8 @@ a fresh counted-time anchor. Goal, mode and layout changes invalidate stale plan
 During Down, a future End Time presentation can use end-at-pause plus elapsed
 Down duration, derived from timestamps so backgrounding cannot accumulate drift.
 These motion and Down End Time proposals are not in the current implementation.
+
+The main active time value and bar Current now share the same formatter and
+interval annotation in Remaining, Elapsed and End Time. Aggregate selection and
+goal changes cannot change this Current readout. Goal deadlines and budgets remain
+separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.

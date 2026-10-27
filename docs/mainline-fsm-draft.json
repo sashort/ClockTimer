@@ -14186,7 +14186,8 @@
       "dropIn": "Same model/renderer and raw configured goal values; existing permissions retained and publisher Standard read-only.",
       "clockLayout": "Center between visible controls above and Log/Mic/content boundary below; zero-minimum grid tracks preserve alignment during resizing.",
       "animations": "Only movement/failure/mode/refit effects implemented. Proposed cold idle load, cold active restore, committed start/end and rejection sequences are in goal-bar.md.",
-      "localVerification": "Automated browser/model evidence; no physical-device or production-deployment claim."
+      "localVerification": "Automated browser/model evidence; no physical-device or production-deployment claim.",
+      "mainTime": "Same shared Current trip readout as bar in Remaining, Elapsed and End Time; Standard is zero remaining."
     }
   },
   "unresolved_contracts": [
@@ -17774,7 +17775,8 @@
         "bar": "Idle configured values; active inferred requirements; Standard-based remaining and trip-counted elapsed",
         "editing": "Whole bar, including nodes, labels, background and compression triangles, opens the existing selector: Trip only in Trip mode, selected aggregate only in aggregate mode, both in Auto. Failure count does not filter choices. No Standard Time edit or Current time-mode action from the bar. Classic and Bar goal dialogs and pads show actual configured and inferred trip values; only actual is edited.",
         "failure": "Right-hand elapsed color, border-aware opaque geometry and travelling ticks",
-        "feedback": "150 cap applies before first announcement; notice is passive"
+        "feedback": "150 cap applies before first announcement; notice is passive",
+        "currentTime": "Main readout exactly equals bar Current in all three time modes, including interval annotations; Remaining is Standard minus counted trip elapsed, not goal or aggregate budget."
       },
       "controls": {
         "equivalence": "One whole-bar click/touch/keyboard target; Sync remains separate.",
@@ -19091,6 +19093,41 @@
           "previewInferred": 158,
           "savedActualBeforeConfirm": 110,
           "idleInferred": "unavailable"
+        }
+      },
+      {
+        "id": "CURRENT-READOUT-PARITY",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "standardMinutes": 30,
+          "countedTripMinutes": 20,
+          "inferredTripGoal": 125
+        },
+        "when": {
+          "scope": [
+            "trip",
+            "total",
+            "auto"
+          ],
+          "timeMode": [
+            "remaining",
+            "elapsed",
+            "calculated-end"
+          ],
+          "interval": [
+            "running",
+            "down",
+            "break",
+            "lunch"
+          ]
+        },
+        "expect": {
+          "mainText": "exactly equals bar Current text including interval annotation",
+          "remainingMinutes": 10,
+          "elapsedMinutes": 20,
+          "goalBudgetMinutes": 24,
+          "goalAccountingUnchanged": true
         }
       }
     ]

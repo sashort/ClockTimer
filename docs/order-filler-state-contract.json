@@ -253,7 +253,7 @@
     },
     {
       "id": "MAIN-TIME-TRIP",
-      "requirement": "Active main Time Elapsed, Time Remaining and End Time readouts use current-trip time and Trip labels in all percentage modes. Idle aggregate banked/over summaries and aggregate accounting remain unchanged.",
+      "requirement": "Active main time value exactly matches bar Current in every selected time mode and percentage scope. Remaining = trip standard minus trip counted elapsed. Elapsed = trip counted elapsed. End Time uses Current counted position. Interval annotations and formatters are shared. Goal accounting and idle aggregate summaries remain separate.",
       "evidence": "node tests/goal-bar.mjs"
     },
     {

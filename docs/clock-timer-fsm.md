@@ -581,7 +581,11 @@ trip, including Down/Break/Lunch; aggregate selection is not an edit guard.
 The goal bar filters goals by configured mode: Trip excludes aggregates, aggregate
 modes exclude Trip, and Auto retains both. Failure routing uses only these visible
 goals. All active bar values and main time readouts remain current-trip based;
-main labels are Trip Time Elapsed, Trip Time Remaining or Trip End Time. Main
-Remaining uses the active goal budget; bar Remaining uses Standard as zero.
+main labels are Trip Time Elapsed, Trip Time Remaining or Trip End Time. Main Remaining and bar Current both use Standard as zero.
 
 Current bar interaction supersedes the earlier per-node routes: Whole bar, including nodes, labels, background and compression triangles, opens the existing selector: Trip only in Trip mode, selected aggregate only in aggregate mode, both in Auto. Failure count does not filter choices. No Standard Time edit or Current time-mode action from the bar. Classic and Bar goal dialogs and pads show actual configured and inferred trip values; only actual is edited.
+
+The main active time value and bar Current now share the same formatter and
+interval annotation in Remaining, Elapsed and End Time. Aggregate selection and
+goal changes cannot change this Current readout. Goal deadlines and budgets remain
+separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.

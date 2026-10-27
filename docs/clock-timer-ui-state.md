@@ -144,8 +144,7 @@ For an active trip, aggregate nodes show inferred trip percentages. Remaining
 uses Standard as zero, while Elapsed uses counted trip duration without aggregate
 history. With a 30-minute standard, Standard is 0:00 Remaining or 30:00 Elapsed.
 Current at 150% is 20 counted minutes: 10:00 Remaining or 20:00 Elapsed. End Time
-uses trip counted positions with the existing deadline formatter, including Current. These bar duration
-rules are deliberately distinct from the main goal-based time readout.
+uses trip counted positions with the existing deadline formatter, including Current. The main readout and bar Current use one shared calculation in all three modes.
 
 The whole bar is one action target. It opens the existing selector with Trip,
 aggregate or both according to configured mode; failed goals remain selectable.
@@ -160,8 +159,12 @@ sequences are specified in [goal-bar.md](goal-bar.md). Existing fit/movement eff
 must not be confused with that unimplemented lifecycle choreography.
 
 Active main time readouts also stay trip-scoped in every percentage mode: Trip
-Time Elapsed, Trip Time Remaining and Trip End Time. Remaining retains the active
-goal-based trip budget; the bar retains Standard-based Remaining. Idle aggregate
+Time Elapsed, Trip Time Remaining and Trip End Time. Remaining uses Standard as zero in both the main readout and bar Current. Idle aggregate
 banked/over summaries and aggregate accounting remain unchanged.
 
 Current bar interaction supersedes the earlier per-node routes: Whole bar, including nodes, labels, background and compression triangles, opens the existing selector: Trip only in Trip mode, selected aggregate only in aggregate mode, both in Auto. Failure count does not filter choices. No Standard Time edit or Current time-mode action from the bar. Classic and Bar goal dialogs and pads show actual configured and inferred trip values; only actual is edited.
+
+The main active time value and bar Current now share the same formatter and
+interval annotation in Remaining, Elapsed and End Time. Aggregate selection and
+goal changes cannot change this Current readout. Goal deadlines and budgets remain
+separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.

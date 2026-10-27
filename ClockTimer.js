@@ -1537,6 +1537,26 @@
             return match[1] ? -value : value;
         }
 
+        #getCurrentTripTimeText(summary, now) {
+            const trip = summary.trip;
+            const counted = Number(trip?.countedTimeElapsedMilliseconds);
+            const standard = Number(trip?.standardTimeMilliseconds);
+            if (!Number.isFinite(standard) || !Number.isFinite(counted)) return undefined;
+            if (this.#renderedTimeMode === "remaining") return this.#formatRemainingRenderedDuration(standard-counted);
+            if (this.#renderedTimeMode === "elapsed") return this.#formatElapsedRenderedDuration(counted);
+            const current = Number(trip?.countedPercent);
+            const end = counted === 0 ? now : Number.isFinite(current) && current > 0
+                ? this.#calculateTripGoalRequirementsForGoal(current, {allowMissed:true}).adjustedEndTime : null;
+            return this.#formatSummaryEndTime(end ? new Date(end) : undefined);
+        }
+
+        #decorateTripTimeText(text, now) {
+            const interval = this.getActiveIntervalState?.(now);
+            return typeof text === "string" && interval?.open === false &&
+                (this.#renderedTimeMode === "remaining" || this.#renderedTimeMode === "elapsed")
+                ? `${text}${this.#renderedTimeMode === "remaining" ? "⁺" : "⁻"}` : text;
+        }
+
         #getActualTimeState(
             now = new Date(),
             summary = this.#buildSummarySnapshot(now)
@@ -1572,8 +1592,8 @@
                     ? `Standard ${suffix}`
                     : `${scope === "total" ? "Total" : "Trip"} ${suffix}`;
 
-            let text =
-                selected?.renderedTime;
+            let text = this.#started && !this.#breakOnly
+                ? this.#getCurrentTripTimeText(summary, now) : selected?.renderedTime;
 
             let value;
             let date;
@@ -1748,13 +1768,8 @@
             const rawRenderedText =
                 effectiveTimeState
                     ?.text;
-            const renderedText =
-                typeof rawRenderedText === "string" &&
-                !effectiveTimeState?.virtual &&
-                (this.#renderedTimeMode === "remaining" || this.#renderedTimeMode === "elapsed") &&
-                interval?.open === false
-                    ? `${rawRenderedText}${this.#renderedTimeMode === "remaining" ? "⁺" : "⁻"}`
-                    : rawRenderedText;
+            const renderedText = effectiveTimeState?.virtual ? rawRenderedText
+                : this.#decorateTripTimeText(rawRenderedText, now);
             const renderedDate =
                 effectiveTimeState
                     ?.date;
@@ -1949,13 +1964,9 @@
                 return Object.freeze({...node, counted_position:position, time:text,
                     failed:Number.isFinite(current) && current*100 < node.percent-1e-7});
             });
-            const currentEnd = mode === "calculated-end" && Number.isFinite(current) && current > 0
-                ? this.#calculateTripGoalRequirementsForGoal(current, {allowMissed:true}).adjustedEndTime : null;
             nodes.push(Object.freeze({id:"current", label:"Current", current:true,
                 percent:Number.isFinite(current)?current*100:null, counted_position:counted,
-                time:mode === "remaining" ? duration(standard-counted)
-                    : mode === "elapsed" ? this.#formatElapsedRenderedDuration(counted)
-                    : this.#formatSummaryEndTime(currentEnd ? new Date(currentEnd) : undefined), failed:false}));
+                time:this.#decorateTripTimeText(this.#getCurrentTripTimeText(summary, now), now), failed:false}));
             const failed = nodes.filter(node=>!node.current).every(node=>node.failed);
             return Object.freeze({available:true, active:true, time_mode:mode, nodes:Object.freeze(nodes),
                 all_failed:failed,
