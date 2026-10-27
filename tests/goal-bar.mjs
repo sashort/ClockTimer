@@ -43,7 +43,8 @@ for (const timeMode of ['remaining','elapsed','calculated-end']) {
   c.configure({goal_type:goalMode});const ui=c.getUIState(),projected=ui.goal_bar;
   const trip=c.getSummarySnapshot().trip;
   assert.equal(ui.time_header_text,timeMode==='remaining'?'Trip Time Remaining':timeMode==='elapsed'?'Trip Time Elapsed':'Trip End Time');
-  assert.equal(ui.time_component.text,trip.renderedTime,'main '+timeMode+' readout is current-trip based in '+goalMode);
+  assert.equal(ui.time_component.text,projected.nodes.find(n=>n.current).time,'main '+timeMode+' readout exactly matches bar Current in '+goalMode);
+  if(timeMode==='remaining')assert.equal(ui.time_component.value,600000,'main remaining is Standard minus counted time, independent of goal');
   if(timeMode==='elapsed')assert.equal(ui.time_component.value,1200000,'main elapsed excludes prior aggregate trips');
   assert.deepEqual(Array.from(projected.nodes,n=>n.id),ids,goalMode+' visible nodes');
   for(const node of projected.nodes){const original=baseline.nodes.find(n=>n.id===node.id);assert.equal(node.percent,original.percent);assert.equal(node.time,original.time,'trip-based '+timeMode+' label survives scope change');}
@@ -51,7 +52,8 @@ for (const timeMode of ['remaining','elapsed','calculated-end']) {
 }
 c.renderedTimeMode='remaining';
 await c.startInterval('down');window.__testTime+=180000;
-state=c.getUIState();assert.equal(state.goal_bar.down,true);assert.equal(state.goal_bar.nodes.find(n=>n.current).percent,150,'Down does not advance counted percentage');
+state=c.getUIState();assert.equal(state.time_component.text,state.goal_bar.nodes.find(n=>n.current).time,'Down readouts match');assert.equal(state.goal_bar.down,true);assert.equal(state.goal_bar.nodes.find(n=>n.current).percent,150,'Down does not advance counted percentage');
+for(const mode of ['remaining','elapsed','calculated-end']){c.renderedTimeMode=mode;const paused=c.getUIState();assert.equal(paused.time_component.text,paused.goal_bar.nodes.find(n=>n.current).time??'---','Down '+mode+' parity');}c.renderedTimeMode='remaining';
 c.configure({total_goal:'115%'});state=c.getUIState();assert.notEqual(state.goal_bar.nodes.find(n=>n.id==='total').percent,125,'goal edits recalculate during Down');
 await c.endInterval();window.__testTime+=600000;
 state=c.getUIState();assert.equal(state.goal_bar.nodes.find(n=>n.current).percent,100);assert.equal(state.goal_bar.nodes.find(n=>n.current).time,'0:00:00');assert.equal(state.goal_bar.nodes.find(n=>n.id==='standard').time,'0:00:00','Standard is always zero remaining');

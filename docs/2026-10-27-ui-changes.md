@@ -77,8 +77,7 @@ main selected-scope deadline. Model and rendered interaction regressions cover
 mode changes, idle reset and shared-node value parity.
 
 Active main time readouts also stay trip-scoped in every percentage mode: Trip
-Time Elapsed, Trip Time Remaining and Trip End Time. Remaining retains the active
-goal-based trip budget; the bar retains Standard-based Remaining. Idle aggregate
+Time Elapsed, Trip Time Remaining and Trip End Time. Remaining uses Standard as zero in both the main readout and bar Current. Idle aggregate
 banked/over summaries and aggregate accounting remain unchanged.
 
 Shared bar detail consolidation: only the next target and Current show time and
@@ -86,3 +85,8 @@ percentage labels. Other unfailed nodes retain names and click targets. All-fail
 state restores Standard at the right with its time and 100% reference details.
 
 Current bar interaction supersedes the earlier per-node routes: Whole bar, including nodes, labels, background and compression triangles, opens the existing selector: Trip only in Trip mode, selected aggregate only in aggregate mode, both in Auto. Failure count does not filter choices. No Standard Time edit or Current time-mode action from the bar. Classic and Bar goal dialogs and pads show actual configured and inferred trip values; only actual is edited.
+
+The main active time value and bar Current now share the same formatter and
+interval annotation in Remaining, Elapsed and End Time. Aggregate selection and
+goal changes cannot change this Current readout. Goal deadlines and budgets remain
+separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.

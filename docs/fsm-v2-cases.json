@@ -1239,6 +1239,41 @@
         "savedActualBeforeConfirm": 110,
         "idleInferred": "unavailable"
       }
+    },
+    {
+      "id": "CURRENT-READOUT-PARITY",
+      "contract": "GOAL-DISPLAY",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "standardMinutes": 30,
+        "countedTripMinutes": 20,
+        "inferredTripGoal": 125
+      },
+      "when": {
+        "scope": [
+          "trip",
+          "total",
+          "auto"
+        ],
+        "timeMode": [
+          "remaining",
+          "elapsed",
+          "calculated-end"
+        ],
+        "interval": [
+          "running",
+          "down",
+          "break",
+          "lunch"
+        ]
+      },
+      "expect": {
+        "mainText": "exactly equals bar Current text including interval annotation",
+        "remainingMinutes": 10,
+        "elapsedMinutes": 20,
+        "goalBudgetMinutes": 24,
+        "goalAccountingUnchanged": true
+      }
     }
   ]
 }
