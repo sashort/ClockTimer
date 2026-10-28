@@ -19595,6 +19595,52 @@
           "rightMember": "total",
           "names": "aggregate or Trip at 100%; no Standard substitution"
         }
+      },
+      {
+        "id": "BAR-SYNC-OVERRIDE-EFFECTIVE-GOAL",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "manualTripGoal": 100,
+          "rawSyncGoal": 80,
+          "sync": true,
+          "tripActive": true
+        },
+        "when": {
+          "syncOverride": [
+            true,
+            false
+          ]
+        },
+        "expect": {
+          "barTripPercent": [
+            80,
+            100
+          ],
+          "idleGoal": "configured value",
+          "editor": "underlying configured goal"
+        }
+      },
+      {
+        "id": "BAR-DIGIT-WIDTH-BANDS",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "percentBands": [
+            "8888.88%",
+            "888.88%",
+            "88.88%",
+            "8.88%"
+          ]
+        },
+        "when": {
+          "tick": "digits vary within band; integer digit count drops at 1000/100/10"
+        },
+        "expect": {
+          "reservedWidth": "stable within band; decreases at boundary unless time text is wider",
+          "fontMeasurement": "widest digit in actual rendered font; no assumed digit",
+          "selectorGaps": "equal above/below options"
+        }
       }
     ]
   },

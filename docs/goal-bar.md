@@ -339,3 +339,14 @@ space are decorative and pass pointer input through. The main time label remains
 above the bar for hit testing. The SVG remains a single keyboard goal-edit action.
 At 100%, Trip and aggregate targets keep their real names in display and speech;
 Standard naming applies only to the actual Standard fallback.
+
+
+Active Trip nodes use the effective synchronized goal, including the Sync Override
+floor policy; idle nodes still use configured goals. Changing Override recalculates
+the node immediately. Editors continue to edit the underlying configured goal.
+Current percentage reserves a measured widest-digit width for its integer-digit
+band plus two decimals and the percent sign. The displayed value is unchanged.
+The band shrinks at 1000→999, 100→99 and 10→9; digits and font metrics are measured
+from the actual rendered font instead of assuming that 8 is widest. Time text may
+remain the wider constraint for a stacked label. Goal-selector option spacing is
+16px above and below the options.

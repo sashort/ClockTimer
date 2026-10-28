@@ -35,6 +35,7 @@ c.percentMode='trip'; // Verify the Sync floor itself independently of Auto's sh
 const protectedState=c.captureState();
 c.configure({sync_override:true});
 assert.equal(c.getSummarySnapshot().trip.percentGoal,.8);
+assert.equal(c.getGoalBarSnapshot().nodes.find(n=>n.id==='trip').percent,80,'bar uses the effective below-floor Sync Override goal');
 assert.equal(c.getUIState().sync_override_in_use,true,'badge appears only while below-floor Sync is used');
 assert.equal(c.getSummarySnapshot().trip.renderedTime,'0:25:00');
 c.restoreState(protectedState);assert.equal(c.syncOverride,false);
@@ -42,6 +43,7 @@ c.configure({sync_override:true});assert.equal(c.getSummarySnapshot().trip.perce
 assert.equal(c.getUIState().sync_override_in_use,true,'badge appears only while below-floor Sync is used');
 c.configure({sync_override:false});assert.equal(c.getSummarySnapshot().trip.percentGoal,1);
 assert.equal(c.getUIState().sync_override_in_use,false,'floor protection hides override badge');
+assert.equal(c.getGoalBarSnapshot().nodes.find(n=>n.id==='trip').percent,100,'disabling Override returns the bar node to the protected floor');
 console.log('PASS override toggling and state rollback recalculate the goal and remaining time');
 console.log('PASS changing aggregate range updates automatic percent goal and remaining time');
 c.autoSyncTripGoal=false;const manualGoal=c.getSummarySnapshot().trip.percentGoal;counted=600000;

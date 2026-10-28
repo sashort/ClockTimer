@@ -6,14 +6,16 @@ const fixture = require('./order-filler-master-fixture.cjs');
   const p=f.page;
   await p.evaluate(()=>{window.earlyBreakSetup=(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();document.querySelector('#percentageDisplayBar').click();})().then(()=>{window.earlyBreakSetupDone=true;},error=>{window.earlyBreakSetupError=String(error.stack||error);});});
   await p.waitForFunction(()=>window.earlyBreakSetupDone||window.earlyBreakSetupError);assert.equal(await p.evaluate(()=>window.earlyBreakSetupError),undefined);
+  let operationSequence=0;
+  const operation=async(fn,arg)=>{const id=++operationSequence;await p.evaluate(({source,arg,id})=>{window.earlyOperations||={};const record=window.earlyOperations[id]={};record.promise=Promise.resolve().then(()=>eval('('+source+')')(arg)).then(result=>{record.result=result;record.done=true;},error=>{record.error=String(error.stack||error);record.done=true;});},{source:fn.toString(),arg,id});await p.waitForFunction(id=>window.earlyOperations[id]?.done,id);const result=await p.evaluate(id=>{const r=window.earlyOperations[id];delete window.earlyOperations[id];return{error:r.error,result:r.result};},id);assert.equal(result.error,undefined);return result.result;};
   const snapshot=()=>p.evaluate(()=>{const s=clockTimer.uiState,current=s.goal_bar.nodes.find(n=>n.current),marker=document.querySelector('.goal-bar-node.is-current:not([aria-hidden=true])');return{trip:s.trip_active,paused:s.paused,time:s.time_component,bar:current,rendered:document.querySelector('#renderedTimeValue').textContent,marker:marker?.querySelector('path')?.getAttribute('d'),percent:marker?.querySelector('.goal-bar-percent')?.textContent,runner:document.querySelector('.goal-bar-avatar')?.dataset.mode,summary:clockTimer.getSummarySnapshot().trip};});
   for(const type of ['break','lunch','short break']){
-   await p.evaluate(()=>clockTimer.start({standardTime:'0:02:00'}));
+   await operation(()=>clockTimer.start({standardTime:'0:02:00'}));
    await p.clock.runFor(10000);
-   await p.evaluate(type=>clockTimer.startInterval(type==='lunch'?'lunch':'break',900000,{breakType:type==='short break'?'short':'break'},15000,15000),type);
+   await operation(type=>clockTimer.startInterval(type==='lunch'?'lunch':'break',900000,{breakType:type==='short break'?'short':'break'},15000,15000),type);
    await p.clock.runFor(3000);
    assert.equal(await p.evaluate(()=>clockTimer.getUIState().interval_state.phase),'start-buffer');
-   await p.evaluate(()=>clockTimer.endInterval());
+   await operation(()=>clockTimer.endInterval());
    await p.clock.runFor(1500);
    let s=await snapshot();
    assert(s.trip&&!s.paused,type+' resumes the active trip');
@@ -34,7 +36,7 @@ const fixture = require('./order-filler-master-fixture.cjs');
    }
    await p.evaluate(()=>{const state=clockTimer.captureState();clockTimer.restoreState(state);clockTimer.renderedTimeMode='remaining';});
    await p.clock.runFor(1500);s=await snapshot();assert(s.bar.unbounded&&s.marker,'reload/replay preserves credited Current');
-   await p.evaluate(()=>clockTimer.stop());await p.clock.runFor(2500);
+   await operation(()=>clockTimer.stop());await p.clock.runFor(2500);
   }
   assert.deepEqual(f.errors,[]);
   console.log('PASS early break completion inside start buffer: Current, runner, signed tick readouts, and replay');

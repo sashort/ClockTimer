@@ -1935,7 +1935,7 @@
             const current = Number(summary.trip?.countedPercent);
             const goalValues = [
                 {id:"standard", label:"Standard", percent:100},
-                {id:"trip", label:"Trip", percent:this.#getUserTripGoal()*100}
+                {id:"trip", label:"Trip", percent:this.#getTripGoal()*100}
             ].filter(visibleGoal);
             const total = showTotal ? this.#calculateTotalGoalRequirements({allowMissed:true}) : null;
             if (Number.isFinite(total?.tripGoal) && total.tripGoal > 0)

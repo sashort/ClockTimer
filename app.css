@@ -7931,3 +7931,5 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 .goal-bar-avatar,.goal-bar-avatar *,.goal-bar-connectors {pointer-events:none!important;}
 .app[data-percentage-display=bar] .trip-summary > :is(.rendered-time-cell,.summary-cell) {position:relative;z-index:2;}
 .percent-summary.is-goal-bar {position:relative;z-index:1;}
+
+.auto-goal-dialog form {padding-bottom:16px;}
