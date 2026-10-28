@@ -154,6 +154,9 @@
    return animation.finished.catch(()=>{}).then(()=>{if(this.motion.get(key)===animation)this.motion.delete(key);});
   }
   move(element,key,x,y,{bounds}={}){
+   // CSS serializes translations at limited precision. Comparing its string to
+   // an unrounded coordinate restarted the same tween on every resize/render.
+   if(element.style.transform){const destination=new DOMMatrix(element.style.transform);if(Math.abs(destination.m41-x)<.01&&Math.abs(destination.m42-y)<.01)return Promise.resolve();}
    let from=getComputedStyle(element).transform;if(from==='none')from=`translate(${x}px, ${y}px)`;
    if(bounds){const matrix=new DOMMatrix(from);from=`translate(${Math.max(bounds[0],Math.min(bounds[1],matrix.m41))}px, ${y}px)`;}
    return this.tween(element,key,{transform:from},{transform:`translate(${x}px, ${y}px)`});
