@@ -161,6 +161,7 @@ jobs:
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
+      - run: node tests/retained-page-operation-browser.cjs
       - run: node tests/trip-time-bank-browser.cjs
       - run: node tests/overtime-break-browser.cjs
       - run: node tests/break-buffer-layout-browser.cjs

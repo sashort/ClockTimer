@@ -350,3 +350,5 @@ The band shrinks at 1000→999, 100→99 and 10→9; digits and font metrics are
 from the actual rendered font instead of assuming that 8 is widest. Time text may
 remain the wider constraint for a stacked label. Goal-selector option spacing is
 16px above and below the options.
+
+Label stacks are bounded by the actual track ends and outermost node edges, not by the SVG viewport. A Current label that would protrude on the right moves inward with its connector; its marker keeps its position. The complete track/node extent stays centered beside Sync. The 100% anchor remains centered under Standard.

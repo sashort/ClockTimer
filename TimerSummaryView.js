@@ -216,7 +216,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    const total=labelUnits.reduce((n,u)=>n+measure(u),0),fontScale=Math.min(1,Math.max(1,width-padding*2-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0))/Math.max(1,total));
    let font=preferred*fontScale;for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}
    const pin=at100,wide=units.some(u=>u.merged)?Math.sqrt(r*r-(r*.45)**2)+2+r+1:0;
-   const margin=Math.max(30,(pin?.half||0)+padding+3,wide+(at100?.merged&&active?30:6)),left=margin,right=Math.max(left,width-margin);
+   const margin=Math.max(30,(pin?.half||0)+padding+3,wide+(at100?.merged&&active?30:6));let left=margin,right=Math.max(left,width-margin);
    const low=!active||allFailed?0:Math.min(...available.map(n=>Math.min(150,n.percent))),high=!active?(data.scale_max||100):allFailed?100:Math.max(low,Math.min(150,raw.find(n=>n.current)?.percent??150));
    const position=value=>high===low?right:left+(Math.min(high,Math.max(low,value))-low)/Math.max(1e-9,high-low)*(right-left);
    for(let i=0;i<units.length;i++){
@@ -226,24 +226,34 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    }
    const excess=Math.max(0,(units.at(-1)?.x||right)-right);for(const unit of units)unit.x-=excess;
    if(at100&&standard)standard.x=at100.x;
+   // Labels stay within the actual track/marker extent, rather than using the
+   // SVG viewport as extra space. Preserve the centered 100% anchor by letting
+   // the track include its stack, then center that complete extent once.
+   if(pin&&standard)left=Math.min(left,standard.x-pin.half);
+   const visualLeft=Math.min(left,...units.map(u=>u.x-u.radius)),visualRight=Math.max(right,...units.map(u=>u.x+u.radius));
+   const centerShift=width/2-(visualLeft+visualRight)/2;
+   left+=centerShift;right+=centerShift;for(const unit of units)unit.x+=centerShift;
+   const labelLeft=Math.max(padding,visualLeft+centerShift),labelRight=Math.min(width-padding,visualRight+centerShift);
+   const labelNeed=labelUnits.reduce((sum,u)=>sum+u.half*2,0)+gap*Math.max(0,labelUnits.length-1);
+   if(labelNeed>labelRight-labelLeft){font*=Math.max(.01,(labelRight-labelLeft-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0))/Math.max(1,labelNeed-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0)));for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}}
    // The 100% stack is an immovable anchor. Fit every other stack on its side.
    if(pin){
-    pin.labelX=at100&&standard?standard.x:Math.max(padding+pin.half,Math.min(width-padding-labelUnits.reduce((sum,u)=>sum+u.half*2,0)+pin.half-gap*(labelUnits.length-1),pin.x));const i=labelUnits.indexOf(pin),before=labelUnits.slice(0,i),after=labelUnits.slice(i+1);
+    pin.labelX=at100&&standard?standard.x:Math.max(labelLeft+pin.half,Math.min(labelRight-labelUnits.reduce((sum,u)=>sum+u.half*2,0)+pin.half-gap*(labelUnits.length-1),pin.x));const i=labelUnits.indexOf(pin),before=labelUnits.slice(0,i),after=labelUnits.slice(i+1);
     const leftNeed=before.reduce((n,u)=>n+u.half*2,0)+(pin.half||0),rightNeed=after.reduce((n,u)=>n+u.half*2,0)+(pin.half||0);
-    const scale=Math.max(.01,Math.min(1,(pin.labelX-padding-gap*before.length)/Math.max(1,leftNeed),(width-padding-pin.labelX-gap*after.length)/Math.max(1,rightNeed)));
+    const scale=Math.max(.01,Math.min(1,(pin.labelX-labelLeft-gap*before.length)/Math.max(1,leftNeed),(labelRight-pin.labelX-gap*after.length)/Math.max(1,rightNeed)));
     if(scale<1){font*=scale;for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}}
     let edge=pin.labelX-pin.half-gap;for(let j=before.length-1;j>=0;j--){const u=before[j];u.labelX=Math.min(u.x,edge-u.half);edge=u.labelX-u.half-gap;}
     let edgeRight=pin.labelX+pin.half+gap;for(const u of after){u.labelX=Math.max(u.x,edgeRight+u.half);edgeRight=u.labelX+u.half+gap;}
-    edge=width-padding;for(let j=after.length-1;j>=0;j--){const u=after[j];u.labelX=Math.min(u.labelX,edge-u.half);edge=u.labelX-u.half-gap;}
+    edge=labelRight;for(let j=after.length-1;j>=0;j--){const u=after[j];u.labelX=Math.min(u.labelX,edge-u.half);edge=u.labelX-u.half-gap;}
    }
    if(!pin&&labelUnits.length){
-    let edge=padding;for(const unit of labelUnits){unit.labelX=Math.max(unit.x,edge+unit.half);edge=unit.labelX+unit.half+gap;}
-    edge=width-padding;for(let i=labelUnits.length-1;i>=0;i--){const unit=labelUnits[i];unit.labelX=Math.min(unit.labelX,edge-unit.half);edge=unit.labelX-unit.half-gap;}
+    let edge=labelLeft;for(const unit of labelUnits){unit.labelX=Math.max(unit.x,edge+unit.half);edge=unit.labelX+unit.half+gap;}
+    edge=labelRight;for(let i=labelUnits.length-1;i>=0;i--){const unit=labelUnits[i];unit.labelX=Math.min(unit.labelX,edge-unit.half);edge=unit.labelX-unit.half-gap;}
    }
    for(const unit of units)unit.labelX??=unit.x;
    const halfLine=r+5,timeOffset=halfLine+7+font,percentOffset=active?timeOffset+font*1.25:halfLine+5+font*.8;
    const y=Math.max(halfLine+avatarSpace+2,height-percentOffset-font*.3-6),thickness=Math.max(14,r*1.3);
-   this.row.style.setProperty('--goal-bar-sync-offset',(y-height+20)+'px');this.svg.dataset.barY=String(y);this.svg.dataset.markerRadius=String(r);this.svg.dataset.visibleTop=String(y-halfLine-avatarSpace-1);this.svg.dataset.visibleBottom=String(y+percentOffset+font*.35+4);
+   this.row.style.setProperty('--goal-bar-sync-offset',(y-height+20)+'px');this.svg.dataset.barY=String(y);this.svg.dataset.markerRadius=String(r);this.svg.dataset.labelLeft=String(labelLeft);this.svg.dataset.labelRight=String(labelRight);this.svg.dataset.visibleTop=String(y-halfLine-avatarSpace-1);this.svg.dataset.visibleBottom=String(y+percentOffset+font*.35+4);
    const appearance=getComputedStyle(this.row.closest('.app')||this.row),color=key=>appearance.getPropertyValue(key).trim(),trip=color('--timer-trip-color')||'#0053e2',overtime=color('--timer-overtime-color')||'#ff5c5c';
    const phase=data.all_failed||data.phase==='overtime'?overtime:data.phase==='b-game'?color('--timer-tolerance-color')||'#2e7d32':trip,segment=data.down?color('--timer-down-color')||'#5f6772':phase;
    const current=units.find(u=>u.current),currentX=active?current?.x??left:right,targetUnit=units.find(u=>u.members.includes(target?.id)),targetX=targetUnit?.x??right;
@@ -303,7 +313,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
     if(split&&changed)parts.stack.style.opacity='0';
     if(unit.detailed&&!(split&&changed))parts.stack.style.opacity='1';
     this.move(parts.markerGroup,unit.id,unit.x,y);
-    const bounds=[padding+(unit.half||0),width-padding-(unit.half||0)];
+    const bounds=[labelLeft+(unit.half||0),labelRight-(unit.half||0)];
     if(unit===at100&&standard){const line=this.node('standard');const matrix=getComputedStyle(line.markerGroup).transform;if(matrix!=='none'&&parts.fresh)parts.stack.style.transform=`translate(${new DOMMatrix(matrix).m41}px, ${y}px)`;}
     this.move(parts.stack,unit.id+'-values',unit.labelX,y,{bounds});
     this.tween(parts.stack,unit.id+'-fade',{opacity:getComputedStyle(parts.stack).opacity},{opacity:unit.detailed?'1':'0'},{force:split&&changed||crossing,frames:crossing?[{opacity:'0'},{opacity:'0',offset:.7},{opacity:unit.detailed?'1':'0'}]:undefined});this.tween(parts.markerGroup,unit.id+'-marker-fade',{opacity:getComputedStyle(parts.markerGroup).opacity},{opacity:'1'});
