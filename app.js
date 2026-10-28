@@ -16667,6 +16667,11 @@
             }
         }
 
+        const orderedGoals = globalThis.WMOFTimerSummaryView?.goalOrder({...clockTimer.getUIState(),goal_bar:clockTimer.getGoalBarSnapshot()}) || [];
+        const options = [...autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")];
+        options.sort((a,b)=>orderedGoals.indexOf(a.dataset.autoGoalScope)-orderedGoals.indexOf(b.dataset.autoGoalScope));
+        const currentOptions = [...autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")];
+        if(options.some((option,index)=>option!==currentOptions[index]))for(const option of options)option.parentElement.append(option);
         const lockedScopes = new Set(endTimeGoalOverride?.scopes || []);
         for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]")) {
             const scope = button.dataset.autoGoalScope;

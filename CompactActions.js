@@ -17,6 +17,18 @@
         if(!icon){icon=document.createElement('span');icon.className='compact-action-icon';icon.setAttribute('aria-hidden','true');button.append(icon);}
         if(icon.dataset.icon!==kind){icon.dataset.icon=kind;icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+iconPaths[kind]+'</svg>';}
     }
+    function renderBuffers(host,buffer) {
+        if(!host)return;
+        host.dataset.bufferActive=String(Boolean(buffer&&buffer.remainingMilliseconds>0));
+        let sides=[...host.querySelectorAll(':scope > .break-buffer-side')];
+        if(!buffer||buffer.remainingMilliseconds<=0){for(const side of sides)side.remove();return;}
+        if(!sides.length)for(const direction of ['left','right']){
+            const side=document.createElement('span');side.className='break-buffer-side '+direction;
+            side.setAttribute('aria-hidden','true');side.innerHTML='<span class="break-buffer-countdown"></span><span class="break-buffer-track"><i></i></span>';host.append(side);sides.push(side);
+        }
+        const seconds=Math.ceil(buffer.remainingMilliseconds/1000),text=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+        for(const side of sides){side.querySelector('.break-buffer-countdown').textContent=text;side.querySelector('i').style.transform='scaleX('+Math.max(0,Math.min(1,buffer.remainingMilliseconds/buffer.durationMilliseconds))+')';side.dataset.phase=buffer.phase;}
+    }
     function init(app) {
         const buttons = new Map(ids.map(id => {
             const button = document.getElementById(id), anchor = document.createComment('Full action: '+id);
@@ -29,6 +41,8 @@
         const view={buttons,left,right,timer,state:null};views.set(app,view);return view;
     }
     function render(app, state) {
+        const buffer=state?.clock?.interval_state?.buffer;
+        renderBuffers(document.getElementById('endTripButton'),app.dataset.actionDisplay==='compact'?null:buffer);
         let view=views.get(app);
         if(!view && app.dataset.actionDisplay!=='compact')return;
         view ||= init(app);if(state)view.state=state;
@@ -61,6 +75,7 @@
         const labelIds={"down": "ba94b593-7fb0-4360-8150-891bd4e56e6f", "break": "556c70ac-c40c-4976-b080-459c3d8e18f1", "short-break": "be9051c0-6763-43eb-8007-ef3c630bf924", "lunch": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5"};
         timer.querySelector('span').textContent=WMOFLanguagePack.text(labelIds[kind]||labelIds.break);
         timer.querySelector('output').textContent=down?document.getElementById('downElapsedValue').textContent:controls.breakClock;
+        renderBuffers(timer,paused?buffer:null);
     }
     let layoutQueue=Promise.resolve();
     globalThis.WMOFLayoutMotion=Object.freeze({whenSettled(){return layoutQueue;},change(app,apply){
