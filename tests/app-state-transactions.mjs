@@ -399,6 +399,18 @@ if(process.argv.includes('--sleep-wake-only')) {
  assert.equal(window.WMOFCoordinator.lockCount,0);assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
  console.log('PASS sleeping mic restricts voice/grammar to Wake, preserves manual Commands access and restores spoken Commands after wake');await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--goal-priority')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ await window.WMOFCoordinator.run('priority-trip',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
+ await window.WMOFActions.changeGoalMode('auto');await settle();
+ for(const type of ['total','trip']){
+  spoken.length=0;chimes.length=0;
+  timer.dispatchEvent(new window.CustomEvent('goalFail',{detail:{goals:[{type:'trip',percent:1.2}],totalScope:'Day',fallback:{type,percent:1,remainingMilliseconds:60000}}}));
+  for(let i=0;i<20;i++)await settle();
+  const message=spoken.join(' ');assert(message.includes(type==='total'?'Day':'Trip'),message);assert(/one hundred|100/.test(message),message);assert(!/until Standard Goal|until Standard Time/.test(message),message);
+ }
+ assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);console.log('PASS 100% aggregate and Trip fallback announcements retain goal identity instead of Standard');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--goal-failure-batch')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  await window.WMOFCoordinator.run('failure-batch-trip',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();

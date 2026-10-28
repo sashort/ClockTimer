@@ -435,14 +435,14 @@
         #getPercentageOrder(candidates = this.#getGoalCandidates()) {
             // The legacy dispatch key names scopes, but priority comes from
             // their current-trip counted-time allowances, not raw percentages.
-            const scopes = ["trip", "total", "standard"];
+            const scopes = ["total", "trip", "standard"];
             const times = Object.fromEntries(scopes.map(scope => {
                 const time = candidates[scope].requirements.adjustedTimeElapsed;
                 return [scope, Number.isFinite(time) && time > 0 ? time : Infinity];
             }));
             const key = scopes.map(scope => times[scope]).join("/");
             if (key !== this.#percentageOrderKey) {
-                // Equal derived times retain Trip > Total > Standard priority.
+                // Equal derived times prioritize Aggregate > Trip > Standard.
                 this.#percentageOrder = scopes.sort((a, b) => times[a] - times[b]).join("_");
                 this.#percentageOrderKey = key;
             }
@@ -3775,6 +3775,8 @@
                     countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     allottedTimeMilliseconds: summary.allottedTimeMilliseconds,
                     allowanceCreditMilliseconds: summary.allowanceCreditMilliseconds,
+                    productiveTimeMilliseconds:summary.productiveTimeMilliseconds,
+                    bankCreditCarryMilliseconds:Math.max(0,-summary.countedTimeBalanceMilliseconds),
                     events: this.#stateEvents().filter(event => event.event !== "trip.stopped")});
             }
             return trips;
@@ -4125,7 +4127,8 @@
                 tripCount,
                 standardTimeMilliseconds,
                 actualTimeMilliseconds,
-                countedTimeMilliseconds
+                countedTimeMilliseconds,
+                bankCreditCarryMilliseconds:Math.max(0,Number(value?.bankCreditCarryMilliseconds)||0)
             };
         }
 
@@ -4144,6 +4147,7 @@
 
             target.countedTimeMilliseconds +=
                 source.countedTimeMilliseconds ?? 0;
+            target.bankCreditCarryMilliseconds=(target.bankCreditCarryMilliseconds||0)+(source.bankCreditCarryMilliseconds||0);
 
             return target;
         }
@@ -4198,7 +4202,8 @@
                         return {
                             standardTimeMilliseconds,
                             actualTimeMilliseconds,
-                            countedTimeMilliseconds
+                            countedTimeMilliseconds,
+                            bankCreditCarryMilliseconds:Math.max(0,Number(trip?.bankCreditCarryMilliseconds)||0)
                         };
                     }
                 );
@@ -4231,7 +4236,8 @@
                     actualTimeMilliseconds:
                         trip.actualTimeMilliseconds,
                     countedTimeMilliseconds:
-                        trip.countedTimeMilliseconds
+                        trip.countedTimeMilliseconds,
+                    bankCreditCarryMilliseconds:trip.bankCreditCarryMilliseconds||0
                 };
 
                 this.#addTripAggregateSummary(
@@ -4384,6 +4390,7 @@
             standardTimeMilliseconds,
             actualTimeMilliseconds,
             countedTimeMilliseconds,
+            bankCreditCarryMilliseconds=0,
             nonProduction
         }) {
             if (
@@ -4439,7 +4446,8 @@
                 nonProductionTrips.push({
                     standardTimeMilliseconds,
                     actualTimeMilliseconds,
-                    countedTimeMilliseconds
+                    countedTimeMilliseconds,
+                    bankCreditCarryMilliseconds
                 });
             }
             else {
@@ -4449,7 +4457,8 @@
                         tripCount: 1,
                         standardTimeMilliseconds,
                         actualTimeMilliseconds,
-                        countedTimeMilliseconds
+                        countedTimeMilliseconds,
+                        bankCreditCarryMilliseconds
                     }
                 );
             }
@@ -6206,6 +6215,10 @@
                 this.#getCountedTimeElapsed(
                     stopTimeline, {completedAt: stopTimeline}
                 );
+            const aggregateBalance = this.#getCountedTimeBalance(stopTimeline,{completedAt:stopTimeline});
+            const aggregateCredit = this.#getEarlyStartAllowanceCredit();
+            const aggregateProductive = Math.max(0,aggregateBalance+aggregateCredit);
+            const aggregateCarry = Math.max(0,-aggregateBalance);
             const aggregateNonProduction =
                 this.#nonProduction;
 
@@ -6235,6 +6248,7 @@
                         aggregateStartTimeline,
                     countedTimeMilliseconds:
                         aggregateCountedTime,
+                    bankCreditCarryMilliseconds:aggregateCarry,
                     nonProduction:
                         aggregateNonProduction
                 });
@@ -6251,7 +6265,10 @@
                         this.#breakOnly ? null : this.#standardDuration,
                     breakOnly: this.#breakOnly,
                     countedTimeMilliseconds:
-                        this.#breakOnly ? 0 : aggregateCountedTime
+                        this.#breakOnly ? 0 : aggregateCountedTime,
+                    productiveTimeMilliseconds:this.#breakOnly?0:aggregateProductive,
+                    allowanceCreditMilliseconds:this.#breakOnly?0:aggregateCredit,
+                    bankCreditCarryMilliseconds:this.#breakOnly?0:aggregateCarry
                 }
             );
 
@@ -27305,7 +27322,7 @@
 
             const adjusted =
                 (totals.standardTimeMilliseconds + this.#standardDuration) /
-                    totalGoal - totals.countedTimeMilliseconds;
+                    totalGoal - totals.countedTimeMilliseconds + (totals.bankCreditCarryMilliseconds||0);
 
             return Number.isFinite(adjusted) && adjusted > 0 ? adjusted : undefined;
         }
@@ -27349,7 +27366,7 @@
                     this.#standardDuration
                 ) /
                     totalGoal -
-                totals.countedTimeMilliseconds;
+                (totals.countedTimeMilliseconds - (totals.bankCreditCarryMilliseconds||0));
 
             if (
                 !Number.isFinite(adjustedTimeElapsed) ||
@@ -27608,7 +27625,7 @@
             }
 
             candidates.sort((left, right) =>
-                Date.parse(left.deadline) - Date.parse(right.deadline));
+                Date.parse(left.deadline) - Date.parse(right.deadline) || ({total:0,trip:1,standard:2}[left.type]-{total:0,trip:1,standard:2}[right.type]));
 
             return candidates[0];
         }
@@ -27895,7 +27912,7 @@
             const adjustedTimeElapsed =
                 combinedStandard /
                     totalGoal -
-                totals.countedTimeMilliseconds;
+                (totals.countedTimeMilliseconds - (totals.bankCreditCarryMilliseconds||0));
 
             if (
                 !Number.isFinite(adjustedTimeElapsed) ||
@@ -27975,7 +27992,7 @@
 
             const targetAdjustedTimeElapsed =
                 targetCombinedCounted -
-                totals.countedTimeMilliseconds;
+                (totals.countedTimeMilliseconds - (totals.bankCreditCarryMilliseconds||0));
 
             if (
                 !Number.isFinite(targetAdjustedTimeElapsed) ||
@@ -28128,8 +28145,12 @@
         #getAutoGoalSelection() {
             if (this.#calculatedGoalSource === "end-time" &&
                 Number.isFinite(this.#calculatedTripGoal) && this.#calculatedTripGoal > 0) {
-                return { scope: "trip", goal: this.#calculatedTripGoal,
+                const explicit = { scope: "trip", goal: this.#calculatedTripGoal,
                     requirements: this.#calculateTripGoalRequirements({ allowMissed: true }) };
+                const aggregate = this.#getGoalCandidates().total;
+                return Number.isFinite(aggregate.requirements.adjustedTimeElapsed) &&
+                    Math.abs(aggregate.requirements.adjustedTimeElapsed-explicit.requirements.adjustedTimeElapsed)<0.5
+                    ? aggregate : explicit;
             }
             const candidates = this.#getGoalCandidates();
             return this.#dispatch("selectGoal", ["auto", this.#getPercentageOrder(candidates)], candidates);
@@ -32985,7 +33006,7 @@
 
             let standardTimeMilliseconds = Number(base?.standardTimeMilliseconds ?? 0);
             let actualTimeMilliseconds = Number(base?.actualTimeMilliseconds ?? 0);
-            let countedTimeMilliseconds = Number(base?.countedTimeMilliseconds ?? 0);
+            let countedTimeMilliseconds = Number(base?.countedTimeMilliseconds ?? 0)-(base?.bankCreditCarryMilliseconds||0);
             let allowanceCreditMilliseconds = 0;
             let remainingCountedTimeMilliseconds;
 
@@ -33045,8 +33066,7 @@
                     )
                     : undefined;
             const completedNetMilliseconds =
-                countedTimeMilliseconds -
-                standardTimeMilliseconds;
+                remainingCountedTimeMilliseconds - standardTimeMilliseconds;
 
             let renderedTime;
             if (!this.#hasStartProperties() &&
@@ -33100,7 +33120,7 @@
                 percentGoal,
                 remainingTimeMilliseconds: activeTrip && Number.isFinite(activeTripRemainingMilliseconds)
                     ? activeTripRemainingMilliseconds
-                    : standardTimeMilliseconds / percentGoal - countedTimeMilliseconds,
+                    : standardTimeMilliseconds / percentGoal - remainingCountedTimeMilliseconds,
                 netTimeMilliseconds:
                     completedNetMilliseconds,
                 renderedTime,
@@ -33172,6 +33192,7 @@
                 countedTimeElapsedMilliseconds: tripCountedTimeElapsedMilliseconds,
                 // Live readouts retain unused early-break credit; persisted durations remain nonnegative.
                 countedTimeBalanceMilliseconds: tripCountedTimeBalanceMilliseconds,
+                productiveTimeMilliseconds:hasTrip?Math.max(0,tripCountedTimeBalanceMilliseconds+this.#getEarlyStartAllowanceCredit()):0,
                 allottedTimeMilliseconds,
                 allowanceCreditMilliseconds: hasTrip ? this.#getEarlyStartAllowanceCredit() : 0,
                 countedPercent: tripCountedPercent,

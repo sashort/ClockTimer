@@ -1315,7 +1315,7 @@
         "changeTripGoal": 130
       },
       "expect": {
-        "unitBefore": "linked-station pair; Trip rightmost",
+        "unitBefore": "linked-station pair; Aggregate rightmost",
         "unitAfter": "separate opaque nodes; changed label fades/moves",
         "border": "new target owns border",
         "standard": "unlabelled unless a goal is 100%"
@@ -1511,6 +1511,107 @@
         "alignment": "25% and 75% across timer area; vertically centered on caption/value pair",
         "fill": "recedes inward with remaining fraction",
         "mainTimeCaption": "Time Remaining / Time Elapsed / End Time without scope prefix"
+      }
+    },
+    {
+      "id": "BANK-CREDIT-NOT-ACTUAL",
+      "contract": "RANGES-SYNC",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "standardMilliseconds": 176000,
+        "wallMilliseconds": 528695,
+        "breakMilliseconds": 186811,
+        "downMilliseconds": 51927,
+        "breakAllowanceMilliseconds": 1200000
+      },
+      "when": {
+        "actions": [
+          "start trip",
+          "buffered break",
+          "end early",
+          "Down",
+          "resume",
+          "stop",
+          "reload"
+        ]
+      },
+      "expect": {
+        "actualWorkMilliseconds": 289957,
+        "allowanceCreditMilliseconds": 1013189,
+        "signedBankBalanceMilliseconds": -723232,
+        "bankCreditCarryMilliseconds": 723232,
+        "bankAt100PercentMilliseconds": 899232,
+        "legacyActualDisplay": "4:49 recovered from complete facts; never 0:00",
+        "databaseRewrites": false
+      }
+    },
+    {
+      "id": "BANK-SURPLUS-NEXT-GOAL",
+      "contract": "RANGES-SYNC",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "completedStandardMilliseconds": 176000,
+        "legacyCountedMilliseconds": 0,
+        "bankCreditCarryMilliseconds": 723232
+      },
+      "when": {
+        "nextStandardMilliseconds": 600000,
+        "aggregateGoal": 100
+      },
+      "expect": {
+        "rawAvailableBudgetMilliseconds": 1499232,
+        "inferredTripGoalPercent": 41,
+        "creditAppliedTimes": 1
+      }
+    },
+    {
+      "id": "BAR-DECORATIVE-POINTER-PASS",
+      "contract": "GOAL-DISPLAY",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "layouts": [
+          "full/bar",
+          "compact/bar"
+        ],
+        "avatar": "visible"
+      },
+      "when": {
+        "pointer": [
+          "avatar",
+          "blank vertical slot",
+          "time label",
+          "painted track"
+        ],
+        "keyboard": "Enter on SVG"
+      },
+      "expect": {
+        "avatarAndAir": "pass through; never open goals",
+        "timeLabel": "toggles mode",
+        "trackAndKeyboard": "open applicable goals"
+      }
+    },
+    {
+      "id": "AGGREGATE-FIRST-EQUAL-GOALS",
+      "contract": "GOAL-DISPLAY",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "aggregateInferred": 100,
+        "trip": 100,
+        "standard": 100
+      },
+      "when": {
+        "select": "Auto target",
+        "render": "merged equal goals",
+        "announce": "100 percent fallback"
+      },
+      "expect": {
+        "priority": [
+          "total",
+          "trip",
+          "standard"
+        ],
+        "rightMember": "total",
+        "names": "aggregate or Trip at 100%; no Standard substitution"
       }
     }
   ]

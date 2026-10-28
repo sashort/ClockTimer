@@ -20694,8 +20694,7 @@
                 : undefined;
 
         if (
-            scope === "standard" ||
-            roundedPercent === 100
+            scope === "standard"
         ) {
             return announcementText("messages.goal.standard");
         }
@@ -22237,8 +22236,7 @@
                         : undefined;
 
                 const useStandardLabel =
-                    type === "standard" ||
-                    roundedPercent === 100;
+                    type === "standard";
 
                 const scope = type === "trip" ? announcementText("messages.scope.trip") : totalScopeLabel();
                 const goalLabel = useStandardLabel ? announcementText("messages.goal.standard") :

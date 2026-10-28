@@ -137,7 +137,7 @@
    this.leftCompression=svgElement('path',{class:'goal-bar-compression goal-bar-compression-left',fill:'#c6def5','aria-hidden':'true'});
    this.rightCompression=svgElement('g',{class:'goal-bar-compression goal-bar-compression-right','aria-hidden':'true'});this.rightCompression.append(svgElement('rect',{x:-12,y:-20,width:24,height:40,fill:'transparent'}),svgElement('path',{d:'M -6 -7 L 7 0 L -6 7 Z',fill:'#c6def5'}));
    const activate=()=>{const mode=this.state?.goal_type,choices=mode==='trip'?['trip']:mode==='total'?['total']:['trip','total'];this.row.dispatchEvent(new CustomEvent('goal-bar-edit',{bubbles:true,detail:{choices}}));};
-   this.svg.addEventListener('click',activate);this.svg.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();activate();}});
+   this.svg.addEventListener('click',event=>{if(event.target.closest?.('.goal-bar-track,.goal-bar-fill,.goal-bar-segment,.goal-bar-outline,.goal-bar-node,.goal-bar-compression'))activate();});this.svg.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();activate();}});
    this.svg.append(this.track,this.fill,this.segment,this.outline,this.connectors,this.layer,this.leftCompression,this.rightCompression);row.append(this.svg);this.avatar=globalThis.WMOFGoalBarAvatar?.create(this.svg,row);
    this.resize=new ResizeObserver(()=>this.schedule());this.resize.observe(this.svg);TimerSpaceLayout.attach(row.closest('.app'));
   }
@@ -174,7 +174,7 @@
    const units=[],goalsToGroup=visible.filter(n=>!n.current&&n.id!=='standard');
    for(const goal of goalsToGroup){let unit=units.find(u=>near(u.percent,goal.percent));if(!unit){unit={...goal,members:[]};units.push(unit);}unit.members.push(goal.id);unit.failed=unit.failed&&goal.failed;}
    for(const unit of units){
-    const selected=this.state?.effective_goal_type;unit.members.sort((a,b)=>a===selected?1:b===selected?-1:a.localeCompare(b));
+    unit.members.sort((a,b)=>({trip:0,total:1}[a]??0)-({trip:0,total:1}[b]??0));
     const unchanged=unit.members.find(id=>near(this.previous.get(id)?.percent??NaN,unit.percent));
     const previousOwner=this.units.find(u=>near(u.percent,unit.percent)&&unit.members.includes(u.id));
     unit.id=previousOwner?.id||unchanged||unit.members[0];unit.merged=unit.members.length>1;
@@ -314,7 +314,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
   }
  }
  function displayApp(root){return root.matches?.('.app')?root:root.querySelector('.app')||root.querySelector('.percent-summary')?.closest('.app');}
- globalThis.WMOFTimerSummaryView={goalOrder(state){return (state?.goal_bar?.nodes||[]).filter(n=>!n.current).toSorted((a,b)=>a.percent-b.percent||(a.id==='standard'?-1:b.id==='standard'?1:0)||(a.id===state.effective_goal_type?1:b.id===state.effective_goal_type?-1:a.id.localeCompare(b.id))).map(n=>n.id);},refreshLayout(root=document){const app=displayApp(root);TimerSpaceLayout.views.get(app)?.fit();const row=root.querySelector('.percent-summary');PercentSummaryLayout.instances.get(row)?.fit();GoalBar.instances.get(row)?.draw();},renderGoalDetails(host,details){
+ globalThis.WMOFTimerSummaryView={goalOrder(state){return (state?.goal_bar?.nodes||[]).filter(n=>!n.current).toSorted((a,b)=>a.percent-b.percent||(a.id==='standard'?-1:b.id==='standard'?1:0)||(({trip:0,total:1}[a.id]??0)-({trip:0,total:1}[b.id]??0))).map(n=>n.id);},refreshLayout(root=document){const app=displayApp(root);TimerSpaceLayout.views.get(app)?.fit();const row=root.querySelector('.percent-summary');PercentSummaryLayout.instances.get(row)?.fit();GoalBar.instances.get(row)?.draw();},renderGoalDetails(host,details){
   if(!host)return;
   let box=host.querySelector(':scope > .goal-details');
   if(!box){box=document.createElement('div');box.className='goal-details';host.append(box);}

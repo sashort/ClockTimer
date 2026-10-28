@@ -310,11 +310,11 @@ with Trip's percentage. For example, Total 120% can imply 20 minutes while Trip
 140% implies about 21 minutes 26 seconds; Total is the first target in that case.
 
 Missed, unavailable, and non-positive allowances cannot win Auto. As each target
-is missed, the next longer available time is used. Equal derived times keep Trip,
-then Total, then Standard priority. Goal-failure fallback announcements likewise
+is missed, the next longer available time is used. Equal derived times keep Total (aggregate),
+then Trip, then Standard priority. Goal-failure fallback announcements likewise
 choose the earliest remaining deadline. Fixed Trip and Total modes retain their
 selected scope after a goal is missed. Explicit calculated end-time goals retain
-their existing Trip priority.
+their Trip target unless the aggregate allowance ties it; Aggregate wins that tie.
 
 The cached ordering key contains all three derived allowances, including their
 availability, rather than the raw goal percentages. Updating logged aggregates,

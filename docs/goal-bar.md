@@ -42,8 +42,8 @@ inferred 100% goal supplies a shared stack pinned beneath the Standard line. Its
 connector is omitted. The bar outline is white, 2.5px, drawn above its fill.
 
 The selected target's label stack has a border. Border ownership follows every
-recalculation and state transition. The selector's target is the rightmost member
-of a merged unit. A changed goal's label fades/moves on split; merging reverses
+recalculation and state transition. Equal visible Trip/aggregate values put Aggregate on the right
+of the merged unit, following Aggregate > Trip > Standard target priority. A changed goal's label fades/moves on split; merging reverses
 that motion. All labels fit inside the available width, respecting the fixed
 100% anchor and actual border widths. Shared units fail and move as one unit.
 Responsive fonts, marker radii and track thickness grow with the real available
@@ -324,3 +324,18 @@ Follow-up regression fixes and buffer presentation:
 
 Additional regressions: `tests/overtime-break-browser.cjs`,
 `tests/break-buffer-layout-browser.cjs`, avatar and merged-unit browser checks.
+
+
+Bank/work correction: Trip Log and Trip Summary Actual now render the separate
+productive duration, never a zero-clamped bank balance. Unused break/buffer credit
+continues to increase the bank; surplus carries into subsequent aggregate-goal
+budgets exactly once. Main bar/live bank-coordinate behavior is unchanged.
+See time-range-model.md, Productive Actual and bank credit are separate.
+
+
+Pointer-region correction: only the painted track, markers, compression arrows
+and their value labels open goal editing. The runner/avatar and empty vertical
+space are decorative and pass pointer input through. The main time label remains
+above the bar for hit testing. The SVG remains a single keyboard goal-edit action.
+At 100%, Trip and aggregate targets keep their real names in display and speech;
+Standard naming applies only to the actual Standard fallback.
