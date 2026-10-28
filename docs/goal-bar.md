@@ -7,13 +7,13 @@ Settings. Classic remains the default. The saved account setting is
 
 ## Idle and active states
 
-With no production trip, the scale starts at 0% and ends at the highest configured
+With no active trip, the scale starts at 0% and ends at the highest configured
 goal, capped at 150% (including Standard at 100%). Nodes use the configured Trip
 and overarching aggregate percentages, not inferred requirements. There is no
 Current node and no time labels. Standalone breaks use this same no-standard
 presentation. `goal_bar.active` distinguishes it from the active projection.
 
-Starting a production trip replaces aggregate values with inferred trip
+Starting a trip replaces aggregate values with inferred trip
 requirements. Ending it restores the configured values and clears stale failed
 states and times. Drop-In follows the same snapshots. Loading an existing trip
 must select the active projection after restoration, not treat it as a new start.
@@ -32,16 +32,25 @@ different: a Day goal of 110% can require 125% on this trip. Editors retain the
 configured overarching value. Calculated requirements may exceed 150%; do not
 clamp those calculations to the input limit.
 
-Only the next target (highest unfailed visible goal) and Current show detailed
-values. Other unfailed nodes retain their circles and names, with no time caption,
-time or percentage. Idle shows the highest configured visible goal percentage
-without times or Current. When all goals have failed, retain Standard at the right
-with its time and 100% reference values alongside Current.
+Visible goal units and Current show their exact inferred-trip percentage. Equal
+goals share one label stack and a short linked-station shape. Time sits directly
+above percentage, both below the bar, with one connector. There are no goal-name
+captions or tick marks. If time is undefined (idle or standalone break), the empty
+time row collapses and the percentage hugs the node. Standard is a dashed line;
+Current is a double solid line. Standard has no separate label: a configured or
+inferred 100% goal supplies a shared stack pinned beneath the Standard line. Its
+connector is omitted. The bar outline is white, 2.5px, drawn above its fill.
 
-Time strings sit above detailed nodes; exact percentages sit below them. Both use the
-approved 16px preferred font, shrinking together only when space requires it.
-Mode captions use 10px and goal names 11px. Each goal's
-counted position is `tripStandard / (inferredTripPercent / 100)`.
+The selected target's label stack has a border. Border ownership follows every
+recalculation and state transition. The selector's target is the rightmost member
+of a merged unit. A changed goal's label fades/moves on split; merging reverses
+that motion. All labels fit inside the available width, respecting the fixed
+100% anchor and actual border widths. Shared units fail and move as one unit.
+Responsive fonts, marker radii and track thickness grow with the real available
+space. Both visible vertical gaps around the percentage group are balanced;
+the Sync button remains centered on the track itself.
+
+Each goal's counted position is `tripStandard / (inferredTripPercent / 100)`.
 
 **Remaining mode uses Standard as zero**, independently of the active goal:
 `nodeRemaining = tripStandard - nodeCountedPosition`. Current uses
@@ -67,7 +76,7 @@ deadlines account for the pause.
 
 ## Geometry, states and motion
 
-Only goals and Current have ticks. A left-pointing triangle marks a compressed lower range.
+There are no tick marks or circle markers for Standard/Current. A left-pointing triangle marks a compressed lower range.
 A right-pointing triangle appears whenever one or more goals have failed, including the
 all-failed layout. Idle and all-failed scales start at zero, so they have no left
 compression marker. Both markers sit outside the node track with reserved
@@ -77,13 +86,12 @@ left. Circle collisions produce touching opaque nodes, using radius plus half th
 computed stroke width for each node. Focus changes trigger refitting, and miss
 pulses expand inward to preserve the outer collision boundary. Labels have their own
 horizontal packing and leader lines so long times do not force node overlap.
-Each tick follows its node’s final collision-adjusted center, rather than leaving
-a detached tick at the original mathematical position.
+Connectors follow the final collision-adjusted marker and label positions.
 
 On failure, labels fade and the failed node moves off the right edge. Stable
 node IDs preserve motion through recalculation; interrupted animations start
 from visible positions. When every goal fails, retain the last goal at the right
-with Standard's time/percentage labels restored. That scale runs from zero at the
+with any 100% goal sharing the Standard reference label; Standard alone remains unlabelled. That scale runs from zero at the
 left to Standard's 100% at the right, with Current placed proportionally.
 
 The bar uses the user's productive Trip/B-game/Overtime colors, ignoring Break
@@ -234,3 +242,46 @@ goal changes cannot change this Current readout. Goal deadlines and budgets rema
 separate accounting/target-node values. This fixes the mismatch reported in EVQT6K.
 
 Aggregate selector titles include the configured percentage: `Day - 115%` or `[Week] - 120%` when targeted by Auto. Idle Auto remains `[Auto]`. The numberpad is touch-only and fills the visual viewport; the mic bar slides out on entry and back on exit if previously active. Switch to Voice explicitly leaves touch input.
+
+## Shared avatar and four-layout presentation (2026-10-28)
+
+`GoalBarAvatar.js` and `GoalBarAvatarAssets.js` are the shared presentation for
+Order Filler and Drop-In. The [interactive reference](goal-bar-avatar-preview.html)
+uses these production modules. It is a projection of existing trip/interval state;
+it never dispatches commands or changes timing/accounting.
+
+* Idle (no trip and no standalone break): upright Walking across the bar. Arms
+  swing with a relaxed backward forearm, using compact 6.5/5.5-unit arm segments.
+  Turns take 1.2 seconds; limbs continue through the turn without frozen holds.
+* Any running trip, including non-production: left-facing running cycle above
+  Current's double line, with a clear gap beneath the feet.
+* Break, Lunch or Short Break, including standalone: chair enters from the right;
+  the shared hip/leg rig turns to a left profile and sits. Both legs overlap when
+  seated. Standing reverses the morph while the chair slides right. Body strokes
+  stay solid white; the last attempted Down-proportion matching was reverted.
+* Down: raised elbow below shoulder, continuous fast forearm shake, no hand nub.
+  Only expletive symbols animate inside the stationary bubble. Its tail points
+  toward the character and the bubble changes side when edge clearance requires.
+* Break → Down and Down → Break have distinct source-exit and destination-entry
+  stages, without a running pose between them. The forearm shortens while lowering.
+* First projection after reload or restoring a hidden view runs destination entry
+  only. It never plays a fabricated source exit or historical finish celebration.
+* Successful active-session completion: lower arm or stand as needed, show the
+  black/white flag in front (left), nod, emit one pastel burst, fade to Walking.
+  The cloth flaps while the pole remains fixed. `canvas-confetti` 1.9.4 supplies
+  randomized gravity/drift/decay and timing; its launch is centered on the bar.
+  Repeated snapshots cannot replay the same session's finish feedback.
+
+Avatar animation cancellation, display changes and visibility changes do not
+block application operations. Reduced motion uses settled poses, no travel and
+no confetti. Classic does not render the avatar or celebrate hidden completions.
+The graph's presentation states are subordinate to the existing business FSM.
+
+Full/Classic, Full/Bar, Compact/Classic and Compact/Bar switch through the shared
+layout transition controller, including interrupted choices and reduced motion.
+Compact uses centered monochrome SVG icons, with an outlined checkered finish
+flag. Its Break/Short Break/Lunch/Down Timer is above the percentage group. In any
+active trip's Break/Down, main Elapsed/Remaining text turns gray; End Time stays
+normal. Standalone breaks are exempt. Full Down controls keep their original
+230px height (156px on short screens), with extra space assigned to surrounding
+gaps. The section's outer background follows the rounded control edges.
