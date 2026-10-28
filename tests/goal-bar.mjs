@@ -42,7 +42,7 @@ for (const timeMode of ['remaining','elapsed','calculated-end']) {
  for (const [goalMode,ids] of [['trip',['standard','trip','current']],['total',['standard','total','current']],['auto',['standard','trip','total','current']]]) {
   c.configure({goal_type:goalMode});const ui=c.getUIState(),projected=ui.goal_bar;
   const trip=c.getSummarySnapshot().trip;
-  assert.equal(ui.time_header_text,timeMode==='remaining'?'Trip Time Remaining':timeMode==='elapsed'?'Trip Time Elapsed':'Trip End Time');
+  assert.equal(ui.time_header_text,timeMode==='remaining'?'Time Remaining':timeMode==='elapsed'?'Time Elapsed':'End Time');
   assert.equal(ui.time_component.text,projected.nodes.find(n=>n.current).time,'main '+timeMode+' readout exactly matches bar Current in '+goalMode);
   if(timeMode==='remaining')assert.equal(ui.time_component.value,600000,'main remaining is Standard minus counted time, independent of goal');
   if(timeMode==='elapsed')assert.equal(ui.time_component.value,1200000,'main elapsed excludes prior aggregate trips');

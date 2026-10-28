@@ -1528,7 +1528,7 @@
         #renderedTimeValue(text, selected, date) {
             if (date instanceof Date) return date.getTime();
             if (this.#renderedTimeMode === "elapsed") {
-                return Number(selected?.countedTimeElapsedMilliseconds);
+                return Number(selected?.countedTimeBalanceMilliseconds ?? selected?.countedTimeElapsedMilliseconds);
             }
             if (typeof text !== "string") return NaN;
             const normalized = text.replace(/[⁺⁻]$/u, "");
@@ -1540,13 +1540,13 @@
 
         #getCurrentTripTimeText(summary, now) {
             const trip = summary.trip;
-            const counted = Number(trip?.countedTimeElapsedMilliseconds);
+            const counted = Number(trip?.countedTimeBalanceMilliseconds ?? trip?.countedTimeElapsedMilliseconds);
             const standard = Number(trip?.standardTimeMilliseconds);
             if (!Number.isFinite(standard) || !Number.isFinite(counted)) return undefined;
             if (this.#renderedTimeMode === "remaining") return this.#formatRemainingRenderedDuration(standard-counted);
-            if (this.#renderedTimeMode === "elapsed") return this.#formatElapsedRenderedDuration(counted);
+            if (this.#renderedTimeMode === "elapsed") return `${counted < 0 ? "-" : ""}${this.#formatElapsedRenderedDuration(counted)}`;
             const current = Number(trip?.countedPercent);
-            const end = counted === 0 ? now : Number.isFinite(current) && current > 0
+            const end = counted <= 0 ? now : Number.isFinite(current) && current > 0
                 ? this.#calculateTripGoalRequirementsForGoal(current, {allowMissed:true}).adjustedEndTime : null;
             return this.#formatSummaryEndTime(end ? new Date(end) : undefined);
         }
@@ -1589,9 +1589,7 @@
                         : "Time Remaining";
 
             const label =
-                scope === "standard"
-                    ? `Standard ${suffix}`
-                    : `${scope === "total" ? "Total" : "Trip"} ${suffix}`;
+                suffix;
 
             let text = this.#started && !this.#breakOnly
                 ? this.#getCurrentTripTimeText(summary, now) : selected?.renderedTime;
@@ -1859,20 +1857,8 @@
                     null,
                     typeof standardText === "string" && Boolean(standardText)
                 ),
-                time_header_text:
-                    effectiveTimeState
-                        ?.label ||
-                    (
-                        scope === "standard"
-                            ? `Standard ${suffix}`
-                            : `${scopeLabel} ${suffix}`
-                    ),
-                time_header_short_text:
-                    effectiveTimeState?.scope === "standard" &&
-                    !effectiveTimeState
-                        ?.virtual
-                        ? `Std. ${suffix}`
-                        : null,
+                time_header_text: suffix,
+                time_header_short_text: null,
                 time_component: this.#component(
                     renderedText,
                     effectiveTimeState
@@ -1932,7 +1918,7 @@
 
         getGoalBarSnapshot(now = new Date(), {summary = this.#buildSummarySnapshot(now)} = {}) {
             const standard = Number(summary.trip?.standardTimeMilliseconds);
-            const counted = Number(summary.trip?.countedTimeElapsedMilliseconds);
+            const counted = Number(summary.trip?.countedTimeBalanceMilliseconds ?? summary.trip?.countedTimeElapsedMilliseconds);
             const showTrip = this.#percentMode !== "total";
             const showTotal = this.#percentMode !== "trip";
             const visibleGoal = node => node.id === "standard"
@@ -1966,7 +1952,7 @@
                     failed:Number.isFinite(current) && current*100 < node.percent-1e-7});
             });
             nodes.push(Object.freeze({id:"current", label:"Current", current:true,
-                percent:Number.isFinite(current)?current*100:null, counted_position:counted,
+                percent:Number.isFinite(current)?current*100:null, unbounded:counted <= 0, counted_position:counted,
                 time:this.#decorateTripTimeText(this.#getCurrentTripTimeText(summary, now), now), failed:false}));
             const failed = nodes.filter(node=>!node.current).every(node=>node.failed);
             return Object.freeze({available:true, active:true, time_mode:mode, nodes:Object.freeze(nodes),
@@ -7315,6 +7301,9 @@
                 }
             }
 
+            const buffer = ["start-buffer", "end-buffer"].includes(phase) && Number.isFinite(current?.end)
+                ? {phase, durationMilliseconds:current.end-current.start,
+                    remainingMilliseconds:Math.max(0,current.end-timelineNow)} : null;
             const elapsedMilliseconds = Math.max(0, timelineNow - start);
             const remainingMilliseconds = Number.isFinite(end)
                 ? end - timelineNow
@@ -7337,7 +7326,8 @@
                     Number.isFinite(record.clockTimerExtensionBoundaryTimeline)
                         ? record.clockTimerExtensionBoundaryTimeline : end),
                 elapsedMilliseconds,
-                remainingMilliseconds
+                remainingMilliseconds,
+                buffer
             };
         }
 
@@ -28653,6 +28643,7 @@
             if (
                 rangeType === "remaining" ||
                 rangeType === "wave" ||
+                rangeType === "overtime" ||
                 this.#projectingFittedTick
             ) {
                 this.#releaseTimeRangeTimingAnimation(
@@ -30074,7 +30065,8 @@
                 Number.isFinite(
                     this.#scheduledStartMilliseconds
                 ) &&
-                this.#scheduledStartMilliseconds >= cutoff
+                // A pause at the reached start cannot move the factual start forward.
+                this.#scheduledStartMilliseconds > cutoff
             ) {
                 this.#scheduledStartMilliseconds += delta;
 
@@ -31669,196 +31661,52 @@
             }
         }
 
-        #updateOvertimeRanges(
-            now
-        ) {
-            if (
-                !this.#started ||
-                !Number.isFinite(
-                    this.#standardEnd
-                )
-            ) {
-                return;
+        #updateOvertimeRanges(now) {
+            if (!this.#started || !Number.isFinite(this.#standardEnd) || now <= this.#standardEnd) return;
+            // Overtime is productive time. Inserted pauses and overwrite views
+            // own their spans, including both scheduled break buffers.
+            const exclusions = [];
+            for (const record of this.#insertedRanges) {
+                if (record.clockTimerPendingDelete === true) continue;
+                const start = this.#dateToTimelineTime(record.startDate);
+                const end = record.clockTimerExplicitlyEnded === true
+                    ? record.clockTimerExplicitEndTimeline
+                    : record.openEnded ? now : this.#getIntervalRecordEnd(record);
+                if (Number.isFinite(start) && Number.isFinite(end) && end > start) exclusions.push([start,end]);
             }
-
-            if (
-                now <=
-                    this.#standardEnd
-            ) {
-                return;
+            for (const record of this.#overwriteRanges) {
+                const end = record.openEnded ? this.#openOverwriteLastTick : record.end;
+                if (Number.isFinite(record.start) && Number.isFinite(end) && end > record.start) exclusions.push([record.start,end]);
             }
-
-            const overtimeStart =
-                this.#standardEnd;
-
-            const firstRing =
-                this.#getTimerRingIndex(
-                    overtimeStart
-                );
-
-            const lastRing =
-                this.#getTimerRingIndex(
-                    now -
-                    0.0001
-                );
-
-            for (
-                let ringIndex =
-                    firstRing;
-                ringIndex <=
-                    lastRing;
-                ringIndex++
-            ) {
-                const ringStart =
-                    this.#getTimerRingStart(
-                        ringIndex
-                    );
-
-                const ringEnd =
-                    this.#getTimerRingEnd(ringIndex);
-
-                const segmentStart =
-                    Math.max(
-                        overtimeStart,
-                        ringStart
-                    );
-
-                const segmentEnd =
-                    Math.min(
-                        now,
-                        ringEnd
-                    );
-
-                if (
-                    segmentEnd <=
-                        segmentStart
-                ) {
-                    continue;
+            const horizon = this.#renderedPercentGoal < 1 ? Math.max(now,this.#calculatedEnd) : now;
+            let segments = [[this.#standardEnd,horizon]];
+            for (const [start,end] of exclusions) segments = segments.flatMap(([left,right]) => {
+                if (right <= start || left >= end) return [[left,right]];
+                return [...(left < start ? [[left,start]] : []),...(right > end ? [[end,right]] : [])];
+            });
+            const existing = [...this.querySelectorAll('time-range[type="overtime"]')]
+                .filter(range => range.clockTimerOverwrite === undefined && range.clockTimerInserted === undefined && range.timeRangeExiting !== true);
+            const kept = new Set();
+            this.#overtimeRanges.clear();
+            for (const [start,end] of segments) {
+                let cursor = start;
+                while (cursor < end) {
+                    const ringIndex = this.#getTimerRingIndex(cursor), ring = this.#ensureRing(ringIndex);
+                    const finish = Math.min(end,this.#getTimerRingEnd(ringIndex));
+                    let range = existing.find(candidate => !kept.has(candidate) && candidate.parentElement === ring && Number(candidate.clockTimerStart) === cursor);
+                    if (!range) {
+                        range = this.#createTimeRange("overtime",cursor,finish,{dynamic:true});
+                        range.clockTimerOvertime = "";
+                        ring.appendChild(range);
+                    } else if (Number(range.clockTimerEnd) !== finish) this.#setRangeTiming(range,cursor,finish);
+                    kept.add(range);
+                    this.#overtimeRanges.set(`${ringIndex}:${cursor}`,range);
+                    cursor = finish;
                 }
-
-                const ring =
-                    this.#ensureRing(
-                        ringIndex
-                    );
-
-                const overtimeRanges =
-                    Array.from(
-                        ring.querySelectorAll(
-                            ':scope > time-range[type="overtime"]'
-                        )
-                    );
-
-                let range =
-                    overtimeRanges.find(
-                        candidate => {
-                            const start =
-                                Number(
-                                    candidate.clockTimerStart
-                                );
-
-                            const end =
-                                Number(
-                                    candidate.clockTimerEnd
-                                );
-
-                            return (
-                                Number.isFinite(
-                                    start
-                                ) &&
-                                Number.isFinite(
-                                    end
-                                ) &&
-                                start <=
-                                    segmentStart &&
-                                end >=
-                                    segmentStart
-                            );
-                        }
-                    );
-
-                if (!range) {
-                    range =
-                        overtimeRanges.find(
-                            candidate => {
-                                const start =
-                                    Number(
-                                        candidate.clockTimerStart
-                                    );
-
-                                return (
-                                    Number.isFinite(
-                                        start
-                                    ) &&
-                                    start >
-                                        segmentStart
-                                );
-                            }
-                        );
-                }
-
-                if (!range) {
-                    range =
-                        this.#createTimeRange(
-                            "overtime",
-                            segmentStart,
-                            segmentEnd,
-                            {
-                                dynamic: true
-                            }
-                        );
-
-                    range.clockTimerOvertime =
-                        "";
-
-                    ring.appendChild(
-                        range
-                    );
-                }
-                else {
-                    const existingStart =
-                        Number(
-                            range.clockTimerStart
-                        );
-
-                    const existingEnd =
-                        Number(
-                            range.clockTimerEnd
-                        );
-
-                    if (
-                        !Number.isFinite(
-                            existingStart
-                        ) ||
-                        existingStart >
-                            segmentStart
-                    ) {
-                        this.#setRangeStart(
-                            range,
-                            segmentStart
-                        );
-                    }
-
-                    if (
-                        !Number.isFinite(
-                            existingEnd
-                        ) ||
-                        segmentEnd >
-                            existingEnd
-                    ) {
-                        this.#setRangeEnd(
-                            range,
-                            segmentEnd
-                        );
-                    }
-                }
-
-                range.clockTimerOvertime =
-                    "";
-
-                this.#overtimeRanges.set(
-                    ringIndex,
-                    range
-                );
+            }
+            for (const range of existing) if (!kept.has(range)) {
+                this.#releaseTimeRangeTimingAnimation(range);
+                range.remove();
             }
         }
 
@@ -33270,9 +33118,10 @@
             const tripActualTimeElapsedMilliseconds = hasTrip
                 ? this.#getTripActualTimeElapsed(timelineNow)
                 : 0;
-            const tripCountedTimeElapsedMilliseconds = hasTrip
-                ? this.#getCountedTimeElapsed(timelineNow)
+            const tripCountedTimeBalanceMilliseconds = hasTrip
+                ? this.#getCountedTimeBalance(timelineNow)
                 : 0;
+            const tripCountedTimeElapsedMilliseconds = Math.max(0,tripCountedTimeBalanceMilliseconds);
             const tripCountedPercent =
                 tripCountedTimeElapsedMilliseconds > 0 &&
                 Number.isFinite(this.#standardDuration)
@@ -33321,6 +33170,8 @@
                     : undefined,
                 actualTimeElapsedMilliseconds: tripActualTimeElapsedMilliseconds,
                 countedTimeElapsedMilliseconds: tripCountedTimeElapsedMilliseconds,
+                // Live readouts retain unused early-break credit; persisted durations remain nonnegative.
+                countedTimeBalanceMilliseconds: tripCountedTimeBalanceMilliseconds,
                 allottedTimeMilliseconds,
                 allowanceCreditMilliseconds: hasTrip ? this.#getEarlyStartAllowanceCredit() : 0,
                 countedPercent: tripCountedPercent,

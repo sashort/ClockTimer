@@ -285,3 +285,42 @@ active trip's Break/Down, main Elapsed/Remaining text turns gray; End Time stays
 normal. Standalone breaks are exempt. Full Down controls keep their original
 230px height (156px on short screens), with extra space assigned to surrounding
 gaps. The section's outer background follows the rounded control edges.
+
+
+Early break completion and unused credit (2026-10-28): live trip readouts use
+`summary.trip.countedTimeBalanceMilliseconds`, which can be negative when unused
+break allowance exceeds productive time. Persisted counted durations remain
+nonnegative. Remaining is Standard minus that signed balance; Elapsed displays
+the signed balance; Current End Time keeps ticking. This applies equally to
+Break, Short Break and Lunch, including ending inside the start buffer and
+restoring the event history. While the balance is zero or negative, Current has
+no meaningful percent: `goal_bar.nodes[current].unbounded` is true, percent is
+null, its label shows an em dash, and its double line and runner stay at the right
+edge. The layout's internal edge coordinate is not an inferred percent. Once the
+balance becomes positive, the normal percentage returns. This presentation case
+must not remove Current, stop its avatar, or freeze the main readout.
+Regression: `tests/early-break-readout-browser.cjs`.
+
+
+Follow-up regression fixes and buffer presentation:
+
+* Overtime projects productive segments only, excluding inserted pauses, both
+  break buffers and overwrite-owned spans. Live overtime bounds commit without
+  replaying growth tweens, including after event restoration in fitted/overflow.
+* Ending a standalone break returns the avatar to Walking with no finish pose or
+  confetti. Only ending an active trip celebrates.
+* Main time captions are Time Elapsed, Time Remaining or End Time. Down's bubble
+  retains its navy/yellow colors. Default header height is 52px, contracting to
+  42px on short screens.
+* Idle Auto highlights the highest configured goal after a merged goal splits.
+  Percent-only target frames use measured text bounds for vertical centering.
+  Goal selector choices follow bar percent order and its selected-goal tie rule.
+* `interval_state.buffer` is null outside buffers. During a start/end buffer it
+  carries phase, durationMilliseconds and remainingMilliseconds for that buffer,
+  independently of the overall break countdown. Full and Compact mirror two
+  countdowns at 25%/75% of the timer area, centered vertically on its caption and
+  value. Their fills recede inward, disappear for the main break, and return for
+  the end buffer. Reduced motion updates without interpolation.
+
+Additional regressions: `tests/overtime-break-browser.cjs`,
+`tests/break-buffer-layout-browser.cjs`, avatar and merged-unit browser checks.

@@ -183,6 +183,10 @@ try {
     assert.equal(creditFirst.getSummarySnapshot().total.countedTimeElapsedMilliseconds,50*60000,'Total applies surplus credit against counted history');
     assert.equal(creditFirst.getSummarySnapshot().total.countedPercent,1.8);
     assert.equal(creditFirst.getSummarySnapshot().total.renderedTime,'0:40:00');
+    assert(creditFirst.getGoalBarSnapshot().nodes.find(n=>n.current).unbounded,'surplus credit retains Current at right edge');
+    assert.equal(creditFirst.getUIState().time_component.text,'0:40:00','live remaining includes surplus credit');
+    advance(11*60000);
+    assert(creditFirst.getGoalBarSnapshot().nodes.find(n=>n.current).percent>0,'Current returns to finite percentage after credit is consumed');
     creditFirst.remove();
 
     const bufferedCredit=await fresh();

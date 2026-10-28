@@ -98,7 +98,7 @@
   update(state,enabled){
    const nextMode=targetMode(state),active=nextMode!=='idle',session=active?String(state?.trip_start_component?.value??(state?.break_only?'break-only':'active-trip')):null;
    if(!active&&this.session&&state?.transition_phase==='active')return;
-   const finished=this.initialized&&this.session!==null&&session===null&&!this.completed.has(this.session),finishKey=this.session;
+   const finished=this.state?.break_only!==true&&this.initialized&&this.session!==null&&session===null&&!this.completed.has(this.session),finishKey=this.session;
    this.state=state;this.session=session;const wasEnabled=this.enabled;this.enabled=enabled;
    if(!enabled){this.cancel();this.root.style.display='none';this.canvas.hidden=true;this.mode=nextMode;this.initialized=true;return;}
    this.root.style.display='';this.canvas.hidden=false;

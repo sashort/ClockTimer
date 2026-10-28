@@ -1405,6 +1405,113 @@
         "timedText": "gray except End Time and standalone break",
         "transitions": "smooth; latest choice wins"
       }
+    },
+    {
+      "id": "EARLY-BREAK-SURPLUS-CURRENT",
+      "contract": "GOAL-DISPLAY",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "activeTripStandardMinutes": 2,
+        "productiveSeconds": 10,
+        "breakMinutes": 15,
+        "startBufferSeconds": 15
+      },
+      "when": {
+        "endBreakAfterSeconds": 3,
+        "then": "advance ticks and restore event history"
+      },
+      "expect": {
+        "countedDuration": "nonnegative for persistence",
+        "liveBalance": "signed, with unused break credit",
+        "currentMarker": "retained at right edge; percent em dash while balance <= 0",
+        "avatar": "running",
+        "mainReadout": "ticks; matches Current in Remaining/Elapsed/End Time"
+      }
+    },
+    {
+      "id": "OVERTIME-BREAK-BOUNDARIES",
+      "contract": "REPLAY-RENDER",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "trip": "already in overtime",
+        "timerTypes": [
+          "radial-overflow",
+          "radial-fitted"
+        ]
+      },
+      "when": {
+        "steps": [
+          "start buffered break",
+          "end during main break",
+          "restore event history",
+          "advance several ticks"
+        ]
+      },
+      "expect": {
+        "overtime": "cannot overlap inserted break or start/end buffer or overwrite spans",
+        "ticks": "no repeated grow animation",
+        "scheduledStart": "does not move when break begins exactly at reached start"
+      }
+    },
+    {
+      "id": "STANDALONE-BREAK-NO-FINISH",
+      "contract": "GOAL-AVATAR",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "breakOnly": true
+      },
+      "when": {
+        "end": "break, lunch or short break"
+      },
+      "expect": {
+        "avatar": "returns to Walking",
+        "finishPose": false,
+        "confetti": false
+      }
+    },
+    {
+      "id": "IDLE-AUTO-SPLIT-TARGET",
+      "contract": "GOAL-DISPLAY",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "activeTrip": false,
+        "mode": "auto",
+        "tripGoal": 120,
+        "aggregateGoal": 120
+      },
+      "when": {
+        "aggregateGoal": 130
+      },
+      "expect": {
+        "targetFrame": "moves to higher goal, vertically centers percent-only text",
+        "selectorOrder": "same left-to-right percent order and merged-node tie order as bar"
+      }
+    },
+    {
+      "id": "BREAK-BUFFER-SIDE-COUNTDOWNS",
+      "contract": "COMPACT-ACTIONS",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "layouts": [
+          "full",
+          "compact"
+        ],
+        "interval": "buffered break"
+      },
+      "when": {
+        "phases": [
+          "start-buffer",
+          "break",
+          "end-buffer",
+          "latency"
+        ]
+      },
+      "expect": {
+        "sideCountdowns": "two, only during a buffer; phase-specific remaining time",
+        "alignment": "25% and 75% across timer area; vertically centered on caption/value pair",
+        "fill": "recedes inward with remaining fraction",
+        "mainTimeCaption": "Time Remaining / Time Elapsed / End Time without scope prefix"
+      }
     }
   ]
 }

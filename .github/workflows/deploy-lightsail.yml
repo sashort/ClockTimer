@@ -157,6 +157,9 @@ jobs:
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
+      - run: node tests/overtime-break-browser.cjs
+      - run: node tests/break-buffer-layout-browser.cjs
+      - run: node tests/early-break-readout-browser.cjs
       - run: node tests/goal-bar-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
       - run: node tests/goal-bar-avatar-browser.cjs
