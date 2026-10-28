@@ -7010,6 +7010,26 @@
       "id": "672c73e3-0abd-428d-bf2d-0c87500fa495",
       "text": "Time Remaining",
       "default": "Time Remaining"
+    },
+    "ba94b593-7fb0-4360-8150-891bd4e56e6f": {
+      "id": "ba94b593-7fb0-4360-8150-891bd4e56e6f",
+      "text": "Down Timer",
+      "default": "Down Timer"
+    },
+    "556c70ac-c40c-4976-b080-459c3d8e18f1": {
+      "id": "556c70ac-c40c-4976-b080-459c3d8e18f1",
+      "text": "Break Timer",
+      "default": "Break Timer"
+    },
+    "be9051c0-6763-43eb-8007-ef3c630bf924": {
+      "id": "be9051c0-6763-43eb-8007-ef3c630bf924",
+      "text": "Short Break Timer",
+      "default": "Short Break Timer"
+    },
+    "9c9e46b8-a798-423f-a09f-bb5e477cd0a5": {
+      "id": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5",
+      "text": "Lunch Timer",
+      "default": "Lunch Timer"
     }
   }
 }

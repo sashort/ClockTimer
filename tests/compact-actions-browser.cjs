@@ -24,7 +24,7 @@ const fixture=require('./order-filler-master-fixture.cjs');
  await p.evaluate(()=>document.querySelector('#clockTimer').endInterval());
  await p.evaluate(()=>document.querySelector('#clockTimer').startInterval('lunch'));
  await state('lunch',['endTripButton'],['tripLogButton']);
- assert.match(await p.locator('.compact-interval-timer').textContent(),/Time Remaining/);
+ assert.match(await p.locator('.compact-interval-timer').textContent(),/Lunch Timer/);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
  await state('lunch-unpinned',['endTripButton'],[]);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());

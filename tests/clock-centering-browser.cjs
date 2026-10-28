@@ -17,9 +17,12 @@ const fixture = require('./order-filler-master-fixture.cjs');
      ? document.querySelector('#tripLogButton').getBoundingClientRect().top
      : app.dataset.speechActive === 'true' ? document.querySelector('#speechMicBar').getSafeTop()
      : app.getBoundingClientRect().bottom - parseFloat(getComputedStyle(app).paddingBottom);
-    return {offset:(clock.top+clock.bottom-above-below)/2,clockHeight:clock.height,space:below-above};
+    const row=app.querySelector('.percent-summary'),bar=row.querySelector('.goal-bar-svg'),mode=app.dataset.percentageDisplay;
+    const top=Math.max(...[...app.querySelectorAll('#standardTimeLabel,#standardTimeValue,#renderedTimeLabel,#renderedTimeValue')].map(e=>e.getBoundingClientRect().bottom));
+    const svg=bar?.getBoundingClientRect(),controls=app.querySelector('.trip-action-controls').getBoundingClientRect();
+    return {mode,offset:(clock.top+clock.bottom-above-below)/2,clockHeight:clock.height,space:below-above,horizontal:(clock.left+clock.right)/2-(app.getBoundingClientRect().left+app.getBoundingClientRect().right)/2,topGap:mode==='bar'?svg.top+Number(bar.dataset.visibleTop)-top:null,bottomGap:mode==='bar'?controls.top-svg.top-Number(bar.dataset.visibleBottom):null};
    });
-   assert(Math.abs(geometry.offset)<1, label+': '+JSON.stringify(geometry));
+   assert(Math.abs(geometry.horizontal)<1,label+' horizontal center');if(geometry.mode==='classic')assert(Math.abs(geometry.offset)<1,label+': '+JSON.stringify(geometry));else {assert(Math.abs(geometry.topGap-geometry.bottomGap)<1,label+' balanced visible gaps: '+JSON.stringify(geometry));assert(geometry.topGap>=2,label+' no readout/control overlap');assert(geometry.clockHeight<=geometry.space+1,label+' clock fits reserved region');}
   }
   for (const height of [844,667]) {
    await p.setViewportSize({width:390,height});
@@ -45,7 +48,7 @@ const fixture = require('./order-filler-master-fixture.cjs');
    else await centered('active '+(interval||'production'));
   }
   assert.deepEqual(f.errors,[]);
-  console.log('PASS clock centered between controls and Log/Mic/content boundary in both displays, short screens and active intervals');
+  console.log('PASS Classic clock centering and balanced Bar gaps, horizontal centering, short screens and active intervals');
  } finally {await f.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
 

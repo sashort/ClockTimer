@@ -17848,9 +17848,10 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "standard": "Main display is always trip-only, Standard Time label, active editor available in every scope",
         "bar": "Idle configured values; active inferred requirements; Standard-based remaining and trip-counted elapsed",
         "editing": "Whole bar uses the shared goal action: one applicable goal (Trip or selected aggregate) directly opens its numberpad; Auto with multiple goals opens configurable selector. Failure count does not filter choices. No Standard editor or time-mode action from bar. Configured goal is editable; inference informational. Aggregate selector/pad has larger configured goal line and smaller inferred line only during active trip; Trip has a single line.",
-        "failure": "Right-hand elapsed color, border-aware opaque geometry and travelling ticks",
+        "failure": "White outlined track; Standard dashed and Current double line; no ticks/captions. Border-aware merged units fail and exit as one unit.",
         "feedback": "150 cap applies before first announcement; notice is passive",
-        "currentTime": "Main readout exactly equals bar Current in all three time modes, including interval annotations; Remaining is Standard minus counted trip elapsed, not goal or aggregate budget."
+        "currentTime": "Main readout exactly equals bar Current in all three time modes, including interval annotations; Remaining is Standard minus counted trip elapsed, not goal or aggregate budget.",
+        "labels": "Changed labels fade and move on split/merge; the unchanged goal retains shared-label ownership. Target border follows the authoritative selected target across all recalculations."
       },
       "controls": {
         "equivalence": "One whole-bar click/touch/keyboard target; Sync remains separate.",
@@ -17880,10 +17881,12 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "node tests/app-state-transactions.mjs --goal-limit --voice-feedback",
         "node tests/drop-in-page.mjs",
         "node tests/drop-in-view.mjs",
-        "node tests/clock-timer-ui-state.mjs --standard-time"
+        "node tests/clock-timer-ui-state.mjs --standard-time",
+        "node tests/goal-bar-units-browser.cjs",
+        "node tests/layout-mode-transitions-browser.cjs"
       ],
-      "activeBar": "Standard and Current in all modes; Trip mode adds Trip only, aggregate modes add inferred aggregate only, Auto includes both. Details appear only on next target and Current.",
-      "detailVisibility": "Only the next target (highest unfailed visible goal) and Current show times and percentages. Other unfailed nodes retain circles, names; whole bar opens the shared goal action. All-failed retains Standard at the right with its time and 100% reference details, and Current on a zero-to-100% scale."
+      "activeBar": "Trip adds Trip only; selected aggregate adds its inferred trip goal only; Auto adds applicable Trip and aggregate. Equal values share a linked-station marker; selector target is the rightmost member.",
+      "detailVisibility": "Every visible goal unit and Current can show time over percent below the track. Equal goals share one stack. Idle time is omitted and percent hugs marker. Standard alone has no label; a 100% goal stack is pinned beneath its line with no connector."
     },
     "GOAL-BAR-LIFECYCLE-ANIMATION": {
       "id": "GOAL-BAR-LIFECYCLE-ANIMATION",
@@ -17945,10 +17948,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "postconditions": {
         "preference": "wmof.clock.actionDisplay: full (default) | compact",
         "actions": "Existing control IDs and handlers; presentation does not change trip/interval eligibility. Left: trip actions. Right: Details and pinned Log. Each stack centered on clock axis.",
-        "intervals": "Compact retains Down clock animation; Break and Down use one timer location. Standalone never offers Down. Full Down hides clock and expands controls.",
+        "intervals": "Compact uses Break/Short Break/Lunch/Down Timer above percentage group. Every active trip, including non-production, grays main Elapsed/Remaining during breaks and Down; End Time unchanged, standalone breaks exempt. Full Down controls retain 230px (156px short screen) and rounded background; only surrounding gaps expand.",
         "log": "Compact pin controls side button only. Open and close use top-entry unpinned animation while preserving actual saved pin.",
         "numberpad": "Touch-only data-speech-input=disabled; no command registrations or transcript dispatch. Mic slides out, editor fills visual viewport, mic restores previous runtime intent on close.",
-        "goals": "One applicable goal opens numberpad directly; multiple use configurable selector. Configured goal is larger, inferred smaller and omitted when idle or Trip. Aggregate mode title includes configured percentage; idle Auto is [Auto]."
+        "goals": "One applicable goal opens numberpad directly; multiple use configurable selector. Configured goal is larger, inferred smaller and omitted when idle or Trip. Aggregate mode title includes configured percentage; idle Auto is [Auto]. Titles always include configured actual goal, including active Auto Trip/Standard; idle Auto remains [Auto].",
+        "layout": "Monochrome centered SVG icons; balanced visible gaps above/below percentage group; Sync centered on actual track. Full/Compact x Classic/Bar changes are cancellable geometry transitions with reduced-motion fallback."
       },
       "controls": {
         "identity": "Existing button IDs and handlers; no action proxies",
@@ -17966,7 +17970,58 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "evidence": [
         "node tests/compact-actions-browser.cjs",
         "node tests/goal-pad-layout-browser.cjs",
-        "node tests/goal-bar-interactions-browser.cjs"
+        "node tests/goal-bar-interactions-browser.cjs",
+        "node tests/layout-mode-transitions-browser.cjs",
+        "node tests/goal-bar-browser.cjs"
+      ]
+    },
+    "GOAL-AVATAR": {
+      "id": "GOAL-AVATAR",
+      "scope": [
+        "R0",
+        "R1",
+        "DOWN",
+        "BL",
+        "GOAL-SELECT"
+      ],
+      "preconditions": {
+        "owner": "Existing trip/interval FSM owns all actions",
+        "visibility": "Bar display in Order Filler or Drop-In; every active trip is eligible, no production-only filter"
+      },
+      "inputs": [
+        "trip and interval snapshots",
+        "initial restored snapshot",
+        "layout/visibility changes",
+        "active-session completion"
+      ],
+      "postconditions": {
+        "idle": "Walking traverses the bar with compact relaxed arms and 1.2-second turns; limbs continue through turns.",
+        "running": "Left-facing run cycle above Current double line with a clear foot gap.",
+        "break": "Shared hip and articulated legs rotate from frontal stance into one left seated profile; body solid white. Chair enters right and exits while standing. The attempted matching of Break proportions to Down was reverted.",
+        "down": "Bent-down upper arm, fast smooth forearm shake, no hand nub, stationary bubble aimed at character, animated centered expletive text.",
+        "hybrid": "Break -> Down and Down -> Break use direct source-exit then destination-entry, no running in between. Forearm shortens while lowering.",
+        "reload": "Destination entry only; no fabricated source exit or historical finish.",
+        "finish": "One clustered pastel canvas-confetti 1.9.4 burst per completed session, horizontally centered on track, black/white flapping flag in front, nod, fade to Walking. Repeated snapshots never replay.",
+        "motion": "Cancellable presentation only; no business locks, command queue dependencies or audio. Reduced motion suppresses travel/confetti. Classic hides avatar and does not celebrate hidden completions."
+      },
+      "controls": {
+        "interaction": "Decorative SVG/canvas, pointer-events none; whole bar retains existing goal action"
+      },
+      "audio": {
+        "behavior": "No new announcements; deployment notification requirements unchanged"
+      },
+      "forbidden": [
+        "Avatar dispatching commands or persisting business data",
+        "Historical confetti on reload",
+        "Running between Break and Down",
+        "Replaying finish per tick",
+        "Confetti loops",
+        "Undefined percentages reaching numeric formatting"
+      ],
+      "evidence": [
+        "node tests/goal-bar-avatar-browser.cjs",
+        "node tests/goal-bar-browser.cjs",
+        "node tests/drop-in-page.mjs"
       ]
     }
   },
@@ -19270,8 +19325,112 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
             "log"
           ],
           "clock": "centered horizontally; each rail centered on its axis",
-          "timer": "Down elapsed above clock",
+          "timer": "Down elapsed above percentage group",
           "eligibleActionsUnchanged": true
+        }
+      },
+      {
+        "id": "GOAL-MERGED-UNIT",
+        "contract": "GOAL-DISPLAY",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "tripGoal": 120,
+          "inferredAggregateGoal": 120,
+          "target": "trip"
+        },
+        "when": {
+          "changeTripGoal": 130
+        },
+        "expect": {
+          "unitBefore": "linked-station pair; Trip rightmost",
+          "unitAfter": "separate opaque nodes; changed label fades/moves",
+          "border": "new target owns border",
+          "standard": "unlabelled unless a goal is 100%"
+        }
+      },
+      {
+        "id": "GOAL-AVATAR-RESTORE",
+        "contract": "GOAL-AVATAR",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "trip": "active non-production",
+          "interval": "lunch",
+          "firstSnapshot": true
+        },
+        "when": {
+          "load": "Bar"
+        },
+        "expect": {
+          "pose": "chair entry and seated profile",
+          "sourceExit": false,
+          "confetti": 0,
+          "body": "solid white; legs/torso share hip"
+        }
+      },
+      {
+        "id": "GOAL-AVATAR-HYBRID",
+        "contract": "GOAL-AVATAR",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "trip": "active",
+          "pose": "down"
+        },
+        "when": {
+          "interval": "break"
+        },
+        "expect": {
+          "order": [
+            "stop/lower gesture",
+            "bubble hides",
+            "chair enters",
+            "turn and sit"
+          ],
+          "runningPose": false,
+          "interruptions": "latest target wins"
+        }
+      },
+      {
+        "id": "GOAL-AVATAR-FINISH",
+        "contract": "GOAL-AVATAR",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "trip": "active",
+          "session": "S1"
+        },
+        "when": {
+          "endTrip": "success",
+          "repeatIdleSnapshots": 20
+        },
+        "expect": {
+          "finish": 1,
+          "confetti": "one randomized cluster at track center",
+          "after": "Walking",
+          "reload": "no replay"
+        }
+      },
+      {
+        "id": "COMPACT-FOUR-LAYOUTS",
+        "contract": "COMPACT-ACTIONS",
+        "implementationStatus": "implemented-local",
+        "given": {
+          "actionDisplay": "full",
+          "percentageDisplay": "bar",
+          "interval": "down"
+        },
+        "when": {
+          "changeLayouts": [
+            "compact/bar",
+            "compact/classic",
+            "full/classic",
+            "full/bar"
+          ]
+        },
+        "expect": {
+          "sameActions": true,
+          "fullDownHeight": "230px or 156px short viewport",
+          "compactTimer": "above percentage group",
+          "timedText": "gray except End Time and standalone break",
+          "transitions": "smooth; latest choice wins"
         }
       }
     ]

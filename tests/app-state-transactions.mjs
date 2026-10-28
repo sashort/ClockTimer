@@ -1312,7 +1312,7 @@ if(process.argv.includes('--auto-selector')) {
   const target=timer.getUIState().effective_goal_type;
   const button=window.document.querySelector('#scopeToggle');
   if(mode==='auto')assert.equal(button.textContent,'[Auto]','idle Auto does not expose its fallback Standard target');
-  else assert.equal(button.textContent,mode==='total'?'Day - 100%':'Trip');
+  else assert.equal(button.textContent,mode==='total'?'Day - 100%':'Trip - 100%');
  }
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
  timer.configure({goal_type:'auto',trip_goal:'110%',total_goal:'120%'});await settle();
@@ -1322,6 +1322,16 @@ if(process.argv.includes('--auto-selector')) {
  assert.equal(window.document.querySelector('#autoTotalGoalValue').textContent,'120%','chooser retains overarching goal rather than inferred trip requirement');
  window.document.querySelector('[data-auto-goal-scope=total]').click();await settle();
  assert.equal(window.WMOFInteractionState.state.editor.value,'120','goal editor edits the overarching target');
+ await window.WMOFActions.cancelNumberPadEdit();while(window.document.querySelector('#numberPadDialog')?.open)await new Promise(r=>setTimeout(r,20));
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
+ await timer.start({standardTime:'0:30:00'});timer.configure({goal_type:'auto',trip_goal:'110%',total_goal:'120%',auto_goal:false});await settle();
+ assert.equal(window.document.querySelector('#scopeToggle').textContent,'[Day] - 120%','Auto aggregate target includes its configured goal');
+ for(const [range,label] of [['week','Week'],['money','Money'],['month','Month'],['year','Year']]){
+  await window.WMOFActions.changeGoalMode(range);await settle();timer.configure({goal_type:'auto',trip_goal:'110%',total_goal:'120%',auto_goal:false});await settle();
+  assert.equal(window.document.querySelector('#scopeToggle').textContent,`[${label}] - 120%`,range+' keeps its configured goal in Auto');
+ }
+ timer.configure({goal_type:'auto',trip_goal:'130%',total_goal:'110%',auto_goal:false});await settle();assert.equal(window.document.querySelector('#scopeToggle').textContent,'[Trip] - 130%');
+ timer.configure({goal_type:'auto',trip_goal:'90%',total_goal:'90%',auto_goal:false});await settle();assert.equal(window.document.querySelector('#scopeToggle').textContent,'[Standard] - 100%');
  console.log('PASS Auto selector follows the active target and manual scopes retain their labels');
  await window.happyDOM.close();process.exit(0);
 }

@@ -108,9 +108,9 @@
         const active=state?.trip_active && !state?.break_only;
         if(effectiveMode==='auto') {
             label.textContent=active?`[${state.effective_goal_type==='total'?goalLabel('total'):state.effective_goal_type==='standard'?'Standard':'Trip'}]`:'[Auto]';
-            if(active&&state.effective_goal_type==='total')label.textContent+=` - ${configuredGoal('total')}%`;
-        } else if(effectiveMode==='total'||(!mirrored&&!['trip','user','auto'].includes(effectiveMode))) {
-            label.textContent+=` - ${configuredGoal('total')}%`;
+            if(active)label.textContent+=` - ${state.effective_goal_type==='standard'?100:configuredGoal(state.effective_goal_type==='total'?'total':'trip')}%`;
+        } else if(effectiveMode && effectiveMode!=='user') {
+            label.textContent+=` - ${configuredGoal(effectiveMode==='trip'?'trip':'total')}%`;
         }
         button.replaceChildren(label);
         if(mirrored){const icon=document.createElement('span');icon.dataset.menuIcon='mirror';icon.setAttribute('aria-hidden','true');button.prepend(icon);}

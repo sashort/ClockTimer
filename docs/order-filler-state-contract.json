@@ -2738,8 +2738,8 @@
     "login.phase": "login"
   },
   "presentationRevision": {
-    "date": "2026-10-27",
-    "deployment": "Local working changes, not a production-version claim",
+    "date": "2026-10-28",
+    "deployment": "Implemented release candidate; verify live build-version.json separately",
     "implemented": [
       "trip-only Standard Time",
       "Classic / Goal bar preference",
@@ -2748,10 +2748,16 @@
       "failed-goal color/geometry/triangles",
       "configurable selector and shared hit targets",
       "150 percent user-input cap with passive notice",
-      "idle Auto label and clock centering"
+      "idle Auto label and clock centering",
+      "linked goal units and shared labels",
+      "target border transfer",
+      "white 2.5px bar outline and collapsed idle time row",
+      "four-layout transitions and responsive space",
+      "shared avatar lifecycle and direct Break/Down transitions",
+      "one-shot centered pastel library confetti"
     ],
     "proposed": [
-      "cold-load/start/end animation choreography"
+      "counted-time forecast keyframes beyond current snapshot-driven node motion"
     ],
     "runtimeEvidence": [
       "node tests/goal-bar.mjs",
@@ -2760,8 +2766,11 @@
       "node tests/clock-centering-browser.cjs",
       "node tests/app-state-transactions.mjs --goal-limit --voice-feedback",
       "node tests/drop-in-page.mjs",
-      "node tests/drop-in-view.mjs"
+      "node tests/drop-in-view.mjs",
+      "node tests/goal-bar-avatar-browser.cjs",
+      "node tests/goal-bar-units-browser.cjs",
+      "node tests/layout-mode-transitions-browser.cjs"
     ],
-    "compactActions": "Full/Compact account preference; same control IDs and existing FSM eligibility. Independent centered action/info rails, shared Compact pause timer. Compact pinned Log uses top-entry animation. Numberpad is touch-only, fullscreen with mic suppressed and restored on close."
+    "compactActions": "Full/Compact account preference; same control IDs and existing FSM eligibility. Independent centered action/info rails, Compact pause timer above percentages. Compact pinned Log uses top-entry animation. Numberpad is touch-only, fullscreen with mic suppressed and restored on close. Full Down retains original control size and rounded section; only gaps expand."
   }
 }

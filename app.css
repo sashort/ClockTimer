@@ -2189,6 +2189,7 @@ button:active:not(:disabled):not(#toggleSyncGoalButton) {
     grid-template-rows: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, .85fr);
     gap: 4px;
     padding: 3px;
+    border-radius: 18px;
     background: var(--wm-blue);
 }
 
@@ -7711,12 +7712,11 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .percent-summary.is-goal-bar > :is(#currentPercentValue,span,#goalPercentValue) {position:absolute;visibility:hidden;opacity:0;pointer-events:none;}
 .percent-summary.is-goal-bar::before {display:none;}
 .percent-summary.is-goal-bar > .goal-sync-button {grid-column:2;grid-row:1;}
-.goal-bar-track {fill:#001e60;stroke:rgb(169 221 247 / 50%);stroke-width:1;}
+.goal-bar-track {fill:#001e60;stroke:#fff;stroke-width:2.5;}
 .goal-bar-node {cursor:pointer;opacity:1;}
-.goal-bar-node circle {fill:#001e60;stroke:var(--goal-node-color,#fff);stroke-width:2;}
-.goal-bar-node.is-current circle {fill:#fff;}
+.goal-bar-node .goal-bar-marker {fill:#001e60;stroke:var(--goal-node-color,#fff);stroke-width:2;}
 .goal-bar-node.is-failed circle {fill:#a92e40;}
-.goal-bar-node:focus-visible circle {stroke-width:4;}
+.goal-bar-svg:focus-visible .goal-bar-marker {filter:drop-shadow(0 0 2px #fff);}
 .goal-bar-glyph {fill:#fff;font-size:11px;font-weight:700;}
 .goal-bar-node.is-current .goal-bar-glyph {fill:#001e60;}
 .goal-bar-time,.goal-bar-percent {fill:#fff;font-family:Arial,sans-serif;font-weight:700;font-variant-numeric:tabular-nums;transition:opacity 180ms ease;}
@@ -7746,7 +7746,7 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 
 /* The goal bar is one keyboard and pointer target; Sync remains separate. */
 .percent-summary.is-goal-bar > .goal-bar-svg {cursor:pointer;}
-.goal-bar-svg:focus-visible {outline:2px solid currentColor;outline-offset:-2px;border-radius:8px;}
+.goal-bar-svg,.goal-bar-svg:focus,.goal-bar-svg:active {outline:none;box-shadow:none;}
 
 .goal-details {display:grid;gap:6px;font-size:15px;line-height:1.3;font-weight:600;text-align:center;}
 .auto-goal-option > .goal-details {grid-column:1 / -1;}
@@ -7842,4 +7842,63 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 
 @starting-style {
     shared-modal-host > .number-pad-dialog[open] {height:var(--shared-modal-entry-height,100dvh);}
+}
+
+.goal-bar-node path.goal-bar-marker {fill:none;stroke:var(--goal-node-color,#fff);stroke-width:2;stroke-linecap:butt;}
+
+/* Responsive bar and interval placement share a single summary height budget. */
+.app {--goal-bar-height:112px;--timer-summary-header-height:78px;--timer-summary-classic-height:64px;}
+.app[data-percentage-display=bar] {--timer-summary-row-height:calc(var(--timer-summary-header-height) + var(--goal-bar-height));}
+.app[data-percentage-display=bar] .trip-summary {grid-template-rows:var(--timer-summary-header-height) var(--goal-bar-height);}
+.goal-bar-svg {height:var(--goal-bar-height,112px);}
+.percent-summary.is-goal-bar > .goal-sync-button {align-self:center;translate:0 var(--goal-bar-sync-offset,0px);}
+.app[data-percentage-display=bar] .clock-region > clock-timer {--home-clock-preferred-size:80vw;}
+.app[data-action-display=compact][data-percentage-display=bar] .clock-region > clock-timer {--home-clock-preferred-size:1000px;}
+.app[data-action-display=compact] > .clock-region {padding-top:0;}
+.app[data-action-display=compact] .compact-action-rail > button {top:50%;overflow:hidden;line-height:0;}
+.app[data-action-display=compact] .compact-action-rail > button::before {display:none!important;}
+.app[data-action-display=compact] .compact-action-rail > button > svg {display:none;}
+.compact-action-icon {position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;}
+.compact-action-icon > svg {display:block;width:62%;height:62%;max-width:32px;max-height:32px;overflow:visible;}
+.app[data-action-display=compact] .trip-summary > .compact-interval-timer:not([hidden]) {display:grid;grid-row:2;grid-column:1 / -1;place-content:center;justify-items:center;gap:4px;min-height:0;padding:4px 0;}
+.app[data-action-display=compact][data-compact-timed=true] {--timer-summary-row-height:calc(var(--timer-summary-header-height) + var(--timer-summary-classic-height) + var(--compact-timer-space));}
+.app[data-action-display=compact][data-compact-timed=true] .trip-summary {grid-template-rows:var(--timer-summary-header-height) var(--compact-timer-space) var(--timer-summary-classic-height);}
+.app[data-action-display=compact][data-compact-timed=true] .percent-summary {grid-row:3;}
+.app[data-action-display=compact][data-compact-timed=true][data-percentage-display=bar] {--timer-summary-row-height:calc(var(--timer-summary-header-height) + var(--goal-bar-height) + var(--compact-timer-space));}
+.app[data-action-display=compact][data-compact-timed=true][data-percentage-display=bar] .trip-summary {grid-template-rows:var(--timer-summary-header-height) var(--compact-timer-space) var(--goal-bar-height);}
+@media(orientation:portrait) and (max-width:520px) and (max-height:720px) {
+ .app {--timer-summary-header-height:55px;--timer-summary-classic-height:45px;}
+}
+@media(prefers-reduced-motion:reduce) {.goal-bar-svg {transition:none;}}
+
+.compact-action-icon {display:none;}
+.app[data-action-display=compact] .compact-action-rail .compact-action-icon {display:grid;}
+.percent-summary.is-goal-bar {height:100%;min-height:0;grid-template-rows:minmax(0,1fr);}
+.percent-summary.is-goal-bar > .goal-bar-svg {height:100%;align-self:stretch;}
+
+.app[data-time-readout-paused=true] :is(#renderedTimeLabel,#renderedTimeValue) {color:#a7a8aa;}
+
+/* Center the bar/clock group vertically, with a controlled gap between them. */
+.app[data-percentage-display=bar] {--goal-bar-slot-height:calc(var(--goal-bar-height) + var(--goal-bar-leading-space,0px));--timer-summary-row-height:calc(var(--timer-summary-header-height) + var(--goal-bar-slot-height));}
+.app[data-percentage-display=bar] .trip-summary {grid-template-rows:var(--timer-summary-header-height) var(--goal-bar-slot-height);}
+.app[data-percentage-display=bar] .percent-summary.is-goal-bar > .goal-bar-svg {height:var(--goal-bar-height);align-self:end;}
+.percent-summary.is-goal-bar > .goal-sync-button {align-self:end;}
+.app[data-percentage-display=bar] .clock-region {place-items:start center;padding-top:16px;}
+.app[data-percentage-display=bar] .clock-region > clock-timer {width:min(var(--clock-stage-diameter,80vw),100cqw,100cqh);height:min(var(--clock-stage-diameter,80vw),100cqw,100cqh);}
+.app[data-action-display=compact][data-percentage-display=bar] .compact-action-rail > button {top:calc(16px + var(--clock-stage-diameter,56vw)/2);}
+.app[data-action-display=compact][data-compact-timed=true][data-percentage-display=bar] {--timer-summary-row-height:calc(var(--timer-summary-header-height) + var(--goal-bar-slot-height) + var(--compact-timer-space));}
+.app[data-action-display=compact][data-compact-timed=true][data-percentage-display=bar] .trip-summary {grid-template-rows:var(--timer-summary-header-height) var(--compact-timer-space) var(--goal-bar-slot-height);}
+.app.layout-switch-snap,.app.layout-switch-snap * {transition:none!important;}
+:root[data-layout-transition] {view-transition-name:none;}
+:root[data-layout-transition]::view-transition-group(*) {animation-duration:360ms;animation-timing-function:ease-in-out;}
+
+.goal-bar-outline {fill:none;stroke:#fff;stroke-width:2.5;vector-effect:non-scaling-stroke;pointer-events:none;}
+
+/* Full Down controls keep their original size; spare height belongs to the gaps. */
+.app[data-action-display="full"][data-interval-state="down"] .trip-action-controls {
+    height:min(230px,100%);
+    align-self:center;
+}
+@media(max-height:650px) {
+    .app[data-action-display="full"][data-interval-state="down"] .trip-action-controls {height:min(156px,100%);}
 }

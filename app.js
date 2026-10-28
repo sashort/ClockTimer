@@ -6836,7 +6836,8 @@
         }
     }
 
-    function applyPercentageDisplay(mode = safeStorageGet(STORAGE.percentageDisplay), {persist = false} = {}) {
+    function applyPercentageDisplay(mode = safeStorageGet(STORAGE.percentageDisplay), {persist = false, animate = true} = {}) {
+        if(persist&&animate&&globalThis.WMOFLayoutMotion)return WMOFLayoutMotion.change(app,()=>applyPercentageDisplay(mode,{persist,animate:false}));
         const value = mode === "bar" ? "bar" : "classic";
         if (persist) safeStorageSet(STORAGE.percentageDisplay, value);
         app.dataset.percentageDisplay = value;
@@ -6847,7 +6848,8 @@
         if (clockTimer) renderClockTimerUIState(clockTimer.getUIState());
     }
 
-    function applyActionDisplay(mode = safeStorageGet(STORAGE.actionDisplay), {persist = false} = {}) {
+    function applyActionDisplay(mode = safeStorageGet(STORAGE.actionDisplay), {persist = false, animate = true} = {}) {
+        if(persist&&animate&&globalThis.WMOFLayoutMotion)return WMOFLayoutMotion.change(app,()=>applyActionDisplay(mode,{persist,animate:false}));
         const value = mode === "compact" ? "compact" : "full";
         if (persist) safeStorageSet(STORAGE.actionDisplay, value);
         app.dataset.actionDisplay = value;
@@ -8857,8 +8859,9 @@
             : target === "standard" ? "Standard" : "Trip";
         let label = mode === "auto" ? `[${state?.trip_active && !state?.break_only ? targetLabel : "Auto"}]`
             : mode === "total" ? totalScopeLabel() : "Trip";
-        if (mode === "total" || (mode === "auto" && state?.trip_active && !state?.break_only && target === "total")) {
-            const percent = clockTimer.getGoalEditorSnapshot("total").actual_percent;
+        if (mode !== "auto" || (state?.trip_active && !state?.break_only)) {
+            const scope = mode === "auto" ? target : mode;
+            const percent = scope === "standard" ? 100 : clockTimer.getGoalEditorSnapshot(scope === "total" ? "total" : "trip").actual_percent;
             if (Number.isFinite(percent)) label += ` - ${Number(percent.toFixed(2))}%`;
         }
         scopeToggle.textContent = label;

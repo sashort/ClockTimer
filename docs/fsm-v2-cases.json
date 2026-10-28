@@ -1298,8 +1298,112 @@
           "log"
         ],
         "clock": "centered horizontally; each rail centered on its axis",
-        "timer": "Down elapsed above clock",
+        "timer": "Down elapsed above percentage group",
         "eligibleActionsUnchanged": true
+      }
+    },
+    {
+      "id": "GOAL-MERGED-UNIT",
+      "contract": "GOAL-DISPLAY",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "tripGoal": 120,
+        "inferredAggregateGoal": 120,
+        "target": "trip"
+      },
+      "when": {
+        "changeTripGoal": 130
+      },
+      "expect": {
+        "unitBefore": "linked-station pair; Trip rightmost",
+        "unitAfter": "separate opaque nodes; changed label fades/moves",
+        "border": "new target owns border",
+        "standard": "unlabelled unless a goal is 100%"
+      }
+    },
+    {
+      "id": "GOAL-AVATAR-RESTORE",
+      "contract": "GOAL-AVATAR",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "trip": "active non-production",
+        "interval": "lunch",
+        "firstSnapshot": true
+      },
+      "when": {
+        "load": "Bar"
+      },
+      "expect": {
+        "pose": "chair entry and seated profile",
+        "sourceExit": false,
+        "confetti": 0,
+        "body": "solid white; legs/torso share hip"
+      }
+    },
+    {
+      "id": "GOAL-AVATAR-HYBRID",
+      "contract": "GOAL-AVATAR",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "trip": "active",
+        "pose": "down"
+      },
+      "when": {
+        "interval": "break"
+      },
+      "expect": {
+        "order": [
+          "stop/lower gesture",
+          "bubble hides",
+          "chair enters",
+          "turn and sit"
+        ],
+        "runningPose": false,
+        "interruptions": "latest target wins"
+      }
+    },
+    {
+      "id": "GOAL-AVATAR-FINISH",
+      "contract": "GOAL-AVATAR",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "trip": "active",
+        "session": "S1"
+      },
+      "when": {
+        "endTrip": "success",
+        "repeatIdleSnapshots": 20
+      },
+      "expect": {
+        "finish": 1,
+        "confetti": "one randomized cluster at track center",
+        "after": "Walking",
+        "reload": "no replay"
+      }
+    },
+    {
+      "id": "COMPACT-FOUR-LAYOUTS",
+      "contract": "COMPACT-ACTIONS",
+      "implementationStatus": "implemented-local",
+      "given": {
+        "actionDisplay": "full",
+        "percentageDisplay": "bar",
+        "interval": "down"
+      },
+      "when": {
+        "changeLayouts": [
+          "compact/bar",
+          "compact/classic",
+          "full/classic",
+          "full/bar"
+        ]
+      },
+      "expect": {
+        "sameActions": true,
+        "fullDownHeight": "230px or 156px short viewport",
+        "compactTimer": "above percentage group",
+        "timedText": "gray except End Time and standalone break",
+        "transitions": "smooth; latest choice wins"
       }
     }
   ]

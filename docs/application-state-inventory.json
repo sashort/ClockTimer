@@ -3677,6 +3677,46 @@
           "id": "GOALINPUTLIMIT-CAPPED"
         }
       ]
+    },
+    {
+      "id": "goalAvatar",
+      "source": {
+        "file": "GoalBarAvatar.js",
+        "owner": "targetMode / Avatar.update / Avatar.change"
+      },
+      "cardinality": "one per visible bar",
+      "values": [
+        {
+          "id": "GOAL-AVATAR-IDLE",
+          "value": "idle",
+          "meaning": "Walking while no trip or standalone break is active"
+        },
+        {
+          "id": "GOAL-AVATAR-RUNNING",
+          "value": "running",
+          "meaning": "Current marker running for any active trip"
+        },
+        {
+          "id": "GOAL-AVATAR-BREAK",
+          "value": "break",
+          "meaning": "Shared seated profile for all break types and standalone breaks"
+        },
+        {
+          "id": "GOAL-AVATAR-DOWN",
+          "value": "down",
+          "meaning": "Raised-arm gesture and expletive bubble"
+        },
+        {
+          "id": "GOAL-AVATAR-FINISH",
+          "value": "finish",
+          "meaning": "One session completion and pastel confetti cluster"
+        },
+        {
+          "id": "GOAL-AVATAR-HIDDEN",
+          "value": "hidden",
+          "meaning": "Classic or hidden view; no hidden completion replay"
+        }
+      ]
     }
   ],
   "surfaces": [
@@ -4189,6 +4229,10 @@
     {
       "id": "compact-action-presentation",
       "rule": "Settings Action buttons Full/Compact reuses existing control identities and action eligibility. Left actions/right details and pinned Log center independently on clock. Numberpad is touch-only, takes visual viewport and suppresses mic presentation until close; recognition intent is preserved."
+    },
+    {
+      "id": "GOAL-AVATAR-PRESENTATION",
+      "requirement": "Avatar is a cancellable projection of existing trip/interval state, not a new business state or action. First snapshot plays target entry only. One finish per completed session; Classic suppresses it. Equal goal values form one render/label/failure unit."
     }
   ],
   "transitionPolicies": [
@@ -4379,6 +4423,15 @@
       "file": "GraphicalSettingsHost.js",
       "owners": [
         "GraphicalSettingsHost"
+      ]
+    },
+    {
+      "file": "GoalBarAvatar.js",
+      "owners": [
+        "targetMode",
+        "breakGeometry",
+        "armGeometry",
+        "class Avatar"
       ]
     }
   ],
