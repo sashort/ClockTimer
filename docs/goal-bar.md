@@ -351,4 +351,10 @@ from the actual rendered font instead of assuming that 8 is widest. Time text ma
 remain the wider constraint for a stacked label. Goal-selector option spacing is
 16px above and below the options.
 
-Label stacks are bounded by the actual track ends and outermost node edges, not by the SVG viewport. A Current label that would protrude on the right moves inward with its connector; its marker keeps its position. The complete track/node extent stays centered beside Sync. The 100% anchor remains centered under Standard.
+Label stacks are bounded by the outermost track, node or continuation-arrow edges, not by the SVG viewport. A label that would protrude moves inward with its connector; its marker keeps its position. The complete track/node/arrow extent stays centered beside Sync. The 100% anchor remains centered under Standard.
+
+The large Time Remaining readout above the bar also uses Standard minus counted trip time (100% is zero). A missed goal or target change must not reset that baseline. The Sync control is visible only when the selected mode is Trip; Auto hides it even when its current target is Trip. The shared Order Filler/Drop-In layout collapses the hidden column.
+
+Both compression arrows contribute to horizontal centering. Label stacks and target boxes (including their border stroke) are nudged inside the outermost track/node or continuation-arrow edges. When an arrow is present, its horizontal extent gives boxes extra room beneath it.
+
+Low-goal regression: Auto with Day 40% and Trip 100% must keep fonts readable as Current approaches 100%. Reserve label room on both sides of the Standard/100% anchor instead of progressively shrinking all text. Resolve node crowding from the right so a distant left goal does not drift. A failed 100% goal retains its marker but omits details while another goal remains available; its details return only for the all-failed fallback. Retired transition text must release its width reservation.

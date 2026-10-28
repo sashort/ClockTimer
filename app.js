@@ -7341,8 +7341,7 @@
             ensureSyncOfflineOverlay(toggleSyncGoalButton);
             toggleSyncGoalButton.classList.toggle("sync-calculable",calculable);
             toggleSyncGoalButton.hidden =
-                renderedScope !==
-                    "trip";
+                (state?.goal_type ?? clockTimer.uiState.goal_type) !== "trip";
         }
     }
 

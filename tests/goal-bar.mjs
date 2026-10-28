@@ -35,6 +35,23 @@ for(const mode of ['elapsed','calculated-end','remaining']){
  if(mode==='elapsed')assert.equal(bar.nodes.find(n=>n.id==='standard').time,'0:30:00','Standard elapsed is trip standard, without aggregate history');
  assert(bar.nodes.every(n=>typeof n.time==='string'&&n.time.length>0),'all '+mode+' positions have a time');
 }
+// Missing a target must not replace the Standard-based remaining baseline.
+{
+ const atTwentyMinutes=window.__testTime;
+ c.renderedTimeMode='remaining';c.configure({goal_type:'auto'});
+ window.__testTime=atTwentyMinutes+239000;const before=c.getUIState();
+ window.__testTime=atTwentyMinutes+241000;const after=c.getUIState();
+ assert.equal(before.goal_bar.nodes.find(n=>n.id==='total').failed,false);
+ assert.equal(after.goal_bar.nodes.find(n=>n.id==='total').failed,true);
+ assert.equal(before.time_component.value-after.time_component.value,2000,'crossing the inferred goal consumes only the two counted seconds, with no target jump');
+ assert.equal(before.time_component.value,361000);assert.equal(after.time_component.value,359000);
+ assert.equal(after.time_component.text,after.goal_bar.nodes.find(n=>n.current).time,'top and Current stay on the same Standard baseline');
+ window.__testTime=atTwentyMinutes+600000;const atStandard=c.getUIState();
+ assert.equal(atStandard.time_component.value,0,'remaining reaches zero at Standard / 100%');
+ assert.equal(atStandard.goal_bar.nodes.find(n=>n.current).percent,100);
+ window.__testTime+=1000;assert.equal(c.getUIState().time_component.value,-1000,'remaining goes negative after Standard');
+ window.__testTime=atTwentyMinutes;
+}
 // Mode changes affect visibility, never the units or historical scope of labels.
 for (const timeMode of ['remaining','elapsed','calculated-end']) {
  c.configure({goal_type:'auto'});c.renderedTimeMode=timeMode;

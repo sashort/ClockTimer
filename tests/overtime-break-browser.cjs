@@ -16,5 +16,14 @@ const fixture=require('./order-filler-master-fixture.cjs');
   await step(90000);await check(type+' after original buffered boundary');
   await operation(()=>clockTimer.stop());
  }
+ for(const type of ['radial-overflow','radial-fitted']){
+  await operation(type=>{clockTimer.setAttribute('timer-type',type);clockTimer.configure({goal_type:'auto',trip_goal:'100%',total_goal:'40%',auto_goal:false});return clockTimer.start({standardTime:'0:22:56'});},type);await step(28*60000);
+  assert.equal(await p.evaluate(()=>clockTimer.getUIState().effective_goal_type),'total','Auto falls back to the lower aggregate goal');
+  const ranges=await p.evaluate(()=>{return [...clockTimer.querySelectorAll('time-range')].filter(e=>e.timeRangeExiting!==true&&['overtime','remaining'].includes(e.getAttribute('type'))).map(e=>({type:e.getAttribute('type'),start:Number(e.clockTimerStart),end:Number(e.clockTimerEnd)}));});
+  const horizon=await p.evaluate(()=>{const start=clockTimer.captureState().events.find(e=>e.event==='trip.started');return overtimeNow-Date.parse(start.value.creationAnchor);});
+  assert(ranges.some(r=>r.type==='overtime'),type+' shows earned overtime');assert(ranges.every(r=>r.end<=horizon+1000),type+' cannot draw future aggregate overtime/remaining rings '+JSON.stringify({ranges,horizon}));
+  await p.evaluate(()=>clockTimer.restoreState(clockTimer.captureState()));await step(1000);
+  const future=await p.evaluate(horizon=>[...clockTimer.querySelectorAll('time-range[type=overtime],time-range[type=remaining]')].filter(e=>e.timeRangeExiting!==true&&Number(e.clockTimerEnd)>horizon+2000).length,horizon);assert.equal(future,0,type+' reload cannot recreate aggregate future rings');await operation(()=>clockTimer.stop());
+ }
  assert.deepEqual(f.errors,[]);console.log('PASS overtime excludes break/buffers and early-start spans, including restored overflow/fitted tick geometry');
 }finally{await f.close();}})().catch(e=>{console.error(e);process.exitCode=1});

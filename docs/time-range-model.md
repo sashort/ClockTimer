@@ -274,3 +274,7 @@ must show 4:49, and the credit must remain available to the next aggregate goal.
 
 Checks: trip-time-bank.mjs, trip_time_bank.php, trip-time-bank-browser.cjs,
 trip-bank-goal-budget.mjs. All database access for diagnosis is read-only.
+
+### Active-trip clock ranges with goals below 100%
+
+A lower inferred goal may have a future calculated end time, but that future goal deadline must not create planned overtime rings. Overtime grows only to the current trip timeline position, excluding pauses and buffers as usual. While a trip is active, the remaining overlay ends at the visible trip ranges, not the aggregate goal deadline. Apply this rule during initial construction, reconciliation, ticks, and replay/reload. Overflow ring boundaries still follow clock hours, so one trip that crosses an hour can legitimately occupy multiple rings; Fitted mode keeps one ring.
