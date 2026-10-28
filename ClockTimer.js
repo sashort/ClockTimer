@@ -26455,13 +26455,8 @@
                     end: this.#standardEnd
                 });
 
-                if (this.#renderedPercentGoal < 1) {
-                    spans.push({
-                        type: "overtime",
-                        start: this.#standardEnd,
-                        end: this.#calculatedEnd
-                    });
-                }
+                // Earned overtime is added by #updateOvertimeRanges; a lower
+                // goal deadline must not preallocate future clock rings.
             }
 
             const segments = [];
@@ -31215,16 +31210,7 @@
                 this.#standardEnd
             );
 
-            if (
-                this.#renderedPercentGoal <
-                    1
-            ) {
-                this.#createSpan(
-                    "overtime",
-                    this.#standardEnd,
-                    this.#calculatedEnd
-                );
-            }
+            // Overtime ranges grow only as this trip actually runs.
         }
 
         #createSpan(
@@ -31543,7 +31529,6 @@
                 this.#getLatestTimerEnd();
 
             const latestEnd =
-                this.#renderedPercentGoal > 1 &&
                 this.#started
                     ? visibleTimerEnd
                     : (
@@ -31699,7 +31684,7 @@
                 const end = record.openEnded ? this.#openOverwriteLastTick : record.end;
                 if (Number.isFinite(record.start) && Number.isFinite(end) && end > record.start) exclusions.push([record.start,end]);
             }
-            const horizon = this.#renderedPercentGoal < 1 ? Math.max(now,this.#calculatedEnd) : now;
+            const horizon = now;
             let segments = [[this.#standardEnd,horizon]];
             for (const [start,end] of exclusions) segments = segments.flatMap(([left,right]) => {
                 if (right <= start || left >= end) return [[left,right]];

@@ -37,6 +37,11 @@ const root=path.resolve(__dirname,'..');
      for(let i=1;i<4;i++)assert.ok(layout.cells[i].left>=layout.cells[i-1].right,`${name} columns cannot overlap`);
     }
    }
+   for(const goalMode of ['auto','trip']){
+    await page.evaluate(goalMode=>WMOFTimerSummaryView.render(document,{goal_type:goalMode,effective_goal_type:'trip',current_percent_component:{text:'110%'},goal_component:{text:'120%'}}),goalMode);await page.waitForTimeout(650);
+    assert.equal(await page.locator('.goal-sync-button').evaluate(e=>e.hidden),goalMode==='auto',name+' selected mode controls Sync, irrespective of effective target');
+    if(goalMode==='auto')assert.equal(await page.locator('.percent-summary').evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').at(-1)),'0px',name+' Auto collapses Sync column');
+   }
    for(const active of [true,false]){
     await page.evaluate(active=>WMOFTimerSummaryView.render(document,{effective_goal_type:'trip',sync_override_in_use:active,current_percent_component:{text:'109.8%'},goal_component:{text:active?'80%':'110%'}}),active);
     await page.waitForTimeout(650);

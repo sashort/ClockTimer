@@ -204,47 +204,56 @@
    const {raw,goals,available,allFailed,units}=this.makeUnits(data),active=data.active!==false,oldUnits=this.units;
    const avatarSpace=this.avatar?.topSpace(this.state)||0;const count=units.length||1,r=Math.max(9,Math.min(25,height*.11)),preferred=Math.max(9,Math.min(28,height*.17,(width-12)/(count*4.1+1),(height-2*(r+5)-avatarSpace-12)/(active?2.6:1.15)));
    const at100=units.find(u=>u.id!=='standard'&&!u.current&&near(u.percent,100)),standard=units.find(u=>u.id==='standard');
-   const labelUnits=units.filter(u=>u.id!=='standard'),padding=6,gap=7;
+   const labelUnits=units.filter(u=>u.id!=='standard'&&(u.current||!u.failed||allFailed&&near(u.percent,100))),padding=6,gap=7;
    const target=(!active&&this.state?.goal_type==="auto"?null:available.find(n=>n.id===this.state?.effective_goal_type))||available.toSorted((a,b)=>b.percent-a.percent)[0];let labelTarget=units.find(u=>u.members.includes(target?.id));if(labelTarget===standard&&at100)labelTarget=at100;
    for(const unit of units){const p=this.node(unit.id);unit.detailed=labelUnits.includes(unit);
     const prior=oldUnits.find(u=>u.members.includes(unit.id));
     if(prior&&!unit.current&&!prior.merged&&!unit.merged&&!near(prior.percent,unit.percent)&&p.percent.textContent&&!this.reduced()){
      p.ghost?.remove();const ghost=p.ghost=svgElement('g',{class:'goal-bar-value-ghost','aria-hidden':'true'});ghost.append(p.time.cloneNode(true),p.percent.cloneNode(true));p.stack.append(ghost);
      p.widthRatio=Math.max(...[...ghost.children].map(e=>e.getComputedTextLength()))/Math.max(1,parseFloat(getComputedStyle(p.time).fontSize));
-     this.tween(ghost,unit.id+'-old-values',{opacity:'1'},{opacity:'0'},{force:true,duration:140}).then(()=>{if(p.ghost===ghost){ghost.remove();p.ghost=null;}});
+     this.tween(ghost,unit.id+'-old-values',{opacity:'1'},{opacity:'0'},{force:true,duration:140}).then(()=>{if(p.ghost===ghost){ghost.remove();p.ghost=null;p.widthRatio=0;this.schedule();}});
      this.tween(p.time,unit.id+'-new-time',{opacity:'0'},{opacity:'1'},{force:true});this.tween(p.percent,unit.id+'-new-percent',{opacity:'0'},{opacity:'1'},{force:true});
     }
 p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textContent=unit.detailed?(unit.percentText??`${Number(unit.percent.toFixed(2))}%`):'';goalFont(p,preferred);}
    const measure=u=>{const p=this.node(u.id);return Math.max(p.time.getComputedTextLength(),u.current&&!u.percentText?this.currentPercentWidth(u,p):p.percent.getComputedTextLength(),(p.widthRatio||0)*parseFloat(p.time.style.fontSize));};
    const total=labelUnits.reduce((n,u)=>n+measure(u),0),fontScale=Math.min(1,Math.max(1,width-padding*2-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0))/Math.max(1,total));
    let font=preferred*fontScale;for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}
-   const pin=at100,wide=units.some(u=>u.merged)?Math.sqrt(r*r-(r*.45)**2)+2+r+1:0;
+   const pin=labelUnits.includes(at100)?at100:undefined,wide=units.some(u=>u.merged)?Math.sqrt(r*r-(r*.45)**2)+2+r+1:0;
    const margin=Math.max(30,(pin?.half||0)+padding+3,wide+(at100?.merged&&active?30:6));let left=margin,right=Math.max(left,width-margin);
-   const low=!active||allFailed?0:Math.min(...available.map(n=>Math.min(150,n.percent))),high=!active?(data.scale_max||100):allFailed?100:Math.max(low,Math.min(150,raw.find(n=>n.current)?.percent??150));
+   const low=!active||allFailed?0:Math.min(...available.map(n=>Math.min(150,n.percent))),high=!active?(data.scale_max||100):allFailed?100:Math.max(low,Math.min(150,raw.find(n=>n.current)?.percent??150),units.some(u=>!u.current&&u.failed&&near(u.percent,100))?100:0);
    const position=value=>high===low?right:left+(Math.min(high,Math.max(low,value))-low)/Math.max(1e-9,high-low)*(right-left);
    for(let i=0;i<units.length;i++){
     const unit=units[i],previous=units[i-1];unit.radius=unit.id==='standard'?1:unit.current?4:unit.merged?Math.sqrt(r*r-(r*.45)**2)+2+r+1:r+1;
-    unit.x=unit.current&&!allFailed?right:position(unit.percent);
+    unit.x=position(unit.percent);
     if(previous&&!(near(unit.percent,100)&&previous.id==='standard'))unit.x=Math.max(unit.x,previous.x+previous.radius+unit.radius);
    }
-   const excess=Math.max(0,(units.at(-1)?.x||right)-right);for(const unit of units)unit.x-=excess;
+   // Resolve crowding from the right without dragging an unrelated left goal
+   // back and forth as Current approaches the 100% marker.
+   for(let i=units.length-1;i>=0;i--){const unit=units[i],next=units[i+1];unit.x=Math.min(unit.x,next?(unit.id==='standard'&&near(next.percent,100)?next.x:next.x-next.radius-unit.radius):right);}
    if(at100&&standard)standard.x=at100.x;
    // Labels stay within the actual track/marker extent, rather than using the
    // SVG viewport as extra space. Preserve the centered 100% anchor by letting
    // the track include its stack, then center that complete extent once.
-   if(pin&&standard)left=Math.min(left,standard.x-pin.half);
+   if(pin&&standard)left=Math.min(left,standard.x-pin.half-.75);
    const visualLeft=Math.min(left,...units.map(u=>u.x-u.radius)),visualRight=Math.max(right,...units.map(u=>u.x+u.radius));
-   const centerShift=width/2-(visualLeft+visualRight)/2;
+   const lc=Boolean(data.available&&active&&low>0&&!allFailed),rc=Boolean(data.available&&active&&goals.some(n=>n.failed));
+   const firstNodeEdge=units.length?Math.min(...units.map(u=>u.x-u.radius)):left,lastNodeEdge=units.length?Math.max(...units.map(u=>u.x+u.radius)):right;
+   const outerLeft=Math.min(visualLeft,lc?firstNodeEdge-21:visualLeft),outerRight=Math.max(visualRight,rc?lastNodeEdge+25:visualRight);
+   const centerShift=width/2-(outerLeft+outerRight)/2;
    left+=centerShift;right+=centerShift;for(const unit of units)unit.x+=centerShift;
-   const labelLeft=Math.max(padding,visualLeft+centerShift),labelRight=Math.min(width-padding,visualRight+centerShift);
+   // Boxes, including their border, may use space beneath a continuation
+   // arrow when present; otherwise track/node endpoints remain the limit.
+   const labelLeft=Math.max(padding,outerLeft+centerShift)+.75,labelRight=Math.min(width-padding,outerRight+centerShift)-.75;
    const labelNeed=labelUnits.reduce((sum,u)=>sum+u.half*2,0)+gap*Math.max(0,labelUnits.length-1);
    if(labelNeed>labelRight-labelLeft){font*=Math.max(.01,(labelRight-labelLeft-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0))/Math.max(1,labelNeed-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0)));for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}}
-   // The 100% stack is an immovable anchor. Fit every other stack on its side.
+   // Keep the 100% stack centered on Standard and fit other stacks on its side.
    if(pin){
-    pin.labelX=at100&&standard?standard.x:Math.max(labelLeft+pin.half,Math.min(labelRight-labelUnits.reduce((sum,u)=>sum+u.half*2,0)+pin.half-gap*(labelUnits.length-1),pin.x));const i=labelUnits.indexOf(pin),before=labelUnits.slice(0,i),after=labelUnits.slice(i+1);
-    const leftNeed=before.reduce((n,u)=>n+u.half*2,0)+(pin.half||0),rightNeed=after.reduce((n,u)=>n+u.half*2,0)+(pin.half||0);
-    const scale=Math.max(.01,Math.min(1,(pin.labelX-labelLeft-gap*before.length)/Math.max(1,leftNeed),(labelRight-pin.labelX-gap*after.length)/Math.max(1,rightNeed)));
-    if(scale<1){font*=scale;for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}}
+    const i=labelUnits.indexOf(pin),before=labelUnits.slice(0,i),after=labelUnits.slice(i+1);
+    const leftNeed=before.reduce((n,u)=>n+u.half*2,0)+(pin.half||0)+gap*before.length,rightNeed=after.reduce((n,u)=>n+u.half*2,0)+(pin.half||0)+gap*after.length;
+    // Keep the 100% label centered on Standard, but reserve readable room on
+    // both sides. Approaching Current must not squeeze every font toward zero.
+    pin.labelX=Math.max(labelLeft+leftNeed,Math.min(labelRight-rightNeed,pin.x));
+    pin.x=pin.labelX;if(standard)standard.x=pin.x;
     let edge=pin.labelX-pin.half-gap;for(let j=before.length-1;j>=0;j--){const u=before[j];u.labelX=Math.min(u.x,edge-u.half);edge=u.labelX-u.half-gap;}
     let edgeRight=pin.labelX+pin.half+gap;for(const u of after){u.labelX=Math.max(u.x,edgeRight+u.half);edgeRight=u.labelX+u.half+gap;}
     edge=labelRight;for(let j=after.length-1;j>=0;j--){const u=after[j];u.labelX=Math.min(u.labelX,edge-u.half);edge=u.labelX-u.half-gap;}
@@ -265,8 +274,8 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    this.fill.setAttribute('x',allFailed?currentX:left);this.fill.setAttribute('width',Math.max(0,allFailed?right-currentX:currentX-left));this.fill.style.fill=allFailed?(data.down?color('--timer-down-color')||'#5f6772':overtime):trip;
    this.segment.setAttribute('x',targetX);this.segment.setAttribute('width',Math.max(0,currentX-targetX));this.segment.style.fill=segment;
    this.connectors.replaceChildren();if((!active||allFailed)&&data.available){const zero=svgElement('text',{x:left,y:y+percentOffset,'text-anchor':'middle',class:'goal-bar-zero'});zero.textContent='0%';this.connectors.append(zero);}
-   const lc=Boolean(data.available&&active&&low>0&&!allFailed),rc=Boolean(data.available&&active&&goals.some(n=>n.failed));this.svg.dataset.compressedLeft=String(lc);this.svg.dataset.compressedRight=String(rc);
-   this.leftCompression.style.display=lc?'':'none';const firstEdge=units.length?Math.min(...units.map(u=>u.x-u.radius)):left,lastEdge=units.length?Math.max(...units.map(u=>u.x+u.radius)):right;this.leftCompression.setAttribute('d',`M ${Math.max(14,firstEdge-8)} ${y-7} L ${Math.max(1,firstEdge-21)} ${y} L ${Math.max(14,firstEdge-8)} ${y+7} Z`);this.rightCompression.style.display=rc?'':'none';this.rightCompression.style.transform=`translate(${Math.min(width-12,lastEdge+18)}px, ${y}px)`;
+   this.svg.dataset.compressedLeft=String(lc);this.svg.dataset.compressedRight=String(rc);
+   this.leftCompression.style.display=lc?'':'none';const firstEdge=units.length?Math.min(...units.map(u=>u.x-u.radius)):left,lastEdge=units.length?Math.max(...units.map(u=>u.x+u.radius)):right;this.leftCompression.setAttribute('d',`M ${firstEdge-8} ${y-7} L ${firstEdge-21} ${y} L ${firstEdge-8} ${y+7} Z`);this.rightCompression.style.display=rc?'':'none';this.rightCompression.style.transform=`translate(${lastEdge+18}px, ${y}px)`;
    this.displaying=new Set(units.map(u=>u.id));
    for(const [id,parts] of this.nodes){
     if(this.displaying.has(id))continue;if(parts.exiting)continue;parts.exiting=true;parts.group.setAttribute('aria-hidden','true');parts.group.style.pointerEvents='none';
@@ -359,7 +368,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
   if(app){const interval=state?.interval_state?.intervalType||state?.active_interval_type;app.dataset.timeReadoutPaused=String(state?.trip_active&&!state?.break_only&&['down','break','lunch','short-break'].includes(interval)&&state?.rendered_time_type!=='calculated_end_time');}
   if(state && Object.hasOwn(state,'effective_goal_type')){
    const sync=row?.querySelector('.goal-sync-button');
-   if(sync)sync.hidden=state.effective_goal_type!=='trip';
+   if(sync)sync.hidden=(state.goal_type??state.effective_goal_type)!=='trip';
   }
   const syncButton=row?.querySelector('.goal-sync-button');
   if(syncButton){

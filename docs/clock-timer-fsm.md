@@ -598,3 +598,5 @@ Settings item aligned with Clock/Timer Settings, not a nested Clock/Timer option
 Standalone completion speech uses the interval type: Break, Short break or Lunch
 ended / ended early / ended late. Regular trip intervals keep their Trip resumed
 announcements and timing details. This changes wording, not lifecycle transitions.
+
+Lower aggregate goals must not allocate future overtime/remaining clock geometry. The active trip owns clock range bounds; computed aggregate deadlines remain goal metadata. Verify Auto Day 40% / Trip 100% before/after Standard failure and after reload in Overflow and Fitted modes.
