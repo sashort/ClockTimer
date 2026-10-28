@@ -54,8 +54,16 @@ const root=path.resolve(__dirname,'..');
       clock.setAttribute('trip-goal','80%');
      });
      await page.clock.runFor(160);
+     const lowerGoal=await page.evaluate(()=>{const anchor=Date.parse(clock.captureState().events.find(e=>e.event==='trip.started').value.creationAnchor),now=Date.now()-anchor;return{now,ranges:[...clock.querySelectorAll('time-range[type=overtime],time-range[type=remaining]')].filter(r=>!r.timeRangeExiting).map(r=>Number(r.clockTimerEnd))};});
+     assert(lowerGoal.ranges.every(end=>end<=lowerGoal.now+1000),'a lower goal cannot animate future aggregate time into the fitted clock');
+     // Test a genuine upcoming goal edit on a fresh running trip. A goal
+     // already missed during overtime does not create a new future arc.
+     await page.evaluate(async()=>{await clock.stop();clock.configure({goal_type:'trip',trip_goal:'100%',auto_goal:false});await clock.start({standardTimeMilliseconds:40000});});
+     await page.clock.runFor(1200);
+     await page.evaluate(()=>{window.editAngles=[];clock.setAttribute('trip-goal','120%');});
+     await page.clock.runFor(160);
      const angles=await page.evaluate(()=>window.editAngles);
-     assert(new Set(angles.map(a=>a.toFixed(3))).size>2,'user goal changes still animate through intermediate arc sizes');
+     assert(new Set(angles.map(a=>a.toFixed(3))).size>2,'goal changes that alter trip/tolerance geometry still animate through intermediate arc sizes');
     }
     assert.deepEqual(errors,[]);
     console.log(`PASS fitted ${scenario} keeps all arcs on one scale without per-tick regrowth`);
