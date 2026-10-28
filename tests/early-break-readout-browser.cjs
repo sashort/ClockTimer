@@ -4,7 +4,8 @@ const fixture = require('./order-filler-master-fixture.cjs');
  const f = await fixture({input:'transcript'});
  try {
   const p=f.page;
-  await p.evaluate(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();document.querySelector('#percentageDisplayBar').click();});
+  await p.evaluate(()=>{window.earlyBreakSetup=(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();document.querySelector('#percentageDisplayBar').click();})().then(()=>{window.earlyBreakSetupDone=true;},error=>{window.earlyBreakSetupError=String(error.stack||error);});});
+  await p.waitForFunction(()=>window.earlyBreakSetupDone||window.earlyBreakSetupError);assert.equal(await p.evaluate(()=>window.earlyBreakSetupError),undefined);
   const snapshot=()=>p.evaluate(()=>{const s=clockTimer.uiState,current=s.goal_bar.nodes.find(n=>n.current),marker=document.querySelector('.goal-bar-node.is-current:not([aria-hidden=true])');return{trip:s.trip_active,paused:s.paused,time:s.time_component,bar:current,rendered:document.querySelector('#renderedTimeValue').textContent,marker:marker?.querySelector('path')?.getAttribute('d'),percent:marker?.querySelector('.goal-bar-percent')?.textContent,runner:document.querySelector('.goal-bar-avatar')?.dataset.mode,summary:clockTimer.getSummarySnapshot().trip};});
   for(const type of ['break','lunch','short break']){
    await p.evaluate(()=>clockTimer.start({standardTime:'0:02:00'}));
