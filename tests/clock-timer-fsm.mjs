@@ -66,7 +66,7 @@ async function exercise(core, checkFSM) {
             const requiredTripGoal=totalBudget>0?Math.ceil(1800000/totalBudget*100-1e-9)/100:undefined;
             const budgets={trip:Math.round(1800000/activeTrip),
                 total:requiredTripGoal?Math.round(1800000/requiredTripGoal):Infinity,standard:1800000};
-            const expectedOrder=['trip','total','standard'].sort((a,b)=>budgets[a]-budgets[b]).join('_');
+            const expectedOrder=['total','trip','standard'].sort((a,b)=>budgets[a]-budgets[b]).join('_');
             assert.equal(timer.getSummarySnapshot().scope,expectedOrder.split('_')[0]);
             if (checkFSM) {
                 const flags=timer.getDispatchState(new window.Date());

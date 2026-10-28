@@ -1,0 +1,91 @@
+{
+  "trip": {
+    "id": 1,
+    "startTime": "2026-01-01T12:00:00.000Z",
+    "endTime": "2026-01-01T12:08:48.695Z",
+    "standardTimeMilliseconds": 176000,
+    "actualTimeMilliseconds": 528695,
+    "countedTimeMilliseconds": 0,
+    "events": [
+      {
+        "id": 1,
+        "event": "trip.started",
+        "timestamp": "2026-01-01T12:00:00.000Z",
+        "value": {
+          "standardTimeMilliseconds": 176000,
+          "creationTime": "12:00:00",
+          "scheduledStart": "12:00:00",
+          "startTime": "12:00:00",
+          "creationAnchor": "2026-01-01T00:00:00.000Z",
+          "nonProduction": false,
+          "breakOnly": false,
+          "intervalElapsedBehavior": "startLatency",
+          "autoRestartTripAfterLateBreak": false
+        }
+      },
+      {
+        "id": 2,
+        "event": "interval.started",
+        "timestamp": "2026-01-01T12:03:25.056Z",
+        "value": {
+          "intervalKey": "break-example",
+          "type": "break",
+          "length": 900000,
+          "startBuffer": 150000,
+          "endBuffer": 150000,
+          "attributes": {
+            "breakType": "break"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "event": "interval.ended",
+        "timestamp": "2026-01-01T12:06:31.867Z",
+        "value": {
+          "intervalKey": "break-example",
+          "reason": "manual"
+        }
+      },
+      {
+        "id": 4,
+        "event": "interval.started",
+        "timestamp": "2026-01-01T12:07:36.988Z",
+        "value": {
+          "intervalKey": "down-example",
+          "type": "down",
+          "length": null,
+          "startBuffer": null,
+          "endBuffer": null,
+          "attributes": []
+        }
+      },
+      {
+        "id": 5,
+        "event": "interval.ended",
+        "timestamp": "2026-01-01T12:08:28.915Z",
+        "value": {
+          "intervalKey": "down-example",
+          "reason": "manual"
+        }
+      },
+      {
+        "id": 6,
+        "event": "trip.stopped",
+        "timestamp": "2026-01-01T12:08:48.695Z",
+        "value": {
+          "standardTimeMilliseconds": 176000,
+          "breakOnly": false,
+          "countedTimeMilliseconds": 0
+        }
+      }
+    ]
+  },
+  "expected": {
+    "productiveTimeMilliseconds": 289957,
+    "allowanceCreditMilliseconds": 1013189,
+    "countedTimeBalanceMilliseconds": -723232,
+    "bankCreditCarryMilliseconds": 723232,
+    "bankedTimeMilliseconds": 899232
+  }
+}

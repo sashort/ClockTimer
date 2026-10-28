@@ -7922,3 +7922,12 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 .compact-action-rail .break-buffer-side {display:none;}
 @media(max-width:360px){.break-buffer-side {font-size:15px;width:36px;}.break-buffer-track {width:32px;}}
 @media(prefers-reduced-motion:reduce){.break-buffer-track > i {transition:none;}}
+
+/* Only painted bar controls receive taps. The avatar and reserved air do not. */
+.percent-summary.is-goal-bar {pointer-events:none;}
+.percent-summary.is-goal-bar > .goal-bar-svg {pointer-events:none;cursor:default;}
+.goal-bar-svg :is(.goal-bar-track,.goal-bar-fill,.goal-bar-segment,.goal-bar-outline,.goal-bar-node,.goal-bar-compression) {pointer-events:auto;cursor:pointer;}
+.percent-summary.is-goal-bar > .goal-sync-button {pointer-events:auto;}
+.goal-bar-avatar,.goal-bar-avatar *,.goal-bar-connectors {pointer-events:none!important;}
+.app[data-percentage-display=bar] .trip-summary > :is(.rendered-time-cell,.summary-cell) {position:relative;z-index:2;}
+.percent-summary.is-goal-bar {position:relative;z-index:1;}

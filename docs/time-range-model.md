@@ -241,3 +241,36 @@ Time Remaining and Expected End Time retain their independent existing calculati
 The final elapsed display is refreshed at completion to apply the completed-early
 exception before freezing. Regression coverage verifies Expected End Time remains
 stable across the scheduled boundary and final elapsed reflects the exception.
+
+
+### Productive Actual and bank credit are separate (2026-10-28 correction)
+
+Unused Break/Lunch allowance, including unused start/end buffers, is credited to
+the counted-time bank. It must never erase recorded work. `productiveTimeMilliseconds`
+is gross productive time after interval exclusions; it is the value rendered as
+Actual in Trip Log and Trip Summary. `allowanceCreditMilliseconds` is the unused
+allowance. Their difference is the signed `countedTimeBalanceMilliseconds` used
+by bank calculations. The legacy nonnegative `countedTimeMilliseconds` remains a
+compatibility field, not the display source for Actual when bank/work facts exist.
+
+When that legacy duration clamps a negative balance to zero, preserve the missing
+surplus separately as `bankCreditCarryMilliseconds = max(0, -balance)`. Aggregate
+goal budgets add this carry once. Do not add the entire allowance to a completed
+credited duration again: a positive legacy net already includes its credit.
+The bank is target budget minus signed balance; active projections retain the
+existing allotted-time floor. Percent-goal rounding remains conservative.
+
+Stopped events and local log projections retain work and allowance metadata.
+The saved-trip API reconstructs these facts from complete event histories, so
+legacy zero rows display correct Actual without rewriting records. Client and
+server projections share `tests/fixtures/early-break-bank.json` as their oracle.
+An incomplete history retains the legacy fallback rather than inventing work.
+
+Regression: 2:56 Standard; 8:48.695 wall time; 3:06.811 actual break including
+buffer; 0:51.927 Down. Actual is 4:49.957. A 20-minute configured break+buffers
+allowance leaves 16:53.189 credit. Signed balance is -12:03.232; its legacy stored
+value is zero, with 12:03.232 carry. At 100%, banked time is 14:59.232. Actual
+must show 4:49, and the credit must remain available to the next aggregate goal.
+
+Checks: trip-time-bank.mjs, trip_time_bank.php, trip-time-bank-browser.cjs,
+trip-bank-goal-budget.mjs. All database access for diagnosis is read-only.

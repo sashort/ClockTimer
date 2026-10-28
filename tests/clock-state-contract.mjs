@@ -12,7 +12,7 @@ for(const name of ['TemporalFormat','RingContainer','TimeRangeModel','TimeRangeE
 const timer=window.document.createElement('clock-timer');window.document.body.append(timer);
 try {
     timer.configure({trip_goal:'140%',total_goal:'120%',goal_type:'trip'});
-    assert.equal(timer.getUIState().auto_goal_order.join('_'),'trip_total_standard','sequence is calculated while not in Auto');
+    assert.equal(timer.getUIState().auto_goal_order.join('_'),'total_trip_standard','equal/unavailable targets retain aggregate-first priority outside Auto');
     await timer.start({standardTimeMilliseconds:1000});
     window.__testTime+=2000;
     assert.equal(timer.getUIState().clock_phase,'overtime','overtime comes from the timer model');

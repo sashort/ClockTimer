@@ -21,17 +21,17 @@
             finished.sort((a,b) => timestamp(b) - timestamp(a));
             const last = finished[0];
             const counted = trip => known(trip?.countedTimeMilliseconds) ? trip.countedTimeMilliseconds : trip?.countedTimeElapsedMilliseconds;
-            const lastActual = counted(last);
-            const lastPercent = known(last?.standardTimeMilliseconds) && lastActual > 0
-                ? last.standardTimeMilliseconds / lastActual : undefined;
-            const activeActual = counted(activeTrip);
-            const activePercent = known(activeTrip?.standardTimeMilliseconds) && activeActual > 0
-                ? activeTrip.standardTimeMilliseconds / activeActual : undefined;
+            const lastActual = globalThis.TripTimeBank?.project(last||{})?.productiveTimeMilliseconds ?? counted(last);
+            const lastPercent = known(last?.standardTimeMilliseconds) && counted(last) > 0
+                ? last.standardTimeMilliseconds / counted(last) : undefined;
+            const activeActual = globalThis.TripTimeBank?.project(activeTrip||{})?.productiveTimeMilliseconds ?? counted(activeTrip);
+            const activePercent = known(activeTrip?.standardTimeMilliseconds) && counted(activeTrip) > 0
+                ? activeTrip.standardTimeMilliseconds / counted(activeTrip) : undefined;
             const row = (key, standard, actual, performance) => Object.freeze({key, label:key==='total'?scopeLabel:text(key+'Label'),
                 standard:known(standard)?duration(standard):'---', actual:known(actual)?duration(actual):'---',
                 percent:known(performance)?percent(performance,percentText(performance)):'---'});
             const rows = [row('total',totals.tripCount?totals.standardTimeMilliseconds:undefined,
-                totals.tripCount?totals.countedTimeMilliseconds:undefined,totals.percent),
+                totals.tripCount?(totals.productiveTimeMilliseconds??totals.countedTimeMilliseconds):undefined,totals.percent),
                 row('last',last?.standardTimeMilliseconds,lastActual,lastPercent)];
             if(activeTrip)rows.push(row('active',activeTrip.standardTimeMilliseconds,activeActual,activePercent));
             const speech = [];

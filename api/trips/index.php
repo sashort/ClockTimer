@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/_core/bootstrap.php';
 require_once dirname(__DIR__) . '/_core/trip_session_timing.php';
+require_once dirname(__DIR__) . '/_core/trip_time_bank.php';
 
 $method = require_method('GET', 'POST', 'PATCH', 'DELETE');
 
@@ -285,13 +286,13 @@ if ($method === 'GET') {
                 $trip['createdAt'] = (string) $row['created_at'];
                 $trip['eventCount'] = 0;
                 $trip['events'] = [];
-                $tripIndexes[$tripId] = count($trips);
             }
 
+            $tripIndexes[$tripId] = count($trips);
             $trips[] = $trip;
         }
 
-        if ($verbose && $tripIndexes !== []) {
+        if ($tripIndexes !== []) {
             $eventsByTrip = fetch_trip_events_grouped(
                 db(),
                 array_keys($tripIndexes),
@@ -300,8 +301,12 @@ if ($method === 'GET') {
 
             foreach ($tripIndexes as $tripId => $tripIndex) {
                 $events = $eventsByTrip[$tripId] ?? [];
-                $trips[$tripIndex]['events'] = $events;
-                $trips[$tripIndex]['eventCount'] = count($events);
+                $bank = trip_time_bank_projection($trips[$tripIndex], $events);
+                if ($bank !== null) $trips[$tripIndex] = array_merge($trips[$tripIndex], $bank);
+                if ($verbose) {
+                    $trips[$tripIndex]['events'] = $events;
+                    $trips[$tripIndex]['eventCount'] = count($events);
+                }
             }
         }
 
@@ -328,31 +333,41 @@ if ($method === 'GET') {
     $actualMicroseconds = (int) ($row['actual_time_us'] ?? 0);
 
     $breakdownStatement = db()->prepare(
-        'SELECT t.standard_time_ms, t.counted_time_ms, t.non_production, '
+        'SELECT t.id, t.start_time, t.end_time, t.break_only, t.standard_time_ms, t.counted_time_ms, t.non_production, '
         . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
         . 'FROM trips t WHERE ' . $aggregateBaseWhere . ' '
         . 'ORDER BY t.start_time ASC, t.id ASC'
     );
     $breakdownStatement->execute($aggregateBaseParameters);
+    $breakdownRows = $breakdownStatement->fetchAll();
+    $bankEvents = fetch_trip_events_grouped(db(), array_column($breakdownRows,'id'), 'log');
 
     $emptyAggregate = static fn (): array => [
         'tripCount' => 0,
         'standardTimeMilliseconds' => 0,
         'actualTimeMilliseconds' => 0,
         'countedTimeMilliseconds' => 0,
+        'productiveTimeMilliseconds' => 0,
+        'allowanceCreditMilliseconds' => 0,
+        'bankCreditCarryMilliseconds' => 0,
     ];
 
-    $addAggregate = static function (array &$aggregate, int $standard, int $actual, int $counted): void {
+    $addAggregate = static function (array &$aggregate, int $standard, int $actual, int $counted, array $bank = []): void {
         $aggregate['tripCount']++;
         $aggregate['standardTimeMilliseconds'] += $standard;
         $aggregate['actualTimeMilliseconds'] += $actual;
         $aggregate['countedTimeMilliseconds'] += $counted;
+        $aggregate['productiveTimeMilliseconds'] += $bank['productiveTimeMilliseconds'] ?? $counted;
+        $aggregate['allowanceCreditMilliseconds'] += $bank['allowanceCreditMilliseconds'] ?? 0;
+        $aggregate['bankCreditCarryMilliseconds'] += $bank['bankCreditCarryMilliseconds'] ?? 0;
     };
 
     $productionAggregate = $emptyAggregate();
     $nonProductionTrips = [];
 
-    while ($breakdownRow = $breakdownStatement->fetch()) {
+    foreach ($breakdownRows as $breakdownRow) {
+        $bank = trip_time_bank_projection(['startTime'=>$breakdownRow['start_time'],'endTime'=>$breakdownRow['end_time'],
+            'breakOnly'=>(bool)$breakdownRow['break_only']], $bankEvents[(int)$breakdownRow['id']] ?? []) ?? [];
         $standardMilliseconds =
             (int) ($breakdownRow['standard_time_ms'] ?? 0);
         $tripActualMicroseconds =
@@ -371,6 +386,7 @@ if ($method === 'GET') {
                 'standardTimeMilliseconds' => $standardMilliseconds,
                 'actualTimeMilliseconds' => $tripActualMilliseconds,
                 'countedTimeMilliseconds' => $tripCountedMilliseconds,
+                ...$bank,
             ];
         }
         else {
@@ -378,7 +394,8 @@ if ($method === 'GET') {
                 $productionAggregate,
                 $standardMilliseconds,
                 $tripActualMilliseconds,
-                $tripCountedMilliseconds
+                $tripCountedMilliseconds,
+                $bank
             );
         }
     }
@@ -411,7 +428,8 @@ if ($method === 'GET') {
             $allNonProductionAggregate,
             $standardMilliseconds,
             $tripActualMilliseconds,
-            $tripCountedMilliseconds
+            $tripCountedMilliseconds,
+            $trip
         );
 
         $tripRatio =
@@ -426,7 +444,8 @@ if ($method === 'GET') {
                 $helpfulAggregate,
                 $standardMilliseconds,
                 $tripActualMilliseconds,
-                $tripCountedMilliseconds
+                $tripCountedMilliseconds,
+                $trip
             );
         }
         else {
@@ -434,7 +453,8 @@ if ($method === 'GET') {
                 $nonHelpfulAggregate,
                 $standardMilliseconds,
                 $tripActualMilliseconds,
-                $tripCountedMilliseconds
+                $tripCountedMilliseconds,
+                $trip
             );
         }
 
@@ -443,7 +463,8 @@ if ($method === 'GET') {
                 $productiveAggregate,
                 $standardMilliseconds,
                 $tripActualMilliseconds,
-                $tripCountedMilliseconds
+                $tripCountedMilliseconds,
+                $trip
             );
         }
     }

@@ -55,6 +55,7 @@ jobs:
           node tests/vosk-runtime-integrity.mjs
           node tests/drop-in-speech-debug.mjs
           node tests/goal-feedback.mjs
+          node tests/app-state-transactions.mjs --goal-priority --voice-feedback
           node tests/app-state-transactions.mjs --goal-failure-batch --voice-feedback
           node tests/app-state-transactions.mjs --goal-cascade --voice-feedback
           node tests/app-state-transactions.mjs --startup-speech --startup-no-focus --voice-feedback
@@ -121,6 +122,9 @@ jobs:
           node tests/goal-bar.mjs
           node tests/clock-timer-ui-state.mjs --standard-time
           node tests/app-state-transactions.mjs --goal-limit --voice-feedback
+          node tests/trip-time-bank.mjs
+          TZ=UTC node tests/trip-bank-goal-budget.mjs
+          TZ=UTC node tests/goal-priority.mjs
           node tests/trip-log.mjs
           node tests/trip-summary.mjs
           node tests/trip-summary-presentation.mjs
@@ -157,11 +161,13 @@ jobs:
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
+      - run: node tests/trip-time-bank-browser.cjs
       - run: node tests/overtime-break-browser.cjs
       - run: node tests/break-buffer-layout-browser.cjs
       - run: node tests/early-break-readout-browser.cjs
       - run: node tests/goal-bar-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
+      - run: node tests/goal-bar-hit-area-browser.cjs
       - run: node tests/goal-bar-avatar-browser.cjs
       - run: node tests/layout-mode-transitions-browser.cjs
       - run: node tests/goal-bar-interactions-browser.cjs
@@ -218,6 +224,7 @@ jobs:
       - run: php tests/speech-recordings-api.php
       - run: php -l api/_core/trip_session_timing.php
       - run: php tests/trip-session-timing.php
+      - run: php tests/trip_time_bank.php
       - run: php -l api/trips/index.php
       - run: php -l api/_core/trip_editor.php
       - run: php -l database/apply_admin_permissions.php

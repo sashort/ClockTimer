@@ -54,6 +54,42 @@
         }
     }
     globalThis.TripDowntimeSummary = TripDowntimeSummary;
+    // Work is a duration; unused break allowance is a separate credit to the bank.
+    // Reconstruct old completed rows whose credited duration was clamped to zero.
+    function timeBank(trip) {
+        if (Number.isSafeInteger(trip.productiveTimeMilliseconds) && trip.productiveTimeMilliseconds >= 0 &&
+            Number.isSafeInteger(trip.allowanceCreditMilliseconds) && trip.allowanceCreditMilliseconds >= 0)
+            return {productiveTimeMilliseconds:trip.productiveTimeMilliseconds,allowanceCreditMilliseconds:trip.allowanceCreditMilliseconds,
+                countedTimeBalanceMilliseconds:trip.productiveTimeMilliseconds-trip.allowanceCreditMilliseconds,bankCreditCarryMilliseconds:Math.max(0,trip.allowanceCreditMilliseconds-trip.productiveTimeMilliseconds)};
+        const events=trip.events||[],started=events.find(e=>e.event==='trip.started'),stopped=events.findLast(e=>e.event==='trip.stopped');
+        if(trip.running||!started||!stopped||trip.breakOnly||started.value?.breakOnly)return null;
+        const begin=instant(trip.startTime||started.timestamp),finish=instant(trip.endTime||stopped.timestamp);
+        if(!Number.isFinite(begin)||!Number.isFinite(finish)||finish<begin)return null;
+        const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value?.intervalKey)),segments=[];
+        let credit=0;
+        for(const event of events.filter(e=>e.event==='interval.started')){
+            const value=event.value||{},key=value.intervalKey;if(!key||deleted.has(key))continue;
+            const type=String(value.type||'').toLowerCase(),end=events.findLast(e=>e.event==='interval.ended'&&e.value?.intervalKey===key);
+            const left=instant(event.timestamp),right=end?instant(end.timestamp):finish;
+            if(!Number.isFinite(left)||!Number.isFinite(right)||right<left)return null;
+            if(left>=finish||right<=begin)continue;
+            if(!['break','lunch','down','buffer'].includes(type))continue;
+            let excluded=right-left;
+            if(type==='down')excluded=TripDowntimeSummary.approved(event,end,events)??excluded;
+            segments.push([Math.max(begin,left),Math.min(finish,left+excluded)]);
+            if(end&&['break','lunch'].includes(type)&&Number.isSafeInteger(value.length))
+                credit+=Math.max(0,value.length+duration(value.startBuffer)+duration(value.endBuffer)-(right-left));
+        }
+        const anchor=instant(started.value?.creationAnchor),clock=String(started.value?.scheduledStart||'').match(/^(\d+):(\d+):(\d+(?:\.\d+)?)$/);
+        if(Number.isFinite(anchor)&&clock){const scheduled=anchor+(Number(clock[1])*3600+Number(clock[2])*60+Number(clock[3]))*1000;if(scheduled>begin&&scheduled<=finish)segments.push([begin,scheduled]);}
+        segments.sort((a,b)=>a[0]-b[0]);let excluded=0,cursor=begin;
+        for(const [left,right] of segments){if(right>Math.max(cursor,left)){excluded+=right-Math.max(cursor,left);cursor=right;}}
+        const productive=Math.max(0,finish-begin-excluded);
+        // Rows with no early-return credit keep their existing accounting contract.
+        if(!credit)return null;
+        return {productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:productive-credit,bankCreditCarryMilliseconds:Math.max(0,credit-productive)};
+    }
+    globalThis.TripTimeBank=Object.freeze({project:timeBank});
     // Persisted counted time is authoritative; active trips use the allotted floor after unused break credit.
     const countedTime = trip => {
         const stored = Number.isSafeInteger(trip?.countedTimeMilliseconds) && trip.countedTimeMilliseconds >= 0
@@ -73,14 +109,20 @@
                 const active = trip.running || (currentTripId !== null && String(trip.id) === String(currentTripId));
                 return (includeActiveTrip || !active) && (!rangeWindow || time >= start && time <= end);
             });
+            const projections=new Map(included.map(trip=>[trip,timeBank(trip)]));
+            const bank = trip => projections.get(trip);
             const sum = key => included.reduce((value, trip) => value + duration(trip[key]), 0);
             const standard = sum("standardTimeMilliseconds"), actual = sum("actualTimeMilliseconds"), counted = included.reduce((sum, trip) => sum + countedTime(trip), 0);
+            const productive=included.reduce((sum,trip)=>sum+(bank(trip)?.productiveTimeMilliseconds??countedTime(trip)),0);
+            const balance=included.reduce((sum,trip)=>{const value=bank(trip);return sum+(value?(trip.running?Math.max(duration(trip.allottedTimeMilliseconds)-value.allowanceCreditMilliseconds,value.countedTimeBalanceMilliseconds):value.countedTimeBalanceMilliseconds):countedTime(trip));},0);
+            const credit=included.reduce((sum,trip)=>sum+(bank(trip)?.allowanceCreditMilliseconds??0),0);
             const goal = Number.isFinite(goalPercent) && goalPercent > 0 ? goalPercent : 1;
             return Object.freeze({includeActiveTrip: Boolean(includeActiveTrip), tripCount: included.length, standardTimeMilliseconds: standard,
                 actualTimeMilliseconds: actual, countedTimeMilliseconds: counted,
+                productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:balance,
                 downtime: TripDowntimeSummary.calculate(included, {now}),
-                percent: counted > 0 ? standard / counted : null,
-                goalPercent: goal, bankedTimeMilliseconds: Math.round(standard / goal - counted)});
+                percent: balance > 0 ? standard / balance : null,
+                goalPercent: goal, bankedTimeMilliseconds: Math.round(standard / goal - balance)});
         }
     });
 })();
