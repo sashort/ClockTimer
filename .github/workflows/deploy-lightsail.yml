@@ -168,6 +168,7 @@ jobs:
       - run: node tests/goal-bar-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
       - run: node tests/goal-bar-hit-area-browser.cjs
+      - run: node tests/goal-bar-label-width-browser.cjs
       - run: node tests/goal-bar-avatar-browser.cjs
       - run: node tests/layout-mode-transitions-browser.cjs
       - run: node tests/goal-bar-interactions-browser.cjs
