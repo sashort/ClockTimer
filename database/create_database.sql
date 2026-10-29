@@ -434,7 +434,9 @@ VALUES
     (11, 'interval.ended', 'An interval ended.', 1),
     (12, 'interval.elapsed', 'An interval reached its planned boundary.', 0),
     (13, 'interval.approval-changed', 'An interval approval value changed.', 0),
-    (14, 'interval.deleted', 'An interval was deleted.', 0)
+    (14, 'interval.deleted', 'An interval was deleted.', 0),
+    (15, 'trip.official-percent-set', 'Completed trip official percentage reconciliation.', 0),
+    (16, 'trip.official-percent-cleared', 'Completed trip official percentage cleared.', 0)
 ON DUPLICATE KEY UPDATE
     `description` = VALUES(`description`),
     `reconstruction` = VALUES(`reconstruction`);

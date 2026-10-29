@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/trip_official_percent.php';
 
 function trip_edit_revision(array $events): string {
     return hash('sha256', json_encode($events, JSON_THROW_ON_ERROR));
@@ -7,6 +8,10 @@ function trip_edit_revision(array $events): string {
 
 function trip_edit_persistence_plan(array $existing, array $edited): array {
     $before=[];foreach($existing as $event)if($event['id']!==null)$before[(string)$event['id']]=$event;
+    foreach($before as $original)if(str_starts_with($original['event'],'trip.official-percent-')){
+        $match=array_values(array_filter($edited,static fn($event)=>($event['id']??null)===$original['id']));
+        if(count($match)!==1||$match[0]['event']!==$original['event']||$match[0]['timestamp']!==$original['timestamp']||$match[0]['value']!==$original['value'])throw new InvalidArgumentException('Official adjustment history cannot be edited or deleted.');
+    }
     $keep=[];$delete=[];$insert=[];
     foreach($edited as $event) {
         $id=$event['id'];$original=$id===null?null:($before[(string)$id]??null);
@@ -82,6 +87,23 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
             if (!is_array($change) || !in_array($change['operation']??'', ['entry','add-entry','delete-entry'], true)) throw new InvalidArgumentException('Invalid entry change.');
             $events=trip_edit_apply($events,$change,false);
         }
+    } elseif (in_array($operation,['official-percent','official-percent-clear'],true)) {
+        trip_official_assert_completed($events);
+        $tenths=$input['percentTenths']??null;
+        if($operation==='official-percent'&&(!is_int($tenths)||$tenths<0||$tenths>9007199254740991))throw new InvalidArgumentException('Enter a non-negative official percentage with one decimal place.');
+        $aggregate=trip_edit_aggregate($events);
+        require_once __DIR__.'/trip_time_bank.php';
+        $trip=['startTime'=>$aggregate['startTime'],'endTime'=>$aggregate['endTime'],'standardTimeMilliseconds'=>$aggregate['standard'],'countedTimeMilliseconds'=>$aggregate['counted']];
+        $base=trip_time_bank_base_projection($trip,$events);
+        if($operation==='official-percent'&&($base['productiveTimeMilliseconds']??$aggregate['counted'])<=0)throw new InvalidArgumentException('Official percentages require positive worked time.');
+        $stop=array_values(array_filter($events,static fn($e)=>$e['event']==='trip.stopped'));
+        $stamp=new DateTimeImmutable('now',new DateTimeZone('UTC'));$end=new DateTimeImmutable(end($stop)['timestamp'],new DateTimeZone('UTC'));
+        foreach($events as $prior)if(str_starts_with($prior['event'],'trip.official-percent-')){$at=new DateTimeImmutable($prior['timestamp'],new DateTimeZone('UTC'));if($at>$end)$end=$at;}
+        $stamp=new DateTimeImmutable($stamp->format('Y-m-d H:i:s.v'),new DateTimeZone('UTC'));
+        if($stamp<=$end)$stamp=$end->modify('+1 millisecond');
+        if($operation==='official-percent-clear'&&!trip_official_record($events))throw new InvalidArgumentException('No official percentage is currently applied.');
+        $events[]=['id'=>null,'event'=>$operation==='official-percent-clear'?'trip.official-percent-cleared':'trip.official-percent-set','timestamp'=>$stamp->format('Y-m-d H:i:s.v'),
+            'value'=>['percentTenths'=>$tenths,'createdBy'=>is_int($input['_actorId']??null)?$input['_actorId']:null]];
     } elseif ($operation==='settings') {
         if ((trip_edit_settings($events)['breakOnly'] ?? false) === true) throw new InvalidArgumentException('Standard time and production settings do not apply to break-only sessions.');
         $s=$input['settings']??null;
@@ -160,7 +182,7 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         $events=array_values(array_filter($events,static fn($e)=>!($e['_delete']??false)));
     } else throw new InvalidArgumentException('Unknown edit operation.');
     usort($events,static fn($a,$b)=>strcmp($a['timestamp'],$b['timestamp'])?:((int)$a['id']<=>(int)$b['id']));
-    if ($validate) trip_edit_aggregate($events);
+    if ($validate) {trip_edit_aggregate($events);if(trip_official_has_history($events))trip_official_assert_completed($events);}
     return $events;
 }
 

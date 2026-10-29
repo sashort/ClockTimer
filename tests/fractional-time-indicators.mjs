@@ -27,6 +27,13 @@ try{
   await c.startInterval('break',60000);assert.equal(read(c,'remaining'),remaining);assert.equal(read(c,'elapsed'),elapsed);assert.equal(read(c,'calculated-end'),activeEnd,'End Time marker is not break-dependent');await c.endInterval();
   await c.startInterval('down');const downEnd=read(c,'calculated-end');assert.equal(/[⁺⁻]$/.test(downEnd),worked!==10000,'Down also retains the End Time fraction marker');if(worked!==10000)assert(downEnd.endsWith('⁺'));
  }
+ for(const worked of [0,1000,10250,11000,119000,119999,120000]){
+  const c=await make(epoch,worked),next=c.getUIState().goal_bar.next_goal;
+  assert(next,'target remains available through its exact deadline');
+  const fractional=next.remaining_milliseconds%1000!==0;
+  assert.equal(/[⁺⁻]$/.test(next.clock),fractional,'countdown sign only for omitted milliseconds at '+worked);
+  if(fractional)assert(next.clock.endsWith('⁺'),'positive floored countdown has only a positive correction');
+ }
  const negative=await make(epoch,10250);await negative.startInterval('break',60000);window.__testTime+=1000;await negative.endInterval();await negative.startInterval('break',60000);assert.equal(read(negative,'elapsed'),'-0:00:49⁺','negative elapsed magnitude rounds away from zero; its omitted correction is positive');
  console.log('PASS fractional correction signs, exact seconds, negative durations and End Time in active/Break/Down states');
 }finally{for(const c of timers)c.remove();await window.happyDOM.close();}

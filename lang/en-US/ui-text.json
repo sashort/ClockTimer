@@ -7054,6 +7054,56 @@
       "text": "Switching Layout",
       "default": "Switching Layout",
       "source": "CompactActions.js"
+    },
+    "5ac2a49f-40b1-5037-bf9f-5111fcbcb88c": {
+      "id": "5ac2a49f-40b1-5037-bf9f-5111fcbcb88c",
+      "text": "Official",
+      "default": "Official"
+    },
+    "dc01bd88-a3bb-5316-b67e-1ea9d911c42b": {
+      "id": "dc01bd88-a3bb-5316-b67e-1ea9d911c42b",
+      "text": "Edit official percentage",
+      "default": "Edit official percentage"
+    },
+    "a6d82e93-de2e-5e13-a5e8-ebe46c684f3f": {
+      "id": "a6d82e93-de2e-5e13-a5e8-ebe46c684f3f",
+      "text": "Official Percentage",
+      "default": "Official Percentage"
+    },
+    "290630bd-1932-5cbd-873f-344f6c5d03d8": {
+      "id": "290630bd-1932-5cbd-873f-344f6c5d03d8",
+      "text": "Calculated",
+      "default": "Calculated"
+    },
+    "355aa22d-6418-512e-819b-7b696959a7bc": {
+      "id": "355aa22d-6418-512e-819b-7b696959a7bc",
+      "text": "Official adjustment",
+      "default": "Official adjustment"
+    },
+    "d2c8a2d1-708f-5f70-8b5e-293d5cb0b614": {
+      "id": "d2c8a2d1-708f-5f70-8b5e-293d5cb0b614",
+      "text": "Clear Official Percentage",
+      "default": "Clear Official Percentage"
+    },
+    "008effdd-f693-5e3c-9add-dad7388a7d28": {
+      "id": "008effdd-f693-5e3c-9add-dad7388a7d28",
+      "text": "Official percentage cleared",
+      "default": "Official percentage cleared"
+    },
+    "028e0529-dfe2-5ede-a55f-187800e89aa2": {
+      "id": "028e0529-dfe2-5ede-a55f-187800e89aa2",
+      "text": "System-managed · cannot be deleted",
+      "default": "System-managed · cannot be deleted"
+    },
+    "82dba04f-f42c-5b8c-8bbd-925a7ace0197": {
+      "id": "82dba04f-f42c-5b8c-8bbd-925a7ace0197",
+      "text": "Superseded · audit history",
+      "default": "Superseded · audit history"
+    },
+    "934af6eb-d600-5932-9c1c-5a95b581a140": {
+      "id": "934af6eb-d600-5932-9c1c-5a95b581a140",
+      "text": "Official percentages can only be edited after a trip has completed.",
+      "default": "Official percentages can only be edited after a trip has completed."
     }
   }
 }

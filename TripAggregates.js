@@ -56,7 +56,7 @@
     globalThis.TripDowntimeSummary = TripDowntimeSummary;
     // Work is a duration; unused break allowance is a separate credit to the bank.
     // Reconstruct old completed rows whose credited duration was clamped to zero.
-    function timeBank(trip) {
+    function baseTimeBank(trip) {
         if (Number.isSafeInteger(trip.productiveTimeMilliseconds) && trip.productiveTimeMilliseconds >= 0 &&
             Number.isSafeInteger(trip.allowanceCreditMilliseconds) && trip.allowanceCreditMilliseconds >= 0)
             return {productiveTimeMilliseconds:trip.productiveTimeMilliseconds,allowanceCreditMilliseconds:trip.allowanceCreditMilliseconds,
@@ -88,6 +88,21 @@
         // Rows with no early-return credit keep their existing accounting contract.
         if(!credit)return null;
         return {productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:productive-credit,bankCreditCarryMilliseconds:Math.max(0,credit-productive)};
+    }
+    function timeBank(trip){
+        const prior=trip?.officialCorrection;
+        const raw=prior?{...trip,allowanceCreditMilliseconds:prior.baseAllowanceCreditMilliseconds}:trip;
+        const bank=baseTimeBank(raw);
+        if(trip.running||trip.breakOnly)return bank;
+        const history=(trip.events||[]).filter(e=>['trip.official-percent-set','trip.official-percent-cleared'].includes(e.event)),record=history.at(-1);
+        if(record?.event==='trip.official-percent-cleared')return bank;
+        const tenths=record?.value?.percentTenths??prior?.percentTenths;
+        if(!Number.isSafeInteger(tenths)||tenths<0)return bank;
+        const productive=bank?.productiveTimeMilliseconds??countedTime(trip),standard=Number(trip.standardTimeMilliseconds)||0,baseCredit=bank?.allowanceCreditMilliseconds??0;
+        if(!(productive>0&&standard>0))return bank;
+        const credit=tenths/1000*productive-standard,balance=productive-credit;
+        return {...bank,productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:balance,bankCreditCarryMilliseconds:Math.max(0,-balance),
+            officialCorrection:{percentTenths:tenths,percent:tenths/10,adjustmentMilliseconds:credit-baseCredit,baseAllowanceCreditMilliseconds:baseCredit,calculatedPercent:100*(standard+baseCredit)/productive,eventId:record?.id??prior?.eventId,createdBy:record?.value?.createdBy??prior?.createdBy,recordedAt:record?.timestamp??prior?.recordedAt}};
     }
     globalThis.TripTimeBank=Object.freeze({project:timeBank});
     // Persisted counted time is authoritative; active trips use the allotted floor after unused break credit.
