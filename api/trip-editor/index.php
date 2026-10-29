@@ -19,7 +19,6 @@ try {
         $existing=fetch_trip_events($pdo,$tripId,'log');
         if(!is_string($input['revision']??null) || !hash_equals(trip_edit_revision($existing),$input['revision'])) api_error('This trip changed. Reopen the editor and try again.',409,'trip_edit_conflict');
         if(($input['operation']??'')==='delete-trip') {
-            if(trip_official_has_history($existing))throw new InvalidArgumentException('Trips with official adjustments cannot be deleted.');
             $pdo->prepare('DELETE FROM trip_events WHERE trip_id=:id')->execute([':id'=>$tripId]);
             $pdo->prepare('DELETE FROM trips WHERE id=:id')->execute([':id'=>$tripId]);
             return ['tripId'=>$tripId,'deleted'=>true];
