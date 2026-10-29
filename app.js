@@ -8890,7 +8890,7 @@
         const label = mode === "total" ? totalScopeLabel()
             : announcementText(`messages.scope.${mode === "auto" ? "auto" : "trip"}`);
         return confirmInformationalChange("range-change",
-            announcementText("messages.settings.viewing", {scope:label}),
+            mode === "auto" ? announcementText("messages.settings.autoMode") : announcementText("messages.settings.viewing", {scope:label}),
             {feedbackSong:unchanged ? "setting-unchanged" : "scope-change"});
     }
 
@@ -22372,11 +22372,14 @@
         refreshTripLogSelection();
     }
 
+    let layoutSettingsLoad = 0;
     function onConnected(event) {
         populateProfile(event.detail?.user);
         void globalThis.SpeechMenu?.setRecognitionAuthenticated?.(true);
         const account=globalThis.WMOFAccountSettings,owner=Number(event.detail?.user?.id);
-        if(account&&owner&&(!account.loaded||account.owner!==owner))void (async()=>{
+        if(account&&owner&&(!account.loaded||account.owner!==owner)){
+          const layoutLoad=++layoutSettingsLoad;document.documentElement.dataset.layoutSettingsPending="true";
+          void (async()=>{
             try {
                 const response=await fetch(new URL('api/users/',document.baseURI),{credentials:'same-origin',cache:'no-store'}),session=await response.json();
                 if(!response.ok||Number(session.user?.id)!==owner)throw new Error('Account changed.');
@@ -22392,7 +22395,9 @@
                 audioSettings=loadAudioSettings();renderAudioSettings();applyAudioOutputSettings();
                 updateSummaryValues();
             } catch(error){globalThis.dispatchEvent(new CustomEvent('wmof:persistence-error',{detail:{error}}));}
-        })();
+            finally{if(layoutLoad===layoutSettingsLoad)document.documentElement.dataset.layoutSettingsPending="false";}
+          })();
+        }
 
         void loadSpeechTimingProfile()
             .catch(
@@ -22418,6 +22423,7 @@
             }
 
             signedInProfile = undefined;
+            layoutSettingsLoad++;document.documentElement.dataset.layoutSettingsPending="false";
             globalThis.WMOFAccountSettings?.clear();
             identityContext
                 ?.clear?.();
@@ -28494,6 +28500,7 @@
     applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
     updateSummaryValues();
     syncNetworkStatusUI({ startup: true });
+    if(!landingSessionPending)document.documentElement.dataset.layoutSettingsPending="false";
     if (landingSessionPending) {
         void (async () => {
             try {
@@ -28505,7 +28512,7 @@
             } catch (error) { console.warn("Existing session could not be resumed:", error); }
             finally {
                 landingSessionPending = false;
-                if (!loginConfirmedThisLoad) showInitialLoginDialog();
+                if (!loginConfirmedThisLoad) {document.documentElement.dataset.layoutSettingsPending="false";showInitialLoginDialog();}
                 else {
                     syncNetworkStatusUI();
                     if (new URL(window.location.href).searchParams.get("tool") === "speechTiming") {

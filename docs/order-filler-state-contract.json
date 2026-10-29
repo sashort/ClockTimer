@@ -1140,7 +1140,7 @@
           },
           {
             "kind": "speech",
-            "text": "Viewing Auto"
+            "text": "Auto Mode"
           }
         ],
         "dispatches": 0,
@@ -1193,7 +1193,7 @@
           },
           {
             "kind": "speech",
-            "text": "Viewing Auto"
+            "text": "Auto Mode"
           }
         ],
         "committed": true,

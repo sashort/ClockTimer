@@ -14217,6 +14217,23 @@
       "animations": "Only movement/failure/mode/refit effects implemented. Proposed cold idle load, cold active restore, committed start/end and rejection sequences are in goal-bar.md.",
       "localVerification": "Automated browser/model evidence; no physical-device or production-deployment claim.",
       "mainTime": "Same shared Current trip readout as bar in Remaining, Elapsed and End Time; Standard is zero remaining."
+    },
+    "menu-binary-state-palette": {
+      "enabled": "light blue",
+      "disabledSetting": "gray",
+      "goalBoundingSwitch": "green when enabled",
+      "controls": [
+        "Trip Log pin",
+        "Sync Goals",
+        "Speech Recognition",
+        "Goal Bounding",
+        "Speech Training",
+        "Drop-In Mirror Settings",
+        "Drop-In Mute"
+      ],
+      "helpButtons": "question marks in one aligned column",
+      "settingsOrder": "Audio Settings first",
+      "adjacentSeparators": "one shared line"
     }
   },
   "unresolved_contracts": [
@@ -17485,7 +17502,15 @@
         "dependency": "A failed chain root invalidates dependent continuations even when other commands intervene",
         "silence": "At the adaptive silence deadline request/drain the decoder final before settling valid, incomplete or malformed collections; do not promote the last partial to final. Release owned collectors, projections and locks; speech resumption before expiry cancels the deadline.",
         "response": "One horizontal row of response columns, newest on the left; incoming results travel from the right under existing results; each keeps its own TTL across utterances; expiry moves the whole chain right until the expired result exits; a single result uses the same mechanism",
-        "continuation": "Logical session owns the unconsumed transcript, collector, projected destination and adaptive deadline across declared UI/FSM transitions; decoder grammar and execution use that same context without replaying consumed openers. Unexpected transitions or revoked authorization cancel ownership."
+        "continuation": "Logical session owns the unconsumed transcript, collector, projected destination and adaptive deadline across declared UI/FSM transitions; decoder grammar and execution use that same context without replaying consumed openers. Unexpected transitions or revoked authorization cancel ownership.",
+        "native_final_wake": {
+          "phrase": "one complete native-final segment",
+          "interimActivates": false,
+          "junkInsidePhraseActivates": false,
+          "earlierEndpointNoiseBlocksLaterWake": false,
+          "waitForLongSilence": false,
+          "repeatAtLogicalFinal": false
+        }
       },
       "controls": {
         "speech": "Availability comes from the active UI/modal and semantic state; pointer flags are outputs"
@@ -17515,7 +17540,9 @@
         "node tests/scheduled-audio-cue.mjs",
         "node tests/app-state-transactions.mjs --time-reference --voice-feedback",
         "node tests/owned-feedback-scope.mjs",
-        "node tests/speech-continuation-session.mjs"
+        "node tests/speech-continuation-session.mjs",
+        "node tests/vosk-context-handoff.mjs",
+        "node tests/app-state-transactions.mjs --mic-wake-native-final --voice-feedback"
       ],
       "implementation_guide": "docs/speech-recognition-v2.md",
       "class_guide": "docs/class-architecture-v2.md",
@@ -17806,7 +17833,32 @@
         "failure": "White outlined track; Standard dashed and Current double line; no ticks/captions. Border-aware merged units fail and exit as one unit.",
         "feedback": "150 cap applies before first announcement; notice is passive",
         "currentTime": "Main readout exactly equals bar Current in all three time modes, including interval annotations; Remaining is Standard minus counted trip elapsed, not goal or aggregate budget.",
-        "labels": "Changed labels fade and move on split/merge; the unchanged goal retains shared-label ownership. Target border follows the authoritative selected target across all recalculations."
+        "labels": "Changed labels fade and move on split/merge; the unchanged goal retains shared-label ownership. Target border follows the authoritative selected target across all recalculations.",
+        "scale_ticks": {
+          "activeOnly": true,
+          "stepPercent": 5,
+          "maximumPercent": 150,
+          "labels": false,
+          "positiveActiveProjection": "reciprocal counted-time distances",
+          "zeroOriginFallback": "finite existing zero-to-goal layout",
+          "clip": "inside track border",
+          "paintOrder": "below goal nodes",
+          "movement": "retain identity and animate position",
+          "enterExit": "fade"
+        },
+        "idle_100_label": {
+          "pinToStandard": false,
+          "inset": "outer bar/node extent including frame border and continuation arrows"
+        },
+        "buffer_bars": {
+          "outerEdge": "padded application boundary",
+          "innerGap": "same page padding",
+          "height": "one third of combined caption and timer height",
+          "verticalCenter": "combined caption and timer group",
+          "border": false,
+          "countdownPosition": "stationary midway between padded edge and timer group",
+          "contrast": "rounded translucent card"
+        }
       },
       "controls": {
         "equivalence": "One whole-bar click/touch/keyboard target; Sync remains separate.",
@@ -17838,7 +17890,9 @@
         "node tests/drop-in-view.mjs",
         "node tests/clock-timer-ui-state.mjs --standard-time",
         "node tests/goal-bar-units-browser.cjs",
-        "node tests/layout-mode-transitions-browser.cjs"
+        "node tests/layout-mode-transitions-browser.cjs",
+        "node tests/goal-bar-ticks-browser.cjs",
+        "node tests/break-buffer-layout-browser.cjs"
       ],
       "activeBar": "Trip adds Trip only; selected aggregate adds its inferred trip goal only; Auto adds applicable Trip and aggregate. Equal values share a linked-station marker; selector target is the rightmost member.",
       "detailVisibility": "Every visible goal unit and Current can show time over percent below the track. Equal goals share one stack. Idle time is omitted and percent hugs marker. Standard alone has no label; a 100% goal stack is pinned beneath its line with no connector."
@@ -17867,7 +17921,15 @@
         "activeLoad": "200ms direct fade at restored inferred positions; no idle flash/start replay",
         "start": "400ms node movement/value crossfade plus Current/time introduction",
         "end": "180ms time/Current fade then 350ms return to configured positions",
-        "rejection": "Retain active layout; do not animate before commit"
+        "rejection": "Retain active layout; do not animate before commit",
+        "layout_settings_readiness": {
+          "unresolvedActionAndPercentageControls": "hidden",
+          "loginHeaderAndSpeech": "available",
+          "resumeAccountSettings": "await before reveal",
+          "failure": "release to fallback layout",
+          "layoutChanges": "Switching Layout translucent busy overlay until queue settles",
+          "cleanup": "always including interrupted and failed transitions"
+        }
       },
       "controls": {
         "motion": "Retarget from visible positions; do not await animation in command/persistence execution"
@@ -17881,7 +17943,9 @@
         "Animating a rejected transition as successful"
       ],
       "evidence": [
-        "Specification: docs/goal-bar.md; automated acceptance cases remain to be implemented"
+        "Specification: docs/goal-bar.md; automated acceptance cases remain to be implemented",
+        "node tests/layout-startup-browser.cjs",
+        "node tests/layout-mode-transitions-browser.cjs"
       ]
     },
     "COMPACT-ACTIONS": {
@@ -17957,7 +18021,15 @@
         "hybrid": "Break -> Down and Down -> Break use direct source-exit then destination-entry, no running in between. Forearm shortens while lowering.",
         "reload": "Destination entry only; no fabricated source exit or historical finish.",
         "finish": "One clustered pastel canvas-confetti 1.9.4 burst per completed session, horizontally centered on track, black/white flapping flag in front, nod, fade to Walking. Repeated snapshots never replay.",
-        "motion": "Cancellable presentation only; no business locks, command queue dependencies or audio. Reduced motion suppresses travel/confetti. Classic hides avatar and does not celebrate hidden completions."
+        "motion": "Cancellable presentation only; no business locks, command queue dependencies or audio. Reduced motion suppresses travel/confetti. Classic hides avatar and does not celebrate hidden completions.",
+        "surface_following": {
+          "surface": "painted bar and goal bubbles only",
+          "verticalMarkersRaiseAvatar": false,
+          "nearbyGoalRaisesCurrentAvatar": true,
+          "chairSharesElevation": true,
+          "idleTravelPhasePreserved": true,
+          "reducedMotion": "settled destination"
+        }
       },
       "controls": {
         "interaction": "Decorative SVG/canvas, pointer-events none; whole bar retains existing goal action"
@@ -17976,7 +18048,8 @@
       "evidence": [
         "node tests/goal-bar-avatar-browser.cjs",
         "node tests/goal-bar-browser.cjs",
-        "node tests/drop-in-page.mjs"
+        "node tests/drop-in-page.mjs",
+        "node tests/goal-bar-avatar-surface-browser.cjs"
       ]
     },
     "GOAL-BOUNDING-BANK": {
@@ -19709,6 +19782,72 @@
         "expect": {
           "tripPercent": "410.13%",
           "aggregateNumeratorIncludesCredit": true
+        }
+      },
+      {
+        "id": "WAKE-AFTER-NATIVE-ENDPOINT-NOISE",
+        "contract": "SPEECH",
+        "given": {
+          "microphone": "sleeping",
+          "priorNativeFinal": "background"
+        },
+        "when": {
+          "newNativeFinal": "wake",
+          "logicalUtteranceStillOpen": true
+        },
+        "expect": {
+          "wakeCount": 1,
+          "waitForLogicalTimeout": false
+        }
+      },
+      {
+        "id": "ACTIVE-RECIPROCAL-FIVE-PERCENT-TICKS",
+        "contract": "GOAL-DISPLAY",
+        "given": {
+          "activeTrip": true,
+          "visibleLowPercent": 100,
+          "visibleHighPercent": 150
+        },
+        "when": {
+          "render": "goal bar"
+        },
+        "expect": {
+          "tickStep": 5,
+          "tick120Fraction": 0.5,
+          "ticksInsideTrack": true,
+          "ticksBelowNodes": true
+        }
+      },
+      {
+        "id": "AVATAR-CURRENT-NEARS-GOAL-BUBBLE",
+        "contract": "GOAL-AVATAR",
+        "given": {
+          "currentApproachesGoal": true,
+          "standardLineVisible": true
+        },
+        "when": {
+          "currentMoves": "past the goal bubble"
+        },
+        "expect": {
+          "raiseThenLower": true,
+          "standardLineCreatesObstacle": false,
+          "chairSharesElevation": true
+        }
+      },
+      {
+        "id": "DELAYED-ACCOUNT-LAYOUT-REVEAL",
+        "contract": "GOAL-BAR-LIFECYCLE-ANIMATION",
+        "given": {
+          "accountSettingsPending": true,
+          "initialDefault": "Full/Classic"
+        },
+        "when": {
+          "accountSettingsResolve": "Compact/Bar"
+        },
+        "expect": {
+          "unresolvedControls": "hidden",
+          "firstVisibleLayout": "Compact/Bar",
+          "loginAvailable": true
         }
       }
     ]

@@ -1692,6 +1692,72 @@
         "tripPercent": "410.13%",
         "aggregateNumeratorIncludesCredit": true
       }
+    },
+    {
+      "id": "WAKE-AFTER-NATIVE-ENDPOINT-NOISE",
+      "contract": "SPEECH",
+      "given": {
+        "microphone": "sleeping",
+        "priorNativeFinal": "background"
+      },
+      "when": {
+        "newNativeFinal": "wake",
+        "logicalUtteranceStillOpen": true
+      },
+      "expect": {
+        "wakeCount": 1,
+        "waitForLogicalTimeout": false
+      }
+    },
+    {
+      "id": "ACTIVE-RECIPROCAL-FIVE-PERCENT-TICKS",
+      "contract": "GOAL-DISPLAY",
+      "given": {
+        "activeTrip": true,
+        "visibleLowPercent": 100,
+        "visibleHighPercent": 150
+      },
+      "when": {
+        "render": "goal bar"
+      },
+      "expect": {
+        "tickStep": 5,
+        "tick120Fraction": 0.5,
+        "ticksInsideTrack": true,
+        "ticksBelowNodes": true
+      }
+    },
+    {
+      "id": "AVATAR-CURRENT-NEARS-GOAL-BUBBLE",
+      "contract": "GOAL-AVATAR",
+      "given": {
+        "currentApproachesGoal": true,
+        "standardLineVisible": true
+      },
+      "when": {
+        "currentMoves": "past the goal bubble"
+      },
+      "expect": {
+        "raiseThenLower": true,
+        "standardLineCreatesObstacle": false,
+        "chairSharesElevation": true
+      }
+    },
+    {
+      "id": "DELAYED-ACCOUNT-LAYOUT-REVEAL",
+      "contract": "GOAL-BAR-LIFECYCLE-ANIMATION",
+      "given": {
+        "accountSettingsPending": true,
+        "initialDefault": "Full/Classic"
+      },
+      "when": {
+        "accountSettingsResolve": "Compact/Bar"
+      },
+      "expect": {
+        "unresolvedControls": "hidden",
+        "firstVisibleLayout": "Compact/Bar",
+        "loginAvailable": true
+      }
     }
   ]
 }

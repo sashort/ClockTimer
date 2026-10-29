@@ -90,6 +90,7 @@ jobs:
           node tests/app-state-transactions.mjs --mic-feedback --voice-feedback
           node tests/app-state-transactions.mjs --sleep-wake-only --voice-feedback
           node tests/app-state-transactions.mjs --mic-wake-grammar --voice-feedback
+          node tests/app-state-transactions.mjs --mic-wake-native-final --voice-feedback
           node tests/async-command-lifecycle.mjs
           node tests/app-state-transactions.mjs --coordinator-end-trip
           node tests/app-state-transactions.mjs --commands-close
@@ -174,7 +175,10 @@ jobs:
       - run: node tests/goal-bar-hit-area-browser.cjs
       - run: node tests/goal-bar-label-width-browser.cjs
       - run: node tests/goal-bar-avatar-browser.cjs
+      - run: node tests/goal-bar-avatar-surface-browser.cjs
+      - run: node tests/goal-bar-ticks-browser.cjs
       - run: node tests/layout-mode-transitions-browser.cjs
+      - run: node tests/layout-startup-browser.cjs
       - run: node tests/goal-bar-interactions-browser.cjs
       - run: node tests/compact-actions-browser.cjs
       - run: node tests/goal-pad-layout-browser.cjs

@@ -10,7 +10,7 @@
         #loader; #decoder; #buffer; #router; #id; #closed=false; #epoch=0;
         #queue=Promise.resolve(); #analysis=Promise.resolve(); #flushing=false; #flushResult;
         #origin=0; #boundary=0; #fed=0; #words=new Map(); #prefix='';
-        #switchQueued=false; #lastProbe=''; #hops=0; #submitted=0; #replayed=0;
+        #switchQueued=false; #lastProbe=''; #hops=0; #submitted=0; #replayed=0; #wakeResultPublished=false;
         #compiler; #pool; #contextCache; #prepared=new Map(); #partial; #partialQueued=false; #metrics; #lastReplacement; #startedAt=0;
         constructor({contextProvider, routerFactory, valuePhrases, overlapMilliseconds=120,
             bufferSeconds=30, preRollMilliseconds=350, maxHandoffs=64, warmDecoders=true, grammarWorker=true, coalescePartials=true, getContextVersion, ...options}={}) {
@@ -67,7 +67,7 @@
             await this.ready;
             if(this.#closed)return;
             if(this.#id!==undefined)throw Error('Previous Vosk utterance must settle before beginning another.');
-            this.#setPhase('preparing-grammar');this.#id=id;this.#prefix='';this.#hops=0;this.#lastProbe='';this.#prepared.clear();this.#contextCache?.clear();this.ledger?.begin(id);this.#startedAt=performance.now();
+            this.#setPhase('preparing-grammar');this.#id=id;this.#prefix='';this.#hops=0;this.#lastProbe='';this.#wakeResultPublished=false;this.#prepared.clear();this.#contextCache?.clear();this.ledger?.begin(id);this.#startedAt=performance.now();
             this.#metrics={utteranceId:id,mode:'sequential',maximumInputQueueMilliseconds:0,coalescedPartials:0,handoffs:[]};
             this.#boundary=Math.max(this.#buffer.start,this.#fed-this.preRollSamples);
             const request=await this.contextProvider(id,'');
@@ -294,8 +294,19 @@
             }
             return decision;
         }
+        #wakeOnlyContext(){return this.#router.paths?.length>0&&this.#router.paths.every(path=>path.record.action==='SpeechMenu.wake');}
+        #publishWakeResult(detail){
+            // Validate one native-final phrase, not a revisable partial, routed
+            // substring, or cumulative text containing earlier endpoint noise.
+            if(this.#wakeResultPublished||!(detail.segmentFinal||detail.isFinal))return;
+            const segment=detail.segments?.at(-1),text=globalThis.SpeechGrammarContext.normalize(segment?.final?segment.text:detail.transcript);
+            if(this.#router.paths.some(path=>new RegExp(path.record.pattern,'i').exec(text)?.[0]===text)){
+                this.#wakeResultPublished=true;this.#publish(text,true);
+            }
+        }
         async #inspect(detail,epoch){
             if(this.#closed || epoch!==this.#epoch || this.#id===undefined)return;
+            if(this.#wakeOnlyContext()){this.#publishWakeResult(detail);return;}
             const aligned=this.#aligned(detail),probe=copyRouter(this.#router);
             const decision=await this.#project(probe,aligned.text);
             if(this.#closed || epoch!==this.#epoch)return;
@@ -326,6 +337,7 @@
                 const finalizationMilliseconds=performance.now()-checkpointStarted;
                 if(this.#closed)return;
                 const detail=this.#flushResult || {transcript:'',segmentFinal:true};
+                if(this.#wakeOnlyContext()){this.#publishWakeResult(detail);return;}
                 const aligned=this.#aligned(detail),next=copyRouter(this.#router);
                 await this.#project(next,aligned.text);
                 // Router text pruning must advance by native timed words too.

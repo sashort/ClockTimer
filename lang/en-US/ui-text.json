@@ -89,8 +89,8 @@
     },
     "ca9814d4-20b2-58e3-9902-5018a670f0f5": {
       "id": "ca9814d4-20b2-58e3-9902-5018a670f0f5",
-      "text": "i",
-      "default": "i"
+      "text": "?",
+      "default": "?"
     },
     "f0962ba5-929a-595d-8d20-5d8e56ad6116": {
       "id": "f0962ba5-929a-595d-8d20-5d8e56ad6116",
@@ -104,8 +104,8 @@
     },
     "8395aa16-446c-50ca-af3e-ce954189e946": {
       "id": "8395aa16-446c-50ca-af3e-ce954189e946",
-      "text": "i",
-      "default": "i"
+      "text": "?",
+      "default": "?"
     },
     "8cce4af3-2cfd-51cd-aaec-192cdd071c90": {
       "id": "8cce4af3-2cfd-51cd-aaec-192cdd071c90",
@@ -7048,6 +7048,12 @@
       "text": "Below-floor goal in use",
       "default": "Below-floor goal in use",
       "source": "TimerSummaryView.js"
+    },
+    "ade066c7-66ca-502f-99ef-888d87a5b61d": {
+      "id": "ade066c7-66ca-502f-99ef-888d87a5b61d",
+      "text": "Switching Layout",
+      "default": "Switching Layout",
+      "source": "CompactActions.js"
     }
   }
 }
