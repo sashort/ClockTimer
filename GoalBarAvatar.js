@@ -149,7 +149,12 @@
     this.pose.style.transformOrigin='0px -3px';this.turn=this.pose.animate([{transform:'rotateY(180deg)',offset:0},{transform:'rotateY(180deg)',offset:.44,easing:'cubic-bezier(.4,0,.2,1)'},{transform:'rotateY(0deg)',offset:.5},{transform:'rotateY(0deg)',offset:.94,easing:'cubic-bezier(.4,0,.2,1)'},{transform:'rotateY(180deg)',offset:1}],{duration:20000,iterations:Infinity});this.walk.currentTime=this.turn.currentTime=time;
    }else{
     this.walk?.cancel();this.turn?.cancel();this.walk=this.turn=null;this.walkKey=null;this.pose.style.transform='';
-    const px=this.visiblePose==='finish'?Math.max(left,Math.min(right,this.finishX??x)):x;this.root.style.transform=`translate(${px}px,${surfaceY(this.context,px)}px)`;
+    // Keep the complete settled chair/body to the left of Current's double line.
+    const anchor=this.visiblePose==='finish'?Math.max(left,Math.min(right,this.finishX??x)):x,px=anchor-20;
+    // The seated rig spans either side of its origin; clear bubbles beneath
+    // the whole footprint, including when Current itself reaches a bubble.
+    const support={...this.context,obstacles:(this.context.obstacles||[]).map(node=>({...node,width:node.width+40}))};
+    this.root.style.transform=`translate(${px}px,${surfaceY(support,px)}px)`;
     const bubble=this.pose.querySelector('.bubble');if(bubble){const wrapper=bubble.parentElement,text=bubble.querySelector('text'),rightSide=px<78&&this.svg.getBoundingClientRect().width-px>78;wrapper.setAttribute('transform',rightSide?'translate(82 0) scale(-1 1)':'translate(-82 0)');text?.setAttribute('transform',rightSide?'translate(74 0) scale(-1 1)':'');}
    }
   }

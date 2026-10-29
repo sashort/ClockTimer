@@ -17211,7 +17211,7 @@
         setInteractionDisabled(breakDown, controls.busy || !actions.startDown);
         breakDown.inert = !controls.breakDownVisible;
         breakDown.setAttribute("aria-hidden", String(!controls.breakDownVisible));
-        if (entering && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+        if (entering && app.dataset.actionDisplay !== "compact" && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
             breakDown.animate?.([{transform:"translateX(100%)",opacity:0},{transform:"translateX(0)",opacity:1}], {duration:400,easing:"ease-out"});
         }
         tripActionRow.hidden = !controls.actionRowVisible;

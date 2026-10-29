@@ -410,3 +410,15 @@ Audio Settings is the first Settings submenu action. Adjacent display-setting
 groups share one separator. The Full Trip Log unpin transition is scoped away
 from Compact controls, so Compact pin/unpin retain their opacity/scale transition
 and the other information buttons recenter smoothly.
+
+Substandard ticks remain visible with Goal Bounding disabled, including while Current exceeds 100%. With Goal Bounding enabled they stay hidden until Current drops below 100%. Lower ticks use a compact reciprocal band; all ticks stay inside the track and beneath goal nodes. Continuation triangles sit outside both the track and node extents with a visible gap. Active avatar poses and the seated chair share an anchor 20px left of Current; obstacle clearance covers their full footprint.
+
+Switching Layout uses a manual top-layer popover above the open hamburger/settings menu. Its existing queue owns dismissal and aria-busy restoration; a large document z-index alone cannot cover menu popovers.
+
+During a running trip, Full/Compact Bar layouts use the shared interval-timer slot for the next unfailed goal deadline. Coincident goals share a slash-separated caption (Week/Trip); Standard is omitted when a named goal shares its percentage. The countdown uses the goal deadline, floors whole seconds and appends the shared fractional correction superscript. Standard-based main readouts remain unchanged. Break/Down timers take priority during intervals; Classic, idle and all-goals-failed states omit the countdown.
+
+In Full mode the timed End Lunch/End Break/End Short Break button restores one large inline label/countdown group centered between its buffer bars. Compact interval captions and countdowns remain stacked. Buffer sizing follows the combined inline group bounds.
+
+Full break text stays on one line and uses its larger available font when buffer content is absent. Buffer text reserves side space only while a buffer is visible; fitting prevents clipping when the button itself is constrained.
+
+Compact Down entrance at end-buffer expiry uses the rail fade/scale transition; the legacy Full slide is restricted to Full mode. The balanced percentage row stacks above the empty clock container so its goal control remains clickable after switching layouts.

@@ -3985,6 +3985,7 @@ clock-timer[hide-latency] time-range[type="latency"] {
 
 .percent-summary {
     position: relative;
+    z-index: 1;
 }
 
 .percent-summary::before {
@@ -7913,10 +7914,9 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 .break-buffer-track > i {display:block;width:100%;height:100%;background:currentColor;opacity:.35;transition:transform 1s linear;}
 .break-buffer-side.left i {transform-origin:right;}
 .break-buffer-side.right i {transform-origin:left;}
-#endTripButton:has(> .break-action-label) {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
-#endTripButton:has(> .break-action-label) .break-action-label {font-size:clamp(15px,4vw,21px);}
-#endTripButton:has(> .break-action-label) .break-action-clock {font-size:clamp(24px,6vw,34px);}
-.break-end-row .break-action-clock::before {content:none!important;}
+.app:not([data-action-display="compact"]) #endTripButton:has(> .break-action-label) {display:flex;flex-direction:row;align-items:center;justify-content:center;gap:0;font-size:var(--break-action-font-size,clamp(24px,8vw,48px));}
+.app:not([data-action-display="compact"]) #endTripButton:has(> .break-action-label) :is(.break-action-label,.break-action-clock) {font-size:inherit;line-height:1.1;}
+.app:not([data-action-display="compact"]) .break-end-row .break-action-clock::before {content:" : "!important;white-space:pre;}
 .compact-action-rail .break-buffer-side {display:none;}
 @media(prefers-reduced-motion:reduce){.break-buffer-track > i {transition:none;}}
 
@@ -7938,6 +7938,8 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 /* Keep unresolved account layout choices from flashing as Full/Classic. */
 html[data-layout-settings-pending="true"] #app :is(.percent-summary,.percent-summary *,.trip-action-controls,.trip-action-controls *,.compact-action-rail,.compact-action-rail *,.compact-interval-timer,.compact-interval-timer *,#tripLogButton) {visibility:hidden!important;pointer-events:none!important;}
 .layout-switch-overlay {position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:rgb(0 15 40 / 42%);view-transition-name:wmof-layout-busy;cursor:progress;}
+.layout-switch-overlay[popover] {margin:0;padding:0;border:0;width:100vw;height:100dvh;max-width:none;max-height:none;overflow:hidden;opacity:1;transition:none;}
+@starting-style {.layout-switch-overlay[popover]:popover-open {opacity:1;}}
 .layout-switch-overlay[hidden] {display:none;}
 .layout-switch-overlay>span {padding:18px 26px;border:1px solid #a9ddf7;border-radius:14px;background:rgb(15 34 56 / 88%);color:white;font:700 20px Arial,sans-serif;}
 ::view-transition-group(wmof-layout-busy) {z-index:2147483647;}
@@ -7949,3 +7951,9 @@ html[data-layout-settings-pending="true"] #app :is(.percent-summary,.percent-sum
 :is(#mainMenu,#dropInMenu) label[data-menu-toggle]:has(input:checked) {color:var(--wm-blue-light,#a9ddf7);}
 :is(#mainMenu,#dropInMenu) [data-menu-toggle] .sync-goals-menu-icon {color:inherit;}
 :is(#mainMenu,#dropInMenu) label[data-menu-toggle] input {accent-color:var(--wm-blue-light,#a9ddf7);}
+
+/* Bar-mode next-goal countdown shares the interval timer's summary slot. */
+.app[data-goal-countdown=true] .trip-summary > .compact-interval-timer:not([hidden]) {display:grid;grid-row:2;grid-column:1 / -1;place-content:center;justify-items:center;gap:4px;min-height:0;padding:4px 0;}
+.app[data-goal-countdown=true][data-percentage-display=bar] {--timer-summary-row-height:calc(var(--timer-summary-header-height) + var(--goal-bar-slot-height) + var(--compact-timer-space,76px));}
+.app[data-goal-countdown=true][data-percentage-display=bar] .trip-summary {grid-template-rows:var(--timer-summary-header-height) var(--compact-timer-space,76px) var(--goal-bar-slot-height);}
+.app[data-goal-countdown=true][data-percentage-display=bar] .percent-summary {grid-row:3;}
