@@ -14025,7 +14025,8 @@
         return Number(parts.minutesText) < 60 && Number(parts.secondsText) < 60;
     }
 
-    function timeDigitsToMilliseconds(raw) {
+    function timeDigitsToMilliseconds(raw, fractionalMilliseconds = 0) {
+        if(!Number.isInteger(fractionalMilliseconds)||fractionalMilliseconds<0||fractionalMilliseconds>999)return undefined;
         const parts = splitTimeDigits(raw);
 
         if (
@@ -14041,7 +14042,7 @@
                 Number(parts.hoursText || 0) * 3600 +
                 Number(parts.minutesText) * 60 +
                 Number(parts.secondsText)
-            ) * 1000;
+            ) * 1000 + Number(fractionalMilliseconds || 0);
 
         return Number.isSafeInteger(milliseconds)
             ? milliseconds
@@ -14141,7 +14142,7 @@
         return {
             digits: absoluteDigits(displayHour, date.getMinutes(), date.getSeconds()),
             date: formatDateInput(date),
-            meridiem
+            meridiem, milliseconds: date.getMilliseconds()
         };
     }
 
@@ -14161,7 +14162,7 @@
         const hour = absoluteHour24(state);
         if (!Number.isFinite(hour)) return undefined;
         const parts = splitAbsoluteDigits(state.pending);
-        const timeMilliseconds = ((hour * 60 + parts.minute) * 60 + parts.second) * 1000;
+        const timeMilliseconds = ((hour * 60 + parts.minute) * 60 + parts.second) * 1000 + (state.milliseconds || 0);
         if (creation) return timeMilliseconds;
         const base = parseDateInput(state.tripDefaults?.creationDate) || getTripBaseDate();
         const dayMilliseconds = date.getTime() - base.getTime();
@@ -14176,6 +14177,11 @@
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
         return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function formatPreciseTimelineMilliseconds(value) {
+        const whole = formatTimelineMilliseconds(value);
+        return whole && value % 1000 ? `${whole}.${String(value % 1000).padStart(3,"0")}` : whole;
     }
 
     function formatTimelineDateTime(date, creationDate) {
@@ -14233,39 +14239,75 @@
             const value=places?numberPadNumericValue(state).toFixed(places):String(numberPadNumericValue(state));
             return WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:value});
         }
-        return state.mode==='absolute'?renderAbsoluteDigits(state.pending):renderTimeDigits(state.pending);
+        const whole=state.mode==='absolute'?renderAbsoluteDigits(state.pending):renderTimeDigits(state.pending);
+        return whole+'.'+String(state.milliseconds||0).padStart(3,'0');
     }
     function fitNumberPadDigits(){
         const run=numberPadDisplay?.querySelector('.number-pad-digit-run');if(!run)return;
         run.style.fontSize='';const style=getComputedStyle(numberPadDisplay),available=numberPadDisplay.clientWidth-(parseFloat(style.paddingLeft)||0)-(parseFloat(style.paddingRight)||0),width=run.getBoundingClientRect().width;
         if(available>0&&width>available)run.style.fontSize=(parseFloat(getComputedStyle(run).fontSize)*available/width)+'px';
     }
+    // Boundaries count digits to their right: 0 is after the final digit.
+    // [n,n] is a caret; [n,n+1] selects exactly one digit.
+    function numberPadAnchorRange(state=numberPadState){
+        const offset=state.mode==='percent'?Math.max(0,Math.log10(state.anchorDigit??1)):3;
+        return state.anchorRange??{start:offset,stop:offset,explicit:false};
+    }
     function paintNumberPadAnchors(){
         if(!numberPadState||!numberPadDisplay)return;
-        const text=numberPadDisplayString(),count=(text.match(/\d/g)||[]).length;
-        const defaultOffset=numberPadState.mode==='percent'?Math.max(0,Math.log10(numberPadState.anchorDigit??1)):0;
-        const range=numberPadState.anchorRange??{start:defaultOffset,stop:defaultOffset,explicit:false};
-        const start=Math.min(range.start,range.stop),stop=Math.max(range.start,range.stop),run=document.createElement('span');run.className='number-pad-digit-run';let index=0;
-        for(const character of text){if(/\d/.test(character)){const span=document.createElement('span'),place=count-1-index++;span.textContent=character;span.dataset.padDigit=String(place);span.classList.toggle('number-pad-anchor-digit',place>=start&&place<=stop);run.append(span);}else run.append(character);}
+        const text=numberPadDisplayString(),count=(text.match(/\d/g)||[]).length,range=numberPadAnchorRange();
+        const padding=numberPadState.anchorInputBuffer&&numberPadState.pending&&numberPadState.mode==='absolute'&&range.start>=3&&range.stop>=3?(numberPadState.pending.length<=2?4:numberPadState.pending.length<=4?2:0):0;
+        const start=Math.min(range.start,range.stop)+padding,stop=Math.max(range.start,range.stop)+padding,run=document.createElement('span');run.className='number-pad-digit-run';let index=0,caretAdded=false,container=run;
+        const caret=()=>{const span=document.createElement('span');span.className='number-pad-caret';span.dataset.padBoundary=String(start);span.setAttribute('aria-hidden','true');container.append(span);caretAdded=true;};
+        for(const character of text){
+            if(/\d/.test(character)){
+                const span=document.createElement('span'),place=count-1-index++;
+                if(start===stop&&place+1===start&&!caretAdded)caret();
+                span.textContent=character;span.dataset.padDigit=String(place);
+                span.classList.toggle('number-pad-anchor-digit',place>=start&&place<stop);container.append(span);
+                if(start===stop&&place===start&&!caretAdded&&!(start===3&&numberPadState.anchorFractionSide))caret();
+            }else {if(character==='.'&&numberPadState.mode!=='percent'){container=document.createElement('span');container.className='number-pad-fraction';run.append(container);}container.append(character);}
+        }
+        if(start===stop&&!caretAdded)caret();
         numberPadDisplay.replaceChildren(run);fitNumberPadDigits();
-        const base=numberPadState.mode==='percent'?Math.min(1,numberPadState.anchorDigit??1):1;
-        numberPadDialog.setAttribute('anchor-start',String(Number((base*10**range.start).toFixed(6))));numberPadDialog.setAttribute('anchor-stop',String(Number((base*10**range.stop).toFixed(6))));
+        numberPadDialog.setAttribute('anchor-start',String(range.start+padding));numberPadDialog.setAttribute('anchor-stop',String(range.stop+padding));
     }
     function editNumberPadAnchorRange(digit){
-        const state=numberPadState,range=state?.anchorRange;if(!range?.explicit)return false;
-        const template=state.pending?numberPadDisplayString(state):(state.anchorTemplate??(state.mode==='percent'?'0.0':'0:00:00')),digits=template.match(/\d/g)||[];while(digits.length<=Math.max(range.start,range.stop))digits.unshift('0');if(!digits.length)return false;
-        const left=Math.max(0,digits.length-1-Math.max(range.start,range.stop)),right=Math.min(digits.length-1,digits.length-1-Math.min(range.start,range.stop)),length=right-left+1;
-        const prior=state.anchorReplace?'0'.repeat(length):digits.slice(left,right+1).join(''),replacement=digit===null?'0'.repeat(length):(prior+digit).slice(-length);
-        digits.splice(left,length,...replacement);let raw=digits.join('');
-        if(state.mode==='percent'&&(state.anchorDigit??1)>1)raw=String(Math.round(Number(raw)/state.anchorDigit));
-        state.pending=digit===null&&left===0&&right===digits.length-1?'':raw.replace(/^0+(?=\d)/,'');state.replaceOnNextDigit=false;state.anchorReplace=digit===null;state.everEdited=true;refreshNumberPad();return true;
+        const state=numberPadState;if(!state)return false;
+        const range=numberPadAnchorRange(state),fraction=state.mode!=='percent',suffix=fraction?String(state.milliseconds||0).padStart(3,'0'):'';
+        const digits=state.pending?(range.explicit&&!state.anchorInputBuffer?(numberPadDisplayString(state).match(/\d/g)||[]):Array.from(String(state.pending)+suffix)):Array.from(suffix);
+        const lo=Math.min(digits.length,Math.min(range.start,range.stop)),hi=Math.min(digits.length,Math.max(range.start,range.stop));
+        if(fraction&&hi<=3&&(hi>lo||lo<3||state.anchorFractionSide)){
+            const text=state.fractionEditBuffer??suffix,padding=3-text.length;
+            const low=Math.max(0,lo-padding),high=Math.max(low,hi-padding);let left=text.length-high,length=high-low;
+            if(digit===null&&!length){if(!left)return true;left--;length=1;}
+            const next=text.slice(0,left)+(digit===null?'':digit)+text.slice(left+length);
+            if(next.length>3)return true;
+            state.fractionEditBuffer=next;state.milliseconds=Number(next.padEnd(3,'0'));state.pending=state.pending||'0';
+            const caret=low+3-next.length;state.anchorRange={start:caret,stop:caret,explicit:true};state.anchorFractionSide=true;state.anchorInputBuffer=false;state.everEdited=true;refreshNumberPad();return true;
+        }
+        state.fractionEditBuffer=undefined;state.anchorFractionSide=false;
+        let left=digits.length-hi,length=hi-lo;
+        if(digit===null&&!length){if(left===0)return true;left--;length=1;}
+        const next=[...digits];next.splice(left,length,...(digit===null?[]:[digit]));let raw=next.join('').replace(/^0+(?=\d)/,'');
+        if(state.mode==='percent'&&(state.anchorDigit??1)>1&&range.explicit&&!state.anchorInputBuffer)raw=String(Math.round(Number(raw)/state.anchorDigit));
+        if(state.mode==='absolute'&&raw.length>9)return true;
+        if(state.mode==='percent'&&raw&&!Number.isSafeInteger(Number(raw)))return true;
+        if(fraction){const padded=raw.padStart(4,'0');state.milliseconds=raw?Number(padded.slice(-3)):0;raw=raw?(padded.slice(0,-3).replace(/^0+(?=\d)/,'')||'0'):'';if(digit===null&&next.length<=3&&state.milliseconds===0)raw='';}
+        state.pending=raw;state.anchorInputBuffer=true;state.anchorRange={start:lo,stop:lo,explicit:true};state.replaceOnNextDigit=false;state.everEdited=true;refreshNumberPad();return true;
     }
     function installNumberPadAnchorGestures(){
         let pointer,timer,origin;
-        const select=(start,stop)=>{numberPadState.anchorTemplate=numberPadDisplayString();numberPadState.anchorRange={start,stop,explicit:true};numberPadState.anchorReplace=true;numberPadState.replaceOnNextDigit=false;paintNumberPadAnchors();};
+        const boundary=event=>{
+            const digits=[...numberPadDisplay.querySelectorAll('[data-pad-digit]')];if(!digits.length)return 0;
+            let nearest=0,distance=Infinity;
+            for(const digit of digits){const r=digit.getBoundingClientRect(),place=Number(digit.dataset.padDigit);for(const [x,position] of [[r.left,place+1],[r.right,place]]){const d=Math.abs(event.clientX-x);if(d<distance){distance=d;nearest=position;}}}
+            return nearest;
+        };
+        const select=(start,stop)=>{numberPadState.fractionEditBuffer=undefined;numberPadState.anchorInputBuffer=false;numberPadState.anchorRange={start,stop,explicit:true};numberPadState.replaceOnNextDigit=false;paintNumberPadAnchors();};
         const end=()=>{clearTimeout(timer);pointer=undefined;origin=undefined;};
-        numberPadDisplay.addEventListener('pointerdown',event=>{const digit=event.target.closest('[data-pad-digit]');if(!digit||!numberPadState)return;event.preventDefault();pointer=event.pointerId;origin={position:Number(digit.dataset.padDigit),x:event.clientX,y:event.clientY};numberPadDisplay.setPointerCapture(pointer);select(origin.position,origin.position);timer=setTimeout(()=>{if(pointer===event.pointerId&&numberPadState){const count=(numberPadDisplay.textContent.match(/\d/g)||[]).length;select(count-1,0);}},550);});
-        numberPadDisplay.addEventListener('pointermove',event=>{if(pointer!==event.pointerId||!origin||!numberPadState)return;if(Math.hypot(event.clientX-origin.x,event.clientY-origin.y)<=6&&!origin.dragging)return;origin.dragging=true;clearTimeout(timer);const digit=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-pad-digit]');if(digit&&numberPadDisplay.contains(digit))select(origin.position,Number(digit.dataset.padDigit));});
+        numberPadDisplay.addEventListener('pointerdown',event=>{if(!numberPadState)return;event.preventDefault();pointer=event.pointerId;origin={position:boundary(event),x:event.clientX,y:event.clientY};numberPadState.anchorFractionSide=!!event.target.closest('.number-pad-fraction');numberPadDisplay.setPointerCapture(pointer);select(origin.position,origin.position);timer=setTimeout(()=>{if(pointer===event.pointerId&&numberPadState){const count=(numberPadDisplay.textContent.match(/\d/g)||[]).length;select(count,0);}},550);});
+        numberPadDisplay.addEventListener('pointermove',event=>{if(pointer!==event.pointerId||!origin||!numberPadState)return;if(Math.hypot(event.clientX-origin.x,event.clientY-origin.y)<=6&&!origin.dragging)return;origin.dragging=true;clearTimeout(timer);select(origin.position,boundary(event));});
         for(const event of ['pointerup','pointercancel','lostpointercapture'])numberPadDisplay.addEventListener(event,end);
     }
 
@@ -14302,12 +14344,12 @@
         const firstHour = absoluteHour24(first);
         const secondHour = absoluteHour24(second);
         if (firstHour === undefined || secondHour === undefined) {
-            return first.pending === second.pending && first.meridiem === second.meridiem;
+            return first.pending === second.pending && first.meridiem === second.meridiem && (first.milliseconds||0)===(second.milliseconds||0);
         }
         const firstParts = splitAbsoluteDigits(first.pending);
         const secondParts = splitAbsoluteDigits(second.pending);
         return firstHour === secondHour && firstParts.minute === secondParts.minute &&
-            firstParts.second === secondParts.second;
+            firstParts.second === secondParts.second && (first.milliseconds||0)===(second.milliseconds||0);
     }
 
     function numberPadHasChanges() {
@@ -14316,10 +14358,11 @@
             return numberPadState.pendingDate !== numberPadState.initialDate ||
                 !absoluteValuesEqual(numberPadState, {
                     pending: numberPadState.initial,
-                    meridiem: numberPadState.initialMeridiem
+                    meridiem: numberPadState.initialMeridiem, milliseconds: numberPadState.initialMilliseconds
                 });
         }
-        return numberPadState.pending !== numberPadState.initial ||
+        return (numberPadState.milliseconds||0)!==(numberPadState.initialMilliseconds||0) ||
+            numberPadState.pending !== numberPadState.initial ||
             numberPadState.pendingDate !== numberPadState.initialDate ||
             numberPadState.meridiem !== numberPadState.initialMeridiem;
     }
@@ -14598,6 +14641,7 @@
         let initial;
         let initialDate;
         let initialMeridiem;
+        let initialMilliseconds = 0;
 
         if (normalizedMode === "absolute") {
             const absolute =
@@ -14609,6 +14653,7 @@
             initial = absolute.digits;
             initialDate = absolute.date;
             initialMeridiem = absolute.meridiem;
+            initialMilliseconds = absolute.milliseconds;
         }
         else {
             initial =
@@ -14625,7 +14670,12 @@
                     );
         }
 
+        if(normalizedMode==='duration'){
+            const value=Number.isSafeInteger(initialValue)?initialValue:parseTimelineTime(initialValue);
+            initialMilliseconds=Number.isSafeInteger(value)&&value>=0?value%1000:0;
+        }
         const state = {
+            initialMilliseconds, milliseconds: initialMilliseconds,
             mode: normalizedMode,
             anchorDigit, previewOfficial, onClearOfficial, confirmUnchanged,
             onConfirm,
@@ -15990,6 +16040,8 @@
 
             numberPadState.pending =
                 pending;
+            numberPadState.milliseconds = 0;
+            numberPadState.anchorRange=undefined;numberPadState.anchorInputBuffer=false;numberPadState.fractionEditBuffer=undefined;numberPadState.anchorFractionSide=false;
             numberPadState.meridiem =
                 meridiem;
 
@@ -16048,6 +16100,8 @@
                 durationValueToRawDigits(
                     duration
                 );
+            numberPadState.milliseconds = Math.round(duration)%1000;
+            numberPadState.anchorRange=undefined;numberPadState.anchorInputBuffer=false;numberPadState.fractionEditBuffer=undefined;numberPadState.anchorFractionSide=false;
 
             if (
                 !timeDigitsValid(
@@ -16817,11 +16871,11 @@
                 !state.pending
                     ? undefined
                     : state.mode === "absolute"
-                        ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString()
+                        ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}.${String(state.milliseconds||0).padStart(3,"0")}`).toISOString()
                         : state.mode === "percent"
                             ? numberPadNumericValue(state)
                             : timeDigitsToMilliseconds(
-                                state.pending
+                                state.pending, state.milliseconds
                             );
             const confirmed =
                 await state.onConfirm(value) !==
@@ -16858,7 +16912,7 @@
             if (tripSettingsSession && ["creation-time", "scheduled-start", "actual-start"].includes(state.source)) {
                 const values = tripSettingsSession.values;
                 if (state.source === "creation-time") {
-                    const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
+                    const value = formatPreciseTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
                     if (!value) return false;
                     values.creationTime = value;
                     values.creationDate = state.pendingDate;
@@ -16866,7 +16920,7 @@
                     return true;
                 }
 
-                const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state));
+                const value = formatPreciseTimelineMilliseconds(absoluteTimelineMilliseconds(state));
                 if (!value) return false;
                 if (state.source === "scheduled-start") {
                     values.scheduledStart = value;
@@ -16880,14 +16934,14 @@
 
             if (!tripIsLive() && state.tripDefaults) {
                 if (state.source === "creation-time") {
-                    const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
+                    const value = formatPreciseTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
                     if (!value) return false;
                     state.tripDefaults.creationTime = value;
                     state.tripDefaults.creationDate = state.pendingDate;
                     return true;
                 }
 
-                const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state));
+                const value = formatPreciseTimelineMilliseconds(absoluteTimelineMilliseconds(state));
                 if (!value) return false;
                 if (state.source === "scheduled-start") {
                     state.tripDefaults.scheduledStart = value;
@@ -16900,7 +16954,7 @@
             }
 
             if (state.source === "creation-time") {
-                const value = formatTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
+                const value = formatPreciseTimelineMilliseconds(absoluteTimelineMilliseconds(state, { creation: true }));
                 if (!value) return false;
                 if (state.pendingDate !== clockTimer.creationDate) {
                     clockTimer.creationDate = state.pendingDate;
@@ -16911,7 +16965,7 @@
             }
 
             const timeline = absoluteTimelineMilliseconds(state);
-            const value = formatTimelineMilliseconds(timeline);
+            const value = formatPreciseTimelineMilliseconds(timeline);
             if (!value) return false;
             if (state.source === "scheduled-start") {
                 clockTimer.scheduledStart = value;
@@ -16927,7 +16981,7 @@
         const durationMilliseconds =
             state.pending
                 ? timeDigitsToMilliseconds(
-                    state.pending
+                    state.pending, state.milliseconds
                 )
                 : undefined;
         if (
@@ -16995,6 +17049,8 @@
     function eraseNumberPadPendingValue() {
         if (!numberPadState) return;
         numberPadState.pending = "";
+        numberPadState.milliseconds = 0;
+        numberPadState.anchorRange=undefined;numberPadState.anchorInputBuffer=false;numberPadState.fractionEditBuffer=undefined;numberPadState.anchorFractionSide=false;
         numberPadState.meridiem = undefined;
         numberPadState.replaceOnNextDigit = false;
         numberPadState.everEdited = true;
@@ -17029,8 +17085,9 @@
 
     function resetNumberPadPendingValue() {
         if (!numberPadState) return;
-        numberPadState.anchorRange=undefined;numberPadState.anchorTemplate=undefined;numberPadState.anchorReplace=false;
+        numberPadState.anchorRange=undefined;numberPadState.anchorInputBuffer=false;numberPadState.fractionEditBuffer=undefined;numberPadState.anchorFractionSide=false;
         numberPadState.pending = numberPadState.initial;
+        numberPadState.milliseconds = numberPadState.initialMilliseconds || 0;
         numberPadState.pendingDate = numberPadState.initialDate;
         numberPadState.meridiem = numberPadState.initialMeridiem;
         numberPadState.replaceOnNextDigit = numberPadState.source !== "new-trip";
@@ -17361,6 +17418,7 @@
         );
         state.initial = digits;
         state.pending = digits;
+        state.initialMilliseconds = state.milliseconds = standardTimeMilliseconds%1000;
         state.replaceOnNextDigit = false;
         state.startsTripOnConfirm = true;
     }
@@ -18183,8 +18241,9 @@
             standardTimeMilliseconds
         );
         if (!digits) return;
-        const changed = digits !== state.initial;
+        const changed = digits !== state.initial || standardTimeMilliseconds%1000 !== (state.initialMilliseconds||0);
         state.pending = digits;
+        state.milliseconds = standardTimeMilliseconds%1000;
         state.replaceOnNextDigit = false;
         state.everEdited = Boolean(state.everEdited || changed);
     }
@@ -26549,8 +26608,7 @@
                 ) {
                     const standardTimeMilliseconds =
                         timeDigitsToMilliseconds(
-                            numberPadState
-                                .pending
+                            numberPadState.pending, numberPadState.milliseconds
                         );
 
                     if (
