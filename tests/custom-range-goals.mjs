@@ -33,18 +33,18 @@ assert.equal(after.trip.percentGoal,1);assert.equal(after.trip.renderedTime,'0:2
 assert.equal(c.syncBelowFloor,true);assert.equal(c.rawSyncTripGoal,0.8);
 c.percentMode='trip'; // Verify the Sync floor itself independently of Auto's shorter Standard target.
 const protectedState=c.captureState();
-c.configure({sync_override:true});
+c.configure({goal_bounding:false});
 assert.equal(c.getSummarySnapshot().trip.percentGoal,.8);
-assert.equal(c.getGoalBarSnapshot().nodes.find(n=>n.id==='trip').percent,80,'bar uses the effective below-floor Sync Override goal');
+assert.equal(c.getGoalBarSnapshot().nodes.find(n=>n.id==='trip').percent,80,'bar uses the effective below-floor Goal Bounding goal');
 assert.equal(c.getUIState().sync_override_in_use,true,'badge appears only while below-floor Sync is used');
 assert.equal(c.getSummarySnapshot().trip.renderedTime,'0:25:00');
-c.restoreState(protectedState);assert.equal(c.syncOverride,false);
-c.configure({sync_override:true});assert.equal(c.getSummarySnapshot().trip.percentGoal,.8);
+c.restoreState(protectedState);assert.equal(c.goalBounding,true);
+c.configure({goal_bounding:false});assert.equal(c.getSummarySnapshot().trip.percentGoal,.8);
 assert.equal(c.getUIState().sync_override_in_use,true,'badge appears only while below-floor Sync is used');
-c.configure({sync_override:false});assert.equal(c.getSummarySnapshot().trip.percentGoal,1);
+c.configure({goal_bounding:true});assert.equal(c.getSummarySnapshot().trip.percentGoal,1);
 assert.equal(c.getUIState().sync_override_in_use,false,'floor protection hides override badge');
 assert.equal(c.getGoalBarSnapshot().nodes.find(n=>n.id==='trip').percent,100,'disabling Override returns the bar node to the protected floor');
-console.log('PASS override toggling and state rollback recalculate the goal and remaining time');
+console.log('PASS bounding toggling and state rollback recalculate the goal and remaining time');
 console.log('PASS changing aggregate range updates automatic percent goal and remaining time');
 c.autoSyncTripGoal=false;const manualGoal=c.getSummarySnapshot().trip.percentGoal;counted=600000;
 await c.calculateTripTotals('2026-09-03T04:00:00Z','2026-09-19T03:59:59.999Z');
@@ -57,7 +57,7 @@ for (const override of [false,true]) {
  fresh.configure({trip_goal:'110%',total_goal:'100%',auto_goal:true,sync_override:override});
  await fresh.calculateTripTotals('2026-09-01T04:00:00Z','2026-09-19T03:59:59.999Z');
  await fresh.start({standardTime:'00:20:00'});
- assert.equal(fresh.getSummarySnapshot().trip.percentGoal,override?.8:1.1,'trip start honors Sync Override and manual floor');
+ assert.equal(fresh.getSummarySnapshot().trip.percentGoal,override?.8:1,'trip start honors the generic 100% Goal Bounding floor');
  assert.equal(fresh.rawSyncTripGoal,.8,'trip start retains raw Sync requirement for override diagnostics');
  assert.equal(fresh.syncBelowFloor,true);
  fresh.remove();

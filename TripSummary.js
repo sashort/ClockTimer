@@ -22,10 +22,10 @@
             const last = finished[0];
             const counted = trip => known(trip?.countedTimeMilliseconds) ? trip.countedTimeMilliseconds : trip?.countedTimeElapsedMilliseconds;
             const lastActual = globalThis.TripTimeBank?.project(last||{})?.productiveTimeMilliseconds ?? counted(last);
-            const lastPercent = known(last?.standardTimeMilliseconds) && counted(last) > 0
+            const lastPercent = globalThis.TripAggregates ? (TripAggregates.performance(last) ?? undefined) : known(last?.standardTimeMilliseconds) && counted(last) > 0
                 ? last.standardTimeMilliseconds / counted(last) : undefined;
             const activeActual = globalThis.TripTimeBank?.project(activeTrip||{})?.productiveTimeMilliseconds ?? counted(activeTrip);
-            const activePercent = known(activeTrip?.standardTimeMilliseconds) && counted(activeTrip) > 0
+            const activePercent = globalThis.TripAggregates ? (TripAggregates.performance(activeTrip) ?? undefined) : known(activeTrip?.standardTimeMilliseconds) && counted(activeTrip) > 0
                 ? activeTrip.standardTimeMilliseconds / counted(activeTrip) : undefined;
             const row = (key, standard, actual, performance) => Object.freeze({key, label:key==='total'?scopeLabel:text(key+'Label'),
                 standard:known(standard)?duration(standard):'---', actual:known(actual)?duration(actual):'---',

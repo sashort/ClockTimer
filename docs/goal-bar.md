@@ -293,12 +293,10 @@ break allowance exceeds productive time. Persisted counted durations remain
 nonnegative. Remaining is Standard minus that signed balance; Elapsed displays
 the signed balance; Current End Time keeps ticking. This applies equally to
 Break, Short Break and Lunch, including ending inside the start buffer and
-restoring the event history. While the balance is zero or negative, Current has
-no meaningful percent: `goal_bar.nodes[current].unbounded` is true, percent is
-null, its label shows an em dash, and its double line and runner stay at the right
-edge. The layout's internal edge coordinate is not an inferred percent. Once the
-balance becomes positive, the normal percentage returns. This presentation case
-must not remove Current, stop its avatar, or freeze the main readout.
+restoring the event history. Current percentage uses earned Standard plus credit
+divided by productive time, even if the signed bank coordinate is negative. Only
+zero productive time makes Current unbounded; its double line and runner stay
+visible. A negative bank coordinate must not freeze time or erase finite performance.
 Regression: `tests/early-break-readout-browser.cjs`.
 
 
@@ -341,8 +339,8 @@ At 100%, Trip and aggregate targets keep their real names in display and speech;
 Standard naming applies only to the actual Standard fallback.
 
 
-Active Trip nodes use the effective synchronized goal, including the Sync Override
-floor policy; idle nodes still use configured goals. Changing Override recalculates
+Active Trip nodes use the effective synchronized goal, including the Goal Bounding
+floor and raw-goal fallback policy; idle nodes still use configured goals. Changing Goal Bounding recalculates
 the node immediately. Editors continue to edit the underlying configured goal.
 Current percentage reserves a measured widest-digit width for its integer-digit
 band plus two decimals and the percent sign. The displayed value is unchanged.
@@ -358,3 +356,11 @@ The large Time Remaining readout above the bar also uses Standard minus counted 
 Both compression arrows contribute to horizontal centering. Label stacks and target boxes (including their border stroke) are nudged inside the outermost track/node or continuation-arrow edges. When an arrow is present, its horizontal extent gives boxes extra room beneath it.
 
 Low-goal regression: Auto with Day 40% and Trip 100% must keep fonts readable as Current approaches 100%. Reserve label room on both sides of the Standard/100% anchor instead of progressively shrinking all text. Resolve node crowding from the right so a distant left goal does not drift. A failed 100% goal retains its marker but omits details while another goal remains available; its details return only for the all-failed fallback. Retired transition text must release its width reservation.
+
+
+Goal Bounding and fractional-time contract: see [goal-bounding-and-counted-bank.md](goal-bounding-and-counted-bank.md).
+The upward triangle marks an actively raised inferred Trip requirement, the downward
+triangle a below-floor target in use. Merged goal units preserve these indicators.
+Releasing the bound retains the underlying candidate, animating its position, label
+and target border through the existing merge/split and target-transfer machinery.
+Time captions remain mode-switch controls, with no extra popover action.

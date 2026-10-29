@@ -1615,7 +1615,7 @@
       }
     },
     {
-      "id": "BAR-SYNC-OVERRIDE-EFFECTIVE-GOAL",
+      "id": "BAR-GOAL-BOUNDING-EFFECTIVE-GOAL",
       "contract": "GOAL-DISPLAY",
       "implementationStatus": "implemented-local",
       "given": {
@@ -1625,9 +1625,9 @@
         "tripActive": true
       },
       "when": {
-        "syncOverride": [
-          true,
-          false
+        "goalBounding": [
+          false,
+          true
         ]
       },
       "expect": {
@@ -1658,6 +1658,39 @@
         "reservedWidth": "stable within band; decreases at boundary unless time text is wider",
         "fontMeasurement": "widest digit in actual rendered font; no assumed digit",
         "selectorGaps": "equal above/below options"
+      }
+    },
+    {
+      "id": "BOUND-RELEASE-RETAIN-RAW",
+      "contract": "GOAL-BOUNDING-BANK",
+      "given": {
+        "standardMilliseconds": 1800000,
+        "rawInferredTripGoal": 0.9,
+        "goalBounding": true
+      },
+      "when": {
+        "productiveMilliseconds": 1860000
+      },
+      "expect": {
+        "effectiveTripGoal": 0.9,
+        "rawGoalRetained": true,
+        "indicator": "down"
+      }
+    },
+    {
+      "id": "EARNED-BANK-PERCENT",
+      "contract": "GOAL-BOUNDING-BANK",
+      "given": {
+        "standardMilliseconds": 176000,
+        "productiveMilliseconds": 289957,
+        "creditMilliseconds": 1013189
+      },
+      "when": {
+        "action": "render completed trip and aggregate"
+      },
+      "expect": {
+        "tripPercent": "410.13%",
+        "aggregateNumeratorIncludesCredit": true
       }
     }
   ]

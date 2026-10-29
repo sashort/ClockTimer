@@ -1517,7 +1517,7 @@
 
         #renderedDate(text, now) {
             if (this.#renderedTimeMode !== "calculated-end" || typeof text !== "string") return null;
-            const match = text.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+            const match = text.replace(/[⁺⁻]$/u, "").match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
             if (!match) return null;
             const date = new Date(now.getTime());
             date.setHours(Number(match[1]), Number(match[2]), Number(match[3]), 0);
@@ -1538,24 +1538,34 @@
             return match[1] ? -value : value;
         }
 
-        #getCurrentTripTimeText(summary, now) {
-            const trip = summary.trip;
-            const counted = Number(trip?.countedTimeBalanceMilliseconds ?? trip?.countedTimeElapsedMilliseconds);
-            const standard = Number(trip?.standardTimeMilliseconds);
-            if (!Number.isFinite(standard) || !Number.isFinite(counted)) return undefined;
-            if (this.#renderedTimeMode === "remaining") return this.#formatRemainingRenderedDuration(standard-counted);
-            if (this.#renderedTimeMode === "elapsed") return `${counted < 0 ? "-" : ""}${this.#formatElapsedRenderedDuration(counted)}`;
-            const current = Number(trip?.countedPercent);
-            const end = counted <= 0 ? now : Number.isFinite(current) && current > 0
-                ? this.#calculateTripGoalRequirementsForGoal(current, {allowMissed:true}).adjustedEndTime : null;
-            return this.#formatSummaryEndTime(end ? new Date(end) : undefined);
+        #getCurrentTripTimeValue(summary, now) {
+            const trip=summary.trip,counted=Number(trip?.countedTimeBalanceMilliseconds??trip?.countedTimeElapsedMilliseconds),standard=Number(trip?.standardTimeMilliseconds);
+            if(!Number.isFinite(standard)||!Number.isFinite(counted))return undefined;
+            if(this.#renderedTimeMode==="remaining")return standard-counted;
+            if(this.#renderedTimeMode==="elapsed")return counted;
+            const current=Number(trip?.countedPercent);
+            const end=counted<=0?now.getTime():Number.isFinite(current)&&current>0
+                ? Date.parse(this.#calculateTripGoalRequirementsForGoal(current,{allowMissed:true}).adjustedEndTime):NaN;
+            return Number.isFinite(end)?end:undefined;
         }
 
-        #decorateTripTimeText(text, now) {
-            const interval = this.getActiveIntervalState?.(now);
-            return !this.#breakOnly && typeof text === "string" && interval?.open === false &&
-                (this.#renderedTimeMode === "remaining" || this.#renderedTimeMode === "elapsed")
-                ? `${text}${this.#renderedTimeMode === "remaining" ? "⁺" : "⁻"}` : text;
+        #getCurrentTripTimeText(summary, now) {
+            const value=this.#getCurrentTripTimeValue(summary,now);
+            if(!Number.isFinite(value))return undefined;
+            if(this.#renderedTimeMode==="remaining")return this.#formatRemainingRenderedDuration(value);
+            if(this.#renderedTimeMode==="elapsed")return `${value<0?"-":""}${this.#formatElapsedRenderedDuration(value)}`;
+            return this.#formatSummaryEndTime(new Date(value));
+        }
+
+        #decorateTripTimeText(text, now, exactValue) {
+            if(this.#renderedTimeMode==="calculated-end")return text;
+            const interval=this.getActiveIntervalState?.(now);
+            if(this.#breakOnly||typeof text!=="string"||interval?.open!==false||!Number.isFinite(exactValue))return text;
+            const match=text.match(/^(-)?(\d+):(\d{2}):(\d{2})$/);
+            if(!match)return text;
+            const displayedValue=((Number(match[2])*60+Number(match[3]))*60+Number(match[4]))*1000*(match[1]?-1:1);
+            const omitted=exactValue-displayedValue;
+            return Math.abs(omitted)<1e-6?text:`${text}${omitted>0?"⁺":"⁻"}`;
         }
 
         #getActualTimeState(
@@ -1633,6 +1643,10 @@
                     );
             }
 
+            if(this.#started&&!this.#breakOnly){
+                const exact=this.#getCurrentTripTimeValue(summary,now);
+                if(Number.isFinite(exact)){value=exact;if(this.#renderedTimeMode==="calculated-end")date=new Date(exact);}
+            }
             return Object.freeze({
                 mode:
                     this.#renderedTimeMode,
@@ -1768,7 +1782,7 @@
                 effectiveTimeState
                     ?.text;
             const renderedText = effectiveTimeState?.virtual ? rawRenderedText
-                : this.#decorateTripTimeText(rawRenderedText, now);
+                : this.#decorateTripTimeText(rawRenderedText, now,this.#started&&!this.#breakOnly?this.#getCurrentTripTimeValue(summary,now):effectiveTimeState?.value);
             const renderedDate =
                 effectiveTimeState
                     ?.date;
@@ -1843,11 +1857,12 @@
                 effective_goal_type: scope,
                 auto_goal_active: this.#percentMode === "auto" && this.#autoSyncTripGoal,
                 sync_enabled: this.#autoSyncTripGoal,
+                goal_bounding: this.goalBounding,
+                goal_bounding_state:this.#resolveGoalSelection().requirements.bounding??null,
                 sync_override: this.#syncOverride,
                 sync_below_floor: this.syncBelowFloor,
-                sync_override_in_use: this.#started && this.#autoSyncTripGoal && this.#syncOverride &&
-                    this.syncBelowFloor && this.#calculatedGoalSource === "sync" && scope === "trip" &&
-                    Number.isFinite(this.#calculatedTripGoal) && Math.abs(goal-this.#calculatedTripGoal)<1e-9,
+                sync_override_in_use: this.#started&&this.#autoSyncTripGoal&&scope==="trip"&&
+                    this.#resolveGoalSelection().requirements.tripGoal<1,
                 auto_goal_order: Object.freeze(this.#getPercentageOrder().split("_")),
                 active_break_type: interval?.breakType || null,
                 standard_time_header_text: "Standard Time",
@@ -1910,10 +1925,11 @@
             const actual = percent === undefined ? (total ? this.#getUserTotalGoal() : this.#getUserTripGoal()) * 100 : Number(percent);
             const active = this.#started && !this.#breakOnly && this.#standardDuration > 0;
             const inferred = active && Number.isFinite(actual) && actual > 0
-                ? total ? this.#calculateTripGoalFromTotalDuration(this.#standardDuration, actual / 100).tripGoal * 100 : actual
+                ? total ? this.#calculateTripGoalFromTotalDuration(this.#standardDuration, actual / 100).tripGoal * 100 : percent===undefined?this.#getTripGoal()*100:actual
                 : null;
-            return Object.freeze({trip_active:active,actual_percent:Number.isFinite(actual)&&actual>0?Number(actual.toFixed(6)):null,
-                inferred_percent:Number.isFinite(inferred)&&inferred>0?inferred:null});
+            const bounding=active&&Number.isFinite(inferred)?this.#goalBoundingProjection(inferred/100):null;
+            return Object.freeze({bounding,raw_inferred_percent:inferred,trip_active:active,actual_percent:Number.isFinite(actual)&&actual>0?Number(actual.toFixed(6)):null,
+                inferred_percent:bounding?bounding.effectiveTripGoal*100:Number.isFinite(inferred)&&inferred>0?inferred:null});
         }
 
         getGoalBarSnapshot(now = new Date(), {summary = this.#buildSummarySnapshot(now)} = {}) {
@@ -1933,27 +1949,28 @@
                     scale_min:0, scale_max:Math.min(150, Math.max(...goals.map(node=>node.percent))), nodes:Object.freeze(goals)});
             }
             const current = Number(summary.trip?.countedPercent);
+            const tripRequirements=this.#calculateTripGoalRequirements({allowMissed:true});
             const goalValues = [
                 {id:"standard", label:"Standard", percent:100},
-                {id:"trip", label:"Trip", percent:this.#getTripGoal()*100}
+                {id:"trip", label:"Trip", percent:(tripRequirements.tripGoal??this.#getTripGoal())*100,bounding:tripRequirements.bounding}
             ].filter(visibleGoal);
             const total = showTotal ? this.#calculateTotalGoalRequirements({allowMissed:true}) : null;
             if (Number.isFinite(total?.tripGoal) && total.tripGoal > 0)
-                goalValues.push({id:"total", label:this.getAttribute("total-label") || "Total", percent:total.tripGoal*100});
+                goalValues.push({id:"total", label:this.getAttribute("total-label") || "Total", percent:total.tripGoal*100,bounding:total.bounding});
             const duration = value => this.#formatRemainingRenderedDuration(value);
             const mode = this.#renderedTimeMode;
             const nodes = goalValues.map(node => {
-                const position = standard/(node.percent/100);
+                const position = (standard+Number(summary.trip?.allowanceCreditMilliseconds??0))/(node.percent/100)-Number(summary.trip?.allowanceCreditMilliseconds??0);
                 const end = this.#calculateTripGoalRequirementsForGoal(node.percent/100, {allowMissed:true}).adjustedEndTime;
-                const text = mode === "elapsed" ? this.#formatElapsedRenderedDuration(position)
+                const text = mode === "elapsed" ? `${position<0?"-":""}${this.#formatElapsedRenderedDuration(position)}`
                     : mode === "calculated-end" ? this.#formatSummaryEndTime(end ? new Date(end) : undefined)
                     : duration(standard-position);
                 return Object.freeze({...node, counted_position:position, time:text,
                     failed:Number.isFinite(current) && current*100 < node.percent-1e-7});
             });
             nodes.push(Object.freeze({id:"current", label:"Current", current:true,
-                percent:Number.isFinite(current)?current*100:null, unbounded:counted <= 0, counted_position:counted,
-                time:this.#decorateTripTimeText(this.#getCurrentTripTimeText(summary, now), now), failed:false}));
+                percent:Number.isFinite(current)?current*100:null, unbounded:Number(summary.trip?.productiveTimeMilliseconds??counted) <= 0, counted_position:counted,
+                time:this.#decorateTripTimeText(this.#getCurrentTripTimeText(summary, now), now,this.#getCurrentTripTimeValue(summary,now)), failed:false}));
             const failed = nodes.filter(node=>!node.current).every(node=>node.failed);
             return Object.freeze({available:true, active:true, time_mode:mode, nodes:Object.freeze(nodes),
                 all_failed:failed,
@@ -4082,7 +4099,9 @@
                 tripCount: 0,
                 standardTimeMilliseconds: 0,
                 actualTimeMilliseconds: 0,
-                countedTimeMilliseconds: 0
+                countedTimeMilliseconds: 0,
+                productiveTimeMilliseconds: 0,
+                allowanceCreditMilliseconds: 0
             };
         }
 
@@ -4128,6 +4147,8 @@
                 standardTimeMilliseconds,
                 actualTimeMilliseconds,
                 countedTimeMilliseconds,
+                productiveTimeMilliseconds:Math.max(0,Number(value?.productiveTimeMilliseconds??countedTimeMilliseconds)||0),
+                allowanceCreditMilliseconds:Math.max(0,Number(value?.allowanceCreditMilliseconds)||0),
                 bankCreditCarryMilliseconds:Math.max(0,Number(value?.bankCreditCarryMilliseconds)||0)
             };
         }
@@ -4147,6 +4168,8 @@
 
             target.countedTimeMilliseconds +=
                 source.countedTimeMilliseconds ?? 0;
+            target.productiveTimeMilliseconds=(target.productiveTimeMilliseconds||0)+(source.productiveTimeMilliseconds??source.countedTimeMilliseconds??0);
+            target.allowanceCreditMilliseconds=(target.allowanceCreditMilliseconds||0)+(source.allowanceCreditMilliseconds||0);
             target.bankCreditCarryMilliseconds=(target.bankCreditCarryMilliseconds||0)+(source.bankCreditCarryMilliseconds||0);
 
             return target;
@@ -4203,6 +4226,8 @@
                             standardTimeMilliseconds,
                             actualTimeMilliseconds,
                             countedTimeMilliseconds,
+                            productiveTimeMilliseconds:Math.max(0,Number(trip?.productiveTimeMilliseconds??countedTimeMilliseconds)||0),
+                            allowanceCreditMilliseconds:Math.max(0,Number(trip?.allowanceCreditMilliseconds)||0),
                             bankCreditCarryMilliseconds:Math.max(0,Number(trip?.bankCreditCarryMilliseconds)||0)
                         };
                     }
@@ -4237,6 +4262,8 @@
                         trip.actualTimeMilliseconds,
                     countedTimeMilliseconds:
                         trip.countedTimeMilliseconds,
+                    productiveTimeMilliseconds:trip.productiveTimeMilliseconds??trip.countedTimeMilliseconds,
+                    allowanceCreditMilliseconds:trip.allowanceCreditMilliseconds||0,
                     bankCreditCarryMilliseconds:trip.bankCreditCarryMilliseconds||0
                 };
 
@@ -4390,6 +4417,8 @@
             standardTimeMilliseconds,
             actualTimeMilliseconds,
             countedTimeMilliseconds,
+            productiveTimeMilliseconds=countedTimeMilliseconds,
+            allowanceCreditMilliseconds=0,
             bankCreditCarryMilliseconds=0,
             nonProduction
         }) {
@@ -4447,6 +4476,8 @@
                     standardTimeMilliseconds,
                     actualTimeMilliseconds,
                     countedTimeMilliseconds,
+                    productiveTimeMilliseconds,
+                    allowanceCreditMilliseconds,
                     bankCreditCarryMilliseconds
                 });
             }
@@ -4458,6 +4489,8 @@
                         standardTimeMilliseconds,
                         actualTimeMilliseconds,
                         countedTimeMilliseconds,
+                        productiveTimeMilliseconds,
+                        allowanceCreditMilliseconds,
                         bankCreditCarryMilliseconds
                     }
                 );
@@ -4762,7 +4795,7 @@
             const previousCalculatedTripGoal =
                 this.#calculatedTripGoal;
 
-            this.#applySyncTripGoal(requirements.tripGoal);
+            this.#applySyncTripGoal(requirements.bounding?.rawTripGoal??requirements.tripGoal);
 
             this.#handleTripGoalChange(
                 this.#renderedPercentGoalSourceOverride === "start"
@@ -5167,7 +5200,7 @@
         }
         captureState() {
             // Checkpoints use model records, never the rendered ring DOM.
-            return {syncOverride:this.#syncOverride, activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
+            return {goalBounding:this.goalBounding,syncOverride:this.#syncOverride, activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
                 attributes: [...this.attributes].map(attribute => [attribute.name, attribute.value]),
                 preparedTrip: this.#preparedTrip && {...this.#preparedTrip},
                 pending: this.#pendingTripEvents.map(event => ({...event, value: structuredClone(event.value)})),
@@ -5182,7 +5215,7 @@
                 attributes:[...this.attributes].filter(attribute => ClockTimer.observedAttributes.includes(attribute.name))
                     .map(attribute => [attribute.name,attribute.value]),
                 totals:this.#cloneAggregateSnapshot(this.#tripTotals), addedToAggregate:this.#tripAddedToAggregate,
-                sync:this.#autoSyncTripGoal, syncOverride:this.#syncOverride, timeDisplay:this.#renderedTimeMode,
+                sync:this.#autoSyncTripGoal, goalBounding:this.goalBounding,syncOverride:this.#syncOverride, timeDisplay:this.#renderedTimeMode,
                 productionFilter:this.#productionFilter};
         }
 
@@ -5231,7 +5264,7 @@
                 }
             }
             const configuration = {goal_type:mode || this.percentMode,
-                auto_goal:sync ?? snapshot.sync, sync_override:snapshot.syncOverride === true, rendered_time_type:'time_remaining'};
+                auto_goal:sync ?? snapshot.sync, goal_bounding:typeof snapshot.goalBounding==="boolean"?snapshot.goalBounding:snapshot.syncOverride!==true, rendered_time_type:'time_remaining'};
             for (const scope of ['trip','total']) if (Number.isFinite(Number(goals?.[scope])) && Number(goals[scope]) > 0) configuration[scope+'_goal'] = `${goals[scope]}%`;
             if (Number.isFinite(goal) && goal > 0) configuration[goalScope === 'total' ? 'total_goal' : 'trip_goal'] = `${goal}%`;
             if (totalLabel) this.setAttribute('total-label', totalLabel);
@@ -5256,7 +5289,7 @@
                     this.#transitionLifecycle("stop"); this.#clearLocal();
                 }
             }
-            this.#syncOverride = snapshot.syncOverride === true;
+            this.#syncOverride = typeof snapshot.goalBounding==="boolean"?!snapshot.goalBounding:snapshot.syncOverride === true;
             this.#tripId = snapshot.tripId;
             this.#preparedTrip = snapshot.preparedTrip;
             this.#completedTripQueue = snapshot.completed;
@@ -6248,6 +6281,8 @@
                         aggregateStartTimeline,
                     countedTimeMilliseconds:
                         aggregateCountedTime,
+                    productiveTimeMilliseconds:aggregateProductive,
+                    allowanceCreditMilliseconds:aggregateCredit,
                     bankCreditCarryMilliseconds:aggregateCarry,
                     nonProduction:
                         aggregateNonProduction
@@ -7120,7 +7155,8 @@
                         );
                     }
                 }
-                if (has("sync_override")) {
+                if (has("goal_bounding")) this.goalBounding=Boolean(configuration.goal_bounding);
+                if (!has("goal_bounding") && has("sync_override")) {
                     this.syncOverride = Boolean(configuration.sync_override);
                 }
                 if (has("auto_goal")) {
@@ -7167,8 +7203,8 @@
             const goal = Number(this.#renderedPercentGoal);
             if (this.#breakOnly || !this.#hasStartProperties() ||
                 !Number.isFinite(this.#standardDuration) || !(goal > 0)) return undefined;
-            return this.#standardDuration / goal -
-                this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds());
+            return this.#tripEarnedTime() / goal -
+                (this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds()) + this.#getEarlyStartAllowanceCredit());
         }
 
         getSummarySnapshot(now = new Date()) {
@@ -7898,6 +7934,12 @@
             );
         }
 
+        get goalBounding() { return !this.#syncOverride; }
+        set goalBounding(value) {
+            if(typeof value!=="boolean")throw TypeError("goalBounding must be a boolean.");
+            this.syncOverride=!value;
+        }
+
         get syncOverride() { return this.#syncOverride; }
         set syncOverride(value) {
             if (typeof value !== "boolean") throw TypeError("syncOverride must be a boolean.");
@@ -7907,7 +7949,7 @@
         }
         get syncBelowFloor() {
             return this.#autoSyncTripGoal && Number.isFinite(this.#rawSyncTripGoal) &&
-                this.#rawSyncTripGoal < this.#getUserTripGoal();
+                this.#rawSyncTripGoal < 1;
         }
         get rawSyncTripGoal() { return this.#rawSyncTripGoal; }
 
@@ -23935,9 +23977,7 @@
 
         #applySyncTripGoal(value) {
             this.#rawSyncTripGoal = Number.isFinite(value) && value > 0 ? value : undefined;
-            this.#calculatedTripGoal = this.#rawSyncTripGoal === undefined ? undefined :
-                this.#syncOverride ? this.#rawSyncTripGoal :
-                Math.max(this.#getUserTripGoal(), this.#rawSyncTripGoal);
+            this.#calculatedTripGoal = this.#rawSyncTripGoal;
         }
 
         #syncGoal_on({ source, forceEvent }) {
@@ -23949,7 +23989,7 @@
                     allowMissed: true
                 });
 
-            this.#applySyncTripGoal(requirements.tripGoal);
+            this.#applySyncTripGoal(requirements.bounding?.rawTripGoal??requirements.tripGoal);
 
             this.#calculatedGoalSource =
                 "sync";
@@ -23998,6 +24038,7 @@
                                     .#getTotalGoalRequirementFailureReason() ??
                                 "insufficient-time"
                             ),
+                    goalBounding: this.goalBounding,
                     syncOverride: this.#syncOverride,
                     belowFloor: this.syncBelowFloor,
                     rawCalculatedTripGoal: this.#rawSyncTripGoal ?? null,
@@ -27304,6 +27345,18 @@
             };
         }
 
+        #aggregateEarnedTime(totals = this.#tripTotals) {
+            return Number(totals?.standardTimeMilliseconds??0)+Number(totals?.allowanceCreditMilliseconds??0);
+        }
+
+        #aggregateProductiveTime(totals = this.#tripTotals) {
+            return Number(totals?.productiveTimeMilliseconds??totals?.countedTimeMilliseconds??0);
+        }
+
+        #tripEarnedTime(standard = this.#standardDuration) {
+            return Number(standard)+this.#getEarlyStartAllowanceCredit();
+        }
+
         #getTotalGoalAdjustedTimeElapsed() {
             const totalGoal = this.#getTotalGoal();
             const totals = this.#tripTotals;
@@ -27316,8 +27369,8 @@
             }
 
             const adjusted =
-                (totals.standardTimeMilliseconds + this.#standardDuration) /
-                    totalGoal - totals.countedTimeMilliseconds + (totals.bankCreditCarryMilliseconds||0);
+                (this.#aggregateEarnedTime(totals) + this.#tripEarnedTime()) /
+                    totalGoal - this.#aggregateProductiveTime(totals);
 
             return Number.isFinite(adjusted) && adjusted > 0 ? adjusted : undefined;
         }
@@ -27357,11 +27410,11 @@
 
             const adjustedTimeElapsed =
                 (
-                    totals.standardTimeMilliseconds +
-                    this.#standardDuration
+                    this.#aggregateEarnedTime(totals) +
+                    this.#tripEarnedTime()
                 ) /
                     totalGoal -
-                (totals.countedTimeMilliseconds - (totals.bankCreditCarryMilliseconds||0));
+                this.#aggregateProductiveTime(totals);
 
             if (
                 !Number.isFinite(adjustedTimeElapsed) ||
@@ -27701,7 +27754,7 @@
                 Number.isFinite(
                     this.#standardDuration
                 )
-                    ? this.#standardDuration /
+                    ? this.#tripEarnedTime() /
                         tripGoal
                     : undefined;
 
@@ -27825,7 +27878,7 @@
 
             const requirements =
                 this.#requirementsFromAdjustedTime(
-                    this.#standardDuration /
+                    this.#tripEarnedTime() /
                         tripGoal,
                     tripGoal
                 );
@@ -27862,10 +27915,10 @@
         }
 
         #calculateTripGoalRequirements({ allowMissed = false } = {}) {
-            return this.#calculateTripGoalRequirementsForGoal(
+            return this.#applyGoalBounding(this.#calculateTripGoalRequirementsForGoal(
                 this.#getTripGoal(),
                 { allowMissed }
-            );
+            ));
         }
 
         #getTotalGoalRequirementFailureReason() {
@@ -27901,13 +27954,13 @@
             }
 
             const combinedStandard =
-                totals.standardTimeMilliseconds +
-                this.#standardDuration;
+                this.#aggregateEarnedTime(totals) +
+                this.#tripEarnedTime();
 
             const adjustedTimeElapsed =
                 combinedStandard /
                     totalGoal -
-                (totals.countedTimeMilliseconds - (totals.bankCreditCarryMilliseconds||0));
+                this.#aggregateProductiveTime(totals);
 
             if (
                 !Number.isFinite(adjustedTimeElapsed) ||
@@ -27978,8 +28031,8 @@
             }
 
             const combinedStandard =
-                totals.standardTimeMilliseconds +
-                standardDuration;
+                this.#aggregateEarnedTime(totals) +
+                this.#tripEarnedTime(standardDuration);
 
             const targetCombinedCounted =
                 combinedStandard /
@@ -27987,7 +28040,7 @@
 
             const targetAdjustedTimeElapsed =
                 targetCombinedCounted -
-                (totals.countedTimeMilliseconds - (totals.bankCreditCarryMilliseconds||0));
+                this.#aggregateProductiveTime(totals);
 
             if (
                 !Number.isFinite(targetAdjustedTimeElapsed) ||
@@ -27997,7 +28050,7 @@
             }
 
             const rawTripGoal =
-                standardDuration /
+                this.#tripEarnedTime(standardDuration) /
                 targetAdjustedTimeElapsed;
 
             if (
@@ -28013,7 +28066,7 @@
                 ) / 100;
 
             const adjustedTimeElapsed =
-                standardDuration /
+                this.#tripEarnedTime(standardDuration) /
                 tripGoal;
 
             if (
@@ -28092,7 +28145,22 @@
                 return empty;
             }
 
-            return requirements;
+            return this.#applyGoalBounding(requirements);
+        }
+
+        #goalBoundingProjection(rawTripGoal) {
+            const below=Number.isFinite(rawTripGoal)&&rawTripGoal>0&&rawTripGoal<1;
+            const productive=this.#started?Math.max(0,this.#getCountedTimeBalance(this.#getCurrentTimelineTime())+this.#getEarlyStartAllowanceCredit()):0;
+            const released=this.goalBounding&&below&&this.#started&&productive>this.#tripEarnedTime();
+            const adjusted=this.goalBounding&&below&&!released;
+            return Object.freeze({enabled:this.goalBounding,rawTripGoal,effectiveTripGoal:adjusted?1:rawTripGoal,adjusted,released,floor:1});
+        }
+
+        #applyGoalBounding(requirements) {
+            if(!Number.isFinite(requirements?.tripGoal))return requirements;
+            const bounding=this.#goalBoundingProjection(requirements.tripGoal);
+            const effective=bounding.adjusted?this.#requirementsFromAdjustedTime(this.#tripEarnedTime(),1):requirements;
+            return {...effective,bounding};
         }
 
         #getGoalCandidates({ allowMissed = false } = {}) {
@@ -32790,7 +32858,7 @@
                             ? approval.duration : 0);
                     }
                 }
-                if (!forGoal && record.clockTimerExplicitlyEnded === true &&
+                if (record.clockTimerExplicitlyEnded === true &&
                     Number.isFinite(record.clockTimerExplicitEndTimeline)) {
                     end = Math.min(end, record.clockTimerExplicitEndTimeline);
                 }
@@ -32811,8 +32879,8 @@
                 const counted = countedTypes.has(type);
                 if (!counted && !this.#isIntervalType(type) &&
                     type !== "approval-surplus") continue;
-                // Goal deadlines preserve scheduled allowance when a break
-                // ends early; its productive Early Start is counted separately.
+                // Explicitly ended breaks use their physical end above. Unused
+                // allowance is earned numerator time, not another exclusion.
                 if (forGoal && counted) continue;
                 const start = record.start;
                 const end = record.openEnded === true
@@ -32884,10 +32952,8 @@
                 return undefined;
             }
 
-            value = new Date(
-                value.getTime() -
-                value.getMilliseconds()
-            );
+            const hasFraction=value.getMilliseconds()!==0;
+            value = new Date(Math.floor(value.getTime()/1000)*1000);
 
             return [
                 value.getHours(),
@@ -32895,7 +32961,7 @@
                 value.getSeconds()
             ]
                 .map(part => String(part).padStart(2, "0"))
-                .join(":");
+                .join(":")+(hasFraction?"⁺":"");
         }
 
         #getEarlyStartAllowanceCredit() {
@@ -32991,8 +33057,8 @@
 
             let standardTimeMilliseconds = Number(base?.standardTimeMilliseconds ?? 0);
             let actualTimeMilliseconds = Number(base?.actualTimeMilliseconds ?? 0);
-            let countedTimeMilliseconds = Number(base?.countedTimeMilliseconds ?? 0)-(base?.bankCreditCarryMilliseconds||0);
-            let allowanceCreditMilliseconds = 0;
+            let countedTimeMilliseconds = this.#aggregateProductiveTime(base);
+            let allowanceCreditMilliseconds = Number(base?.allowanceCreditMilliseconds??0);
             let remainingCountedTimeMilliseconds;
 
             if (Number.isFinite(this.#externalStandardTime)) {
@@ -33008,15 +33074,16 @@
                 standardTimeMilliseconds += Number(this.#standardDuration ?? 0);
                 actualTimeMilliseconds += this.#getTripActualTimeElapsed(timelineNow);
                 const balance = this.#getCountedTimeBalance(timelineNow);
-                countedTimeMilliseconds += balance;
-                remainingCountedTimeMilliseconds += this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds());
+                const credit=this.#getEarlyStartAllowanceCredit();
+                countedTimeMilliseconds += Math.max(0,balance+credit);
+                remainingCountedTimeMilliseconds += Math.max(0,this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds())+credit);
                 allowanceCreditMilliseconds +=
                     this.#getEarlyStartAllowanceCredit();
             }
 
             countedTimeMilliseconds = Math.max(0, countedTimeMilliseconds);
             const countedPercent = countedTimeMilliseconds > 0
-                ? standardTimeMilliseconds / countedTimeMilliseconds
+                ? (standardTimeMilliseconds+allowanceCreditMilliseconds) / countedTimeMilliseconds
                 : undefined;
             const percentGoal = this.#getScopePercentGoal("total");
             const activeTrip =
@@ -33035,7 +33102,7 @@
                 Number.isFinite(
                     standardTimeMilliseconds
                 )
-                    ? standardTimeMilliseconds /
+                    ? (standardTimeMilliseconds+allowanceCreditMilliseconds) /
                         percentGoal
                     : undefined;
             const activeTripRemainingMilliseconds =
@@ -33051,7 +33118,7 @@
                     )
                     : undefined;
             const completedNetMilliseconds =
-                remainingCountedTimeMilliseconds - standardTimeMilliseconds;
+                remainingCountedTimeMilliseconds - (standardTimeMilliseconds+allowanceCreditMilliseconds);
 
             let renderedTime;
             if (!this.#hasStartProperties() &&
@@ -33101,11 +33168,13 @@
                 actualTimeElapsedMilliseconds: actualTimeMilliseconds,
                 countedTimeElapsedMilliseconds: countedTimeMilliseconds,
                 allowanceCreditMilliseconds,
+                productiveTimeMilliseconds:countedTimeMilliseconds,
+                earnedTimeMilliseconds:standardTimeMilliseconds+allowanceCreditMilliseconds,
                 countedPercent,
                 percentGoal,
                 remainingTimeMilliseconds: activeTrip && Number.isFinite(activeTripRemainingMilliseconds)
                     ? activeTripRemainingMilliseconds
-                    : standardTimeMilliseconds / percentGoal - remainingCountedTimeMilliseconds,
+                    : (standardTimeMilliseconds+allowanceCreditMilliseconds) / percentGoal - remainingCountedTimeMilliseconds,
                 netTimeMilliseconds:
                     completedNetMilliseconds,
                 renderedTime,
@@ -33127,11 +33196,10 @@
                 ? this.#getCountedTimeBalance(timelineNow)
                 : 0;
             const tripCountedTimeElapsedMilliseconds = Math.max(0,tripCountedTimeBalanceMilliseconds);
-            const tripCountedPercent =
-                tripCountedTimeElapsedMilliseconds > 0 &&
-                Number.isFinite(this.#standardDuration)
-                    ? this.#standardDuration / tripCountedTimeElapsedMilliseconds
-                    : undefined;
+            const tripCredit=hasTrip?this.#getEarlyStartAllowanceCredit():0;
+            const tripProductive=hasTrip?Math.max(0,tripCountedTimeBalanceMilliseconds+tripCredit):0;
+            const tripCountedPercent = tripProductive>0&&Number.isFinite(this.#standardDuration)
+                ? (this.#standardDuration+tripCredit)/tripProductive : undefined;
             let activeGoalRequirements;
             if (this.#percentMode === "trip") {
                 activeGoalRequirements =
@@ -33177,11 +33245,12 @@
                 countedTimeElapsedMilliseconds: tripCountedTimeElapsedMilliseconds,
                 // Live readouts retain unused early-break credit; persisted durations remain nonnegative.
                 countedTimeBalanceMilliseconds: tripCountedTimeBalanceMilliseconds,
-                productiveTimeMilliseconds:hasTrip?Math.max(0,tripCountedTimeBalanceMilliseconds+this.#getEarlyStartAllowanceCredit()):0,
+                productiveTimeMilliseconds:tripProductive,
+                earnedTimeMilliseconds:hasTrip?this.#standardDuration+tripCredit:0,
                 allottedTimeMilliseconds,
                 allowanceCreditMilliseconds: hasTrip ? this.#getEarlyStartAllowanceCredit() : 0,
                 countedPercent: tripCountedPercent,
-                percentGoal: this.#getScopePercentGoal("trip"),
+                percentGoal: this.#calculateTripGoalRequirements({allowMissed:true}).tripGoal??this.#getScopePercentGoal("trip"),
                 renderedTime: hasTrip
                     ? (
                         this.#started
@@ -33945,7 +34014,7 @@
                 normalizedMilliseconds % 1000 === 0
                     ? normalizedMilliseconds
                     : Math.ceil(
-                        normalizedMilliseconds /
+                        Math.abs(normalizedMilliseconds) /
                         1000
                     ) * 1000;
 
@@ -33996,10 +34065,10 @@
         #renderTime_remaining({ timelineNow }) {
             const goal = Number(this.#renderedPercentGoal);
             const required = Number.isFinite(goal) && goal > 0 && Number.isFinite(this.#standardDuration)
-                ? this.#standardDuration / goal : undefined;
+                ? this.#tripEarnedTime() / goal : undefined;
             if (!Number.isFinite(required)) return this.#formatRemainingRenderedDuration(undefined);
             return this.#formatRemainingRenderedDuration(
-                required - this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds()));
+                required - (this.#getProductiveTimeBalance(timelineNow, this.#getElapsedStartTimeMilliseconds())+this.#getEarlyStartAllowanceCredit()));
         }
 
         #renderTime_end({ now, timelineNow }) {

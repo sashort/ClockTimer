@@ -253,12 +253,14 @@ allowance. Their difference is the signed `countedTimeBalanceMilliseconds` used
 by bank calculations. The legacy nonnegative `countedTimeMilliseconds` remains a
 compatibility field, not the display source for Actual when bank/work facts exist.
 
-When that legacy duration clamps a negative balance to zero, preserve the missing
-surplus separately as `bankCreditCarryMilliseconds = max(0, -balance)`. Aggregate
-goal budgets add this carry once. Do not add the entire allowance to a completed
-credited duration again: a positive legacy net already includes its credit.
-The bank is target budget minus signed balance; active projections retain the
-existing allotted-time floor. Percent-goal rounding remains conservative.
+Percentage is `(Standard + allowanceCreditMilliseconds) / productiveTimeMilliseconds`.
+Aggregate earned numerators and productive denominators are summed before division;
+never average trip percentages. A goal budget is `earned / goalRatio - productive`.
+The legacy carry field remains readable, but must not be added again when complete
+work and credit metadata are available. Signed bank coordinates remain useful for
+elapsed/remaining readouts; they are not the percentage denominator. Active aggregate
+projections retain their allotted-time floor. Goal rounding remains conservative.
+For example, 30 minutes Standard plus 10 minutes credit over 20 minutes work is 200%.
 
 Stopped events and local log projections retain work and allowance metadata.
 The saved-trip API reconstructs these facts from complete event histories, so
@@ -270,7 +272,7 @@ Regression: 2:56 Standard; 8:48.695 wall time; 3:06.811 actual break including
 buffer; 0:51.927 Down. Actual is 4:49.957. A 20-minute configured break+buffers
 allowance leaves 16:53.189 credit. Signed balance is -12:03.232; its legacy stored
 value is zero, with 12:03.232 carry. At 100%, banked time is 14:59.232. Actual
-must show 4:49, and the credit must remain available to the next aggregate goal.
+must show 4:49 and 410.13%; the credit improves every aggregate containing this trip.
 
 Checks: trip-time-bank.mjs, trip_time_bank.php, trip-time-bank-browser.cjs,
 trip-bank-goal-budget.mjs. All database access for diagnosis is read-only.

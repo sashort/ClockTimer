@@ -37,8 +37,8 @@ assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,a
 assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,allottedTimeMilliseconds:1200000,countedTimeMilliseconds:1500000}]),'80.00%');
 assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1200000,allottedTimeMilliseconds:1500000,countedTimeMilliseconds:600000}]),'80.00%');
 assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1200000,actualTimeMilliseconds:600000}]),'200.00%');
-assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1800000,allottedTimeMilliseconds:1800000,countedTimeMilliseconds:600000,allowanceCreditMilliseconds:600000}]),'150.00%','active trip projection immediately includes unused break allowance');
-assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1800000,countedTimeMilliseconds:1500000,allowanceCreditMilliseconds:600000}]),'120.00%','completed persisted counted time is not credited a second time');
+assert.equal(w.TripLog.percent([{running:true,standardTimeMilliseconds:1800000,allottedTimeMilliseconds:1800000,countedTimeMilliseconds:600000,productiveTimeMilliseconds:1200000,allowanceCreditMilliseconds:600000}]),'133.33%','active trip projection immediately includes unused break allowance');
+assert.equal(w.TripLog.percent([{standardTimeMilliseconds:1800000,countedTimeMilliseconds:1500000,productiveTimeMilliseconds:2100000,allowanceCreditMilliseconds:600000}]),'114.29%','completed earned time includes credit once over productive work');
 assert.equal(view.entryLabel(events[2],events[1],events[2]),'Break Ended');
 assert.equal(view.entryLabel({...events[2],timestamp:'2026-09-18 12:06:00'},events[1],{...events[2],timestamp:'2026-09-18 12:06:00'}),'Break Ended Early · 1:00 Gained');
 assert.equal(view.entryLabel({...events[2],timestamp:'2026-09-18 12:08:30'},events[1],{...events[2],timestamp:'2026-09-18 12:08:30'}),'Break Ended Late · 1:30 Lost');

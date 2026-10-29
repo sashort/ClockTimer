@@ -600,3 +600,16 @@ ended / ended early / ended late. Regular trip intervals keep their Trip resumed
 announcements and timing details. This changes wording, not lifecycle transitions.
 
 Lower aggregate goals must not allocate future overtime/remaining clock geometry. The active trip owns clock range bounds; computed aggregate deadlines remain goal metadata. Verify Auto Day 40% / Trip 100% before/after Standard failure and after reload in Overflow and Fitted modes.
+
+
+## Goal Bounding, earned-time bank and fractional readouts
+
+The authoritative contract is [goal-bounding-and-counted-bank.md](goal-bounding-and-counted-bank.md).
+Goal Bounding defaults On. Each candidate retains raw and effective inferred Trip
+requirements. Crossing a raised 100% boundary releases the bound while retaining
+the raw goal; crossing the raw deadline fails that candidate. Derive release after
+replay so reloads, Break and Down preserve the same result. ▲ means raised, ▼ means
+below-floor in use. Underlying aggregate settings never change as a side effect.
+Earned time is Standard plus unused allowance; performance divides earned time by
+productive work. End Time floors absolute timestamps and shows ⁺ for a nonzero
+fraction in Running, Break and Down. Exact seconds have no marker.

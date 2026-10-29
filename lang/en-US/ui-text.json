@@ -6923,18 +6923,18 @@
     },
     "7f05505a-1327-5bb2-9804-4ecf0c78b536": {
       "id": "7f05505a-1327-5bb2-9804-4ecf0c78b536",
-      "text": "Sync Override",
-      "default": "Sync Override"
+      "text": "Goal Bounding",
+      "default": "Goal Bounding"
     },
     "46dea09b-4cc5-50ee-bf99-e944e84b6f59": {
       "id": "46dea09b-4cc5-50ee-bf99-e944e84b6f59",
-      "text": "Sync normally keeps the trip goal at or above your manual/default goal. Sync Override allows a calculated goal below that floor. You can change this option at any time; it applies when Sync calculates a goal. Changing it may recalculate your trip goal and remaining time.",
-      "default": "Sync normally keeps the trip goal at or above your manual/default goal. Sync Override allows a calculated goal below that floor. You can change this option at any time; it applies when Sync calculates a goal. Changing it may recalculate your trip goal and remaining time."
+      "text": "Goal Bounding is On by default. It raises an inferred Trip target below 100% to 100%, without changing the saved goal. This applies to Trip, Auto and Sync. If the bounded target is missed, the original goal is recalculated without bounding and remains available if achievable. Turn bounding Off to allow lower targets immediately. ▲ means raised to the floor; ▼ means a below-floor target is in use.",
+      "default": "Goal Bounding is On by default. It raises an inferred Trip target below 100% to 100%, without changing the saved goal. This applies to Trip, Auto and Sync. If the bounded target is missed, the original goal is recalculated without bounding and remains available if achievable. Turn bounding Off to allow lower targets immediately. ▲ means raised to the floor; ▼ means a below-floor target is in use."
     },
     "1f8d9e5f-bb50-5bc2-b591-783995c8e0a1": {
       "id": "1f8d9e5f-bb50-5bc2-b591-783995c8e0a1",
-      "text": "About Sync Override",
-      "default": "About Sync Override"
+      "text": "About Goal Bounding",
+      "default": "About Goal Bounding"
     },
     "b4ddfd1d-1282-5dd0-99e8-64faed3a9871": {
       "id": "b4ddfd1d-1282-5dd0-99e8-64faed3a9871",
@@ -7030,6 +7030,24 @@
       "id": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5",
       "text": "Lunch Timer",
       "default": "Lunch Timer"
+    },
+    "285022ea-8eb2-50c7-a87b-a1c9caf1489a": {
+      "id": "285022ea-8eb2-50c7-a87b-a1c9caf1489a",
+      "text": "Calculated Trip Goal: {value}",
+      "default": "Calculated Trip Goal: {value}",
+      "source": "TimerSummaryView.js"
+    },
+    "4a5ce630-cda8-503b-a7f4-52dd93926d01": {
+      "id": "4a5ce630-cda8-503b-a7f4-52dd93926d01",
+      "text": "Raised to the 100% floor",
+      "default": "Raised to the 100% floor",
+      "source": "TimerSummaryView.js"
+    },
+    "1852c87c-85c2-569e-a016-6f0dc9c96781": {
+      "id": "1852c87c-85c2-569e-a016-6f0dc9c96781",
+      "text": "Below-floor goal in use",
+      "default": "Below-floor goal in use",
+      "source": "TimerSummaryView.js"
     }
   }
 }

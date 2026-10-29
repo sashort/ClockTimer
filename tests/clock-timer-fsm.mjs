@@ -58,7 +58,7 @@ async function exercise(core, checkFSM) {
             window.document.body.append(timer); timers.push(timer);
             await timer.connect('test','test');
             await timer.calculateTripTotals('2026-09-18T00:00:00Z','2026-09-20T00:00:00Z');
-            timer.configure({goal_type:'auto',trip_goal:`${trip*100}%`,total_goal:`${total*100}%`});
+            timer.configure({goal_bounding:false,goal_type:'auto',trip_goal:`${trip*100}%`,total_goal:`${total*100}%`});
             timer.autoSyncTripGoal=sync;
             await timer.start({standardTime:'0:30:00'});
             const activeTrip=sync?timer.calculatedTripGoal:trip;

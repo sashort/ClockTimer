@@ -453,7 +453,7 @@ if(process.argv.includes('--sync-availability')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  window.SpeechMenu.testBegin();await window.WMOFActions.handleSpeechRuntimeStarted();await window.WMOFActions.toggleSync('on');await settle();
  const menu=window.document.querySelector('#toggleSyncMenuButton');
- const override=window.document.querySelector('#syncOverrideButton');
+ const override=window.document.querySelector('#goalBoundingButton');
  assert.equal(override.disabled,false,'override is enabled while idle');
  timer.configure({total_goal:'100%'});
  await window.WMOFCoordinator.run('sync-empty-test',()=>timer.start({standardTimeMilliseconds:3600000}));await settle();
@@ -1249,26 +1249,24 @@ if(process.argv.includes('--commands-close')) {
 }
 if(process.argv.includes('--sync-override-feedback')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();await settle();
- const button=window.document.querySelector('#syncOverrideButton');
+ const button=window.document.querySelector('#goalBoundingButton');
  await window.WMOFActions.toggleSync('off');await settle();
- for(const enabled of [true,false]) {
-  assert.equal(button.disabled,false,'Sync off cannot disable Override');spoken.length=0;button.click();await settle();
-  assert.equal(timer.syncOverride,enabled);assert.deepEqual(spoken,[`Sync override ${enabled?'on':'off'}.`]);
+ for(const enabled of [false,true]) {
+  assert.equal(button.disabled,false,'Sync off cannot disable Goal Bounding');spoken.length=0;button.click();await settle();
+  assert.equal(timer.goalBounding,enabled);assert.deepEqual(spoken,[`Goal bounding ${enabled?'on':'off'}.`]);
  }
  await timer.start({standardTime:'00:20:00'});await window.WMOFActions.toggleSync('on');await settle();
  timer.configure({goal_type:'trip',auto_goal:true,trip_goal:'100%',total_goal:'100%',external_standard_time:600000,external_counted_time:300000});await settle();
- assert.equal(timer.calculatedTripGoal,1,'floor initially applies');spoken.length=0;button.click();await settle();
- assert.equal(timer.calculatedTripGoal,.8,'enabling override recalculates below the floor');
- assert.deepEqual(spoken,['Sync override on. New trip goal 80 percent.'],'override state precedes recalculation');
- spoken.length=0;button.click();await settle();assert.equal(timer.calculatedTripGoal,1);
- assert.deepEqual(spoken,['Sync override off. New trip goal 100 percent.']);
- await window.WMOFActions.toggleSync('off');await settle();spoken.length=0;
- await window.WMOFActions.enableSyncOverride();await settle();
- assert(spoken.length===1&&spoken[0].startsWith('Sync override on. Sync On.'),'compound command also puts override state first: '+JSON.stringify(spoken));
+ assert.equal(timer.getSummarySnapshot().trip.percentGoal,1,'floor initially applies');spoken.length=0;button.click();await settle();
+ assert.equal(timer.getSummarySnapshot().trip.percentGoal,.8,'disabling bounding recalculates below the floor');
+ assert.deepEqual(spoken,['Goal bounding off. New trip goal 80 percent.'],'bounding state precedes recalculation');
+ spoken.length=0;button.click();await settle();assert.equal(timer.getSummarySnapshot().trip.percentGoal,1);
+ assert.deepEqual(spoken,['Goal bounding on. New trip goal 100 percent.']);
+ assert.equal(window.WMOFActions.enableSyncOverride,undefined,'obsolete compound command is removed');
  assert.equal(window.document.querySelector('#syncOverrideHelp'),null,'removed disabled explanation is absent');
- assert.equal(window.document.querySelector('#syncOverrideHelpButton').textContent.trim(),'?');
+ assert.equal(window.document.querySelector('#goalBoundingHelpButton').textContent.trim(),'?');
  assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);
- console.log('PASS always-enabled Override, state-first confirmations, preserved goal recalculation and question-mark help');await window.happyDOM.close();process.exit(0);
+ console.log('PASS always-enabled Goal Bounding, state-first confirmations and recalculation');await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--scope-feedback')) {
  await timer.connect('test','password');await settle();window.document.querySelector('#loginDialog').close();await settle();
@@ -1343,7 +1341,7 @@ if(process.argv.includes('--auto-selector')) {
   assert.equal(window.document.querySelector('#scopeToggle').textContent,`[${label}] - 120%`,range+' keeps its configured goal in Auto');
  }
  timer.configure({goal_type:'auto',trip_goal:'130%',total_goal:'110%',auto_goal:false});await settle();assert.equal(window.document.querySelector('#scopeToggle').textContent,'[Trip] - 130%');
- timer.configure({goal_type:'auto',trip_goal:'90%',total_goal:'90%',auto_goal:false});await settle();assert.equal(window.document.querySelector('#scopeToggle').textContent,'[Standard] - 100%');
+ timer.configure({goal_type:'auto',trip_goal:'90%',total_goal:'90%',auto_goal:false});await settle();assert.equal(window.document.querySelector('#scopeToggle').textContent,'[Year] - 90%');
  console.log('PASS Auto selector follows the active target and manual scopes retain their labels');
  await window.happyDOM.close();process.exit(0);
 }

@@ -17,7 +17,7 @@ window.fetch=async(url,options={})=>{
 for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 const c=window.document.createElement('clock-timer');window.document.body.append(c);
 await c.connect('test','test');
-c.configure({goal_type:'auto',trip_goal:'110%',total_goal:'110%',auto_goal:false});
+c.configure({goal_bounding:false,goal_type:'auto',trip_goal:'110%',total_goal:'110%',auto_goal:false});
 await c.calculateTripTotals('2026-09-01T04:00:00Z','2026-09-19T03:59:59.999Z');
 c.setAttribute('goal-bar','');
 assert.equal(c.getGoalEditorSnapshot('total').inferred_percent,null,'idle has no inferred value');
