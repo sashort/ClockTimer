@@ -5497,6 +5497,10 @@
         );
     }
 
+    function renderCompactActions(state) {
+        globalThis.WMOFCompactActions?.render(app,state,{totalLabel:totalScopeLabel()});
+    }
+
     function totalScopeLabel() {
         return announcementText(`messages.scope.${getTripLogRange()}`);
     }
@@ -5678,7 +5682,7 @@
             );
         }
 
-        globalThis.WMOFCompactActions?.render(app);
+        renderCompactActions();
         return pinned;
     }
 
@@ -6855,7 +6859,7 @@
         app.dataset.actionDisplay = value;
         for (const button of document.querySelectorAll("button[data-action-display]"))
             button.setAttribute("aria-checked", String(button.dataset.actionDisplay === value));
-        globalThis.WMOFCompactActions?.render(app);
+        renderCompactActions();
         requestAnimationFrame(() => clockTimer?.refreshLayout?.());
     }
 
@@ -9257,7 +9261,7 @@
             const interval = clockTimer.getActiveIntervalState?.(new Date());
             downElapsedValue.value = formatDuration(interval?.elapsedMilliseconds || 0).replace(/^0(?=\d:)/, "");
             downElapsedValue.textContent = downElapsedValue.value;
-            globalThis.WMOFCompactActions?.render(app);
+            renderCompactActions();
         }
         renderEndTimeGoalLock();
         renderSyncGoalsState(state);
@@ -13836,6 +13840,8 @@
                 document.body.append(template.content.cloneNode(true));
                 numberPadDialog = $("#numberPadDialog");
                 numberPadDisplay = $("#numberPadDisplay");
+                installNumberPadAnchorGestures();
+                new ResizeObserver(fitNumberPadDigits).observe(numberPadDisplay);
                 numberPadSettingsArea = $("#numberPadSettingsArea");
                 numberPadSettings = $("#numberPadSettings");
                 numberPadConnection = $("#numberPadConnection");
@@ -14211,9 +14217,56 @@
         }
     }
 
-    function normalizePercentDigits(value) {
-        const match = String(value || "").trim().match(/^(\d+)(?:%)?$/);
-        return match ? String(Number(match[1])) : "";
+    function normalizePercentDigits(value, anchorDigit = 1) {
+        const match = String(value ?? "").trim().match(/^(\d+(?:\.\d+)?)(?:%)?$/);
+        return match && Number.isFinite(Number(match[1])) ? String(Math.round(Number(match[1])/anchorDigit)) : "";
+    }
+
+    function numberPadNumericValue(state = numberPadState) {
+        return Number((Number(state.pending)*(state.anchorDigit??1)).toFixed(6));
+    }
+
+    function numberPadDisplayString(state=numberPadState){
+        if(!state.pending)return '---';
+        if(state.mode==='percent'){
+            const places=Math.max(0,-Math.log10(state.anchorDigit??1));
+            const value=places?numberPadNumericValue(state).toFixed(places):String(numberPadNumericValue(state));
+            return WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:value});
+        }
+        return state.mode==='absolute'?renderAbsoluteDigits(state.pending):renderTimeDigits(state.pending);
+    }
+    function fitNumberPadDigits(){
+        const run=numberPadDisplay?.querySelector('.number-pad-digit-run');if(!run)return;
+        run.style.fontSize='';const style=getComputedStyle(numberPadDisplay),available=numberPadDisplay.clientWidth-(parseFloat(style.paddingLeft)||0)-(parseFloat(style.paddingRight)||0),width=run.getBoundingClientRect().width;
+        if(available>0&&width>available)run.style.fontSize=(parseFloat(getComputedStyle(run).fontSize)*available/width)+'px';
+    }
+    function paintNumberPadAnchors(){
+        if(!numberPadState||!numberPadDisplay)return;
+        const text=numberPadDisplayString(),count=(text.match(/\d/g)||[]).length;
+        const defaultOffset=numberPadState.mode==='percent'?Math.max(0,Math.log10(numberPadState.anchorDigit??1)):0;
+        const range=numberPadState.anchorRange??{start:defaultOffset,stop:defaultOffset,explicit:false};
+        const start=Math.min(range.start,range.stop),stop=Math.max(range.start,range.stop),run=document.createElement('span');run.className='number-pad-digit-run';let index=0;
+        for(const character of text){if(/\d/.test(character)){const span=document.createElement('span'),place=count-1-index++;span.textContent=character;span.dataset.padDigit=String(place);span.classList.toggle('number-pad-anchor-digit',place>=start&&place<=stop);run.append(span);}else run.append(character);}
+        numberPadDisplay.replaceChildren(run);fitNumberPadDigits();
+        const base=numberPadState.mode==='percent'?Math.min(1,numberPadState.anchorDigit??1):1;
+        numberPadDialog.setAttribute('anchor-start',String(Number((base*10**range.start).toFixed(6))));numberPadDialog.setAttribute('anchor-stop',String(Number((base*10**range.stop).toFixed(6))));
+    }
+    function editNumberPadAnchorRange(digit){
+        const state=numberPadState,range=state?.anchorRange;if(!range?.explicit)return false;
+        const template=state.pending?numberPadDisplayString(state):(state.anchorTemplate??(state.mode==='percent'?'0.0':'0:00:00')),digits=template.match(/\d/g)||[];while(digits.length<=Math.max(range.start,range.stop))digits.unshift('0');if(!digits.length)return false;
+        const left=Math.max(0,digits.length-1-Math.max(range.start,range.stop)),right=Math.min(digits.length-1,digits.length-1-Math.min(range.start,range.stop)),length=right-left+1;
+        const prior=state.anchorReplace?'0'.repeat(length):digits.slice(left,right+1).join(''),replacement=digit===null?'0'.repeat(length):(prior+digit).slice(-length);
+        digits.splice(left,length,...replacement);let raw=digits.join('');
+        if(state.mode==='percent'&&(state.anchorDigit??1)>1)raw=String(Math.round(Number(raw)/state.anchorDigit));
+        state.pending=digit===null&&left===0&&right===digits.length-1?'':raw.replace(/^0+(?=\d)/,'');state.replaceOnNextDigit=false;state.anchorReplace=digit===null;state.everEdited=true;refreshNumberPad();return true;
+    }
+    function installNumberPadAnchorGestures(){
+        let pointer,timer,origin;
+        const select=(start,stop)=>{numberPadState.anchorTemplate=numberPadDisplayString();numberPadState.anchorRange={start,stop,explicit:true};numberPadState.anchorReplace=true;numberPadState.replaceOnNextDigit=false;paintNumberPadAnchors();};
+        const end=()=>{clearTimeout(timer);pointer=undefined;origin=undefined;};
+        numberPadDisplay.addEventListener('pointerdown',event=>{const digit=event.target.closest('[data-pad-digit]');if(!digit||!numberPadState)return;event.preventDefault();pointer=event.pointerId;origin={position:Number(digit.dataset.padDigit),x:event.clientX,y:event.clientY};numberPadDisplay.setPointerCapture(pointer);select(origin.position,origin.position);timer=setTimeout(()=>{if(pointer===event.pointerId&&numberPadState){const count=(numberPadDisplay.textContent.match(/\d/g)||[]).length;select(count-1,0);}},550);});
+        numberPadDisplay.addEventListener('pointermove',event=>{if(pointer!==event.pointerId||!origin||!numberPadState)return;if(Math.hypot(event.clientX-origin.x,event.clientY-origin.y)<=6&&!origin.dragging)return;origin.dragging=true;clearTimeout(timer);const digit=document.elementFromPoint(event.clientX,event.clientY)?.closest('[data-pad-digit]');if(digit&&numberPadDisplay.contains(digit))select(origin.position,Number(digit.dataset.padDigit));});
+        for(const event of ['pointerup','pointercancel','lostpointercapture'])numberPadDisplay.addEventListener(event,end);
     }
 
     function getNumberPadTitle(source) {
@@ -14237,7 +14290,7 @@
         if (!numberPadState) return false;
         if (!numberPadState.pending) return Boolean(numberPadState.allowEmpty);
         if (numberPadState.mode === "percent") {
-            return Number.isInteger(Number(numberPadState.pending)) && Number(numberPadState.pending) > 0;
+            return Number.isSafeInteger(Number(numberPadState.pending)) && (numberPadState.source==='official-percent'?Number(numberPadState.pending)>=0:Number(numberPadState.pending)>0);
         }
         if (numberPadState.mode === "absolute") {
             return Boolean(numberPadState.pendingDate) && absoluteDigitsValid(numberPadState.pending, numberPadState.meridiem);
@@ -14282,11 +14335,20 @@
         numberPadContext.classList.toggle("absolute-mode", absoluteMode);
         numberPadReadout.classList.toggle("absolute-mode", absoluteMode);
         numberPadDisplay.textContent = percentMode
-            ? (numberPadState.pending ? globalThis.WMOFLanguagePack.text("e3620451-3e1a-5638-b0e7-c608c808d5b7", {value0: (Number(numberPadState.pending))}) : "---")
+            ? (numberPadState.pending ? globalThis.WMOFLanguagePack.text("e3620451-3e1a-5638-b0e7-c608c808d5b7", {value0: (numberPadNumericValue())}) : "---")
             : absoluteMode
                 ? (numberPadState.pending ? renderAbsoluteDigits(numberPadState.pending) : "---")
                 : (numberPadState.pending ? renderTimeDigits(numberPadState.pending) : "---");
 
+        numberPadDialog.setAttribute('anchor-digit',String(numberPadState.anchorDigit??1));
+        paintNumberPadAnchors();
+        let official=numberPadDialog.querySelector('.number-pad-official-details');
+        if(numberPadState.previewOfficial){
+            if(!official){official=document.createElement('div');official.className='number-pad-official-details';numberPadContext.append(official);}
+            official.replaceChildren();const preview=numberPadState.previewOfficial(numberPadState.pending?numberPadNumericValue():null);
+            const line=document.createElement('div');line.textContent=preview.text;official.append(line);
+            if(numberPadState.onClearOfficial){const clear=document.createElement('button');clear.type='button';clear.textContent=preview.clearText;clear.className='clear-official-percentage';clear.addEventListener('click',async()=>{clear.disabled=true;try{await numberPadState.onClearOfficial();await closeNumberPad({discardPrepared:false,allowChanged:true});}catch(error){const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.message;official.append(message);clear.disabled=false;}});official.append(clear);}
+        }else official?.remove();
         numberPadDateRow.hidden = !absoluteMode;
         numberPadAM.hidden = !absoluteMode;
         numberPadPM.hidden = !absoluteMode;
@@ -14503,7 +14565,11 @@
         onConfirm,
         onCancel,
         title,
-        allowEmpty = false
+        allowEmpty = false,
+        anchorDigit = 1,
+        previewOfficial,
+        onClearOfficial,
+        confirmUnchanged = false
     } = {}) {
         if (
             typeof confirmTarget !== "string" ||
@@ -14515,6 +14581,8 @@
                 "Input requires explicit confirmTarget and cancelTarget."
             );
         }
+
+        if(![1,.1,.01,.001,10,100].includes(anchorDigit))throw new TypeError("Invalid anchor digit.");
 
         const normalizedMode =
             mode === "percent"
@@ -14546,7 +14614,7 @@
             initial =
                 normalizedMode === "percent"
                     ? normalizePercentDigits(
-                        initialValue
+                        initialValue, anchorDigit
                     )
                     : durationValueToRawDigits(
                         Number.isSafeInteger(initialValue)
@@ -14559,6 +14627,7 @@
 
         const state = {
             mode: normalizedMode,
+            anchorDigit, previewOfficial, onClearOfficial, confirmUnchanged,
             onConfirm,
             onCancel,
             source,
@@ -15849,7 +15918,7 @@
                     );
 
             if (
-                !Number.isInteger(
+                !Number.isFinite(
                     percent
                 ) ||
                 percent <= 0
@@ -15857,12 +15926,9 @@
                 return false;
             }
 
-            numberPadState.pending =
-                String(
-                    percent
-                );
+            numberPadState.pending = normalizePercentDigits(percent,numberPadState.anchorDigit??1);
             display =
-                numberPadState.pending +
+                numberPadNumericValue() +
                 "%";
         }
         else if (
@@ -16741,7 +16807,7 @@
 
         if (
             !numberPadHasChanges() &&
-            !state.startsTripOnConfirm
+            !state.startsTripOnConfirm && !state.confirmUnchanged
         ) {
             return true;
         }
@@ -16753,7 +16819,7 @@
                     : state.mode === "absolute"
                         ? new Date(`${state.pendingDate}T${String(absoluteHour24(state)).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).minute).padStart(2,"0")}:${String(splitAbsoluteDigits(state.pending).second).padStart(2,"0")}`).toISOString()
                         : state.mode === "percent"
-                            ? Number(state.pending)
+                            ? numberPadNumericValue(state)
                             : timeDigitsToMilliseconds(
                                 state.pending
                             );
@@ -16943,6 +17009,8 @@
             return false;
         }
 
+        if(editNumberPadAnchorRange(null))return true;
+
         numberPadState.pending =
             String(
                 numberPadState.pending
@@ -16961,6 +17029,7 @@
 
     function resetNumberPadPendingValue() {
         if (!numberPadState) return;
+        numberPadState.anchorRange=undefined;numberPadState.anchorTemplate=undefined;numberPadState.anchorReplace=false;
         numberPadState.pending = numberPadState.initial;
         numberPadState.pendingDate = numberPadState.initialDate;
         numberPadState.meridiem = numberPadState.initialMeridiem;
@@ -17244,7 +17313,7 @@
         setInteractionDisabled($("#tripTransitionSummaryOk"), controls.busy || !actions.confirmSummary);
         setInteractionDisabled($("#tripTransitionSummaryCancel"), controls.busy);
         setEndTripButtonIntervalPalette(state.interval);
-        globalThis.WMOFCompactActions?.render(app, state);
+        renderCompactActions(state);
     }
 
     // Planning and execution must select the same branch before the action
@@ -19345,7 +19414,7 @@
             const interval = clockTimer.getActiveIntervalState?.(now);
             downElapsedValue.value = formatDuration(interval?.elapsedMilliseconds || 0).replace(/^0(?=\d:)/, "");
             downElapsedValue.textContent = downElapsedValue.value;
-            globalThis.WMOFCompactActions?.render(app);
+            renderCompactActions();
         }
     }
 
@@ -26264,6 +26333,8 @@
                     return false;
                 }
 
+                if(editNumberPadAnchorRange(value))return true;
+
                 const previousPending =
                     numberPadState
                         .pending;
@@ -28202,7 +28273,7 @@
         const state = numberPadState;
         const interval = clockTimer.getActiveIntervalState?.(new Date());
         const value = !state?.pending ? "" : state.mode === "percent"
-            ? formatSpokenPercent(Number(state.pending)) : state.mode === "absolute"
+            ? formatSpokenPercent(numberPadNumericValue(state)) : state.mode === "absolute"
                 ? renderAbsoluteDigits(state.pending) : formatGoalFailureDuration(timeDigitsToMilliseconds(state.pending));
         const snapshot = {
             semantic:commandFeedbackState(), announcementCount:commandAnnouncementCount,

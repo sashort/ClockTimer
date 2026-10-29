@@ -19,15 +19,17 @@ try {
         $existing=fetch_trip_events($pdo,$tripId,'log');
         if(!is_string($input['revision']??null) || !hash_equals(trip_edit_revision($existing),$input['revision'])) api_error('This trip changed. Reopen the editor and try again.',409,'trip_edit_conflict');
         if(($input['operation']??'')==='delete-trip') {
+            if(trip_official_has_history($existing))throw new InvalidArgumentException('Trips with official adjustments cannot be deleted.');
             $pdo->prepare('DELETE FROM trip_events WHERE trip_id=:id')->execute([':id'=>$tripId]);
             $pdo->prepare('DELETE FROM trips WHERE id=:id')->execute([':id'=>$tripId]);
             return ['tripId'=>$tripId,'deleted'=>true];
         }
+        $input['_actorId']=authenticated_user_id();
         $events=trip_edit_apply($existing,$input);$plan=trip_edit_persistence_plan($existing,$events);$ids=$plan['keep'];
         if($plan['delete'])$pdo->prepare('DELETE FROM trip_events WHERE trip_id=? AND id IN ('.implode(',',array_fill(0,count($plan['delete']),'?')).')')->execute([$tripId,...$plan['delete']]);
         foreach($plan['insert'] as $e) {
             $value=json_encode($e['value'],JSON_THROW_ON_ERROR);
-            $typeId=require_trip_event_type_id($pdo,$e['event']);
+            $typeId=str_starts_with($e['event'],'trip.official-percent-')?trip_official_event_type_id($pdo,$e['event']):require_trip_event_type_id($pdo,$e['event']);
             $pdo->prepare('INSERT INTO trip_events (trip_id,event_type_id,timestamp,value) VALUES (:trip,:type,:time,:value)')->execute([':trip'=>$tripId,':type'=>$typeId,':time'=>$e['timestamp'],':value'=>$value]);
             $ids[]=(int)$pdo->lastInsertId();
         }

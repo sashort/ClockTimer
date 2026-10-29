@@ -1758,6 +1758,21 @@
         "firstVisibleLayout": "Compact/Bar",
         "loginAvailable": true
       }
+    },
+    {
+      "id": "OFFICIAL-PERCENT-FIXED",
+      "contract": "TRIP-OFFICIAL",
+      "given": {
+        "trip": "completed, Standard 30 minutes, productive time 27 minutes, no allowance credit"
+      },
+      "when": {
+        "action": "apply official percentage 112.5 then edit Standard to 31 minutes"
+      },
+      "expect": {
+        "percentage": 112.5,
+        "effectiveBankCreditMinutes": -0.625,
+        "history": "original official set record remains immutable; adjustment recalculates"
+      }
     }
   ]
 }

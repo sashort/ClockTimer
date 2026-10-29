@@ -17855,7 +17855,8 @@
           "intervals": "Break/Down timers take priority; countdown returns on resume",
           "hidden": "Classic, idle, standalone break, all goals failed",
           "main_readout": "Remains Standard-based and mode-specific"
-        }
+        },
+        "numberpad_anchors": "All percentage, time and duration sessions have inclusive start/stop digit anchors. Default one position: ones for ordinary percent, seconds ones for time/duration, tenths for official percent. Tap/drag selects a range; 550 ms long press selects all. Backspace clears the range, Select All deletion clears the value. Reset restores the initial/null value and default single anchor. Underline only; never recolor or wrap digits."
       },
       "controls": {
         "equivalence": "One whole-bar click/touch/keyboard target; Sync remains separate.",
@@ -18085,6 +18086,46 @@
         "node tests/goal-bounding.mjs",
         "node tests/trip-time-bank.mjs",
         "node tests/fractional-time-indicators.mjs"
+      ]
+    },
+    "TRIP-OFFICIAL": {
+      "id": "TRIP-OFFICIAL",
+      "scope": [
+        "TS"
+      ],
+      "preconditions": {
+        "trip": "Completed, owned trip with positive Standard and productive time; no standalone break"
+      },
+      "inputs": [
+        "completed trip percent activation",
+        "apply official percentage",
+        "Clear Official Percentage",
+        "later trip edit"
+      ],
+      "postconditions": {
+        "accounting": "Preserve entered percent; effective signed bank credit = official fraction * productive time - Standard. Recalculate after edits and include in aggregates.",
+        "history": "Append actor-attributed set/clear events after Trip End under row lock/revision/CSRF. Immutable history blocks deletion and restart; Clear restores original allowance credit without deleting history.",
+        "editor": "Shared percent numberpad with tenths default anchor, calculated result, signed adjustment and Clear action when applicable. No 150 percent measurement cap.",
+        "presentation": "Official badge on corrected percent; locked history rows after ordinary entries."
+      },
+      "evidence": [
+        "php tests/official-percent.php",
+        "node tests/official-percent.mjs",
+        "node tests/official-percent-browser.cjs",
+        "node tests/numberpad-anchors.mjs"
+      ],
+      "controls": [
+        "completed trip percent",
+        "shared numberpad",
+        "Clear Official Percentage"
+      ],
+      "audio": {
+        "policy": "Use existing numberpad confirmation/error feedback; no trip lifecycle announcement."
+      },
+      "forbidden": [
+        "correct an active trip or standalone break",
+        "delete or rewrite official history",
+        "change underlying factual timestamps"
       ]
     }
   },
@@ -19847,6 +19888,21 @@
           "unresolvedControls": "hidden",
           "firstVisibleLayout": "Compact/Bar",
           "loginAvailable": true
+        }
+      },
+      {
+        "id": "OFFICIAL-PERCENT-FIXED",
+        "contract": "TRIP-OFFICIAL",
+        "given": {
+          "trip": "completed, Standard 30 minutes, productive time 27 minutes, no allowance credit"
+        },
+        "when": {
+          "action": "apply official percentage 112.5 then edit Standard to 31 minutes"
+        },
+        "expect": {
+          "percentage": 112.5,
+          "effectiveBankCreditMinutes": -0.625,
+          "history": "original official set record remains immutable; adjustment recalculates"
         }
       }
     ]

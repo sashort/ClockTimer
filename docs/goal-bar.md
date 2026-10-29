@@ -422,3 +422,5 @@ In Full mode the timed End Lunch/End Break/End Short Break button restores one l
 Full break text stays on one line and uses its larger available font when buffer content is absent. Buffer text reserves side space only while a buffer is visible; fitting prevents clipping when the button itself is constrained.
 
 Compact Down entrance at end-buffer expiry uses the rail fade/scale transition; the legacy Full slide is restricted to Full mode. The balanced percentage row stacks above the empty clock container so its goal control remains clickable after switching layouts.
+
+The next-goal countdown resolves aggregate identities through the current localized range caption (Day, Week, Year, etc.), matching the bar; it does not expose the internal Total fallback. Merged captions use that same name, e.g. Week/Trip. Fractional markers are absent at exact whole seconds and zero; positive floored countdowns append + only when milliseconds were omitted.

@@ -4161,7 +4161,7 @@
                 actualTimeMilliseconds,
                 countedTimeMilliseconds,
                 productiveTimeMilliseconds:Math.max(0,Number(value?.productiveTimeMilliseconds??countedTimeMilliseconds)||0),
-                allowanceCreditMilliseconds:Math.max(0,Number(value?.allowanceCreditMilliseconds)||0),
+                allowanceCreditMilliseconds:Number(value?.allowanceCreditMilliseconds)||0,
                 bankCreditCarryMilliseconds:Math.max(0,Number(value?.bankCreditCarryMilliseconds)||0)
             };
         }
@@ -4240,7 +4240,7 @@
                             actualTimeMilliseconds,
                             countedTimeMilliseconds,
                             productiveTimeMilliseconds:Math.max(0,Number(trip?.productiveTimeMilliseconds??countedTimeMilliseconds)||0),
-                            allowanceCreditMilliseconds:Math.max(0,Number(trip?.allowanceCreditMilliseconds)||0),
+                            allowanceCreditMilliseconds:Number(trip?.allowanceCreditMilliseconds)||0,
                             bankCreditCarryMilliseconds:Math.max(0,Number(trip?.bankCreditCarryMilliseconds)||0)
                         };
                     }

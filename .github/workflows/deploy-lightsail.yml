@@ -126,6 +126,8 @@ jobs:
           node tests/clock-timer-ui-state.mjs --standard-time
           node tests/app-state-transactions.mjs --goal-limit --voice-feedback
           node tests/trip-time-bank.mjs
+          node tests/official-percent.mjs
+          node tests/numberpad-anchors.mjs
           TZ=UTC node tests/trip-bank-goal-budget.mjs
           TZ=UTC node tests/goal-priority.mjs
           node tests/trip-log.mjs
@@ -172,6 +174,10 @@ jobs:
       - run: node tests/goal-bounding-browser.cjs
       - run: node tests/goal-bar-browser.cjs
       - run: node tests/next-goal-countdown-browser.cjs
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - run: node tests/official-percent-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
       - run: node tests/goal-bar-hit-area-browser.cjs
       - run: node tests/goal-bar-label-width-browser.cjs
@@ -235,6 +241,7 @@ jobs:
       - run: php -l api/_core/trip_session_timing.php
       - run: php tests/trip-session-timing.php
       - run: php tests/trip_time_bank.php
+      - run: php -d extension=pdo_sqlite tests/official-percent.php
       - run: php -l api/trips/index.php
       - run: php -l api/_core/trip_editor.php
       - run: php -l database/apply_admin_permissions.php

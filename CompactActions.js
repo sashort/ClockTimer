@@ -57,19 +57,19 @@
         app.append(left,right);app.querySelector('.trip-summary').append(timer);
         const view={buttons,left,right,timer,state:null};views.set(app,view);return view;
     }
-    function render(app, state) {
+    function render(app, state, {totalLabel}={}) {
         const buffer=state?.clock?.interval_state?.buffer;
         renderBuffers(document.getElementById('endTripButton'),app.dataset.actionDisplay==='compact'?null:buffer);
         let view=views.get(app);
         if(!view && app.dataset.actionDisplay!=='compact'&&!(app.dataset.percentageDisplay==='bar'&&state?.clock?.goal_bar?.active))return;
-        view ||= init(app);if(state)view.state=state;
+        view ||= init(app);if(state)view.state=state;if(totalLabel)view.totalLabel=totalLabel;
         const {buttons,left,right,timer}=view, compact=app.dataset.actionDisplay==='compact';
         const controls=view.state?.controls;if(!controls)return;
         const active=controls.activeTripVisible, down=controls.downVisiblePanel, paused=Boolean(controls.breakLabel);
         const nextGoal=app.dataset.percentageDisplay==='bar'&&active&&!down&&!paused?view.state?.clock?.goal_bar?.next_goal:null;
         app.dataset.goalCountdown=String(Boolean(nextGoal));
         timer.hidden=!(nextGoal||compact&&(down||paused));
-        if(nextGoal){timer.dataset.kind='goal';timer.querySelector('span').textContent=nextGoal.label;timer.querySelector('output').textContent=nextGoal.clock;renderBuffers(timer,null);}
+        if(nextGoal){timer.dataset.kind='goal';timer.querySelector('span').textContent=nextGoal.ids.map(id=>id==='total'&&view.totalLabel?view.totalLabel:view.state.clock.goal_bar.nodes.find(node=>node.id===id)?.label).filter(Boolean).join('/');timer.querySelector('output').textContent=nextGoal.clock;renderBuffers(timer,null);}
         else if(compact){
             const kind=down?'down':String(view.state.tripStatus||'break').replaceAll('_','-');timer.dataset.kind=kind;
             const labelIds={"down": "ba94b593-7fb0-4360-8150-891bd4e56e6f", "break": "556c70ac-c40c-4976-b080-459c3d8e18f1", "short-break": "be9051c0-6763-43eb-8007-ef3c630bf924", "lunch": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5"};

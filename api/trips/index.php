@@ -367,7 +367,7 @@ if ($method === 'GET') {
 
     foreach ($breakdownRows as $breakdownRow) {
         $bank = trip_time_bank_projection(['startTime'=>$breakdownRow['start_time'],'endTime'=>$breakdownRow['end_time'],
-            'breakOnly'=>(bool)$breakdownRow['break_only']], $bankEvents[(int)$breakdownRow['id']] ?? []) ?? [];
+            'breakOnly'=>(bool)$breakdownRow['break_only'],'standardTimeMilliseconds'=>(int)$breakdownRow['standard_time_ms'],'countedTimeMilliseconds'=>(int)$breakdownRow['counted_time_ms']], $bankEvents[(int)$breakdownRow['id']] ?? []) ?? [];
         $standardMilliseconds =
             (int) ($breakdownRow['standard_time_ms'] ?? 0);
         $tripActualMicroseconds =
@@ -733,7 +733,9 @@ if ($method === 'DELETE') {
     $ensureTripIdReclaimTable();
 
     $reclaimedTripId = audited_write(static function (PDO $pdo) use ($tripId): ?int {
+        $pdo->prepare('SELECT id FROM trips WHERE id=:id FOR UPDATE')->execute([':id'=>$tripId]);
         $trip = require_trip_owner($pdo, $tripId);
+        if(trip_official_has_history(fetch_trip_events($pdo,$tripId,'log')))api_error('Trips with official adjustments cannot be deleted.',422,'protected_official_adjustment');
         $pending = ((int) ($trip['pending'] ?? 0)) === 1;
 
         $deleteEvents = $pdo->prepare(
@@ -792,6 +794,8 @@ if ($action === 'start') {
     audited_write(
         static function (PDO $pdo) use ($tripId, $startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $breakOnlyValue): void {
             require_trip_owner($pdo, $tripId);
+            $pdo->prepare('SELECT id FROM trips WHERE id=:id FOR UPDATE')->execute([':id'=>$tripId]);
+            if(trip_official_has_history(fetch_trip_events($pdo,$tripId,'log')))api_error('A reconciled completed trip cannot be restarted.',422,'protected_official_adjustment');
             $statement = $pdo->prepare(
                 'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
                 . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, break_only = :break_only, pending = 0 '

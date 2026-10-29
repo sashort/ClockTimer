@@ -5,6 +5,7 @@ declare(strict_types=1);
 function check_trip_event_command(array $events, array $input): array
 {
     $name = require_string($input, 'event');
+    if(str_starts_with($name,'trip.official-percent-'))return ['accepted'=>false,'reason'=>'Use the completed-trip official percentage editor.'];
     $timestamp = normalize_datetime(require_string($input, 'timestamp'), 'timestamp');
     $value = $input['value'] ?? null;
     if (!is_array($value)) return ['accepted' => false, 'reason' => 'Event value must be an object.'];

@@ -1,9 +1,15 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__.'/trip_official_percent.php';
+
+function trip_time_bank_projection(array $trip,array $events): ?array {
+    return trip_official_projection($trip,$events,trip_time_bank_base_projection($trip,$events));
+}
+
 // Read projection only. Factual events and persisted legacy counted durations
 // remain unchanged; unused allowance is bank credit, never negative work.
-function trip_time_bank_projection(array $trip, array $events): ?array
+function trip_time_bank_base_projection(array $trip, array $events): ?array
 {
     if (!empty($trip['breakOnly']) || !empty($trip['running'])) return null;
     $instant = static function ($value): ?int {
