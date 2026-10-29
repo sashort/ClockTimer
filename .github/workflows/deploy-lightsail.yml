@@ -171,6 +171,7 @@ jobs:
       - run: node tests/early-break-readout-browser.cjs
       - run: node tests/goal-bounding-browser.cjs
       - run: node tests/goal-bar-browser.cjs
+      - run: node tests/next-goal-countdown-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
       - run: node tests/goal-bar-hit-area-browser.cjs
       - run: node tests/goal-bar-label-width-browser.cjs

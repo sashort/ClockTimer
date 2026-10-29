@@ -25,7 +25,7 @@
    this.mutations.observe(row,{childList:true,characterData:true,attributes:true,attributeFilter:['hidden'],subtree:true});
    const app=row.closest('.app'),clock=app?.querySelector('clock-timer');
    if(clock)this.resize.observe(clock);
-   if(app){const keys=['data-speech-active','data-trip-log-pinned','data-action-display','data-percentage-display','data-compact-timed','data-interval-state'],snapshot=()=>keys.map(k=>app.getAttribute(k)).join('|');this.layoutKey=snapshot();this.layoutChanges=new MutationObserver(()=>{const key=snapshot();if(key!==this.layoutKey){this.layoutKey=key;this.watchBalance();}});this.layoutChanges.observe(app,{attributes:true,attributeFilter:keys});}
+   if(app){const keys=['data-speech-active','data-trip-log-pinned','data-action-display','data-percentage-display','data-compact-timed','data-goal-countdown','data-interval-state'],snapshot=()=>keys.map(k=>app.getAttribute(k)).join('|');this.layoutKey=snapshot();this.layoutChanges=new MutationObserver(()=>{const key=snapshot();if(key!==this.layoutKey){this.layoutKey=key;this.watchBalance();}});this.layoutChanges.observe(app,{attributes:true,attributeFilter:keys});}
    row.ownerDocument.fonts?.ready.then(schedule);
    schedule();
   }
@@ -107,7 +107,7 @@
  class TimerSpaceLayout{
   static views=new WeakMap();
   static attach(app){if(!app?.querySelector('.clock-region')||this.views.has(app))return;this.views.set(app,new this(app));}
-  constructor(app){this.app=app;const schedule=()=>{if(this.frame)return;this.frame=requestAnimationFrame(()=>{this.frame=0;this.fit();});};this.resize=new ResizeObserver(schedule);this.resize.observe(app);this.mutations=new MutationObserver(schedule);this.mutations.observe(app,{attributes:true,attributeFilter:['data-percentage-display','data-action-display','data-trip-state','data-interval-state','data-speech-active','data-trip-log-pinned','data-compact-timed']});schedule();}
+  constructor(app){this.app=app;const schedule=()=>{if(this.frame)return;this.frame=requestAnimationFrame(()=>{this.frame=0;this.fit();});};this.resize=new ResizeObserver(schedule);this.resize.observe(app);this.mutations=new MutationObserver(schedule);this.mutations.observe(app,{attributes:true,attributeFilter:['data-percentage-display','data-action-display','data-trip-state','data-interval-state','data-speech-active','data-trip-log-pinned','data-compact-timed','data-goal-countdown']});schedule();}
   fit(){
    const app=this.app;if(app.dataset.percentageDisplay!=='bar'||app.clientHeight<300)return;
    const style=getComputedStyle(app),px=name=>parseFloat(style.getPropertyValue(name))||0;
@@ -118,7 +118,7 @@
    const contentWidth=app.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),contentHeight=app.clientHeight-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom);
    const clock=down&&!compact?0:compact?Math.max(0,contentWidth-rails):contentWidth*.8;
    const controls=compact?0:down?(app.clientHeight<=650?156:230):app.querySelector('.trip-action-controls')?.getBoundingClientRect().height||0;
-   const reserve=compact&&app.dataset.compactTimed==='true'?(app.clientHeight<=650?64:76):0;
+   const reserve=(compact&&app.dataset.compactTimed==='true'||app.dataset.goalCountdown==='true')?(app.clientHeight<=650?64:76):0;
    const minimum=down?164:140;const spare=contentHeight-header-summary-footer-controls-reserve-clock-24-minimum;
    const height=Math.round(Math.max(minimum,Math.min(200,minimum+Math.max(0,spare)*.5)));
    if(app.style.getPropertyValue('--goal-bar-height')!==height+'px')app.style.setProperty('--goal-bar-height',height+'px');
@@ -228,7 +228,12 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    // Equal counted-time distances are equal screen distances. Standard / ratio
    // is reciprocal in percent; the explicit zero-origin fallback stays finite.
    const fraction=value=>{const bounded=Math.min(high,Math.max(low,value));return high===low?1:active&&low>0?(1/low-1/bounded)/(1/low-1/high):(bounded-low)/Math.max(1e-9,high-low);};
-   const position=value=>left+fraction(value)*(right-left);
+   // Retain a compact lower-scale band so sub-target 5% ticks remain
+   // visible even while Current is above Standard. Both bands use counted time.
+   const showSubstandardTicks=this.state?.goal_bounding===false||(raw.find(node=>node.current)?.percent??Infinity)<100;
+   const lowerBand=active&&showSubstandardTicks&&low>5&&!allFailed?Math.min(52,(right-left)*.2):0;
+   const lowerFraction=value=>(1/5-1/Math.max(5,value))/(1/5-1/low);
+   const position=value=>lowerBand&&value<low?left+lowerFraction(value)*lowerBand:left+lowerBand+fraction(value)*(right-left-lowerBand);
    for(let i=0;i<units.length;i++){
     const unit=units[i],previous=units[i-1];unit.radius=unit.id==='standard'?1:unit.current?4:unit.merged?Math.sqrt(r*r-(r*.45)**2)+2+r+1:r+1;
     unit.x=position(unit.percent);
@@ -244,8 +249,8 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    if(pin&&standard)left=Math.min(left,standard.x-pin.half-.75);
    const visualLeft=Math.min(left,...units.map(u=>u.x-u.radius)),visualRight=Math.max(right,...units.map(u=>u.x+u.radius));
    const lc=Boolean(data.available&&active&&low>0&&!allFailed),rc=Boolean(data.available&&active&&goals.some(n=>n.failed));
-   const firstNodeEdge=units.length?Math.min(...units.map(u=>u.x-u.radius)):left,lastNodeEdge=units.length?Math.max(...units.map(u=>u.x+u.radius)):right;
-   const outerLeft=Math.min(visualLeft,lc?firstNodeEdge-21:visualLeft),outerRight=Math.max(visualRight,rc?lastNodeEdge+25:visualRight);
+   const firstNodeEdge=units.length?Math.min(left,...units.map(u=>u.x-u.radius)):left,lastNodeEdge=units.length?Math.max(right,...units.map(u=>u.x+u.radius)):right;
+   const outerLeft=Math.min(visualLeft,lc?firstNodeEdge-25:visualLeft),outerRight=Math.max(visualRight,rc?lastNodeEdge+25:visualRight);
    const centerShift=width/2-(outerLeft+outerRight)/2;
    left+=centerShift;right+=centerShift;for(const unit of units)unit.x+=centerShift;
    // Boxes, including their border, may use space beneath a continuation
@@ -280,10 +285,11 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    this.track.setAttribute('x',left);this.track.setAttribute('width',Math.max(0,right-left));this.outline.setAttribute('x',left);this.outline.setAttribute('width',Math.max(0,right-left));
    for(const [key,value] of Object.entries({x:left+1.5,y:y-thickness/2+1.5,width:Math.max(0,right-left-3),height:Math.max(0,thickness-3),rx:Math.max(0,thickness/2-1.5)}))this.tickClip.setAttribute(key,value);
    const tickLeft=units.find(u=>near(u.percent,low))?.x??left,tickRight=units.find(u=>near(u.percent,high))?.x??right;
-   const visibleTicks=new Set();if(active&&data.available)for(let percent=Math.max(0,Math.ceil(low/5)*5);percent<=Math.min(150,high)+1e-7;percent+=5){
+   const tickMinimum=Math.max(showSubstandardTicks?0:100,lowerBand?5:Math.ceil(low/5)*5);
+   const visibleTicks=new Set();if(active&&data.available)for(let percent=tickMinimum;percent<=Math.min(150,high)+1e-7;percent+=5){
     visibleTicks.add(percent);let tick=this.tickNodes.get(percent);if(!tick){tick=svgElement('path',{'data-percent':percent,stroke:'#fff','stroke-width':1});tick.style.opacity='0';this.tickNodes.set(percent,tick);this.ticks.append(tick);}
     tick.dataset.exiting='false';this.tween(tick,'scale-tick-opacity-'+percent,{opacity:tick.style.opacity||'0'},{opacity:'.6'},{duration:220});
-    tick.setAttribute('d',`M 0 ${-thickness*.23} V ${thickness*.23}`);this.move(tick,'scale-tick-'+percent,tickLeft+fraction(percent)*(tickRight-tickLeft),y);
+    tick.setAttribute('d',`M 0 ${-thickness*.23} V ${thickness*.23}`);this.move(tick,'scale-tick-'+percent,lowerBand&&percent<low?left+lowerFraction(percent)*(tickLeft-left):tickLeft+fraction(percent)*(tickRight-tickLeft),y);
    }
    for(const [percent,tick] of this.tickNodes)if(!visibleTicks.has(percent)&&tick.dataset.exiting!=='true'){
     tick.dataset.exiting='true';this.tween(tick,'scale-tick-opacity-'+percent,{opacity:getComputedStyle(tick).opacity},{opacity:'0'},{duration:180}).then(()=>{if(tick.dataset.exiting==='true'&&this.tickNodes.get(percent)===tick){tick.remove();this.tickNodes.delete(percent);this.motion.get('scale-tick-'+percent)?.cancel();this.motion.delete('scale-tick-'+percent);}});
@@ -292,7 +298,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    this.segment.setAttribute('x',targetX);this.segment.setAttribute('width',Math.max(0,currentX-targetX));this.segment.style.fill=segment;
    this.connectors.replaceChildren();if((!active||allFailed)&&data.available){const zero=svgElement('text',{x:left,y:y+percentOffset,'text-anchor':'middle',class:'goal-bar-zero'});zero.textContent='0%';this.connectors.append(zero);}
    this.svg.dataset.compressedLeft=String(lc);this.svg.dataset.compressedRight=String(rc);
-   this.leftCompression.style.display=lc?'':'none';const firstEdge=units.length?Math.min(...units.map(u=>u.x-u.radius)):left,lastEdge=units.length?Math.max(...units.map(u=>u.x+u.radius)):right;this.leftCompression.setAttribute('d',`M ${firstEdge-8} ${y-7} L ${firstEdge-21} ${y} L ${firstEdge-8} ${y+7} Z`);this.rightCompression.style.display=rc?'':'none';this.rightCompression.style.transform=`translate(${lastEdge+18}px, ${y}px)`;
+   this.leftCompression.style.display=lc?'':'none';const firstEdge=units.length?Math.min(left,...units.map(u=>u.x-u.radius)):left,lastEdge=units.length?Math.max(right,...units.map(u=>u.x+u.radius)):right;this.leftCompression.setAttribute('d',`M ${firstEdge-12} ${y-7} L ${firstEdge-25} ${y} L ${firstEdge-12} ${y+7} Z`);this.rightCompression.style.display=rc?'':'none';this.rightCompression.style.transform=`translate(${lastEdge+18}px, ${y}px)`;
    this.displaying=new Set(units.map(u=>u.id));
    for(const [id,parts] of this.nodes){
     if(this.displaying.has(id))continue;if(parts.exiting)continue;parts.exiting=true;parts.group.setAttribute('aria-hidden','true');parts.group.style.pointerEvents='none';

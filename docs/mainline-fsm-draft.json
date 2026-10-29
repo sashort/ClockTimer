@@ -17830,22 +17830,11 @@
         "standard": "Main display is always trip-only, Standard Time label, active editor available in every scope",
         "bar": "Idle configured values; active inferred requirements; Standard-based remaining and trip-counted elapsed",
         "editing": "Whole bar uses the shared goal action: one applicable goal (Trip or selected aggregate) directly opens its numberpad; Auto with multiple goals opens configurable selector. Failure count does not filter choices. No Standard editor or time-mode action from bar. Configured goal is editable; inference informational. Aggregate selector/pad has larger configured goal line and smaller inferred line only during active trip; Trip has a single line.",
-        "failure": "White outlined track; Standard dashed and Current double line; no ticks/captions. Border-aware merged units fail and exit as one unit.",
+        "failure": "White outlined track, Standard dashed and Current double line. Failed merged units exit together; continuation arrows stay outside both track and node extents with a visible gap.",
         "feedback": "150 cap applies before first announcement; notice is passive",
         "currentTime": "Main readout exactly equals bar Current in all three time modes, including interval annotations; Remaining is Standard minus counted trip elapsed, not goal or aggregate budget.",
         "labels": "Changed labels fade and move on split/merge; the unchanged goal retains shared-label ownership. Target border follows the authoritative selected target across all recalculations.",
-        "scale_ticks": {
-          "activeOnly": true,
-          "stepPercent": 5,
-          "maximumPercent": 150,
-          "labels": false,
-          "positiveActiveProjection": "reciprocal counted-time distances",
-          "zeroOriginFallback": "finite existing zero-to-goal layout",
-          "clip": "inside track border",
-          "paintOrder": "below goal nodes",
-          "movement": "retain identity and animate position",
-          "enterExit": "fade"
-        },
+        "scale_ticks": "Five-percent ticks stay inside track beneath nodes. Below 100% ticks appear when Goal Bounding is off or Current is below 100%; otherwise hidden. Compressed lower band preserves main goal scale.",
         "idle_100_label": {
           "pinToStandard": false,
           "inset": "outer bar/node extent including frame border and continuation arrows"
@@ -17858,6 +17847,14 @@
           "border": false,
           "countdownPosition": "stationary midway between padded edge and timer group",
           "contrast": "rounded translucent card"
+        },
+        "next_goal_countdown": {
+          "visible": "Running active trip in Full/Compact Bar; next unfailed visible goal by earliest deadline",
+          "caption": "Coincident named goals share slash-separated names, e.g. Week/Trip; omit Standard when a named goal shares 100%",
+          "time": "Canonical goal deadline minus now, floor whole seconds and show omitted fractional correction superscript",
+          "intervals": "Break/Down timers take priority; countdown returns on resume",
+          "hidden": "Classic, idle, standalone break, all goals failed",
+          "main_readout": "Remains Standard-based and mode-specific"
         }
       },
       "controls": {
@@ -17929,7 +17926,8 @@
           "failure": "release to fallback layout",
           "layoutChanges": "Switching Layout translucent busy overlay until queue settles",
           "cleanup": "always including interrupted and failed transitions"
-        }
+        },
+        "layout_busy_stacking": "Manual top-layer busy popover covers open hamburger/settings; queue controls dismissal and aria-busy restoration."
       },
       "controls": {
         "motion": "Retarget from visible positions; do not await animation in command/persistence execution"
@@ -18029,7 +18027,8 @@
           "chairSharesElevation": true,
           "idleTravelPhasePreserved": true,
           "reducedMotion": "settled destination"
-        }
+        },
+        "current_anchor": "Active rig and chair sit 20px left of Current; height follows whole footprint over goal bubbles, never Standard/Current lines."
       },
       "controls": {
         "interaction": "Decorative SVG/canvas, pointer-events none; whole bar retains existing goal action"

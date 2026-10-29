@@ -1561,7 +1561,11 @@
             if(this.#renderedTimeMode==="calculated-end")return text;
             const interval=this.getActiveIntervalState?.(now);
             if(this.#breakOnly||typeof text!=="string"||interval?.open!==false||!Number.isFinite(exactValue))return text;
-            const match=text.match(/^(-)?(\d+):(\d{2}):(\d{2})$/);
+            return this.#decorateFractionalTimeText(text,exactValue);
+        }
+
+        #decorateFractionalTimeText(text, exactValue) {
+            const match=text?.match(/^(-)?(\d+):(\d{2}):(\d{2})$/);
             if(!match)return text;
             const displayedValue=((Number(match[2])*60+Number(match[3]))*60+Number(match[4]))*1000*(match[1]?-1:1);
             const omitted=exactValue-displayedValue;
@@ -1965,14 +1969,23 @@
                 const text = mode === "elapsed" ? `${position<0?"-":""}${this.#formatElapsedRenderedDuration(position)}`
                     : mode === "calculated-end" ? this.#formatSummaryEndTime(end ? new Date(end) : undefined)
                     : duration(standard-position);
-                return Object.freeze({...node, counted_position:position, time:text,
+                return Object.freeze({...node, remaining_milliseconds:Number.isFinite(Date.parse(end))?Math.max(0,Date.parse(end)-now.getTime()):null, counted_position:position, time:text,
                     failed:Number.isFinite(current) && current*100 < node.percent-1e-7});
             });
             nodes.push(Object.freeze({id:"current", label:"Current", current:true,
                 percent:Number.isFinite(current)?current*100:null, unbounded:Number(summary.trip?.productiveTimeMilliseconds??counted) <= 0, counted_position:counted,
                 time:this.#decorateTripTimeText(this.#getCurrentTripTimeText(summary, now), now,this.#getCurrentTripTimeValue(summary,now)), failed:false}));
             const failed = nodes.filter(node=>!node.current).every(node=>node.failed);
-            return Object.freeze({available:true, active:true, time_mode:mode, nodes:Object.freeze(nodes),
+            const upcoming=nodes.filter(node=>!node.current&&!node.failed&&Number.isFinite(node.remaining_milliseconds)).sort((a,b)=>b.percent-a.percent);
+            let nextGoal=null;
+            if(upcoming.length){
+                let shared=upcoming.filter(node=>Math.abs(node.percent-upcoming[0].percent)<1e-7);
+                if(shared.some(node=>node.id!=="standard"))shared=shared.filter(node=>node.id!=="standard");
+                shared.sort((a,b)=>({total:0,trip:1,standard:2}[a.id]??3)-({total:0,trip:1,standard:2}[b.id]??3));
+                const remaining=upcoming[0].remaining_milliseconds;
+                nextGoal=Object.freeze({ids:Object.freeze(shared.map(node=>node.id)),label:shared.map(node=>node.label).join("/"),remaining_milliseconds:remaining,clock:this.#decorateFractionalTimeText(this.#formatRemainingRenderedDuration(remaining),remaining)});
+            }
+            return Object.freeze({available:true, active:true, next_goal:nextGoal, time_mode:mode, nodes:Object.freeze(nodes),
                 all_failed:failed,
                 phase:failed || (Number.isFinite(current) && current<1) ? "overtime"
                     : Number.isFinite(current) && current<this.#renderedPercentGoal ? "b-game" : "trip",

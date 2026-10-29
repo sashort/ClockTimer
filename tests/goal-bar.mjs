@@ -25,6 +25,10 @@ const idle=c.getUIState().goal_bar;assert.equal(idle.active,false);assert.deepEq
 await c.start({standardTime:'0:30:00'});window.__testTime+=1200000;c.setAttribute('goal-bar','');
 assert.equal(c.getGoalEditorSnapshot('total').actual_percent,110);assert.equal(c.getGoalEditorSnapshot('total').inferred_percent,125);assert.equal(c.getGoalEditorSnapshot('total',120).inferred_percent,158);assert.equal(c.getGoalEditorSnapshot('total').actual_percent,110,'preview never changes saved goal');
 let state=c.getUIState(),bar=state.goal_bar;assert.equal(bar.available,true);
+assert.equal(bar.next_goal.label,'Total');assert.equal(bar.next_goal.remaining_milliseconds,240000);assert.equal(bar.next_goal.clock,'0:04:00');
+window.__testTime+=250;assert.equal(c.getUIState().goal_bar.next_goal.clock,'0:03:59⁺','next-goal countdown preserves omitted fractional seconds');window.__testTime-=250;
+c.setAttribute('total-label','Week');c.configure({trip_goal:'125%'});assert.equal(c.getUIState().goal_bar.next_goal.label,'Week/Trip','coincident goals share a slash-separated caption');c.configure({trip_goal:'110%'});c.removeAttribute('total-label');
+
 assert.equal(bar.nodes.find(n=>n.id==='total').percent,125,'Day 110% infers 125% trip requirement');
 assert.deepEqual(Array.from(bar.nodes,n=>Number(n.percent.toFixed(6))),[100,110,125,150]);
 assert.deepEqual(Array.from(bar.nodes,n=>n.time),['0:00:00','0:02:43','0:06:00','0:10:00']);
@@ -76,7 +80,7 @@ await c.endInterval();window.__testTime+=600000;
 state=c.getUIState();assert.equal(state.goal_bar.nodes.find(n=>n.current).percent,100);assert.equal(state.goal_bar.nodes.find(n=>n.current).time,'0:00:00');assert.equal(state.goal_bar.nodes.find(n=>n.id==='standard').time,'0:00:00','Standard is always zero remaining');
 c.renderedTimeMode='elapsed';state=c.getUIState();assert.equal(state.goal_bar.nodes.find(n=>n.current).time,'0:30:00');assert.equal(state.goal_bar.nodes.find(n=>n.id==='standard').time,'0:30:00','Current and Standard elapsed coincide at 100%');c.renderedTimeMode='remaining';
 window.__testTime+=600000;c.configure({goal_type:'trip',trip_goal:'110%'});
-bar=c.getUIState().goal_bar;assert.deepEqual(Array.from(bar.nodes.filter(n=>n.failed),n=>n.id),['standard','trip'],'hidden aggregate never enters failed-goal choices');assert.equal(bar.all_failed,true);assert.equal(bar.phase,'overtime');
+bar=c.getUIState().goal_bar;assert.deepEqual(Array.from(bar.nodes.filter(n=>n.failed),n=>n.id),['standard','trip'],'hidden aggregate never enters failed-goal choices');assert.equal(bar.all_failed,true);assert.equal(bar.next_goal,null,'no countdown remains after all goals fail');assert.equal(bar.phase,'overtime');
 await c.stop();const ended=c.getUIState().goal_bar;assert.equal(ended.active,false);assert(ended.nodes.every(n=>n.time===null&&!n.failed&&!n.current),'ending restores configured nodes without stale failure/time state');assert.deepEqual(Array.from(ended.nodes,n=>Number(n.percent.toFixed(6))),[100,110]);
 for(const [mode,ids] of [['total',['standard','total']],['auto',['standard','trip','total']]]){c.configure({goal_type:mode});assert.deepEqual(Array.from(c.getUIState().goal_bar.nodes,n=>n.id),ids,'idle '+mode+' visibility');}
 c.remove();await window.happyDOM.close();console.log('PASS inferred nodes, counted positions, all display modes, paused goal edits and all-failed overtime');

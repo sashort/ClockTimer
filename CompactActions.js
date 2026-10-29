@@ -17,9 +17,16 @@
         if(!icon){icon=document.createElement('span');icon.className='compact-action-icon';icon.setAttribute('aria-hidden','true');button.append(icon);}
         if(icon.dataset.icon!==kind){icon.dataset.icon=kind;icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+iconPaths[kind]+'</svg>';}
     }
+    function fitFullBreakText(host){
+        if(host.id!=='endTripButton'||host.closest('.app')?.dataset.actionDisplay==='compact'||!host.querySelector(':scope > .break-action-label'))return;
+        host.style.removeProperty('--break-action-font-size');
+        const labels=[...host.querySelectorAll(':scope > .break-action-label,:scope > .break-action-clock')],style=getComputedStyle(host),font=parseFloat(style.fontSize),boxes=labels.map(e=>e.getBoundingClientRect());
+        const reserve=host.dataset.bufferActive==='true'?Math.min(96,host.clientWidth*.28):0,available=Math.max(1,host.clientWidth-20-reserve),width=boxes.reduce((sum,r)=>sum+r.width,0),height=Math.max(...boxes.map(r=>r.height));
+        host.style.setProperty('--break-action-font-size',Math.max(10,font*Math.min(1,available/Math.max(1,width),Math.max(1,host.clientHeight-8)/Math.max(1,height)))+'px');
+    }
     const bufferLayouts=new WeakMap();
     function fitBuffers(host){
-        if(!host.isConnected)return;const sides=[...host.querySelectorAll(':scope > .break-buffer-side')];if(!sides.length)return;
+        if(!host.isConnected)return;fitFullBreakText(host);const sides=[...host.querySelectorAll(':scope > .break-buffer-side')];if(!sides.length)return;
         const labels=[...host.children].filter(e=>e.matches('.break-action-label,.break-action-clock,output')||host.classList.contains('compact-interval-timer')&&e.localName==='span'&&!e.classList.contains('break-buffer-side')).map(e=>e.getBoundingClientRect());
         if(!labels.length)return;const box=host.getBoundingClientRect(),app=host.closest('.app'),a=(app||host).getBoundingClientRect(),style=getComputedStyle(app||host),paddingLeft=parseFloat(style.paddingLeft)||0,paddingRight=parseFloat(style.paddingRight)||0;
         const group={left:Math.min(...labels.map(r=>r.left)),right:Math.max(...labels.map(r=>r.right)),top:Math.min(...labels.map(r=>r.top)),bottom:Math.max(...labels.map(r=>r.bottom))},left=a.left+paddingLeft,right=a.right-paddingRight,gapLeft=Math.max(0,paddingLeft),gapRight=Math.max(0,paddingRight),height=(group.bottom-group.top)/3;
@@ -29,7 +36,7 @@
         if(!host)return;
         host.dataset.bufferActive=String(Boolean(buffer&&buffer.remainingMilliseconds>0));
         let sides=[...host.querySelectorAll(':scope > .break-buffer-side')];
-        if(!buffer||buffer.remainingMilliseconds<=0){for(const side of sides)side.remove();return;}
+        if(!buffer||buffer.remainingMilliseconds<=0){for(const side of sides)side.remove();fitFullBreakText(host);return;}
         if(!sides.length)for(const direction of ['left','right']){
             const side=document.createElement('span');side.className='break-buffer-side '+direction;
             side.setAttribute('aria-hidden','true');side.innerHTML='<span class="break-buffer-countdown"></span><span class="break-buffer-track"><i></i></span>';host.append(side);sides.push(side);
@@ -54,9 +61,22 @@
         const buffer=state?.clock?.interval_state?.buffer;
         renderBuffers(document.getElementById('endTripButton'),app.dataset.actionDisplay==='compact'?null:buffer);
         let view=views.get(app);
-        if(!view && app.dataset.actionDisplay!=='compact')return;
+        if(!view && app.dataset.actionDisplay!=='compact'&&!(app.dataset.percentageDisplay==='bar'&&state?.clock?.goal_bar?.active))return;
         view ||= init(app);if(state)view.state=state;
         const {buttons,left,right,timer}=view, compact=app.dataset.actionDisplay==='compact';
+        const controls=view.state?.controls;if(!controls)return;
+        const active=controls.activeTripVisible, down=controls.downVisiblePanel, paused=Boolean(controls.breakLabel);
+        const nextGoal=app.dataset.percentageDisplay==='bar'&&active&&!down&&!paused?view.state?.clock?.goal_bar?.next_goal:null;
+        app.dataset.goalCountdown=String(Boolean(nextGoal));
+        timer.hidden=!(nextGoal||compact&&(down||paused));
+        if(nextGoal){timer.dataset.kind='goal';timer.querySelector('span').textContent=nextGoal.label;timer.querySelector('output').textContent=nextGoal.clock;renderBuffers(timer,null);}
+        else if(compact){
+            const kind=down?'down':String(view.state.tripStatus||'break').replaceAll('_','-');timer.dataset.kind=kind;
+            const labelIds={"down": "ba94b593-7fb0-4360-8150-891bd4e56e6f", "break": "556c70ac-c40c-4976-b080-459c3d8e18f1", "short-break": "be9051c0-6763-43eb-8007-ef3c630bf924", "lunch": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5"};
+            timer.querySelector('span').textContent=WMOFLanguagePack.text(labelIds[kind]||labelIds.break);
+            timer.querySelector('output').textContent=down?document.getElementById('downElapsedValue').textContent:controls.breakClock;
+            renderBuffers(timer,paused?buffer:null);
+        }else renderBuffers(timer,null);
         if(!compact) {
             for(const {button,anchor,ownedLabel} of buttons.values()) {
                 if(button.closest('dialog[open]'))continue;
@@ -65,11 +85,9 @@
             }
             delete app.dataset.compactTimed;return;
         }
-        const controls=view.state?.controls;if(!controls)return;
-        const active=controls.activeTripVisible, down=controls.downVisiblePanel, paused=Boolean(controls.breakLabel);
         const actions=down?['downResumeButton','downBreakButton','downCancelButton']:!active?['newTripButton','idleBreakButton']:paused?['endTripButton',...(controls.breakDownVisible?['breakDownButton']:[])]:['endTripButton',...(controls.breakVisible?['breakButton']:[]),...(controls.downVisible?['downButton']:[])];
         const information=[...(down?['downDetailsButton']:[]),...(app.dataset.tripLogPinned!=='false'?['tripLogButton']:[])];
-        app.dataset.compactTimed=String(down||paused);
+        app.dataset.compactTimed=String(down||paused||Boolean(nextGoal));
         for(const [id,record] of buttons) {
             const {button}=record;if(button.closest('dialog[open]'))continue;
             const rail=['downDetailsButton','tripLogButton'].includes(id)?right:left, visible=(rail===left?actions:information), index=visible.indexOf(id);
@@ -80,19 +98,14 @@
             if(!button.hasAttribute('aria-label')||record.ownedLabel){button.setAttribute('aria-label',button.textContent.trim()||button.title||id);record.ownedLabel=true;}
             button.title=button.getAttribute('aria-label');
         }
-        timer.hidden=!(down||paused);
-        const kind=down?'down':String(view.state.tripStatus||'break').replaceAll('_','-');
-        const labelIds={"down": "ba94b593-7fb0-4360-8150-891bd4e56e6f", "break": "556c70ac-c40c-4976-b080-459c3d8e18f1", "short-break": "be9051c0-6763-43eb-8007-ef3c630bf924", "lunch": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5"};
-        timer.querySelector('span').textContent=WMOFLanguagePack.text(labelIds[kind]||labelIds.break);
-        timer.querySelector('output').textContent=down?document.getElementById('downElapsedValue').textContent:controls.breakClock;
-        renderBuffers(timer,paused?buffer:null);
+
     }
     let layoutQueue=Promise.resolve(),pendingLayouts=0,busyOverlay,busyApp,previousBusy;
     function showLayoutBusy(app){
-        if(!busyOverlay){busyOverlay=document.createElement('div');busyOverlay.className='layout-switch-overlay';busyOverlay.setAttribute('role','status');busyOverlay.setAttribute('aria-live','polite');const label=document.createElement('span');label.textContent=WMOFLanguagePack.text('ade066c7-66ca-502f-99ef-888d87a5b61d');busyOverlay.append(label);document.body.append(busyOverlay);}
-        if(!pendingLayouts){busyApp=app;previousBusy=app.getAttribute('aria-busy');app.setAttribute('aria-busy','true');}busyOverlay.hidden=false;
+        if(!busyOverlay){busyOverlay=document.createElement('div');busyOverlay.className='layout-switch-overlay';busyOverlay.setAttribute('popover','manual');busyOverlay.setAttribute('role','status');busyOverlay.setAttribute('aria-live','polite');const label=document.createElement('span');label.textContent=WMOFLanguagePack.text('ade066c7-66ca-502f-99ef-888d87a5b61d');busyOverlay.append(label);document.body.append(busyOverlay);}
+        if(!pendingLayouts){busyApp=app;previousBusy=app.getAttribute('aria-busy');app.setAttribute('aria-busy','true');}busyOverlay.hidden=false;if(!busyOverlay.matches(':popover-open'))busyOverlay.showPopover();
     }
-    function hideLayoutBusy(){if(--pendingLayouts>0)return;busyOverlay.hidden=true;if(previousBusy===null)busyApp.removeAttribute('aria-busy');else busyApp.setAttribute('aria-busy',previousBusy);}
+    function hideLayoutBusy(){if(--pendingLayouts>0)return;busyOverlay.hidePopover();busyOverlay.hidden=true;if(previousBusy===null)busyApp.removeAttribute('aria-busy');else busyApp.setAttribute('aria-busy',previousBusy);}
     globalThis.WMOFLayoutMotion=Object.freeze({whenSettled(){return layoutQueue;},change(app,apply){
         showLayoutBusy(app);pendingLayouts++;
         const run=async()=>{
