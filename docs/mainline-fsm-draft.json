@@ -18130,6 +18130,39 @@
         "individually delete or rewrite official adjustment entries",
         "change underlying factual timestamps"
       ]
+    },
+    "HALLOWEEN-THEME": {
+      "id": "HALLOWEEN-THEME",
+      "scope": "Orthogonal appearance/audio setting; does not change trip, login, interval or command state.",
+      "preconditions": [
+        "Open Settings > Themes; account persistence uses the current identity."
+      ],
+      "inputs": [
+        "Toggle Halloween using pointer or keyboard."
+      ],
+      "postconditions": [
+        "Persist wmof.clock.theme as halloween or default in orderFiller account settings.",
+        "Apply or remove the palette in document, closed shadows, embedded settings and Drop In.",
+        "Restore saved timer colors, original avatar and normal keypad audio when disabled."
+      ],
+      "controls": [
+        "themesMenuButton opens themesSubmenu.",
+        "halloweenThemeToggle reflects effective state and is disabled only during its save."
+      ],
+      "audio": [
+        "Halloween uses low Cinematic Pulse Bass and Part 3 tremolo chords for keys; the Part 2 low pulse follows one second of inactivity.",
+        "Disabling cancels pending and ringing seasonal audio. Announcement cues and saved audio preferences are unchanged."
+      ],
+      "forbidden": [
+        "Modify saved clock colors or timing/accounting state as part of theming.",
+        "Leave stale palette, pumpkin or skeleton after disabling.",
+        "Leave blue accents in themed UI."
+      ],
+      "evidence": [
+        "node tests/halloween-theme-browser.cjs",
+        "node tests/halloween-audio.cjs",
+        "node tests/halloween-idle-audio.cjs"
+      ]
     }
   },
   "v2_test_vectors": {
@@ -19922,6 +19955,25 @@
           "tripAndEntriesRemoved": true,
           "individualOfficialEntryDeletionAllowed": false,
           "normalOwnershipRevisionAndCsrfChecks": "remain required"
+        }
+      },
+      {
+        "id": "HALLOWEEN-TOGGLE-RESTORE",
+        "contract": "HALLOWEEN-THEME",
+        "given": {
+          "appearance": "default",
+          "savedClockColors": "custom values",
+          "trip": "active or inactive"
+        },
+        "when": {
+          "action": "enable Halloween in Settings > Themes, then disable it"
+        },
+        "expect": {
+          "enabled": "palette, pumpkin, skeleton and seasonal keypad sounds change together",
+          "disabled": "normal colors, avatar and sounds return",
+          "savedClockColors": "unchanged",
+          "tripAccounting": "unchanged",
+          "preference": "saved per account"
         }
       }
     ]

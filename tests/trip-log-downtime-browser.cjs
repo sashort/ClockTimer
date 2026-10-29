@@ -3,7 +3,7 @@ const root=path.resolve(__dirname,'..');
 (async()=>{const browser=await chromium.launch({headless:true,...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});try{
 for(const width of [360,480,900]){
 const page=await browser.newPage({viewport:{width,height:1200},deviceScaleFactor:1});
-await page.setContent('<html><head><style>'+fs.readFileSync(path.join(root,'app.css'),'utf8')+'</style><style>html,body{margin:0;width:100%;max-width:none;min-height:100%;background:#333b44;color:white;font-family:Arial,sans-serif}#log{height:auto;max-height:none;width:100%;max-width:none;box-sizing:border-box;overflow:visible}.trip-log-settings{display:none!important}</style></head><body><section id="log" class="trip-log-body trip-log-merged"></section></body></html>');
+await page.setContent('<html><head><style>'+fs.readFileSync(path.join(root,'styles/default/app.css'),'utf8')+'</style><style>html,body{margin:0;width:100%;max-width:none;min-height:100%;background:#333b44;color:white;font-family:Arial,sans-serif}#log{height:auto;max-height:none;width:100%;max-width:none;box-sizing:border-box;overflow:visible}.trip-log-settings{display:none!important}</style></head><body><section id="log" class="trip-log-body trip-log-merged"></section></body></html>');
 await page.evaluate(ui=>{globalThis.WMOFLanguagePack={text:id=>ui.texts[id]?.text||id};},JSON.parse(fs.readFileSync(path.join(root,'lang/en-US/ui-text.json'),'utf8')));
 for(const name of ['CalendarRange.js','TripAggregates.js','TripLog.js'])await page.addScriptTag({content:fs.readFileSync(path.join(root,name),'utf8')});
 await page.evaluate(()=>{

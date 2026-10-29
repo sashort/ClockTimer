@@ -2761,6 +2761,11 @@
           "id": "MENU-PANE__SPEECHSUBMENU",
           "value": "speechSubmenu",
           "meaning": "speechSubmenu"
+        },
+        {
+          "id": "MENU-PANE__THEMESSUBMENU",
+          "value": "themesSubmenu",
+          "meaning": "Settings > Themes"
         }
       ],
       "notes": "Per menu; active path and expanded child set are attached payload. Visible descendants count regardless of nesting."
@@ -3715,6 +3720,26 @@
           "id": "GOAL-AVATAR-HIDDEN",
           "value": "hidden",
           "meaning": "Classic or hidden view; no hidden completion replay"
+        }
+      ]
+    },
+    {
+      "id": "theme",
+      "source": {
+        "file": "SeasonalTheme.js",
+        "owner": "setPreference / effective Halloween appearance"
+      },
+      "cardinality": "one",
+      "values": [
+        {
+          "id": "THEME__DEFAULT",
+          "value": "default",
+          "meaning": "Default visuals and original audio; saved graphical colors remain effective."
+        },
+        {
+          "id": "THEME__HALLOWEEN",
+          "value": "halloween",
+          "meaning": "Halloween palette, pumpkin clock, skeleton avatar and coordinated keypad sounds."
         }
       ]
     }

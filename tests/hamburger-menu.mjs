@@ -218,7 +218,7 @@ assert.match(
 const appCss =
     fs.readFileSync(
         new URL(
-            "../app.css",
+            "../styles/default/app.css",
             import.meta.url
         ),
         "utf8"

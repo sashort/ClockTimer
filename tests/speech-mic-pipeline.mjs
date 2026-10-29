@@ -915,7 +915,7 @@ assert.match(html, /id="speechTrainingResultsCount"/);
 assert.match(html, /id="speechTrainingResultsList"/);
 assert.doesNotMatch(html, /id="speechAdminGroup"/);
 
-const css = fs.readFileSync(new URL("../app.css", import.meta.url), "utf8");
+const css = fs.readFileSync(new URL("../styles/default/app.css", import.meta.url), "utf8");
 assert.match(css, /--speech-mic-row-height:\s*0px/);
 assert.doesNotMatch(css, /independent-timer|independent-timer-controls|independent-timer-value|play-icon|stop-icon/);
 assert.match(css, /\.app\[data-speech-active="true"\]\s*\{[^}]*--speech-mic-row-height:\s*74px/s);

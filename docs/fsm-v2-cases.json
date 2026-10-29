@@ -1789,6 +1789,25 @@
         "individualOfficialEntryDeletionAllowed": false,
         "normalOwnershipRevisionAndCsrfChecks": "remain required"
       }
+    },
+    {
+      "id": "HALLOWEEN-TOGGLE-RESTORE",
+      "contract": "HALLOWEEN-THEME",
+      "given": {
+        "appearance": "default",
+        "savedClockColors": "custom values",
+        "trip": "active or inactive"
+      },
+      "when": {
+        "action": "enable Halloween in Settings > Themes, then disable it"
+      },
+      "expect": {
+        "enabled": "palette, pumpkin, skeleton and seasonal keypad sounds change together",
+        "disabled": "normal colors, avatar and sounds return",
+        "savedClockColors": "unchanged",
+        "tripAccounting": "unchanged",
+        "preference": "saved per account"
+      }
     }
   ]
 }

@@ -56,6 +56,7 @@
    this.canvas=document.createElement('canvas');this.canvas.className='goal-bar-confetti';this.canvas.setAttribute('aria-hidden','true');row.append(this.canvas);
    this.mode=null;this.visiblePose=null;this.session=null;this.initialized=false;this.enabled=false;this.sequence=0;this.animations=new Set();this.waiters=new Map();this.completed=new Set();this.burstTimers=[];this.context=null;this.rig=null;
    this.motionPreference=matchMedia('(prefers-reduced-motion: reduce)');this.visibility=()=>{if(document.hidden){this.cancel();this.root.hidden=true;this.root.style.display='none';}else if(this.enabled){this.root.style.display='';this.change(this.mode,{entryOnly:true});}};
+   this.themeChanged=()=>globalThis.WMOFHalloweenAvatar?.decorate(this.pose);window.addEventListener('wmof-seasonal-theme-change',this.themeChanged);
    document.addEventListener('visibilitychange',this.visibility);this.preferenceChanged=()=>{if(this.enabled)this.change(this.mode,{entryOnly:true});};this.motionPreference.addEventListener?.('change',this.preferenceChanged);
   }
   reduced(){return this.motionPreference.matches;}
@@ -76,6 +77,7 @@
   setPose(name){
    this.visiblePose=name;this.pose.style.opacity='';this.root.dataset.pose=name;this.pose.innerHTML=assets.poses[name];this.root.classList.remove('is-arm-transition');
    this.rig=name==='break'?{sit:0,turn:0,chair:34}:null;
+   globalThis.WMOFHalloweenAvatar?.decorate(this.pose);
    if(this.reduced())this.pose.querySelectorAll('animate').forEach(e=>e.remove());
    if(this.rig)this.drawRig();this.position();
   }
@@ -85,6 +87,7 @@
    root.querySelector('.rig-body').style.opacity='1';root.querySelector('.rig-spine').setAttribute('d',path(g.spine));
    const head=root.querySelector('.rig-head');head.setAttribute('cx',g.head[0]);head.setAttribute('cy',g.head[1]);
    for(let i=0;i<2;i++){root.querySelector('.rig-leg-'+i).setAttribute('d',path(g.legs[i].screen));root.querySelector('.rig-arm-'+i).setAttribute('d',path(g.arms[i]));}
+   globalThis.WMOFHalloweenAvatar?.update(this.pose);
   }
   rigTo(to,duration){
    if(this.reduced()){this.rig={...to};this.drawRig();return Promise.resolve(true);}
@@ -162,9 +165,9 @@
    if(this.reduced()||!globalThis.confetti||!this.context)return;
    this.fire ||= globalThis.confetti.create(this.canvas,{resize:true,useWorker:false});this.fire.reset();
    const rect=this.canvas.getBoundingClientRect(),box=this.svg.getBoundingClientRect(),c=this.context,range=(a,b)=>a+Math.random()*(b-a),originX=(box.left+(c.left+c.right)/2-rect.left)/Math.max(1,rect.width),originY=clamp((box.top+c.y-c.halfLine-24-12-rect.top)/Math.max(1,rect.height));
-   for(const delay of [0,range(45,100),range(115,185)])this.burstTimers.push(setTimeout(()=>this.fire({particleCount:Math.round(range(8,13)),angle:range(82,98),spread:range(65,95),startVelocity:range(12,18),decay:range(.9,.94),gravity:range(.85,1.15),drift:range(-.15,.15),ticks:Math.round(range(85,120)),scalar:range(.4,.65),colors:['#ffd6e7','#fff2b3','#c9f2df','#d5e2ff','#e7d5ff','#ffdcc4'],shapes:['square','circle'],origin:{x:originX,y:originY},disableForReducedMotion:true}),delay));
+   for(const delay of [0,range(45,100),range(115,185)])this.burstTimers.push(setTimeout(()=>this.fire({particleCount:Math.round(range(8,13)),angle:range(82,98),spread:range(65,95),startVelocity:range(12,18),decay:range(.9,.94),gravity:range(.85,1.15),drift:range(-.15,.15),ticks:Math.round(range(85,120)),scalar:range(.4,.65),colors:globalThis.WMOFSeasonalTheme?.active?['#ffd34e','#ffab53','#f6d7a7','#ba96cf','#eee3cc']:['#ffd6e7','#fff2b3','#c9f2df','#d5e2ff','#e7d5ff','#ffdcc4'],shapes:['square','circle'],origin:{x:originX,y:originY},disableForReducedMotion:true}),delay));
   }
-  dispose(){this.cancel();document.removeEventListener('visibilitychange',this.visibility);this.motionPreference.removeEventListener?.('change',this.preferenceChanged);this.root.remove();this.canvas.remove();this.enabled=false;}
+  dispose(){this.cancel();window.removeEventListener('wmof-seasonal-theme-change',this.themeChanged);document.removeEventListener('visibilitychange',this.visibility);this.motionPreference.removeEventListener?.('change',this.preferenceChanged);this.root.remove();this.canvas.remove();this.enabled=false;}
  }
  globalThis.WMOFGoalBarAvatar=Object.freeze({create:(svg,row)=>new Avatar(svg,row),modeFor:targetMode,breakGeometry,armGeometry,surfaceY});
 })();

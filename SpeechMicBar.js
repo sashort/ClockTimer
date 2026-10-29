@@ -1157,6 +1157,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                     capture: true
                 }
             );
+        globalThis.WMOFSeasonalTheme?.registerRoot(this.#shadow);
         this.#bar = this.#shadow.querySelector("#bar");
         this.#bar
             ?.addEventListener(

@@ -32,7 +32,7 @@ const index =
 const css =
     fs.readFileSync(
         new URL(
-            "../app.css",
+            "../styles/default/app.css",
             import.meta.url
         ),
         "utf8"

@@ -13,7 +13,7 @@ try{
 
 
  await call('Emulation.setDeviceMetricsOverride',{width:360,height:420,deviceScaleFactor:1,mobile:false});
- const frame=await call('Page.getFrameTree');await call('Page.setDocumentContent',{frameId:frame.frameTree.frame.id,html:'<style>'+read('app.css')+read('MenuIcons.css')+read('drop-in.css')+'</style>'+markup});
+ const frame=await call('Page.getFrameTree');await call('Page.setDocumentContent',{frameId:frame.frameTree.frame.id,html:'<style>'+read('styles/default/app.css')+read('styles/default/MenuIcons.css')+read('styles/default/drop-in.css')+'</style>'+markup});
  await ev('globalThis.WMOFLanguagePack={text:id=>id}');await ev(read('PanePage.js'));await ev(read('HamburgerMenu.js'));
  await ev('document.getElementById("dropInMenu").showPopover()');await new Promise(r=>setTimeout(r,700));
  const state=()=>ev('(()=>{const m=document.getElementById("dropInMenu");return {count:m.pageCount,index:m.page,panels:[...m.querySelectorAll(".hamburger-menu-panel")].map(p=>({height:p.getBoundingClientRect().height,rows:[...p.children].map(x=>({text:x.textContent,height:x.getBoundingClientRect().height,style:x.getAttribute("style")}))}))};})()');
@@ -31,7 +31,7 @@ try{
   const body=read(page+'.html').match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
   await call('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:false});
   const pageFrame=await call('Page.getFrameTree');
-  await call('Page.setDocumentContent',{frameId:pageFrame.frameTree.frame.id,html:'<style>'+read('app.css')+read('MenuIcons.css')+'</style>'+body});
+  await call('Page.setDocumentContent',{frameId:pageFrame.frameTree.frame.id,html:'<style>'+read('styles/default/app.css')+read('styles/default/MenuIcons.css')+'</style>'+body});
   await ev('globalThis.WMOFLanguagePack={text:id=>id}');await ev(read('PanePage.js'));await ev(read('HamburgerMenu.js'));
   await ev('document.getElementById('+JSON.stringify(menuId)+').showPopover()');await new Promise(r=>setTimeout(r,650));
   for(const id of parents){

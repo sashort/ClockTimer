@@ -345,7 +345,7 @@ for(const variable of ['--clock-timer-active-ring-width','--clock-timer-inactive
  assert.match(clockTimerSource,new RegExp(variable));
 }
 console.log('PASS structural clock sizing is centralized while one GUI font drives both internal clock fonts');
-const appCssText=fs.readFileSync(new URL('../app.css',import.meta.url),'utf8');
+const appCssText=fs.readFileSync(new URL('../styles/default/app.css',import.meta.url),'utf8');
 assert.match(appCssText,/clock-timer time-range\[type="overtime"\]\s*\{[^}]*--clock-timer-overtime-color/s);
 assert.match(appCssText,/clock-timer\[hide-overtime\] time-range\[type="overtime"\]\s*\{[^}]*--clock-timer-trip-color/s);
 console.log('PASS Clock/Timer settings use a single-open mobile accordion with grouped range colors');
