@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {Window} from 'happy-dom';
 const {compose,render,pages}=createRequire(import.meta.url)('../scripts/build-pages.cjs');
 const root=fileURLToPath(new URL('..',import.meta.url));
-const icons=fs.readFileSync(new URL('../MenuIcons.css',import.meta.url),'utf8');
+const icons=fs.readFileSync(new URL('../styles/default/MenuIcons.css',import.meta.url),'utf8');
 for(const page of pages){
  const source=fs.readFileSync(new URL('../templates/'+page+'.html',import.meta.url),'utf8');
  assert.equal(source.trim(),'{{page:'+page+'}}','each page delegates to the shared document');
@@ -26,7 +26,7 @@ for(const page of pages){
  assert.equal(w.document.querySelector('#userLookupCopySelected'),null,'Copy Identity is removed');
  assert.equal(w.document.querySelectorAll('#editProfilePermissions input[type=checkbox]').length,9,'permissions use named choices, including Impersonate');
  assert.equal(Boolean(w.document.getElementById('dropInLookupActionTemplate')),page==='drop-in','only Drop-In owns its action template');
- assert.equal(w.document.querySelectorAll('link[href^="MenuIcons.css"]').length,1);
+ assert.equal(w.document.querySelectorAll('link[href^="styles/default/MenuIcons.css"]').length,1);
  const menu=page==='index'?'#homePane button,#homePane a,#signedOutActions button,#signedOutActions a':page==='order-filler'?'#mainMenu button:not(#menuButton),#mainMenu a,#mainMenu summary':'#dropInMenu button:not(#dropInMenuButton),#dropInMenu a';
  for(const option of w.document.querySelectorAll(menu)){
   assert(option.dataset.menuIcon || option.querySelector('svg'),page+': missing icon for '+(option.id||option.textContent.trim()));

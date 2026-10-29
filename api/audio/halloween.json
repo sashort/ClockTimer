@@ -1,0 +1,209 @@
+{
+  "instruments": {
+    "halloween-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.82,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Cinematic Pulse Bass"
+    },
+    "halloween-strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-tremolo",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 0.5
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "reverb": {
+        "wet": 0.08,
+        "decay": 1.2
+      }
+    },
+    "halloween-idle-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.6,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.5,
+        "sustain": 0.86,
+        "release": 0.5
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 650,
+        "Q": 0.65,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.08,
+        "decay": 2.2
+      },
+      "delay": {
+        "time": 0.46875,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.045
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Cinematic Pulse Bass"
+    }
+  },
+  "songs": {},
+  "touchtones": {
+    "octaveShift": -4,
+    "pulseGain": 0.4,
+    "attackSeconds": 0.008,
+    "releaseSeconds": 0.012,
+    "strings": {
+      "gain": 1.7,
+      "ringSeconds": 0.25,
+      "decaySeconds": 0.5,
+      "voicing": "bass-harmonics"
+    },
+    "idleBell": {
+      "pulse": true,
+      "timeoutSeconds": 1,
+      "holdSeconds": 1.2,
+      "volume": 0.35
+    }
+  }
+}

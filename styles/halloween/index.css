@@ -1,0 +1,101 @@
+/* Palette overrides only. Layout and ordinary styles live in styles/default. */
+html[data-seasonal-theme="halloween"] {
+    color-scheme: dark;
+    --wm-blue: #21170f !important;
+    --wm-blue-dark: #120f0d !important;
+    --wm-blue-mid: #2b1b10 !important;
+    --wm-yellow: #ffd04f !important;
+    --wm-white: #fff5e2 !important;
+    --wm-blue-light: #ffd778 !important;
+    --wm-blue-sky: #f1a240 !important;
+    --wm-gray: #aaa297 !important;
+    --wm-red: #e9782b !important;
+    --ui-navy-gradient: linear-gradient(#302319,#17110c) !important;
+    --ui-blue-gradient: linear-gradient(#9b5516,#6d350b) !important;
+    --ui-yellow-gradient: linear-gradient(#ffdb67,#f4ab23) !important;
+    accent-color: #f3a329;
+}
+html[data-seasonal-theme="halloween"] :is(.app,clock-timer,shared-modal-host) {
+    --timer-trip-color: #ef8b21 !important;
+    --timer-early-start-color: #ffd34e !important;
+    --timer-break-color: #806094 !important;
+    --timer-lunch-color: #ffc83f !important;
+    --timer-break-buffer-color: #a67b4c !important;
+    --timer-down-color: #817c74 !important;
+    --timer-tolerance-color: #a775c4 !important;
+    --timer-overtime-color: #ff6328 !important;
+    --timer-latency-color: #d46324 !important;
+    --clock-timer-trip-color: #ef8b21 !important;
+    --clock-timer-early-start-color: #ffd34e !important;
+    --clock-timer-break-color: #806094 !important;
+    --clock-timer-lunch-color: #ffc83f !important;
+    --clock-timer-break-buffer-color: #a67b4c !important;
+    --clock-timer-down-color: #817c74 !important;
+    --clock-timer-tolerance-color: #a775c4 !important;
+    --clock-timer-overtime-color: #ff6328 !important;
+    --clock-timer-latency-color: #d46324 !important;
+}
+html[data-seasonal-theme="halloween"] :is(body,.app) {
+    background: #17120e !important;
+}
+html[data-seasonal-theme="halloween"] .app {
+    background: linear-gradient(#21160e,#17120e 45%,#24180e) !important;
+}
+html[data-seasonal-theme="halloween"] :is(.hamburger-menu-popover,.mode-dropdown) {
+    background: #21170f !important;
+    border-color: #ed972d !important;
+}
+html[data-seasonal-theme="halloween"] :is(.header-button,.scope-control button) {
+    background: #24190f !important;
+    color: #ffd778 !important;
+    border-color: #ed972d !important;
+}
+html[data-seasonal-theme="halloween"] :is(.dialog-header,.number-pad-context,.number-pad-settings,.trip-log-header) {
+    background: linear-gradient(#59350f,#25190e) !important;
+    color: #fff5e2 !important;
+}
+html[data-seasonal-theme="halloween"] :is(.number-pad-key,.number-pad-ampm,.number-pad-date) {
+    background: #211910 !important;
+    color: #fff5e2 !important;
+    border-color: #8e642e !important;
+}
+html[data-seasonal-theme="halloween"] .number-pad-confirm {
+    background: #f3a329 !important;
+    color: #21140a !important;
+}
+html[data-seasonal-theme="halloween"] .number-pad-close {
+    background: #4a2c18 !important;
+    color: #fff5e2 !important;
+    border-color: #ffd778 !important;
+}
+html[data-seasonal-theme="halloween"] :is(.voice-entry-surface,.app-dialog,.graphical-dialog) {
+    background: #211910 !important;
+    color: #fff5e2 !important;
+    border-color: #ed972d !important;
+}
+html[data-seasonal-theme="halloween"] :is(.voice-entry-header,.voice-entry-copy>strong) {color:#ffd04f!important;}
+html[data-seasonal-theme="halloween"] :is(.voice-entry-touch,.voice-entry-close) {
+    background:#42280e!important;color:#ffd778!important;border-color:#ed972d!important;
+}
+html[data-seasonal-theme="halloween"] :is(.trip-log-shell,.trip-log-content,.trip-log-trip,.trip-log-overview) {
+    background: #302a24 !important;
+    border-color: #9b7947 !important;
+}
+html[data-seasonal-theme="halloween"] .percentage-display-options > button[role="radio"][aria-checked="true"] {
+    background: #f3a329 !important;
+    color: #20150a !important;
+    border-color: #ffdfa0 !important;
+}
+html[data-seasonal-theme="halloween"] .goal-bar-target-border {stroke:#ffd34e!important;}
+html[data-seasonal-theme="halloween"] .goal-bar-avatar.is-skeleton {
+    color:#fff2d3!important;stroke:#fff2d3!important;
+}
+html[data-seasonal-theme="halloween"] .is-skeleton .rib-bones {
+    fill:none;stroke:#fff2d3!important;stroke-width:1;
+}
+html[data-seasonal-theme="halloween"] .is-skeleton .skull-detail {
+    fill:#21150d!important;stroke:none!important;
+}
+html[data-seasonal-theme="halloween"] .is-skeleton .bubble path {fill:#34220f!important;stroke:#ffd34e!important;}
+html[data-seasonal-theme="halloween"] .is-skeleton .bubble text {fill:#ffd34e!important;stroke:none!important;}
+html[data-seasonal-theme="halloween"] :is(button,input,select):focus-visible {outline-color:#ffcf60!important;}

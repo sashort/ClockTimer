@@ -2,10 +2,13 @@
 <html lang="en-US">
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="app.css?build=E4GUFA">
-<link rel="stylesheet" href="MenuIcons.css?build=E4GUFA">
-<link rel="stylesheet" href="ModeMenu.css?build=E4GUFA">
-<meta name="viewport" content="width=device-width, initial-scale=1"><title>Drop-In</title><link rel="stylesheet" href="drop-in.css?build=E4GUFA">
+<link rel="stylesheet" href="styles/default/app.css?build=E4GUFA">
+<link rel="stylesheet" href="styles/default/MenuIcons.css?build=E4GUFA">
+<link rel="stylesheet" href="styles/default/ModeMenu.css?build=E4GUFA">
+<link rel="stylesheet" href="styles/halloween/index.css?build=E4GUFA" data-halloween-source>
+<script src="SeasonalTheme.js?build=E4GUFA"></script>
+<script src="styles/halloween/SkeletonAvatar.js?build=E4GUFA"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Drop-In</title><link rel="stylesheet" href="styles/default/drop-in.css?build=E4GUFA">
 
 </head>
 <body>
@@ -120,7 +123,7 @@
 
 <div class="summary-spacer" aria-hidden="true"></div>
 <section class="clock-region" data-timer-part="dial" aria-label="Clock" data-language-id="204a8eaf-4aaa-575c-88df-7a44688ec4f0">
-<clock-timer id="liveStreamClockTimer" inert military-time="true" timer-type="radial-overflow" timer-mode="elapsed"></clock-timer>
+<clock-timer id="liveStreamClockTimer" app-mode="production" inert military-time="true" timer-type="radial-overflow" timer-mode="elapsed"></clock-timer>
 
 </section>
 </div>
@@ -292,6 +295,7 @@ dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="graphical
 <script src="IdentityContext.js?build=E4GUFA"></script>
 <script src="UserLookup.js?build=E4GUFA"></script>
 <script src="api/audio/VoiceCatalog.js?build=E4GUFA"></script>
+<script src="api/audio/HalloweenAudio.js?build=E4GUFA"></script>
 <script src="api/audio/AudioEngine.js?build=E4GUFA"></script>
 <script src="LiveTripStream.js?build=E4GUFA"></script>
 <script src="DropInSpeechDebug.js"></script>

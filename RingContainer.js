@@ -182,6 +182,7 @@ class RingContainer extends HTMLElement {
         this.#shadowRoot.appendChild(
             this.#container
         );
+        globalThis.WMOFSeasonalTheme?.registerRoot(this.#shadowRoot);
 
         this.#refreshNormalizedLengthAttributes();
 

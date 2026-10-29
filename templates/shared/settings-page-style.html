@@ -1,0 +1,52 @@
+<style id="standaloneSettingsPageStyles">
+body.settings-page { margin:0; padding:1rem; background:var(--app-background, #f5f5f5); }
+body.settings-page > :not(dialog):not(shared-modal-host):not(script):not(style):not(#settingsPageHeader) { display:none !important; }
+#settingsPageHeader { max-width:1100px; margin:0 auto 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+#settingsPageHeader h1 { margin:0; font-size:1.5rem; }
+#settingsPageHeader a { color:inherit; }
+
+/* Only open settings surfaces are visible; all settings forms keep their original
+   padding and scroll behavior from app.css. The primary surface fills the iframe,
+   while the old dialog's centering margin belongs to the iframe element itself. */
+body.settings-page dialog#graphicalSettingsDialog:not([open]),
+body.settings-page dialog#audioSettingsDialog:not([open]),
+body.settings-page dialog#audioAnnouncementsDialog:not([open]),
+body.settings-page dialog#stateSettingsDialog:not([open]),
+body.settings-page dialog#tripSettingsDialog:not([open]) { display:none !important; }
+body.settings-page dialog::backdrop { display:none !important; }
+
+body.settings-page dialog#graphicalSettingsDialog[data-primary-settings-surface],
+body.settings-page dialog#audioSettingsDialog[data-primary-settings-surface],
+body.settings-page dialog#audioAnnouncementsDialog[data-primary-settings-surface],
+body.settings-page dialog#stateSettingsDialog[data-primary-settings-surface],
+body.settings-page dialog#tripSettingsDialog[data-primary-settings-surface] {
+ position:static !important;
+ inset:auto !important;
+ transform:none !important;
+ display:block !important;
+ box-sizing:border-box;
+ width:100% !important;
+ max-width:100% !important;
+ /* The old dialog's size and centering move to the iframe. Keep this surface's
+    original padding, border, background, and overflow rules. */
+ height:100% !important;
+ min-height:0 !important;
+ max-height:100% !important;
+ margin:0 !important;
+}
+
+body.settings-page.settings-embedded {
+ padding:0 !important;
+ width:100%;
+ height:100%;
+ overflow:auto !important;
+ background:transparent !important;
+}
+html.settings-embedded-document { overflow:auto !important; background:transparent !important; }
+@media (max-width:700px) { body.settings-page:not(.settings-embedded) { padding:.5rem; } #settingsPageHeader h1 {font-size:1.2rem;} }
+/* SharedModal now promotes dialogs under its host rather than directly under body. */
+#settingsPageHeader[hidden] {display:none !important;}
+body.settings-page shared-modal-host {--shared-modal-safe-height:100dvh !important;}
+body.settings-page :is(#audioSettingsDialog,#audioAnnouncementsDialog) {--audio-settings-safe-height:100dvh !important;--audio-settings-safe-top:0px !important;}
+body.settings-page :is(#audioSettingsDialog,#audioAnnouncementsDialog) > form {height:100% !important;max-height:100% !important;}
+</style>

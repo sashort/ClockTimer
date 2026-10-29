@@ -1222,6 +1222,7 @@
                 style,
                 this.#renderBox
             );
+            globalThis.WMOFSeasonalTheme?.registerRoot(this.#shadowRoot);
         }
 
         #getTimingDetail(actualTime, scheduledTime) {

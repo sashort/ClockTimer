@@ -20,7 +20,7 @@ const indexSource = readFileSync(
     "utf8"
 );
 const cssSource = readFileSync(
-    new URL("../app.css", import.meta.url),
+    new URL("../styles/default/app.css", import.meta.url),
     "utf8"
 );
 const clockTimerSource = readFileSync(

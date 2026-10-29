@@ -2,9 +2,12 @@
 <html lang="en-US">
 <head>
 <meta charset="utf-8">
-<link rel="stylesheet" href="app.css?build=E4GUFA">
-<link rel="stylesheet" href="MenuIcons.css?build=E4GUFA">
-<link rel="stylesheet" href="ModeMenu.css?build=E4GUFA">
+<link rel="stylesheet" href="styles/default/app.css?build=E4GUFA">
+<link rel="stylesheet" href="styles/default/MenuIcons.css?build=E4GUFA">
+<link rel="stylesheet" href="styles/default/ModeMenu.css?build=E4GUFA">
+<link rel="stylesheet" href="styles/halloween/index.css?build=E4GUFA" data-halloween-source>
+<script src="SeasonalTheme.js?build=E4GUFA"></script>
+<script src="styles/halloween/SkeletonAvatar.js?build=E4GUFA"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title data-language-id="c4b1721b-fc18-59a5-81a8-3b24bd9f62a3">WMOF — Walmart Order Filler</title>
     <script>
@@ -44,6 +47,12 @@
                     <button id="settingsMenuButton" type="button" aria-expanded="false" aria-controls="settingsSubmenu"><span class="menu-inline-icon settings-gear-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="5.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg></span><span data-language-id="708d54ab-8dc9-5047-b30b-67ee440153da">Settings</span></button>
                     <div id="settingsSubmenu" class="settings-submenu" hidden>
                         <button id="audioSettingsButton" type="button" data-open-clock-timer-settings data-settings-surface="audioSettingsDialog"><span class="menu-inline-icon audio-speaker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span data-language-id="7b7d624d-739b-57ae-96f4-f79bad524320">Audio Settings</span></button>
+                        <div class="theme-settings-group">
+                            <button id="themesMenuButton" type="button" aria-expanded="false" aria-controls="themesSubmenu" data-menu-icon="palette">Themes</button>
+                            <div id="themesSubmenu" class="themes-submenu" hidden>
+                                <label class="halloween-theme-option" data-menu-toggle><input id="halloweenThemeToggle" type="checkbox"><span>Halloween</span></label>
+                            </div>
+                        </div>
                         <button id="openGraphicalSettingsFrame" type="button" data-open-clock-timer-settings data-settings-surface="graphicalSettingsDialog" data-language-id="92a6c5f7-f8b9-51f6-a70b-73669905326c" data-menu-icon="palette">Clock/Timer Settings</button>
 
                         <div class="percentage-display-setting">
@@ -1349,6 +1358,7 @@ dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="graphical
     <script src="AnnouncementLanguage.js?v=language-pack-20261001&amp;build=E4GUFA"></script>
     <script src="AnnouncementCatalog.js?v=stable-announcement-types-20261001&amp;build=E4GUFA"></script>
     <script src="api/audio/VoiceCatalog.js?v=language-aware-voices-1&amp;build=E4GUFA"></script>
+    <script src="api/audio/HalloweenAudio.js?build=E4GUFA"></script>
     <script src="api/audio/AudioEngine.js?v=dynamic-system-voices-1&amp;build=E4GUFA"></script>
     <script src="IdentityContext.js?build=E4GUFA"></script>
     <script src="UserLookup.js?v=language-pack-20261001&amp;build=E4GUFA"></script>

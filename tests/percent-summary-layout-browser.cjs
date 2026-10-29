@@ -9,7 +9,7 @@ const root=path.resolve(__dirname,'..');
    const html=fs.readFileSync(path.join(root,name+'.html'),'utf8');
    const row=html.match(/<div class="percent-summary"[\s\S]*?<\/div>/)[0];
    await page.setContent(`<main class="app" style="display:block;padding:0;margin:0;width:100%;visibility:visible"><div class="scope-control" style="height:52px"><button class="scope-connection-button" aria-label="Connection"></button></div>${row}</main>`);
-   await page.addStyleTag({path:path.join(root,'app.css')});
+   await page.addStyleTag({path:path.join(root,'styles/default/app.css')});
    await page.addScriptTag({path:path.join(root,'TimerSummaryView.js')});
    await page.evaluate(()=>{const badge=document.querySelector('.goal-sync-button');badge.hidden=false;badge.insertAdjacentHTML('beforeend','<span class="sync-offline-overlay"></span><span class="sync-pause-badge"></span>');});
    for(const width of [240,320,390,768]){

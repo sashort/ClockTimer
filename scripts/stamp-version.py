@@ -31,6 +31,13 @@ def stamp(root):
             return match[1] + updated.replace('&', '&amp;') + match[3]
         text = re.sub(r'((?:src|href)=")([^"]+)(")', asset, text)
         prepared[path] = text
+    # Legacy stylesheet URLs forward to the new default folder. Version those
+    # imports too, so a cached default stylesheet cannot outlive its release.
+    for name in ('app.css', 'MenuIcons.css', 'ModeMenu.css', 'drop-in.css'):
+        path = root / name
+        if path.exists():
+            text = path.read_text(encoding='utf-8')
+            prepared[path] = re.sub(r'([?&]build=)[A-Za-z0-9]+', lambda match: match[1] + version, text)
     app = root / 'app.js'
     text, count = re.subn(r'(const SPEECH_RUNTIME_REVISION\s*=\s*")[^"]+(";)',
                          lambda match: match[1] + version + match[2], app.read_text(encoding='utf-8'))

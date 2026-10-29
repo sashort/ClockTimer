@@ -51,8 +51,17 @@ function render(root, template, locale = 'en-US') {
         return attrs(result);
     }).trimEnd() + '\n';
 }
+function renderSettings(root) {
+    const read = name => fs.readFileSync(path.join(root,'templates/shared',name+'.html'),'utf8');
+    return render(root,'{{page:order-filler}}')
+        .replace(/<title[^>]*>[\s\S]*?<\/title>/,'<title>ClockTimer Settings</title>')
+        .replace('</head>',read('settings-page-style')+'</head>')
+        .replace('<body>','<body class="settings-page">\n'+read('settings-page-header'))
+        .replace('</body>',read('settings-page-bootstrap')+'</body>');
+}
 function build(root) {
     for (const name of [...pages, "graphical-settings"]) fs.writeFileSync(path.join(root,name+'.html'),render(root,fs.readFileSync(path.join(root,'templates',name+'.html'),'utf8')));
+    fs.writeFileSync(path.join(root,'settings.html'),renderSettings(root));
 }
-module.exports = {compose, render, build, pages};
+module.exports = {compose, render, renderSettings, build, pages};
 if (require.main === module) {build(path.resolve(process.argv[2] || path.join(__dirname,'..')));console.log('Built landing, Order Filler and Drop-In from shared templates');}

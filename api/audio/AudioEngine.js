@@ -282,6 +282,11 @@
                 this.#prepareAudioResources(
                     context
                 );
+                if (globalThis.WMOFHalloweenAudio?.isActive()) {
+                    // Warm the preset cache on user activation, before the first keypad tap.
+                    void globalThis.WMOFHalloweenAudio.prepare(context).catch(error =>
+                        console.warn("Halloween pulse preload failed", error));
+                }
 
                 return true;
             }
@@ -3126,7 +3131,8 @@
                 entry.instrumentResources.clear();
             }
 
-            for (const node of entry.nodes) {
+            if (entry.releaseAudioNodes) entry.releaseAudioNodes(reason);
+            else for (const node of entry.nodes) {
                 try { node.stop?.(); } catch {}
                 try { node.disconnect?.(); } catch {}
             }
@@ -3233,10 +3239,14 @@
                     true,
                 startBeat = 0,
                 normalizeLoudness = true,
-                startAtPerformanceMs
+                startAtPerformanceMs,
+                seasonalNote
             } = {}
         ) {
-            const catalog = await this.prepare();
+            let catalog = await this.prepare();
+            if (name === 'halloween-idle-pulse' && globalThis.WMOFHalloweenAudio?.isActive()) {
+                catalog = await globalThis.WMOFHalloweenAudio.pulseCatalog(catalog, seasonalNote);
+            }
             const song = catalog?.songs?.[name];
 
             if (!song) {
@@ -4177,6 +4187,21 @@
             );
 
             try {
+                const halloween = globalThis.WMOFHalloweenAudio;
+                if (reason === "number-pad" && halloween?.isActive()) {
+                    try {
+                        await halloween.touchtones(context, this.#programOutputNode(context), values,
+                            (Number(volume) || 0) * this.#outputSettings.toneVolume, entry);
+                        return Object.freeze({id: entry.id, stop: () => this.#release(entry, "key-released")});
+                    } catch (error) {
+                        for (const node of entry.nodes) {
+                            try { node.stop?.(); } catch {}
+                            try { node.disconnect?.(); } catch {}
+                        }
+                        entry.nodes.clear();
+                        console.warn("Halloween touchtones unavailable; using normal tones", error);
+                    }
+                }
                 for (const frequency of values) {
                     const oscillator =
                         context.createOscillator();
@@ -4274,6 +4299,7 @@
         }
 
         stopAll() {
+            globalThis.WMOFHalloweenAudio?.cancelPending?.(true);
             for (
                 const entry of
                 Array.from(
