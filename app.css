@@ -6893,7 +6893,10 @@ speech-command {
     top: 6px;
     right: 6px;
     z-index: 4;
-    color: var(--wm-blue-dark);
+    color: var(--wm-white);
+    background: #172331;
+    border: 2px solid #d8e3ef;
+    border-radius: 8px;
 }
 
 
@@ -7969,9 +7972,14 @@ html[data-layout-settings-pending="true"] #app :is(.percent-summary,.percent-sum
 .number-pad-official-details {text-align:center;font-size:14px;color:#c6dce9;padding:4px 10px;}
 .clear-official-percentage {font:inherit;color:#fff;background:transparent;border:1px solid #a9bdd0;border-radius:7px;padding:7px 12px;margin-top:6px;}
 
-.number-pad-display:has(.number-pad-anchor-digit) {display:flex;justify-content:center;align-items:center;white-space:nowrap;}
+.number-pad-display:has(.number-pad-digit-run) {display:flex;justify-content:center;align-items:center;white-space:nowrap;}
 .number-pad-context:has(> .number-pad-official-details) {padding:10px 44px;}
 
 .number-pad-digit-run {display:inline-block;white-space:nowrap;user-select:none;touch-action:none;}
 .number-pad-display {touch-action:none;}
 [data-pad-digit] {cursor:text;}
+
+.number-pad-caret {display:inline-block;width:0;height:1em;position:relative;vertical-align:-.1em;pointer-events:none;}
+.number-pad-caret::after {content:"";position:absolute;inset:0 auto 0 -1px;border-left:2px solid currentColor;}
+
+.number-pad-fraction {font-size:.48em;line-height:1;font-variant-numeric:tabular-nums;}
