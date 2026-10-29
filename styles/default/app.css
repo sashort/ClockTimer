@@ -7989,9 +7989,9 @@ html[data-layout-settings-pending="true"] #app :is(.percent-summary,.percent-sum
 .themes-submenu .halloween-theme-option input {width:22px;height:22px;margin:0;flex:none;accent-color:var(--wm-blue-light);}
 
 /* Embedded settings stay inside the shared modal boundary above the Mic Bar. */
-shared-modal-host dialog#clockTimerSettingsFrameDialog {
+shared-modal-host dialog#clockTimerSettingsFrameDialog:has(iframe:not([data-settings-surface="graphicalSettingsDialog"])) {
     top:0;bottom:auto;height:var(--shared-modal-safe-height,100dvh);max-height:var(--shared-modal-safe-height,100dvh);
 }
-shared-modal-host dialog#clockTimerSettingsFrameDialog iframe {
+shared-modal-host dialog#clockTimerSettingsFrameDialog iframe:not([data-settings-surface="graphicalSettingsDialog"]) {
     max-height:calc(var(--shared-modal-safe-height,100dvh) - 16px);
 }
