@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const fixture=require('./order-filler-master-fixture.cjs');
 (async()=>{const f=await fixture({input:'transcript'});try{
  const p=f.page,operation=require('./retained-page-operation.cjs')(p);const logColors=()=>p.locator('#tripLogButton').evaluate(e=>{const s=getComputedStyle(e);return {background:s.backgroundImage,color:s.color};});let fullLogColors;let settings={version:1};await p.route('**/api/settings/',async route=>{if(route.request().method()==='PATCH'){const body=route.request().postDataJSON();settings={...settings,[body.namespace]:{...settings[body.namespace],...body.changes}};}await route.fulfill({json:{userId:2,settings}});});await p.setViewportSize({width:390,height:844});
- await p.evaluate(()=>window.compactSetup=(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();while(!WMOFAccountSettings.loaded)await new Promise(r=>setTimeout(r,20));globalThis.fullLogColors=(()=>{const s=getComputedStyle(document.querySelector('#tripLogButton'));return{background:s.backgroundImage,color:s.color};})();document.querySelector('#actionDisplayCompact').click();})());
+ await operation(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();while(!WMOFAccountSettings.loaded)await new Promise(r=>setTimeout(r,20));globalThis.fullLogColors=(()=>{const s=getComputedStyle(document.querySelector('#tripLogButton'));return{background:s.backgroundImage,color:s.color};})();document.querySelector('#actionDisplayCompact').click();});
  await p.waitForTimeout(1300);
  async function state(name,left,right){
   await p.waitForTimeout(2300);
