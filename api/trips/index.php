@@ -735,7 +735,6 @@ if ($method === 'DELETE') {
     $reclaimedTripId = audited_write(static function (PDO $pdo) use ($tripId): ?int {
         $pdo->prepare('SELECT id FROM trips WHERE id=:id FOR UPDATE')->execute([':id'=>$tripId]);
         $trip = require_trip_owner($pdo, $tripId);
-        if(trip_official_has_history(fetch_trip_events($pdo,$tripId,'log')))api_error('Trips with official adjustments cannot be deleted.',422,'protected_official_adjustment');
         $pending = ((int) ($trip['pending'] ?? 0)) === 1;
 
         $deleteEvents = $pdo->prepare(

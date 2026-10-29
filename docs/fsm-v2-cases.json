@@ -1773,6 +1773,22 @@
         "effectiveBankCreditMinutes": -0.625,
         "history": "original official set record remains immutable; adjustment recalculates"
       }
+    },
+    {
+      "id": "OFFICIAL-WHOLE-TRIP-DELETE",
+      "contract": "TRIP-OFFICIAL",
+      "given": {
+        "trip": "owned completed trip with active or cleared official percentage history"
+      },
+      "when": {
+        "action": "confirm whole-trip deletion"
+      },
+      "expect": {
+        "deleteAllowed": true,
+        "tripAndEntriesRemoved": true,
+        "individualOfficialEntryDeletionAllowed": false,
+        "normalOwnershipRevisionAndCsrfChecks": "remain required"
+      }
     }
   ]
 }

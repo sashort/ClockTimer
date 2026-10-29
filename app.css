@@ -7702,7 +7702,7 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .percentage-display-options {display:grid;grid-template-columns:1fr 1fr;gap:7px;}
 .percentage-display-options > button {display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin:0!important;padding:12px 8px!important;min-height:76px;width:100%;border:1px solid #87a7ce!important;border-radius:10px;background:#001e60;font-size:16px;}
 .percentage-display-options > button::before {display:none!important;}
-.percentage-display-options > button[aria-checked=true] {background:#28558f;border:2px solid #d4ebff!important;}
+.percentage-display-options > button[role=radio][aria-checked=true] {background:#28558f;border:2px solid #d4ebff!important;}
 .percentage-display-options small {font-size:12px;color:#c1def5;font-weight:400;}
 .percentage-bar-miniature {display:flex;justify-content:space-between;align-items:center;width:78px;height:5px;background:#ffc220;margin:6px 0;}
 .percentage-bar-miniature i {display:block;width:10px;height:10px;border-radius:50%;border:2px solid white;background:#001e60;}
