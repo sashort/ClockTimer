@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict');
 const fixture=require('./order-filler-master-fixture.cjs');
 (async()=>{const f=await fixture({input:'transcript'});try{
- const p=f.page;const logColors=()=>p.locator('#tripLogButton').evaluate(e=>{const s=getComputedStyle(e);return {background:s.backgroundImage,color:s.color};});let fullLogColors;let settings={version:1};await p.route('**/api/settings/',async route=>{if(route.request().method()==='PATCH'){const body=route.request().postDataJSON();settings={...settings,[body.namespace]:{...settings[body.namespace],...body.changes}};}await route.fulfill({json:{userId:2,settings}});});await p.setViewportSize({width:390,height:844});
+ const p=f.page,operation=require('./retained-page-operation.cjs')(p);const logColors=()=>p.locator('#tripLogButton').evaluate(e=>{const s=getComputedStyle(e);return {background:s.backgroundImage,color:s.color};});let fullLogColors;let settings={version:1};await p.route('**/api/settings/',async route=>{if(route.request().method()==='PATCH'){const body=route.request().postDataJSON();settings={...settings,[body.namespace]:{...settings[body.namespace],...body.changes}};}await route.fulfill({json:{userId:2,settings}});});await p.setViewportSize({width:390,height:844});
  await p.evaluate(()=>window.compactSetup=(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();while(!WMOFAccountSettings.loaded)await new Promise(r=>setTimeout(r,20));globalThis.fullLogColors=(()=>{const s=getComputedStyle(document.querySelector('#tripLogButton'));return{background:s.backgroundImage,color:s.color};})();document.querySelector('#actionDisplayCompact').click();})());
  await p.waitForTimeout(1300);
  async function state(name,left,right){
@@ -15,14 +15,14 @@ const fixture=require('./order-filler-master-fixture.cjs');
  }
  await state('idle',['newTripButton','idleBreakButton'],['tripLogButton']);fullLogColors=await p.evaluate(()=>globalThis.fullLogColors);assert.deepEqual(await logColors(),fullLogColors,'Compact Trip Log matches the Full button colors');
  const exiting=await p.evaluate(async()=>{const e=document.querySelector('#tripLogButton');getComputedStyle(e).opacity;document.querySelector('#tripLogPinButton').click();await new Promise(resolve=>requestAnimationFrame(resolve));getComputedStyle(e).opacity;const transitions=e.getAnimations().filter(a=>a.transitionProperty==='opacity'||a.transitionProperty==='visibility');if(!transitions.some(a=>a.transitionProperty==='opacity'))throw new Error('unpin did not create an opacity transition');for(const a of transitions){a.pause();a.currentTime=100;}const result={opacity:Number(getComputedStyle(e).opacity),visibility:getComputedStyle(e).visibility};for(const a of transitions)a.play();return result;});assert(exiting.opacity>0&&exiting.opacity<1&&exiting.visibility==='visible','unpin keeps painting during fade/scale exit '+JSON.stringify(exiting));await state('idle-unpinned',['newTripButton','idleBreakButton'],[]);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
- await p.evaluate(()=>document.querySelector('#clockTimer').start({standardTime:'0:30:00'}));
+ await operation(()=>document.querySelector('#clockTimer').start({standardTime:'0:30:00'}));
  await state('running',['endTripButton','breakButton','downButton'],['tripLogButton']);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());await state('running-unpinned',['endTripButton','breakButton','downButton'],[]);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
- await p.evaluate(()=>document.querySelector('#clockTimer').startInterval('down'));
+ await operation(()=>document.querySelector('#clockTimer').startInterval('down'));
  await state('down',['downResumeButton','downBreakButton','downCancelButton'],['downDetailsButton','tripLogButton']);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());await state('down-unpinned',['downResumeButton','downBreakButton','downCancelButton'],['downDetailsButton']);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
- await p.evaluate(()=>document.querySelector('#clockTimer').endInterval());
- await p.evaluate(()=>document.querySelector('#clockTimer').startInterval('lunch'));
+ await operation(()=>document.querySelector('#clockTimer').endInterval());
+ await operation(()=>document.querySelector('#clockTimer').startInterval('lunch'));
  await state('lunch',['endTripButton'],['tripLogButton']);
  assert.match(await p.locator('.compact-interval-timer').textContent(),/Lunch Timer/);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
@@ -35,6 +35,6 @@ const fixture=require('./order-filler-master-fixture.cjs');
  await p.emulateMedia({reducedMotion:'reduce'});await p.setViewportSize({width:320,height:560});await state('short-break',['endTripButton'],['tripLogButton']);
  await p.evaluate(()=>document.querySelector('#actionDisplayFull').click());await p.waitForTimeout(2300);
  assert.equal(await p.locator('#breakEndRow #endTripButton').count(),1,'restores actual Full button');
- assert.equal(await p.evaluate(async()=>{await WMOFPersistence.flush();return WMOFPersistence.peek('wmof.clock.actionDisplay');}),'full');
+ assert.equal(await operation(async()=>{await WMOFPersistence.flush();return WMOFPersistence.peek('wmof.clock.actionDisplay');}),'full');
  assert.deepEqual(f.errors,[]);console.log('PASS Compact real controls, independent centered columns, intervals, pin, log promotion/return, Full restoration and persisted preference');
 }finally{await f.close();}})().catch(e=>{console.error(e);process.exitCode=1});
