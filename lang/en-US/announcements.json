@@ -156,6 +156,7 @@
       "speechRate": "Speech Rate {percent}",
       "volume": "Volume {percent}%",
       "viewing": "Viewing {scope}",
+      "autoMode": "Auto Mode",
       "mode": "{scope} Mode",
       "endTimeLocked": "End Time Locked to {time}",
       "standardTime": "Standard Time Set to {time}",

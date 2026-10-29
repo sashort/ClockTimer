@@ -364,3 +364,49 @@ triangle a below-floor target in use. Merged goal units preserve these indicator
 Releasing the bound retains the underlying candidate, animating its position, label
 and target border through the existing merge/split and target-transfer machinery.
 Time captions remain mode-switch controls, with no extra popover action.
+
+Idle 100% labels follow the normal outer track/node inset, including the target
+frame border and the available width beside Sync. The 100% label stays centered
+on Standard only during an active trip; idle endpoint markers remain at their
+scale position while the text stack moves inward. This rule is shared by Drop-In.
+
+
+Avatar surface following: the shared renderer passes painted track thickness and
+visible goal-bubble bounds to the avatar. Feet travel just above that surface, with
+smooth cosine approaches over goal bubbles, and merged units; Standard and Current lines do not raise him.
+Idle travel keyframes share the same elevation profile in both directions; layout
+changes retain the travel phase. Running, Down, finish and the complete chair rig
+use that same surface calculation. Labels and invisible hit areas do not lift the
+man. Reduced motion places him directly at the destination without travel.
+Selecting Auto announces “Auto Mode”; other scope announcements retain “Viewing …”.
+
+As the Current line approaches a goal bubble, the same surface envelope raises
+the man before overlap, then lowers him once clear. The entire chair rig follows
+that elevation. Compact Trip Log inherits its regular button colors.
+
+
+Active-trip tick scale: paint a tick at every visible multiple of 5%, up to 150%,
+inside a rounded clip inset from the track border. Paint ticks below node units;
+no tick labels or external stems. On positive active ranges, both nodes and ticks
+project reciprocal percentages (`Standard / ratio`) to counted-time distances.
+For example, 120% lies halfway between 100% and 150% on this scale. Preserve the
+explicit finite 0% origin for idle/all-failed fallback layouts. Existing ticks
+retain their identity during movement; entering/exiting ticks fade, with clipping
+maintained through the entire transition. Reduced motion settles immediately.
+
+
+Startup keeps percentage and action controls invisible until saved layout settings
+are resolved. Resuming a landing-page session also waits for account settings;
+failed requests release the gate to the fallback layout. Login, header and speech
+controls remain available. Full/Compact and Classic/Bar transitions share a
+translucent Switching Layout status overlay, retained through queued changes and
+removed on success or failure. Reduced-motion changes still clear busy state.
+Buffer bars reach the padded page edges with the same inner gap to the combined
+break caption/time group. They are borderless, vertically centered on that group,
+and one-third its height. Each countdown stays halfway between the padded page
+edge and timer group, centered vertically in a rounded contrast card.
+
+Audio Settings is the first Settings submenu action. Adjacent display-setting
+groups share one separator. The Full Trip Log unpin transition is scoped away
+from Compact controls, so Compact pin/unpin retain their opacity/scale transition
+and the other information buttons recenter smoothly.

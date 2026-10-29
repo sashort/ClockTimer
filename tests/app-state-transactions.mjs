@@ -542,6 +542,15 @@ if(process.argv.includes('--announcement-layers')) {
  assert.deepEqual(errors,[]);assert.deepEqual(consoleErrors,[]);
  console.log('PASS configured announcement layers: Sync summary-only feedback never requests unknown songs');await window.happyDOM.close();process.exit(0);
 }
+if(process.argv.includes('--mic-wake-native-final')) {
+ await timer.connect('test','test');window.document.querySelector('#loginDialog').close();await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
+ for(const name of ['PcmSampleBuffer','SpeechBoundaryAnalyzer','VoskContextRecognizer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+ const decoders=[];window.VoskRecognizer=class extends window.EventTarget {constructor(options){super();this.options=options;this.model={};this.ready=Promise.resolve(this);decoders.push(this);}beginUtterance(id){this.id=id;return Promise.resolve();}accept(){return Promise.resolve(true);}close(){this.closed=true;}emit(text,final=false){this.last=text;this.dispatchEvent(new window.CustomEvent('transcript',{detail:{utteranceId:this.id,transcript:text,isFinal:final,segmentFinal:final,segments:[{id:'0',text,final}],words:final?text.split(' ').map((word,i)=>({word,start:i/10,end:(i+1)/10})):undefined}}));}finishUtterance(){this.emit(this.last||'',true);return Promise.resolve();}};
+ await window.SpeechMenu.sleep();await settle();const u=window.SpeechMenu.testCapture();await settle();
+ const recognizer=new window.VoskContextRecognizer({contextProvider:(id,text)=>window.SpeechMenu.testVoskContext(id,text),warmDecoders:false,grammarWorker:false});
+ let wakes=0;window.SpeechMenu.events.addEventListener('unmuted',()=>wakes++);recognizer.addEventListener('transcript',e=>{if(e.detail.isFinal)window.SpeechMenu.testDeliverFinal(u,e.detail.transcript);});window.SpeechMenu.testUseRecognizer(recognizer);
+ await recognizer.beginUtterance(u.id);await recognizer.acceptAudio(new window.Float32Array(16000));const decoder=decoders.at(-1);decoder.emit('wake');await settle();assert(window.SpeechMenu.muted,'a partial cannot wake the mic');decoder.emit('background wake',true);await settle();assert(window.SpeechMenu.muted,'junk cannot be routed into a wake');decoder.emit('wake',true);await settle();await u.digestQueue;await settle();assert(!window.SpeechMenu.muted&&u.hadCommittedCommand,'native-final Wake executes without a logical stream finish');assert.equal(wakes,1);decoder.emit('wake',true);await settle();assert.equal(wakes,1,'duplicate final cannot reactivate twice');recognizer.close();assert.deepEqual(consoleErrors,[]);assert.deepEqual(errors,[]);console.log('PASS real sequential Wake context executes one native-final wake and rejects partial/junk results');await window.happyDOM.close();process.exit(0);
+}
 if(process.argv.includes('--mic-wake-grammar')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  await window.WMOFActions.handleSpeechRuntimeStarted();window.document.querySelector('#speechMicBar').isOpen=true;await settle();
@@ -1279,7 +1288,7 @@ if(process.argv.includes('--scope-feedback')) {
    assert(u.hadCommittedCommand&&!u.digestExecutionFailed,value+' voice mode executes');
   }
   await settle();
-  assert.deepEqual(spoken,['Viewing '+label],value+' announces one scope change');
+  assert.deepEqual(spoken,[value==='auto'?'Auto Mode':'Viewing '+label],value+' announces one scope change');
   assert.deepEqual(chimes,[unchanged?'setting-unchanged':'scope-change'],value+' uses the approved view cue');
   if(keepRange)assert.equal(window.WMOFInteractionState.state.tripLogRange,previousRange,value+' must not alter the date filter');
  };

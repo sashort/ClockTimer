@@ -17,6 +17,16 @@
   return{legs,arms,spine:[[hipsX,hipY],[hipsX,hipY-10]],head:[hipsX-1.5*Math.sin(theta),hipY-16]};
  }
  const path=points=>points.map(([x,y],i)=>(i?'L ':'M ')+x.toFixed(4)+' '+y.toFixed(4)).join(' ');
+ // Foot/chair clearance follows the painted surface, not the label or hit area.
+ // A cosine shoulder gives each obstacle a smooth approach in either direction.
+ function surfaceY(context,x){
+  const base=(context.thickness??18)/2+1.25;let rise=base;
+  for(const node of context.obstacles||[]){
+   const plateau=Math.max(0,node.width/2-node.height),distance=Math.max(0,Math.abs(x-node.x)-plateau),reach=node.height*1.8+14;
+   if(distance<reach)rise=Math.max(rise,base+Math.max(0,node.height+3-base)*(1+Math.cos(Math.PI*distance/reach))/2);
+  }
+  return context.y-rise-16;
+ }
  function armGeometry(progress){
   const upper=(150-45*progress)*Math.PI/180,fore=(-105-150*progress)*Math.PI/180,ex=-1+(9-2*progress)*Math.cos(upper),ey=-12+(9-2*progress)*Math.sin(upper);
   return{upper:path([[-1,-12],[ex,ey]]),fore:path([[ex,ey],[ex+(10.5-4.5*progress)*Math.cos(fore),ey+(10.5-4.5*progress)*Math.sin(fore)]])};
@@ -32,7 +42,7 @@
  function installStyle(){
   if(document.getElementById('goal-bar-avatar-style'))return;
   const style=document.createElement('style');style.id='goal-bar-avatar-style';style.textContent=assets.css+'\n'+`
-.goal-bar-avatar {color:#fff;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;}
+.goal-bar-avatar {color:#fff;fill:none;stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;transition:transform 240ms ease-in-out;}
 .goal-bar-avatar .rig-body {stroke:#fff;}
 .goal-bar-avatar.is-arm-transition .fist path {animation:none;}
 .goal-bar-avatar .bubble {transition:opacity 200ms;}
@@ -128,16 +138,18 @@
   }
   place(context){this.context=context;this.position();}
   position(){
-   if(!this.context||!this.visiblePose||!this.enabled)return;const {left,right,x,y,halfLine}=this.context,top=y-halfLine-24;
+   if(!this.context||!this.visiblePose||!this.enabled)return;const {left,right,x}=this.context,top=surfaceY(this.context,right);
    if(this.visiblePose==='idle'){
     if(this.reduced()){this.root.style.transform=`translate(${right}px,${top}px)`;return;}
-    const key=[left,right,top].map(n=>n.toFixed(2)).join('|');if(this.walkKey===key)return;
+    const key=JSON.stringify([left,right,this.context.y,this.context.thickness,this.context.obstacles]);if(this.walkKey===key)return;
     const time=this.walk?.currentTime||0;this.walk?.cancel();this.turn?.cancel();this.walkKey=key;
-    this.walk=this.root.animate([{transform:`translate(${left}px,${top}px)`,offset:0},{transform:`translate(${right}px,${top}px)`,offset:.44},{transform:`translate(${right}px,${top}px)`,offset:.5},{transform:`translate(${left}px,${top}px)`,offset:.94},{transform:`translate(${left}px,${top}px)`,offset:1}],{duration:20000,iterations:Infinity,easing:'linear'});
+    const offsets=[...new Set([...Array.from({length:241},(_,i)=>i/240),.44,.5,.94])].sort((a,b)=>a-b);
+    const frames=offsets.map(offset=>{const px=offset<.44?lerp(left,right,offset/.44):offset<.5?right:offset<.94?lerp(right,left,(offset-.5)/.44):left;return{transform:`translate(${px}px,${surfaceY(this.context,px)}px)`,offset};});
+    this.walk=this.root.animate(frames,{duration:20000,iterations:Infinity,easing:'linear'});
     this.pose.style.transformOrigin='0px -3px';this.turn=this.pose.animate([{transform:'rotateY(180deg)',offset:0},{transform:'rotateY(180deg)',offset:.44,easing:'cubic-bezier(.4,0,.2,1)'},{transform:'rotateY(0deg)',offset:.5},{transform:'rotateY(0deg)',offset:.94,easing:'cubic-bezier(.4,0,.2,1)'},{transform:'rotateY(180deg)',offset:1}],{duration:20000,iterations:Infinity});this.walk.currentTime=this.turn.currentTime=time;
    }else{
     this.walk?.cancel();this.turn?.cancel();this.walk=this.turn=null;this.walkKey=null;this.pose.style.transform='';
-    const px=this.visiblePose==='finish'?Math.max(left,Math.min(right,this.finishX??x)):x;this.root.style.transform=`translate(${px}px,${top}px)`;
+    const px=this.visiblePose==='finish'?Math.max(left,Math.min(right,this.finishX??x)):x;this.root.style.transform=`translate(${px}px,${surfaceY(this.context,px)}px)`;
     const bubble=this.pose.querySelector('.bubble');if(bubble){const wrapper=bubble.parentElement,text=bubble.querySelector('text'),rightSide=px<78&&this.svg.getBoundingClientRect().width-px>78;wrapper.setAttribute('transform',rightSide?'translate(82 0) scale(-1 1)':'translate(-82 0)');text?.setAttribute('transform',rightSide?'translate(74 0) scale(-1 1)':'');}
    }
   }
@@ -149,5 +161,5 @@
   }
   dispose(){this.cancel();document.removeEventListener('visibilitychange',this.visibility);this.motionPreference.removeEventListener?.('change',this.preferenceChanged);this.root.remove();this.canvas.remove();this.enabled=false;}
  }
- globalThis.WMOFGoalBarAvatar=Object.freeze({create:(svg,row)=>new Avatar(svg,row),modeFor:targetMode,breakGeometry,armGeometry});
+ globalThis.WMOFGoalBarAvatar=Object.freeze({create:(svg,row)=>new Avatar(svg,row),modeFor:targetMode,breakGeometry,armGeometry,surfaceY});
 })();

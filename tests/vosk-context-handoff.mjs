@@ -119,3 +119,16 @@ assert.equal(noisyAdapter.slots[0].value,'00421234');
 assert.equal(noisyAdapter.slots[0].startSample,3200,'junk never becomes part of the credential slot');
 noisyAdapter.close();
 console.log('PASS timed leading-noise discard preserves credential ownership and subsequent commands');
+
+// Sleep-only recognition must not route noise into Wake or wait for a logical
+// utterance timeout after a native final Wake result.
+const wakeRecords=[{id:'wake',pattern:'^wake$',action:'SpeechMenu.wake'}],wakeEvents=[];
+const wakeAdapter=new context.VoskContextRecognizer({contextProvider:async()=>({records:wakeRecords}),warmDecoders:false,grammarWorker:false});
+wakeAdapter.addEventListener('transcript',e=>wakeEvents.push(e.detail));
+await wakeAdapter.beginUtterance('sleep-native-final');await wakeAdapter.acceptAudio(new Float32Array(16000));
+let wakeDecoder=instances.at(-1);wakeDecoder.emit('wake');await turn();assert.equal(wakeEvents.length,0,'partial Wake does not activate');
+wakeDecoder.emit('background wake',{words:[{word:'background',start:.1,end:.2},{word:'wake',start:.2,end:.3}],final:true});await turn();assert.equal(wakeEvents.length,0,'Wake is not extracted from surrounding junk');
+wakeDecoder.emit('wake',{words:[{word:'wake',start:.1,end:.3}],final:true});await turn();assert.equal(wakeEvents.length,1,'native final Wake is published before finishUtterance');assert.equal(wakeEvents[0].transcript,'wake');assert.equal(wakeEvents[0].isFinal,true);
+wakeDecoder.emit('wake',{words:[{word:'wake',start:.1,end:.3}],final:true});await turn();await wakeAdapter.finishUtterance('sleep-native-final');assert.equal(wakeEvents.length,1,'later stream final cannot repeat the wake');
+await wakeAdapter.beginUtterance('sleep-junk-only');await wakeAdapter.acceptAudio(new Float32Array(16000));wakeDecoder=instances.at(-1);wakeDecoder.emit('background wake',{words:[{word:'background',start:.1,end:.2},{word:'wake',start:.2,end:.3}],final:true});await wakeAdapter.finishUtterance('sleep-junk-only');assert.equal(wakeEvents.length,1,'logical final also preserves the complete phrase requirement');await wakeAdapter.beginUtterance('sleep-earlier-endpoint-noise');await wakeAdapter.acceptAudio(new Float32Array(16000));wakeDecoder=instances.at(-1);wakeDecoder.emit('background',{words:[{word:'background',start:.1,end:.2}],final:true});await turn();wakeDecoder.dispatchEvent(new CustomEvent('transcript',{detail:{utteranceId:'sleep-earlier-endpoint-noise',transcript:'background wake',segmentFinal:true,isFinal:false,segments:[{id:'old',text:'background',final:true},{id:'new',text:'wake',final:true}]}}));await turn();assert.equal(wakeEvents.length,2,'a fresh native-final Wake survives earlier endpoint noise');assert.equal(wakeEvents.at(-1).transcript,'wake');wakeAdapter.close();
+console.log('PASS native-final-only Wake, no leading-junk activation, immediate delivery and final-result reconciliation');

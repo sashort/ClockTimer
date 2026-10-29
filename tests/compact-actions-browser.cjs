@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict');
 const fixture=require('./order-filler-master-fixture.cjs');
 (async()=>{const f=await fixture({input:'transcript'});try{
- const p=f.page;let settings={version:1};await p.route('**/api/settings/',async route=>{if(route.request().method()==='PATCH'){const body=route.request().postDataJSON();settings={...settings,[body.namespace]:{...settings[body.namespace],...body.changes}};}await route.fulfill({json:{userId:2,settings}});});await p.setViewportSize({width:390,height:844});
- await p.evaluate(()=>window.compactSetup=(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();while(!WMOFAccountSettings.loaded)await new Promise(r=>setTimeout(r,20));document.querySelector('#actionDisplayCompact').click();})());
+ const p=f.page;const logColors=()=>p.locator('#tripLogButton').evaluate(e=>{const s=getComputedStyle(e);return {background:s.backgroundImage,color:s.color};});let fullLogColors;let settings={version:1};await p.route('**/api/settings/',async route=>{if(route.request().method()==='PATCH'){const body=route.request().postDataJSON();settings={...settings,[body.namespace]:{...settings[body.namespace],...body.changes}};}await route.fulfill({json:{userId:2,settings}});});await p.setViewportSize({width:390,height:844});
+ await p.evaluate(()=>window.compactSetup=(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();while(!WMOFAccountSettings.loaded)await new Promise(r=>setTimeout(r,20));globalThis.fullLogColors=(()=>{const s=getComputedStyle(document.querySelector('#tripLogButton'));return{background:s.backgroundImage,color:s.color};})();document.querySelector('#actionDisplayCompact').click();})());
  await p.waitForTimeout(1300);
  async function state(name,left,right){
   await p.waitForTimeout(2300);
@@ -13,8 +13,8 @@ const fixture=require('./order-filler-master-fixture.cjs');
   for(const r of [...result.left,...result.right]){assert(r.width>=42&&r.width===r.height,name+' square');assert(r.y>=0&&r.y+r.height<=result.app.height,name+' fits');}
   await p.screenshot({path:require('node:path').resolve('../outputs/compact-live-'+name+'.png')});
  }
- await state('idle',['newTripButton','idleBreakButton'],['tripLogButton']);
- await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());await state('idle-unpinned',['newTripButton','idleBreakButton'],[]);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
+ await state('idle',['newTripButton','idleBreakButton'],['tripLogButton']);fullLogColors=await p.evaluate(()=>globalThis.fullLogColors);assert.deepEqual(await logColors(),fullLogColors,'Compact Trip Log matches the Full button colors');
+ const exiting=await p.evaluate(async()=>{const e=document.querySelector('#tripLogButton');getComputedStyle(e).opacity;document.querySelector('#tripLogPinButton').click();await new Promise(resolve=>requestAnimationFrame(resolve));getComputedStyle(e).opacity;const transitions=e.getAnimations().filter(a=>a.transitionProperty==='opacity'||a.transitionProperty==='visibility');if(!transitions.some(a=>a.transitionProperty==='opacity'))throw new Error('unpin did not create an opacity transition');for(const a of transitions){a.pause();a.currentTime=100;}const result={opacity:Number(getComputedStyle(e).opacity),visibility:getComputedStyle(e).visibility};for(const a of transitions)a.play();return result;});assert(exiting.opacity>0&&exiting.opacity<1&&exiting.visibility==='visible','unpin keeps painting during fade/scale exit '+JSON.stringify(exiting));await state('idle-unpinned',['newTripButton','idleBreakButton'],[]);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
  await p.evaluate(()=>document.querySelector('#clockTimer').start({standardTime:'0:30:00'}));
  await state('running',['endTripButton','breakButton','downButton'],['tripLogButton']);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());await state('running-unpinned',['endTripButton','breakButton','downButton'],[]);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());

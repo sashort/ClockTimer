@@ -311,3 +311,13 @@ Goal Bounding commands are `goal bounding on`, `goal bounding off`, and `goal bo
 The setting defaults On, applies to inferred Trip requirements in Trip, Sync and Auto,
 and announces its new state before any resulting Trip-goal recalculation.
 See [goal-bounding-and-counted-bank.md](goal-bounding-and-counted-bank.md).
+
+
+Sleep-only sequential recognition treats Wake as a complete native-final phrase.
+It does not hand the word through command-chain continuation routing, accept an
+interim guess, prune surrounding junk into Wake, or wait for the long utterance
+silence timeout. A later final result cannot publish the same Wake again. Both
+native endpoint and explicit finish paths enforce this same whole-phrase gate.
+Regression: `tests/vosk-context-handoff.mjs`. This tests software routing with
+simulated native decoder results; acoustic false positives still require recordings
+or live diagnostics to distinguish a genuine top-ranked “wake” misrecognition.

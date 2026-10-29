@@ -594,7 +594,7 @@ clock-timer[hide-second-hand]::part(second-hand) {
 }
 
 
-.app[data-trip-log-pinned="false"] .trip-log-button:not(.trip-log-floating) {
+.app:not([data-action-display="compact"])[data-trip-log-pinned="false"] .trip-log-button:not(.trip-log-floating) {
     visibility: hidden;
     pointer-events: none;
     /* Keep painting while the app's reserved Log row contracts. */
@@ -7674,7 +7674,6 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .trip-log-trip.is-break-only .trip-log-menu-actions {color:#fff;}
 
 /* Sync keeps the existing arrow and badge artwork; Override is a separate switch. */
-.sync-override-menu-row { grid-template-columns:minmax(0,1fr) 42px; }
 #goalBoundingButton { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; }
 .goal-bounding-toggle { display:inline-block; position:relative; flex:0 0 38px; height:22px; border-radius:12px; background:#425466; }
 .goal-bounding-toggle::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform 180ms ease; }
@@ -7694,6 +7693,7 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 
 /* Percentage presentation is shared by Order Filler and Drop-In. */
 .percentage-display-setting {margin:4px 8px 12px;padding:12px 14px;border-block:1px solid #456b9b;}
+.percentage-display-setting + .percentage-display-setting {border-top:0;margin-top:0;}
 .percentage-display-label {display:block;margin-bottom:12px;font-size:16px;font-weight:600;}
 .percentage-display-options {display:grid;grid-template-columns:1fr 1fr;gap:7px;}
 .percentage-display-options > button {display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin:0!important;padding:12px 8px!important;min-height:76px;width:100%;border:1px solid #87a7ce!important;border-radius:10px;background:#001e60;font-size:16px;}
@@ -7797,7 +7797,6 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 }
 .app[data-action-display="compact"] .compact-action-rail > button > :is(.break-action-label,.break-action-clock,.deferred-trip-icon) {display:none;}
 .app[data-action-display="compact"] .compact-action-rail > button[data-compact-visible="false"] {opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,-50%) scale(.7);}
-.app[data-action-display="compact"] .compact-action-rail > #tripLogButton {background:#f5f6f7;color:var(--wm-blue-dark);}
 .app[data-action-display="compact"] .compact-action-rail > :is(#downButton,#breakDownButton) {background:var(--wm-gray);color:var(--wm-blue-dark);}
 .app[data-action-display="compact"] #downDetailsButton svg {width:30px;height:30px;}
 .app[data-action-display="compact"] #downDetailsButton::before {display:none;}
@@ -7908,11 +7907,10 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 .goal-bar-avatar .bubble {stroke:#ffc220;}
 .goal-bar-avatar .bubble text {fill:#ffc220;}
 .compact-interval-timer,#endTripButton {position:relative;}
-.break-buffer-side {position:absolute;top:50%;width:44px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;line-height:1.1;font-size:18px;font-variant-numeric:tabular-nums;}
-.break-buffer-side.left {left:25%;}
-.break-buffer-side.right {left:75%;}
-.break-buffer-track {display:block;width:40px;height:5px;background:rgb(0 30 96 / 22%);border-radius:3px;overflow:hidden;}
-.break-buffer-track > i {display:block;width:100%;height:100%;background:currentColor;transition:transform 1s linear;}
+.break-buffer-side {position:absolute;transform:translateY(-50%);display:grid;place-items:center;pointer-events:none;line-height:1.1;font-size:18px;font-variant-numeric:tabular-nums;border:0;}
+.break-buffer-countdown {grid-area:1/1;z-index:1;transform:translateX(var(--buffer-label-offset,0px));padding:2px 5px;border-radius:5px;background:rgb(0 20 50 / 78%);color:#fff;white-space:nowrap;}
+.break-buffer-track {grid-area:1/1;display:block;width:100%;height:100%;background:rgb(0 30 96 / 22%);border:0;border-radius:3px;overflow:hidden;}
+.break-buffer-track > i {display:block;width:100%;height:100%;background:currentColor;opacity:.35;transition:transform 1s linear;}
 .break-buffer-side.left i {transform-origin:right;}
 .break-buffer-side.right i {transform-origin:left;}
 #endTripButton:has(> .break-action-label) {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
@@ -7920,7 +7918,6 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 #endTripButton:has(> .break-action-label) .break-action-clock {font-size:clamp(24px,6vw,34px);}
 .break-end-row .break-action-clock::before {content:none!important;}
 .compact-action-rail .break-buffer-side {display:none;}
-@media(max-width:360px){.break-buffer-side {font-size:15px;width:36px;}.break-buffer-track {width:32px;}}
 @media(prefers-reduced-motion:reduce){.break-buffer-track > i {transition:none;}}
 
 /* Only painted bar controls receive taps. The avatar and reserved air do not. */
@@ -7937,3 +7934,18 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 .goal-bounding-indicator{display:inline-block;pointer-events:none;font-size:.7em;vertical-align:super;color:inherit;}
 .goal-bounding-raw{font-size:12px;font-weight:500;color:#c1def5;}
 .goal-bounding-marker{pointer-events:none;transform-box:fill-box;transform-origin:center;}
+
+/* Keep unresolved account layout choices from flashing as Full/Classic. */
+html[data-layout-settings-pending="true"] #app :is(.percent-summary,.percent-summary *,.trip-action-controls,.trip-action-controls *,.compact-action-rail,.compact-action-rail *,.compact-interval-timer,.compact-interval-timer *,#tripLogButton) {visibility:hidden!important;pointer-events:none!important;}
+.layout-switch-overlay {position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:rgb(0 15 40 / 42%);view-transition-name:wmof-layout-busy;cursor:progress;}
+.layout-switch-overlay[hidden] {display:none;}
+.layout-switch-overlay>span {padding:18px 26px;border:1px solid #a9ddf7;border-radius:14px;background:rgb(15 34 56 / 88%);color:white;font:700 20px Arial,sans-serif;}
+::view-transition-group(wmof-layout-busy) {z-index:2147483647;}
+::view-transition-old(wmof-layout-busy),::view-transition-new(wmof-layout-busy) {animation:none;}
+
+/* Binary menu state has one palette; disclosure and radio choices are separate. */
+:is(#mainMenu,#dropInMenu) [data-menu-toggle] {color:var(--menu-toggle-off,#9da6b3);transition:color 160ms linear;}
+:is(#mainMenu,#dropInMenu) [data-menu-toggle]:is([aria-pressed="true"],[aria-checked="true"]),
+:is(#mainMenu,#dropInMenu) label[data-menu-toggle]:has(input:checked) {color:var(--wm-blue-light,#a9ddf7);}
+:is(#mainMenu,#dropInMenu) [data-menu-toggle] .sync-goals-menu-icon {color:inherit;}
+:is(#mainMenu,#dropInMenu) label[data-menu-toggle] input {accent-color:var(--wm-blue-light,#a9ddf7);}

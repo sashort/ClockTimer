@@ -133,12 +133,14 @@
    this.row=row;this.nodes=new Map();this.previous=new Map();this.units=[];this.motion=new Map();this.prefix='goal-shape-'+(++GoalBar.sequence);
    this.svg=svgElement('svg',{class:'goal-bar-svg',role:'button',tabindex:0,'aria-label':'Goal bar · Edit goals',viewBox:'0 0 300 112'});
    this.track=svgElement('rect',{class:'goal-bar-track'});this.outline=svgElement('rect',{class:'goal-bar-outline','aria-hidden':'true'});this.fill=svgElement('rect',{class:'goal-bar-fill'});this.segment=svgElement('rect',{class:'goal-bar-segment'});
+   const defs=svgElement('defs'),clip=svgElement('clipPath',{id:this.prefix+'-ticks'});this.tickClip=svgElement('rect');clip.append(this.tickClip);defs.append(clip);this.svg.append(defs);
+   this.ticks=svgElement('g',{class:'goal-bar-scale-ticks','clip-path':`url(#${this.prefix}-ticks)`,'aria-hidden':'true'});this.ticks.style.pointerEvents='none';this.tickNodes=new Map();
    this.connectors=svgElement('g',{class:'goal-bar-connectors','aria-hidden':'true'});this.layer=svgElement('g');
    this.leftCompression=svgElement('path',{class:'goal-bar-compression goal-bar-compression-left',fill:'#c6def5','aria-hidden':'true'});
    this.rightCompression=svgElement('g',{class:'goal-bar-compression goal-bar-compression-right','aria-hidden':'true'});this.rightCompression.append(svgElement('rect',{x:-12,y:-20,width:24,height:40,fill:'transparent'}),svgElement('path',{d:'M -6 -7 L 7 0 L -6 7 Z',fill:'#c6def5'}));
    const activate=()=>{const mode=this.state?.goal_type,choices=mode==='trip'?['trip']:mode==='total'?['total']:['trip','total'];this.row.dispatchEvent(new CustomEvent('goal-bar-edit',{bubbles:true,detail:{choices}}));};
    this.svg.addEventListener('click',event=>{if(event.target.closest?.('.goal-bar-track,.goal-bar-fill,.goal-bar-segment,.goal-bar-outline,.goal-bar-node,.goal-bar-compression'))activate();});this.svg.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();activate();}});
-   this.svg.append(this.track,this.fill,this.segment,this.outline,this.connectors,this.layer,this.leftCompression,this.rightCompression);row.append(this.svg);this.avatar=globalThis.WMOFGoalBarAvatar?.create(this.svg,row);
+   this.svg.append(this.track,this.fill,this.segment,this.ticks,this.outline,this.connectors,this.layer,this.leftCompression,this.rightCompression);row.append(this.svg);this.avatar=globalThis.WMOFGoalBarAvatar?.create(this.svg,row);
    this.probe=svgElement('text',{'aria-hidden':'true',visibility:'hidden'});this.probe.style.pointerEvents='none';this.svg.append(this.probe);this.widthDigits=new Map();
    this.resize=new ResizeObserver(()=>this.schedule());this.resize.observe(this.svg);TimerSpaceLayout.attach(row.closest('.app'));
   }
@@ -218,10 +220,15 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    const measure=u=>{const p=this.node(u.id);return Math.max(p.time.getComputedTextLength(),u.current&&!u.percentText?this.currentPercentWidth(u,p):p.percent.getComputedTextLength(),(p.widthRatio||0)*parseFloat(p.time.style.fontSize));};
    const total=labelUnits.reduce((n,u)=>n+measure(u),0),fontScale=Math.min(1,Math.max(1,width-padding*2-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0))/Math.max(1,total));
    let font=preferred*fontScale;for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}
-   const pin=labelUnits.includes(at100)?at100:undefined,wide=units.some(u=>u.merged)?Math.sqrt(r*r-(r*.45)**2)+2+r+1:0;
+   // Only an active trip pins its label to Standard. Idle labels must inset
+   // independently without moving the endpoint after its outer bounds are measured.
+   const pin=active&&standard&&labelUnits.includes(at100)?at100:undefined,wide=units.some(u=>u.merged)?Math.sqrt(r*r-(r*.45)**2)+2+r+1:0;
    const margin=Math.max(30,(pin?.half||0)+padding+3,wide+(at100?.merged&&active?30:6));let left=margin,right=Math.max(left,width-margin);
    const low=!active||allFailed?0:Math.min(...available.map(n=>Math.min(150,n.percent))),high=!active?(data.scale_max||100):allFailed?100:Math.max(low,Math.min(150,raw.find(n=>n.current)?.percent??150),units.some(u=>!u.current&&u.failed&&near(u.percent,100))?100:0);
-   const position=value=>high===low?right:left+(Math.min(high,Math.max(low,value))-low)/Math.max(1e-9,high-low)*(right-left);
+   // Equal counted-time distances are equal screen distances. Standard / ratio
+   // is reciprocal in percent; the explicit zero-origin fallback stays finite.
+   const fraction=value=>{const bounded=Math.min(high,Math.max(low,value));return high===low?1:active&&low>0?(1/low-1/bounded)/(1/low-1/high):(bounded-low)/Math.max(1e-9,high-low);};
+   const position=value=>left+fraction(value)*(right-left);
    for(let i=0;i<units.length;i++){
     const unit=units[i],previous=units[i-1];unit.radius=unit.id==='standard'?1:unit.current?4:unit.merged?Math.sqrt(r*r-(r*.45)**2)+2+r+1:r+1;
     unit.x=position(unit.percent);
@@ -271,6 +278,16 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    const current=units.find(u=>u.current),currentX=active?current?.x??left:right,targetUnit=units.find(u=>u.members.includes(target?.id)),targetX=targetUnit?.x??right;
    for(const element of [this.track,this.fill,this.segment,this.outline]){element.setAttribute('y',y-thickness/2);element.setAttribute('height',thickness);element.setAttribute('rx',thickness/2);}
    this.track.setAttribute('x',left);this.track.setAttribute('width',Math.max(0,right-left));this.outline.setAttribute('x',left);this.outline.setAttribute('width',Math.max(0,right-left));
+   for(const [key,value] of Object.entries({x:left+1.5,y:y-thickness/2+1.5,width:Math.max(0,right-left-3),height:Math.max(0,thickness-3),rx:Math.max(0,thickness/2-1.5)}))this.tickClip.setAttribute(key,value);
+   const tickLeft=units.find(u=>near(u.percent,low))?.x??left,tickRight=units.find(u=>near(u.percent,high))?.x??right;
+   const visibleTicks=new Set();if(active&&data.available)for(let percent=Math.max(0,Math.ceil(low/5)*5);percent<=Math.min(150,high)+1e-7;percent+=5){
+    visibleTicks.add(percent);let tick=this.tickNodes.get(percent);if(!tick){tick=svgElement('path',{'data-percent':percent,stroke:'#fff','stroke-width':1});tick.style.opacity='0';this.tickNodes.set(percent,tick);this.ticks.append(tick);}
+    tick.dataset.exiting='false';this.tween(tick,'scale-tick-opacity-'+percent,{opacity:tick.style.opacity||'0'},{opacity:'.6'},{duration:220});
+    tick.setAttribute('d',`M 0 ${-thickness*.23} V ${thickness*.23}`);this.move(tick,'scale-tick-'+percent,tickLeft+fraction(percent)*(tickRight-tickLeft),y);
+   }
+   for(const [percent,tick] of this.tickNodes)if(!visibleTicks.has(percent)&&tick.dataset.exiting!=='true'){
+    tick.dataset.exiting='true';this.tween(tick,'scale-tick-opacity-'+percent,{opacity:getComputedStyle(tick).opacity},{opacity:'0'},{duration:180}).then(()=>{if(tick.dataset.exiting==='true'&&this.tickNodes.get(percent)===tick){tick.remove();this.tickNodes.delete(percent);this.motion.get('scale-tick-'+percent)?.cancel();this.motion.delete('scale-tick-'+percent);}});
+   }
    this.fill.setAttribute('x',allFailed?currentX:left);this.fill.setAttribute('width',Math.max(0,allFailed?right-currentX:currentX-left));this.fill.style.fill=allFailed?(data.down?color('--timer-down-color')||'#5f6772':overtime):trip;
    this.segment.setAttribute('x',targetX);this.segment.setAttribute('width',Math.max(0,currentX-targetX));this.segment.style.fill=segment;
    this.connectors.replaceChildren();if((!active||allFailed)&&data.available){const zero=svgElement('text',{x:left,y:y+percentOffset,'text-anchor':'middle',class:'goal-bar-zero'});zero.textContent='0%';this.connectors.append(zero);}
@@ -339,7 +356,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
     if(active&&unit.detailed&&!near(unit.percent,100))this.connectors.append(svgElement('path',{class:'goal-bar-connector','data-node-id':unit.id,d:`M ${unit.x} ${y+halfLine} L ${unit.labelX} ${y+timeOffset-font}`,fill:'none',stroke:'#c6def5',opacity:.65}));
     parts.fresh=false;unit.radiusValue=r;
    }
-   this.avatar?.place({left,right,x:currentX,y,halfLine});
+   this.avatar?.place({left,right,x:currentX,y,halfLine,thickness,obstacles:units.filter(u=>u.id!=='standard'&&!u.current).map(u=>({x:u.x,width:u.radius*2,height:r+1}))});
    this.units=units.map(u=>({...u,members:[...u.members]}));this.previous=new Map(raw.map(n=>[n.id,{...n}]));this.initial=false;
    this.svg.setAttribute('aria-label','Goal bar · Edit goals · '+(data.time_mode||''));PercentSummaryLayout.instances.get(this.row)?.balance();
   }

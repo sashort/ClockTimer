@@ -12,6 +12,7 @@
                 <div class="settings-menu-group">
                     <button id="settingsMenuButton" type="button" aria-expanded="false" aria-controls="settingsSubmenu"><span class="menu-inline-icon settings-gear-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="5.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg></span><span data-language-id="708d54ab-8dc9-5047-b30b-67ee440153da">{{text:708d54ab-8dc9-5047-b30b-67ee440153da:text0}}</span></button>
                     <div id="settingsSubmenu" class="settings-submenu" hidden>
+                        <button id="audioSettingsButton" type="button" data-open-clock-timer-settings data-settings-surface="audioSettingsDialog"><span class="menu-inline-icon audio-speaker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span data-language-id="7b7d624d-739b-57ae-96f4-f79bad524320">Audio Settings</span></button>
                         <button id="openGraphicalSettingsFrame" type="button" data-open-clock-timer-settings data-settings-surface="graphicalSettingsDialog" data-language-id="92a6c5f7-f8b9-51f6-a70b-73669905326c" data-menu-icon="palette">Clock/Timer Settings</button>
 
                         <div class="percentage-display-setting">
@@ -28,11 +29,10 @@
                                 <button id="actionDisplayCompact" data-language-id="8ba6b8cf-ef58-4e94-b1e8-7150e652e3af" type="button" role="radio" aria-checked="false" data-action-display="compact" data-menu-icon="settings">{{text:8ba6b8cf-ef58-4e94-b1e8-7150e652e3af:text0}}</button>
                             </div>
                         </div>
-                        <button id="audioSettingsButton" type="button" data-open-clock-timer-settings data-settings-surface="audioSettingsDialog"><span class="menu-inline-icon audio-speaker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span data-language-id="7b7d624d-739b-57ae-96f4-f79bad524320">Audio Settings</span></button>
                     </div>
                 </div>
                 <div class="main-menu-row speech-recognition-menu-row">
-                    <button id="speechRecognitionButton" type="button" aria-pressed="false" title="{{text:d549a1af-0e08-5ef7-8a33-0106901cb282:title}}" disabled data-language-id="d549a1af-0e08-5ef7-8a33-0106901cb282" data-menu-icon="settings"><span data-language-id="64bf66be-85cc-529b-b86e-95855d455a33">{{text:64bf66be-85cc-529b-b86e-95855d455a33:text0}}</span></button>
+                    <button id="speechRecognitionButton" data-menu-toggle type="button" aria-pressed="false" title="{{text:d549a1af-0e08-5ef7-8a33-0106901cb282:title}}" disabled data-language-id="d549a1af-0e08-5ef7-8a33-0106901cb282" data-menu-icon="settings"><span data-language-id="64bf66be-85cc-529b-b86e-95855d455a33">{{text:64bf66be-85cc-529b-b86e-95855d455a33:text0}}</span></button>
                     <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:aria-label}}" data-language-id="6e6ea3a3-2d38-5c75-b5ed-9620454a3520" data-menu-icon="settings">{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:text0}}</button>
 
                 </div>
@@ -45,16 +45,16 @@
                         <output id="recognizerNameStatus" role="status"></output>
                     </div></div>
                 <div class="main-menu-row sync-goals-menu-row">
-                    <button id="toggleSyncMenuButton" class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
+                    <button id="toggleSyncMenuButton" data-menu-toggle class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
                     <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="{{text:fe244302-ff9a-5be1-949d-444793532606:aria-label}}" data-language-id="fe244302-ff9a-5be1-949d-444793532606" data-menu-icon="settings">{{text:fe244302-ff9a-5be1-949d-444793532606:text0}}</button>
                 </div>
                 <div class="main-menu-row sync-override-menu-row">
-                    <button id="goalBoundingButton" data-menu-icon="settings" type="button" role="switch" aria-checked="true"><span data-language-id="7f05505a-1327-5bb2-9804-4ecf0c78b536">{{text:7f05505a-1327-5bb2-9804-4ecf0c78b536:text0}}</span><span class="goal-bounding-toggle" aria-hidden="true"></span></button>
+                    <button id="goalBoundingButton" data-menu-toggle data-menu-icon="goal-bounding" type="button" role="switch" aria-checked="true"><span data-language-id="7f05505a-1327-5bb2-9804-4ecf0c78b536">{{text:7f05505a-1327-5bb2-9804-4ecf0c78b536:text0}}</span><span class="goal-bounding-toggle" aria-hidden="true"></span></button>
                     <button id="goalBoundingHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="goalBounding" aria-label="{{text:0ab8d3cc-a3d0-5072-8d06-55dff706addd:aria-label}}" data-language-id="0ab8d3cc-a3d0-5072-8d06-55dff706addd" data-menu-icon="settings">{{text:0ab8d3cc-a3d0-5072-8d06-55dff706addd:text0}}</button>
                 </div>
                 <div class="trip-menu-group main-menu-row">
 <button id="tripLogMenuParentButton" type="button" aria-expanded="false" aria-controls="tripLogSubmenu" data-menu-icon="list">{{text:758b0729-0d3e-5768-acd5-326ec90f35e9:text0}}</button>
-<button id="tripLogPinButton" class="menu-pin-button" type="button" aria-label="{{text:9ef29698-122f-59f2-8410-bb636061c726:aria-label}}" aria-pressed="true" title="{{text:9ef29698-122f-59f2-8410-bb636061c726:title}}" data-language-id="9ef29698-122f-59f2-8410-bb636061c726" data-menu-icon="pin"></button>
+<button id="tripLogPinButton" data-menu-toggle class="menu-pin-button" type="button" aria-label="{{text:9ef29698-122f-59f2-8410-bb636061c726:aria-label}}" aria-pressed="true" title="{{text:9ef29698-122f-59f2-8410-bb636061c726:title}}" data-language-id="9ef29698-122f-59f2-8410-bb636061c726" data-menu-icon="pin"></button>
 <div id="tripLogSubmenu" hidden>
                 <label class="trip-log-range-menu" for="tripProductionFilter" data-menu-icon="filter"><span data-language-id="8e9add04-86ec-5731-bd69-5183c77ec1c9">{{text:8e9add04-86ec-5731-bd69-5183c77ec1c9:text0}}</span><select id="tripProductionFilter" data-language-id="db59782c-258e-5188-aada-ba1bba08df80">{{options:db59782c-258e-5188-aada-ba1bba08df80}}</select></label>
                 <label class="trip-log-range-menu" for="tripLogRangeSelect" data-menu-icon="calendar">
@@ -104,7 +104,7 @@
                                 <span data-language-id="60df224f-9ca5-5a1b-9158-ea65cdc63318">{{text:60df224f-9ca5-5a1b-9158-ea65cdc63318:text0}}</span>
                             </button>
                             <div id="speechSubmenu" class="speech-submenu" hidden>
-                                <button id="speechTrainingButton" type="button" aria-pressed="false" disabled data-language-id="c80bf239-538a-5bd0-a5d9-fb8cf3c7c706" data-menu-icon="microphone">{{text:c80bf239-538a-5bd0-a5d9-fb8cf3c7c706:text0}}</button>
+                                <button id="speechTrainingButton" data-menu-toggle type="button" aria-pressed="false" disabled data-language-id="c80bf239-538a-5bd0-a5d9-fb8cf3c7c706" data-menu-icon="microphone">{{text:c80bf239-538a-5bd0-a5d9-fb8cf3c7c706:text0}}</button>
                                 <button id="speechTimingButton" type="button" hidden data-language-id="023722cb-153c-5395-8469-4cd3a68f8914" data-menu-icon="timer">{{text:023722cb-153c-5395-8469-4cd3a68f8914:text0}}</button>
                                 <button id="speechEditorButton" type="button" hidden data-language-id="e0d509e0-aa06-5a80-ac75-5212207dca36" data-menu-icon="edit">{{text:e0d509e0-aa06-5a80-ac75-5212207dca36:text0}}</button>
                             </div>

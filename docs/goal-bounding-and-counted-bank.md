@@ -28,3 +28,13 @@ provides the shared earned/work calculation; `TimerSummaryView.js` renders both
 Order Filler and Drop-In. Tests: `goal-bounding.mjs`, `goal-bounding-browser.cjs`,
 `fractional-time-indicators.mjs`, `trip-time-bank.mjs`, `trip-time-bank-browser.cjs`,
 `trip-log.mjs`, `counted-time-accounting.mjs`, and the voice/touch feedback suites.
+
+The Goal Bounding menu icon is an upward arrow above a horizontal floor line.
+The adjacent switch remains the authoritative On/Off control.
+
+Menu state colors: Goal Bounding, Sync Goals, Speech Recognition, Trip Log pin and
+Speech Training use light-blue icons/text when On and gray when Off. Goal Bounding
+keeps its green enabled switch; it does not use an Off slash. Drop-In's mirror and
+mute checkbox options share the same checked/unchecked palette. Disclosure arrows,
+radio selections, disabled availability and runtime/network badges remain separate
+state cues. A sleeping microphone is still enabled, with its existing Muted status.
