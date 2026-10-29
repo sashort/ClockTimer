@@ -47,8 +47,8 @@ try {
     normal.remove();
     const autoStandard = await fresh();
     autoStandard.configure({goal_type:'auto',trip_goal:'80%'});
-    assert.equal(autoStandard.getUIState().effective_goal_type,'standard');
-    assert.equal(autoStandard.getUIState().goal_component.value,1,'Auto Standard renders its 100% trip requirement');
+    assert.equal(autoStandard.getUIState().effective_goal_type,'trip');
+    assert.equal(autoStandard.getUIState().goal_component.value,1,'bounded Trip retains priority over Standard at the same 100% target');
     autoStandard.remove();
 
     const down = await fresh();
@@ -159,7 +159,7 @@ try {
     const gainSummary=gained.getSummarySnapshot();
     assert.equal(gainSummary.trip.renderedTime,'0:20:00','unused ten minutes immediately extend remaining time');
     assert.equal(gainSummary.trip.countedTimeElapsedMilliseconds,10*60000,'full unused allowance reduces counted time immediately');
-    assert.equal(gainSummary.trip.countedPercent,3);
+    assert.equal(gainSummary.trip.countedPercent,2,'(30 Standard + 10 earned credit) / 20 productive minutes');
     assert.equal(gainSummary.total.renderedTime,'0:20:00','Total receives the same early-break credit');
     assert.equal(gainSummary.trip.allowanceCreditMilliseconds,10*60000);
     const snapshot=gained.captureState();const factualEvents=JSON.stringify(snapshot.events);
@@ -171,7 +171,7 @@ try {
     assert.equal(activeLog.allowanceCreditMilliseconds,10*60000,'offline active Trip Log receives the credit');
     advance(15*60000);await gained.stop();
     assert.equal(counted(gained),25*60000,'completed counted time retains the full unused allowance');
-    assert.equal(gained.getSummarySnapshot().trip.countedPercent,1.2);
+    assert.equal(gained.getSummarySnapshot().trip.countedPercent,40/35);
     gained.remove();
 
     const creditFirst=await fresh();creditFirst.configure({trip_goal:'100%'});
@@ -180,8 +180,8 @@ try {
     assert.equal(counted(creditFirst),0,'persisted counted time remains nonnegative');
     assert.equal(creditFirst.getSummarySnapshot().total.renderedTime,'0:40:00');
     creditFirst.configure({external_standard_time:3600000,external_counted_time:3600000,total_goal:'100%'});
-    assert.equal(creditFirst.getSummarySnapshot().total.countedTimeElapsedMilliseconds,50*60000,'Total applies surplus credit against counted history');
-    assert.equal(creditFirst.getSummarySnapshot().total.countedPercent,1.8);
+    assert.equal(creditFirst.getSummarySnapshot().total.countedTimeElapsedMilliseconds,60*60000,'Total keeps productive history separate from earned credit');
+    assert.equal(creditFirst.getSummarySnapshot().total.countedPercent,100/60);
     assert.equal(creditFirst.getSummarySnapshot().total.renderedTime,'0:40:00');
     assert(creditFirst.getGoalBarSnapshot().nodes.find(n=>n.current).unbounded,'surplus credit retains Current at right edge');
     assert.equal(creditFirst.getUIState().time_component.text,'0:40:00','live remaining includes surplus credit');
@@ -195,7 +195,7 @@ try {
     advance(5*60000);await bufferedCredit.endInterval();
     assert.equal(bufferedCredit.getSummarySnapshot().trip.allowanceCreditMilliseconds,15*60000,'unused scheduled buffers and lunch allowance are credited once');
     assert.equal(counted(bufferedCredit),5*60000);
-    assert.equal(bufferedCredit.getSummarySnapshot().trip.renderedTime,'0:19:00','credit is milliseconds, independent of the percent goal');
+    assert.equal(bufferedCredit.getSummarySnapshot().trip.renderedTime,'0:16:00','earned Standard plus credit is divided by the percentage goal');
     bufferedCredit.remove();
 
     const onTimeBreak=await fresh();onTimeBreak.configure({trip_goal:'100%'});advance(20*60000);
@@ -247,9 +247,9 @@ try {
     assert.equal(counted(total),600000,'goal selection does not reset counted time');
     let latestGoalState;
     total.addEventListener('uiStateChanged',event=>{latestGoalState=event.detail;});
-    for(const type of ['down','break','lunch']) {
+    for(const [type,expectedGoals,resumed] of [['down',[['125%',1.88,'188%'],['120%',1.5,'150%']],1.5],['break',[['125%',1.88,'188%'],['120%',1.5,'150%']],1.42],['lunch',[['125%',1.67,'167%'],['120%',1.42,'142%']],1.37]]) {
         await total.startInterval(type,type==='down'?undefined:600000,{breakType:type});
-        for(const [target,required,text] of [['125%',1.88,'188%'],['120%',1.5,'150%']]) {
+        for(const [target,required,text] of expectedGoals) {
             total.configure({trip_goal:'110%',total_goal:target});
             assert.equal(total.getUIState().effective_goal_type,'total',type+' retains aggregate Auto target');
             assert.equal(total.getUIState().goal_component.value,required,type+' recalculates trip requirement immediately');
@@ -257,7 +257,7 @@ try {
             assert.equal(total.getUIState().total_goal_component.text,target,type+' keeps the overarching editor goal separate');
         }
         await total.endInterval();
-        assert.equal(total.getUIState().goal_component.value,1.5,type+' resume preserves the current requirement');
+        assert.equal(total.getUIState().goal_component.value,resumed,type+' resume credits unused allowance and recalculates the requirement');
     }
     total.remove();
     console.log('PASS goal changes refresh Auto requirement during Down, Break and Lunch and after resume');

@@ -166,7 +166,7 @@ prerequisites rather than blocking an entire utterance. Current action policies 
 | Combined credential login / PIN authentication | `authentication` | Its required login workflow prerequisites. |
 | Four-digit ID staging | `login-id` | Its required login workflow prerequisites. |
 | Goal reads/settings | `goal` | An existing authentication producer and earlier Goal work. |
-| Sync / Sync Override | `sync` | An existing authentication producer and earlier Sync work. |
+| Sync / Goal Bounding | `sync` | An existing authentication producer and earlier Sync work. |
 
 Goal and Sync do not wait for each other. Their action metadata opts out of the
 compound state transaction so rollback of unrelated work cannot undo an independent
@@ -304,3 +304,10 @@ values remain configured percentages; inferred bar values are display payload.
 See [goal-bar.md](goal-bar.md) and [the UI change audit](2026-10-27-ui-changes.md).
 This addendum records the release changes without asserting a deployed build or
 changing the recorded stability observation for I0462X.
+
+
+Goal Bounding commands are `goal bounding on`, `goal bounding off`, and `goal bounding`
+(state query). They replace the retired Sync Override aliases and compound commands.
+The setting defaults On, applies to inferred Trip requirements in Trip, Sync and Auto,
+and announces its new state before any resulting Trip-goal recalculation.
+See [goal-bounding-and-counted-bank.md](goal-bounding-and-counted-bank.md).

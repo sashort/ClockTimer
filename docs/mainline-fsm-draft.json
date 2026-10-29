@@ -13128,7 +13128,7 @@
         "loading/ready/error",
         "request revision",
         "percentOverride: null or positive integer percent",
-        "syncOverride: user/on/off",
+        "goalBounding: user/on/off (default On)",
         "timeDisplay: user/remaining/elapsed/calculated-end",
         "per-user local preferences (session memory)",
         "recent watched identities",
@@ -13956,7 +13956,7 @@
         "loading/ready/error",
         "request revision",
         "percentOverride: null or positive integer percent",
-        "syncOverride: user/on/off",
+        "goalBounding: user/on/off (default On)",
         "timeDisplay: user/remaining/elapsed/calculated-end",
         "per-user local preferences (session memory)",
         "recent watched identities",
@@ -17978,6 +17978,42 @@
         "node tests/goal-bar-browser.cjs",
         "node tests/drop-in-page.mjs"
       ]
+    },
+    "GOAL-BOUNDING-BANK": {
+      "id": "GOAL-BOUNDING-BANK",
+      "scope": "Shared goal policy, performance accounting and fractional-time rendering",
+      "preconditions": [
+        "Raw trip and event facts are available",
+        "Bounding defaults On; legacy syncOverride migrates with inverse polarity"
+      ],
+      "inputs": [
+        "Goal Bounding on/off/query",
+        "Goal edits, ticks, breaks, Down and replay"
+      ],
+      "postconditions": [
+        "Performance=(Standard+unused allowance credit)/productive work; aggregate facts are summed before division",
+        "Bounds apply to inferred Trip requirements, never saved aggregate goals",
+        "Missed bound releases to raw goal; only raw deadline failure discards it",
+        "End Time floors timestamps and uses plus for nonzero fractions in all trip phases"
+      ],
+      "controls": [
+        "Shared menu and voice action",
+        "Caption remains time-mode switch",
+        "Up triangle raised, down triangle below-floor target in use"
+      ],
+      "audio": [
+        "Goal bounding on/off precedes recalculation announcements"
+      ],
+      "forbidden": [
+        "Dividing by signed work-minus-credit",
+        "Discarding an achievable raw goal when its bound fails",
+        "Reintroducing Sync Override voice aliases"
+      ],
+      "evidence": [
+        "node tests/goal-bounding.mjs",
+        "node tests/trip-time-bank.mjs",
+        "node tests/fractional-time-indicators.mjs"
+      ]
     }
   },
   "v2_test_vectors": {
@@ -19597,7 +19633,7 @@
         }
       },
       {
-        "id": "BAR-SYNC-OVERRIDE-EFFECTIVE-GOAL",
+        "id": "BAR-GOAL-BOUNDING-EFFECTIVE-GOAL",
         "contract": "GOAL-DISPLAY",
         "implementationStatus": "implemented-local",
         "given": {
@@ -19607,9 +19643,9 @@
           "tripActive": true
         },
         "when": {
-          "syncOverride": [
-            true,
-            false
+          "goalBounding": [
+            false,
+            true
           ]
         },
         "expect": {
@@ -19640,6 +19676,39 @@
           "reservedWidth": "stable within band; decreases at boundary unless time text is wider",
           "fontMeasurement": "widest digit in actual rendered font; no assumed digit",
           "selectorGaps": "equal above/below options"
+        }
+      },
+      {
+        "id": "BOUND-RELEASE-RETAIN-RAW",
+        "contract": "GOAL-BOUNDING-BANK",
+        "given": {
+          "standardMilliseconds": 1800000,
+          "rawInferredTripGoal": 0.9,
+          "goalBounding": true
+        },
+        "when": {
+          "productiveMilliseconds": 1860000
+        },
+        "expect": {
+          "effectiveTripGoal": 0.9,
+          "rawGoalRetained": true,
+          "indicator": "down"
+        }
+      },
+      {
+        "id": "EARNED-BANK-PERCENT",
+        "contract": "GOAL-BOUNDING-BANK",
+        "given": {
+          "standardMilliseconds": 176000,
+          "productiveMilliseconds": 289957,
+          "creditMilliseconds": 1013189
+        },
+        "when": {
+          "action": "render completed trip and aggregate"
+        },
+        "expect": {
+          "tripPercent": "410.13%",
+          "aggregateNumeratorIncludesCredit": true
         }
       }
     ]

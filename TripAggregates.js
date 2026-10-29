@@ -98,6 +98,11 @@
     };
     globalThis.TripAggregates = Object.freeze({
         counted: countedTime,
+        performance(trip) {
+            if(!trip)return null;
+            const bank=timeBank(trip),productive=bank?.productiveTimeMilliseconds??countedTime(trip);
+            return productive>0?(duration(trip?.standardTimeMilliseconds)+(bank?.allowanceCreditMilliseconds??0))/productive:null;
+        },
         calculate({trips, rangeWindow = null, currentTripId = null, includeActiveTrip = false, goalPercent = 1, now = Date.now()}) {
             const start = rangeWindow ? Date.parse(rangeWindow.startTime) : -Infinity, end = rangeWindow ? Date.parse(rangeWindow.endTime) : Infinity;
             if (rangeWindow && (!Number.isFinite(start) || !Number.isFinite(end) || end < start)) throw new TypeError("Invalid trip aggregation range.");
@@ -116,13 +121,16 @@
             const productive=included.reduce((sum,trip)=>sum+(bank(trip)?.productiveTimeMilliseconds??countedTime(trip)),0);
             const balance=included.reduce((sum,trip)=>{const value=bank(trip);return sum+(value?(trip.running?Math.max(duration(trip.allottedTimeMilliseconds)-value.allowanceCreditMilliseconds,value.countedTimeBalanceMilliseconds):value.countedTimeBalanceMilliseconds):countedTime(trip));},0);
             const credit=included.reduce((sum,trip)=>sum+(bank(trip)?.allowanceCreditMilliseconds??0),0);
+            const performanceCounted=included.reduce((sum,trip)=>sum+Math.max(trip.running?duration(trip.allottedTimeMilliseconds):0,bank(trip)?.productiveTimeMilliseconds??countedTime(trip)),0);
+            const earned=standard+credit;
             const goal = Number.isFinite(goalPercent) && goalPercent > 0 ? goalPercent : 1;
             return Object.freeze({includeActiveTrip: Boolean(includeActiveTrip), tripCount: included.length, standardTimeMilliseconds: standard,
                 actualTimeMilliseconds: actual, countedTimeMilliseconds: counted,
                 productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:balance,
                 downtime: TripDowntimeSummary.calculate(included, {now}),
-                percent: balance > 0 ? standard / balance : null,
-                goalPercent: goal, bankedTimeMilliseconds: Math.round(standard / goal - balance)});
+                earnedTimeMilliseconds:earned,performanceCountedTimeMilliseconds:performanceCounted,
+                percent: performanceCounted > 0 ? earned / performanceCounted : null,
+                goalPercent: goal, bankedTimeMilliseconds: Math.round(earned / goal - performanceCounted)});
         }
     });
 })();

@@ -120,6 +120,8 @@ jobs:
           TZ=America/New_York node tests/clock-timer-fsm.mjs
           TZ=UTC node tests/counted-time-accounting.mjs
           node tests/goal-bar.mjs
+          TZ=UTC node tests/goal-bounding.mjs
+          TZ=UTC node tests/fractional-time-indicators.mjs
           node tests/clock-timer-ui-state.mjs --standard-time
           node tests/app-state-transactions.mjs --goal-limit --voice-feedback
           node tests/trip-time-bank.mjs
@@ -166,6 +168,7 @@ jobs:
       - run: node tests/overtime-break-browser.cjs
       - run: node tests/break-buffer-layout-browser.cjs
       - run: node tests/early-break-readout-browser.cjs
+      - run: node tests/goal-bounding-browser.cjs
       - run: node tests/goal-bar-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
       - run: node tests/goal-bar-hit-area-browser.cjs

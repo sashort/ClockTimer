@@ -18,9 +18,9 @@ const fixture = require('./order-filler-master-fixture.cjs');
    await p.clock.runFor(1500);
    let s=await snapshot();
    assert(s.trip&&!s.paused,type+' resumes the active trip');
-   assert(s.bar.unbounded&&s.bar.counted_position<0,type+' retains signed credit');
+   assert(!s.bar.unbounded&&s.bar.counted_position<0,type+' retains signed credit with a finite earned/work percentage');
    assert.equal(s.summary.countedTimeElapsedMilliseconds,0,'persisted counted duration remains nonnegative');
-   assert.equal(s.percent,'\u2014','undefined percentage does not become a fabricated finite value');
+   assert(Number.isFinite(s.bar.percent)&&s.bar.percent>100,'unused credit bolsters a finite percentage');
    assert.match(s.marker,/M -3.*M 3/,'Current double line remains visible');
    assert.equal(s.runner,'running','runner returns after standing up');
    for(const mode of ['remaining','elapsed','calculated-end']){
@@ -34,7 +34,7 @@ const fixture = require('./order-filler-master-fixture.cjs');
     if(mode==='elapsed')assert(after.time.value<0&&after.time.text.startsWith('-'),'elapsed exposes the signed balance');
    }
    await p.evaluate(()=>{const state=clockTimer.captureState();clockTimer.restoreState(state);clockTimer.renderedTimeMode='remaining';});
-   await p.clock.runFor(1500);s=await snapshot();assert(s.bar.unbounded&&s.marker,'reload/replay preserves credited Current');
+   await p.clock.runFor(1500);s=await snapshot();assert(!s.bar.unbounded&&s.marker,'reload/replay preserves credited Current');
    await operation(()=>clockTimer.stop());await p.clock.runFor(2500);
   }
   assert.deepEqual(f.errors,[]);

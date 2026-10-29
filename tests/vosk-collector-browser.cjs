@@ -99,20 +99,17 @@ const root=path.resolve(__dirname,'..');
   await page.evaluate(()=>SpeechMenu.testVoskFinish());
   await page.waitForFunction(()=>document.querySelector('#clockTimer').getAttribute('total-goal')==='112%');
   assert.equal(await page.evaluate(()=>valueDispatches.length)-beforeGoalDispatches,1,'native endpoint keeps leading one and dispatches once');
-  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').syncOverride),false,'override defaults off');
-  for (const [words,expected] of [['sync override on',true],['sync override',true],['sync override off',false]]) {
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').goalBounding),true,'bounding defaults on');
+  for (const [words,expected] of [['goal bounding off',false],['goal bounding',false],['goal bounding on',true]]) {
    await begin();await speak(words);
-   if(words==='sync override') {await page.evaluate(()=>SpeechMenu.testVoskSilence());await page.waitForFunction(()=>valueDispatches.includes('sync override'));}
+   if(words==='goal bounding') {await page.evaluate(()=>SpeechMenu.testVoskSilence());await page.waitForFunction(()=>valueDispatches.includes('goal bounding'));}
    else await page.evaluate(()=>SpeechMenu.testVoskFinish());
-   await page.waitForFunction(expected=>document.querySelector('#clockTimer').syncOverride===expected,expected);
-   assert.equal(await page.locator('#syncOverrideButton').getAttribute('aria-checked'),String(expected));
+   await page.waitForFunction(expected=>document.querySelector('#clockTimer').goalBounding===expected,expected);
+   assert.equal(await page.locator('#goalBoundingButton').getAttribute('aria-checked'),String(expected));
   }
-  await begin();await speak('sync on');
-  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').autoSyncTripGoal),false,'Sync On holds its possible Override continuation');
-  await speak('sync on override');await page.evaluate(()=>SpeechMenu.testVoskFinish());
-  await page.waitForFunction(()=>document.querySelector('#clockTimer').syncOverride&&document.querySelector('#clockTimer').autoSyncTripGoal);
-  assert.equal(await page.locator('#syncOverrideButton').getAttribute('aria-checked'),'true');
-  assert(await page.locator('#syncOverrideButton').isEnabled(),'override remains configurable while Sync is unavailable');
+  await begin();await speak('sync on');await page.evaluate(()=>SpeechMenu.testVoskFinish());
+  await page.waitForFunction(()=>document.querySelector('#clockTimer').autoSyncTripGoal);
+  assert(await page.locator('#goalBoundingButton').isEnabled(),'bounding remains configurable while Sync is unavailable');
   await page.waitForFunction(()=>!SpeechMenu.commandBufferSnapshot.some(e=>['queued','executing'].includes(e.status))&&WMOFCoordinator.pending.length===0&&WMOFCoordinator.lockCount===0);
   await page.evaluate(()=>{
    globalThis.testSyncFloorSetup=(async()=>{
@@ -126,13 +123,13 @@ const root=path.resolve(__dirname,'..');
   });
   await page.waitForFunction(()=>globalThis.testSyncFloorSetupDone||globalThis.testSyncFloorSetupError);
   assert.equal(await page.evaluate(()=>globalThis.testSyncFloorSetupError),undefined);
-  await page.waitForFunction(()=>!document.querySelector('#syncOverrideButton').disabled);
+  await page.waitForFunction(()=>!document.querySelector('#goalBoundingButton').disabled);
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').syncBelowFloor),true);
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),.8);
-  await page.locator('#syncOverrideButton').evaluate(button=>button.click());
+  await page.locator('#goalBoundingButton').evaluate(button=>button.click());
   await page.waitForFunction(()=>!document.querySelector('#clockTimer').syncOverride);
-  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),1,'touch restores goal floor');
-  await page.locator('#syncOverrideButton').evaluate(button=>button.click());
+  assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').getSummarySnapshot().trip.percentGoal),1,'touch restores goal floor');
+  await page.locator('#goalBoundingButton').evaluate(button=>button.click());
   await page.waitForFunction(()=>document.querySelector('#clockTimer').syncOverride);
   assert.equal(await page.evaluate(()=>document.querySelector('#clockTimer').calculatedTripGoal),.8,'touch override recalculates');
   await begin();await speak('break start');
@@ -169,6 +166,6 @@ const root=path.resolve(__dirname,'..');
   }
   assert.deepEqual(errors,[]);
   await page.evaluate(()=>SpeechMenu.stop());
-  console.log('PASS Vosk in current UI: persistent capture, Ready handoff, endpoint continuation, shared duration collector and single dispatch, adaptive silence and Sync Override voice/touch recalculation');
+  console.log('PASS Vosk in current UI: persistent capture, Ready handoff, endpoint continuation, shared duration collector and single dispatch, adaptive silence and Goal Bounding voice/touch recalculation');
  }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

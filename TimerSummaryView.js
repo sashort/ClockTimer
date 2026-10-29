@@ -168,9 +168,9 @@
    const targetFrame=svgElement('rect',{class:'goal-bar-target-frame',rx:5,fill:'none','stroke-width':1.5});
    const time=svgElement('text',{'text-anchor':'middle',class:'goal-bar-time'}),percent=svgElement('text',{'text-anchor':'middle',class:'goal-bar-percent'}),title=svgElement('title');
    const defs=svgElement('defs'),gradient=svgElement('linearGradient',{id:this.prefix+'-'+id,x1:'0%',x2:'100%'});gradient.append(svgElement('stop',{offset:'30%','stop-color':'#ffc220'}),svgElement('stop',{offset:'70%','stop-color':'#55d5fb'}));defs.append(gradient);
-   markerGroup.append(marker,glyph,glyph2);
+   const boundIndicator=svgElement('path',{class:'goal-bounding-marker',d:'M -5 3 L 0 -5 L 5 3 Z',fill:'#fff',stroke:'#001e60','stroke-width':1,'aria-hidden':'true'});boundIndicator.style.pointerEvents='none';boundIndicator.style.opacity='0';markerGroup.append(marker,glyph,glyph2,boundIndicator);
    stack.append(targetFrame,time,percent);group.append(defs,markerGroup,stack,title);this.layer.append(group);
-   const parts={group,markerGroup,stack,marker,glyph,glyph2,targetFrame,time,percent,title,fresh:true};this.nodes.set(id,parts);return parts;
+   const parts={group,markerGroup,stack,boundIndicator,marker,glyph,glyph2,targetFrame,time,percent,title,fresh:true};this.nodes.set(id,parts);return parts;
   }
   makeUnits(data){
    const raw=(data.nodes||[]).map(n=>n.current&&n.unbounded?{...n,percent:Math.max(150,...(data.nodes||[]).filter(g=>!g.current&&Number.isFinite(g.percent)).map(g=>g.percent)),percentText:"\u2014"}:n).filter(n=>Number.isFinite(n.percent)&&(n.current||n.percent>0)),goals=raw.filter(n=>!n.current),available=goals.filter(n=>!n.failed),allFailed=data.active!==false&&!available.length;
@@ -302,6 +302,13 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
     parts.group.classList.toggle('is-current',Boolean(unit.current));parts.group.classList.toggle('is-failed',Boolean(unit.failed));
     const members=unit.members.map(id=>raw.find(n=>n.id===id)).filter(Boolean),label=n=>n.id==='total'?(this.state.goal_bar_total_label||n.label):n.label;
     parts.title.textContent=[members.map(label).join(' + '),unit.time,(unit.percentText??`${Number(unit.percent.toFixed(2))}%`),unit.failed?'Missed':''].filter(Boolean).join(' · ');parts.group.setAttribute('aria-label',parts.title.textContent);
+    const raised=members.some(n=>n.bounding?.adjusted),lower=!raised&&unit.percent<100&&unit.members.includes(this.state.effective_goal_type),direction=raised?'raised':lower?'lower':'';
+    parts.group.dataset.goalBounding=direction;
+    const markerInfo=raised?'Raised to 100%':lower?'Below-floor target':'';
+    if(markerInfo){parts.title.textContent+=' · '+markerInfo;parts.group.setAttribute('aria-label',parts.title.textContent);}
+    this.tween(parts.boundIndicator,unit.id+'-bounding-opacity',{opacity:getComputedStyle(parts.boundIndicator).opacity},{opacity:direction?'1':'0'});
+    this.tween(parts.boundIndicator,unit.id+'-bounding-direction',{transform:getComputedStyle(parts.boundIndicator).transform==='none'?'translate(0px, 0px)':getComputedStyle(parts.boundIndicator).transform},{transform:`translate(${r*.6}px, ${raised?-r*.6:r*.6}px) rotate(${raised?0:180}deg)`});
+
     const stroke=unit.id==='total'?'#55d5fb':unit.id==='trip'?'#ffc220':'#fff';parts.marker.style.fill=unit.id==='standard'||unit.current?'none':'#001e60';parts.marker.style.stroke=unit.merged?`url(#${this.prefix}-${unit.id})`:stroke;parts.group.style.setProperty('--goal-node-color',stroke);
     if(unit.id==='standard'||unit.current){parts.marker.setAttribute('d',unit.current?`M -3 -${halfLine} V ${halfLine} M 3 -${halfLine} V ${halfLine}`:`M 0 -${halfLine} V ${halfLine}`);parts.marker.setAttribute('stroke-dasharray',unit.id==='standard'?'3 3':'none');parts.glyph.textContent=parts.glyph2.textContent='';}
     else{
@@ -357,6 +364,11 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
   if(pad)for(const node of [...host.childNodes])if(node.nodeType===Node.TEXT_NODE)node.remove();
   const heading=option&&host.querySelector(':scope > span');if(heading)heading.hidden=true;
   box.replaceChildren(...[['actual','67ef1f5b-6dc4-49ad-a50e-f98a170a3e12',details.actual_percent],['inferred','f5fe1d41-f859-4869-ac1e-e361598373fc',details.inferred_percent]].map(([key,id,value])=>{const line=document.createElement('div');line.dataset.goalDetail=key;line.textContent=(option||pad)&&key==='actual'?WMOFLanguagePack.text('a63d5a6f-a680-487d-8fdd-6822b629d3eb',{scope:details.scope_label,value:format(value)}):WMOFLanguagePack.text(id,{value:format(value)});line.hidden=key==='inferred'&&(option||pad)&&(details.scope==='trip'||!details.trip_active);return line;}));
+  const bounding=details?.bounding,raised=bounding?.adjusted===true,lower=bounding&&bounding.effectiveTripGoal<1;
+  const inferred=box.querySelector('[data-goal-detail=inferred]'),actual=box.querySelector('[data-goal-detail=actual]');
+  if(raised&&details.trip_active&&inferred)inferred.hidden=false;
+  if(raised||lower){const indicator=document.createElement('span');indicator.className='goal-bounding-indicator';indicator.textContent=raised?' ▲':' ▼';indicator.setAttribute('role','img');indicator.setAttribute('aria-label',WMOFLanguagePack.text('4a5ce630-cda8-503b-a7f4-52dd93926d01'));if(lower)indicator.setAttribute('aria-label',WMOFLanguagePack.text('1852c87c-85c2-569e-a016-6f0dc9c96781'));(inferred&&!inferred.hidden?inferred:actual)?.append(indicator);}
+  if(raised&&Number.isFinite(details.raw_inferred_percent)){const raw=document.createElement('small');raw.className='goal-bounding-raw';raw.textContent=WMOFLanguagePack.text('285022ea-8eb2-50c7-a87b-a1c9caf1489a',{value:format(details.raw_inferred_percent)});box.append(raw);}
   if(option||pad){if(!goalDetailObservers.has(host)){const observer=new ResizeObserver(()=>requestAnimationFrame(()=>fitGoalDetails(host)));observer.observe(host);goalDetailObservers.set(host,observer);}requestAnimationFrame(()=>fitGoalDetails(host));}
  },setMode(root,mode){
   const app=displayApp(root),row=root.querySelector('.percent-summary');if(!app||!row)return;
@@ -385,6 +397,8 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
   }
   PercentSummaryLayout.attach(row);
   for(const [id,text] of [['standardTimeValue',state?.standard_time_component?.text],['renderedTimeValue',state?.time_component?.text],['currentPercentValue',state?.current_percent_component?.text],['goalPercentValue',state?.goal_component?.text]]){const e=root.querySelector('#'+id);if(e)e.textContent=text||'-';}
+  const goalValue=root.querySelector('#goalPercentValue'),bounding=state?.goal_bounding_state;
+  if(goalValue&&state?.goal_type!=='total'&&(bounding?.adjusted||bounding?.effectiveTripGoal<1)){const marker=goalValue.ownerDocument.createElement('span');marker.className='goal-bounding-indicator';marker.textContent=bounding.adjusted?' ▲':' ▼';marker.setAttribute('aria-hidden','true');goalValue.append(marker);}
   for(const [id,key] of [['standardTimeLabel','standard_time_header_text'],['renderedTimeLabel','time_header_text']]){const e=root.querySelector('#'+id);if(e&&state?.[key])e.textContent=state[key];}
  }};
 })();
