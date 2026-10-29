@@ -84,7 +84,7 @@ module.exports = async function runMaster(method) {
    if(method==='voice'){await say('trip mode');await say('trip goal one hundred ten percent');await say('trip goal');}
    else {
     await tap('#scopeToggle');await tap('#scopeToggleDropdown [data-mode="trip"]');
-    await tap('#goalPercentValue');await touchPad();
+    await tap('#goalPercentValue');await touchPad();await page.locator('#numberPadClear').tap({position:{x:12,y:12}});assert.equal(await page.locator('#numberPadDisplay').textContent(),'---');
     for(const digit of '110')await tap(`#numberPadGrid [data-number="${digit}"]`);
     await tap('#numberPadConfirm');
    }
