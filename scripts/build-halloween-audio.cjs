@@ -9,8 +9,8 @@ const instruments={'halloween-pulse':score.instruments['finale-pulse'],'hallowee
 function arrangement(events,definitions,prefix){return events.map(e=>{const name=prefix+e.instrument;instruments[name]=definitions[e.instrument];return {...e,instrument:name};});}
 const startEvents=arrangement(score.song.events.filter(e=>Number(e.offset)>=cut).map(e=>({...e,offset:String(Number(e.offset)-cut)})),score.instruments,'halloween-score-');
 const endEvents=arrangement(ending.events,score.instruments,'halloween-score-');
-for(const name of ['trip-started','trip-started-early','trip-started-late'])songs[name]={bpm:score.song.bpm,instrument:startEvents[0].instrument,events:startEvents,seasonalSpeechStartSeconds:2,seasonalGain:.9};
-songs['trip-ended']={bpm:score.song.bpm,instrument:endEvents[0].instrument,events:endEvents,seasonalSpeechStartSeconds:2,seasonalGain:.9};
+for(const name of ['trip-started','trip-started-early','trip-started-late'])songs[name]={bpm:score.song.bpm,instrument:startEvents[0].instrument,events:startEvents,seasonalSpeechStartSeconds:2,seasonalGain:.45};
+songs['trip-ended']={bpm:score.song.bpm,instrument:endEvents[0].instrument,events:endEvents,seasonalSpeechStartSeconds:2,seasonalGain:.45};
 const aliases={
  '01-break-start':['break-started','short-break-started','lunch-started','lunch-clock-out'],
  '02-resume-break':['trip-resumed-early','trip-resumed-automatically','trip-resumed-after-break','lunch-clock-in'],

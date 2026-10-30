@@ -138,14 +138,14 @@ const out = path.resolve(__dirname,'../../outputs/halloween-implemented'); fs.mk
         await op(()=>clockTimer.stop()); await p.clock.runFor(1200);
         await p.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close()));
         await layouts('');
-        await p.evaluate(async()=>{await WMOFSeasonalTheme.setPreference(null,{persist:false});
+        await op(async()=>{await WMOFSeasonalTheme.setPreference(null,{persist:false});
             if(WMOFSeasonalTheme.refresh(new Date(2026,9,30)))throw Error('October 30 must remain normal');
             if(!WMOFSeasonalTheme.refresh(new Date(2026,9,31)))throw Error('October 31 activates the date default');
             if(WMOFSeasonalTheme.refresh(new Date(2026,10,1)))throw Error('November 1 restores normal');
             await WMOFAccountSettings.load(2,'a'.repeat(64));
             if(!WMOFSeasonalTheme.active)throw Error('saved account choice must restore');});
         const url=new URL('drop-in.php',p.url()).href;await p.goto(url);await p.waitForLoadState('domcontentloaded');
-        await p.evaluate(()=>WMOFSeasonalTheme.setPreference('halloween',{persist:false}));await p.waitForTimeout(1000);await shot('drop-in');
+        await op(()=>WMOFSeasonalTheme.setPreference('halloween',{persist:false}));await p.waitForTimeout(1000);await shot('drop-in');
         assert(audits.every(a=>a.blue.length===0),'remaining blue colors: '+JSON.stringify(audits.filter(a=>a.blue.length)));
         assert.deepEqual(f.errors,[]);
         fs.writeFileSync(path.join(out,'audit.json'),JSON.stringify(audits,null,2));
