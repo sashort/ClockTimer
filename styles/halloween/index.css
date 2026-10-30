@@ -103,6 +103,9 @@ html[data-seasonal-theme="halloween"] :is(button,input,select):focus-visible {ou
 html[data-seasonal-theme="halloween"] #downBreakButton {
     color:#ffd778!important;background:linear-gradient(#59350f,#25190e)!important;border-color:#ed972d!important;
 }
+html[data-seasonal-theme="halloween"] #downDetailsButton {
+    color:#ffd778!important;background:linear-gradient(#65401e,#3a2412)!important;border-color:#ed972d!important;
+}
 html[data-seasonal-theme="halloween"] #downCancelButton {
     color:#fff5e2!important;background:linear-gradient(#813b17,#59300f)!important;border-color:#ed972d!important;
 }
