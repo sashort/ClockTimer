@@ -3,13 +3,17 @@
     const sessions = new Map();
     const pressed = new Map();
     const transients = new Set();
+    const openingTails = new Set();
     const revisions = new Map();
     let generation = 0;
     const report = error => console.warn('Window audio unavailable', error);
-    function stop(session) {
+    function stop(session, {finishOpening=false}={}) {
         session.controller.abort();
         for (const handle of session.handles) handle?.stop?.();
         session.handles.clear();
+        // Keep only an already-playing, explicitly opted-in opening cue alive.
+        // Pending preparation still belongs to the window and must be canceled.
+        if(session.opening && (!finishOpening || !session.opening.handles.size))stop(session.opening);
     }
     async function phase(session, definition, sustained = false) {
         if (!definition || session.controller.signal.aborted) return;
@@ -43,7 +47,14 @@
             const config = await WMOFSoundCatalog.json('api/audio/themes/'+WMOFSoundCatalog.theme()+'/windows.json');
             if(session.controller.signal.aborted)return;
             session.definition=config.windows?.[id];
-            await phase(session,session.definition?.opening);
+            const definition=session.definition?.opening;
+            if(definition?.cue && definition.finishOnClose===true){
+                const opening={controller:new AbortController(),handles:new Set()};
+                session.opening=opening;
+                openingTails.add(opening);
+                try {await phase(opening,definition);}
+                finally {openingTails.delete(opening);}
+            } else await phase(session,definition);
             await phase(session,session.definition?.sustained,true);
         } catch(error) {if(!session.controller.signal.aborted)report(error);}
     }
@@ -51,13 +62,13 @@
         revisions.set(id,(revisions.get(id)||0)+1);
         for(const session of [...pressed.values(),...transients])if(session.windowId===id)stop(session);
         const session=sessions.get(id);if(!session?.open)return;
-        stop(session);session.open=false;
+        stop(session,{finishOpening:true});session.open=false;
         const closing={open:false,controller:new AbortController(),handles:new Set()};
         sessions.set(id,closing);
         if(!silent)try{await phase(closing,session.definition?.closing);}catch(error){report(error);}
         if(sessions.get(id)===closing)sessions.delete(id);
     }
-    function cancelAll(){generation++;for(const session of sessions.values())stop(session);sessions.clear();for(const session of [...pressed.values(),...transients])stop(session);pressed.clear();transients.clear();}
+    function cancelAll(){generation++;for(const session of sessions.values())stop(session);sessions.clear();for(const session of [...pressed.values(),...transients,...openingTails])stop(session);pressed.clear();transients.clear();openingTails.clear();}
     async function control(event, name) {
         const button=event.target?.closest?.('button, [role="button"], [data-audio-control]');
         if(!button || button.disabled || button.getAttribute('aria-disabled')==='true')return;

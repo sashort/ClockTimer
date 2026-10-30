@@ -12,7 +12,7 @@ Product event sounds use `WMOFAudio.playSound`, which resolves a WAV from the ac
 
 `windows.json` is version 1 with a `windows` object keyed by stable window ID. A dialog uses `data-audio-window`, falling back to its DOM ID. The main surface uses `main` for button configuration. Omitted windows, phases, and controls are silent.
 
-Each window may specify `opening`, `sustained`, and `closing`. A phase references either `{ "cue": "keypad-open" }` or `{ "instrument": "keypad-dial-tone" }`. Opening plays once, sustained begins after opening, and closing stops opening/sustain before its own cue. Reopening, close-before-ready, theme changes, and page departure cancel old owners.
+Each window may specify `opening`, `sustained`, and `closing`. A phase references either `{ "cue": "keypad-open" }` or `{ "instrument": "keypad-dial-tone" }`. Opening plays once, sustained begins after opening, and closing normally stops opening/sustain before its own cue. An opening cue can set `finishOnClose: true` to let an already-playing recording decay naturally after closure; Halloween's numberpad bell uses this option. Pending preparation is still canceled on closure, sustained/key tones still stop immediately, and closing never starts the old window's sustain. Theme changes, global cancellation, and page departure also stop detached opening tails.
 
 `controls.buttons` maps `data-audio-control`, DOM ID, or `data-action` to optional `press`, `release`, and `click` phases. A held phase sets `hold: true`; release/cancel stops it. Complete cues are one-shot. Both phases may be defined deliberately, but do not configure press and click for the same cue unless two plays are intended.
 
