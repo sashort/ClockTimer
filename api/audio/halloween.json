@@ -1502,7 +1502,7 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.9
+      "seasonalGain": 0.45
     },
     "trip-started-early": {
       "bpm": 120,
@@ -1836,7 +1836,7 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.9
+      "seasonalGain": 0.45
     },
     "trip-started-late": {
       "bpm": 120,
@@ -2170,7 +2170,7 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.9
+      "seasonalGain": 0.45
     },
     "trip-ended": {
       "bpm": 120,
@@ -2504,7 +2504,7 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.9
+      "seasonalGain": 0.45
     },
     "break-started": {
       "bpm": 120,
