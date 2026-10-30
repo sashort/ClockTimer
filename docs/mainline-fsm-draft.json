@@ -18150,8 +18150,9 @@
         "halloweenThemeToggle reflects effective state and is disabled only during its save."
       ],
       "audio": [
-        "Halloween uses low Cinematic Pulse Bass and Part 3 tremolo chords for keys; the Part 2 low pulse follows one second of inactivity.",
-        "Disabling cancels pending and ringing seasonal audio. Announcement cues and saved audio preferences are unchanged."
+        "Opening numberpad plays the first Part 3 string chord; held digits cycle D2, D2, A2, D2, A2. One second of inactivity and Reset silently reset the sequence; OK is silent.",
+        "Trip start and end replace normal songs with approved ensemble segments; speech begins two seconds after audio start. Other events use the approved orchestral family.",
+        "Disabling stops pending and ringing seasonal audio. Saved audio preferences and full Easter Egg songs remain unchanged."
       ],
       "forbidden": [
         "Modify saved clock colors or timing/accounting state as part of theming.",
@@ -18161,7 +18162,8 @@
       "evidence": [
         "node tests/halloween-theme-browser.cjs",
         "node tests/halloween-audio.cjs",
-        "node tests/halloween-idle-audio.cjs"
+        "node tests/halloween-idle-audio.cjs",
+        "node tests/halloween-keypad-browser.cjs"
       ]
     }
   },
@@ -19970,7 +19972,7 @@
           "action": "enable Halloween in Settings > Themes, then disable it"
         },
         "expect": {
-          "enabled": "palette, pumpkin, skeleton and seasonal keypad sounds change together",
+          "enabled": "palette, pumpkin, skeleton, five-note held keypad and approved seasonal event songs change together",
           "disabled": "normal colors, avatar and sounds return",
           "savedClockColors": "unchanged",
           "tripAccounting": "unchanged",

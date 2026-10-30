@@ -3107,6 +3107,7 @@
             if (!entry || entry.released) return;
 
             entry.released = true;
+            entry.abortSignal?.removeEventListener("abort",entry.onAbort);
             clearTimeout(entry.endTimer);
 
             for (const timer of entry.timers) {
@@ -3244,15 +3245,15 @@
             } = {}
         ) {
             let catalog = await this.prepare();
-            if (name === 'halloween-idle-pulse' && globalThis.WMOFHalloweenAudio?.isActive()) {
-                catalog = await globalThis.WMOFHalloweenAudio.pulseCatalog(catalog, seasonalNote);
-            }
+            if (globalThis.WMOFHalloweenAudio?.isActive()) catalog = await globalThis.WMOFHalloweenAudio.catalogForSong(catalog,name);
             const song = catalog?.songs?.[name];
 
             if (!song) {
                 throw new Error("Unknown song: " + name);
             }
 
+            const seasonalSong = Number.isFinite(song.seasonalGain);
+            if (seasonalSong) useSelectedInstrument = false;
             const context = await this.#audioContext();
 
             this.#prepareAudioResources(
@@ -3330,7 +3331,7 @@
                         : 1
                 ) *
                 effectiveToneVolume * (normalizeLoudness && !this.#isPhone()
-                    ? this.loudnessGain(song, useSelectedInstrument && this.#outputSettings.instrument || song.instrument) : 1);
+                    ? this.loudnessGain(song, useSelectedInstrument && this.#outputSettings.instrument || song.instrument) : 1) * (song.seasonalGain ?? 1);
             const shouldLoop =
                 loop === undefined
                     ? Boolean(song.loop)
@@ -3411,6 +3412,8 @@
                 }));
             }
 
+            if (seasonalSong && !globalThis.WMOFHalloweenAudio?.isActive()) return null;
+
             let resolveFinished;
 
             const finished =
@@ -3435,6 +3438,7 @@
 
             const entry = {
                 id: ++this.#sequence,
+                seasonal: seasonalSong,
                 name,
                 nodes: new Set(),
                 instrumentResources:
@@ -3800,6 +3804,8 @@
                             ) *
                                 1000
                         ),
+                    speechStartsInMs: hasChime && Number.isFinite(song.seasonalSpeechStartSeconds)
+                        ? Math.max(0,(entry.startedAt-context.currentTime+song.seasonalSpeechStartSeconds)*1000) : null,
                     audibleChimeDurationMs,
                     audibleChimeEndsInMs: Math.max(0, (entry.startedAt - context.currentTime) * 1000 + audibleChimeDurationMs),
                     timing,
@@ -4137,12 +4143,29 @@
             return true;
         }
 
+        stopSeasonalSongs() {
+            for (const entry of [...this.#active.values()]) if (entry.seasonal) this.#release(entry,"stopped");
+        }
+
+        async playNumberPadCue(kind) {
+            const seasonal = globalThis.WMOFHalloweenAudio;
+            if (!seasonal?.isActive()) return null;
+            try {
+                const context = await this.#audioContext();
+                return await seasonal.playCue(context, this.#programOutputNode(context), this.#outputSettings.toneVolume, kind);
+            } catch (error) {
+                console.warn('Halloween numberpad cue unavailable', error);
+                return null;
+            }
+        }
+
         async startFrequencies(
             frequencies,
             {
                 waveform = "square",
                 volume = 1,
-                reason = "direct-tone"
+                reason = "direct-tone",
+                signal
             } = {}
         ) {
             const values =
@@ -4165,6 +4188,8 @@
             const context =
                 await this.#audioContext();
 
+            if (signal?.aborted) return Object.freeze({stop(){}});
+
             const entry = {
                 id: ++this.#sequence,
                 name: reason,
@@ -4186,6 +4211,10 @@
                 entry
             );
 
+            if (signal) {
+                entry.abortSignal=signal;entry.onAbort=()=>this.#release(entry,"key-released");
+                signal.addEventListener("abort",entry.onAbort,{once:true});
+            }
             try {
                 const halloween = globalThis.WMOFHalloweenAudio;
                 if (reason === "number-pad" && halloween?.isActive()) {
@@ -4202,6 +4231,7 @@
                         console.warn("Halloween touchtones unavailable; using normal tones", error);
                     }
                 }
+                if (entry.released) return Object.freeze({stop(){}});
                 for (const frequency of values) {
                     const oscillator =
                         context.createOscillator();

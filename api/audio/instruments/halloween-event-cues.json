@@ -1,0 +1,1156 @@
+{
+  "instruments": {
+    "pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.1,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.22,
+        "sustain": 0.76,
+        "release": 0.16
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-tremolo",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 0.55
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "reverb": {
+        "wet": 0.08,
+        "decay": 1.2
+      }
+    },
+    "shortStrings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-short",
+      "orchestraGroup": "violin-short",
+      "volume": 4.8,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.02,
+        "sustain": 0.96,
+        "release": 0.012
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-short-0.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 1.7675963718820862,
+          "peakAmplitude": 0.27215576171875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-1.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 1.2079365079365079,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-2.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.9490249433106576,
+          "peakAmplitude": 0.362060546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-3.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 0.9231972789115647,
+          "peakAmplitude": 0.34674072265625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141"
+        }
+      ],
+      "reverb": {
+        "wet": 0.025,
+        "decay": 0.35
+      }
+    },
+    "horns": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded horn",
+      "orchestraGroup": "horn",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.35
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-horn-13.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 14.644716553287981,
+          "peakAmplitude": 0.03826904296875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_D2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "9155ef0c33c06ebe55daeaaaca7dec4090578af6cf3d6a028fbfa7b7f2ec876e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-14.wav",
+          "rootFrequency": 174.61411571650194,
+          "note": "F3",
+          "durationSeconds": 14.502448979591836,
+          "peakAmplitude": 0.065521240234375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_F2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "2e487a49c834ff2d76aff1c9755875fc03013bf202b949a5c5fe354d0c2123c2"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-15.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 12.703197278911565,
+          "peakAmplitude": 0.110565185546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_C3_v2_1.wav",
+          "library": "vsco",
+          "sha256": "c0c0b157dcde094c4417b7c165d645897cde9ea6d74247bbab0c0e75355e78c3"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "knock": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Drop-In Eighties Attention Alert",
+      "waveform": "square",
+      "volume": 1.8,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.035,
+        "sustain": 0.72,
+        "release": 0.035
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.72,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.16,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 3,
+          "gain": 0.08,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 4800,
+        "Q": 0.65
+      },
+      "noise": {
+        "amount": 0.025,
+        "decay": 0.012
+      }
+    }
+  },
+  "cues": [
+    {
+      "id": "01-break-start",
+      "label": "1 · Break / Lunch started",
+      "description": "Bass steps into a suspended brass-and-string chord.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D2",
+          "length": "0.28",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "A2",
+          "length": "0.5",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "D4",
+          "length": "0.6",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.36",
+          "tone": "G4",
+          "length": "0.6",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.36",
+          "tone": "A4",
+          "length": "0.6",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.36",
+          "tone": "D5",
+          "length": "0.44",
+          "instrument": "strings",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.36",
+          "tone": "G5",
+          "length": "0.44",
+          "instrument": "strings",
+          "dynamic": "mp"
+        }
+      ]
+    },
+    {
+      "id": "02-resume-break",
+      "label": "2 · Resume from break",
+      "description": "A fifth-to-tonic pulse and a softer orchestral resolution.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2",
+          "length": "0.28",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "D3",
+          "length": "0.6",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "D4",
+          "length": "0.56",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.36",
+          "tone": "F4",
+          "length": "0.56",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.36",
+          "tone": "A4",
+          "length": "0.56",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.36",
+          "tone": "A4",
+          "length": "0.5",
+          "instrument": "strings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "D5",
+          "length": "0.5",
+          "instrument": "strings",
+          "dynamic": "mf"
+        }
+      ]
+    },
+    {
+      "id": "03-down-start",
+      "label": "3 · Down started",
+      "description": "The bass falls into tense, unresolved brass and strings.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D2",
+          "length": "0.28",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "C#2",
+          "length": "0.64",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "C#3",
+          "length": "0.64",
+          "instrument": "horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "E3",
+          "length": "0.64",
+          "instrument": "horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "G3",
+          "length": "0.64",
+          "instrument": "horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "A4",
+          "length": "0.48",
+          "instrument": "strings",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.36",
+          "tone": "Bb4",
+          "length": "0.48",
+          "instrument": "strings",
+          "dynamic": "mp"
+        }
+      ]
+    },
+    {
+      "id": "04-resume-down",
+      "label": "4 · Resume from Down",
+      "description": "Approved original — unchanged; reference for the new arrangements.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C#2",
+          "length": "0.28",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "D2",
+          "length": "0.6",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "D4",
+          "length": "0.6",
+          "instrument": "horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "F4",
+          "length": "0.6",
+          "instrument": "horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "A4",
+          "length": "0.6",
+          "instrument": "horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "D5",
+          "length": "0.44",
+          "instrument": "strings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.36",
+          "tone": "F5",
+          "length": "0.44",
+          "instrument": "strings",
+          "dynamic": "mf"
+        }
+      ]
+    },
+    {
+      "id": "05-goal-missed",
+      "label": "5 · Goal missed",
+      "description": "Three descending bass strikes, with a tense ensemble response.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "F2",
+          "length": "0.18",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.24",
+          "tone": "E2",
+          "length": "0.18",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.48",
+          "tone": "D2",
+          "length": "0.5",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.48",
+          "tone": "Eb4",
+          "length": "0.36",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.48",
+          "tone": "Gb4",
+          "length": "0.36",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.48",
+          "tone": "A4",
+          "length": "0.36",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.48",
+          "tone": "Eb5",
+          "length": "0.24",
+          "instrument": "shortStrings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.48",
+          "tone": "E5",
+          "length": "0.24",
+          "instrument": "shortStrings",
+          "dynamic": "mf"
+        }
+      ]
+    },
+    {
+      "id": "06-setting-on",
+      "label": "6 · Setting On",
+      "description": "A short rising pulse with a light resolving brass/string accent.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C#3",
+          "length": "0.2",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.28",
+          "tone": "D3",
+          "length": "0.3",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.28",
+          "tone": "D4",
+          "length": "0.24",
+          "instrument": "horns",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0.28",
+          "tone": "F4",
+          "length": "0.24",
+          "instrument": "horns",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0.28",
+          "tone": "A4",
+          "length": "0.2",
+          "instrument": "shortStrings",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.28",
+          "tone": "D5",
+          "length": "0.2",
+          "instrument": "shortStrings",
+          "dynamic": "mp"
+        }
+      ]
+    },
+    {
+      "id": "07-setting-off",
+      "label": "7 · Setting Off",
+      "description": "A matching downward pulse and lower orchestral accent.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.2",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.28",
+          "tone": "C3",
+          "length": "0.3",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.28",
+          "tone": "C4",
+          "length": "0.24",
+          "instrument": "horns",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0.28",
+          "tone": "Eb4",
+          "length": "0.24",
+          "instrument": "horns",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0.28",
+          "tone": "G4",
+          "length": "0.2",
+          "instrument": "shortStrings",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.28",
+          "tone": "C5",
+          "length": "0.2",
+          "instrument": "shortStrings",
+          "dynamic": "mp"
+        }
+      ]
+    },
+    {
+      "id": "08-setting-unchanged",
+      "label": "8 · Setting unchanged",
+      "description": "Two quiet repeated pulses with a restrained ensemble echo.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.16",
+          "instrument": "pulse",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.26",
+          "tone": "D3",
+          "length": "0.16",
+          "instrument": "pulse",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.26",
+          "tone": "D4",
+          "length": "0.2",
+          "instrument": "horns",
+          "dynamic": "pp"
+        },
+        {
+          "offset": "0.26",
+          "tone": "A4",
+          "length": "0.2",
+          "instrument": "horns",
+          "dynamic": "pp"
+        },
+        {
+          "offset": "0.26",
+          "tone": "D5",
+          "length": "0.16",
+          "instrument": "shortStrings",
+          "dynamic": "p"
+        }
+      ]
+    },
+    {
+      "id": "09-goal-view-change",
+      "label": "9 · Goal / view changed",
+      "description": "A three-step pulse figure opens into a brief ensemble chord.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.16",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.22",
+          "tone": "F3",
+          "length": "0.16",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.44",
+          "tone": "A3",
+          "length": "0.34",
+          "instrument": "pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.44",
+          "tone": "D4",
+          "length": "0.32",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.44",
+          "tone": "F4",
+          "length": "0.32",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.44",
+          "tone": "A4",
+          "length": "0.32",
+          "instrument": "horns",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.44",
+          "tone": "D5",
+          "length": "0.24",
+          "instrument": "shortStrings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.44",
+          "tone": "F5",
+          "length": "0.24",
+          "instrument": "shortStrings",
+          "dynamic": "mf"
+        }
+      ]
+    },
+    {
+      "id": "10-mic-on",
+      "label": "10 · Microphone activated",
+      "description": "A light pulse pickup with rising string accents and a soft brass response.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2",
+          "length": "0.16",
+          "instrument": "pulse",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.28",
+          "tone": "D3",
+          "length": "0.24",
+          "instrument": "pulse",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0",
+          "tone": "A5",
+          "length": "0.16",
+          "instrument": "shortStrings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.28",
+          "tone": "D6",
+          "length": "0.24",
+          "instrument": "shortStrings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.28",
+          "tone": "D4",
+          "length": "0.2",
+          "instrument": "horns",
+          "dynamic": "pp"
+        },
+        {
+          "offset": "0.28",
+          "tone": "F4",
+          "length": "0.2",
+          "instrument": "horns",
+          "dynamic": "pp"
+        }
+      ]
+    },
+    {
+      "id": "11-mic-off",
+      "label": "11 · Microphone deactivated",
+      "description": "A paired descending pulse/string gesture with lower brass.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.16",
+          "instrument": "pulse",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.28",
+          "tone": "A2",
+          "length": "0.24",
+          "instrument": "pulse",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0",
+          "tone": "D6",
+          "length": "0.16",
+          "instrument": "shortStrings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.28",
+          "tone": "A5",
+          "length": "0.24",
+          "instrument": "shortStrings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.28",
+          "tone": "A3",
+          "length": "0.2",
+          "instrument": "horns",
+          "dynamic": "pp"
+        },
+        {
+          "offset": "0.28",
+          "tone": "C4",
+          "length": "0.2",
+          "instrument": "horns",
+          "dynamic": "pp"
+        }
+      ]
+    },
+    {
+      "id": "12-speech-rejected",
+      "label": "12 · Speech rejected",
+      "description": "Two adjacent pulse notes answered by a muted, unsettled ensemble.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.18",
+          "instrument": "pulse",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.28",
+          "tone": "Eb3",
+          "length": "0.28",
+          "instrument": "pulse",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.28",
+          "tone": "Eb4",
+          "length": "0.26",
+          "instrument": "horns",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0.28",
+          "tone": "A4",
+          "length": "0.26",
+          "instrument": "horns",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0.28",
+          "tone": "F5",
+          "length": "0.2",
+          "instrument": "shortStrings",
+          "dynamic": "mp"
+        }
+      ]
+    },
+    {
+      "id": "13-drop-in-message",
+      "label": "13 · Drop-In message",
+      "description": "A double knock reinforced by low brass and short strings.",
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.16",
+          "instrument": "knock",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.4",
+          "tone": "A2",
+          "length": "0.2",
+          "instrument": "knock",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.18",
+          "instrument": "horns",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0.4",
+          "tone": "A2",
+          "length": "0.26",
+          "instrument": "horns",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "0.12",
+          "instrument": "shortStrings",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0.4",
+          "tone": "A4",
+          "length": "0.16",
+          "instrument": "shortStrings",
+          "dynamic": "p"
+        }
+      ]
+    }
+  ],
+  "reports": [
+    {
+      "id": "01-break-start",
+      "speed": 1,
+      "file": "01-break-start.wav",
+      "seconds": 1.8506666666666667,
+      "peak": 0.6328092888613948,
+      "gain": 1.1645398727539484
+    },
+    {
+      "id": "01-break-start",
+      "speed": 2,
+      "file": "01-break-start-fast.wav",
+      "seconds": 1.7260833333333334,
+      "peak": 0.6500000000000001,
+      "gain": 1.1645398727539484
+    },
+    {
+      "id": "02-resume-break",
+      "speed": 1,
+      "file": "02-resume-break.wav",
+      "seconds": 1.8939166666666667,
+      "peak": 0.6129612524961372,
+      "gain": 0.9585650799388006
+    },
+    {
+      "id": "02-resume-break",
+      "speed": 2,
+      "file": "02-resume-break-fast.wav",
+      "seconds": 1.7553958333333333,
+      "peak": 0.65,
+      "gain": 0.9585650799388006
+    },
+    {
+      "id": "03-down-start",
+      "speed": 1,
+      "file": "03-down-start.wav",
+      "seconds": 1.8456666666666666,
+      "peak": 0.65,
+      "gain": 1.0628586744273651
+    },
+    {
+      "id": "03-down-start",
+      "speed": 2,
+      "file": "03-down-start-fast.wav",
+      "seconds": 1.7485416666666667,
+      "peak": 0.5615340715548216,
+      "gain": 1.0628586744273651
+    },
+    {
+      "id": "04-resume-down",
+      "speed": 1,
+      "file": "04-resume-down.wav",
+      "seconds": 1.8533958333333334,
+      "peak": 0.65,
+      "gain": 1
+    },
+    {
+      "id": "04-resume-down",
+      "speed": 2,
+      "file": "04-resume-down-fast.wav",
+      "seconds": 1.7068958333333333,
+      "peak": 0.65,
+      "gain": 1
+    },
+    {
+      "id": "05-goal-missed",
+      "speed": 1,
+      "file": "05-goal-missed.wav",
+      "seconds": 1.6822291666666667,
+      "peak": 0.65,
+      "gain": 0.8838383835109193
+    },
+    {
+      "id": "05-goal-missed",
+      "speed": 2,
+      "file": "05-goal-missed-fast.wav",
+      "seconds": 1.5466041666666666,
+      "peak": 0.45527647975709096,
+      "gain": 0.8838383835109193
+    },
+    {
+      "id": "06-setting-on",
+      "speed": 1,
+      "file": "06-setting-on.wav",
+      "seconds": 1.4909583333333334,
+      "peak": 0.65,
+      "gain": 1.2651244289927814
+    },
+    {
+      "id": "06-setting-on",
+      "speed": 2,
+      "file": "06-setting-on-fast.wav",
+      "seconds": 1.4067083333333332,
+      "peak": 0.6205228747440793,
+      "gain": 1.2651244289927814
+    },
+    {
+      "id": "07-setting-off",
+      "speed": 1,
+      "file": "07-setting-off.wav",
+      "seconds": 1.4399583333333332,
+      "peak": 0.65,
+      "gain": 1.276337731910789
+    },
+    {
+      "id": "07-setting-off",
+      "speed": 2,
+      "file": "07-setting-off-fast.wav",
+      "seconds": 1.328125,
+      "peak": 0.6482526182315196,
+      "gain": 1.276337731910789
+    },
+    {
+      "id": "08-setting-unchanged",
+      "speed": 1,
+      "file": "08-setting-unchanged.wav",
+      "seconds": 1.4080833333333334,
+      "peak": 0.65,
+      "gain": 1.5441155745726483
+    },
+    {
+      "id": "08-setting-unchanged",
+      "speed": 2,
+      "file": "08-setting-unchanged-fast.wav",
+      "seconds": 1.3445208333333334,
+      "peak": 0.6117635906170104,
+      "gain": 1.5441155745726483
+    },
+    {
+      "id": "09-goal-view-change",
+      "speed": 1,
+      "file": "09-goal-view-change.wav",
+      "seconds": 1.6819375,
+      "peak": 0.6499999999999999,
+      "gain": 1.030154460958536
+    },
+    {
+      "id": "09-goal-view-change",
+      "speed": 2,
+      "file": "09-goal-view-change-fast.wav",
+      "seconds": 1.5459583333333333,
+      "peak": 0.551950415341958,
+      "gain": 1.030154460958536
+    },
+    {
+      "id": "10-mic-on",
+      "speed": 1,
+      "file": "10-mic-on.wav",
+      "seconds": 1.4707291666666666,
+      "peak": 0.65,
+      "gain": 1.2183720822146031
+    },
+    {
+      "id": "10-mic-on",
+      "speed": 2,
+      "file": "10-mic-on-fast.wav",
+      "seconds": 1.3692708333333334,
+      "peak": 0.5990757236590432,
+      "gain": 1.2183720822146031
+    },
+    {
+      "id": "11-mic-off",
+      "speed": 1,
+      "file": "11-mic-off.wav",
+      "seconds": 1.4060208333333333,
+      "peak": 0.65,
+      "gain": 1.3088085417559043
+    },
+    {
+      "id": "11-mic-off",
+      "speed": 2,
+      "file": "11-mic-off-fast.wav",
+      "seconds": 1.3359583333333334,
+      "peak": 0.578778313067058,
+      "gain": 1.3088085417559043
+    },
+    {
+      "id": "12-speech-rejected",
+      "speed": 1,
+      "file": "12-speech-rejected.wav",
+      "seconds": 1.4524583333333334,
+      "peak": 0.6487427873097198,
+      "gain": 1.5247427522153825
+    },
+    {
+      "id": "12-speech-rejected",
+      "speed": 2,
+      "file": "12-speech-rejected-fast.wav",
+      "seconds": 1.3581041666666667,
+      "peak": 0.65,
+      "gain": 1.5247427522153825
+    },
+    {
+      "id": "13-drop-in-message",
+      "speed": 1,
+      "file": "13-drop-in-message.wav",
+      "seconds": 1.3161666666666667,
+      "peak": 0.49613819122314456,
+      "gain": 1.6
+    },
+    {
+      "id": "13-drop-in-message",
+      "speed": 2,
+      "file": "13-drop-in-message-fast.wav",
+      "seconds": 1.2221666666666666,
+      "peak": 0.49613819122314456,
+      "gain": 1.6
+    }
+  ]
+}
