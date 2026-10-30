@@ -7792,8 +7792,9 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
     font-size:0!important;line-height:1;grid-row:auto;
     transform:translate(-50%,calc(-50% + var(--compact-offset,0)*var(--compact-action-step))) scale(1);
     transition:transform 400ms ease,opacity 250ms ease,visibility 250ms;
-    opacity:1;visibility:visible;z-index:1;
+    opacity:0;visibility:hidden;pointer-events:none;z-index:1;
 }
+.app[data-action-display="compact"] .compact-action-rail > button[data-compact-visible="true"] {opacity:1;visibility:visible;pointer-events:auto;}
 .app[data-action-display="compact"] .compact-action-rail > button::before {content:attr(data-compact-glyph);font-size:29px;line-height:1;}
 .app[data-action-display="compact"] .compact-action-rail > #endTripButton:not(:has(.break-action-label))::before {
     content:"";width:26px;height:24px;clip-path:polygon(0 0,100% 0,100% 75%,8% 75%,8% 100%,0 100%);

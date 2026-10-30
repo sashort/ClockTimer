@@ -1,6 +1,6 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';
 const source=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8'),section=(a,b)=>source.slice(source.indexOf(a),source.indexOf(b));
-const controller=new Function(`let numberPadState;const WMOFLanguagePack={text:(id,{value0})=>value0+'%'};function refreshNumberPad(){};${section('    function splitTimeDigits(', '    function timeDigitsValid(')}${section('    function timeDigitsValid(', '    function autocorrectTimeDigits(')}${section('    function splitAbsoluteDigits(', '    function getTripMomentDefaults(')}${section('    function numberPadNumericValue(', '    function getNumberPadTitle(')}${section('    function resetNumberPadPendingValue(', '    function changeNumberPadMeridiem(')}return{set:s=>numberPadState=s,get:()=>numberPadState,edit:editNumberPadAnchorRange,reset:resetNumberPadPendingValue,text:numberPadDisplayString,duration:timeDigitsToMilliseconds};`)();
+const controller=new Function(`let numberPadState;const WMOFLanguagePack={text:(id,{value0})=>value0+'%'};function refreshNumberPad(){};${section('    function splitTimeDigits(', '    function timeDigitsValid(')}${section('    function timeDigitsValid(', '    function autocorrectTimeDigits(')}${section('    function splitAbsoluteDigits(', '    function getTripMomentDefaults(')}${section('    function numberPadNumericValue(', '    function getNumberPadTitle(')}${section('    function resetNumberPadPendingValue(', '    function changeNumberPadMeridiem(')}return{set:s=>numberPadState=s,get:()=>numberPadState,edit:editNumberPadAnchorRange,selectAll:selectNumberPadValue,reset:resetNumberPadPendingValue,text:numberPadDisplayString,duration:timeDigitsToMilliseconds};`)();
 const state=(pending,range,mode='percent',anchorDigit=1)=>({mode,pending,initial:pending,anchorDigit,anchorRange:range&&{...range,explicit:true}});
 controller.set(state('1234',{start:3,stop:2}));controller.edit('9');assert.equal(controller.text(),'1934%','one boundary difference selects one digit');assert.deepEqual(controller.get().anchorRange,{start:2,stop:2,explicit:true},'replacement collapses immediately after input');controller.edit('8');assert.equal(controller.text(),'19834%','next digit inserts at collapsed caret');controller.edit(null);assert.equal(controller.text(),'1934%','Backspace removes digit left of caret');
 controller.set(state('1234',{start:1,stop:3}));controller.edit('9');assert.equal(controller.text(),'194%','reverse selection replaces the whole range once');assert.equal(controller.get().anchorRange.start,1);controller.edit('8');assert.equal(controller.text(),'1984%');
@@ -20,3 +20,20 @@ console.log('PASS fixed three-digit fractional editing, unchanged whole time, le
 assert.equal(controller.duration('123456',789),45296789);assert.equal(controller.duration('10',5),10005);assert.equal(controller.duration('10',0),10000);assert.equal(controller.duration('10',1000),undefined);assert.equal(controller.duration('10',-1),undefined);console.log('PASS exact millisecond duration confirmation and fractional bounds');
 
 controller.set({...state('1',undefined,'duration'),milliseconds:0});controller.edit(null);assert.equal(controller.get().pending,'','Backspace removes the last whole-time digit');controller.set({...state('1',undefined,'duration'),milliseconds:789});controller.edit(null);assert.equal(controller.text(),'0:00:00.789','Backspace preserves remaining fractional time');
+
+for(const [mode,initial,precision,typed,expected] of [
+ ['percent','120',1,'95','95%'],['percent','1125',.1,'101','10.1%'],
+ ['duration','123456',1,'135','0:01:35.000'],['absolute','123456',1,'123456','12:34:56.000']
+]){
+ controller.set({...state(initial,undefined,mode,precision),milliseconds:789,meridiem:'PM',pendingDate:'2026-10-30'});
+ const before=controller.text();controller.selectAll();
+ assert.equal(controller.text(),before,'selection preserves the existing value until input');
+ assert.deepEqual(controller.get().anchorRange,{start:(before.match(/\d/g)||[]).length,stop:0,explicit:true});
+ for(const digit of typed)controller.edit(digit);
+ assert.equal(controller.text(),expected,'full replacement uses the default precision for '+mode);
+ assert.equal(controller.get().anchorRange.start,controller.get().anchorRange.stop,'first replacement collapses the anchors');
+ assert.equal(controller.get().meridiem,'PM');assert.equal(controller.get().pendingDate,'2026-10-30');
+ controller.selectAll();controller.edit(null);assert.equal(controller.get().pending,'','Backspace removes the entire initial/Clear selection');
+}
+controller.set(state('',undefined,'duration'));controller.selectAll();controller.edit('7');assert.equal(controller.text(),'0:00:07.000','empty input keeps the seconds entry position');
+console.log('PASS initial/Clear whole-value selection, replacement precision, collapsed caret, Backspace and unchanged date/meridiem');

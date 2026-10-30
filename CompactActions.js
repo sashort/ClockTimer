@@ -62,7 +62,13 @@
         renderBuffers(document.getElementById('endTripButton'),app.dataset.actionDisplay==='compact'?null:buffer);
         let view=views.get(app);
         if(!view && app.dataset.actionDisplay!=='compact'&&!(app.dataset.percentageDisplay==='bar'&&state?.clock?.goal_bar?.active))return;
-        view ||= init(app);if(state)view.state=state;if(totalLabel)view.totalLabel=totalLabel;
+        view ||= init(app);
+        // Interval handoffs may briefly publish Running while the old interval
+        // is ended. Keep its controls until the new interval or settled result.
+        if(app.dataset.actionDisplay==='compact' && state?.controls?.busy &&
+            (view.state?.controls?.downVisiblePanel || view.state?.controls?.breakLabel) &&
+            !state.controls.downVisiblePanel && !state.controls.breakLabel && state.controls.activeTripVisible)return;
+        if(state)view.state=state;if(totalLabel)view.totalLabel=totalLabel;
         const {buttons,left,right,timer}=view, compact=app.dataset.actionDisplay==='compact';
         const controls=view.state?.controls;if(!controls)return;
         const active=controls.activeTripVisible, down=controls.downVisiblePanel, paused=Boolean(controls.breakLabel);
@@ -91,8 +97,8 @@
         for(const [id,record] of buttons) {
             const {button}=record;if(button.closest('dialog[open]'))continue;
             const rail=['downDetailsButton','tripLogButton'].includes(id)?right:left, visible=(rail===left?actions:information), index=visible.indexOf(id);
-            if(button.parentElement!==rail)rail.append(button);
             button.dataset.compactVisible=String(index>=0);
+            if(button.parentElement!==rail)rail.append(button);
             button.style.setProperty('--compact-offset', index>=0?index-(visible.length-1)/2:0);
             renderIcon(button,id==='endTripButton'&&paused?'play':icons[id]);
             if(!button.hasAttribute('aria-label')||record.ownedLabel){button.setAttribute('aria-label',button.textContent.trim()||button.title||id);record.ownedLabel=true;}

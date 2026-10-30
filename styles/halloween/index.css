@@ -99,3 +99,20 @@ html[data-seasonal-theme="halloween"] .is-skeleton .skull-detail {
 html[data-seasonal-theme="halloween"] .is-skeleton .bubble path {fill:#34220f!important;stroke:#ffd34e!important;}
 html[data-seasonal-theme="halloween"] .is-skeleton .bubble text {fill:#ffd34e!important;stroke:none!important;}
 html[data-seasonal-theme="halloween"] :is(button,input,select):focus-visible {outline-color:#ffcf60!important;}
+/* Down's enabled controls and timer retain seasonal color above its gray backdrop. */
+html[data-seasonal-theme="halloween"] #downBreakButton {
+    color:#ffd778!important;background:linear-gradient(#59350f,#25190e)!important;border-color:#ed972d!important;
+}
+html[data-seasonal-theme="halloween"] #downCancelButton {
+    color:#fff5e2!important;background:linear-gradient(#813b17,#59300f)!important;border-color:#ed972d!important;
+}
+html[data-seasonal-theme="halloween"] :is(.down-elapsed-panel,.down-elapsed-value,.compact-interval-timer[data-kind="down"]) {
+    color:#ffd778!important;
+}
+html[data-seasonal-theme="halloween"] .down-elapsed-panel {border-color:#ed972d!important;}
+html[data-seasonal-theme="halloween"] .trip-log-trip.is-break-only {color:#fff5e2!important;}
+html[data-seasonal-theme="halloween"] .trip-log-trip.is-break-only :is(.trip-log-entry,.trip-log-menu>button,.trip-log-entry-heading button,.trip-log-add) {color:#ffd778!important;}
+html[data-seasonal-theme="halloween"] .trip-log-break-only-badge {background:#ffd778!important;color:#21140a!important;border-color:#ed972d!important;}
+html[data-seasonal-theme="halloween"] .app[data-action-display="compact"][data-interval-state="down"] .compact-interval-timer {
+    position:relative;z-index:3001;
+}
