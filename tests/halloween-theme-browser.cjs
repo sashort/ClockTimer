@@ -95,6 +95,8 @@ const out = path.resolve(__dirname,'../../outputs/halloween-implemented'); fs.mk
                 {id:2,event:'trip.stopped',timestamp:date+'T10:27:00Z',value:{}}]}];
         trips.push({id:42,startTime:date+'T09:00:00Z',endTime:date+'T09:15:00Z',breakOnly:true,nonProduction:false,standardTimeMilliseconds:null,countedTimeMilliseconds:0,actualTimeMilliseconds:900000,running:false,events:[{event:'trip.started',timestamp:date+'T09:00:00Z',value:{breakOnly:true}}]});
         await op(()=>WMOFActions.openTripLog('pointer'));await p.waitForSelector('.trip-log-trip',{state:'attached'});
+        await p.locator('.trip-log-trip.is-break-only').evaluate(e=>{for(let parent=e;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;});
+        await p.locator('.trip-log-trip.is-break-only').waitFor({state:'visible'});
         const breakContrast=await p.locator('.trip-log-trip.is-break-only').evaluate(e=>{
             const luminance=color=>{const rgb=color.match(/[\d.]+/g).slice(0,3).map(Number).map(n=>{n/=255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
             const ratio=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
@@ -129,8 +131,9 @@ const out = path.resolve(__dirname,'../../outputs/halloween-implemented'); fs.mk
                 await op(async({actions,percent})=>{document.querySelector('#actionDisplay'+actions).click();document.querySelector('#percentageDisplay'+percent).click();await WMOFLayoutMotion.whenSettled();},{actions,percent});
                 await shot('mode-'+n+suffix);
                 if(suffix==='d'){
-                    const colors=await p.evaluate(()=>({buttons:['downBreakButton','downCancelButton'].map(id=>{const s=getComputedStyle(document.getElementById(id));return{color:s.color,background:s.backgroundImage};}),timer:{color:getComputedStyle(document.querySelector(app.dataset.actionDisplay==='compact'?'.compact-interval-timer':'#downElapsedValue')).color,zIndex:getComputedStyle(document.querySelector('.compact-interval-timer')).zIndex}}));
+                    const colors=await p.evaluate(()=>({buttons:['downBreakButton','downCancelButton','downDetailsButton'].map(id=>{const s=getComputedStyle(document.getElementById(id));return{color:s.color,background:s.backgroundImage};}),timer:{color:getComputedStyle(document.querySelector(app.dataset.actionDisplay==='compact'?'.compact-interval-timer':'#downElapsedValue')).color,zIndex:getComputedStyle(document.querySelector('.compact-interval-timer')).zIndex}}));
                     assert.equal(colors.buttons[0].color,'rgb(255, 215, 120)');assert.equal(colors.buttons[1].color,'rgb(255, 245, 226)');
+                    assert.equal(colors.buttons[2].color,'rgb(255, 215, 120)','camera/details icon retains gold contrast');
                     for(const button of colors.buttons){const rgb=button.background.match(/rgb\((\d+), (\d+), (\d+)\)/).slice(1,4).map(Number);assert(Math.max(...rgb)-Math.min(...rgb)>30,'Down backgrounds retain seasonal color');}
                     assert.equal(colors.timer.color,'rgb(255, 215, 120)');if(actions==='Compact')assert(Number(colors.timer.zIndex)>3000,'compact Down timer stays above desaturation');
                 }

@@ -18146,7 +18146,7 @@
         "Persist wmof.clock.theme as halloween or default in orderFiller account settings.",
         "Apply or remove the palette in document, closed shadows, embedded settings and Drop In.",
         "Restore saved timer colors, original avatar and normal keypad audio when disabled.",
-        "Full/Compact Down Break and Cancel have warm colored backgrounds with gold/cream foregrounds. Down timer caption/value use gold; compact Down timer is above the grayscale backdrop. Standalone-break log rows use cream/gold text and a contrasting gold badge."
+        "Full/Compact Down Break, Cancel and Camera/Details have warm colored backgrounds with gold/cream foregrounds. Down timer caption/value use gold; compact Down timer is above the grayscale backdrop. Standalone-break log rows use cream/gold text and a contrasting gold badge."
       ],
       "controls": [
         "themesMenuButton opens themesSubmenu.",
