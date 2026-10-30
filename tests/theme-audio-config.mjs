@@ -20,3 +20,41 @@ await scope.WMOFWindowAudio.close('example');
 await new Promise(r=>setImmediate(r));
 assert.equal(calls.length,count,'a pending button sound cannot start after its window closes');
 console.log('PASS theme WAV resolution, event/template references, opening/sustain/closing, duplicate opens, silent omissions, button cues and live Default dial tone');
+
+// A ringing bell outlives its window, but delayed preparation and global owners do not.
+scope.WMOFSeasonalTheme.active=true;
+const tick=()=>new Promise(r=>setImmediate(r));
+const voices=[];
+scope.WMOFAudio.playSound=async(name,options)=>{
+ let finish;
+ const voice={name,signal:options.signal,stops:0,finish:()=>finish({reason:'ended'})};
+ const handle={finished:new Promise(r=>finish=r),stop(){voice.stops++;finish({reason:'stopped'});}};
+ voices.push(voice);return handle;
+};
+const ringing=scope.WMOFWindowAudio.open('numberpad');await tick();
+await scope.WMOFWindowAudio.close('numberpad');
+assert.equal(voices[0].signal.aborted,false,'closing the numberpad preserves an already-ringing bell');
+assert.equal(voices[0].stops,0);
+const reopened=scope.WMOFWindowAudio.open('numberpad');await tick();
+assert.equal(voices[0].stops,0,'reopening does not truncate the previous bell');
+await scope.WMOFWindowAudio.close('numberpad');
+voices[0].finish();await ringing;
+scope.WMOFWindowAudio.cancelAll();await reopened;
+assert(voices[1].signal.aborted,'global cancellation still stops detached tails');
+assert(voices[1].stops>0);
+
+let prepare,preparedSignal,lateStops=0;
+scope.WMOFAudio.playSound=(name,options)=>{preparedSignal=options.signal;return new Promise(r=>prepare=r);};
+const pending=scope.WMOFWindowAudio.open('numberpad');await tick();
+await scope.WMOFWindowAudio.close('numberpad');
+assert(preparedSignal.aborted,'a bell that has not started is canceled on close');
+prepare({finished:Promise.resolve(),stop(){lateStops++;}});await pending;
+assert.equal(lateStops,1,'a late handle cannot start an orphaned bell');
+
+scope.WMOFSeasonalTheme.active=false;
+let defaultStops=0,finishDefault;
+scope.WMOFAudio.playSound=async()=>({finished:new Promise(r=>finishDefault=r),stop(){defaultStops++;finishDefault({reason:'stopped'});}});
+const normal=scope.WMOFWindowAudio.open('example');await tick();
+await scope.WMOFWindowAudio.close('example',{silent:true});await normal;
+assert(defaultStops>0,'openings without finishOnClose retain their original close behavior');
+console.log('PASS natural bell tails after close/reopen, pending cancellation, global tail cleanup and unchanged Default close behavior');

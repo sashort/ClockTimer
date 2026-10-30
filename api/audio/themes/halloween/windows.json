@@ -3,7 +3,8 @@
   "windows": {
     "numberpad": {
       "opening": {
-        "cue": "keypad-open"
+        "cue": "keypad-open",
+        "finishOnClose": true
       },
       "controls": {
         "press": {
