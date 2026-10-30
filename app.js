@@ -18,7 +18,8 @@
 
     const announcementLanguage = globalThis.WMOFAnnouncementLanguage;
     await announcementLanguage.load(document.documentElement.lang || "en-US");
-    const announcementText = (key, values) => announcementLanguage.text(key, values);
+    const announcementText = (key, values) => globalThis.WMOFSoundCatalog?.speech ? globalThis.WMOFSoundCatalog.speech(key, values) : announcementLanguage.text(key, values);
+    await globalThis.WMOFSoundCatalog?.prepareEvents?.().catch(error => console.warn("Theme event sounds unavailable", error));
     let startupAnnouncementPending = true;
     let startupAnnouncementStarted = false;
     let finishStartupAnnouncement;
@@ -102,12 +103,10 @@
                     key
                 );
 
-    const announcementSongName =
-        key =>
-            announcementDefinition(
-                key
-            )?.song ||
-            key;
+    const announcementSongName = key => {
+        const configured = globalThis.WMOFSoundCatalog?.eventSound?.(key);
+        return configured === undefined ? announcementDefinition(key)?.song || key : configured;
+    };
 
     const announcementOverridesMaster =
         (
@@ -2344,7 +2343,7 @@
 
             try {
                 const playback =
-                    await audio.startSong(
+                    await (audio.playSound || audio.startSong).call(audio,
                         easterEggSong,
                         {
                             startBeat:
@@ -8481,6 +8480,7 @@
             `${transitionDuration}ms`
         );
         dialog.showModal();
+        void globalThis.WMOFWindowAudio?.open(dialog.dataset.audioWindow || dialog.id);
         // The microphone bar is a separate top-layer popover. Never raise it
         // over a modal when speech recognition is disabled.
         speechMicBar
@@ -8511,6 +8511,7 @@
             dialogCloseTimers.delete(dialog);
         } else if (!emitUIEvent(dialog, "closing", {reason,immediate}, true)) return false;
 
+        void globalThis.WMOFWindowAudio?.close(dialog.dataset.audioWindow || dialog.id);
         const duration =
             immediate
                 ? 0
@@ -14496,71 +14497,14 @@
         }
     }
 
-    let numberPadAmbientTone;
-    let numberPadAmbientToneGeneration = 0;
-    const activeNumberPadTouchTones =
-        new Map();
+    const activeNumberPadTouchTones = new Map();
 
     function startNumberPadAmbientTone() {
-        if (globalThis.WMOFHalloweenAudio?.isActive()) {
-            stopNumberPadAmbientTone();
-            globalThis.WMOFHalloweenAudio.resetSequence();
-            const generation = numberPadAmbientToneGeneration;
-            void Promise.resolve(globalThis.WMOFAudio?.playNumberPadCue?.('open')).then(handle => {
-                if (generation !== numberPadAmbientToneGeneration) handle?.stop?.();
-                else numberPadAmbientTone = handle;
-            }).catch(error => console.warn('Halloween opening chord unavailable', error));
-            return;
-        }
-        const generation =
-            ++numberPadAmbientToneGeneration;
-
-        numberPadAmbientTone
-            ?.stop?.();
-        numberPadAmbientTone =
-            undefined;
-
-        void globalThis
-            .WMOFAudio
-            ?.startFrequencies?.(
-                [350, 440],
-                {
-                    waveform: "square",
-                    volume: 0.01,
-                    reason:
-                        "number-pad-ambient",
-                }
-            )
-            .then(
-                handle => {
-                    if (
-                        generation !==
-                        numberPadAmbientToneGeneration
-                    ) {
-                        handle
-                            ?.stop?.();
-                        return;
-                    }
-
-                    numberPadAmbientTone =
-                        handle;
-                }
-            )
-            .catch(
-                error =>
-                    console.error(
-                        "Number pad ambient tone failed:",
-                        error
-                    )
-            );
+        void globalThis.WMOFWindowAudio?.open('numberpad');
     }
 
     function stopNumberPadAmbientTone() {
-        numberPadAmbientToneGeneration++;
-        numberPadAmbientTone
-            ?.stop?.();
-        numberPadAmbientTone =
-            undefined;
+        void globalThis.WMOFWindowAudio?.close('numberpad');
     }
 
     function stopNumberPadTouchTone(
@@ -18549,7 +18493,7 @@
 
         numberPadDialog
             .querySelectorAll(
-                "[data-touch-tone]"
+                "[data-touch-tone], [data-halloween-touch-tone]"
             )
             .forEach(
                 button => {
@@ -18569,8 +18513,7 @@
                                 return;
                             }
 
-                            // OK is silent in the seasonal keypad; trip events own their cues.
-                            if (button === numberPadConfirm && globalThis.WMOFHalloweenAudio?.isActive()) return;
+                            if (button.dataset.halloweenTouchTone && !globalThis.WMOFHalloweenAudio?.isActive()) return;
 
                             // Commit numeric input at the same point as the
                             // touch tone. Waiting for pointerup can leave an
@@ -18605,7 +18548,7 @@
                             const frequencies =
                                 String(
                                     button.dataset
-                                        .touchTone ||
+                                        .touchTone || button.dataset.halloweenTouchTone ||
                                     ""
                                 )
                                     .split(",")
@@ -20685,16 +20628,16 @@
         const speechStart = output.speechStart || { anchor: "end", paddingMs: 0 };
         const chimeComponent = { phase: "chime", delayMs: output.speechDelayMs, play: async function () {
             let played = false;
+            if (songName === null) return false;
             try {
-                const song = await audio.startSong(songName, { ...output, ...options, includeSpeech: false });
+                const song = await (audio.playSound || audio.startSong).call(audio, songName, { ...output, ...options, includeSpeech: false });
                 if (song?.hasChime && Number.isFinite(song.chimeEndsInMs)) {
                     const atSustain = speechStart.anchor === "sustain" && Number.isFinite(song.sustainStartsInMs);
-                    const atCue = Number.isFinite(song.speechStartsInMs);
-                    const anchorMs = atCue ? song.speechStartsInMs : atSustain ? song.sustainStartsInMs : song.chimeEndsInMs;
+                    const anchorMs = atSustain ? song.sustainStartsInMs : song.chimeEndsInMs;
                     // Speech follows the musical timeline; natural instrument tails may continue underneath.
                     // Normal padding remains the queue's rate-scaled margin; sustain speech has none.
-                    this.nextDelayMs = atSustain || atCue ? 0 : undefined;
-                    const elapsed = waitForAnnouncementDelay(anchorMs + (atCue ? 0 : Number(speechStart.paddingMs) || 0));
+                    this.nextDelayMs = atSustain ? 0 : undefined;
+                    const elapsed = waitForAnnouncementDelay(anchorMs + (Number(speechStart.paddingMs) || 0));
                     const ended = await Promise.race([elapsed.then(() => true),
                         Promise.resolve(song.finished).then(result => result?.reason === "stopped" || result?.reason === "error" ? false : elapsed.then(() => true))]);
                     played = ended;
@@ -20729,7 +20672,9 @@
         // Catalog summaries are a distinct component even when their text loads asynchronously.
         const components = announcementComponents(audio, announcementSongName(name), chime.perform, [], output, undefined, options);
         if (summary.perform) components.push({ phase: "summary", delayMs: output.speechDelayMs, play: async () => {
-            const summary = announcementLanguage.summary(name);
+            const original = announcementLanguage.summary(name);
+            const configured = globalThis.WMOFSoundCatalog?.eventSpeech?.(name,"summary",options.values || {});
+            const summary = configured === undefined ? original : {text:configured,options:original?.options || {}};
             return summary ? speakSemanticAndWait(audio, summary.text,
                 { ...output, ...options, ...summary.options }, reserveSemanticSpeech()) : false;
         }});
@@ -23308,7 +23253,7 @@
             if (!summary.perform || !chime.perform) {
                 const value=valueAt(performance.now()); settleResponse(response(value).speechResponse);
                 if (summary.perform) return speak(formatToneReadback(value).text);
-                const song=await audio.startSong("time-reference",{...output,includeSpeech:false,useSelectedInstrument:false});
+                const song=await (audio.playSound || audio.startSong).call(audio, "time-reference",{...output,includeSpeech:false,useSelectedInstrument:false});
                 await song?.finished; return Boolean(song?.hasChime);
             }
             timeReadbackCoordinator ??= new globalThis.ToneReferencedAnnouncement();
@@ -23318,7 +23263,7 @@
                 onPlan:plan=>settleResponse(response(plan.value).speechResponse),
                 play:async plan=> {
                     if (!valid()) return null;
-                    return audio.startSong("time-reference",{...output,includeSpeech:false,
+                    return (audio.playSound || audio.startSong).call(audio, "time-reference",{...output,includeSpeech:false,
                         useSelectedInstrument:false,startAtPerformanceMs:plan.at});
                 }});
             return result.performed;

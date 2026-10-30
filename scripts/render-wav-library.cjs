@@ -1,0 +1,22 @@
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),{chromium}=require('node:module').createRequire(path.join(root,'tests/package.json'))('playwright');
+const plan=JSON.parse(fs.readFileSync(path.join(root,'api/audio/wav/render-plan.json'),'utf8'));
+const out=path.join(root,'api/audio/wav');
+const shard=Number(process.env.WAV_SHARD||0),shards=Number(process.env.WAV_SHARDS||1);
+let jobs=plan.jobs.filter((_,i)=>i%shards===shard);
+if(process.env.WAV_LIMIT)jobs=jobs.slice(0,Number(process.env.WAV_LIMIT));
+const engine=fs.readFileSync(path.join(root,'api/audio/AudioEngine.js'),'utf8').replace(/const scheduleAheadSeconds =\s*this\.#isPhone\(\)\s*\? 1\.8\s*: 2\.6;/,'const scheduleAheadSeconds = 120;');
+const server=http.createServer((req,res)=>{const file=path.resolve(root,'.'+new URL(req.url,'http://local').pathname);if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(file,(e,b)=>{if(e){res.writeHead(404).end();return;}res.end(b);});});
+function wav(channels){const frames=channels[0].length,b=Buffer.alloc(44+frames*4);b.write('RIFF');b.writeUInt32LE(b.length-8,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(2,22);b.writeUInt32LE(44100,24);b.writeUInt32LE(176400,28);b.writeUInt16LE(4,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(frames*4,40);let peak=0,last=0;for(const a of channels)for(let i=0;i<frames;i++){assert(Number.isFinite(a[i]));peak=Math.max(peak,Math.abs(a[i]));if(Math.abs(a[i])>.000025)last=Math.max(last,i);}assert(peak>.00001,'Silent render');const gain=Math.min(1,.78/peak);for(let i=0;i<frames;i++)for(let c=0;c<2;c++)b.writeInt16LE(Math.round(Math.max(-1,Math.min(1,channels[c][i]*gain))*32767),44+(i*2+c)*2);const end=Math.min(frames,last+4410);const result=b.subarray(0,44+end*4);result.writeUInt32LE(result.length-8,4);result.writeUInt32LE(end*4,40);return{bytes:result,seconds:end/44100,peak:peak*gain};}
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({headless:true});let cursor=0,done=0;
+try{await Promise.all(Array.from({length:Number(process.env.WAV_WORKERS||3)},async()=>{while(cursor<jobs.length){const job=jobs[cursor++],file=path.join(out,job.key+'.wav');if(fs.existsSync(file)&&fs.existsSync(file+'.json')){done++;continue;}
+const p=await browser.newPage();try{await p.goto('http://127.0.0.1:'+server.address().port+'/api/audio/.htaccess');
+await p.evaluate(job=>{for(const d of Object.values(job.instruments))delete d.phoneFallback;globalThis.catalog={instruments:job.instruments,songs:{[job.name]:job.score}};const nativeFetch=globalThis.fetch;globalThis.fetch=u=>(String(u)==='api/audio/'||String(u).includes('catalog.json'))?Promise.resolve({ok:true,json:async()=>catalog}):nativeFetch(new URL(u,location.origin+'/').href);globalThis.setTimeout=()=>1;globalThis.clearTimeout=()=>{};globalThis.AudioContext=class extends OfflineAudioContext{constructor(){super(2,Math.ceil(44100*(globalThis.WMOFAudio.songTiming(job.score,{toneVelocity:job.speed}).durationMs/1000+15)),44100);globalThis.renderContext=this;}resume(){return Promise.resolve();}};},job);
+await p.addScriptTag({content:engine});
+const result=await p.evaluate(async job=>{const timing=WMOFAudio.songTiming(job.score,{toneVelocity:job.speed});await WMOFAudio.startSong(job.name,{toneVelocity:job.speed,includeSpeech:false,useSelectedInstrument:false,normalizeLoudness:job.theme!=='halloween'});const b=await renderContext.startRendering();return{timing,channels:[0,1].map(c=>{const a=new Uint8Array(b.getChannelData(c).buffer);let s='';for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode(...a.subarray(i,i+8192));return btoa(s);})};},job);
+const channels=result.channels.map(s=>{const b=Buffer.from(s,'base64');return new Float32Array(b.buffer.slice(b.byteOffset,b.byteOffset+b.length));});const rendered=wav(channels);fs.writeFileSync(file+'.tmp',rendered.bytes);fs.renameSync(file+'.tmp',file);fs.writeFileSync(file+'.json',JSON.stringify({seconds:rendered.seconds,peak:rendered.peak,timing:result.timing})+'\n');done++;if(done%20===0)console.log(done+'/'+jobs.length+' recordings ready');
+}catch(e){throw Error(job.name+' / '+job.profile+' / '+job.speed+': '+e.stack);}finally{await p.close();}
+}}));console.log(JSON.stringify({shard,recordings:done}));}finally{await browser.close();server.close();}})().catch(e=>{console.error(e);server.close();process.exitCode=1;});
+
+
+

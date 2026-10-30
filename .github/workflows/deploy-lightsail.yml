@@ -11,6 +11,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  wav-library:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+        working-directory: tests
+      - run: npx playwright install --with-deps chromium
+        working-directory: tests
+      - uses: actions/cache@v4
+        with:
+          path: api/audio/wav
+          key: wav-v1-${{ matrix.shard }}-${{ hashFiles('api/audio/AudioEngine.js', 'api/audio/catalog.json', 'api/audio/halloween.json', 'scripts/render-wav-library.cjs') }}
+          restore-keys: wav-v1-${{ matrix.shard }}-
+      - run: node scripts/build-wav-catalogs.cjs
+      - name: Render immutable WAV recordings
+        run: node scripts/render-wav-library.cjs
+        env:
+          WAV_SHARD: ${{ matrix.shard }}
+          WAV_SHARDS: 4
+          WAV_WORKERS: 2
+      - name: Package this shard
+        env:
+          WAV_SHARD: ${{ matrix.shard }}
+        run: |
+          node -e "const fs=require('fs'),p=require('./api/audio/wav/render-plan.json');fs.writeFileSync('wav-files.txt',p.jobs.filter((_,i)=>i%4===Number(process.env.WAV_SHARD)).map(j=>'api/audio/wav/'+j.key+'.wav').join('\n')+'\n')"
+          tar -czf wav-${WAV_SHARD}.tgz -T wav-files.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wav-library-${{ matrix.shard }}
+          path: wav-*.tgz
+          compression-level: 0
+          retention-days: 7
   server-speech-tests:
     uses: ./.github/workflows/speech-server.yml
   speech-tests:
@@ -66,6 +105,8 @@ jobs:
           node tests/halloween-idle-audio.cjs
           node tests/seasonal-song-timing.mjs
           node tests/audio-sample-cache.mjs
+          node tests/audio-gesture-order.mjs
+          node tests/theme-audio-config.mjs
           node tests/neon-countdown-song.mjs
           node tests/cinematic-robot-pulse.mjs
           node tests/beat-tempo-ramp.mjs
@@ -157,8 +198,15 @@ jobs:
           node tests/speech-chain-actions.mjs
   settings-browser:
     runs-on: ubuntu-latest
+    needs: [wav-library]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wav-library-*
+          path: wav-release
+          merge-multiple: true
+      - run: for shard in wav-release/wav-*.tgz; do tar -xzf "$shard"; done
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -170,6 +218,8 @@ jobs:
       - run: node tests/halloween-theme-browser.cjs
       - run: node tests/halloween-keypad-browser.cjs
       - run: node tests/halloween-trip-playback-browser.cjs
+      - run: node scripts/verify-wav-library.cjs
+      - run: node tests/announcement-real-engine-browser.cjs
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
@@ -262,10 +312,15 @@ jobs:
           CLOCKTIMER_TEST_PASSWORD: clocktimer-test
   deploy:
     if: github.ref == 'refs/heads/web-speech-experiment'
-    needs: [speech-tests, settings-browser, break-session-backend, server-speech-tests]
+    needs: [speech-tests, settings-browser, break-session-backend, server-speech-tests, wav-library]
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wav-library-*
+          path: wav-release
+          merge-multiple: true
       - name: Configure SSH
         shell: bash
         env:
@@ -281,6 +336,17 @@ jobs:
 
           ssh-keyscan -H "$LAMP_HOST" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+
+      - name: Stage WAV library before activating code
+        shell: bash
+        env:
+          LAMP_HOST: ${{ secrets.LAMP_HOST }}
+          LAMP_USER: ${{ secrets.LAMP_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/id_ed25519 "$LAMP_USER@$LAMP_HOST" 'mkdir -p /tmp/clocktimer-wav-release'
+          scp -i ~/.ssh/id_ed25519 wav-release/*.tgz "$LAMP_USER@$LAMP_HOST:/tmp/clocktimer-wav-release/"
+          ssh -i ~/.ssh/id_ed25519 "$LAMP_USER@$LAMP_HOST" 'set -e; cd /opt/bitnami/apache2/htdocs; mkdir -p api/audio/wav; for shard in /tmp/clocktimer-wav-release/wav-*.tgz; do tar -xzf "$shard"; done'
 
       - name: Deploy ClockTimer
         shell: bash

@@ -1803,7 +1803,7 @@
         "action": "enable Halloween in Settings > Themes, then disable it"
       },
       "expect": {
-        "enabled": "palette, pumpkin, skeleton, five-note held keypad and approved seasonal event songs change together",
+        "enabled": "palette, pumpkin, skeleton, four-octave positional held keypad and approved seasonal event songs change together",
         "disabled": "normal colors, avatar and sounds return",
         "savedClockColors": "unchanged",
         "tripAccounting": "unchanged",

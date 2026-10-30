@@ -1,0 +1,1435 @@
+{
+  "version": 1,
+  "theme": "default",
+  "profile": "cinematic-robot-pulse",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1c221a0ae1757445f8abc61b.wav",
+          "key": "1c221a0ae1757445f8abc61b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/7f1423c0f22a57eb34c96546.wav",
+          "key": "7f1423c0f22a57eb34c96546"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3caed617564c34e45b175e00.wav",
+          "key": "3caed617564c34e45b175e00"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c7efe272045bfa649a19f578.wav",
+          "key": "c7efe272045bfa649a19f578"
+        },
+        "0.8": {
+          "url": "api/audio/wav/82de95e646a8a813ea81801d.wav",
+          "key": "82de95e646a8a813ea81801d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/feffedc13ab7900461e45c21.wav",
+          "key": "feffedc13ab7900461e45c21"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0b0a8a0607a09306ebe67a82.wav",
+          "key": "0b0a8a0607a09306ebe67a82"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e5b66675e06a175bf22ca63c.wav",
+          "key": "e5b66675e06a175bf22ca63c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/994a4583819277425f99e138.wav",
+          "key": "994a4583819277425f99e138"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e01c7382df2f1d5218c79be5.wav",
+          "key": "e01c7382df2f1d5218c79be5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/210fc7a66e7ac443bfe508d4.wav",
+          "key": "210fc7a66e7ac443bfe508d4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/17cca652f7167142e3802d79.wav",
+          "key": "17cca652f7167142e3802d79"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c556884d031485edeae277ab.wav",
+          "key": "c556884d031485edeae277ab"
+        },
+        "0.8": {
+          "url": "api/audio/wav/acc4076e9789583b59d697bc.wav",
+          "key": "acc4076e9789583b59d697bc"
+        },
+        "1.2": {
+          "url": "api/audio/wav/be8a0cda190dddb7ad6a1d17.wav",
+          "key": "be8a0cda190dddb7ad6a1d17"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0285bd10a1adda666b906955.wav",
+          "key": "0285bd10a1adda666b906955"
+        },
+        "0.8": {
+          "url": "api/audio/wav/524474114a4ec28cd54ec4d3.wav",
+          "key": "524474114a4ec28cd54ec4d3"
+        },
+        "1.2": {
+          "url": "api/audio/wav/738cc551f68b2504517d1904.wav",
+          "key": "738cc551f68b2504517d1904"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3583d024d8c4e902fcf0cbeb.wav",
+          "key": "3583d024d8c4e902fcf0cbeb"
+        },
+        "0.8": {
+          "url": "api/audio/wav/6f480c6e86c8cc658844526a.wav",
+          "key": "6f480c6e86c8cc658844526a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/08188529dd0122afeef3ba8e.wav",
+          "key": "08188529dd0122afeef3ba8e"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/7dbd8e0281f223630eab4d35.wav",
+          "key": "7dbd8e0281f223630eab4d35"
+        },
+        "0.8": {
+          "url": "api/audio/wav/ecd721d5960458039eb80c17.wav",
+          "key": "ecd721d5960458039eb80c17"
+        },
+        "1.2": {
+          "url": "api/audio/wav/50bfc4cba7ef55f460da3818.wav",
+          "key": "50bfc4cba7ef55f460da3818"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ecf8b20c6108615d9083910f.wav",
+          "key": "ecf8b20c6108615d9083910f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/af44ce67d225a998b603c650.wav",
+          "key": "af44ce67d225a998b603c650"
+        },
+        "1.2": {
+          "url": "api/audio/wav/23c40f24b26a977ff6976e89.wav",
+          "key": "23c40f24b26a977ff6976e89"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/f2548a107d7ff12800bb3ae8.wav",
+          "key": "f2548a107d7ff12800bb3ae8"
+        },
+        "0.8": {
+          "url": "api/audio/wav/636e46f07e0932b88182c537.wav",
+          "key": "636e46f07e0932b88182c537"
+        },
+        "1.2": {
+          "url": "api/audio/wav/10cec273e378415379218d6f.wav",
+          "key": "10cec273e378415379218d6f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/5cb3d34792c96a783aed8e7b.wav",
+          "key": "5cb3d34792c96a783aed8e7b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/ee6506213cc8df67ac0a1c2f.wav",
+          "key": "ee6506213cc8df67ac0a1c2f"
+        },
+        "1.2": {
+          "url": "api/audio/wav/135677ae884a430ed3e20b7b.wav",
+          "key": "135677ae884a430ed3e20b7b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-out": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/f2548a107d7ff12800bb3ae8.wav",
+          "key": "f2548a107d7ff12800bb3ae8"
+        },
+        "0.8": {
+          "url": "api/audio/wav/636e46f07e0932b88182c537.wav",
+          "key": "636e46f07e0932b88182c537"
+        },
+        "1.2": {
+          "url": "api/audio/wav/10cec273e378415379218d6f.wav",
+          "key": "10cec273e378415379218d6f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-in": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/f2548a107d7ff12800bb3ae8.wav",
+          "key": "f2548a107d7ff12800bb3ae8"
+        },
+        "0.8": {
+          "url": "api/audio/wav/636e46f07e0932b88182c537.wav",
+          "key": "636e46f07e0932b88182c537"
+        },
+        "1.2": {
+          "url": "api/audio/wav/10cec273e378415379218d6f.wav",
+          "key": "10cec273e378415379218d6f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a18c516344b3e53598962de0.wav",
+          "key": "a18c516344b3e53598962de0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4804f346ec8f34bc2aca4379.wav",
+          "key": "4804f346ec8f34bc2aca4379"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a61f981cc986e0a920f52ad9.wav",
+          "key": "a61f981cc986e0a920f52ad9"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a18c516344b3e53598962de0.wav",
+          "key": "a18c516344b3e53598962de0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4804f346ec8f34bc2aca4379.wav",
+          "key": "4804f346ec8f34bc2aca4379"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a61f981cc986e0a920f52ad9.wav",
+          "key": "a61f981cc986e0a920f52ad9"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-late": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a18c516344b3e53598962de0.wav",
+          "key": "a18c516344b3e53598962de0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4804f346ec8f34bc2aca4379.wav",
+          "key": "4804f346ec8f34bc2aca4379"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a61f981cc986e0a920f52ad9.wav",
+          "key": "a61f981cc986e0a920f52ad9"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0b0a8a0607a09306ebe67a82.wav",
+          "key": "0b0a8a0607a09306ebe67a82"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e5b66675e06a175bf22ca63c.wav",
+          "key": "e5b66675e06a175bf22ca63c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/994a4583819277425f99e138.wav",
+          "key": "994a4583819277425f99e138"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "short-break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0b0a8a0607a09306ebe67a82.wav",
+          "key": "0b0a8a0607a09306ebe67a82"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e5b66675e06a175bf22ca63c.wav",
+          "key": "e5b66675e06a175bf22ca63c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/994a4583819277425f99e138.wav",
+          "key": "994a4583819277425f99e138"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0b0a8a0607a09306ebe67a82.wav",
+          "key": "0b0a8a0607a09306ebe67a82"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e5b66675e06a175bf22ca63c.wav",
+          "key": "e5b66675e06a175bf22ca63c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/994a4583819277425f99e138.wav",
+          "key": "994a4583819277425f99e138"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e01c7382df2f1d5218c79be5.wav",
+          "key": "e01c7382df2f1d5218c79be5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/210fc7a66e7ac443bfe508d4.wav",
+          "key": "210fc7a66e7ac443bfe508d4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/17cca652f7167142e3802d79.wav",
+          "key": "17cca652f7167142e3802d79"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-automatically": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e01c7382df2f1d5218c79be5.wav",
+          "key": "e01c7382df2f1d5218c79be5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/210fc7a66e7ac443bfe508d4.wav",
+          "key": "210fc7a66e7ac443bfe508d4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/17cca652f7167142e3802d79.wav",
+          "key": "17cca652f7167142e3802d79"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-after-break": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e01c7382df2f1d5218c79be5.wav",
+          "key": "e01c7382df2f1d5218c79be5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/210fc7a66e7ac443bfe508d4.wav",
+          "key": "210fc7a66e7ac443bfe508d4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/17cca652f7167142e3802d79.wav",
+          "key": "17cca652f7167142e3802d79"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-ended": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0b0a8a0607a09306ebe67a82.wav",
+          "key": "0b0a8a0607a09306ebe67a82"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e5b66675e06a175bf22ca63c.wav",
+          "key": "e5b66675e06a175bf22ca63c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/994a4583819277425f99e138.wav",
+          "key": "994a4583819277425f99e138"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/eb3b6c09d366ca8d8cacaf05.wav",
+          "key": "eb3b6c09d366ca8d8cacaf05"
+        },
+        "0.8": {
+          "url": "api/audio/wav/508929c7c69777cbd8b79bed.wav",
+          "key": "508929c7c69777cbd8b79bed"
+        },
+        "1.2": {
+          "url": "api/audio/wav/afb90b29540b1a29b3610602.wav",
+          "key": "afb90b29540b1a29b3610602"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "down-time-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c08e87a72be0a26b2409c44f.wav",
+          "key": "c08e87a72be0a26b2409c44f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/93b7cc01d459c219ca843bd0.wav",
+          "key": "93b7cc01d459c219ca843bd0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4719f931aa29c49d692fd0e0.wav",
+          "key": "4719f931aa29c49d692fd0e0"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-from-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/7dbd8e0281f223630eab4d35.wav",
+          "key": "7dbd8e0281f223630eab4d35"
+        },
+        "0.8": {
+          "url": "api/audio/wav/ecd721d5960458039eb80c17.wav",
+          "key": "ecd721d5960458039eb80c17"
+        },
+        "1.2": {
+          "url": "api/audio/wav/50bfc4cba7ef55f460da3818.wav",
+          "key": "50bfc4cba7ef55f460da3818"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "goal-failed": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c08e87a72be0a26b2409c44f.wav",
+          "key": "c08e87a72be0a26b2409c44f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/93b7cc01d459c219ca843bd0.wav",
+          "key": "93b7cc01d459c219ca843bd0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4719f931aa29c49d692fd0e0.wav",
+          "key": "4719f931aa29c49d692fd0e0"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-on": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/5cb3d34792c96a783aed8e7b.wav",
+          "key": "5cb3d34792c96a783aed8e7b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/ee6506213cc8df67ac0a1c2f.wav",
+          "key": "ee6506213cc8df67ac0a1c2f"
+        },
+        "1.2": {
+          "url": "api/audio/wav/135677ae884a430ed3e20b7b.wav",
+          "key": "135677ae884a430ed3e20b7b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-off": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2/3",
+          "tone": "C2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/5390a3cd8acb0dd04d77e864.wav",
+          "key": "5390a3cd8acb0dd04d77e864"
+        },
+        "0.8": {
+          "url": "api/audio/wav/00a2cf0b5ad84d654df61e4e.wav",
+          "key": "00a2cf0b5ad84d654df61e4e"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7696326395b73a724ab86344.wav",
+          "key": "7696326395b73a724ab86344"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-unchanged": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0daf552652cc2264cf2fc2f2.wav",
+          "key": "0daf552652cc2264cf2fc2f2"
+        },
+        "0.8": {
+          "url": "api/audio/wav/86029c4414332fb03c4a3a95.wav",
+          "key": "86029c4414332fb03c4a3a95"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f95ee390e1a6c5a5a623c5f5.wav",
+          "key": "f95ee390e1a6c5a5a623c5f5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-activated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/2a3caab0af19a67901fde497.wav",
+          "key": "2a3caab0af19a67901fde497"
+        },
+        "0.8": {
+          "url": "api/audio/wav/35adb9200f38ed2919930c6a.wav",
+          "key": "35adb9200f38ed2919930c6a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b87f28eed31e6a71205407b8.wav",
+          "key": "b87f28eed31e6a71205407b8"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-deactivated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/324d227cc435d7262b44d75e.wav",
+          "key": "324d227cc435d7262b44d75e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/02e442962ea851c13c3e921a.wav",
+          "key": "02e442962ea851c13c3e921a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f1aa10d6b9dce004592bb287.wav",
+          "key": "f1aa10d6b9dce004592bb287"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "observer-message": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E6",
+          "length": "2/3",
+          "dynamic": "f",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "3/2",
+          "dynamic": "f",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6bf6c0f0adb7367a7a2e0af9.wav",
+          "key": "6bf6c0f0adb7367a7a2e0af9"
+        },
+        "0.8": {
+          "url": "api/audio/wav/14bbd2d154ac9b8b0700af2d.wav",
+          "key": "14bbd2d154ac9b8b0700af2d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/681331e057f25eabf57d5792.wav",
+          "key": "681331e057f25eabf57d5792"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "speech-rejected": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "0",
+          "tone": "D#2",
+          "length": "1/2",
+          "dynamic": "pp",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a7fd509a3afc470df9679c4b.wav",
+          "key": "a7fd509a3afc470df9679c4b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8a7a4dd2019da0d9383601a0.wav",
+          "key": "8a7a4dd2019da0d9383601a0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/aba7ec9c5e822075e5b0206d.wav",
+          "key": "aba7ec9c5e822075e5b0206d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/614f27a9d24adb530602936c.wav",
+          "key": "614f27a9d24adb530602936c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/01e7ac98196dd394d45b846d.wav",
+          "key": "01e7ac98196dd394d45b846d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/95191da761e727f35a316496.wav",
+          "key": "95191da761e727f35a316496"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "scope-change": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "2/3",
+          "tone": "E2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        },
+        {
+          "offset": "1 1/3",
+          "tone": "D2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "cinematic-robot-pulse"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/445195cebd4a8096745957ec.wav",
+          "key": "445195cebd4a8096745957ec"
+        },
+        "0.8": {
+          "url": "api/audio/wav/f3fc1f7246eec376ad55337c.wav",
+          "key": "f3fc1f7246eec376ad55337c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3e15710d2ff72b63d766c508.wav",
+          "key": "3e15710d2ff72b63d766c508"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}

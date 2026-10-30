@@ -1,0 +1,3767 @@
+{
+  "version": 1,
+  "instruments": {
+    "legacy-square": {
+      "type": "oscillator",
+      "waveform": "square",
+      "volume": 1,
+      "displayName": "Legacy Square"
+    },
+    "eighties-poly": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.78,
+      "detune": 0,
+      "velocitySensitivity": 0.9,
+      "envelope": {
+        "attack": 0.035,
+        "decay": 0.24,
+        "sustain": 0.72,
+        "release": 0.55
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.68,
+          "detune": -6,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.32,
+          "detune": 6,
+          "waveform": "square"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 4200,
+        "Q": 0.85,
+        "envelopeAmount": 900
+      },
+      "reverb": {
+        "wet": 0.18,
+        "decay": 1.8
+      },
+      "delay": {
+        "time": 0.22,
+        "feedback": 0.24,
+        "wet": 0.16
+      },
+      "tremolo": {
+        "rate": 5.2,
+        "depth": 0.06
+      },
+      "distortion": {
+        "amount": 0.04
+      },
+      "trillStep": "1/8",
+      "displayName": "80s Poly"
+    },
+    "cinematic-pulse-bass": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.82,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Cinematic Pulse Bass"
+    },
+    "cinematic-pulse-bass-phone": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.58,
+      "detune": 0,
+      "velocitySensitivity": 0.72,
+      "envelope": {
+        "attack": 0.022,
+        "decay": 0.34,
+        "sustain": 0.48,
+        "release": 0.22
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.42,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.42,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.12,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1450,
+        "Q": 0.75,
+        "envelopeAmount": 1200
+      },
+      "pitchEnvelope": {
+        "amount": 8,
+        "attack": 0,
+        "decay": 0.06
+      },
+      "reverb": {
+        "wet": 0.04,
+        "decay": 0.9
+      },
+      "delay": {
+        "time": 0.15,
+        "feedback": 0.08,
+        "wet": 0.035
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.018
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse Bass (Phone)"
+    },
+    "warm-chorus-poly": {
+      "displayName": "Warm Chorus Poly",
+      "type": "oscillator",
+      "waveform": "triangle",
+      "volume": 1.18,
+      "detune": 0,
+      "velocitySensitivity": 0.55,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.26,
+        "sustain": 0.72,
+        "release": 0.42
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.48,
+          "detune": -6,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.48,
+          "detune": 6,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.18,
+          "detune": 0,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.1,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 2650,
+        "Q": 0.62,
+        "envelopeAmount": 720
+      },
+      "pitchEnvelope": {
+        "amount": 3,
+        "attack": 0,
+        "decay": 0.07
+      },
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.45
+      },
+      "delay": {
+        "time": 0.095,
+        "feedback": 0.08,
+        "wet": 0.075
+      },
+      "tremolo": {
+        "rate": 4.7,
+        "depth": 0.035
+      },
+      "distortion": {
+        "amount": 0.028
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8"
+    },
+    "eighties-drum-kick": {
+      "displayName": "80s Drum Kick",
+      "type": "oscillator",
+      "waveform": "sine",
+      "volume": 0.98,
+      "detune": 0,
+      "velocitySensitivity": 0.35,
+      "envelope": {
+        "attack": 0.001,
+        "decay": 0.14,
+        "sustain": 0.04,
+        "release": 0.08
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.82,
+          "detune": 0,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.12,
+          "detune": 0,
+          "waveform": "triangle"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1650,
+        "Q": 0.7,
+        "envelopeAmount": 900
+      },
+      "pitchEnvelope": {
+        "amount": 760,
+        "attack": 0,
+        "decay": 0.075
+      },
+      "reverb": {
+        "wet": 0.025,
+        "decay": 0.45
+      },
+      "delay": {
+        "time": 0.08,
+        "feedback": 0.03,
+        "wet": 0.015
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0.045,
+        "decay": 0.025
+      },
+      "trillStep": "1/8"
+    },
+    "gated-snare": {
+      "displayName": "Gated Snare",
+      "type": "oscillator",
+      "waveform": "triangle",
+      "volume": 0.94,
+      "detune": 0,
+      "velocitySensitivity": 0.32,
+      "envelope": {
+        "attack": 0.001,
+        "decay": 0.11,
+        "sustain": 0.025,
+        "release": 0.1
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.13,
+          "detune": 0,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 1.47,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "highpass",
+        "frequency": 720,
+        "Q": 0.55,
+        "envelopeAmount": 0
+      },
+      "pitchEnvelope": {
+        "amount": 90,
+        "attack": 0,
+        "decay": 0.05
+      },
+      "reverb": {
+        "wet": 0.22,
+        "decay": 0.62
+      },
+      "delay": {
+        "time": 0.105,
+        "feedback": 0.06,
+        "wet": 0.025
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.075
+      },
+      "noise": {
+        "amount": 0.92,
+        "decay": 0.16
+      },
+      "trillStep": "1/8"
+    },
+    "electro-tom": {
+      "displayName": "Electro Tom",
+      "type": "oscillator",
+      "waveform": "triangle",
+      "volume": 0.93,
+      "detune": 0,
+      "velocitySensitivity": 0.42,
+      "envelope": {
+        "attack": 0.001,
+        "decay": 0.19,
+        "sustain": 0.06,
+        "release": 0.12
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.68,
+          "detune": 0,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.16,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 2100,
+        "Q": 0.9,
+        "envelopeAmount": 700
+      },
+      "pitchEnvelope": {
+        "amount": 310,
+        "attack": 0,
+        "decay": 0.13
+      },
+      "reverb": {
+        "wet": 0.09,
+        "decay": 0.8
+      },
+      "delay": {
+        "time": 0.12,
+        "feedback": 0.06,
+        "wet": 0.025
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.045
+      },
+      "noise": {
+        "amount": 0.08,
+        "decay": 0.055
+      },
+      "trillStep": "1/8"
+    },
+    "breathy-flute": {
+      "displayName": "Breathy Flute",
+      "type": "oscillator",
+      "waveform": "triangle",
+      "volume": 0.88,
+      "detune": 0,
+      "velocitySensitivity": 0.58,
+      "envelope": {
+        "attack": 0.045,
+        "decay": 0.24,
+        "sustain": 0.78,
+        "release": 0.36
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.58,
+          "detune": -2,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.24,
+          "detune": 2,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 3900,
+        "Q": 0.52,
+        "envelopeAmount": 450
+      },
+      "pitchEnvelope": {
+        "amount": 8,
+        "attack": 0.035,
+        "decay": 0.11
+      },
+      "reverb": {
+        "wet": 0.16,
+        "decay": 1.55
+      },
+      "delay": {
+        "time": 0.16,
+        "feedback": 0.12,
+        "wet": 0.07
+      },
+      "tremolo": {
+        "rate": 5.1,
+        "depth": 0.045
+      },
+      "distortion": {
+        "amount": 0.005
+      },
+      "noise": {
+        "amount": 0.075,
+        "decay": 0.12
+      },
+      "trillStep": "1/8"
+    },
+    "digital-reed": {
+      "displayName": "Digital Reed",
+      "type": "oscillator",
+      "waveform": "square",
+      "volume": 0.91,
+      "detune": 0,
+      "velocitySensitivity": 0.62,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.21,
+        "sustain": 0.68,
+        "release": 0.29
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.42,
+          "detune": -3,
+          "waveform": "square"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.28,
+          "detune": 3,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.11,
+          "detune": 0,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 3,
+          "gain": 0.055,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 3300,
+        "Q": 1.05,
+        "envelopeAmount": 780
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0.02,
+        "decay": 0.09
+      },
+      "reverb": {
+        "wet": 0.1,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.135,
+        "feedback": 0.13,
+        "wet": 0.075
+      },
+      "tremolo": {
+        "rate": 4.6,
+        "depth": 0.025
+      },
+      "distortion": {
+        "amount": 0.018
+      },
+      "noise": {
+        "amount": 0.025,
+        "decay": 0.06
+      },
+      "trillStep": "1/8"
+    },
+    "synth-brass-stab": {
+      "displayName": "Synth Brass Stab",
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.86,
+      "detune": 0,
+      "velocitySensitivity": 0.54,
+      "envelope": {
+        "attack": 0.007,
+        "decay": 0.22,
+        "sustain": 0.48,
+        "release": 0.2
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.38,
+          "detune": -7,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.38,
+          "detune": 7,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.1,
+          "detune": 0,
+          "waveform": "square"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 2250,
+        "Q": 0.95,
+        "envelopeAmount": 2250
+      },
+      "pitchEnvelope": {
+        "amount": 5,
+        "attack": 0,
+        "decay": 0.055
+      },
+      "reverb": {
+        "wet": 0.075,
+        "decay": 0.95
+      },
+      "delay": {
+        "time": 0.11,
+        "feedback": 0.07,
+        "wet": 0.035
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.035
+      },
+      "noise": {
+        "amount": 0.01,
+        "decay": 0.025
+      },
+      "trillStep": "1/8"
+    },
+    "easter-egg-sub-bass": {
+      "type": "oscillator",
+      "waveform": "sine",
+      "volume": 0.48,
+      "displayName": "Easter Egg Sub Bass",
+      "velocitySensitivity": 0.75,
+      "envelope": {
+        "attack": 0.008,
+        "decay": 0.15,
+        "sustain": 0.65,
+        "release": 0.08
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.8,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.18,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 3,
+          "gain": 0.06,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 800,
+        "Q": 0.7
+      }
+    },
+    "easter-egg-tuba": {
+      "displayName": "Easter Egg Tuba",
+      "type": "oscillator",
+      "waveform": "sine",
+      "volume": 3.4,
+      "velocitySensitivity": 0.7,
+      "envelope": {
+        "attack": 0.045,
+        "decay": 0.14,
+        "sustain": 0.88,
+        "release": 0.16
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.0309,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.0942,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 3,
+          "gain": 0.1413,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 4,
+          "gain": 0.144,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 5,
+          "gain": 0.2366,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 6,
+          "gain": 0.196,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 7,
+          "gain": 0.1093,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 8,
+          "gain": 0.031,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1750,
+        "Q": 0.55,
+        "envelopeAmount": 450
+      },
+      "pitchEnvelope": {
+        "amount": 2,
+        "attack": 0,
+        "decay": 0.06
+      },
+      "noise": {
+        "amount": 0.003,
+        "decay": 0.06
+      },
+      "reverb": {
+        "wet": 0.035,
+        "decay": 0.7
+      },
+      "tremolo": {
+        "rate": 4.4,
+        "depth": 0.012
+      },
+      "reference": {
+        "source": "https://theremin.music.uiowa.edu/MIStuba.html",
+        "basis": "Measured C2 mf spectrum and amplitude envelope; synthesis approximation, not sample playback."
+      }
+    },
+    "easter-egg-tuba-expressive": {
+      "displayName": "Tuba â€” Expressive Reference",
+      "type": "oscillator",
+      "waveform": "sine",
+      "volume": 3.4,
+      "velocitySensitivity": 0.7,
+      "envelope": {
+        "attack": 0.045,
+        "decay": 0.14,
+        "sustain": 0.88,
+        "release": 0.16
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.0309,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.055,
+            "decay": 0.16,
+            "sustain": 0.9,
+            "release": 0.18
+          }
+        },
+        {
+          "ratio": 2,
+          "gain": 0.0942,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.055,
+            "decay": 0.16,
+            "sustain": 0.9,
+            "release": 0.18
+          }
+        },
+        {
+          "ratio": 3,
+          "gain": 0.1413,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.9,
+            "release": 0.18
+          }
+        },
+        {
+          "ratio": 4,
+          "gain": 0.144,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.9,
+            "release": 0.12
+          }
+        },
+        {
+          "ratio": 5,
+          "gain": 0.2366,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.78,
+            "release": 0.12
+          }
+        },
+        {
+          "ratio": 6,
+          "gain": 0.196,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.78,
+            "release": 0.12
+          }
+        },
+        {
+          "ratio": 7,
+          "gain": 0.1093,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.78,
+            "release": 0.12
+          }
+        },
+        {
+          "ratio": 8,
+          "gain": 0.031,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.78,
+            "release": 0.12
+          }
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1750,
+        "Q": 0.55,
+        "envelopeAmount": 450
+      },
+      "pitchEnvelope": {
+        "amount": 2,
+        "attack": 0,
+        "decay": 0.06
+      },
+      "noise": {
+        "amount": 0.003,
+        "decay": 0.06
+      },
+      "reverb": {
+        "wet": 0.035,
+        "decay": 0.7
+      },
+      "tremolo": {
+        "rate": 4.4,
+        "depth": 0.012
+      },
+      "reference": {
+        "source": "https://theremin.music.uiowa.edu/MIStuba.html",
+        "basis": "Measured C2 mf spectrum and amplitude envelope; synthesis approximation, not sample playback."
+      },
+      "class": "expressive",
+      "variation": {
+        "seed": 41,
+        "gain": 0.018,
+        "detuneCents": 1.5
+      },
+      "velocityTone": {
+        "brightness": 0.12,
+        "filterOctaves": 0.12
+      },
+      "excitation": {
+        "amount": 0.003,
+        "decay": 0.06
+      }
+    },
+    "steelpan-expressive": {
+      "displayName": "Steel Pan â€” Expressive Preview",
+      "class": "expressive",
+      "type": "oscillator",
+      "waveform": "sine",
+      "volume": 2.4,
+      "velocitySensitivity": 0.8,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0.3
+      },
+      "partials": [
+        {
+          "ratio": 1.0047,
+          "gain": 0.325,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.002,
+            "decay": 0.34,
+            "sustain": 0,
+            "release": 0.3
+          }
+        },
+        {
+          "ratio": 1.9985,
+          "gain": 0.175,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.002,
+            "decay": 0.2,
+            "sustain": 0,
+            "release": 0.2
+          }
+        },
+        {
+          "ratio": 2.9868,
+          "gain": 0.14,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.002,
+            "decay": 0.12,
+            "sustain": 0,
+            "release": 0.1
+          }
+        },
+        {
+          "ratio": 4.0079,
+          "gain": 0.275,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.002,
+            "decay": 0.08,
+            "sustain": 0,
+            "release": 0.08
+          }
+        },
+        {
+          "ratio": 8.0158,
+          "gain": 0.046,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.002,
+            "decay": 0.035,
+            "sustain": 0,
+            "release": 0.035
+          }
+        },
+        {
+          "ratio": 2.30136,
+          "gain": 0.025,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.002,
+            "decay": 0.025,
+            "sustain": 0,
+            "release": 0.025
+          }
+        }
+      ],
+      "excitation": {
+        "amount": 0.012,
+        "decay": 0.012
+      },
+      "variation": {
+        "seed": 19,
+        "gain": 0.025,
+        "detuneCents": 1.2
+      },
+      "velocityTone": {
+        "brightness": 0.15
+      },
+      "repeatDamping": {
+        "release": 0.018
+      },
+      "filter": {
+        "type": "lowpass",
+        "frequency": 5200,
+        "Q": 0.5
+      },
+      "reverb": {
+        "wet": 0.04,
+        "decay": 0.5
+      },
+      "reference": {
+        "sources": [
+          "https://bitklavier.com/the-dunleavy-double-seconds/",
+          "https://code4fukui.github.io/web-steelpan/"
+        ],
+        "basis": "Experimental synthesis with independent mode decay, not sample playback; pending listening approval."
+      }
+    },
+    "easter-egg-lead-tuba": {
+      "displayName": "Easter Egg Lead Tuba",
+      "type": "oscillator",
+      "waveform": "sine",
+      "volume": 4.8,
+      "velocitySensitivity": 0.7,
+      "envelope": {
+        "attack": 0.045,
+        "decay": 0.14,
+        "sustain": 0.88,
+        "release": 0.16
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.0309,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.055,
+            "decay": 0.16,
+            "sustain": 0.9,
+            "release": 0.18
+          }
+        },
+        {
+          "ratio": 2,
+          "gain": 0.0942,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.055,
+            "decay": 0.16,
+            "sustain": 0.9,
+            "release": 0.18
+          }
+        },
+        {
+          "ratio": 3,
+          "gain": 0.1413,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.9,
+            "release": 0.18
+          }
+        },
+        {
+          "ratio": 4,
+          "gain": 0.144,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.9,
+            "release": 0.12
+          }
+        },
+        {
+          "ratio": 5,
+          "gain": 0.2366,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.78,
+            "release": 0.12
+          }
+        },
+        {
+          "ratio": 6,
+          "gain": 0.196,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.78,
+            "release": 0.12
+          }
+        },
+        {
+          "ratio": 7,
+          "gain": 0.1093,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.78,
+            "release": 0.12
+          }
+        },
+        {
+          "ratio": 8,
+          "gain": 0.031,
+          "waveform": "sine",
+          "envelope": {
+            "attack": 0.035,
+            "decay": 0.16,
+            "sustain": 0.78,
+            "release": 0.12
+          }
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1750,
+        "Q": 0.55,
+        "envelopeAmount": 450
+      },
+      "pitchEnvelope": {
+        "amount": 2,
+        "attack": 0,
+        "decay": 0.06
+      },
+      "noise": {
+        "amount": 0.003,
+        "decay": 0.06
+      },
+      "reverb": {
+        "wet": 0.035,
+        "decay": 0.7
+      },
+      "tremolo": {
+        "rate": 4.4,
+        "depth": 0.012
+      },
+      "reference": {
+        "source": "https://theremin.music.uiowa.edu/MIStuba.html",
+        "basis": "Measured C2 mf spectrum and amplitude envelope; synthesis approximation, not sample playback."
+      },
+      "class": "expressive",
+      "variation": {
+        "seed": 41,
+        "gain": 0.018,
+        "detuneCents": 1.5
+      },
+      "velocityTone": {
+        "brightness": 0.12,
+        "filterOctaves": 0.12
+      },
+      "excitation": {
+        "amount": 0.003,
+        "decay": 0.06
+      }
+    },
+    "easter-egg-steady-beat": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.64,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Easter Egg Steady Beat"
+    },
+    "easter-egg-lead-flute": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Easter Egg Recorded Flute",
+      "volume": 3,
+      "velocitySensitivity": 0.75,
+      "variation": {
+        "seed": 41,
+        "gain": 0.025,
+        "detuneCents": 0.5
+      },
+      "envelope": {
+        "attack": 0.005,
+        "decay": 0.12,
+        "sustain": 0.95,
+        "release": 0.13
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/flute-mf-C4.wav",
+          "rootFrequency": 261.6255653005986,
+          "loopStart": 0.45,
+          "loopEnd": 1.35
+        },
+        {
+          "url": "api/audio/samples/flute-mf-D4.wav",
+          "rootFrequency": 293.6647679174076,
+          "loopStart": 0.45,
+          "loopEnd": 1.35
+        },
+        {
+          "url": "api/audio/samples/flute-mf-Eb4.wav",
+          "rootFrequency": 311.1269837220809,
+          "loopStart": 0.45,
+          "loopEnd": 1.35
+        },
+        {
+          "url": "api/audio/samples/flute-mf-F4.wav",
+          "rootFrequency": 349.2282314330039,
+          "loopStart": 0.45,
+          "loopEnd": 1.35
+        },
+        {
+          "url": "api/audio/samples/flute-mf-G4.wav",
+          "rootFrequency": 391.99543598174927,
+          "loopStart": 0.45,
+          "loopEnd": 1.35
+        },
+        {
+          "url": "api/audio/samples/flute-mf-Ab4.wav",
+          "rootFrequency": 415.3046975799451,
+          "loopStart": 0.45,
+          "loopEnd": 1.35
+        },
+        {
+          "url": "api/audio/samples/flute-mf-Bb4.wav",
+          "rootFrequency": 466.1637615180899,
+          "loopStart": 0.45,
+          "loopEnd": 1.35
+        }
+      ],
+      "reference": {
+        "source": "https://theremin.music.uiowa.edu/MISflute.html",
+        "recording": "Sonja Feig, flute with vibrato, mf B3B4, April 2000, University of Iowa EMS",
+        "processing": "Individual notes extracted; crossfaded sustain loops preserve long phrases."
+      }
+    },
+    "easter-egg-featured-slides": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.64,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Easter Egg Featured Slides"
+    },
+    "easter-egg-lead-oboe": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Easter Egg Recorded Oboe",
+      "volume": 3,
+      "velocitySensitivity": 0.75,
+      "variation": {
+        "seed": 41,
+        "gain": 0.025,
+        "detuneCents": 0.5
+      },
+      "envelope": {
+        "attack": 0.005,
+        "decay": 0.12,
+        "sustain": 0.95,
+        "release": 0.48
+      },
+      "delay": {
+        "time": 0.135,
+        "feedback": 0.08,
+        "wet": 0.065
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/oboe-mf-C4.wav",
+          "rootFrequency": 260.1604621349153,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-D4.wav",
+          "rootFrequency": 294.28146393003414,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-Eb4.wav",
+          "rootFrequency": 310.53584245300897,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-F4.wav",
+          "rootFrequency": 348.8440803784276,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-G4.wav",
+          "rootFrequency": 393.17142228969453,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-Ab4.wav",
+          "rootFrequency": 415.0139842916392,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-Bb4.wav",
+          "rootFrequency": 466.5833089034562,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        }
+      ],
+      "reference": {
+        "source": "https://theremin.music.uiowa.edu/MISoboe.html",
+        "recording": "Kira Wharton, Howarth S5, July 23 1997, University of Iowa EMS",
+        "processing": "Individual mf notes; tuned root frequencies, crossfaded sustain loops."
+      }
+    },
+    "easter-egg-eighties-snare": {
+      "displayName": "Easter Egg 80s Digital Snare",
+      "type": "oscillator",
+      "waveform": "triangle",
+      "volume": 1.15,
+      "detune": 0,
+      "velocitySensitivity": 0.32,
+      "envelope": {
+        "attack": 0.001,
+        "decay": 0.085,
+        "sustain": 0.005,
+        "release": 0.07
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.13,
+          "detune": 0,
+          "waveform": "triangle"
+        },
+        {
+          "ratio": 1.47,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "highpass",
+        "frequency": 720,
+        "Q": 0.55,
+        "envelopeAmount": 0
+      },
+      "pitchEnvelope": {
+        "amount": 90,
+        "attack": 0,
+        "decay": 0.05
+      },
+      "reverb": {
+        "wet": 0.34,
+        "decay": 0.32
+      },
+      "delay": {
+        "time": 0.105,
+        "feedback": 0.06,
+        "wet": 0.025
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.13
+      },
+      "noise": {
+        "amount": 1.1,
+        "decay": 0.12
+      },
+      "trillStep": "1/8"
+    },
+    "easter-egg-eighties-kick": {
+      "displayName": "Easter Egg 80s Electronic Kick",
+      "type": "oscillator",
+      "waveform": "sine",
+      "volume": 1.15,
+      "detune": 0,
+      "velocitySensitivity": 0.35,
+      "envelope": {
+        "attack": 0.001,
+        "decay": 0.14,
+        "sustain": 0.04,
+        "release": 0.08
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.82,
+          "detune": 0,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.12,
+          "detune": 0,
+          "waveform": "triangle"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1650,
+        "Q": 0.7,
+        "envelopeAmount": 900
+      },
+      "pitchEnvelope": {
+        "amount": 950,
+        "attack": 0,
+        "decay": 0.055
+      },
+      "reverb": {
+        "wet": 0.025,
+        "decay": 0.45
+      },
+      "delay": {
+        "time": 0.08,
+        "feedback": 0.03,
+        "wet": 0.015
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.1
+      },
+      "noise": {
+        "amount": 0.075,
+        "decay": 0.016
+      },
+      "trillStep": "1/8"
+    },
+    "easter-egg-lead-shawm": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Easter Egg Shawm-Inspired Reed",
+      "volume": 2.9,
+      "velocitySensitivity": 0.75,
+      "variation": {
+        "seed": 41,
+        "gain": 0.025,
+        "detuneCents": 0.5
+      },
+      "envelope": {
+        "attack": 0.005,
+        "decay": 0.12,
+        "sustain": 0.95,
+        "release": 0.48
+      },
+      "delay": {
+        "time": 0.135,
+        "feedback": 0.08,
+        "wet": 0.065
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/shawm-model-C4.wav",
+          "rootFrequency": 260.1604621349153,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/shawm-model-D4.wav",
+          "rootFrequency": 294.28146393003414,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/shawm-model-Eb4.wav",
+          "rootFrequency": 310.53584245300897,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/shawm-model-F4.wav",
+          "rootFrequency": 348.8440803784276,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/shawm-model-G4.wav",
+          "rootFrequency": 393.17142228969453,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/shawm-model-Ab4.wav",
+          "rootFrequency": 415.0139842916392,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/shawm-model-Bb4.wav",
+          "rootFrequency": 466.5833089034562,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        }
+      ],
+      "reference": {
+        "source": "https://theremin.music.uiowa.edu/MISoboe.html",
+        "recording": "Derived from Kira Wharton oboe recordings, University of Iowa EMS, July 1997.",
+        "model": "Shawm-inspired approximation: broader reed harmonics, stronger upper-mid presence, mild nonlinear excitation and crossfaded sustain loops. Not a recording of a shawm.",
+        "release": "480 ms falling release per note."
+      }
+    },
+    "dark-breathy-reed": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark Breathy Reed",
+      "volume": 3.4,
+      "velocitySensitivity": 0.75,
+      "variation": {
+        "seed": 41,
+        "gain": 0.018,
+        "detuneCents": 0.65
+      },
+      "envelope": {
+        "attack": 0.024,
+        "decay": 0.16,
+        "sustain": 0.91,
+        "release": 0.52
+      },
+      "delay": {
+        "time": 0.135,
+        "feedback": 0.06,
+        "wet": 0.045
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/oboe-mf-C4.wav",
+          "rootFrequency": 260.1604621349153,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-D4.wav",
+          "rootFrequency": 294.28146393003414,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-Eb4.wav",
+          "rootFrequency": 310.53584245300897,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-F4.wav",
+          "rootFrequency": 348.8440803784276,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-G4.wav",
+          "rootFrequency": 393.17142228969453,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-Ab4.wav",
+          "rootFrequency": 415.0139842916392,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        },
+        {
+          "url": "api/audio/samples/oboe-mf-Bb4.wav",
+          "rootFrequency": 466.5833089034562,
+          "loopStart": 0.3,
+          "loopEnd": 0.95
+        }
+      ],
+      "reference": {
+        "source": "https://theremin.music.uiowa.edu/MISoboe.html",
+        "recording": "Kira Wharton, Howarth S5, July 23 1997, University of Iowa EMS",
+        "processing": "Dark reed candidate using recorded oboe sustain loops, softened upper harmonics, a breath-noise attack and 520 ms falling release."
+      },
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1650,
+        "Q": 0.55,
+        "envelopeAmount": 280
+      },
+      "excitation": {
+        "amount": 0.022,
+        "decay": 0.18
+      },
+      "velocityTone": {
+        "filterOctaves": 0.22
+      }
+    },
+    "jx3p-inspired-lead": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "JX-3P Inspired Rounded Lead",
+      "volume": 3.2,
+      "velocitySensitivity": 0.7,
+      "waveform": "sawtooth",
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.56,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.44,
+          "detune": 5,
+          "waveform": "square"
+        }
+      ],
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.24,
+        "sustain": 0.72,
+        "release": 0.46
+      },
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1200,
+        "Q": 0.85,
+        "envelopeAmount": 1300
+      },
+      "velocityTone": {
+        "filterOctaves": 0.3
+      },
+      "variation": {
+        "seed": 41,
+        "gain": 0.012,
+        "detuneCents": 0.2
+      },
+      "chorus": {
+        "rate": 0.65,
+        "delay": 0.016,
+        "depth": 0.0028,
+        "wet": 0.38
+      },
+      "reference": {
+        "source": "https://cdn.roland.com/assets/media/pdf/JX-3P_OM.pdf",
+        "model": "Inspired by dual-oscillator and chorus architecture. Web Audio approximation; not a hardware emulation or a factory preset."
+      }
+    },
+    "jx3p-inspired-trumpet": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "JX-3P Inspired Synth Trumpet",
+      "volume": 3.1,
+      "velocitySensitivity": 0.7,
+      "waveform": "sawtooth",
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.62,
+          "detune": -2,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.38,
+          "detune": 3,
+          "waveform": "sawtooth"
+        }
+      ],
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.19,
+        "sustain": 0.78,
+        "release": 0.3
+      },
+      "filter": {
+        "type": "lowpass",
+        "frequency": 1900,
+        "Q": 1.5,
+        "envelopeAmount": 2350
+      },
+      "velocityTone": {
+        "filterOctaves": 0.32
+      },
+      "variation": {
+        "seed": 41,
+        "gain": 0.012,
+        "detuneCents": 0.2
+      },
+      "chorus": {
+        "rate": 0.6,
+        "delay": 0.014,
+        "depth": 0.0018,
+        "wet": 0.19
+      },
+      "reference": {
+        "source": "https://cdn.roland.com/assets/media/pdf/JX-3P_OM.pdf",
+        "model": "Trumpet-like synth brass approximation inspired by JX-3P dual oscillators, resonant filter envelope and chorus; not a factory preset or recorded trumpet."
+      },
+      "pitchEnvelope": {
+        "amount": -22,
+        "attack": 0.04,
+        "decay": 0.07
+      }
+    },
+    "easter-egg-pulse-lead": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 2.65,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.12,
+        "sustain": 0.82,
+        "release": 0.9
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Easter Egg Sustained Pulse Melody"
+    },
+    "easter-egg-hiphop-hat": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "80s Hip-Hop Closed Hat",
+      "volume": 2.55,
+      "velocitySensitivity": 0.45,
+      "envelope": {
+        "attack": 0.001,
+        "decay": 0.028,
+        "sustain": 0,
+        "release": 0.014
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.025,
+          "waveform": "square"
+        },
+        {
+          "ratio": 1.43,
+          "gain": 0.025,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2.11,
+          "gain": 0.02,
+          "waveform": "square"
+        }
+      ],
+      "filter": {
+        "type": "highpass",
+        "frequency": 4500,
+        "Q": 0.6
+      },
+      "excitation": {
+        "amount": 0.7,
+        "decay": 0.032
+      },
+      "variation": {
+        "seed": 808,
+        "gain": 0.035,
+        "detuneCents": 0
+      }
+    },
+    "easter-egg-hiphop-clap": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "80s Hip-Hop Handclap",
+      "volume": 2.7,
+      "velocitySensitivity": 0.4,
+      "envelope": {
+        "attack": 0.001,
+        "decay": 0.06,
+        "sustain": 0,
+        "release": 0.025
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.009,
+          "waveform": "triangle"
+        }
+      ],
+      "filter": {
+        "type": "bandpass",
+        "frequency": 1500,
+        "Q": 0.8
+      },
+      "excitation": {
+        "amount": 0.85,
+        "decay": 0.072
+      },
+      "reverb": {
+        "wet": 0.12,
+        "decay": 0.18
+      },
+      "variation": {
+        "seed": 909,
+        "gain": 0.025,
+        "detuneCents": 0
+      }
+    },
+    "easter-egg-low-driving-beat": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.95,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 700,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Lower Driving Beat"
+    },
+    "easter-egg-recorded-phrase-0": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 2.65,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.06,
+        "sustain": 0.82,
+        "release": 0.03
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Recorded Phrase G2"
+    },
+    "easter-egg-recorded-phrase-1": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 2.65,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.06,
+        "sustain": 0.82,
+        "release": 0.04
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Recorded Phrase F2"
+    },
+    "easter-egg-recorded-phrase-2": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 2.65,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.06,
+        "sustain": 0.82,
+        "release": 0.015
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Recorded Phrase Eb2"
+    },
+    "easter-egg-recorded-phrase-3": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 2.65,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.06,
+        "sustain": 0.82,
+        "release": 0.04
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 980,
+        "Q": 1.1,
+        "envelopeAmount": 1850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "phoneFallback": "cinematic-pulse-bass-phone",
+      "displayName": "Recorded Phrase C2"
+    },
+    "easter-egg-approved-render": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Approved Easter Egg Mix",
+      "volume": 12.5,
+      "velocitySensitivity": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/easter-egg-approved-v89.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "dark-eighties-approved-render": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s approved mix",
+      "volume": 12.5,
+      "velocitySensitivity": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-approved-v27.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "microphone-bell": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Microphone Bell",
+      "volume": 1,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/microphone-bell-E5.wav",
+          "rootFrequency": 659.255,
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/microphone-bell-B5.wav",
+          "rootFrequency": 987.767,
+          "naturalDecay": true
+        }
+      ],
+      "reference": {
+        "source": "Original synthesized bell preview 2, approved by user",
+        "basis": "Fundamental with short-lived partials at 2.01 and 3.98 ratios, 4 ms attack, exponential natural decay; no loop or echo."
+      }
+    },
+    "drop-in-message-knock": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Drop-In Eighties Attention Alert",
+      "waveform": "square",
+      "volume": 1.8,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.035,
+        "sustain": 0.72,
+        "release": 0.035
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.72,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.16,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 3,
+          "gain": 0.08,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 4800,
+        "Q": 0.65
+      },
+      "noise": {
+        "amount": 0.025,
+        "decay": 0.012
+      }
+    },
+    "neon-countdown-render": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Neon Countdown stereo mix",
+      "volume": 12.5,
+      "velocitySensitivity": 0,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/neon-countdown.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "cinematic-robot-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.48,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "filter": {
+        "type": "lowpass",
+        "frequency": 4200,
+        "Q": 0.55,
+        "envelopeAmount": 300
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.055
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Robot Pulse",
+      "class": "expressive",
+      "derivedFrom": "cinematic-pulse-bass",
+      "chorus": {
+        "rate": 0.35,
+        "delay": 0.019,
+        "depth": 0.002,
+        "wet": 0.12
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/cinematic-robot-c2.wav",
+          "rootFrequency": 65.40639132514966,
+          "loopStart": 0.04,
+          "loopEnd": 2.04
+        },
+        {
+          "url": "api/audio/samples/cinematic-robot-c3.wav",
+          "rootFrequency": 130.8127826502993,
+          "loopStart": 0.04,
+          "loopEnd": 2.04
+        },
+        {
+          "url": "api/audio/samples/cinematic-robot-c4.wav",
+          "rootFrequency": 261.6255653005986,
+          "loopStart": 0.04,
+          "loopEnd": 2.04
+        }
+      ]
+    },
+    "cinematic-pulse-softened": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 0.82,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.42,
+        "sustain": 0.52,
+        "release": 0.28
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "halloween-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.1,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.22,
+        "sustain": 0.76,
+        "release": 0.16
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "halloween-opening-strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-tremolo",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 1.75
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "reverb": {
+        "wet": 0.08,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.1,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.22,
+        "sustain": 0.76,
+        "release": 0.16
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "halloween-score-finale-cellos": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded cello-short",
+      "orchestraGroup": "cello-short",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-cello-short-10.wav",
+          "rootFrequency": 65.40639132514966,
+          "note": "C2",
+          "durationSeconds": 3.2272108843537417,
+          "peakAmplitude": 0.3993399143218994,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C1_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "92de035cdbfab6e41f94115b2c23716a9e93554a4c23c1cc4b946f7492d9c927",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-11.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 3.386485260770975,
+          "peakAmplitude": 0.38178324699401855,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_D2_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "c647723304b5f4b2d3af02739017e38bc4e85244c15355ebd6f8443c1445b5ab",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-cello-short-12.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 2.026893424036281,
+          "peakAmplitude": 0.314375638961792,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/spic/spic_C3_v2_RR1.wav",
+          "library": "vsco",
+          "sha256": "278a14177cd3ffffc5418e403d9583af22778a8ce8fc548f88ea707e044a62d4",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-spiccato": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-short",
+      "orchestraGroup": "violin-short",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-short-0.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 1.7675963718820862,
+          "peakAmplitude": 0.27215576171875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-1.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 1.2079365079365079,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-2.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.9490249433106576,
+          "peakAmplitude": 0.362060546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-3.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 0.9231972789115647,
+          "peakAmplitude": 0.34674072265625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-hiphop-kick": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s kick",
+      "volume": 3.2,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-kick.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 0.43,
+          "peakAmplitude": 0.318634033203125,
+          "sha256": "c86b8a2caca94874871008c88d7997fbf9d169104a65926f1ed579ed72eb6ef6",
+          "sourceBeat": 32,
+          "sourceVelocity": 1,
+          "gain": 2.3537975289723208
+        }
+      ]
+    },
+    "halloween-score-finale-hiphop-snare": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s snare",
+      "volume": 2.6,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-snare.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 0.24,
+          "peakAmplitude": 0.384674072265625,
+          "sha256": "7a538a6026e1d86aae86538a170081fc75c4a8cb19b1eca1ef29f62cc6b92007",
+          "sourceBeat": 34,
+          "sourceVelocity": 1,
+          "gain": 1.94970249900833
+        }
+      ]
+    },
+    "halloween-score-finale-hiphop-clap": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s clap",
+      "volume": 2.2,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-clap.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 0.18,
+          "peakAmplitude": 0.148040771484375,
+          "sha256": "068c53d0a907cc2ec18ee09bee71ff01d6792d4ccce028adb24fd25ed2168f24",
+          "sourceBeat": 34,
+          "sourceVelocity": 0.85,
+          "gain": 5.066171923314781
+        }
+      ]
+    },
+    "halloween-score-finale-hiphop-hat": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Dark 80s hat",
+      "volume": 1.6,
+      "velocitySensitivity": 0.5,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/dark-eighties-hiphop-hat.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 0.072,
+          "peakAmplitude": 0.060211181640625,
+          "sha256": "5f8ed26ec444a3d914c69adfc47744c2935ab21ad77eaf19306b77b384df25da",
+          "sourceBeat": 32,
+          "sourceVelocity": 0.65,
+          "gain": 12.456158134820072
+        }
+      ]
+    },
+    "halloween-score-finale-string-runs": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-short",
+      "orchestraGroup": "violin-short",
+      "volume": 4.8,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.02,
+        "sustain": 0.96,
+        "release": 0.012
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-short-0.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 1.7675963718820862,
+          "peakAmplitude": 0.27215576171875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-1.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 1.2079365079365079,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-2.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.9490249433106576,
+          "peakAmplitude": 0.362060546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-3.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 0.9231972789115647,
+          "peakAmplitude": 0.34674072265625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141"
+        }
+      ],
+      "reverb": {
+        "wet": 0.025,
+        "decay": 0.35
+      }
+    },
+    "halloween-score-finale-violins": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-long",
+      "orchestraGroup": "violin-long",
+      "volume": 2.4,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-long-4.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 9.476530612244899,
+          "peakAmplitude": 0.170379638671875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_A3_v2.wav",
+          "library": "vsco",
+          "sha256": "3fc4a9e22037643fce11e755da72c61c664893f83e637c24a7b5c2d3824ab986"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-5.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 11.436893424036281,
+          "peakAmplitude": 0.2657470703125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "5857387b40c412f756ef281c1171247664432a4e5078c98142d595d15cd92ef9"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-6.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 12.18873015873016,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_G4_v2.wav",
+          "library": "vsco",
+          "sha256": "a1d6d5a0397541692e2f88a0cd9820eabe90407784ee631aa3bfa74772637a65"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-7.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 11.20312925170068,
+          "peakAmplitude": 0.2459716796875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "0c2ca9de723bed0a0968e32126b934f778cd678b367a29e7fde91004daf84daf"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-long-29.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 13.933469387755101,
+          "peakAmplitude": 0.129669189453125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/susVib/VlnEns_susVib_D3_v2.wav",
+          "library": "vsco",
+          "sha256": "77893dbf1ea1be8c40ad756d16b916298e6b1b0742495e9853e020375592357c"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-last-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.25,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.2,
+        "sustain": 0.8,
+        "release": 0.35
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "halloween-score-finale-last-organ": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded pipe-organ",
+      "orchestraGroup": "pipe-organ",
+      "volume": 1.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.015,
+        "decay": 0.2,
+        "sustain": 0.95,
+        "release": 3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-pipe-organ-26.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 12.401746031746033,
+          "peakAmplitude": 0.087310791015625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_C4.wav",
+          "library": "vcsl",
+          "sha256": "9f3b80ef47d908b8acae4d6e7898a28e8179c3e090d6ee1ff4c326d35ea1d945"
+        },
+        {
+          "url": "api/audio/samples/orchestra-pipe-organ-27.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 12.069909297052154,
+          "peakAmplitude": 0.04693603515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_A4.wav",
+          "library": "vcsl",
+          "sha256": "5ac10b40fb5cb026e3e487e05e24a1b0aeda35fa8df956d48f8c9d9fd18bff38"
+        },
+        {
+          "url": "api/audio/samples/orchestra-pipe-organ-28.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 12.106439909297052,
+          "peakAmplitude": 0.0595703125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Pipe%20Organ/Loud/Rode_Man3Open_C5.wav",
+          "library": "vcsl",
+          "sha256": "abcfa8821cd0ff1279f427b71cfad6467d39b0a56481fda4f164880df8f6ddcc"
+        }
+      ],
+      "reverb": {
+        "wet": 0.1,
+        "decay": 1
+      }
+    },
+    "halloween-score-finale-last-trumpets": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded trumpet-long",
+      "orchestraGroup": "trumpet-long",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-trumpet-long-33.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 9.629115646258503,
+          "peakAmplitude": 0.083648681640625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/straightM-sus/Sum_SHTrumpet_straightM-sus_D3_v3_rr1.wav",
+          "library": "vsco",
+          "sha256": "7846226f5e797f0b2fb5e170ca02d6bb8e279a9d2e818cc120679b5bb8d4c342"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-horns": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded horn",
+      "orchestraGroup": "horn",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.35
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-horn-13.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 14.644716553287981,
+          "peakAmplitude": 0.03826904296875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_D2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "9155ef0c33c06ebe55daeaaaca7dec4090578af6cf3d6a028fbfa7b7f2ec876e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-14.wav",
+          "rootFrequency": 174.61411571650194,
+          "note": "F3",
+          "durationSeconds": 14.502448979591836,
+          "peakAmplitude": 0.065521240234375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_F2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "2e487a49c834ff2d76aff1c9755875fc03013bf202b949a5c5fe354d0c2123c2"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-15.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 12.703197278911565,
+          "peakAmplitude": 0.110565185546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_C3_v2_1.wav",
+          "library": "vsco",
+          "sha256": "c0c0b157dcde094c4417b7c165d645897cde9ea6d74247bbab0c0e75355e78c3"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-last-cellos": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded cello-long",
+      "orchestraGroup": "cello-long",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-cello-long-32.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 12.438866213151927,
+          "peakAmplitude": 0.6602948904037476,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Cello%20Section/susvib/susvib_D2_v3_1.wav",
+          "library": "vsco",
+          "sha256": "fc946615cd6550570c8f05d61c0d59b9079bf9daba8bf25be7943487fea5a7ae"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-horror-strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-tremolo",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 0.5
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "reverb": {
+        "wet": 0.08,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-bells": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded Tubular Bells (VCSL)",
+      "volume": 5.2,
+      "velocitySensitivity": 0.7,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Asharp3_ff_rr1.wav",
+          "rootFrequency": 233.08188075904496,
+          "naturalDecay": true,
+          "durationSeconds": 12.56702947845805,
+          "note": "A#3",
+          "sha256": "55fcfdb825026629670e3486f47762e6a3c4a89e138990fbd0e65c3f0a1d6a79",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_A%233_ff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_C3_f_rr1.wav",
+          "rootFrequency": 130.8127826502993,
+          "naturalDecay": true,
+          "durationSeconds": 11.355963718820862,
+          "note": "C3",
+          "sha256": "76d51955e61e70e7a6b46a05865cd0f06f4948aaab97b1925f0f06f193f717f5",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C3_f_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_C4_ff_rr2.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 18.43077097505669,
+          "note": "C4",
+          "sha256": "50d2c2bff54396a684ce9b29346bb8d43bb55d5d9adb9d736bdd5a713adc424a",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_D3_ff_rr1.wav",
+          "rootFrequency": 146.8323839587038,
+          "naturalDecay": true,
+          "durationSeconds": 19.611541950113377,
+          "note": "D3",
+          "sha256": "ca1c64961ce8e96f6ea3ed3bf67bde09c0beb723b0fe346881b317695b1ce84f",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D3_ff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_D4_ff_rr2.wav",
+          "rootFrequency": 293.6647679174076,
+          "naturalDecay": true,
+          "durationSeconds": 13.736190476190476,
+          "note": "D4",
+          "sha256": "2657add471fc1804a29c1261df45af13c700803cfa29bd11c134400a3fbc8700",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_E3_ff_rr2.wav",
+          "rootFrequency": 164.81377845643496,
+          "naturalDecay": true,
+          "durationSeconds": 17.82390022675737,
+          "note": "E3",
+          "sha256": "086a46cb560dae926014c0494965034aeecdffade7a1d6f54feda13274775a11",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E3_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_E4_ff_rr2.wav",
+          "rootFrequency": 329.6275569128699,
+          "naturalDecay": true,
+          "durationSeconds": 12.852947845804989,
+          "note": "E4",
+          "sha256": "1bec82ee61186bf12863842251b1ec726322a649bc90f50f7bca423d30b345ac",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Fsharp3_fff_rr1.wav",
+          "rootFrequency": 184.9972113558172,
+          "naturalDecay": true,
+          "durationSeconds": 13.189274376417234,
+          "note": "F#3",
+          "sha256": "4664366c705496c3dc5ba9de75ffcd6739610dc669391cadda34a63cbcfa1251",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_F%233_fff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Gsharp3_ff_rr1.wav",
+          "rootFrequency": 207.65234878997256,
+          "naturalDecay": true,
+          "durationSeconds": 14.701269841269841,
+          "note": "G#3",
+          "sha256": "ec7743ccc27b4546f51852965e7d96e97cc14270f6051040c2890fd4d34c24c2",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_G%233_ff_rr1.wav"
+        }
+      ],
+      "reverb": {
+        "wet": 0.1,
+        "decay": 2.8
+      }
+    },
+    "halloween-cue-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.1,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.22,
+        "sustain": 0.76,
+        "release": 0.16
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "halloween-cue-horns": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded horn",
+      "orchestraGroup": "horn",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.35
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-horn-13.wav",
+          "rootFrequency": 146.8323839587038,
+          "note": "D3",
+          "durationSeconds": 14.644716553287981,
+          "peakAmplitude": 0.03826904296875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_D2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "9155ef0c33c06ebe55daeaaaca7dec4090578af6cf3d6a028fbfa7b7f2ec876e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-14.wav",
+          "rootFrequency": 174.61411571650194,
+          "note": "F3",
+          "durationSeconds": 14.502448979591836,
+          "peakAmplitude": 0.065521240234375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_F2_v2_1.wav",
+          "library": "vsco",
+          "sha256": "2e487a49c834ff2d76aff1c9755875fc03013bf202b949a5c5fe354d0c2123c2"
+        },
+        {
+          "url": "api/audio/samples/orchestra-horn-15.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 12.703197278911565,
+          "peakAmplitude": 0.110565185546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/sus/MOHorn_sus_C3_v2_1.wav",
+          "library": "vsco",
+          "sha256": "c0c0b157dcde094c4417b7c165d645897cde9ea6d74247bbab0c0e75355e78c3"
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-cue-strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-tremolo",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 0.55
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "reverb": {
+        "wet": 0.08,
+        "decay": 1.2
+      }
+    },
+    "halloween-cue-shortStrings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-short",
+      "orchestraGroup": "violin-short",
+      "volume": 4.8,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.02,
+        "sustain": 0.96,
+        "release": 0.012
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-short-0.wav",
+          "rootFrequency": 293.6647679174076,
+          "note": "D4",
+          "durationSeconds": 1.7675963718820862,
+          "peakAmplitude": 0.27215576171875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_D3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "36105c7bc208181a10b41a468aab1e8ca4f31a9eae43834dd90d8d533a48e650"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-1.wav",
+          "rootFrequency": 440,
+          "note": "A4",
+          "durationSeconds": 1.2079365079365079,
+          "peakAmplitude": 0.22662353515625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_A3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "ce5d025e7c2ac71e220a3f6487c5a2ce431a150e808c93276570f19536568a5e"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-2.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 0.9490249433106576,
+          "peakAmplitude": 0.362060546875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a14e9795677e0c418f1e18f7b640bc27b8cb3aef4cfef766e18caf38549ffe56"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-short-3.wav",
+          "rootFrequency": 783.9908719634985,
+          "note": "G5",
+          "durationSeconds": 0.9231972789115647,
+          "peakAmplitude": 0.34674072265625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Spic/VlnEns_Spic_G4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "3345451be62b9bdfbbf6bb03f22f410484abb75585992336d530215fc4df7141"
+        }
+      ],
+      "reverb": {
+        "wet": 0.025,
+        "decay": 0.35
+      }
+    },
+    "halloween-cue-knock": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Drop-In Eighties Attention Alert",
+      "waveform": "square",
+      "volume": 1.8,
+      "envelope": {
+        "attack": 0.003,
+        "decay": 0.035,
+        "sustain": 0.72,
+        "release": 0.035
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.72,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.16,
+          "waveform": "sine"
+        },
+        {
+          "ratio": 3,
+          "gain": 0.08,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 4800,
+        "Q": 0.65
+      },
+      "noise": {
+        "amount": 0.025,
+        "decay": 0.012
+      }
+    }
+  }
+}
