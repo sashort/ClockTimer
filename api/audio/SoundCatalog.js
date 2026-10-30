@@ -27,7 +27,10 @@
         const speed = Number(options.toneVelocity ?? output.toneVelocity ?? 1);
         const rate = index.rates.reduce((a,b) => Math.abs(b-speed)<Math.abs(a-speed)?b:a);
         const clip=sound.rates[rate];
-        return { ...sound, clip, speed:clip.existing?1:rate, theme:selectedTheme };
+        const effectiveSpeed=clip.existing?1:rate;
+        const speechStartSeconds=Number.isFinite(sound.speechStartBeat)
+            ? sound.speechStartBeat*60/sound.bpm/effectiveSpeed : sound.speechStartSeconds;
+        return { ...sound, speechStartSeconds, clip, speed:effectiveSpeed, theme:selectedTheme };
     }
     async function prepareEvents() {
         await Promise.all(['default','halloween'].map(async name => {
@@ -40,6 +43,7 @@
         const entry=events.get(theme())?.[id];
         return entry && Object.hasOwn(entry,'sound') ? entry.sound : undefined;
     }
+    function eventSpeechStart(id) { return events.get(theme())?.[id]?.speechStart; }
     function eventSpeechTemplate(id, phase) {
         const key=events.get(theme())?.[id]?.speech?.[phase];
         if(key!==undefined && (typeof key!=='string' || !/^(announcements|messages)\.[\w.-]+$/.test(key)))
@@ -56,5 +60,5 @@
         const reference=configured ?? templates.get(theme())?.[path] ?? templates.get('default')?.[path] ?? path;
         return globalThis.WMOFAnnouncementLanguage.text(reference,values);
     }
-    globalThis.WMOFSoundCatalog = Object.freeze({resolve, theme, json, versioned, prepareEvents, eventSound, eventSpeechTemplate, eventSpeech, speech});
+    globalThis.WMOFSoundCatalog = Object.freeze({resolve, theme, json, versioned, prepareEvents, eventSound, eventSpeechStart, eventSpeechTemplate, eventSpeech, speech});
 })();

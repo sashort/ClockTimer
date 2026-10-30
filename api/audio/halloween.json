@@ -907,6 +907,291 @@
         "decay": 2.8
       }
     },
+    "halloween-score-finale-trumpets": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded trumpet",
+      "orchestraGroup": "trumpet",
+      "volume": 1.9,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-trumpet-16.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 1.140453514739229,
+          "peakAmplitude": 0.0556640625,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_C3_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "dcd3d370fe299ca76b222066d7facd0034a549a105051ed474f8dd1f478f1afa",
+          "naturalDecay": true
+        },
+        {
+          "url": "api/audio/samples/orchestra-trumpet-17.wav",
+          "rootFrequency": 587.3295358348151,
+          "note": "D5",
+          "durationSeconds": 1.337437641723356,
+          "peakAmplitude": 0.132171630859375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_D4_v2_rr1.wav",
+          "library": "vsco",
+          "sha256": "a817b4b11b818e04cf73197a382b380c5dd8576f1e7f7d1ee359559d0542eb8a",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-cymbal": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded cymbal",
+      "orchestraGroup": "cymbal",
+      "volume": 1.4,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.012,
+        "decay": 0.15,
+        "sustain": 0.9,
+        "release": 0.3
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-cymbal-25.wav",
+          "rootFrequency": 261.6255653005986,
+          "note": "C4",
+          "durationSeconds": 13.29079365079365,
+          "peakAmplitude": 0.70098876953125,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Clash%20Cymbals%201/cymbal_crash1_ff2.wav",
+          "library": "vcsl",
+          "sha256": "6f27c36fe2a829b667fd3372e1488437671534c0c719af9ae90128e5f99629d3",
+          "naturalDecay": true
+        }
+      ],
+      "reverb": {
+        "wet": 0.12,
+        "decay": 1.2
+      }
+    },
+    "halloween-score-finale-opening-horror-strings": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded violin-tremolo",
+      "orchestraGroup": "violin-tremolo",
+      "volume": 2.6,
+      "velocitySensitivity": 0.65,
+      "envelope": {
+        "attack": 0.025,
+        "decay": 0.15,
+        "sustain": 0.95,
+        "release": 1.75
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-8.wav",
+          "rootFrequency": 523.2511306011972,
+          "note": "C5",
+          "durationSeconds": 8.11795918367347,
+          "peakAmplitude": 0.634368896484375,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_C4_v2.wav",
+          "library": "vsco",
+          "sha256": "fb63b02651cf1f08c103f192e6c4783a6c469c4ed953d069949e9b0fe92bd9f0"
+        },
+        {
+          "url": "api/audio/samples/orchestra-violin-tremolo-9.wav",
+          "rootFrequency": 1174.6590716696303,
+          "note": "D6",
+          "durationSeconds": 9.358027210884353,
+          "peakAmplitude": 0.44110107421875,
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Violin%20Section/Trem/VlnEns_Trem_D5_v2.wav",
+          "library": "vsco",
+          "sha256": "e1d0fb1f01a2c9c7d4a6b19bf3988534b1a0c0c321d6066af143f50d54f3fd82"
+        }
+      ],
+      "reverb": {
+        "wet": 0.08,
+        "decay": 1.2
+      }
+    },
+    "halloween-start-held-pulse": {
+      "type": "oscillator",
+      "waveform": "sawtooth",
+      "volume": 1.1,
+      "detune": 0,
+      "velocitySensitivity": 0.78,
+      "envelope": {
+        "attack": 0.018,
+        "decay": 0.22,
+        "sustain": 0.76,
+        "release": 1.092105263157868
+      },
+      "partials": [
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": -3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 1,
+          "gain": 0.5,
+          "detune": 3,
+          "waveform": "sawtooth"
+        },
+        {
+          "ratio": 0.5,
+          "gain": 0.24,
+          "detune": 0,
+          "waveform": "square"
+        },
+        {
+          "ratio": 2,
+          "gain": 0.08,
+          "detune": 0,
+          "waveform": "sine"
+        }
+      ],
+      "filter": {
+        "type": "lowpass",
+        "frequency": 620,
+        "Q": 0.6,
+        "envelopeAmount": 850
+      },
+      "pitchEnvelope": {
+        "amount": 12,
+        "attack": 0,
+        "decay": 0.08
+      },
+      "reverb": {
+        "wet": 0.055,
+        "decay": 1.15
+      },
+      "delay": {
+        "time": 0.17,
+        "feedback": 0.12,
+        "wet": 0.055
+      },
+      "tremolo": {
+        "rate": 0,
+        "depth": 0
+      },
+      "distortion": {
+        "amount": 0.012
+      },
+      "noise": {
+        "amount": 0,
+        "decay": 0.03
+      },
+      "trillStep": "1/8",
+      "displayName": "Cinematic Pulse — Softened"
+    },
+    "halloween-keypad-bell": {
+      "class": "expressive",
+      "type": "oscillator",
+      "displayName": "Recorded Tubular Bells (VCSL)",
+      "volume": 5.2,
+      "velocitySensitivity": 0.7,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Asharp3_ff_rr1.wav",
+          "rootFrequency": 233.08188075904496,
+          "naturalDecay": true,
+          "durationSeconds": 12.56702947845805,
+          "note": "A#3",
+          "sha256": "55fcfdb825026629670e3486f47762e6a3c4a89e138990fbd0e65c3f0a1d6a79",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_A%233_ff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_C3_f_rr1.wav",
+          "rootFrequency": 130.8127826502993,
+          "naturalDecay": true,
+          "durationSeconds": 11.355963718820862,
+          "note": "C3",
+          "sha256": "76d51955e61e70e7a6b46a05865cd0f06f4948aaab97b1925f0f06f193f717f5",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C3_f_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_C4_ff_rr2.wav",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true,
+          "durationSeconds": 18.43077097505669,
+          "note": "C4",
+          "sha256": "50d2c2bff54396a684ce9b29346bb8d43bb55d5d9adb9d736bdd5a713adc424a",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_C4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_D3_ff_rr1.wav",
+          "rootFrequency": 146.8323839587038,
+          "naturalDecay": true,
+          "durationSeconds": 19.611541950113377,
+          "note": "D3",
+          "sha256": "ca1c64961ce8e96f6ea3ed3bf67bde09c0beb723b0fe346881b317695b1ce84f",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D3_ff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_D4_ff_rr2.wav",
+          "rootFrequency": 293.6647679174076,
+          "naturalDecay": true,
+          "durationSeconds": 13.736190476190476,
+          "note": "D4",
+          "sha256": "2657add471fc1804a29c1261df45af13c700803cfa29bd11c134400a3fbc8700",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_D4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_E3_ff_rr2.wav",
+          "rootFrequency": 164.81377845643496,
+          "naturalDecay": true,
+          "durationSeconds": 17.82390022675737,
+          "note": "E3",
+          "sha256": "086a46cb560dae926014c0494965034aeecdffade7a1d6f54feda13274775a11",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E3_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_E4_ff_rr2.wav",
+          "rootFrequency": 329.6275569128699,
+          "naturalDecay": true,
+          "durationSeconds": 12.852947845804989,
+          "note": "E4",
+          "sha256": "1bec82ee61186bf12863842251b1ec726322a649bc90f50f7bca423d30b345ac",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_E4_ff_rr2.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Fsharp3_fff_rr1.wav",
+          "rootFrequency": 184.9972113558172,
+          "naturalDecay": true,
+          "durationSeconds": 13.189274376417234,
+          "note": "F#3",
+          "sha256": "4664366c705496c3dc5ba9de75ffcd6739610dc669391cadda34a63cbcfa1251",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_F%233_fff_rr1.wav"
+        },
+        {
+          "url": "api/audio/samples/vcsl-tubular-chimes_Gsharp3_ff_rr1.wav",
+          "rootFrequency": 207.65234878997256,
+          "naturalDecay": true,
+          "durationSeconds": 14.701269841269841,
+          "note": "G#3",
+          "sha256": "ec7743ccc27b4546f51852965e7d96e97cc14270f6051040c2890fd4d34c24c2",
+          "sourceUrl": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tubular%20Bells%201/chimes_G%233_ff_rr1.wav"
+        }
+      ],
+      "reverb": {
+        "wet": 0.1,
+        "decay": 2.8
+      }
+    },
     "halloween-cue-pulse": {
       "type": "oscillator",
       "waveform": "sawtooth",
@@ -1167,108 +1452,6 @@
         "amount": 0.025,
         "decay": 0.012
       }
-    },
-    "halloween-rendered-trip-started-0_8": {
-      "type": "oscillator",
-      "volume": 1,
-      "envelope": {
-        "attack": 0,
-        "decay": 0,
-        "sustain": 1,
-        "release": 0
-      },
-      "samples": [
-        {
-          "url": "api/audio/samples/halloween-trip/trip-started-0_8.mp3",
-          "rootFrequency": 261.6255653005986,
-          "naturalDecay": true
-        }
-      ]
-    },
-    "halloween-rendered-trip-ended-0_8": {
-      "type": "oscillator",
-      "volume": 1,
-      "envelope": {
-        "attack": 0,
-        "decay": 0,
-        "sustain": 1,
-        "release": 0
-      },
-      "samples": [
-        {
-          "url": "api/audio/samples/halloween-trip/trip-ended-0_8.mp3",
-          "rootFrequency": 261.6255653005986,
-          "naturalDecay": true
-        }
-      ]
-    },
-    "halloween-rendered-trip-started-1": {
-      "type": "oscillator",
-      "volume": 1,
-      "envelope": {
-        "attack": 0,
-        "decay": 0,
-        "sustain": 1,
-        "release": 0
-      },
-      "samples": [
-        {
-          "url": "api/audio/samples/halloween-trip/trip-started-1.mp3",
-          "rootFrequency": 261.6255653005986,
-          "naturalDecay": true
-        }
-      ]
-    },
-    "halloween-rendered-trip-ended-1": {
-      "type": "oscillator",
-      "volume": 1,
-      "envelope": {
-        "attack": 0,
-        "decay": 0,
-        "sustain": 1,
-        "release": 0
-      },
-      "samples": [
-        {
-          "url": "api/audio/samples/halloween-trip/trip-ended-1.mp3",
-          "rootFrequency": 261.6255653005986,
-          "naturalDecay": true
-        }
-      ]
-    },
-    "halloween-rendered-trip-started-1_2": {
-      "type": "oscillator",
-      "volume": 1,
-      "envelope": {
-        "attack": 0,
-        "decay": 0,
-        "sustain": 1,
-        "release": 0
-      },
-      "samples": [
-        {
-          "url": "api/audio/samples/halloween-trip/trip-started-1_2.mp3",
-          "rootFrequency": 261.6255653005986,
-          "naturalDecay": true
-        }
-      ]
-    },
-    "halloween-rendered-trip-ended-1_2": {
-      "type": "oscillator",
-      "volume": 1,
-      "envelope": {
-        "attack": 0,
-        "decay": 0,
-        "sustain": 1,
-        "release": 0
-      },
-      "samples": [
-        {
-          "url": "api/audio/samples/halloween-trip/trip-ended-1_2.mp3",
-          "rootFrequency": 261.6255653005986,
-          "naturalDecay": true
-        }
-      ]
     }
   },
   "songs": {
@@ -1278,308 +1461,178 @@
       "events": [
         {
           "offset": "0",
-          "tone": "A1",
-          "length": "0.8421052631578947",
+          "tone": "D2",
+          "length": "0.6842105263157895",
           "instrument": "halloween-score-finale-pulse",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
           "offset": "0",
-          "tone": "A2",
+          "tone": "D3",
           "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-cellos",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "G4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
           "dynamic": "mf"
         },
         {
           "offset": "0",
-          "tone": "C4",
-          "length": "0.42105263157894735",
-          "instrument": "halloween-score-finale-hiphop-kick",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.3157894736842105",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.3157894736842105",
-          "instrument": "halloween-score-finale-hiphop-clap",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "p"
-        },
-        {
-          "offset": "0",
-          "tone": "G5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "E4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "E6",
-          "length": "0.7368421052631579",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "A5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "G4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "Bb5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "A4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "p"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C#6",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D6",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D2",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-pulse",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
           "tone": "D4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "D4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "D4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "F4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "F4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "F4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "A4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "A4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "A4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "D3",
-          "length": "3.1578947368421053",
+          "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-horns",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "F3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
           "tone": "A3",
-          "length": "3.1578947368421053",
+          "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
           "dynamic": "f"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "0",
           "tone": "D4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horns",
-          "dynamic": "f"
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "F4",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "A4",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-cymbal",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.263157894736878",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "E6",
+          "length": "1.5789473684210527",
+          "instrument": "halloween-score-finale-opening-horror-strings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "F6",
+          "length": "1.5789473684210527",
+          "instrument": "halloween-score-finale-opening-horror-strings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
+          "tone": "D2",
+          "length": "0.47368421052631576",
+          "instrument": "halloween-score-finale-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
           "tone": "D3",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-cellos",
-          "dynamic": "f"
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
         },
         {
           "offset": "1.0526315789473983",
-          "tone": "A5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horror-strings",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D6",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horror-strings",
-          "dynamic": "f"
+          "tone": "F4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
         },
         {
           "offset": "1.0526315789473983",
           "tone": "C4",
           "length": "0.42105263157894735",
           "instrument": "halloween-score-finale-hiphop-kick",
-          "dynamic": "ff"
+          "dynamic": "mf"
         },
         {
           "offset": "1.0526315789473983",
@@ -1597,28 +1650,182 @@
         },
         {
           "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "1.0526315789473684",
-          "instrument": "halloween-score-finale-bells",
-          "dynamic": "ff"
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "1.3157894736841627",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "A2",
+          "length": "0.6842105263157895",
+          "instrument": "halloween-score-finale-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "A3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "C5",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.8421052631579187",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "2.368421052631561",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D2",
+          "length": "0.7894736842105263",
+          "instrument": "halloween-start-held-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "F4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "F3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "A3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.894736842105317",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.3157894736842105",
+          "instrument": "halloween-score-finale-hiphop-snare",
+          "dynamic": "f"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.3157894736842105",
+          "instrument": "halloween-score-finale-hiphop-clap",
+          "dynamic": "f"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
         }
       ],
-      "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.45,
-      "renderedVariants": {
-        "1": {
-          "instrument": "halloween-rendered-trip-started-1",
-          "seconds": 9.3608125
-        },
-        "0.8": {
-          "instrument": "halloween-rendered-trip-started-0_8",
-          "seconds": 9.492416666666667
-        },
-        "1.2": {
-          "instrument": "halloween-rendered-trip-started-1_2",
-          "seconds": 9.273395833333334
-        }
-      }
+      "seasonalSpeechStartBeat": 2.631578947368439,
+      "releaseSync": {
+        "instrument": "halloween-start-held-pulse",
+        "referenceInstruments": [
+          "halloween-score-finale-violins",
+          "halloween-score-finale-opening-horror-strings"
+        ]
+      },
+      "seasonalGain": 0.45
     },
     "trip-started-early": {
       "bpm": 120,
@@ -1626,308 +1833,178 @@
       "events": [
         {
           "offset": "0",
-          "tone": "A1",
-          "length": "0.8421052631578947",
+          "tone": "D2",
+          "length": "0.6842105263157895",
           "instrument": "halloween-score-finale-pulse",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
           "offset": "0",
-          "tone": "A2",
+          "tone": "D3",
           "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-cellos",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "G4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
           "dynamic": "mf"
         },
         {
           "offset": "0",
-          "tone": "C4",
-          "length": "0.42105263157894735",
-          "instrument": "halloween-score-finale-hiphop-kick",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.3157894736842105",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.3157894736842105",
-          "instrument": "halloween-score-finale-hiphop-clap",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "p"
-        },
-        {
-          "offset": "0",
-          "tone": "G5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "E4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "E6",
-          "length": "0.7368421052631579",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "A5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "G4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "Bb5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "A4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "p"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C#6",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D6",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D2",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-pulse",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
           "tone": "D4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "D4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "D4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "F4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "F4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "F4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "A4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "A4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "A4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "D3",
-          "length": "3.1578947368421053",
+          "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-horns",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "F3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
           "tone": "A3",
-          "length": "3.1578947368421053",
+          "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
           "dynamic": "f"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "0",
           "tone": "D4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horns",
-          "dynamic": "f"
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "F4",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "A4",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-cymbal",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.263157894736878",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "E6",
+          "length": "1.5789473684210527",
+          "instrument": "halloween-score-finale-opening-horror-strings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "F6",
+          "length": "1.5789473684210527",
+          "instrument": "halloween-score-finale-opening-horror-strings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
+          "tone": "D2",
+          "length": "0.47368421052631576",
+          "instrument": "halloween-score-finale-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
           "tone": "D3",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-cellos",
-          "dynamic": "f"
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
         },
         {
           "offset": "1.0526315789473983",
-          "tone": "A5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horror-strings",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D6",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horror-strings",
-          "dynamic": "f"
+          "tone": "F4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
         },
         {
           "offset": "1.0526315789473983",
           "tone": "C4",
           "length": "0.42105263157894735",
           "instrument": "halloween-score-finale-hiphop-kick",
-          "dynamic": "ff"
+          "dynamic": "mf"
         },
         {
           "offset": "1.0526315789473983",
@@ -1945,28 +2022,182 @@
         },
         {
           "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "1.0526315789473684",
-          "instrument": "halloween-score-finale-bells",
-          "dynamic": "ff"
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "1.3157894736841627",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "A2",
+          "length": "0.6842105263157895",
+          "instrument": "halloween-score-finale-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "A3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "C5",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.8421052631579187",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "2.368421052631561",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D2",
+          "length": "0.7894736842105263",
+          "instrument": "halloween-start-held-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "F4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "F3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "A3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.894736842105317",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.3157894736842105",
+          "instrument": "halloween-score-finale-hiphop-snare",
+          "dynamic": "f"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.3157894736842105",
+          "instrument": "halloween-score-finale-hiphop-clap",
+          "dynamic": "f"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
         }
       ],
-      "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.45,
-      "renderedVariants": {
-        "1": {
-          "instrument": "halloween-rendered-trip-started-1",
-          "seconds": 9.3608125
-        },
-        "0.8": {
-          "instrument": "halloween-rendered-trip-started-0_8",
-          "seconds": 9.492416666666667
-        },
-        "1.2": {
-          "instrument": "halloween-rendered-trip-started-1_2",
-          "seconds": 9.273395833333334
-        }
-      }
+      "seasonalSpeechStartBeat": 2.631578947368439,
+      "releaseSync": {
+        "instrument": "halloween-start-held-pulse",
+        "referenceInstruments": [
+          "halloween-score-finale-violins",
+          "halloween-score-finale-opening-horror-strings"
+        ]
+      },
+      "seasonalGain": 0.45
     },
     "trip-started-late": {
       "bpm": 120,
@@ -1974,308 +2205,178 @@
       "events": [
         {
           "offset": "0",
-          "tone": "A1",
-          "length": "0.8421052631578947",
+          "tone": "D2",
+          "length": "0.6842105263157895",
           "instrument": "halloween-score-finale-pulse",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
           "offset": "0",
-          "tone": "A2",
+          "tone": "D3",
           "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-cellos",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "G4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
           "dynamic": "mf"
         },
         {
           "offset": "0",
-          "tone": "C4",
-          "length": "0.42105263157894735",
-          "instrument": "halloween-score-finale-hiphop-kick",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.3157894736842105",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.3157894736842105",
-          "instrument": "halloween-score-finale-hiphop-clap",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "p"
-        },
-        {
-          "offset": "0",
-          "tone": "G5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "E4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "E6",
-          "length": "0.7368421052631579",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "0.2631578947367643",
-          "tone": "A5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "G4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.5263157894736423",
-          "tone": "Bb5",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "A4",
-          "length": "0.3368421052631579",
-          "instrument": "halloween-score-finale-spiccato",
-          "dynamic": "mp"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C4",
-          "length": "0.21052631578947367",
-          "instrument": "halloween-score-finale-hiphop-hat",
-          "dynamic": "p"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C4",
-          "length": "0.16842105263157894",
-          "instrument": "halloween-score-finale-hiphop-snare",
-          "dynamic": "mf"
-        },
-        {
-          "offset": "0.7894736842105203",
-          "tone": "C#6",
-          "length": "0.22105263157894736",
-          "instrument": "halloween-score-finale-string-runs",
-          "dynamic": "mf",
-          "sampleStartSeconds": 0.12
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D6",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D2",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-pulse",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
           "tone": "D4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "D4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "D4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "F4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "F4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "F4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "A4",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "A4",
-          "length": "3.1578947368421053",
+          "length": "3.3684210526315788",
           "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
-          "tone": "A4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "4.2105263157894735",
-          "instrument": "halloween-score-finale-last-organ",
-          "dynamic": "ff"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-violins",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-trumpets",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
+          "offset": "0",
           "tone": "D3",
-          "length": "3.1578947368421053",
+          "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-horns",
-          "dynamic": "f"
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "F3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
           "tone": "A3",
-          "length": "3.1578947368421053",
+          "length": "0.8421052631578947",
           "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
           "dynamic": "f"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "0",
           "tone": "D4",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horns",
-          "dynamic": "f"
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
         },
         {
-          "offset": "1.0526315789473983",
+          "offset": "0",
+          "tone": "F4",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "A4",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-trumpets",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-cymbal",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.263157894736878",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "E6",
+          "length": "1.5789473684210527",
+          "instrument": "halloween-score-finale-opening-horror-strings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "F6",
+          "length": "1.5789473684210527",
+          "instrument": "halloween-score-finale-opening-horror-strings",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "0.5263157894736423",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
+          "tone": "D2",
+          "length": "0.47368421052631576",
+          "instrument": "halloween-score-finale-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
           "tone": "D3",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-last-cellos",
-          "dynamic": "f"
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0.7894736842105203",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
         },
         {
           "offset": "1.0526315789473983",
-          "tone": "A5",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horror-strings",
-          "dynamic": "f"
-        },
-        {
-          "offset": "1.0526315789473983",
-          "tone": "D6",
-          "length": "3.1578947368421053",
-          "instrument": "halloween-score-finale-horror-strings",
-          "dynamic": "f"
+          "tone": "F4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
         },
         {
           "offset": "1.0526315789473983",
           "tone": "C4",
           "length": "0.42105263157894735",
           "instrument": "halloween-score-finale-hiphop-kick",
-          "dynamic": "ff"
+          "dynamic": "mf"
         },
         {
           "offset": "1.0526315789473983",
@@ -2293,28 +2394,182 @@
         },
         {
           "offset": "1.0526315789473983",
-          "tone": "D5",
-          "length": "1.0526315789473684",
-          "instrument": "halloween-score-finale-bells",
-          "dynamic": "ff"
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "1.3157894736841627",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "A2",
+          "length": "0.6842105263157895",
+          "instrument": "halloween-score-finale-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "A3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "C5",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "1.5789473684210407",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1.8421052631579187",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.105263157894683",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
+        },
+        {
+          "offset": "2.368421052631561",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D2",
+          "length": "0.7894736842105263",
+          "instrument": "halloween-start-held-pulse",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-cellos",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "F4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "D3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "F3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "A3",
+          "length": "0.8421052631578947",
+          "instrument": "halloween-score-finale-horns",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.631578947368439",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "2.894736842105317",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "p"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "A4",
+          "length": "0.3368421052631579",
+          "instrument": "halloween-score-finale-spiccato",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.42105263157894735",
+          "instrument": "halloween-score-finale-hiphop-kick",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.3157894736842105",
+          "instrument": "halloween-score-finale-hiphop-snare",
+          "dynamic": "f"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.3157894736842105",
+          "instrument": "halloween-score-finale-hiphop-clap",
+          "dynamic": "f"
+        },
+        {
+          "offset": "3.1578947368420813",
+          "tone": "C4",
+          "length": "0.21052631578947367",
+          "instrument": "halloween-score-finale-hiphop-hat",
+          "dynamic": "f"
         }
       ],
-      "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.45,
-      "renderedVariants": {
-        "1": {
-          "instrument": "halloween-rendered-trip-started-1",
-          "seconds": 9.3608125
-        },
-        "0.8": {
-          "instrument": "halloween-rendered-trip-started-0_8",
-          "seconds": 9.492416666666667
-        },
-        "1.2": {
-          "instrument": "halloween-rendered-trip-started-1_2",
-          "seconds": 9.273395833333334
-        }
-      }
+      "seasonalSpeechStartBeat": 2.631578947368439,
+      "releaseSync": {
+        "instrument": "halloween-start-held-pulse",
+        "referenceInstruments": [
+          "halloween-score-finale-violins",
+          "halloween-score-finale-opening-horror-strings"
+        ]
+      },
+      "seasonalGain": 0.45
     },
     "trip-ended": {
       "bpm": 120,
@@ -2378,7 +2633,7 @@
         },
         {
           "offset": "0",
-          "tone": "D6",
+          "tone": "G5",
           "length": "0.22105263157894736",
           "instrument": "halloween-score-finale-string-runs",
           "dynamic": "mf",
@@ -2407,14 +2662,14 @@
         },
         {
           "offset": "0.2631578947367643",
-          "tone": "C#6",
+          "tone": "E6",
           "length": "0.7368421052631579",
           "instrument": "halloween-score-finale-violins",
           "dynamic": "f"
         },
         {
           "offset": "0.2631578947367643",
-          "tone": "C#6",
+          "tone": "A5",
           "length": "0.22105263157894736",
           "instrument": "halloween-score-finale-string-runs",
           "dynamic": "mf",
@@ -2472,7 +2727,7 @@
         },
         {
           "offset": "0.7894736842105203",
-          "tone": "A5",
+          "tone": "C#6",
           "length": "0.22105263157894736",
           "instrument": "halloween-score-finale-string-runs",
           "dynamic": "mf",
@@ -2480,7 +2735,7 @@
         },
         {
           "offset": "1.0526315789473983",
-          "tone": "D5",
+          "tone": "D6",
           "length": "3.1578947368421053",
           "instrument": "halloween-score-finale-violins",
           "dynamic": "f"
@@ -2648,21 +2903,21 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
+      "seasonalGain": 0.45
+    },
+    "keypad-open": {
+      "bpm": 120,
+      "instrument": "halloween-keypad-bell",
       "seasonalGain": 0.45,
-      "renderedVariants": {
-        "1": {
-          "instrument": "halloween-rendered-trip-ended-1",
-          "seconds": 9.3608125
-        },
-        "0.8": {
-          "instrument": "halloween-rendered-trip-ended-0_8",
-          "seconds": 9.492416666666667
-        },
-        "1.2": {
-          "instrument": "halloween-rendered-trip-ended-1_2",
-          "seconds": 9.273395833333334
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D4",
+          "length": "1",
+          "instrument": "halloween-keypad-bell",
+          "dynamic": "ff"
         }
-      }
+      ]
     },
     "break-started": {
       "bpm": 120,
@@ -3694,11 +3949,9 @@
     "timeoutSeconds": 1
   },
   "opening": {
-    "notes": [
-      "E6",
-      "F6"
-    ],
-    "holdSeconds": 0.7894736842105263,
-    "volume": 0.45
+    "cue": "keypad-open",
+    "instrument": "halloween-keypad-bell",
+    "note": "D4",
+    "naturalDecay": true
   }
 }

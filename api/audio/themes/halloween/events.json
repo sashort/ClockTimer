@@ -7,6 +7,10 @@
         "summary": "announcements.trip-started.summary",
         "inProgress": "announcements.trip-started.inProgress",
         "details": "announcements.trip-started.details"
+      },
+      "speechStart": {
+        "anchor": "cue",
+        "paddingMs": 0
       }
     },
     "trip-started-early": {
@@ -14,6 +18,10 @@
       "speech": {
         "summary": "announcements.trip-started-early.summary",
         "details": "announcements.trip-started-early.details"
+      },
+      "speechStart": {
+        "anchor": "cue",
+        "paddingMs": 0
       }
     },
     "trip-started-late": {
@@ -21,6 +29,10 @@
       "speech": {
         "summary": "announcements.trip-started-late.summary",
         "details": "announcements.trip-started-late.details"
+      },
+      "speechStart": {
+        "anchor": "cue",
+        "paddingMs": 0
       }
     },
     "break-started": {
