@@ -1874,7 +1874,9 @@
                     null,
                     typeof standardText === "string" && Boolean(standardText)
                 ),
-                time_header_text: suffix,
+                time_header_text: effectiveTimeState?.virtual
+                    ? effectiveTimeState.type === "over" ? "Over By" : "Banked"
+                    : suffix,
                 time_header_short_text: null,
                 time_component: this.#component(
                     renderedText,

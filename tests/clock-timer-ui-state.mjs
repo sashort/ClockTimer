@@ -62,7 +62,20 @@ await timer.start({standardTime:'0:30:00'});
 const state=timer.uiState;assert.equal(state.state,'running');assert.equal(state.standard_time_header_text,'Standard Time');assert.equal(state.time_header_text,'End Time');assert.equal(state.standard_time_component.value,1800000);assert.equal(state.trip_goal_component.text,'107%');if(process.argv.includes('--standard-time')){
  assert.equal(timer.getSummarySnapshot().total.standardTimeMilliseconds,5400000,'aggregate accounting keeps its own standard');
  for(const mode of ['trip','total','auto']){timer.configure({goal_type:mode});const view=timer.getUIState();assert.equal(view.standard_time_header_text,'Standard Time');assert.equal(view.standard_time_component.value,1800000,'main standard is trip-only in '+mode);}
- timer.remove();await window.happyDOM.close();console.log('PASS trip-only Standard Time in all goal modes; aggregate standard retained separately');process.exit(0);
+ const balance=window.document.createElement('clock-timer');window.document.body.append(balance);
+ for(const bar of [false,true]){
+  balance.toggleAttribute('goal-bar',bar);
+  for(const [counted,label,value,text] of [[3000000,'Banked',600000,'0:10:00'],[3900000,'Over By',300000,'0:05:00'],[3600000,'Banked',0,'0:00:00']]){
+   balance.configure({rendered_time_type:'time_remaining',goal_type:'total',total_goal:'100%',external_standard_time:3600000,external_counted_time:counted});
+   const view=balance.uiState;
+   assert.equal(view.time_header_text,label,'idle aggregate caption in '+(bar?'Bar':'Classic'));
+   assert.equal(view.time_component.value,value,'the bank displays the absolute remaining balance');
+   assert.equal(view.time_component.text,text,'Over By negates negative remaining time');
+  }
+  balance.configure({rendered_time_type:'calculated_start_time'});assert.equal(balance.uiState.time_header_text,'Time Elapsed');
+  balance.configure({rendered_time_type:'calculated_end_time'});assert.equal(balance.uiState.time_header_text,'End Time');
+ }
+ balance.remove();timer.remove();await window.happyDOM.close();console.log('PASS trip-only Standard Time, aggregate Banked/Over By captions and absolute balances in Classic/Bar');process.exit(0);
 }
 assert(state.time_component.date instanceof window.Date);assert(Object.isFrozen(state));
 assert(states.some(item=>item.transition==='trip_started'&&item.state==='running'));assert(states.some(item=>item.transition_phase==='active'));await Promise.resolve();assert(states.some(item=>item.transition_phase==='settled'));
