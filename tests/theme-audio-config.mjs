@@ -14,4 +14,9 @@ scope.WMOFSeasonalTheme.active=true;await scope.WMOFWindowAudio.open('numberpad'
 const profile=await scope.WMOFSoundCatalog.resolve('trip-started',{},{});assert(profile.clip.url.endsWith('.wav'));assert.equal(profile.speechStartSeconds,2);
 scope.WMOFSeasonalTheme.active=false;const button={id:'apply',dataset:{},getAttribute:()=>null,closest:()=>({id:'example',dataset:{}})};
 await listeners.click({target:{closest:()=>button}});await new Promise(r=>setImmediate(r));assert(calls.some(c=>c[1]==='setting-unchanged'),'button click sound is configurable');
+const count=calls.length;
+listeners.click({target:{closest:()=>button}});
+await scope.WMOFWindowAudio.close('example');
+await new Promise(r=>setImmediate(r));
+assert.equal(calls.length,count,'a pending button sound cannot start after its window closes');
 console.log('PASS theme WAV resolution, event/template references, opening/sustain/closing, duplicate opens, silent omissions, button cues and live Default dial tone');
