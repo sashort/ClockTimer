@@ -65,6 +65,7 @@ jobs:
           node tests/halloween-audio.cjs
           node tests/halloween-idle-audio.cjs
           node tests/seasonal-song-timing.mjs
+          node tests/audio-sample-cache.mjs
           node tests/neon-countdown-song.mjs
           node tests/cinematic-robot-pulse.mjs
           node tests/beat-tempo-ramp.mjs
@@ -168,6 +169,7 @@ jobs:
       - run: node tests/main-page-browser.cjs
       - run: node tests/halloween-theme-browser.cjs
       - run: node tests/halloween-keypad-browser.cjs
+      - run: node tests/halloween-trip-playback-browser.cjs
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs

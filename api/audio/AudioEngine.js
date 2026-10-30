@@ -2,6 +2,18 @@
     "use strict";
 
 
+    // One promise per context/URL, shared by warmup and all instrument definitions.
+    const decodedSamples = new WeakMap();
+    function loadSample(context, url) {
+        let cache = decodedSamples.get(context);
+        if (!cache) decodedSamples.set(context, cache = new Map());
+        if (!cache.has(url)) cache.set(url, fetch(url).then(response => {
+            if (!response.ok) throw new Error("Instrument sample could not be loaded: " + url);
+            return response.arrayBuffer();
+        }).then(bytes => context.decodeAudioData(bytes)).catch(error => { cache.delete(url); throw error; }));
+        return cache.get(url);
+    }
+
     // Legacy definitions remain untouched; custom sound controls opt into a separate model.
     class OscillatorInstrument {
         constructor(definition) { this.definition = definition; }
@@ -66,9 +78,7 @@
         async prepare(context) {
             await Promise.all((this.definition.samples || []).map(async sample => {
                 if (!this.#buffers.has(sample.url)) {
-                    const response = await fetch(sample.url);
-                    if (!response.ok) throw new Error("Instrument sample could not be loaded: " + sample.url);
-                    const buffer = await context.decodeAudioData(await response.arrayBuffer());
+                    const buffer = await loadSample(context, sample.url);
                     if (sample.loopEnd > buffer.duration) throw new RangeError("Sample sustain loop exceeds recording duration");
                     this.#buffers.set(sample.url, buffer);
                 }
@@ -185,6 +195,8 @@
             return Array.from(this.#active.values()).map(entry => entry.name);
         }
 
+        loadSample(context, url) { return loadSample(context, url); }
+
         get outputSettings() {
             return {...this.#outputSettings};
         }
@@ -269,6 +281,9 @@
                         : current.voice
             };
 
+            if (current.toneVelocity !== this.#outputSettings.toneVelocity && this.#context && globalThis.WMOFHalloweenAudio?.isActive()) {
+                void globalThis.WMOFHalloweenAudio.prepare(this.#context).catch(error => console.warn("Seasonal cue warmup failed", error));
+            }
             return this.outputSettings;
         }
 
@@ -3245,7 +3260,7 @@
             } = {}
         ) {
             let catalog = await this.prepare();
-            if (globalThis.WMOFHalloweenAudio?.isActive()) catalog = await globalThis.WMOFHalloweenAudio.catalogForSong(catalog,name);
+            if (globalThis.WMOFHalloweenAudio?.isActive()) catalog = await globalThis.WMOFHalloweenAudio.catalogForSong(catalog,name,{toneVelocity:toneVelocity ?? this.#outputSettings.toneVelocity,bpm});
             const song = catalog?.songs?.[name];
 
             if (!song) {
@@ -3330,7 +3345,7 @@
                         ? Math.max(0, Number(volume))
                         : 1
                 ) *
-                effectiveToneVolume * (normalizeLoudness && !this.#isPhone()
+                effectiveToneVolume * (normalizeLoudness && !song.seasonalPreRendered && !this.#isPhone()
                     ? this.loudnessGain(song, useSelectedInstrument && this.#outputSettings.instrument || song.instrument) : 1) * (song.seasonalGain ?? 1);
             const shouldLoop =
                 loop === undefined

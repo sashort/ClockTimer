@@ -1,0 +1,61 @@
+{
+  "sampleRate": 48000,
+  "channels": 2,
+  "peakTarget": 0.78,
+  "masterGain": 0.24210566308671302,
+  "rates": [
+    0.8,
+    1,
+    1.2
+  ],
+  "clips": [
+    {
+      "name": "trip-started",
+      "velocity": 0.8,
+      "url": "api/audio/samples/halloween-trip/trip-started-0_8.mp3",
+      "seconds": 9.492416666666667,
+      "peak": 0.78,
+      "bytes": 229293
+    },
+    {
+      "name": "trip-ended",
+      "velocity": 0.8,
+      "url": "api/audio/samples/halloween-trip/trip-ended-0_8.mp3",
+      "seconds": 9.492416666666667,
+      "peak": 0.7755346460364521,
+      "bytes": 229293
+    },
+    {
+      "name": "trip-started",
+      "velocity": 1,
+      "url": "api/audio/samples/halloween-trip/trip-started-1.mp3",
+      "seconds": 9.3608125,
+      "peak": 0.6768177621864568,
+      "bytes": 226413
+    },
+    {
+      "name": "trip-ended",
+      "velocity": 1,
+      "url": "api/audio/samples/halloween-trip/trip-ended-1.mp3",
+      "seconds": 9.3608125,
+      "peak": 0.676871328655493,
+      "bytes": 226413
+    },
+    {
+      "name": "trip-started",
+      "velocity": 1.2,
+      "url": "api/audio/samples/halloween-trip/trip-started-1_2.mp3",
+      "seconds": 9.273395833333334,
+      "peak": 0.6979221428718907,
+      "bytes": 224109
+    },
+    {
+      "name": "trip-ended",
+      "velocity": 1.2,
+      "url": "api/audio/samples/halloween-trip/trip-ended-1_2.mp3",
+      "seconds": 9.273395833333334,
+      "peak": 0.6916916352196278,
+      "bytes": 224109
+    }
+  ]
+}

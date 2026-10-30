@@ -20,5 +20,12 @@ const aliases={
  '10-mic-on':['microphone-activated'],'11-mic-off':['microphone-deactivated'],
  '12-speech-rejected':['speech-rejected'],'13-drop-in-message':['observer-message']};
 for(const cue of cues.cues){const events=arrangement(cue.events,cues.instruments,'halloween-cue-');const gain=cues.reports.find(r=>r.id===cue.id&&r.speed===1).gain;for(const name of aliases[cue.id])songs[name]={bpm:120,instrument:events[0].instrument,events,seasonalGain:gain};}
+const rendered=read('api/audio/samples/halloween-trip/manifest.json');
+for(const clip of rendered.clips){
+ const instrument='halloween-rendered-'+clip.name+'-'+String(clip.velocity).replace('.','_');
+ instruments[instrument]={type:'oscillator',volume:1,envelope:{attack:0,decay:0,sustain:1,release:0},samples:[{url:clip.url,rootFrequency:261.6255653005986,naturalDecay:true}]};
+ const names=clip.name==='trip-started'?['trip-started','trip-started-early','trip-started-late']:['trip-ended'];
+ for(const name of names){songs[name].renderedVariants??={};songs[name].renderedVariants[String(clip.velocity)]={instrument,seconds:clip.seconds};}
+}
 fs.writeFileSync(path.join(root,'api/audio/halloween.json'),JSON.stringify({instruments,songs,touchtones:{notes:first.map(e=>e.tone),pulseGain:.4,attackSeconds:.008,releaseSeconds:score.instruments['finale-pulse'].envelope.release,timeoutSeconds:1},opening:{notes:chord.map(e=>e.tone),holdSeconds:Number(chord[0].length)*60/score.song.bpm,volume:.45}},null,2)+'\n');
 console.log('Built '+Object.keys(songs).length+' Halloween event mappings, opening chord and five-note held sequence.');

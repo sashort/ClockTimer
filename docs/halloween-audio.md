@@ -34,3 +34,33 @@ Verification: `tests/halloween-audio.cjs`, `tests/halloween-idle-audio.cjs` and
 `tests/halloween-keypad-browser.cjs` cover sustained notes, silent resets and OK,
 sequence timing, catalog caching, theme cancellation, event mappings and the
 two-second speech handoff. Existing volume, scheduled-cue and theme checks apply.
+
+## Phone trip-cue playback
+
+Trip Start (including early/late) and Trip End use pre-rendered stereo clips at
+Slow 0.8×, Medium 1× and Fast 1.2×. Each rate is rendered from the approved score,
+so changing speed does not shift pitch or cut off the final chord. A single
+natural-decay source plays the complete cue, including its baked effects; no
+live ensemble oscillators or convolution are allocated during these cues.
+Speech still begins two seconds after actual audio start. Volume, mute,
+cancellation and theme-off behavior remain governed by the shared engine.
+Custom API speeds or BPM use the original score as a compatibility fallback.
+
+Unlock warms the opening strings, then the selected speed's Start/End clips
+sequentially. Changing speed warms the new pair. Shared per-context/per-URL
+promises deduplicate fetch/decode across warmup and separate instrument models;
+failed loads can retry. Repeated playback reuses decoded buffers. Other speeds
+are not decoded until selected. The six compressed assets total about 1.36 MB.
+The shared render gain retains headroom at maximum volume, including the finale.
+
+`node scripts/render-halloween-trip-cues.cjs` regenerates the six clips using
+Playwright and FFmpeg (`FFMPEG_PATH` may specify the encoder). Then run
+`node scripts/build-halloween-audio.cjs`. The clip manifest records rates,
+durations, levels and source files. These clips derive only from existing sounds
+and samples; their original provenance still applies.
+
+`tests/audio-sample-cache.mjs` covers concurrent cache reuse and retry.
+`tests/halloween-trip-playback-browser.cjs` exercises both cues at all three
+speeds in a mobile browser profile: one source per play, zero live oscillators
+or convolvers, no repeated decode, safe peaks, theme cancellation and the
+unchanged speech mark. Actual phone playback remains the final user check.

@@ -18152,7 +18152,8 @@
       "audio": [
         "Opening numberpad plays the first Part 3 string chord; held digits cycle D2, D2, A2, D2, A2. One second of inactivity and Reset silently reset the sequence; OK is silent.",
         "Trip start and end replace normal songs with approved ensemble segments; speech begins two seconds after audio start. Other events use the approved orchestral family.",
-        "Disabling stops pending and ringing seasonal audio. Saved audio preferences and full Easter Egg songs remain unchanged."
+        "Disabling stops pending and ringing seasonal audio. Saved audio preferences and full Easter Egg songs remain unchanged.",
+        "Trip Start/End at supported speeds use one pre-rendered cached buffer; warm only the selected speed, preserve pitch/tail and the two-second speech mark. Theme-off stops playback."
       ],
       "forbidden": [
         "Modify saved clock colors or timing/accounting state as part of theming.",
@@ -18163,7 +18164,9 @@
         "node tests/halloween-theme-browser.cjs",
         "node tests/halloween-audio.cjs",
         "node tests/halloween-idle-audio.cjs",
-        "node tests/halloween-keypad-browser.cjs"
+        "node tests/halloween-keypad-browser.cjs",
+        "node tests/audio-sample-cache.mjs",
+        "node tests/halloween-trip-playback-browser.cjs"
       ]
     }
   },

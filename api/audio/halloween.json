@@ -1167,6 +1167,108 @@
         "amount": 0.025,
         "decay": 0.012
       }
+    },
+    "halloween-rendered-trip-started-0_8": {
+      "type": "oscillator",
+      "volume": 1,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/halloween-trip/trip-started-0_8.mp3",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "halloween-rendered-trip-ended-0_8": {
+      "type": "oscillator",
+      "volume": 1,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/halloween-trip/trip-ended-0_8.mp3",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "halloween-rendered-trip-started-1": {
+      "type": "oscillator",
+      "volume": 1,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/halloween-trip/trip-started-1.mp3",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "halloween-rendered-trip-ended-1": {
+      "type": "oscillator",
+      "volume": 1,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/halloween-trip/trip-ended-1.mp3",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "halloween-rendered-trip-started-1_2": {
+      "type": "oscillator",
+      "volume": 1,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/halloween-trip/trip-started-1_2.mp3",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
+    },
+    "halloween-rendered-trip-ended-1_2": {
+      "type": "oscillator",
+      "volume": 1,
+      "envelope": {
+        "attack": 0,
+        "decay": 0,
+        "sustain": 1,
+        "release": 0
+      },
+      "samples": [
+        {
+          "url": "api/audio/samples/halloween-trip/trip-ended-1_2.mp3",
+          "rootFrequency": 261.6255653005986,
+          "naturalDecay": true
+        }
+      ]
     }
   },
   "songs": {
@@ -1502,7 +1604,21 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.45
+      "seasonalGain": 0.45,
+      "renderedVariants": {
+        "1": {
+          "instrument": "halloween-rendered-trip-started-1",
+          "seconds": 9.3608125
+        },
+        "0.8": {
+          "instrument": "halloween-rendered-trip-started-0_8",
+          "seconds": 9.492416666666667
+        },
+        "1.2": {
+          "instrument": "halloween-rendered-trip-started-1_2",
+          "seconds": 9.273395833333334
+        }
+      }
     },
     "trip-started-early": {
       "bpm": 120,
@@ -1836,7 +1952,21 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.45
+      "seasonalGain": 0.45,
+      "renderedVariants": {
+        "1": {
+          "instrument": "halloween-rendered-trip-started-1",
+          "seconds": 9.3608125
+        },
+        "0.8": {
+          "instrument": "halloween-rendered-trip-started-0_8",
+          "seconds": 9.492416666666667
+        },
+        "1.2": {
+          "instrument": "halloween-rendered-trip-started-1_2",
+          "seconds": 9.273395833333334
+        }
+      }
     },
     "trip-started-late": {
       "bpm": 120,
@@ -2170,7 +2300,21 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.45
+      "seasonalGain": 0.45,
+      "renderedVariants": {
+        "1": {
+          "instrument": "halloween-rendered-trip-started-1",
+          "seconds": 9.3608125
+        },
+        "0.8": {
+          "instrument": "halloween-rendered-trip-started-0_8",
+          "seconds": 9.492416666666667
+        },
+        "1.2": {
+          "instrument": "halloween-rendered-trip-started-1_2",
+          "seconds": 9.273395833333334
+        }
+      }
     },
     "trip-ended": {
       "bpm": 120,
@@ -2504,7 +2648,21 @@
         }
       ],
       "seasonalSpeechStartSeconds": 2,
-      "seasonalGain": 0.45
+      "seasonalGain": 0.45,
+      "renderedVariants": {
+        "1": {
+          "instrument": "halloween-rendered-trip-ended-1",
+          "seconds": 9.3608125
+        },
+        "0.8": {
+          "instrument": "halloween-rendered-trip-ended-0_8",
+          "seconds": 9.492416666666667
+        },
+        "1.2": {
+          "instrument": "halloween-rendered-trip-ended-1_2",
+          "seconds": 9.273395833333334
+        }
+      }
     },
     "break-started": {
       "bpm": 120,
