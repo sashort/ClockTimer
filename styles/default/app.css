@@ -7960,6 +7960,13 @@ html[data-layout-settings-pending="true"] #app :is(.percent-summary,.percent-sum
 .app[data-goal-countdown=true][data-percentage-display=bar] {--timer-summary-row-height:calc(var(--timer-summary-header-height) + var(--goal-bar-slot-height) + var(--compact-timer-space,76px));}
 .app[data-goal-countdown=true][data-percentage-display=bar] .trip-summary {grid-template-rows:var(--timer-summary-header-height) var(--compact-timer-space,76px) var(--goal-bar-slot-height);}
 .app[data-goal-countdown=true][data-percentage-display=bar] .percent-summary {grid-row:3;}
+.app[data-goal-countdown=true] .trip-summary > .compact-interval-timer:not([hidden]) {
+    grid-row:1;grid-column:1;min-width:0;gap:3px;padding:0;text-align:center;
+}
+.app[data-goal-countdown=true] .compact-interval-timer > span {max-width:100%;font-weight:700;}
+.app[data-goal-countdown=true] .compact-interval-timer > output {font-size:34px;}
+.app[data-goal-countdown=true] #standardTimeButton {grid-row:2;grid-column:1 / -1;}
+.app[data-goal-countdown=true] .rendered-time-cell {grid-row:1;grid-column:2;}
 
 .trip-log-percent-button {font:inherit;color:inherit;background:transparent;border:0;padding:0;width:100%;cursor:pointer;}
 .trip-log-actual.is-official-percent {border:1px solid #a9ddf7;border-radius:7px;padding:5px 3px;}

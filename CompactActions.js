@@ -69,7 +69,7 @@
         const nextGoal=app.dataset.percentageDisplay==='bar'&&active&&!down&&!paused?view.state?.clock?.goal_bar?.next_goal:null;
         app.dataset.goalCountdown=String(Boolean(nextGoal));
         timer.hidden=!(nextGoal||compact&&(down||paused));
-        if(nextGoal){timer.dataset.kind='goal';timer.querySelector('span').textContent=nextGoal.ids.map(id=>id==='total'&&view.totalLabel?view.totalLabel:view.state.clock.goal_bar.nodes.find(node=>node.id===id)?.label).filter(Boolean).join('/');timer.querySelector('output').textContent=nextGoal.clock;renderBuffers(timer,null);}
+        if(nextGoal){timer.dataset.kind='goal';timer.querySelector('span').textContent=nextGoal.ids.length===1&&nextGoal.ids[0]==='standard'?WMOFLanguagePack.text('4f163c6a-3526-4504-92af-9c7f0e91a223'):WMOFLanguagePack.text('4b7e5e4c-8c49-4d50-9313-2a7436e4ac12',{goals:nextGoal.ids.map(id=>id==='total'&&view.totalLabel?view.totalLabel:view.state.clock.goal_bar.nodes.find(node=>node.id===id)?.label).filter(Boolean).reverse().join('/')});timer.querySelector('output').textContent=nextGoal.clock;renderBuffers(timer,null);}
         else if(compact){
             const kind=down?'down':String(view.state.tripStatus||'break').replaceAll('_','-');timer.dataset.kind=kind;
             const labelIds={"down": "ba94b593-7fb0-4360-8150-891bd4e56e6f", "break": "556c70ac-c40c-4976-b080-459c3d8e18f1", "short-break": "be9051c0-6763-43eb-8007-ef3c630bf924", "lunch": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5"};

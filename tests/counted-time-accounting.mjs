@@ -162,6 +162,11 @@ try {
     assert.equal(gainSummary.trip.countedPercent,2,'(30 Standard + 10 earned credit) / 20 productive minutes');
     assert.equal(gainSummary.total.renderedTime,'0:20:00','Total receives the same early-break credit');
     assert.equal(gainSummary.trip.allowanceCreditMilliseconds,10*60000);
+    gained.renderedTimeMode='elapsed';
+    assert.equal(gained.getUIState().time_component.value,20*60000,'elapsed is productive time, not productive time minus credit');
+    assert.equal(gained.getSummarySnapshot().trip.renderedTime,'0:20:00','summary elapsed agrees with live elapsed');
+    assert.equal(gained.getGoalBarSnapshot().nodes.find(n=>n.id==='standard').time,'0:40:00','Standard elapsed target includes earned allowance');
+    gained.renderedTimeMode='remaining';
     const snapshot=gained.captureState();const factualEvents=JSON.stringify(snapshot.events);
     gained.restoreState(snapshot);
     assert.equal(gained.getSummarySnapshot().trip.renderedTime,'0:20:00','restored event model retains full early-break credit');
@@ -169,9 +174,11 @@ try {
     assert.equal(JSON.stringify(gained.captureState().events),factualEvents,'accounting credit never rewrites factual break events');
     const activeLog=gained.getLocalTripLog().find(trip=>trip.running);
     assert.equal(activeLog.allowanceCreditMilliseconds,10*60000,'offline active Trip Log receives the credit');
+    gained.renderedTimeMode='elapsed';
     advance(15*60000);await gained.stop();
     assert.equal(counted(gained),25*60000,'completed counted time retains the full unused allowance');
     assert.equal(gained.getSummarySnapshot().trip.countedPercent,40/35);
+    assert.equal(gained.getSummarySnapshot().trip.renderedTime,'0:35:00','completed elapsed preserves productive time independently of credit');
     gained.remove();
 
     const creditFirst=await fresh();creditFirst.configure({trip_goal:'100%'});
@@ -185,6 +192,12 @@ try {
     assert.equal(creditFirst.getSummarySnapshot().total.renderedTime,'0:40:00');
     assert(creditFirst.getGoalBarSnapshot().nodes.find(n=>n.current).unbounded,'surplus credit retains Current at right edge');
     assert.equal(creditFirst.getUIState().time_component.text,'0:40:00','live remaining includes surplus credit');
+    creditFirst.renderedTimeMode='elapsed';
+    assert.equal(creditFirst.getUIState().time_component.value,0,'zero productive time displays zero, not a negative bank');
+    advance(1000);
+    assert.equal(creditFirst.getUIState().time_component.value,1000,'elapsed starts ticking immediately instead of clamping until credit is consumed');
+    assert.equal(creditFirst.getSummarySnapshot().trip.renderedTime,'0:00:01');
+    creditFirst.renderedTimeMode='remaining';
     advance(11*60000);
     assert(creditFirst.getGoalBarSnapshot().nodes.find(n=>n.current).percent>0,'Current returns to finite percentage after credit is consumed');
     creditFirst.remove();
