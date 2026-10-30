@@ -1529,7 +1529,7 @@
         #renderedTimeValue(text, selected, date) {
             if (date instanceof Date) return date.getTime();
             if (this.#renderedTimeMode === "elapsed") {
-                return Number(selected?.countedTimeBalanceMilliseconds ?? selected?.countedTimeElapsedMilliseconds);
+                return Number(selected?.productiveTimeMilliseconds ?? selected?.countedTimeElapsedMilliseconds);
             }
             if (typeof text !== "string") return NaN;
             const normalized = text.replace(/[⁺⁻]$/u, "");
@@ -1543,7 +1543,7 @@
             const trip=summary.trip,counted=Number(trip?.countedTimeBalanceMilliseconds??trip?.countedTimeElapsedMilliseconds),standard=Number(trip?.standardTimeMilliseconds);
             if(!Number.isFinite(standard)||!Number.isFinite(counted))return undefined;
             if(this.#renderedTimeMode==="remaining")return standard-counted;
-            if(this.#renderedTimeMode==="elapsed")return counted;
+            if(this.#renderedTimeMode==="elapsed")return Number(trip?.productiveTimeMilliseconds ?? Math.max(0,counted));
             const current=Number(trip?.countedPercent);
             const end=counted<=0?now.getTime():Number.isFinite(current)&&current>0
                 ? Date.parse(this.#calculateTripGoalRequirementsForGoal(current,{allowMissed:true}).adjustedEndTime):NaN;
@@ -1558,19 +1558,16 @@
             return this.#formatSummaryEndTime(new Date(value));
         }
 
-        #decorateTripTimeText(text, now, exactValue) {
-            if(this.#renderedTimeMode==="calculated-end")return text;
+        #decorateTripTimeText(text, now, exactValue, mode = this.#renderedTimeMode) {
+            if(mode==="calculated-end")return text;
             const interval=this.getActiveIntervalState?.(now);
             if(this.#breakOnly||typeof text!=="string"||interval?.open!==false||!Number.isFinite(exactValue))return text;
-            return this.#decorateFractionalTimeText(text,exactValue);
+            return this.#decorateFractionalTimeText(text,exactValue,mode);
         }
 
-        #decorateFractionalTimeText(text, exactValue) {
-            const match=text?.match(/^(-)?(\d+):(\d{2}):(\d{2})$/);
-            if(!match)return text;
-            const displayedValue=((Number(match[2])*60+Number(match[3]))*60+Number(match[4]))*1000*(match[1]?-1:1);
-            const omitted=exactValue-displayedValue;
-            return Math.abs(omitted)<1e-6?text:`${text}${omitted>0?"⁺":"⁻"}`;
+        #decorateFractionalTimeText(text, exactValue, mode = this.#renderedTimeMode) {
+            if(typeof text!=="string")return text;
+            return text + TemporalFormat.timeReadout(exactValue,{mode}).correction;
         }
 
         #getActualTimeState(
@@ -1965,12 +1962,14 @@
             const duration = value => this.#formatRemainingRenderedDuration(value);
             const mode = this.#renderedTimeMode;
             const nodes = goalValues.map(node => {
-                const position = (standard+Number(summary.trip?.allowanceCreditMilliseconds??0))/(node.percent/100)-Number(summary.trip?.allowanceCreditMilliseconds??0);
+                const credit = Number(summary.trip?.allowanceCreditMilliseconds??0);
+                const productiveTarget = (standard+credit)/(node.percent/100);
+                const position = productiveTarget-credit;
                 const end = this.#calculateTripGoalRequirementsForGoal(node.percent/100, {allowMissed:true}).adjustedEndTime;
-                const text = mode === "elapsed" ? `${position<0?"-":""}${this.#formatElapsedRenderedDuration(position)}`
+                const text = mode === "elapsed" ? this.#formatElapsedRenderedDuration(productiveTarget)
                     : mode === "calculated-end" ? this.#formatSummaryEndTime(end ? new Date(end) : undefined)
                     : duration(standard-position);
-                return Object.freeze({...node, remaining_milliseconds:Number.isFinite(Date.parse(end))?Math.max(0,Date.parse(end)-now.getTime()):null, counted_position:position, time:text,
+                return Object.freeze({...node, remaining_milliseconds:Number.isFinite(productiveTarget)&&Number.isFinite(summary.trip?.productiveTimeMilliseconds)?Math.max(0,productiveTarget-summary.trip.productiveTimeMilliseconds):null, counted_position:position, time:text,
                     failed:Number.isFinite(current) && current*100 < node.percent-1e-7});
             });
             nodes.push(Object.freeze({id:"current", label:"Current", current:true,
@@ -1984,7 +1983,7 @@
                 if(shared.some(node=>node.id!=="standard"))shared=shared.filter(node=>node.id!=="standard");
                 shared.sort((a,b)=>({total:0,trip:1,standard:2}[a.id]??3)-({total:0,trip:1,standard:2}[b.id]??3));
                 const remaining=upcoming[0].remaining_milliseconds;
-                nextGoal=Object.freeze({ids:Object.freeze(shared.map(node=>node.id)),label:shared.map(node=>node.label).join("/"),remaining_milliseconds:remaining,clock:this.#decorateFractionalTimeText(this.#formatRemainingRenderedDuration(remaining),remaining)});
+                nextGoal=Object.freeze({ids:Object.freeze(shared.map(node=>node.id)),label:shared.map(node=>node.label).reverse().join("/"),remaining_milliseconds:remaining,clock:this.#decorateTripTimeText(this.#formatRemainingRenderedDuration(remaining),now,remaining,"remaining")});
             }
             return Object.freeze({available:true, active:true, next_goal:nextGoal, time_mode:mode, nodes:Object.freeze(nodes),
                 all_failed:failed,
@@ -32966,8 +32965,8 @@
                 return undefined;
             }
 
-            const hasFraction=value.getMilliseconds()!==0;
-            value = new Date(Math.floor(value.getTime()/1000)*1000);
+            const readout=TemporalFormat.timeReadout(value.getTime(),{mode:"calculated-end"});
+            value = new Date(readout.milliseconds);
 
             return [
                 value.getHours(),
@@ -32975,7 +32974,7 @@
                 value.getSeconds()
             ]
                 .map(part => String(part).padStart(2, "0"))
-                .join(":")+(hasFraction?"⁺":"");
+                .join(":")+readout.correction;
         }
 
         #getEarlyStartAllowanceCredit() {
@@ -34019,18 +34018,8 @@
                 return undefined;
             }
 
-            const normalizedMilliseconds =
-                Math.round(
-                    milliseconds
-                );
-
-            const displayMilliseconds =
-                normalizedMilliseconds % 1000 === 0
-                    ? normalizedMilliseconds
-                    : Math.ceil(
-                        Math.abs(normalizedMilliseconds) /
-                        1000
-                    ) * 1000;
+            const displayMilliseconds = TemporalFormat.timeReadout(milliseconds,
+                {mode:"elapsed",showCorrection:false}).milliseconds;
 
             return this.#formatStandardTime(Math.abs(displayMilliseconds), {includeHours: true});
         }
@@ -34042,11 +34031,8 @@
                 return undefined;
             }
 
-            const displayMilliseconds =
-                Math.trunc(
-                    milliseconds /
-                    1000
-                ) * 1000;
+            const displayMilliseconds = TemporalFormat.timeReadout(milliseconds,
+                {mode:"remaining",showCorrection:false}).milliseconds;
 
             const duration = this.#formatStandardTime(Math.abs(displayMilliseconds), {includeHours: true});
 
@@ -34073,7 +34059,10 @@
         }
 
         #renderTime_elapsed({ timelineNow }) {
-            return this.#formatElapsedRenderedDuration(this.#getCountedTimeElapsed(timelineNow));
+            // Allowance credit increases earned time; it does not undo time worked.
+            // Keep the signed accounting coordinate separate from elapsed readouts.
+            return this.#formatElapsedRenderedDuration(Math.max(0,
+                this.#getCountedTimeBalance(timelineNow) + this.#getEarlyStartAllowanceCredit()));
         }
 
         #renderTime_remaining({ timelineNow }) {

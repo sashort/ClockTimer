@@ -1,4 +1,18 @@
 class TemporalFormat {
+    // One rounding/correction policy for signed durations and absolute times.
+    // Inputs have millisecond precision; floating-point residue is not a fraction.
+    static timeReadout(value, {mode = 'remaining', showCorrection = true} = {}) {
+        const exact = Number.isFinite(value) ? Math.round(value) : NaN;
+        if (!['remaining', 'elapsed', 'calculated-end'].includes(mode)) throw new RangeError('Unknown time readout mode');
+        const milliseconds = mode === 'elapsed'
+            ? Math.sign(exact) * Math.ceil(Math.abs(exact) / 1000) * 1000
+            : mode === 'calculated-end' ? Math.floor(exact / 1000) * 1000
+            : Math.trunc(exact / 1000) * 1000;
+        const correction = !showCorrection || !Number.isFinite(exact) || exact === milliseconds
+            ? '' : exact > milliseconds ? '⁺' : '⁻';
+        return Object.freeze({milliseconds, correction});
+    }
+
     static #TIME_PATTERN = /^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(AM|PM)?$/i;
 
     static #DATE_TIME_PATTERN = /^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?\s*(AM|PM)?$/i;

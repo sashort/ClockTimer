@@ -7104,6 +7104,16 @@
       "id": "934af6eb-d600-5932-9c1c-5a95b581a140",
       "text": "Official percentages can only be edited after a trip has completed.",
       "default": "Official percentages can only be edited after a trip has completed."
+    },
+    "4b7e5e4c-8c49-4d50-9313-2a7436e4ac12": {
+      "id": "4b7e5e4c-8c49-4d50-9313-2a7436e4ac12",
+      "text": "{goals} Goal In",
+      "default": "{goals} Goal In"
+    },
+    "4f163c6a-3526-4504-92af-9c7f0e91a223": {
+      "id": "4f163c6a-3526-4504-92af-9c7f0e91a223",
+      "text": "Standard In",
+      "default": "Standard In"
     }
   }
 }

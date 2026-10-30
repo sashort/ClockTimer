@@ -36,7 +36,7 @@
   balance(){
    const row=this.row,app=row.closest('.app'),clock=app?.querySelector('clock-timer');if(!clock||app.clientHeight<300)return;
    const visible=e=>e&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden';
-   const timer=app.querySelector('.compact-interval-timer'),topElements=visible(timer)&&!timer.hidden?[...timer.children]:[...app.querySelectorAll('#standardTimeLabel,#standardTimeValue,#renderedTimeLabel,#renderedTimeValue')];
+   const timer=app.querySelector('.compact-interval-timer'),readouts=[...app.querySelectorAll('#standardTimeLabel,#standardTimeValue,#renderedTimeLabel,#renderedTimeValue')],topElements=visible(timer)&&!timer.hidden?timer.dataset.kind==='goal'?[...readouts,...timer.children]:[...timer.children]:readouts;
    const top=Math.max(...topElements.filter(visible).map(e=>e.getBoundingClientRect().bottom));
    const controls=app.querySelector('.trip-action-controls');let bottom;
    if(app.dataset.actionDisplay!=='compact'&&visible(controls)&&controls.getBoundingClientRect().height>0)bottom=controls.getBoundingClientRect().top;

@@ -290,8 +290,12 @@ gaps. The section's outer background follows the rounded control edges.
 Early break completion and unused credit (2026-10-28): live trip readouts use
 `summary.trip.countedTimeBalanceMilliseconds`, which can be negative when unused
 break allowance exceeds productive time. Persisted counted durations remain
-nonnegative. Remaining is Standard minus that signed balance; Elapsed displays
-the signed balance; Current End Time keeps ticking. This applies equally to
+nonnegative. Remaining is Standard minus that signed balance. Elapsed displays
+productive time, without subtracting allowance credit; it must keep advancing
+even when the credit exceeds time worked. Goal Elapsed labels use their
+productive-time target (earned Standard plus credit, divided by inferred goal).
+The signed coordinate is only for accounting and bar positioning, never an
+elapsed duration. Current End Time keeps ticking. This applies equally to
 Break, Short Break and Lunch, including ending inside the start buffer and
 restoring the event history. Current percentage uses earned Standard plus credit
 divided by productive time, even if the signed bank coordinate is negative. Only
@@ -415,7 +419,7 @@ Substandard ticks remain visible with Goal Bounding disabled, including while Cu
 
 Switching Layout uses a manual top-layer popover above the open hamburger/settings menu. Its existing queue owns dismissal and aria-busy restoration; a large document z-index alone cannot cover menu popovers.
 
-During a running trip, Full/Compact Bar layouts use the shared interval-timer slot for the next unfailed goal deadline. Coincident goals share a slash-separated caption (Week/Trip); Standard is omitted when a named goal shares its percentage. The countdown uses the goal deadline, floors whole seconds and appends the shared fractional correction superscript. Standard-based main readouts remain unchanged. Break/Down timers take priority during intervals; Classic, idle and all-goals-failed states omit the countdown.
+During a running trip, Full/Compact Bar layouts use the shared interval-timer slot for the next unfailed goal deadline. Coincident goals share a slash-separated caption (Trip/Week Goal In); Standard is omitted when a named goal shares its percentage. The countdown uses the productive-time goal budget, floors whole seconds and follows the main duration readout's correction policy. During normal running transient fractions do not add superscripts; frozen fractional durations use the shared correction sign. Standard-based main readouts remain unchanged. Break/Down timers take priority during intervals; Classic, idle and all-goals-failed states omit the countdown.
 
 In Full mode the timed End Lunch/End Break/End Short Break button restores one large inline label/countdown group centered between its buffer bars. Compact interval captions and countdowns remain stacked. Buffer sizing follows the combined inline group bounds.
 
@@ -423,6 +427,6 @@ Full break text stays on one line and uses its larger available font when buffer
 
 Compact Down entrance at end-buffer expiry uses the rail fade/scale transition; the legacy Full slide is restricted to Full mode. The balanced percentage row stacks above the empty clock container so its goal control remains clickable after switching layouts.
 
-The next-goal countdown resolves aggregate identities through the current localized range caption (Day, Week, Year, etc.), matching the bar; it does not expose the internal Total fallback. Merged captions use that same name, e.g. Week/Trip. Fractional markers are absent at exact whole seconds and zero; positive floored countdowns append + only when milliseconds were omitted.
+The next-goal countdown resolves aggregate identities through the current localized range caption (Day, Week, Year, etc.), matching the bar; it does not expose the internal Total fallback. Merged captions use that same name, e.g. Trip/Week Goal In. Single named goals use the same Goal In suffix; when Standard is the next target, the caption is Standard In. Fractional markers are absent at exact whole seconds and zero. Both countdown and main durations use TemporalFormat.timeReadout for rounding and correction; positive frozen remaining durations append + only when milliseconds were omitted.
 
 Layout-option selection uses the applied `aria-checked` state. Selected Classic/Goal bar and Full/Compact radio buttons retain their selected fill and border while hovered or keyboard-focused; generic menu hover/focus decoration must not obscure selection after Switching Layout closes. Browser verification covers all four options without reopening Settings.

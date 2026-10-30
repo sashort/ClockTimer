@@ -1423,9 +1423,10 @@
       "expect": {
         "countedDuration": "nonnegative for persistence",
         "liveBalance": "signed, with unused break credit",
-        "currentMarker": "retained at right edge; percent em dash while balance <= 0",
+        "currentMarker": "visible; finite earned/work percent whenever productive time is positive",
         "avatar": "running",
-        "mainReadout": "ticks; matches Current in Remaining/Elapsed/End Time"
+        "mainReadout": "ticks; matches Current; Elapsed is productive time without subtracting credit",
+        "fractionalCorrection": "shared duration/time policy; exact whole seconds have no sign"
       }
     },
     {

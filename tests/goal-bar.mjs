@@ -26,8 +26,8 @@ await c.start({standardTime:'0:30:00'});window.__testTime+=1200000;c.setAttribut
 assert.equal(c.getGoalEditorSnapshot('total').actual_percent,110);assert.equal(c.getGoalEditorSnapshot('total').inferred_percent,125);assert.equal(c.getGoalEditorSnapshot('total',120).inferred_percent,158);assert.equal(c.getGoalEditorSnapshot('total').actual_percent,110,'preview never changes saved goal');
 let state=c.getUIState(),bar=state.goal_bar;assert.equal(bar.available,true);
 assert.equal(bar.next_goal.label,'Total');assert.equal(bar.next_goal.remaining_milliseconds,240000);assert.equal(bar.next_goal.clock,'0:04:00');
-window.__testTime+=250;assert.equal(c.getUIState().goal_bar.next_goal.clock,'0:03:59⁺','next-goal countdown preserves omitted fractional seconds');window.__testTime-=250;
-c.setAttribute('total-label','Week');c.configure({trip_goal:'125%'});assert.equal(c.getUIState().goal_bar.next_goal.label,'Week/Trip','coincident goals share a slash-separated caption');c.configure({trip_goal:'110%'});c.removeAttribute('total-label');
+window.__testTime+=250;assert.equal(c.getUIState().goal_bar.next_goal.clock,'0:03:59','running next-goal countdown follows the main duration correction policy');window.__testTime-=250;
+c.setAttribute('total-label','Week');c.configure({trip_goal:'125%'});assert.equal(c.getUIState().goal_bar.next_goal.label,'Trip/Week','coincident goals share a slash-separated caption');c.configure({trip_goal:'110%'});c.removeAttribute('total-label');
 
 assert.equal(bar.nodes.find(n=>n.id==='total').percent,125,'Day 110% infers 125% trip requirement');
 assert.deepEqual(Array.from(bar.nodes,n=>Number(n.percent.toFixed(6))),[100,110,125,150]);
