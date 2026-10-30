@@ -14502,6 +14502,16 @@
         new Map();
 
     function startNumberPadAmbientTone() {
+        if (globalThis.WMOFHalloweenAudio?.isActive()) {
+            stopNumberPadAmbientTone();
+            globalThis.WMOFHalloweenAudio.resetSequence();
+            const generation = numberPadAmbientToneGeneration;
+            void Promise.resolve(globalThis.WMOFAudio?.playNumberPadCue?.('open')).then(handle => {
+                if (generation !== numberPadAmbientToneGeneration) handle?.stop?.();
+                else numberPadAmbientTone = handle;
+            }).catch(error => console.warn('Halloween opening chord unavailable', error));
+            return;
+        }
         const generation =
             ++numberPadAmbientToneGeneration;
 
@@ -14568,6 +14578,7 @@
 
         state.released =
             true;
+        state.controller?.abort();
 
         state.handle
             ?.stop?.();
@@ -17085,6 +17096,10 @@
 
     function resetNumberPadPendingValue() {
         if (!numberPadState) return;
+        if (globalThis.WMOFHalloweenAudio?.isActive()) {
+            stopNumberPadAmbientTone();
+            globalThis.WMOFHalloweenAudio.resetSequence();
+        }
         numberPadState.anchorRange=undefined;numberPadState.anchorInputBuffer=false;numberPadState.fractionEditBuffer=undefined;numberPadState.anchorFractionSide=false;
         numberPadState.pending = numberPadState.initial;
         numberPadState.milliseconds = numberPadState.initialMilliseconds || 0;
@@ -18554,6 +18569,9 @@
                                 return;
                             }
 
+                            // OK is silent in the seasonal keypad; trip events own their cues.
+                            if (button === numberPadConfirm && globalThis.WMOFHalloweenAudio?.isActive()) return;
+
                             // Commit numeric input at the same point as the
                             // touch tone. Waiting for pointerup can leave an
                             // audible keypress with no corresponding digit
@@ -18574,6 +18592,7 @@
 
                             const state = {
                                 released: false,
+                                controller: new AbortController(),
                                 handle: undefined
                             };
 
@@ -18602,6 +18621,7 @@
                                         volume: 1,
                                         reason:
                                             "number-pad",
+                                        signal: state.controller.signal,
                                     }
                                 )
                                 .then(
@@ -20669,11 +20689,12 @@
                 const song = await audio.startSong(songName, { ...output, ...options, includeSpeech: false });
                 if (song?.hasChime && Number.isFinite(song.chimeEndsInMs)) {
                     const atSustain = speechStart.anchor === "sustain" && Number.isFinite(song.sustainStartsInMs);
-                    const anchorMs = atSustain ? song.sustainStartsInMs : song.chimeEndsInMs;
+                    const atCue = Number.isFinite(song.speechStartsInMs);
+                    const anchorMs = atCue ? song.speechStartsInMs : atSustain ? song.sustainStartsInMs : song.chimeEndsInMs;
                     // Speech follows the musical timeline; natural instrument tails may continue underneath.
                     // Normal padding remains the queue's rate-scaled margin; sustain speech has none.
-                    this.nextDelayMs = atSustain ? 0 : undefined;
-                    const elapsed = waitForAnnouncementDelay(anchorMs + (Number(speechStart.paddingMs) || 0));
+                    this.nextDelayMs = atSustain || atCue ? 0 : undefined;
+                    const elapsed = waitForAnnouncementDelay(anchorMs + (atCue ? 0 : Number(speechStart.paddingMs) || 0));
                     const ended = await Promise.race([elapsed.then(() => true),
                         Promise.resolve(song.finished).then(result => result?.reason === "stopped" || result?.reason === "error" ? false : elapsed.then(() => true))]);
                     played = ended;

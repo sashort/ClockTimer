@@ -1,0 +1,338 @@
+{
+  "notes": [
+    "D6",
+    "C#6",
+    "Bb5",
+    "A5",
+    "D5"
+  ],
+  "finalChord": "D minor",
+  "events": [
+    {
+      "offset": "0",
+      "tone": "A1",
+      "length": "0.8421052631578947",
+      "instrument": "finale-pulse",
+      "dynamic": "f"
+    },
+    {
+      "offset": "0",
+      "tone": "A2",
+      "length": "0.8421052631578947",
+      "instrument": "finale-cellos",
+      "dynamic": "f"
+    },
+    {
+      "offset": "0",
+      "tone": "G4",
+      "length": "0.3368421052631579",
+      "instrument": "finale-spiccato",
+      "dynamic": "mf"
+    },
+    {
+      "offset": "0",
+      "tone": "C4",
+      "length": "0.42105263157894735",
+      "instrument": "finale-hiphop-kick",
+      "dynamic": "mf"
+    },
+    {
+      "offset": "0",
+      "tone": "C4",
+      "length": "0.3157894736842105",
+      "instrument": "finale-hiphop-snare",
+      "dynamic": "ff"
+    },
+    {
+      "offset": "0",
+      "tone": "C4",
+      "length": "0.3157894736842105",
+      "instrument": "finale-hiphop-clap",
+      "dynamic": "f"
+    },
+    {
+      "offset": "0",
+      "tone": "C4",
+      "length": "0.21052631578947367",
+      "instrument": "finale-hiphop-hat",
+      "dynamic": "f"
+    },
+    {
+      "offset": "0",
+      "tone": "C4",
+      "length": "0.16842105263157894",
+      "instrument": "finale-hiphop-snare",
+      "dynamic": "p"
+    },
+    {
+      "offset": "0",
+      "tone": "D6",
+      "length": "0.22105263157894736",
+      "instrument": "finale-string-runs",
+      "dynamic": "mf",
+      "sampleStartSeconds": 0.12
+    },
+    {
+      "offset": "0.2631578947367643",
+      "tone": "E4",
+      "length": "0.3368421052631579",
+      "instrument": "finale-spiccato",
+      "dynamic": "mp"
+    },
+    {
+      "offset": "0.2631578947367643",
+      "tone": "C4",
+      "length": "0.21052631578947367",
+      "instrument": "finale-hiphop-hat",
+      "dynamic": "mp"
+    },
+    {
+      "offset": "0.2631578947367643",
+      "tone": "C4",
+      "length": "0.16842105263157894",
+      "instrument": "finale-hiphop-snare",
+      "dynamic": "mf"
+    },
+    {
+      "offset": "0.2631578947367643",
+      "tone": "C#6",
+      "length": "0.7368421052631579",
+      "instrument": "finale-violins",
+      "dynamic": "f"
+    },
+    {
+      "offset": "0.2631578947367643",
+      "tone": "C#6",
+      "length": "0.22105263157894736",
+      "instrument": "finale-string-runs",
+      "dynamic": "mf",
+      "sampleStartSeconds": 0.12
+    },
+    {
+      "offset": "0.5263157894736423",
+      "tone": "G4",
+      "length": "0.3368421052631579",
+      "instrument": "finale-spiccato",
+      "dynamic": "mf"
+    },
+    {
+      "offset": "0.5263157894736423",
+      "tone": "C4",
+      "length": "0.21052631578947367",
+      "instrument": "finale-hiphop-hat",
+      "dynamic": "mf"
+    },
+    {
+      "offset": "0.5263157894736423",
+      "tone": "C4",
+      "length": "0.16842105263157894",
+      "instrument": "finale-hiphop-snare",
+      "dynamic": "mf"
+    },
+    {
+      "offset": "0.5263157894736423",
+      "tone": "Bb5",
+      "length": "0.22105263157894736",
+      "instrument": "finale-string-runs",
+      "dynamic": "mf",
+      "sampleStartSeconds": 0.12
+    },
+    {
+      "offset": "0.7894736842105203",
+      "tone": "A4",
+      "length": "0.3368421052631579",
+      "instrument": "finale-spiccato",
+      "dynamic": "mp"
+    },
+    {
+      "offset": "0.7894736842105203",
+      "tone": "C4",
+      "length": "0.21052631578947367",
+      "instrument": "finale-hiphop-hat",
+      "dynamic": "p"
+    },
+    {
+      "offset": "0.7894736842105203",
+      "tone": "C4",
+      "length": "0.16842105263157894",
+      "instrument": "finale-hiphop-snare",
+      "dynamic": "mf"
+    },
+    {
+      "offset": "0.7894736842105203",
+      "tone": "A5",
+      "length": "0.22105263157894736",
+      "instrument": "finale-string-runs",
+      "dynamic": "mf",
+      "sampleStartSeconds": 0.12
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D5",
+      "length": "3.1578947368421053",
+      "instrument": "finale-violins",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D2",
+      "length": "3.1578947368421053",
+      "instrument": "finale-last-pulse",
+      "dynamic": "ff"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D4",
+      "length": "4.2105263157894735",
+      "instrument": "finale-last-organ",
+      "dynamic": "ff"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D4",
+      "length": "3.1578947368421053",
+      "instrument": "finale-violins",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D4",
+      "length": "3.1578947368421053",
+      "instrument": "finale-last-trumpets",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "F4",
+      "length": "4.2105263157894735",
+      "instrument": "finale-last-organ",
+      "dynamic": "ff"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "F4",
+      "length": "3.1578947368421053",
+      "instrument": "finale-violins",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "F4",
+      "length": "3.1578947368421053",
+      "instrument": "finale-last-trumpets",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "A4",
+      "length": "4.2105263157894735",
+      "instrument": "finale-last-organ",
+      "dynamic": "ff"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "A4",
+      "length": "3.1578947368421053",
+      "instrument": "finale-violins",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "A4",
+      "length": "3.1578947368421053",
+      "instrument": "finale-last-trumpets",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D5",
+      "length": "4.2105263157894735",
+      "instrument": "finale-last-organ",
+      "dynamic": "ff"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D5",
+      "length": "3.1578947368421053",
+      "instrument": "finale-violins",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D5",
+      "length": "3.1578947368421053",
+      "instrument": "finale-last-trumpets",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D3",
+      "length": "3.1578947368421053",
+      "instrument": "finale-horns",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "A3",
+      "length": "3.1578947368421053",
+      "instrument": "finale-horns",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D4",
+      "length": "3.1578947368421053",
+      "instrument": "finale-horns",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D3",
+      "length": "3.1578947368421053",
+      "instrument": "finale-last-cellos",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "A5",
+      "length": "3.1578947368421053",
+      "instrument": "finale-horror-strings",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D6",
+      "length": "3.1578947368421053",
+      "instrument": "finale-horror-strings",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "C4",
+      "length": "0.42105263157894735",
+      "instrument": "finale-hiphop-kick",
+      "dynamic": "ff"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "C4",
+      "length": "0.3157894736842105",
+      "instrument": "finale-hiphop-snare",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "C4",
+      "length": "0.3157894736842105",
+      "instrument": "finale-hiphop-clap",
+      "dynamic": "f"
+    },
+    {
+      "offset": "1.0526315789473983",
+      "tone": "D5",
+      "length": "1.0526315789473684",
+      "instrument": "finale-bells",
+      "dynamic": "ff"
+    }
+  ]
+}

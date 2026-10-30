@@ -43,14 +43,13 @@ goal calculation, motion geometry and trip accounting do not change.
 
 ## Audio
 
-The current Halloween keypad preset combines low Cinematic Pulse Bass with the
-recorded Part 3 tremolo-string voice from Neon Countdown. Chords follow each
-key's two bass pitches using octaves and a fifth. After one second without
-further keypad activity, a single low note uses Part 2's actual `midnight-pulse`
-preset. It holds for 1.2 seconds, then releases. Another press resets a pending
-response. Normal announcement songs, saved audio preferences, volume and mute
-remain governed by the existing audio settings. Turning the theme off cancels
-pending/ringing seasonal voices and restores normal keypad tones.
+The Halloween numberpad opens with Part 3 strings and cycles through five held
+Cinematic Pulse Bass notes. Inactivity and Reset silently reset the sequence;
+OK is silent. Seasonal trip-start/end ensemble arrangements allow speech at the
+two-second mark. The approved orchestral event family covers other notifications.
+Saved instruments, volume and mute remain governed by existing audio settings.
+Turning the theme off cancels seasonal playback and restores normal audio.
+See [halloween-audio.md](halloween-audio.md) for scores and event behavior.
 
 ## Verification and state references
 
@@ -58,8 +57,8 @@ pending/ringing seasonal voices and restores normal keypad tones.
 saved custom colors, the day boundary, closed shadows, embedded settings,
 skeleton geometry, the 16 layout/state combinations, dialogs and Drop In. It
 captures the actual UI and audits visible colors in all frames for remaining blue.
-The audio tests cover chord pitch relationships, timeout resets, cancellation,
-recording caches and the Part 2 instrument dispatch. Existing layout/avatar,
+The audio tests cover five-note sequencing, timeout resets, cancellation,
+recording caches and approved ensemble dispatch. Existing layout/avatar,
 template, settings and audio-volume checks remain applicable.
 
 The `HALLOWEEN-THEME` version 2 FSM contract and `HALLOWEEN-TOGGLE-RESTORE` case

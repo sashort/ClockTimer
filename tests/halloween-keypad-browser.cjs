@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict'),fixture=require('./order-filler-master-fixture.cjs');
+(async()=>{const f=await fixture({input:'transcript'});try{const p=f.page,op=require('./retained-page-operation.cjs')(p);
+await op(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();});
+await p.evaluate(async()=>{
+ window.seasonalAudioTrace=[];WMOFAudio.unlock=async()=>true;
+ WMOFAudio.playNumberPadCue=async kind=>{seasonalAudioTrace.push({type:'cue',kind,at:performance.now()});return{stop(){seasonalAudioTrace.push({type:'cue-stop',kind,at:performance.now()});}};};
+ WMOFAudio.startFrequencies=async(frequencies,options)=>{seasonalAudioTrace.push({type:'tone',frequencies,reason:options.reason,at:performance.now()});return{stop(){seasonalAudioTrace.push({type:'tone-stop',at:performance.now()});}};};
+ WMOFAudio.startSong=async name=>{const special=['trip-started','trip-started-early','trip-started-late','trip-ended'].includes(name);seasonalAudioTrace.push({type:'song',name,at:performance.now()});return{hasChime:true,chimeEndsInMs:special?9000:0,speechStartsInMs:WMOFSeasonalTheme.active&&special?2000:null,finished:new Promise(r=>setTimeout(()=>r({reason:'ended'}),special?9000:0))};};
+ WMOFAudio.speak=(text,options={})=>{seasonalAudioTrace.push({type:'speech',text,at:performance.now()});queueMicrotask(()=>options.onEnd?.());return true;};
+ await WMOFSeasonalTheme.setPreference('halloween',{persist:false});
+});
+await op(()=>WMOFActions.openGoalEditor({scope:'trip'}));await p.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open);await p.clock.runFor(700);
+let trace=await p.evaluate(()=>seasonalAudioTrace);assert(trace.some(e=>e.type==='cue'&&e.kind==='open'),'opening chord requested');assert(!trace.some(e=>e.reason==='number-pad-ambient'),'no default dual-tone drone');
+await p.evaluate(()=>WMOFActions.clearNumberPadValue());await p.locator('[data-number="1"]').hover();await p.mouse.down();await p.clock.runFor(500);trace=await p.evaluate(()=>seasonalAudioTrace);assert(trace.some(e=>e.type==='tone'&&e.reason==='number-pad'));const stops=trace.filter(e=>e.type==='tone-stop').length;await p.mouse.up();await p.clock.runFor(100);assert((await p.evaluate(()=>seasonalAudioTrace)).filter(e=>e.type==='tone-stop').length>stops,'pointerup releases held voice');
+await op(()=>WMOFActions.resetNumberPadValue());const before=await p.evaluate(()=>seasonalAudioTrace.filter(e=>e.type==='tone').length);await p.locator('#numberPadConfirm').dispatchEvent('pointerdown',{pointerId:9});assert.equal(await p.evaluate(()=>seasonalAudioTrace.filter(e=>e.type==='tone').length),before,'OK is silent');
+await op(()=>WMOFActions.cancelNumberPadEdit());await p.clock.runFor(700);await p.evaluate(()=>seasonalAudioTrace=[]);
+await op(()=>clockTimer.start({standardTime:'0:02:00'}));await p.clock.runFor(2300);
+trace=await p.evaluate(()=>seasonalAudioTrace);const start=trace.find(e=>e.type==='song'&&/^trip-started/.test(e.name)),speech=trace.find(e=>e.type==='speech'&&start&&e.at>=start.at);assert(start&&speech,'start cue and speech both occur');assert(speech.at-start.at>=1990&&speech.at-start.at<2600,'speech follows two-second cue mark, not nine-second tail: '+JSON.stringify({start,speech}));
+assert.equal(trace.filter(e=>e.type==='song'&&/^trip-started/.test(e.name)).length,1,'no extra start song');assert.deepEqual(f.errors,[]);console.log('PASS seasonal numberpad opening, no ambient dual tone, held key release, silent OK/Reset and two-second trip-start speech handoff');
+}finally{await f.close();}})().catch(e=>{console.error(e);process.exitCode=1});
