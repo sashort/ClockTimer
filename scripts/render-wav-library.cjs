@@ -1,7 +1,8 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..'),{chromium}=require('node:module').createRequire(path.join(root,'tests/package.json'))('playwright');
-const plan=JSON.parse(fs.readFileSync(path.join(root,'api/audio/wav/render-plan.json'),'utf8'));
-const out=path.join(root,'api/audio/wav');
+const plan=JSON.parse(fs.readFileSync(process.env.WAV_PLAN||path.join(root,'api/audio/wav/render-plan.json'),'utf8'));
+const out=process.env.WAV_OUTPUT?path.resolve(process.env.WAV_OUTPUT):path.join(root,'api/audio/wav');
+fs.mkdirSync(out,{recursive:true});
 const shard=Number(process.env.WAV_SHARD||0),shards=Number(process.env.WAV_SHARDS||1);
 let jobs=plan.jobs.filter((_,i)=>i%shards===shard);
 if(process.env.WAV_LIMIT)jobs=jobs.slice(0,Number(process.env.WAV_LIMIT));

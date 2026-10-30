@@ -3731,7 +3731,7 @@
 
         return {
             lang: announcementLanguage.locale,
-            speechStart: globalThis.WMOFAnnouncementCatalog?.get?.(announcement)?.speechStart,
+            speechStart: globalThis.WMOFSoundCatalog?.eventSpeechStart?.(announcement) || globalThis.WMOFAnnouncementCatalog?.get?.(announcement)?.speechStart,
             speechVolume:
                 resolve("volume"),
             toneVolume:
@@ -20632,12 +20632,13 @@
             try {
                 const song = await (audio.playSound || audio.startSong).call(audio, songName, { ...output, ...options, includeSpeech: false });
                 if (song?.hasChime && Number.isFinite(song.chimeEndsInMs)) {
+                    const atCue = speechStart.anchor === "cue";
                     const atSustain = speechStart.anchor === "sustain" && Number.isFinite(song.sustainStartsInMs);
                     const anchorMs = atSustain ? song.sustainStartsInMs : song.chimeEndsInMs;
                     // Speech follows the musical timeline; natural instrument tails may continue underneath.
                     // Normal padding remains the queue's rate-scaled margin; sustain speech has none.
-                    this.nextDelayMs = atSustain ? 0 : undefined;
-                    const elapsed = waitForAnnouncementDelay(anchorMs + (Number(speechStart.paddingMs) || 0));
+                    this.nextDelayMs = atSustain || atCue ? 0 : undefined;
+                    const elapsed = waitForAnnouncementDelay(anchorMs + (atCue ? 0 : Number(speechStart.paddingMs) || 0));
                     const ended = await Promise.race([elapsed.then(() => true),
                         Promise.resolve(song.finished).then(result => result?.reason === "stopped" || result?.reason === "error" ? false : elapsed.then(() => true))]);
                     played = ended;

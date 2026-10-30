@@ -18200,7 +18200,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "windows.json owns opening, sustained, closing and button phases. Omitted phases are silent. Shared instruments live under api/audio/instruments.",
         "events.json owns sound selection and language-template references; translated text and placeholder values stay in the language system.",
         "Default preserves live dual tones. Halloween held keys use D-minor arpeggios across four rows/octaves, including Clear/Reset and OK; release follows the instrument envelope.",
-        "Halloween keypad opening uses the approved string-chord WAV. Trip start/end use one cached WAV source with the authored two-second speech mark and complete recorded tail.",
+        "Halloween keypad opening uses the approved Part 2/3 tubular-bell D4 WAV. Start uses the first four Part III pulse notes, speech at the fourth attack without queue padding, and a final pulse release aligned with the strings at every speed. End uses the former Start arrangement and its two-second speech mark. All instrument tails remain intact.",
         "Closing windows, theme changes and canceled presses stop old owners and reject late-loading voices. WAV cues share the original semantic speech queue without a separate seasonal speech branch."
       ],
       "forbidden": [
@@ -18216,7 +18216,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "node tests/audio-sample-cache.mjs",
         "node tests/halloween-trip-playback-browser.cjs",
         "node tests/theme-audio-config.mjs",
-        "node tests/announcement-real-engine-browser.cjs"
+        "node tests/announcement-real-engine-browser.cjs",
+        "node tests/halloween-trip-arrangements.mjs"
       ]
     }
   },

@@ -16,13 +16,13 @@ Each window may specify `opening`, `sustained`, and `closing`. A phase reference
 
 `controls.buttons` maps `data-audio-control`, DOM ID, or `data-action` to optional `press`, `release`, and `click` phases. A held phase sets `hold: true`; release/cancel stops it. Complete cues are one-shot. Both phases may be defined deliberately, but do not configure press and click for the same cue unless two plays are intended.
 
-The keypad's `controls.press` declares its shared live instrument and positional mapping. Default preserves original DTMF, including the quiet 350/440 Hz window sustain. Halloween plays the opening string WAV, has no sustained drone, and maps rows to D-minor arpeggios D2/F2/A2 through D5/F5/A5. Clear and Reset share the bottom-left pitch; Zero and OK complete the fourth row. Notes sustain while held and release using the pulse envelope.
+The keypad's `controls.press` declares its shared live instrument and positional mapping. Default preserves original DTMF, including the quiet 350/440 Hz window sustain. Halloween plays a D4 tubular-bell WAV, has no sustained drone, and maps rows to D-minor arpeggios D2/F2/A2 through D5/F5/A5. Clear and Reset share the bottom-left pitch; Zero and OK complete the fourth row. Notes sustain while held and release using the pulse envelope.
 
 ## Events and language
 
 `events.json` is version 1 with an `events` object. Each event declares `sound` (a cue ID, or `null` for silence) and may declare `speech` references by phase, for example `"summary": "announcements.trip-started.summary"`. The optional `templates` map references other language-template paths. It contains no translated prose. The existing language system supplies wording, locale fallback, placeholders, and speech options. Computed values remain parameters, not theme-specific text.
 
-Both themes use the same semantic speech queue. Recorded-cue handles expose the musical speech handoff separately from the full recorded tail; Halloween trip start/end retain their two-second mark. Audio activation starts before asynchronous catalog loading. Failed or timed-out sound preparation is reported to the queue so speech can proceed; Android device behavior must still be verified on the user's phone.
+Both themes use the same semantic speech queue. Recorded-cue handles expose the musical speech handoff separately from the full recorded tail; Halloween Start uses the first four Part III pulse notes, with speech at the fourth attack and no additional queue padding. Its final pulse fades with the strings at every supported speed. Halloween End uses the former Start arrangement and retains its two-second speech mark. Audio activation starts before asynchronous catalog loading. Failed or timed-out sound preparation is reported to the queue so speech can proceed; Android device behavior must still be verified on the user's phone.
 
 ## Build and deployment
 

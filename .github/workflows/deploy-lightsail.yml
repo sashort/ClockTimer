@@ -219,6 +219,8 @@ jobs:
       - run: node tests/halloween-keypad-browser.cjs
       - run: node tests/halloween-trip-playback-browser.cjs
       - run: node scripts/verify-wav-library.cjs
+      - run: node scripts/build-wav-catalogs.cjs
+      - run: node tests/halloween-trip-arrangements.mjs
       - run: node tests/announcement-real-engine-browser.cjs
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs

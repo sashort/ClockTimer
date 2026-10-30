@@ -15,7 +15,7 @@ const rendererHash=crypto.createHash('sha256').update(fs.readFileSync(path.join(
 const sampleHashes=new Map();
 function sampleHash(url){if(!sampleHashes.has(url))sampleHashes.set(url,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,url))).digest('hex'));return sampleHashes.get(url);}
 for(const theme of ['default','halloween']){
- const scores=clean({...base.songs,...(theme==='halloween'?{...halloween.songs,'keypad-open':{bpm:120,instrument:'halloween-opening-strings',seasonalGain:halloween.opening.volume,events:halloween.opening.notes.map(tone=>({offset:'0',tone,length:String(halloween.opening.holdSeconds*2),dynamic:'fff'}))}}:{})}),profiles={};
+ const scores=clean({...base.songs,...(theme==='halloween'?halloween.songs:{})}),profiles={};
  for(const profile of ['authored',...instruments.map(i=>i.id)]){
   const sounds={};
   for(const [name,score]of Object.entries(scores)){
@@ -26,15 +26,22 @@ for(const theme of ['default','halloween']){
    const used=[...new Set([instrument,...events.map(e=>e.instrument||instrument)])];
    const defs=Object.fromEntries(used.map(id=>[id,selected?{...definitions[id],...(definitions[id].samples?{samples:definitions[id].samples.map(sample=>({...sample,...(/(?:neon-countdown|easter-egg-approved|dark-eighties-approved)/.test(sample.url)?{naturalDecay:false}:{})}))}:{})}:definitions[id]])),variants={};
    for(const speed of rates){
+    let rateDefs=defs;
+    if(score.releaseSync){
+     const sync=score.releaseSync,seconds=60/score.bpm/speed;
+     const referenceEnd=Math.max(...events.filter(e=>sync.referenceInstruments.includes(e.instrument)).map(e=>(Number(e.offset)+Number(e.length))*seconds+defs[e.instrument].envelope.release));
+     const heldEnd=Math.max(...events.filter(e=>e.instrument===sync.instrument).map(e=>(Number(e.offset)+Number(e.length))*seconds));
+     rateDefs={...defs,[sync.instrument]:{...defs[sync.instrument],envelope:{...defs[sync.instrument].envelope,release:Math.max(.16,referenceEnd-heldEnd)}}};
+    }
     const sample=events.length===1&&defs[instrument]?.samples?.length===1&&defs[instrument].samples[0];
     if(profile==='authored'&&sample?.naturalDecay&&/\.wav$/i.test(sample.url)){variants[speed]={url:sample.url,existing:true};continue;}
-    const samples=Object.fromEntries(Object.values(defs).flatMap(d=>d.samples||[]).map(s=>[s.url,sampleHash(s.url)]));
-    const payload={renderer:rendererHash,bpm:score.bpm,instrument,events,definitions:defs,samples,speed,gain:score.seasonalGain??1};
+    const samples=Object.fromEntries(Object.values(rateDefs).flatMap(d=>d.samples||[]).map(s=>[s.url,sampleHash(s.url)]));
+    const payload={renderer:rendererHash,bpm:score.bpm,instrument,events,definitions:rateDefs,samples,speed,gain:score.seasonalGain??1};
     const key=crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex').slice(0,24);
     variants[speed]={url:'api/audio/wav/'+key+'.wav',key};
-    if(!jobs.has(key))jobs.set(key,{key,theme,name,profile,speed,score:{...score,instrument,events},instruments:defs});
+    if(!jobs.has(key))jobs.set(key,{key,theme,name,profile,speed,score:{...score,instrument,events},instruments:rateDefs});
    }
-   sounds[name]={bpm:score.bpm,events,rates:variants,speechStartSeconds:score.seasonalSpeechStartSeconds??null,loop:!!score.loop};
+   sounds[name]={bpm:score.bpm,events,rates:variants,speechStartSeconds:score.seasonalSpeechStartSeconds??null,...(score.seasonalSpeechStartBeat!=null?{speechStartBeat:score.seasonalSpeechStartBeat}:{}),loop:!!score.loop};
   }
   const file='api/audio/themes/'+theme+'/profiles/'+profile+'.json';write(file,{version:1,theme,profile,sounds});profiles[profile]=file;
  }
