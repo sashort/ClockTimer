@@ -93,7 +93,13 @@ const out = path.resolve(__dirname,'../../outputs/halloween-implemented'); fs.mk
             actualTimeMilliseconds:1620000,countedTimeMilliseconds:1620000,running:false,events:[
                 {id:1,event:'trip.started',timestamp:date+'T10:00:00Z',value:{standardTimeMilliseconds:1800000}},
                 {id:2,event:'trip.stopped',timestamp:date+'T10:27:00Z',value:{}}]}];
+        trips.push({id:42,startTime:date+'T09:00:00Z',endTime:date+'T09:15:00Z',breakOnly:true,nonProduction:false,standardTimeMilliseconds:null,countedTimeMilliseconds:0,actualTimeMilliseconds:900000,running:false,events:[{event:'trip.started',timestamp:date+'T09:00:00Z',value:{breakOnly:true}}]});
         await op(()=>WMOFActions.openTripLog('pointer'));await p.waitForSelector('.trip-log-trip',{state:'attached'});
+        const breakContrast=await p.locator('.trip-log-trip.is-break-only').evaluate(e=>{
+            const luminance=color=>{const rgb=color.match(/[\d.]+/g).slice(0,3).map(Number).map(n=>{n/=255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
+            const ratio=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+            const row=getComputedStyle(e),badge=getComputedStyle(e.querySelector('.trip-log-break-only-badge'));return{row:ratio(row.color,row.backgroundColor),badge:ratio(badge.color,badge.backgroundColor)};
+        });assert(breakContrast.row>=4.5&&breakContrast.badge>=4.5,'standalone-break row and badge contrast: '+JSON.stringify(breakContrast));
         await p.locator('.trip-log-trip').first().evaluate(e=>{for(let a=e;a;a=a.parentElement)if(a.tagName==='DETAILS')a.open=true;});
         await shot('trip-log');
         await p.route('**/api/trip-editor/**',r=>r.fulfill({json:{revision:'theme-test',events:trips[0].events}}));
@@ -122,6 +128,12 @@ const out = path.resolve(__dirname,'../../outputs/halloween-implemented'); fs.mk
             for(const [n,actions,percent] of [[1,'Full','Classic'],[2,'Full','Bar'],[3,'Compact','Classic'],[4,'Compact','Bar']]){
                 await op(async({actions,percent})=>{document.querySelector('#actionDisplay'+actions).click();document.querySelector('#percentageDisplay'+percent).click();await WMOFLayoutMotion.whenSettled();},{actions,percent});
                 await shot('mode-'+n+suffix);
+                if(suffix==='d'){
+                    const colors=await p.evaluate(()=>({buttons:['downBreakButton','downCancelButton'].map(id=>{const s=getComputedStyle(document.getElementById(id));return{color:s.color,background:s.backgroundImage};}),timer:{color:getComputedStyle(document.querySelector(app.dataset.actionDisplay==='compact'?'.compact-interval-timer':'#downElapsedValue')).color,zIndex:getComputedStyle(document.querySelector('.compact-interval-timer')).zIndex}}));
+                    assert.equal(colors.buttons[0].color,'rgb(255, 215, 120)');assert.equal(colors.buttons[1].color,'rgb(255, 245, 226)');
+                    for(const button of colors.buttons){const rgb=button.background.match(/rgb\((\d+), (\d+), (\d+)\)/).slice(1,4).map(Number);assert(Math.max(...rgb)-Math.min(...rgb)>30,'Down backgrounds retain seasonal color');}
+                    assert.equal(colors.timer.color,'rgb(255, 215, 120)');if(actions==='Compact')assert(Number(colors.timer.zIndex)>3000,'compact Down timer stays above desaturation');
+                }
             }
         }
         await layouts('a');

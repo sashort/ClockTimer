@@ -3286,6 +3286,8 @@
     ]);
     let tripListButtonAnimation;
     let tripListBodyAnimationFrame;
+    let tripListBodyAnimationResolve;
+    let tripListTransitionRevision = 0;
 
     function defaultAudioSettings() {
         const rows = {};
@@ -5884,7 +5886,7 @@
     ) {
         tripListButtonAnimation?.cancel();
 
-        tripListButtonAnimation =
+        const animation = tripListButtonAnimation =
             tripLogButton.animate(
                 [
                     { transform: fromTransform },
@@ -5898,12 +5900,12 @@
             );
 
         try {
-            await tripListButtonAnimation.finished;
+            await animation.finished;
         }
         catch {}
 
-        tripListButtonAnimation?.cancel();
-        tripListButtonAnimation = undefined;
+        animation.cancel();
+        if(tripListButtonAnimation===animation)tripListButtonAnimation = undefined;
     }
 
     function getTripLogBodyRect() {
@@ -6356,6 +6358,8 @@
             tripListBodyAnimationFrame =
                 undefined;
         }
+        tripListBodyAnimationResolve?.(false);
+        tripListBodyAnimationResolve=undefined;
 
         const fullWidth =
             Math.max(
@@ -6389,6 +6393,7 @@
 
         return new Promise(
             resolve => {
+                tripListBodyAnimationResolve=resolve;
                 let startedAt;
 
                 const frame =
@@ -6457,6 +6462,7 @@
                                 );
                             }
 
+                            tripListBodyAnimationResolve=undefined;
                             resolve(true);
                             return;
                         }
@@ -6514,6 +6520,7 @@
     async function showTripLogMerge(
         duration = TRIP_LIST_MERGE_DURATION
     ) {
+        const revision=tripListTransitionRevision;
         if (
             !tripLogButton ||
             !tripLogBody ||
@@ -6543,7 +6550,7 @@
         requestAnimationFrame(
             () => {
                 if (
-                    tripListIsActive()
+                    revision===tripListTransitionRevision && tripListIsActive()
                 ) {
                     tripLogCloseButton.classList.add(
                         "is-visible"
@@ -6557,12 +6564,13 @@
             duration
         );
 
-        clearTripLogMergeDuration();
+        if(revision===tripListTransitionRevision)clearTripLogMergeDuration();
     }
 
     async function hideTripLogMerge(
         duration = TRIP_LIST_MERGE_DURATION
     ) {
+        const revision=tripListTransitionRevision;
         setTripLogMergeDuration(
             duration
         );
@@ -6583,6 +6591,7 @@
         await wait(
             duration
         );
+        if(revision!==tripListTransitionRevision)return;
 
         if (tripLogCloseButton) {
             tripLogCloseButton.hidden =
@@ -6593,6 +6602,29 @@
         clearTripLogMergeDuration();
     }
 
+    function restoreClosedTripLog() {
+        tripListTransitionRevision++;
+        tripListButtonAnimation?.cancel();tripListButtonAnimation=undefined;
+        if(tripListBodyAnimationFrame!==undefined)cancelAnimationFrame(tripListBodyAnimationFrame);
+        tripListBodyAnimationFrame=undefined;
+        tripListBodyAnimationResolve?.(false);tripListBodyAnimationResolve=undefined;
+        app.dataset.tripListState='closed';
+        tripLogBody.hidden=true;tripLogBody.inert=true;
+        tripLogButton.classList.remove('trip-log-merged');tripLogBody.classList.remove('trip-log-merged');
+        for(const control of [tripLogCloseButton,tripLogSettingsButton]){
+            control.hidden=true;control.classList.remove('is-visible');
+        }
+        clearTripLogMergeDuration();clearFloatingTripLogBodyRect();clearFloatingTripLogRect();
+        tripLogButton.setAttribute('aria-expanded','false');
+        if(tripLogPlaceholder){tripLogPlaceholder.before(tripLogButton);tripLogPlaceholder.hidden=true;}
+        if(tripLogDialog.open)tripLogDialog.close();
+        globalThis.SpeechMenu?.surfaceClosed?.(tripLogDialog);
+        setTripLogPinned(tripLogIsPinned(),{persist:false});
+    }
+    tripLogDialog?.addEventListener('close',()=>{
+        if(!tripLogDialog.open && getTripListState()!=='closed')restoreClosedTripLog();
+    });
+
     async function openTripList(source = "button") {
         if (
             !tripLogButton ||
@@ -6601,6 +6633,9 @@
         ) {
             return false;
         }
+        const revision=++tripListTransitionRevision;
+        const current=()=>revision===tripListTransitionRevision && tripLogDialog.open;
+        try {
 
         tripLogSettingsVisible = false;
         tripLogView?.setSettingsVisible(false);
@@ -6654,6 +6689,7 @@
             );
         }
 
+        if(!current())return true;
         setFloatingTripLogRect(
             topRect
         );
@@ -6661,6 +6697,7 @@
         await wait(
             TRIP_LIST_BODY_DELAY
         );
+        if(!current())return true;
 
         const bodyRect =
             getTripLogBodyRect();
@@ -6690,6 +6727,7 @@
             bodyRect,
             true
         );
+        if(!current())return true;
 
         app.dataset.tripListState =
             "open";
@@ -6698,9 +6736,14 @@
         await showTripLogMerge();
 
         return true;
+        } catch(error) {
+            if(revision===tripListTransitionRevision)restoreClosedTripLog();
+            throw error;
+        }
     }
 
     async function closeTripList(source = "close") {
+        if(getTripListState()==='opening'){restoreClosedTripLog();return true;}
         if (
             !tripLogButton ||
             !tripLogBody ||
@@ -6708,6 +6751,9 @@
         ) {
             return false;
         }
+        const revision=++tripListTransitionRevision;
+        const current=()=>revision===tripListTransitionRevision && tripLogDialog.open;
+        try {
 
         const pinned =
             tripLogIsPinned();
@@ -6758,12 +6804,14 @@
         await hideTripLogMerge(
             TRIP_LIST_MERGE_DURATION
         );
+        if(!current())return true;
 
         await animateTripLogBody(
             bodyRect,
             false,
             TRIP_LIST_BODY_DURATION
         );
+        if(!current())return true;
 
         tripLogBody.hidden =
             true;
@@ -6773,6 +6821,7 @@
         await wait(
             TRIP_LIST_BODY_DELAY
         );
+        if(!current())return true;
 
         if (pinned && app.dataset.actionDisplay !== "compact") {
             const destination = getTripLogBottomRect();
@@ -6781,6 +6830,7 @@
                 `translateY(${destination.top - topRect.top}px)`,
                 TRIP_LIST_BUTTON_TRANSITION_DURATION
             );
+            if(!current())return true;
             setFloatingTripLogRect(destination);
         }
         else {
@@ -6790,6 +6840,7 @@
                 `translateY(-${distance}px)`,
                 TRIP_LIST_BUTTON_TRANSITION_DURATION
             );
+            if(!current())return true;
         }
 
         app.dataset.tripListState =
@@ -6827,6 +6878,10 @@
         );
 
         return true;
+        } catch(error) {
+            if(revision===tripListTransitionRevision)restoreClosedTripLog();
+            throw error;
+        }
     }
 
     function getStoredJSON(key, fallback) {
@@ -7119,7 +7174,7 @@
             force = false
         } = {}
     ) {
-        if (goalChangeFeedbackDepth) {setSyncAnnouncementBaseline(); return false;}
+        if (goalChangeFeedbackDepth || clockTimer.breakOnly) {setSyncAnnouncementBaseline(); return false;}
         const goal =
             currentCalculatedSyncGoal();
 
@@ -7159,7 +7214,7 @@
                 false
         } = {}
     ) {
-        if (goalChangeFeedbackDepth) {setSyncAnnouncementBaseline(); return false;}
+        if (goalChangeFeedbackDepth || clockTimer.breakOnly) {setSyncAnnouncementBaseline(); return false;}
         const state =
             getSyncRuntimeState();
 
@@ -14254,6 +14309,13 @@
         const offset=state.mode==='percent'?Math.max(0,Math.log10(state.anchorDigit??1)):3;
         return state.anchorRange??{start:offset,stop:offset,explicit:false};
     }
+    function selectNumberPadValue(state=numberPadState){
+        if(!state)return;
+        const count=(numberPadDisplayString(state).match(/\d/g)||[]).length;
+        state.anchorRange=count?{start:count,stop:0,explicit:true}:undefined;
+        state.anchorInputBuffer=false;state.fractionEditBuffer=undefined;state.anchorFractionSide=false;
+        state.replaceOnNextDigit=count>0;
+    }
     function paintNumberPadAnchors(){
         if(!numberPadState||!numberPadDisplay)return;
         const text=numberPadDisplayString(),count=(text.match(/\d/g)||[]).length,range=numberPadAnchorRange();
@@ -14278,6 +14340,15 @@
         const range=numberPadAnchorRange(state),fraction=state.mode!=='percent',suffix=fraction?String(state.milliseconds||0).padStart(3,'0'):'';
         const digits=state.pending?(range.explicit&&!state.anchorInputBuffer?(numberPadDisplayString(state).match(/\d/g)||[]):Array.from(String(state.pending)+suffix)):Array.from(suffix);
         const lo=Math.min(digits.length,Math.min(range.start,range.stop)),hi=Math.min(digits.length,Math.max(range.start,range.stop));
+        if(state.replaceOnNextDigit && range.explicit && hi>lo && lo===0 && hi===digits.length){
+            // Replace the initial/Clear selection, then type at the session's normal
+            // entry position (seconds for time, configured precision for percent).
+            state.pending='';state.milliseconds=0;state.anchorRange=undefined;
+            state.anchorInputBuffer=false;state.fractionEditBuffer=undefined;state.anchorFractionSide=false;
+            state.replaceOnNextDigit=false;state.everEdited=true;
+            if(digit===null){refreshNumberPad();return true;}
+            return editNumberPadAnchorRange(digit);
+        }
         if(fraction&&hi<=3&&(hi>lo||lo<3||state.anchorFractionSide)){
             const text=state.fractionEditBuffer??suffix,padding=3-text.length;
             const low=Math.max(0,lo-padding),high=Math.max(low,hi-padding);let left=text.length-high,length=high-low;
@@ -14692,6 +14763,7 @@
                 performance.now();
         }
 
+        if(state.pending)selectNumberPadValue(state);
         return state;
     }
 
@@ -26319,7 +26391,8 @@
             },
 
             clearNumberPadValue() {
-                eraseNumberPadPendingValue();
+                selectNumberPadValue();
+                refreshNumberPad();
 
                 return Boolean(
                     numberPadState
@@ -26523,7 +26596,8 @@
             },
 
             runNumberPadClear() {
-                eraseNumberPadPendingValue();
+                selectNumberPadValue();
+                refreshNumberPad();
 
                 return Boolean(
                     numberPadState

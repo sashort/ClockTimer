@@ -17711,7 +17711,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "audio": {
         "selector": "Say/press break type then OK.",
         "started": "<type> started. Say break end to end your <type>.",
-        "end": "Are you ready to end your <type>?; once per prompt"
+        "end": "Are you ready to end your <type>?; once per prompt",
+        "standalone": "Starting/ending a break-only session suppresses automatic Sync state, inferred goal and appended Goal Bounding announcements. Update the silent baseline so suppressed transitions are not replayed after ending. Explicit settings changes and active-trip feedback remain enabled."
       },
       "forbidden": [
         "lunch end",
@@ -17902,7 +17903,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
           "hidden": "Classic, idle, standalone break, all goals failed",
           "main_readout": "Remains Standard-based and mode-specific"
         },
-        "numberpad_anchors": "All numberpads use digit boundaries: equal start/stop is a caret; difference one selects one digit. Tap places a caret, drag selects, 550 ms long press selects all. Input replaces a selection once and collapses after input; subsequent input inserts to the left of the collapsed boundary. Backspace deletes selection or preceding digit. Reset restores initial/null value and default caret. Underline selections only; thin zero-layout-width caret for collapsed ranges. Existing clock/duration and decimal formatting remain in use.",
+        "numberpad_anchors": "All numberpads use digit boundaries: equal start/stop is a caret; difference one selects one digit. Tap places a caret, drag selects, 550 ms long press selects all. Input replaces a selection once and collapses after input; subsequent input inserts to the left of the collapsed boundary. Backspace deletes selection or preceding digit. Reset restores initial/null value and default caret. Underline selections only; thin zero-layout-width caret for collapsed ranges. Existing clock/duration and decimal formatting remain in use. Opening with a specified value or pressing Clear selects every digit without immediately erasing the value. First input replaces the whole selection at the session default entry position; following input inserts at the collapsed caret. Backspace deletes the full selection. This applies to both themes and includes fractional digits; date and AM/PM remain independent.",
         "numberpad_milliseconds": "Time/duration pads show three smaller fractional digits. Default caret is after whole seconds, before the decimal. Fraction replacement preserves the whole time and pads missing fractional places with zeros. Confirm/Reset/AM-PM/date changes preserve exact milliseconds. Percentages retain their existing anchor precision and have no time fraction. Close button has contrasting foreground and border.",
         "layout_option_selection": "Applied aria-checked selection remains visible for Classic/Goal bar and Full/Compact while hovered or keyboard-focused, immediately after Switching Layout closes, without reopening Settings. Generic hover/focus background cannot override selected fill."
       },
@@ -18015,10 +18016,11 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "preference": "wmof.clock.actionDisplay: full (default) | compact",
         "actions": "Existing control IDs and handlers; presentation does not change trip/interval eligibility. Left: trip actions. Right: Details and pinned Log. Each stack centered on clock axis.",
         "intervals": "Compact uses Break/Short Break/Lunch/Down Timer above percentage group. Every active trip, including non-production, grays main Elapsed/Remaining during breaks and Down; End Time unchanged, standalone breaks exempt. Full Down controls retain 230px (156px short screen) and rounded background; only surrounding gaps expand.",
-        "log": "Compact pin controls side button only. Open and close use top-entry unpinned animation while preserving actual saved pin.",
+        "log": "Compact pin controls side button only. Open and close use top-entry unpinned animation while preserving actual saved pin. Interrupted opening/closing cancels the owned animation, resolves body motion, clears floating geometry and restores the closed/pinned button. Stale animation completion cannot cancel a newer animation or restore a detached header rectangle.",
         "numberpad": "Touch-only data-speech-input=disabled; no command registrations or transcript dispatch. Mic slides out, editor fills visual viewport, mic restores previous runtime intent on close.",
         "goals": "One applicable goal opens numberpad directly; multiple use configurable selector. Configured goal is larger, inferred smaller and omitted when idle or Trip. Aggregate mode title includes configured percentage; idle Auto is [Auto]. Titles always include configured actual goal, including active Auto Trip/Standard; idle Auto remains [Auto].",
-        "layout": "Monochrome centered SVG icons; balanced visible gaps above/below percentage group; Sync centered on actual track. Full/Compact x Classic/Bar changes are cancellable geometry transitions with reduced-motion fallback."
+        "layout": "Monochrome centered SVG icons; balanced visible gaps above/below percentage group; Sync centered on actual track. Full/Compact x Classic/Bar changes are cancellable geometry transitions with reduced-motion fallback.",
+        "handoffs": "Unconfigured compact buttons are hidden before insertion. During a busy interval handoff, retain prior interval controls across temporary Running snapshots until the destination interval or settled result is rendered. Existing outgoing controls retain their exit animation."
       },
       "controls": {
         "identity": "Existing button IDs and handlers; no action proxies",
@@ -18189,7 +18191,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       "postconditions": [
         "Persist wmof.clock.theme as halloween or default in orderFiller account settings.",
         "Apply or remove the palette in document, closed shadows, embedded settings and Drop In.",
-        "Restore saved timer colors, original avatar and normal keypad audio when disabled."
+        "Restore saved timer colors, original avatar and normal keypad audio when disabled.",
+        "Full/Compact Down Break and Cancel have warm colored backgrounds with gold/cream foregrounds. Down timer caption/value use gold; compact Down timer is above the grayscale backdrop. Standalone-break log rows use cream/gold text and a contrasting gold badge."
       ],
       "controls": [
         "themesMenuButton opens themesSubmenu.",

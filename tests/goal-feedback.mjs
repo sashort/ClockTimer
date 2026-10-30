@@ -47,3 +47,24 @@ context.runSemanticAnnouncement=()=>Promise.resolve(false);
 context.fail({detail:{goals:[{type:'trip',percent:1.1}]}});await flush();
 assert.deepEqual(spoken,[],'canceled queue output settles without retry loops');
 console.log('PASS final Auto/Sync goal feedback, direct/unchanged goals, merged queued failures, duplicate suppression and late failure without a second chime');
+
+const automatic=[];
+const syncScope=vm.createContext({clockTimer:{breakOnly:false,syncBelowFloor:true,goalBounding:true},
+ goalChangeFeedbackDepth:0,syncAnnouncementState:'ready',syncAnnouncementGoal:undefined,
+ runtime:'active',getSyncRuntimeState:()=>syncScope.runtime,currentCalculatedSyncGoal:()=>1.2,
+ syncGoalMatches:(a,b)=>a===b,getSyncGoalsState:()=>true,
+ announcementText:language.text,formatSummaryPercent:goal=>(goal*100)+'%',
+ confirmInformationalChange:(name,text)=>{automatic.push({name,text});return true;}});
+vm.runInContext(app.slice(app.indexOf('    function setSyncAnnouncementBaseline('),app.indexOf('    function renderSyncGoalsState(')),syncScope);
+for(const runtime of ['active','time-blocked','ready']){
+ syncScope.clockTimer.breakOnly=true;syncScope.runtime=runtime;
+ syncScope.announceSyncRuntimeState({force:true,preferCalculatedGoal:true,forceCalculatedGoal:true});
+ syncScope.announceCalculatedSyncGoal({force:true});
+ assert.equal(automatic.length,0,'standalone break transitions suppress Sync and appended Bounding feedback');
+ assert.equal(syncScope.syncAnnouncementState,runtime,'silent transitions still update the baseline');
+}
+syncScope.clockTimer.breakOnly=false;syncScope.announceSyncRuntimeState();
+assert.equal(automatic.length,0,'ending the standalone break does not replay its silent state changes');
+syncScope.runtime='active';syncScope.announceSyncRuntimeState({force:true,preferCalculatedGoal:true,forceCalculatedGoal:true});
+assert.equal(automatic.length,1,'real-trip Sync feedback remains enabled');assert.match(automatic[0].text,/goal bounding on/i);
+console.log('PASS standalone-break Sync/Bounding suppression, baseline advancement and unchanged active-trip feedback');

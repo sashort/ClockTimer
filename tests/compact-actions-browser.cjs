@@ -14,15 +14,43 @@ const fixture=require('./order-filler-master-fixture.cjs');
   await p.screenshot({path:require('node:path').resolve('../outputs/compact-live-'+name+'.png')});
  }
  await state('idle',['newTripButton','idleBreakButton'],['tripLogButton']);fullLogColors=await p.evaluate(()=>globalThis.fullLogColors);assert.deepEqual(await logColors(),fullLogColors,'Compact Trip Log matches the Full button colors');
+ for(const theme of ['default','halloween']){
+  await operation(theme=>WMOFSeasonalTheme.setPreference(theme,{persist:false}),theme);
+  for(const phase of ['opening','closing']){
+   await p.evaluate(()=>{void WMOFActions.openTripLog('pointer');});
+   await p.waitForFunction(()=>document.querySelector('#tripLogDialog').open);
+   if(phase==='closing'){
+    await p.waitForFunction(()=>document.querySelector('#app').dataset.tripListState==='open');
+    await p.evaluate(()=>{void WMOFActions.closeTripLog();});
+    await p.waitForFunction(()=>document.querySelector('#app').dataset.tripListState==='closing');
+   }
+   await p.evaluate(()=>document.querySelector('#tripLogDialog').close());
+   await p.waitForFunction(()=>document.querySelector('#app').dataset.tripListState==='closed');
+   await p.waitForTimeout(2600);
+   const recovered=await p.locator('#tripLogButton').evaluate(e=>({floating:e.classList.contains('trip-log-floating'),width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height,parent:e.parentElement.className,expanded:e.getAttribute('aria-expanded')}));
+   assert.equal(recovered.floating,false,theme+' interrupted '+phase+' clears floating styles');
+   assert.equal(recovered.width,recovered.height,JSON.stringify(recovered));assert.match(recovered.parent,/compact-action-right/);assert.equal(recovered.expanded,'false');
+  }
+ }
+ await operation(()=>WMOFSeasonalTheme.setPreference('default',{persist:false}));
  const exiting=await p.evaluate(async()=>{const e=document.querySelector('#tripLogButton');getComputedStyle(e).opacity;document.querySelector('#tripLogPinButton').click();await new Promise(resolve=>requestAnimationFrame(resolve));getComputedStyle(e).opacity;const transitions=e.getAnimations().filter(a=>a.transitionProperty==='opacity'||a.transitionProperty==='visibility');if(!transitions.some(a=>a.transitionProperty==='opacity'))throw new Error('unpin did not create an opacity transition');for(const a of transitions){a.pause();a.currentTime=100;}const result={opacity:Number(getComputedStyle(e).opacity),visibility:getComputedStyle(e).visibility};for(const a of transitions)a.play();return result;});assert(exiting.opacity>0&&exiting.opacity<1&&exiting.visibility==='visible','unpin keeps painting during fade/scale exit '+JSON.stringify(exiting));await state('idle-unpinned',['newTripButton','idleBreakButton'],[]);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
  await operation(()=>document.querySelector('#clockTimer').start({standardTime:'0:30:00'}));
  await state('running',['endTripButton','breakButton','downButton'],['tripLogButton']);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());await state('running-unpinned',['endTripButton','breakButton','downButton'],[]);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
  await operation(()=>document.querySelector('#clockTimer').startInterval('down'));
  await state('down',['downResumeButton','downBreakButton','downCancelButton'],['downDetailsButton','tripLogButton']);
+ const held=await p.evaluate(()=>{
+  WMOFCompactActions.render(document.querySelector('#app'),{controls:{busy:true,activeTripVisible:true,downVisiblePanel:false,breakLabel:null},clock:{},tripStatus:'running'});
+  const visible=[...document.querySelectorAll('.compact-action-left > [data-compact-visible=true]')].map(e=>e.id).sort();
+  const button=document.createElement('button');document.querySelector('.compact-action-left').append(button);const style=getComputedStyle(button),unconfigured={opacity:style.opacity,visibility:style.visibility};button.remove();return {visible,unconfigured};
+ });
+ assert.deepEqual(held.visible,['downResumeButton','downBreakButton','downCancelButton'].sort(),'intermediate Running must not expose unrelated handoff controls');
+ assert.deepEqual(held.unconfigured,{opacity:'0',visibility:'hidden'},'unconfigured compact buttons never flash visible');
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());await state('down-unpinned',['downResumeButton','downBreakButton','downCancelButton'],['downDetailsButton']);await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
- await operation(()=>document.querySelector('#clockTimer').endInterval());
- await operation(()=>document.querySelector('#clockTimer').startInterval('lunch'));
+ await operation(()=>WMOFActions.resumeTrip());
+ await state('resumed-running',['endTripButton','breakButton','downButton'],['tripLogButton']);
+ await operation(()=>WMOFActions.startDownTime());
+ await operation(()=>WMOFActions.startBreak('lunch'));
  await state('lunch',['endTripButton'],['tripLogButton']);
  assert.match(await p.locator('.compact-interval-timer').textContent(),/Lunch Timer/);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
