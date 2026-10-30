@@ -1,0 +1,1435 @@
+{
+  "version": 1,
+  "theme": "default",
+  "profile": "gated-snare",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/9cc7e08b31b0c8566e0bb8ad.wav",
+          "key": "9cc7e08b31b0c8566e0bb8ad"
+        },
+        "0.8": {
+          "url": "api/audio/wav/6c3164ba27cad5eba789e3f3.wav",
+          "key": "6c3164ba27cad5eba789e3f3"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ff8bdeff0307288af6775c56.wav",
+          "key": "ff8bdeff0307288af6775c56"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/398b2446891120959ded1e13.wav",
+          "key": "398b2446891120959ded1e13"
+        },
+        "0.8": {
+          "url": "api/audio/wav/fffe34cfa252481ddbe9e652.wav",
+          "key": "fffe34cfa252481ddbe9e652"
+        },
+        "1.2": {
+          "url": "api/audio/wav/06020a14d108db4b1f568eae.wav",
+          "key": "06020a14d108db4b1f568eae"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e033cb1677e6cc333a0a3198.wav",
+          "key": "e033cb1677e6cc333a0a3198"
+        },
+        "0.8": {
+          "url": "api/audio/wav/56907af97917fb3f205110c0.wav",
+          "key": "56907af97917fb3f205110c0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/620610b7e1c74c5f35149bca.wav",
+          "key": "620610b7e1c74c5f35149bca"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c65288793e6fb84ff9a3840f.wav",
+          "key": "c65288793e6fb84ff9a3840f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e984cf6e43aeb46cfefecdf5.wav",
+          "key": "e984cf6e43aeb46cfefecdf5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/daca8d2cc97a57d884af2611.wav",
+          "key": "daca8d2cc97a57d884af2611"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/99d8e9c38b95478b40ecc587.wav",
+          "key": "99d8e9c38b95478b40ecc587"
+        },
+        "0.8": {
+          "url": "api/audio/wav/b957e6392b572bfe8408dca4.wav",
+          "key": "b957e6392b572bfe8408dca4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4e85951cda6dc571ff91de8e.wav",
+          "key": "4e85951cda6dc571ff91de8e"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/62b9e99b27532cbc69eedf61.wav",
+          "key": "62b9e99b27532cbc69eedf61"
+        },
+        "0.8": {
+          "url": "api/audio/wav/2c34333630f8207ef61b520b.wav",
+          "key": "2c34333630f8207ef61b520b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/63daf72040d2b3fe2d647dfe.wav",
+          "key": "63daf72040d2b3fe2d647dfe"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/76ae80a182fa9a60ab2705c0.wav",
+          "key": "76ae80a182fa9a60ab2705c0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/de4fbfe1c897585f7233e08e.wav",
+          "key": "de4fbfe1c897585f7233e08e"
+        },
+        "1.2": {
+          "url": "api/audio/wav/bb6ddf8ce112722c6cdd8a69.wav",
+          "key": "bb6ddf8ce112722c6cdd8a69"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ffadc3f2dc1371370a7f5ee2.wav",
+          "key": "ffadc3f2dc1371370a7f5ee2"
+        },
+        "0.8": {
+          "url": "api/audio/wav/05c82dd345012d9f1dda62c5.wav",
+          "key": "05c82dd345012d9f1dda62c5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/45c3c9f7b5a02b22c391c587.wav",
+          "key": "45c3c9f7b5a02b22c391c587"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/47e493eed118f79881be4557.wav",
+          "key": "47e493eed118f79881be4557"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8da8e01b75eae42cdc31f497.wav",
+          "key": "8da8e01b75eae42cdc31f497"
+        },
+        "1.2": {
+          "url": "api/audio/wav/1a2db65991d92607288c6900.wav",
+          "key": "1a2db65991d92607288c6900"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/2602b631079c723e8e1ecda0.wav",
+          "key": "2602b631079c723e8e1ecda0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/76bbdd822da91c74722e73bb.wav",
+          "key": "76bbdd822da91c74722e73bb"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2f3c707eb60ac588198585d4.wav",
+          "key": "2f3c707eb60ac588198585d4"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0cdf2933c29ed4f5c67d8bbd.wav",
+          "key": "0cdf2933c29ed4f5c67d8bbd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/978ac7cd5ce1276d5a23a487.wav",
+          "key": "978ac7cd5ce1276d5a23a487"
+        },
+        "1.2": {
+          "url": "api/audio/wav/5308c6636394fc36d51b7b16.wav",
+          "key": "5308c6636394fc36d51b7b16"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-out": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/2602b631079c723e8e1ecda0.wav",
+          "key": "2602b631079c723e8e1ecda0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/76bbdd822da91c74722e73bb.wav",
+          "key": "76bbdd822da91c74722e73bb"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2f3c707eb60ac588198585d4.wav",
+          "key": "2f3c707eb60ac588198585d4"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-in": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/2602b631079c723e8e1ecda0.wav",
+          "key": "2602b631079c723e8e1ecda0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/76bbdd822da91c74722e73bb.wav",
+          "key": "76bbdd822da91c74722e73bb"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2f3c707eb60ac588198585d4.wav",
+          "key": "2f3c707eb60ac588198585d4"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/5feea7dadbb2d77d6a2bee1a.wav",
+          "key": "5feea7dadbb2d77d6a2bee1a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4f0212b6864be3925c97a671.wav",
+          "key": "4f0212b6864be3925c97a671"
+        },
+        "1.2": {
+          "url": "api/audio/wav/79b873e633fe9f722fec984d.wav",
+          "key": "79b873e633fe9f722fec984d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/5feea7dadbb2d77d6a2bee1a.wav",
+          "key": "5feea7dadbb2d77d6a2bee1a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4f0212b6864be3925c97a671.wav",
+          "key": "4f0212b6864be3925c97a671"
+        },
+        "1.2": {
+          "url": "api/audio/wav/79b873e633fe9f722fec984d.wav",
+          "key": "79b873e633fe9f722fec984d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-late": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/5feea7dadbb2d77d6a2bee1a.wav",
+          "key": "5feea7dadbb2d77d6a2bee1a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4f0212b6864be3925c97a671.wav",
+          "key": "4f0212b6864be3925c97a671"
+        },
+        "1.2": {
+          "url": "api/audio/wav/79b873e633fe9f722fec984d.wav",
+          "key": "79b873e633fe9f722fec984d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e033cb1677e6cc333a0a3198.wav",
+          "key": "e033cb1677e6cc333a0a3198"
+        },
+        "0.8": {
+          "url": "api/audio/wav/56907af97917fb3f205110c0.wav",
+          "key": "56907af97917fb3f205110c0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/620610b7e1c74c5f35149bca.wav",
+          "key": "620610b7e1c74c5f35149bca"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "short-break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e033cb1677e6cc333a0a3198.wav",
+          "key": "e033cb1677e6cc333a0a3198"
+        },
+        "0.8": {
+          "url": "api/audio/wav/56907af97917fb3f205110c0.wav",
+          "key": "56907af97917fb3f205110c0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/620610b7e1c74c5f35149bca.wav",
+          "key": "620610b7e1c74c5f35149bca"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e033cb1677e6cc333a0a3198.wav",
+          "key": "e033cb1677e6cc333a0a3198"
+        },
+        "0.8": {
+          "url": "api/audio/wav/56907af97917fb3f205110c0.wav",
+          "key": "56907af97917fb3f205110c0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/620610b7e1c74c5f35149bca.wav",
+          "key": "620610b7e1c74c5f35149bca"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c65288793e6fb84ff9a3840f.wav",
+          "key": "c65288793e6fb84ff9a3840f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e984cf6e43aeb46cfefecdf5.wav",
+          "key": "e984cf6e43aeb46cfefecdf5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/daca8d2cc97a57d884af2611.wav",
+          "key": "daca8d2cc97a57d884af2611"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-automatically": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c65288793e6fb84ff9a3840f.wav",
+          "key": "c65288793e6fb84ff9a3840f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e984cf6e43aeb46cfefecdf5.wav",
+          "key": "e984cf6e43aeb46cfefecdf5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/daca8d2cc97a57d884af2611.wav",
+          "key": "daca8d2cc97a57d884af2611"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-after-break": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c65288793e6fb84ff9a3840f.wav",
+          "key": "c65288793e6fb84ff9a3840f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e984cf6e43aeb46cfefecdf5.wav",
+          "key": "e984cf6e43aeb46cfefecdf5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/daca8d2cc97a57d884af2611.wav",
+          "key": "daca8d2cc97a57d884af2611"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-ended": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e033cb1677e6cc333a0a3198.wav",
+          "key": "e033cb1677e6cc333a0a3198"
+        },
+        "0.8": {
+          "url": "api/audio/wav/56907af97917fb3f205110c0.wav",
+          "key": "56907af97917fb3f205110c0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/620610b7e1c74c5f35149bca.wav",
+          "key": "620610b7e1c74c5f35149bca"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/8df0ef8ae3975ae7fd1952fb.wav",
+          "key": "8df0ef8ae3975ae7fd1952fb"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e7af00cdde3d755214ecb92a.wav",
+          "key": "e7af00cdde3d755214ecb92a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/9d8eb65c49e38e1b7bffe745.wav",
+          "key": "9d8eb65c49e38e1b7bffe745"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "down-time-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a76cea3a256f67dde1558ded.wav",
+          "key": "a76cea3a256f67dde1558ded"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0dd60360f9815eab49d1eeb5.wav",
+          "key": "0dd60360f9815eab49d1eeb5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/cd3fca4a07c35100377637e5.wav",
+          "key": "cd3fca4a07c35100377637e5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-from-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ffadc3f2dc1371370a7f5ee2.wav",
+          "key": "ffadc3f2dc1371370a7f5ee2"
+        },
+        "0.8": {
+          "url": "api/audio/wav/05c82dd345012d9f1dda62c5.wav",
+          "key": "05c82dd345012d9f1dda62c5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/45c3c9f7b5a02b22c391c587.wav",
+          "key": "45c3c9f7b5a02b22c391c587"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "goal-failed": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a76cea3a256f67dde1558ded.wav",
+          "key": "a76cea3a256f67dde1558ded"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0dd60360f9815eab49d1eeb5.wav",
+          "key": "0dd60360f9815eab49d1eeb5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/cd3fca4a07c35100377637e5.wav",
+          "key": "cd3fca4a07c35100377637e5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-on": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0cdf2933c29ed4f5c67d8bbd.wav",
+          "key": "0cdf2933c29ed4f5c67d8bbd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/978ac7cd5ce1276d5a23a487.wav",
+          "key": "978ac7cd5ce1276d5a23a487"
+        },
+        "1.2": {
+          "url": "api/audio/wav/5308c6636394fc36d51b7b16.wav",
+          "key": "5308c6636394fc36d51b7b16"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-off": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2/3",
+          "tone": "C2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/2a8c795ea58e8caf09b60002.wav",
+          "key": "2a8c795ea58e8caf09b60002"
+        },
+        "0.8": {
+          "url": "api/audio/wav/fb5027199dc24c1b567032cb.wav",
+          "key": "fb5027199dc24c1b567032cb"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f255d0642259bdcf1ae77bfb.wav",
+          "key": "f255d0642259bdcf1ae77bfb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-unchanged": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/72136a9f95f0eea0f51efafd.wav",
+          "key": "72136a9f95f0eea0f51efafd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/eab42a38d7c64bcc67a22680.wav",
+          "key": "eab42a38d7c64bcc67a22680"
+        },
+        "1.2": {
+          "url": "api/audio/wav/bef198dc919d1f3481f7426e.wav",
+          "key": "bef198dc919d1f3481f7426e"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-activated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/162529a1f33201f86b4085a4.wav",
+          "key": "162529a1f33201f86b4085a4"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8ccc32fcd84f5603bb6ed4af.wav",
+          "key": "8ccc32fcd84f5603bb6ed4af"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4e0b68c8ba320805e06af943.wav",
+          "key": "4e0b68c8ba320805e06af943"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-deactivated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/9b74c7da43ffef4e75f83374.wav",
+          "key": "9b74c7da43ffef4e75f83374"
+        },
+        "0.8": {
+          "url": "api/audio/wav/9e518615f16c526edbdfd70c.wav",
+          "key": "9e518615f16c526edbdfd70c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/6493f2dea75b1e22c0b6e6f1.wav",
+          "key": "6493f2dea75b1e22c0b6e6f1"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "observer-message": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E6",
+          "length": "2/3",
+          "dynamic": "f",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "3/2",
+          "dynamic": "f",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/cbee0668338af2d1569532ff.wav",
+          "key": "cbee0668338af2d1569532ff"
+        },
+        "0.8": {
+          "url": "api/audio/wav/703c4dda53f8df7f9fcf8281.wav",
+          "key": "703c4dda53f8df7f9fcf8281"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ea78647b62055911a051061b.wav",
+          "key": "ea78647b62055911a051061b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "speech-rejected": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "0",
+          "tone": "D#2",
+          "length": "1/2",
+          "dynamic": "pp",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1bea279ea3dacde711920065.wav",
+          "key": "1bea279ea3dacde711920065"
+        },
+        "0.8": {
+          "url": "api/audio/wav/fc628a6ab105a92cfd42da14.wav",
+          "key": "fc628a6ab105a92cfd42da14"
+        },
+        "1.2": {
+          "url": "api/audio/wav/182a81b322c4711291adc348.wav",
+          "key": "182a81b322c4711291adc348"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/26dee8ab6af4ab233eaa88ca.wav",
+          "key": "26dee8ab6af4ab233eaa88ca"
+        },
+        "0.8": {
+          "url": "api/audio/wav/bcbed08ed30e07c2c6ef5c37.wav",
+          "key": "bcbed08ed30e07c2c6ef5c37"
+        },
+        "1.2": {
+          "url": "api/audio/wav/20e192e02747a7cd71d2233d.wav",
+          "key": "20e192e02747a7cd71d2233d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "scope-change": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "2/3",
+          "tone": "E2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1 1/3",
+          "tone": "D2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "gated-snare"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c22fcb76b731b3c00dc4840e.wav",
+          "key": "c22fcb76b731b3c00dc4840e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/ec7bdbe6b23b43021ab4e1cc.wav",
+          "key": "ec7bdbe6b23b43021ab4e1cc"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2dbdd75456b99f879b1aaa82.wav",
+          "key": "2dbdd75456b99f879b1aaa82"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}

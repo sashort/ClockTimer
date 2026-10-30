@@ -1,0 +1,6497 @@
+{
+  "version": 1,
+  "theme": "default",
+  "profile": "authored",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/78cf207574e4ae362488ae8f.wav",
+          "key": "78cf207574e4ae362488ae8f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/c4b2a98630b6e9fc01623a05.wav",
+          "key": "c4b2a98630b6e9fc01623a05"
+        },
+        "1.2": {
+          "url": "api/audio/wav/993a294ed97bef3af997c425.wav",
+          "key": "993a294ed97bef3af997c425"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/af1c11f03f77a47419a6c283.wav",
+          "key": "af1c11f03f77a47419a6c283"
+        },
+        "0.8": {
+          "url": "api/audio/wav/66acbcc526f226bbbd67aac2.wav",
+          "key": "66acbcc526f226bbbd67aac2"
+        },
+        "1.2": {
+          "url": "api/audio/wav/aa2ace6b55dfdf82e7db89a4.wav",
+          "key": "aa2ace6b55dfdf82e7db89a4"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3aece18bd582d963cdccd25e.wav",
+          "key": "3aece18bd582d963cdccd25e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/50b0b637e8e479f995ea7fb4.wav",
+          "key": "50b0b637e8e479f995ea7fb4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/599027964938483d5ff89f99.wav",
+          "key": "599027964938483d5ff89f99"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/883e7c03c5f7fc1bf46542ae.wav",
+          "key": "883e7c03c5f7fc1bf46542ae"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5d29c1c85e09bd792ca9e2dd.wav",
+          "key": "5d29c1c85e09bd792ca9e2dd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/62bc404f3aecfcfbfb99f103.wav",
+          "key": "62bc404f3aecfcfbfb99f103"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/9199c81ab2c14092a64af2bb.wav",
+          "key": "9199c81ab2c14092a64af2bb"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a1f9461ec1a56ae4e46417e0.wav",
+          "key": "a1f9461ec1a56ae4e46417e0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/949a61d037a096ffd1f47d5f.wav",
+          "key": "949a61d037a096ffd1f47d5f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e71f71c069f5c81d9422b404.wav",
+          "key": "e71f71c069f5c81d9422b404"
+        },
+        "0.8": {
+          "url": "api/audio/wav/b1b69d85da80efe492fa8b90.wav",
+          "key": "b1b69d85da80efe492fa8b90"
+        },
+        "1.2": {
+          "url": "api/audio/wav/c62316144fe9640cf330094b.wav",
+          "key": "c62316144fe9640cf330094b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/368c0a2db2f7fcee38330d52.wav",
+          "key": "368c0a2db2f7fcee38330d52"
+        },
+        "0.8": {
+          "url": "api/audio/wav/fbfccb26e04b3727b902a07d.wav",
+          "key": "fbfccb26e04b3727b902a07d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a0c9ff7d016ccd8609f1659a.wav",
+          "key": "a0c9ff7d016ccd8609f1659a"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c2e8e2951aa2ecf2e161e42b.wav",
+          "key": "c2e8e2951aa2ecf2e161e42b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/1cfbead272fd87f54ad21b21.wav",
+          "key": "1cfbead272fd87f54ad21b21"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a85860fda82b5b5a6cac79de.wav",
+          "key": "a85860fda82b5b5a6cac79de"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/8a674ad3d6b71e375f1b8d31.wav",
+          "key": "8a674ad3d6b71e375f1b8d31"
+        },
+        "0.8": {
+          "url": "api/audio/wav/234489bab8dd48e608e1244b.wav",
+          "key": "234489bab8dd48e608e1244b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/73cef262115991a34d67cb6d.wav",
+          "key": "73cef262115991a34d67cb6d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6a125bb9bc338edcd3e24efe.wav",
+          "key": "6a125bb9bc338edcd3e24efe"
+        },
+        "0.8": {
+          "url": "api/audio/wav/10e4333224070fe8f1634858.wav",
+          "key": "10e4333224070fe8f1634858"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f9eedeea2390cd0a198526b2.wav",
+          "key": "f9eedeea2390cd0a198526b2"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ef2a81d1aededce2b0f3d89a.wav",
+          "key": "ef2a81d1aededce2b0f3d89a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/be8abac3a022b63ae487f965.wav",
+          "key": "be8abac3a022b63ae487f965"
+        },
+        "1.2": {
+          "url": "api/audio/wav/1f6c86ecd8b8068fb6029b54.wav",
+          "key": "1f6c86ecd8b8068fb6029b54"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-out": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6a125bb9bc338edcd3e24efe.wav",
+          "key": "6a125bb9bc338edcd3e24efe"
+        },
+        "0.8": {
+          "url": "api/audio/wav/10e4333224070fe8f1634858.wav",
+          "key": "10e4333224070fe8f1634858"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f9eedeea2390cd0a198526b2.wav",
+          "key": "f9eedeea2390cd0a198526b2"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-in": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6a125bb9bc338edcd3e24efe.wav",
+          "key": "6a125bb9bc338edcd3e24efe"
+        },
+        "0.8": {
+          "url": "api/audio/wav/10e4333224070fe8f1634858.wav",
+          "key": "10e4333224070fe8f1634858"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f9eedeea2390cd0a198526b2.wav",
+          "key": "f9eedeea2390cd0a198526b2"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/7e8b0fea5fd1e52077ddc080.wav",
+          "key": "7e8b0fea5fd1e52077ddc080"
+        },
+        "0.8": {
+          "url": "api/audio/wav/c6a24ec6500f6c574b3bf6db.wav",
+          "key": "c6a24ec6500f6c574b3bf6db"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b94ad5425a662265e86553cc.wav",
+          "key": "b94ad5425a662265e86553cc"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/7e8b0fea5fd1e52077ddc080.wav",
+          "key": "7e8b0fea5fd1e52077ddc080"
+        },
+        "0.8": {
+          "url": "api/audio/wav/c6a24ec6500f6c574b3bf6db.wav",
+          "key": "c6a24ec6500f6c574b3bf6db"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b94ad5425a662265e86553cc.wav",
+          "key": "b94ad5425a662265e86553cc"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-late": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/7e8b0fea5fd1e52077ddc080.wav",
+          "key": "7e8b0fea5fd1e52077ddc080"
+        },
+        "0.8": {
+          "url": "api/audio/wav/c6a24ec6500f6c574b3bf6db.wav",
+          "key": "c6a24ec6500f6c574b3bf6db"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b94ad5425a662265e86553cc.wav",
+          "key": "b94ad5425a662265e86553cc"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3aece18bd582d963cdccd25e.wav",
+          "key": "3aece18bd582d963cdccd25e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/50b0b637e8e479f995ea7fb4.wav",
+          "key": "50b0b637e8e479f995ea7fb4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/599027964938483d5ff89f99.wav",
+          "key": "599027964938483d5ff89f99"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "short-break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3aece18bd582d963cdccd25e.wav",
+          "key": "3aece18bd582d963cdccd25e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/50b0b637e8e479f995ea7fb4.wav",
+          "key": "50b0b637e8e479f995ea7fb4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/599027964938483d5ff89f99.wav",
+          "key": "599027964938483d5ff89f99"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3aece18bd582d963cdccd25e.wav",
+          "key": "3aece18bd582d963cdccd25e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/50b0b637e8e479f995ea7fb4.wav",
+          "key": "50b0b637e8e479f995ea7fb4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/599027964938483d5ff89f99.wav",
+          "key": "599027964938483d5ff89f99"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/883e7c03c5f7fc1bf46542ae.wav",
+          "key": "883e7c03c5f7fc1bf46542ae"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5d29c1c85e09bd792ca9e2dd.wav",
+          "key": "5d29c1c85e09bd792ca9e2dd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/62bc404f3aecfcfbfb99f103.wav",
+          "key": "62bc404f3aecfcfbfb99f103"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-automatically": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/883e7c03c5f7fc1bf46542ae.wav",
+          "key": "883e7c03c5f7fc1bf46542ae"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5d29c1c85e09bd792ca9e2dd.wav",
+          "key": "5d29c1c85e09bd792ca9e2dd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/62bc404f3aecfcfbfb99f103.wav",
+          "key": "62bc404f3aecfcfbfb99f103"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-after-break": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/883e7c03c5f7fc1bf46542ae.wav",
+          "key": "883e7c03c5f7fc1bf46542ae"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5d29c1c85e09bd792ca9e2dd.wav",
+          "key": "5d29c1c85e09bd792ca9e2dd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/62bc404f3aecfcfbfb99f103.wav",
+          "key": "62bc404f3aecfcfbfb99f103"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-ended": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3aece18bd582d963cdccd25e.wav",
+          "key": "3aece18bd582d963cdccd25e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/50b0b637e8e479f995ea7fb4.wav",
+          "key": "50b0b637e8e479f995ea7fb4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/599027964938483d5ff89f99.wav",
+          "key": "599027964938483d5ff89f99"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/276acb3f53aa5a5641ba85ca.wav",
+          "key": "276acb3f53aa5a5641ba85ca"
+        },
+        "0.8": {
+          "url": "api/audio/wav/bb7d62d21fc2d2953f2e27e3.wav",
+          "key": "bb7d62d21fc2d2953f2e27e3"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4289dd478b5ace43f84aa1df.wav",
+          "key": "4289dd478b5ace43f84aa1df"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "down-time-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/7905aac6d8c7ebaf2ab8810d.wav",
+          "key": "7905aac6d8c7ebaf2ab8810d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/812a858e25d2b7bf9897dda9.wav",
+          "key": "812a858e25d2b7bf9897dda9"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2973bdaaaa4f8cbd60e55066.wav",
+          "key": "2973bdaaaa4f8cbd60e55066"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-from-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c2e8e2951aa2ecf2e161e42b.wav",
+          "key": "c2e8e2951aa2ecf2e161e42b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/1cfbead272fd87f54ad21b21.wav",
+          "key": "1cfbead272fd87f54ad21b21"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a85860fda82b5b5a6cac79de.wav",
+          "key": "a85860fda82b5b5a6cac79de"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "goal-failed": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/7905aac6d8c7ebaf2ab8810d.wav",
+          "key": "7905aac6d8c7ebaf2ab8810d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/812a858e25d2b7bf9897dda9.wav",
+          "key": "812a858e25d2b7bf9897dda9"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2973bdaaaa4f8cbd60e55066.wav",
+          "key": "2973bdaaaa4f8cbd60e55066"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "neon-afterglow": {
+      "bpm": 195,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E3",
+          "length": "0.9",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "1.5",
+          "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "2",
+          "tone": "E4",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "3",
+          "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "4",
+          "tone": "C3",
+          "length": "0.9",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "5.5",
+          "tone": "G3",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "6",
+          "tone": "C4",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "7",
+          "tone": "G3",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "8",
+          "tone": "G3",
+          "length": "0.9",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "8",
+          "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "8",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "8",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "9.5",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "10",
+          "tone": "G4",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "10",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "10",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "10",
+          "tone": "B4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "11",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "12",
+          "tone": "D3",
+          "length": "0.9",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "12",
+          "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "12",
+          "tone": "F#4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "12",
+          "tone": "A4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "13.5",
+          "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "14",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "14",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "14",
+          "tone": "F#4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "14",
+          "tone": "A4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "15",
+          "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "16",
+          "tone": "E3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "16",
+          "tone": "E4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "16",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "16",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "16",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "f"
+        },
+        {
+          "offset": "16.75",
+          "tone": "G4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "17.5",
+          "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "17.5",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "18",
+          "tone": "E4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "18",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "18",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "18",
+          "tone": "B4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "18.5",
+          "tone": "G4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "19",
+          "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "19",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "20",
+          "tone": "C3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "20",
+          "tone": "E4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "20",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "20",
+          "tone": "C5",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "20",
+          "tone": "C5",
+          "length": "0.45",
+          "dynamic": "f"
+        },
+        {
+          "offset": "20.75",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "21.5",
+          "tone": "G3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "21.5",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "22",
+          "tone": "C4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "22",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "22",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "22",
+          "tone": "C5",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "22.5",
+          "tone": "E4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "23",
+          "tone": "G3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "23",
+          "tone": "G4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "24",
+          "tone": "G3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "24",
+          "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "24",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "24",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "24",
+          "tone": "D5",
+          "length": "0.45",
+          "dynamic": "f"
+        },
+        {
+          "offset": "24.75",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "25.5",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "25.5",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "26",
+          "tone": "G4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "26",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "26",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "26",
+          "tone": "B4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "26.5",
+          "tone": "A4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "27",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "27",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "28",
+          "tone": "D3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "28",
+          "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "28",
+          "tone": "F#4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "28",
+          "tone": "A4",
+          "length": "1.35",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "28",
+          "tone": "A4",
+          "length": "0.45",
+          "dynamic": "f"
+        },
+        {
+          "offset": "28.75",
+          "tone": "F#4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "29.5",
+          "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "29.5",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "30",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "30",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "30",
+          "tone": "F#4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "30",
+          "tone": "A4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "30.5",
+          "tone": "F#4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "31",
+          "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "31",
+          "tone": "A4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "32",
+          "tone": "E3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "32",
+          "tone": "E4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "32",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "32",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "32",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "f"
+        },
+        {
+          "offset": "32.75",
+          "tone": "G4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "33.5",
+          "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "33.5",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "34",
+          "tone": "E4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "34",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "34",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "34",
+          "tone": "B4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "34.5",
+          "tone": "G4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "35",
+          "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "35",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "36",
+          "tone": "C3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "36",
+          "tone": "E4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "36",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "36",
+          "tone": "C5",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "36",
+          "tone": "C5",
+          "length": "0.45",
+          "dynamic": "f"
+        },
+        {
+          "offset": "36.75",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "37.5",
+          "tone": "G3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "37.5",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "38",
+          "tone": "C4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "38",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "38",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "38",
+          "tone": "C5",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "38.5",
+          "tone": "E4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "39",
+          "tone": "G3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "39",
+          "tone": "G4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "40",
+          "tone": "G3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "40",
+          "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "40",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "40",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "40",
+          "tone": "D5",
+          "length": "0.45",
+          "dynamic": "f"
+        },
+        {
+          "offset": "40.75",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "41.5",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "41.5",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "42",
+          "tone": "G4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "42",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "42",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "42",
+          "tone": "B4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "42.5",
+          "tone": "A4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "43",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "43",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "44",
+          "tone": "D3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "44",
+          "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "44",
+          "tone": "F#4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "44",
+          "tone": "A4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "44",
+          "tone": "A4",
+          "length": "0.45",
+          "dynamic": "f"
+        },
+        {
+          "offset": "44.75",
+          "tone": "F#4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "45.5",
+          "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "45.5",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "46",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "46",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "46",
+          "tone": "F#4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "46",
+          "tone": "A4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "46.5",
+          "tone": "F#4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "47",
+          "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "47",
+          "tone": "A4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "48",
+          "tone": "E3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "48",
+          "tone": "E4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "48",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "48",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "48",
+          "tone": "E5",
+          "length": "0.7",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "49",
+          "tone": "D5",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "49.5",
+          "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "49.75",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "50",
+          "tone": "E4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "50",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "50",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "50",
+          "tone": "B4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "50.5",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "51",
+          "tone": "B3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "52",
+          "tone": "C3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "52",
+          "tone": "E4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "52",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "52",
+          "tone": "C5",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "52",
+          "tone": "C5",
+          "length": "0.7",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "53",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "53.5",
+          "tone": "G3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "53.75",
+          "tone": "G4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "54",
+          "tone": "C4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "54",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "54",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "54",
+          "tone": "C5",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "54.5",
+          "tone": "E4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "55",
+          "tone": "G3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "56",
+          "tone": "G3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "56",
+          "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "56",
+          "tone": "G4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "56",
+          "tone": "B4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "56",
+          "tone": "D5",
+          "length": "0.7",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "57",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "57.5",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "57.75",
+          "tone": "A4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "58",
+          "tone": "G4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "58",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "58",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "58",
+          "tone": "B4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "58.5",
+          "tone": "G4",
+          "length": "0.8",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "59",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "60",
+          "tone": "D3",
+          "length": "0.9",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "60",
+          "tone": "D4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "60",
+          "tone": "F#4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "60",
+          "tone": "A4",
+          "length": "1.35",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "60",
+          "tone": "A4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "60.75",
+          "tone": "B4",
+          "length": "0.45",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "61.5",
+          "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "61.5",
+          "tone": "D5",
+          "length": "0.7",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "62",
+          "tone": "D4",
+          "length": "0.55",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "62",
+          "tone": "D4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "62",
+          "tone": "F#4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "62",
+          "tone": "A4",
+          "length": "0.8",
+          "dynamic": "mp"
+        },
+        {
+          "offset": "62.5",
+          "tone": "E5",
+          "length": "1.25",
+          "dynamic": "f"
+        },
+        {
+          "offset": "63",
+          "tone": "A3",
+          "length": "0.55",
+          "dynamic": "mf"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/383d92c9311fb0ea9d4cea70.wav",
+          "key": "383d92c9311fb0ea9d4cea70"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0704aa32e2065240999ff6fa.wav",
+          "key": "0704aa32e2065240999ff6fa"
+        },
+        "1.2": {
+          "url": "api/audio/wav/8664430e27ad8f96b2a6ecff.wav",
+          "key": "8664430e27ad8f96b2a6ecff"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "chrome-velocity": {
+      "bpm": 292.5,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "0",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "0",
+          "tone": "D3",
+          "length": "0.42",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "F3",
+          "length": "0.42",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "1",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "1",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "1",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "1.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "2",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "2",
+          "tone": "D3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "2.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "3",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "3",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "3",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "3.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "4",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "4",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "4",
+          "tone": "Bb3",
+          "length": "0.42",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "4",
+          "tone": "D4",
+          "length": "0.42",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "4",
+          "tone": "F4",
+          "length": "0.42",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "4.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "5",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "5",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "5",
+          "tone": "F3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "5.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "6",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "6",
+          "tone": "Bb3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "6.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "7",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "7",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "7",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "7.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "8",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "8",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "8",
+          "tone": "C4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "8",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "8",
+          "tone": "G4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "8.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "9",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "9",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "9",
+          "tone": "G3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "9.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "10",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "10",
+          "tone": "C4",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "10.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "10.5",
+          "tone": "C4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "10.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "10.5",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "11",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "11",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "11",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "11.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "12",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "12",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "12",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "12",
+          "tone": "C#4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "12",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "12.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "13",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "13",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "13",
+          "tone": "E3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "13.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "14",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "14",
+          "tone": "A3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "14.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "14.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "14.5",
+          "tone": "C#4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "14.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "14.5",
+          "tone": "A3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "15",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "15",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "15",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "15",
+          "tone": "F3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "15.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "15.5",
+          "tone": "D3",
+          "length": "0.3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "16",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "16",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "16",
+          "tone": "D3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "16",
+          "tone": "F3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "16",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "16",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "16.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "16.5",
+          "tone": "D5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "17",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "17",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "17",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "17",
+          "tone": "F5",
+          "length": "0.45",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "17.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "17.5",
+          "tone": "E5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "18",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "18",
+          "tone": "D3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "18",
+          "tone": "D5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "18.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "18.5",
+          "tone": "D3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "18.5",
+          "tone": "F3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "18.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "18.75",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "19",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "19",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "19",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "19.25",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "19.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "19.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "20",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "20",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "20",
+          "tone": "Bb3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "20",
+          "tone": "D4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "20",
+          "tone": "F4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "20",
+          "tone": "F4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "20.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "20.5",
+          "tone": "Bb4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "21",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "21",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "21",
+          "tone": "F3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "21",
+          "tone": "D5",
+          "length": "0.45",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "21.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "21.5",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "22",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "22",
+          "tone": "Bb3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "22",
+          "tone": "Bb4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "22.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "22.5",
+          "tone": "Bb3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "22.5",
+          "tone": "D4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "22.5",
+          "tone": "F4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "22.75",
+          "tone": "F4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "23",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "23",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "23",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "23.25",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "23.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "23.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "24",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "24",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "24",
+          "tone": "C4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "24",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "24",
+          "tone": "G4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "24",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "24.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "24.5",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "25",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "25",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "25",
+          "tone": "G3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "25",
+          "tone": "E5",
+          "length": "0.45",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "25.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "25.5",
+          "tone": "D5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "26",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "26",
+          "tone": "C4",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "26",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "26.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "26.5",
+          "tone": "C4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "26.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "26.5",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "26.75",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "27",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "27",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "27",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "27.25",
+          "tone": "Bb4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "27.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "27.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "28",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "28",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "28",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "28",
+          "tone": "C#4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "28",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "28",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "28.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "28.5",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "29",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "29",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "29",
+          "tone": "E3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "29",
+          "tone": "C#5",
+          "length": "0.45",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "29.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "29.5",
+          "tone": "B4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "30",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "30",
+          "tone": "A3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "30",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "30.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "30.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "30.5",
+          "tone": "C#4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "30.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "30.5",
+          "tone": "A3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "30.75",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "31",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "31",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "31",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "31",
+          "tone": "F3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "31.25",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "31.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "31.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "31.5",
+          "tone": "D3",
+          "length": "0.3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "32",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "32",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "32",
+          "tone": "D3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "32",
+          "tone": "F3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "32",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "32",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "32.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "32.5",
+          "tone": "D5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "33",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "33",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "33",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "33",
+          "tone": "F5",
+          "length": "0.45",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "33.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "33.5",
+          "tone": "E5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "34",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "34",
+          "tone": "D3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "34",
+          "tone": "D5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "34.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "34.5",
+          "tone": "D3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "34.5",
+          "tone": "F3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "34.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "34.75",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "35",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "35",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "35",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "35.25",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "35.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "35.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "36",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "36",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "36",
+          "tone": "Bb3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "36",
+          "tone": "D4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "36",
+          "tone": "F4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "36",
+          "tone": "F4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "36.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "36.5",
+          "tone": "Bb4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "37",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "37",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "37",
+          "tone": "F3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "37",
+          "tone": "D5",
+          "length": "0.45",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "37.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "37.5",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "38",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "38",
+          "tone": "Bb3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "38",
+          "tone": "Bb4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "38.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "38.5",
+          "tone": "Bb3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "38.5",
+          "tone": "D4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "38.5",
+          "tone": "F4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "38.75",
+          "tone": "F4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "39",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "39",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "39",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "39.25",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "39.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "39.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "39.5",
+          "tone": "F3",
+          "length": "0.2",
+          "dynamic": "mf",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "40",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "40",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "40",
+          "tone": "C4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "40",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "40",
+          "tone": "G4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "40",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "40.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "40.5",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "41",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "41",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "41",
+          "tone": "G3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "41",
+          "tone": "E5",
+          "length": "0.45",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "41.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "41.5",
+          "tone": "D5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "42",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "42",
+          "tone": "C4",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "42",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "42.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "42.5",
+          "tone": "C4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "42.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "42.5",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "42.75",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "43",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "43",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "43",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "43.25",
+          "tone": "Bb4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "43.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "43.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "44",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "44",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "44",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "44",
+          "tone": "C#4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "44",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "44",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "44.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "44.5",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "45",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "45",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "45",
+          "tone": "E3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "45",
+          "tone": "C#5",
+          "length": "0.45",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "45.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "45.5",
+          "tone": "B4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "46",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "46",
+          "tone": "A3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "46",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "46.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "46.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "46.5",
+          "tone": "C#4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "46.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "46.5",
+          "tone": "A3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "46.75",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "47",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "47",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "47",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "47",
+          "tone": "F3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "47.25",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "47.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "47.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "47.5",
+          "tone": "D3",
+          "length": "0.3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "48",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "48",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "48",
+          "tone": "D3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "48",
+          "tone": "F3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "48",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "48",
+          "tone": "D5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "48.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "48.5",
+          "tone": "A3",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "49",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "49",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "49",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "49",
+          "tone": "F5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "49.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "50",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "50",
+          "tone": "D3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "50",
+          "tone": "A5",
+          "length": "0.72",
+          "dynamic": "f",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "50.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "50.5",
+          "tone": "D3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "50.5",
+          "tone": "F3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "50.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "50.5",
+          "tone": "F3",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "51",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "51",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "51",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "51",
+          "tone": "G5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "51.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "51.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "52",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "52",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "52",
+          "tone": "Bb3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "52",
+          "tone": "D4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "52",
+          "tone": "F4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "52",
+          "tone": "Bb4",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "52.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "52.5",
+          "tone": "F4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "53",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "53",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "53",
+          "tone": "F3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "53",
+          "tone": "D5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "53.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "54",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "54",
+          "tone": "Bb3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "54",
+          "tone": "F5",
+          "length": "0.72",
+          "dynamic": "f",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "54.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "54.5",
+          "tone": "Bb3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "54.5",
+          "tone": "D4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "54.5",
+          "tone": "F4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "54.5",
+          "tone": "D4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "55",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "55",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "55",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "55",
+          "tone": "D5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "55.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "55.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "55.5",
+          "tone": "F3",
+          "length": "0.2",
+          "dynamic": "mf",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "56",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "56",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "56",
+          "tone": "C4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "56",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "56",
+          "tone": "G4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "56",
+          "tone": "C5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "56.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "56.5",
+          "tone": "G4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "57",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "57",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "57",
+          "tone": "G3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "57",
+          "tone": "E5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "57.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "58",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "58",
+          "tone": "C4",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "58",
+          "tone": "G5",
+          "length": "0.72",
+          "dynamic": "f",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "58.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "58.5",
+          "tone": "C4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "58.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "58.5",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "58.5",
+          "tone": "E4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "59",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "59",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "59",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "59",
+          "tone": "E5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "59.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "59.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "60",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "60",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "60",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "60",
+          "tone": "C#4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "60",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "60",
+          "tone": "A4",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "60.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "60.5",
+          "tone": "E4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "61",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "61",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "61",
+          "tone": "E3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "61",
+          "tone": "C#5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "61.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "62",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "62",
+          "tone": "A3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "62",
+          "tone": "E5",
+          "length": "0.72",
+          "dynamic": "f",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "62.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "62.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "62.5",
+          "tone": "C#4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "62.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "62.5",
+          "tone": "A3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "62.5",
+          "tone": "C#4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "63",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "63",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "63",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "63",
+          "tone": "F3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "63",
+          "tone": "C#5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "63.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "63.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "63.5",
+          "tone": "D3",
+          "length": "0.3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "64",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "64",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "64",
+          "tone": "D3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "64",
+          "tone": "F3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "64",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "64",
+          "tone": "D5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "64.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "64.5",
+          "tone": "A3",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "65",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "65",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "65",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "65",
+          "tone": "F5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "65.5",
+          "tone": "D2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "66",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "66",
+          "tone": "D3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "66",
+          "tone": "A5",
+          "length": "0.72",
+          "dynamic": "f",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "66.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "66.5",
+          "tone": "D3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "66.5",
+          "tone": "F3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "66.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "66.5",
+          "tone": "F3",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "67",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "67",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "67",
+          "tone": "D2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "67",
+          "tone": "G5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "67.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "67.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "68",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "68",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "68",
+          "tone": "Bb3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "68",
+          "tone": "D4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "68",
+          "tone": "F4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "68",
+          "tone": "Bb4",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "68.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "68.5",
+          "tone": "F4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "69",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "69",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "69",
+          "tone": "F3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "69",
+          "tone": "D5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "69.5",
+          "tone": "Bb2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "70",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "70",
+          "tone": "Bb3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "70",
+          "tone": "F5",
+          "length": "0.72",
+          "dynamic": "f",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "70.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "70.5",
+          "tone": "Bb3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "70.5",
+          "tone": "D4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "70.5",
+          "tone": "F4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "70.5",
+          "tone": "D4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "71",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "71",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "71",
+          "tone": "Bb2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "71",
+          "tone": "D5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "71.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "71.5",
+          "tone": "F3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "71.5",
+          "tone": "F3",
+          "length": "0.2",
+          "dynamic": "mf",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "72",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "72",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "72",
+          "tone": "C4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "72",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "72",
+          "tone": "G4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "72",
+          "tone": "C5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "72.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "72.5",
+          "tone": "G4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "73",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "73",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "73",
+          "tone": "G3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "73",
+          "tone": "E5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "73.5",
+          "tone": "C3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "74",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "74",
+          "tone": "C4",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "74",
+          "tone": "G5",
+          "length": "0.72",
+          "dynamic": "f",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "74.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "74.5",
+          "tone": "C4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "74.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "74.5",
+          "tone": "G4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "74.5",
+          "tone": "E4",
+          "length": "0.24",
+          "dynamic": "mf",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "75",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "75",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "75",
+          "tone": "C3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "75",
+          "tone": "E5",
+          "length": "0.52",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "75.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "75.5",
+          "tone": "G3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "76",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "76",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "f",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "76",
+          "tone": "A3",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "76",
+          "tone": "C#4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "76",
+          "tone": "E4",
+          "length": "0.42",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "76",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "76",
+          "tone": "A4",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "76.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "76.5",
+          "tone": "F3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "76.5",
+          "tone": "C5",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "77",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "77",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "77",
+          "tone": "E3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "77",
+          "tone": "A3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "77",
+          "tone": "D5",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "77.5",
+          "tone": "A2",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "77.5",
+          "tone": "D4",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "77.5",
+          "tone": "F5",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "78",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "78",
+          "tone": "A3",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "78",
+          "tone": "F4",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "78",
+          "tone": "A5",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "78.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "78.5",
+          "tone": "A3",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "78.5",
+          "tone": "C#4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "78.5",
+          "tone": "E4",
+          "length": "0.28",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "78.5",
+          "tone": "A3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "78.5",
+          "tone": "A4",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "78.5",
+          "tone": "C6",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "79",
+          "tone": "D3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "79",
+          "tone": "D4",
+          "length": "0.18",
+          "dynamic": "ff",
+          "instrument": "gated-snare"
+        },
+        {
+          "offset": "79",
+          "tone": "A2",
+          "length": "0.38",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "79",
+          "tone": "F3",
+          "length": "0.22",
+          "dynamic": "f",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "79",
+          "tone": "D5",
+          "length": "0.22",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "79",
+          "tone": "D3",
+          "length": "0.85",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "79",
+          "tone": "F3",
+          "length": "0.85",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "79",
+          "tone": "A3",
+          "length": "0.85",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "79",
+          "tone": "D4",
+          "length": "0.85",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "79",
+          "tone": "D6",
+          "length": "0.28",
+          "dynamic": "f",
+          "instrument": "digital-reed"
+        },
+        {
+          "offset": "79.5",
+          "tone": "D3",
+          "length": "0.16",
+          "dynamic": "mf",
+          "instrument": "eighties-drum-kick"
+        },
+        {
+          "offset": "79.5",
+          "tone": "E3",
+          "length": "0.26",
+          "dynamic": "mf",
+          "instrument": "cinematic-pulse-bass"
+        },
+        {
+          "offset": "79.5",
+          "tone": "D3",
+          "length": "0.3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/dc251724fb4e093ab601f593.wav",
+          "key": "dc251724fb4e093ab601f593"
+        },
+        "0.8": {
+          "url": "api/audio/wav/cb4c11b759dcc9c6dafe3bdb.wav",
+          "key": "cb4c11b759dcc9c6dafe3bdb"
+        },
+        "1.2": {
+          "url": "api/audio/wav/0f11b9deaa578f9131eb20d3.wav",
+          "key": "0f11b9deaa578f9131eb20d3"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-on": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ef2a81d1aededce2b0f3d89a.wav",
+          "key": "ef2a81d1aededce2b0f3d89a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/be8abac3a022b63ae487f965.wav",
+          "key": "be8abac3a022b63ae487f965"
+        },
+        "1.2": {
+          "url": "api/audio/wav/1f6c86ecd8b8068fb6029b54.wav",
+          "key": "1f6c86ecd8b8068fb6029b54"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-off": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2/3",
+          "tone": "C2",
+          "length": "1 1/3",
+          "dynamic": "p"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ffdf9c9f45669ec311d67af6.wav",
+          "key": "ffdf9c9f45669ec311d67af6"
+        },
+        "0.8": {
+          "url": "api/audio/wav/675381cc498fb62bc89ade8b.wav",
+          "key": "675381cc498fb62bc89ade8b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b781a6a69e6c9f7877679a78.wav",
+          "key": "b781a6a69e6c9f7877679a78"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-unchanged": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/b68052d2535830cadd2ad8d4.wav",
+          "key": "b68052d2535830cadd2ad8d4"
+        },
+        "0.8": {
+          "url": "api/audio/wav/55558f26648dddefcd72c16b.wav",
+          "key": "55558f26648dddefcd72c16b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/5ba944dfb0be795baca2e849.wav",
+          "key": "5ba944dfb0be795baca2e849"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "chime-easter-egg": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "232",
+          "dynamic": "ff",
+          "instrument": "easter-egg-approved-render"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/samples/easter-egg-approved-v89.wav",
+          "existing": true
+        },
+        "0.8": {
+          "url": "api/audio/samples/easter-egg-approved-v89.wav",
+          "existing": true
+        },
+        "1.2": {
+          "url": "api/audio/samples/easter-egg-approved-v89.wav",
+          "existing": true
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "dark-eighties": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "975/2",
+          "dynamic": "ff",
+          "instrument": "dark-eighties-approved-render"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/samples/dark-eighties-approved-v27.wav",
+          "existing": true
+        },
+        "0.8": {
+          "url": "api/audio/samples/dark-eighties-approved-v27.wav",
+          "existing": true
+        },
+        "1.2": {
+          "url": "api/audio/samples/dark-eighties-approved-v27.wav",
+          "existing": true
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-activated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1e404457a5141e51aab05135.wav",
+          "key": "1e404457a5141e51aab05135"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5d07caec869bb3fd8d336086.wav",
+          "key": "5d07caec869bb3fd8d336086"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7f701ccba94d6f4dd6339b94.wav",
+          "key": "7f701ccba94d6f4dd6339b94"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-deactivated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "1",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/8399aacf458b12e92b092887.wav",
+          "key": "8399aacf458b12e92b092887"
+        },
+        "0.8": {
+          "url": "api/audio/wav/229278ca8003c496bd3e113d.wav",
+          "key": "229278ca8003c496bd3e113d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/d118776f2616759bf7b8bb14.wav",
+          "key": "d118776f2616759bf7b8bb14"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "observer-message": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E6",
+          "length": "2/3",
+          "dynamic": "f"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "3/2",
+          "dynamic": "f"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/862ea3bb6877bcbc6461258d.wav",
+          "key": "862ea3bb6877bcbc6461258d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/f89c7ba56aa791f5b147c114.wav",
+          "key": "f89c7ba56aa791f5b147c114"
+        },
+        "1.2": {
+          "url": "api/audio/wav/bba557563b5c87e7d7aa9b09.wav",
+          "key": "bba557563b5c87e7d7aa9b09"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "speech-rejected": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "mf"
+        },
+        {
+          "offset": "0",
+          "tone": "D#2",
+          "length": "1/2",
+          "dynamic": "pp"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/bff48db3a1be00c07ffbf738.wav",
+          "key": "bff48db3a1be00c07ffbf738"
+        },
+        "0.8": {
+          "url": "api/audio/wav/3fe38222c0899cf73aabe969.wav",
+          "key": "3fe38222c0899cf73aabe969"
+        },
+        "1.2": {
+          "url": "api/audio/wav/059b30aeffdb002feba5fb1c.wav",
+          "key": "059b30aeffdb002feba5fb1c"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/b1a7f6c6b3ed3df5669b3767.wav",
+          "key": "b1a7f6c6b3ed3df5669b3767"
+        },
+        "0.8": {
+          "url": "api/audio/wav/eba66bb8fc66d9c052b3af70.wav",
+          "key": "eba66bb8fc66d9c052b3af70"
+        },
+        "1.2": {
+          "url": "api/audio/wav/e1fdac42f66e06315793cc54.wav",
+          "key": "e1fdac42f66e06315793cc54"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "neon-countdown": {
+      "bpm": 120,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C4",
+          "length": "774",
+          "dynamic": "ff",
+          "instrument": "neon-countdown-render"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/samples/neon-countdown.wav",
+          "existing": true
+        },
+        "0.8": {
+          "url": "api/audio/samples/neon-countdown.wav",
+          "existing": true
+        },
+        "1.2": {
+          "url": "api/audio/samples/neon-countdown.wav",
+          "existing": true
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "scope-change": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "2/3",
+          "tone": "E2",
+          "length": "2/3",
+          "dynamic": "p"
+        },
+        {
+          "offset": "1 1/3",
+          "tone": "D2",
+          "length": "2/3",
+          "dynamic": "p"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/49a316ca5fd0e7b54d4a8bc7.wav",
+          "key": "49a316ca5fd0e7b54d4a8bc7"
+        },
+        "0.8": {
+          "url": "api/audio/wav/b48bcb84459923ed0285b684.wav",
+          "key": "b48bcb84459923ed0285b684"
+        },
+        "1.2": {
+          "url": "api/audio/wav/52d873ef313b9fbd798f2399.wav",
+          "key": "52d873ef313b9fbd798f2399"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}

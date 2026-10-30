@@ -1,0 +1,1435 @@
+{
+  "version": 1,
+  "theme": "default",
+  "profile": "synth-brass-stab",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ffebb35ef61d93237c964233.wav",
+          "key": "ffebb35ef61d93237c964233"
+        },
+        "0.8": {
+          "url": "api/audio/wav/183e742ed9760f1ff447528c.wav",
+          "key": "183e742ed9760f1ff447528c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3e1f50d69bca7d9dfc92707d.wav",
+          "key": "3e1f50d69bca7d9dfc92707d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/2377aa3ca747cb410fa398a0.wav",
+          "key": "2377aa3ca747cb410fa398a0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0be167d3578bf7d00e89c314.wav",
+          "key": "0be167d3578bf7d00e89c314"
+        },
+        "1.2": {
+          "url": "api/audio/wav/05c73c338b1a74a1cbe2425b.wav",
+          "key": "05c73c338b1a74a1cbe2425b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/faa687112afdd4d6f89db472.wav",
+          "key": "faa687112afdd4d6f89db472"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a219d62e0adc5d1f98ec713b.wav",
+          "key": "a219d62e0adc5d1f98ec713b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/430da35026f8f299e689fb1f.wav",
+          "key": "430da35026f8f299e689fb1f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/17081a89fb836158b50ee15c.wav",
+          "key": "17081a89fb836158b50ee15c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5024b3e4097b629be57b7c2d.wav",
+          "key": "5024b3e4097b629be57b7c2d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b84704423e50fe084a6e5fc5.wav",
+          "key": "b84704423e50fe084a6e5fc5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0eeee98bbc56ae69f6cf391f.wav",
+          "key": "0eeee98bbc56ae69f6cf391f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/57b40401cefb2569a804bd57.wav",
+          "key": "57b40401cefb2569a804bd57"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2c75c1a54a0000b6c994af12.wav",
+          "key": "2c75c1a54a0000b6c994af12"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a6457bf668bbdb4f30e36cd1.wav",
+          "key": "a6457bf668bbdb4f30e36cd1"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8284f0cf63bd0d65df32c4e4.wav",
+          "key": "8284f0cf63bd0d65df32c4e4"
+        },
+        "1.2": {
+          "url": "api/audio/wav/33fa09ecf0f2437d8bd706ce.wav",
+          "key": "33fa09ecf0f2437d8bd706ce"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/b338df2dfa5e9364cb329541.wav",
+          "key": "b338df2dfa5e9364cb329541"
+        },
+        "0.8": {
+          "url": "api/audio/wav/49c0e54d2c9e23742ed65022.wav",
+          "key": "49c0e54d2c9e23742ed65022"
+        },
+        "1.2": {
+          "url": "api/audio/wav/32ba63620096ed1e57626b0f.wav",
+          "key": "32ba63620096ed1e57626b0f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/fe54e69e0e52a5507cf84715.wav",
+          "key": "fe54e69e0e52a5507cf84715"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e47bdf89f78d93159d8b0c3e.wav",
+          "key": "e47bdf89f78d93159d8b0c3e"
+        },
+        "1.2": {
+          "url": "api/audio/wav/addd5aa03557f34f80cf4e29.wav",
+          "key": "addd5aa03557f34f80cf4e29"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/d4db9c374dff884f86d3efe0.wav",
+          "key": "d4db9c374dff884f86d3efe0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8bc23cf92cc5e0a67a77518c.wav",
+          "key": "8bc23cf92cc5e0a67a77518c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/05749e6801a5a31f94c5c6cb.wav",
+          "key": "05749e6801a5a31f94c5c6cb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0e423b863cadd777a00e1348.wav",
+          "key": "0e423b863cadd777a00e1348"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5fa3cf126fafd5a44440c9e0.wav",
+          "key": "5fa3cf126fafd5a44440c9e0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/19c54bf596a4baff577b9a64.wav",
+          "key": "19c54bf596a4baff577b9a64"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/fa094eca8aab47bda6d377f7.wav",
+          "key": "fa094eca8aab47bda6d377f7"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4f177e57b7e013818dedf6d8.wav",
+          "key": "4f177e57b7e013818dedf6d8"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b2aaf69fe11e5896c2c373eb.wav",
+          "key": "b2aaf69fe11e5896c2c373eb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-out": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0e423b863cadd777a00e1348.wav",
+          "key": "0e423b863cadd777a00e1348"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5fa3cf126fafd5a44440c9e0.wav",
+          "key": "5fa3cf126fafd5a44440c9e0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/19c54bf596a4baff577b9a64.wav",
+          "key": "19c54bf596a4baff577b9a64"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-in": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0e423b863cadd777a00e1348.wav",
+          "key": "0e423b863cadd777a00e1348"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5fa3cf126fafd5a44440c9e0.wav",
+          "key": "5fa3cf126fafd5a44440c9e0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/19c54bf596a4baff577b9a64.wav",
+          "key": "19c54bf596a4baff577b9a64"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/15dec366d2eac9e154dc2357.wav",
+          "key": "15dec366d2eac9e154dc2357"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0a7cad73519016363732c7f6.wav",
+          "key": "0a7cad73519016363732c7f6"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7cc63312a9793d912cf479aa.wav",
+          "key": "7cc63312a9793d912cf479aa"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/15dec366d2eac9e154dc2357.wav",
+          "key": "15dec366d2eac9e154dc2357"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0a7cad73519016363732c7f6.wav",
+          "key": "0a7cad73519016363732c7f6"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7cc63312a9793d912cf479aa.wav",
+          "key": "7cc63312a9793d912cf479aa"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-late": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/15dec366d2eac9e154dc2357.wav",
+          "key": "15dec366d2eac9e154dc2357"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0a7cad73519016363732c7f6.wav",
+          "key": "0a7cad73519016363732c7f6"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7cc63312a9793d912cf479aa.wav",
+          "key": "7cc63312a9793d912cf479aa"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/faa687112afdd4d6f89db472.wav",
+          "key": "faa687112afdd4d6f89db472"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a219d62e0adc5d1f98ec713b.wav",
+          "key": "a219d62e0adc5d1f98ec713b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/430da35026f8f299e689fb1f.wav",
+          "key": "430da35026f8f299e689fb1f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "short-break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/faa687112afdd4d6f89db472.wav",
+          "key": "faa687112afdd4d6f89db472"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a219d62e0adc5d1f98ec713b.wav",
+          "key": "a219d62e0adc5d1f98ec713b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/430da35026f8f299e689fb1f.wav",
+          "key": "430da35026f8f299e689fb1f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/faa687112afdd4d6f89db472.wav",
+          "key": "faa687112afdd4d6f89db472"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a219d62e0adc5d1f98ec713b.wav",
+          "key": "a219d62e0adc5d1f98ec713b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/430da35026f8f299e689fb1f.wav",
+          "key": "430da35026f8f299e689fb1f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/17081a89fb836158b50ee15c.wav",
+          "key": "17081a89fb836158b50ee15c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5024b3e4097b629be57b7c2d.wav",
+          "key": "5024b3e4097b629be57b7c2d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b84704423e50fe084a6e5fc5.wav",
+          "key": "b84704423e50fe084a6e5fc5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-automatically": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/17081a89fb836158b50ee15c.wav",
+          "key": "17081a89fb836158b50ee15c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5024b3e4097b629be57b7c2d.wav",
+          "key": "5024b3e4097b629be57b7c2d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b84704423e50fe084a6e5fc5.wav",
+          "key": "b84704423e50fe084a6e5fc5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-after-break": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/17081a89fb836158b50ee15c.wav",
+          "key": "17081a89fb836158b50ee15c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/5024b3e4097b629be57b7c2d.wav",
+          "key": "5024b3e4097b629be57b7c2d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b84704423e50fe084a6e5fc5.wav",
+          "key": "b84704423e50fe084a6e5fc5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-ended": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/faa687112afdd4d6f89db472.wav",
+          "key": "faa687112afdd4d6f89db472"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a219d62e0adc5d1f98ec713b.wav",
+          "key": "a219d62e0adc5d1f98ec713b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/430da35026f8f299e689fb1f.wav",
+          "key": "430da35026f8f299e689fb1f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0536279250803e102a5a5da3.wav",
+          "key": "0536279250803e102a5a5da3"
+        },
+        "0.8": {
+          "url": "api/audio/wav/568fc9a70e3e8df083b2832b.wav",
+          "key": "568fc9a70e3e8df083b2832b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4e4869c7b9a80abda164e867.wav",
+          "key": "4e4869c7b9a80abda164e867"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "down-time-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6d249187e1a8f177cc757113.wav",
+          "key": "6d249187e1a8f177cc757113"
+        },
+        "0.8": {
+          "url": "api/audio/wav/6f16d8579447582993379d67.wav",
+          "key": "6f16d8579447582993379d67"
+        },
+        "1.2": {
+          "url": "api/audio/wav/877e2c1ac516d6bfb870b15d.wav",
+          "key": "877e2c1ac516d6bfb870b15d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-from-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/fe54e69e0e52a5507cf84715.wav",
+          "key": "fe54e69e0e52a5507cf84715"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e47bdf89f78d93159d8b0c3e.wav",
+          "key": "e47bdf89f78d93159d8b0c3e"
+        },
+        "1.2": {
+          "url": "api/audio/wav/addd5aa03557f34f80cf4e29.wav",
+          "key": "addd5aa03557f34f80cf4e29"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "goal-failed": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6d249187e1a8f177cc757113.wav",
+          "key": "6d249187e1a8f177cc757113"
+        },
+        "0.8": {
+          "url": "api/audio/wav/6f16d8579447582993379d67.wav",
+          "key": "6f16d8579447582993379d67"
+        },
+        "1.2": {
+          "url": "api/audio/wav/877e2c1ac516d6bfb870b15d.wav",
+          "key": "877e2c1ac516d6bfb870b15d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-on": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/fa094eca8aab47bda6d377f7.wav",
+          "key": "fa094eca8aab47bda6d377f7"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4f177e57b7e013818dedf6d8.wav",
+          "key": "4f177e57b7e013818dedf6d8"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b2aaf69fe11e5896c2c373eb.wav",
+          "key": "b2aaf69fe11e5896c2c373eb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-off": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2/3",
+          "tone": "C2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1aae99db7214b8f7d92de31c.wav",
+          "key": "1aae99db7214b8f7d92de31c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/d94a93c6898d8c696f3ee84c.wav",
+          "key": "d94a93c6898d8c696f3ee84c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/e007a7ae898c4e31ad7f6842.wav",
+          "key": "e007a7ae898c4e31ad7f6842"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-unchanged": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/db8a72eec804c5dc399bd6f0.wav",
+          "key": "db8a72eec804c5dc399bd6f0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/fc10cd0e848e8d91bf89c494.wav",
+          "key": "fc10cd0e848e8d91bf89c494"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b81c1d10fa4598285a091fd2.wav",
+          "key": "b81c1d10fa4598285a091fd2"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-activated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/bae27bc9024a2e53bbb9a9c4.wav",
+          "key": "bae27bc9024a2e53bbb9a9c4"
+        },
+        "0.8": {
+          "url": "api/audio/wav/fbac406b390f0098d00acf01.wav",
+          "key": "fbac406b390f0098d00acf01"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a3434ac50977b8922b6ffc2a.wav",
+          "key": "a3434ac50977b8922b6ffc2a"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-deactivated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3e048a86fb5f0757d326657d.wav",
+          "key": "3e048a86fb5f0757d326657d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/7195a70923a1580c22178fcd.wav",
+          "key": "7195a70923a1580c22178fcd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7bc41b772063defbbbae4f87.wav",
+          "key": "7bc41b772063defbbbae4f87"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "observer-message": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E6",
+          "length": "2/3",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "3/2",
+          "dynamic": "f",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/d93d9f4ea7ad2f5fe22c9b79.wav",
+          "key": "d93d9f4ea7ad2f5fe22c9b79"
+        },
+        "0.8": {
+          "url": "api/audio/wav/985a462e1601bebe194f88e5.wav",
+          "key": "985a462e1601bebe194f88e5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a62a8daf866b5dce9f91af25.wav",
+          "key": "a62a8daf866b5dce9f91af25"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "speech-rejected": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "0",
+          "tone": "D#2",
+          "length": "1/2",
+          "dynamic": "pp",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/da1bc4303c953a555cb2d763.wav",
+          "key": "da1bc4303c953a555cb2d763"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a022029457a06e1a60464cce.wav",
+          "key": "a022029457a06e1a60464cce"
+        },
+        "1.2": {
+          "url": "api/audio/wav/9567e44f8af84650f666f245.wav",
+          "key": "9567e44f8af84650f666f245"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/92748a0c658638f6439bafee.wav",
+          "key": "92748a0c658638f6439bafee"
+        },
+        "0.8": {
+          "url": "api/audio/wav/31694d22bd47fb018677ca68.wav",
+          "key": "31694d22bd47fb018677ca68"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a6f7ffec7d13a18849643101.wav",
+          "key": "a6f7ffec7d13a18849643101"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "scope-change": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "2/3",
+          "tone": "E2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        },
+        {
+          "offset": "1 1/3",
+          "tone": "D2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "synth-brass-stab"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e4ee67a6e0a9711834d7e8dd.wav",
+          "key": "e4ee67a6e0a9711834d7e8dd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/3057ef5c46174d108a9abf91.wav",
+          "key": "3057ef5c46174d108a9abf91"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b72ced7853562ff258b6eb9c.wav",
+          "key": "b72ced7853562ff258b6eb9c"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}

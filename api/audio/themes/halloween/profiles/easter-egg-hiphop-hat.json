@@ -1,0 +1,511 @@
+{
+  "version": 1,
+  "theme": "halloween",
+  "profile": "easter-egg-hiphop-hat",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/4a380f4100e69a9080d45af6.wav",
+          "key": "4a380f4100e69a9080d45af6"
+        },
+        "0.8": {
+          "url": "api/audio/wav/45aad248f5488a8052d89d29.wav",
+          "key": "45aad248f5488a8052d89d29"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a5d3e9b3bc565eef57370506.wav",
+          "key": "a5d3e9b3bc565eef57370506"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/796750291f3fd864a7efa286.wav",
+          "key": "796750291f3fd864a7efa286"
+        },
+        "0.8": {
+          "url": "api/audio/wav/d3d0faa0743b0abe8080e61c.wav",
+          "key": "d3d0faa0743b0abe8080e61c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/8318b13ef2d180e8345a907a.wav",
+          "key": "8318b13ef2d180e8345a907a"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/5dcfdc013c958fc4517daa8c.wav",
+          "key": "5dcfdc013c958fc4517daa8c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/04e43807c029f5daf2f02121.wav",
+          "key": "04e43807c029f5daf2f02121"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ee58ccd6ab1b224ad835be8d.wav",
+          "key": "ee58ccd6ab1b224ad835be8d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ffa8caa06971194fc1e5a0a2.wav",
+          "key": "ffa8caa06971194fc1e5a0a2"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e50490fd71567b10c03ceeb5.wav",
+          "key": "e50490fd71567b10c03ceeb5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7da44821e74a3d4d629f2d90.wav",
+          "key": "7da44821e74a3d4d629f2d90"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/f1a5984de4573637ff0f791a.wav",
+          "key": "f1a5984de4573637ff0f791a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/aa8c2c3c3c7e442a20e833f5.wav",
+          "key": "aa8c2c3c3c7e442a20e833f5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/9d3f1d67bb6ad6a658208bcc.wav",
+          "key": "9d3f1d67bb6ad6a658208bcc"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/f1e3763800be1a17e493b5f7.wav",
+          "key": "f1e3763800be1a17e493b5f7"
+        },
+        "0.8": {
+          "url": "api/audio/wav/7c1fa60db9f0f218ccba655c.wav",
+          "key": "7c1fa60db9f0f218ccba655c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4928f584cb12fc5ab3297439.wav",
+          "key": "4928f584cb12fc5ab3297439"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/045ed6a1078f96e3289c616b.wav",
+          "key": "045ed6a1078f96e3289c616b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/9930a0218555f3cbbbb182fc.wav",
+          "key": "9930a0218555f3cbbbb182fc"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7824a111b489370b09db1e0c.wav",
+          "key": "7824a111b489370b09db1e0c"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/de89894b9413ab3aecc016b9.wav",
+          "key": "de89894b9413ab3aecc016b9"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8c6e6f139eb334ccc1d708bd.wav",
+          "key": "8c6e6f139eb334ccc1d708bd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2cca51e548893b09c5fc7dd5.wav",
+          "key": "2cca51e548893b09c5fc7dd5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e7c23699fbb5b53bae4a74be.wav",
+          "key": "e7c23699fbb5b53bae4a74be"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a9d7ee25f4401ed3ef8d7e08.wav",
+          "key": "a9d7ee25f4401ed3ef8d7e08"
+        },
+        "1.2": {
+          "url": "api/audio/wav/34ca64551e176ace5b3c28f9.wav",
+          "key": "34ca64551e176ace5b3c28f9"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/b95d2bd450515059cf0a1eaa.wav",
+          "key": "b95d2bd450515059cf0a1eaa"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8edb6be7a723a46b18c79856.wav",
+          "key": "8edb6be7a723a46b18c79856"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ba947542bfc59f9ad3293344.wav",
+          "key": "ba947542bfc59f9ad3293344"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/2a8465fdce6aca41b099d2fc.wav",
+          "key": "2a8465fdce6aca41b099d2fc"
+        },
+        "0.8": {
+          "url": "api/audio/wav/427cf3a1eab1ae0b5ad47be8.wav",
+          "key": "427cf3a1eab1ae0b5ad47be8"
+        },
+        "1.2": {
+          "url": "api/audio/wav/01422168bbdb1499a573f169.wav",
+          "key": "01422168bbdb1499a573f169"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e35e5dfada7896f30775e7bd.wav",
+          "key": "e35e5dfada7896f30775e7bd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/f59512c212bf7bfb30d2cb42.wav",
+          "key": "f59512c212bf7bfb30d2cb42"
+        },
+        "1.2": {
+          "url": "api/audio/wav/e73e507e3a20ecedbdc45384.wav",
+          "key": "e73e507e3a20ecedbdc45384"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf",
+          "instrument": "easter-egg-hiphop-hat"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/f08190eb2a677bdfc7d52112.wav",
+          "key": "f08190eb2a677bdfc7d52112"
+        },
+        "0.8": {
+          "url": "api/audio/wav/359cbec025f6654edbf1fdd3.wav",
+          "key": "359cbec025f6654edbf1fdd3"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7ded1213aaeeda6a66d912ac.wav",
+          "key": "7ded1213aaeeda6a66d912ac"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}

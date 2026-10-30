@@ -1,0 +1,370 @@
+{
+  "version": 1,
+  "events": {
+    "trip-started": {
+      "sound": "trip-started",
+      "speech": {
+        "summary": "announcements.trip-started.summary",
+        "inProgress": "announcements.trip-started.inProgress",
+        "details": "announcements.trip-started.details"
+      }
+    },
+    "trip-started-early": {
+      "sound": "trip-started-early",
+      "speech": {
+        "summary": "announcements.trip-started-early.summary",
+        "details": "announcements.trip-started-early.details"
+      }
+    },
+    "trip-started-late": {
+      "sound": "trip-started-late",
+      "speech": {
+        "summary": "announcements.trip-started-late.summary",
+        "details": "announcements.trip-started-late.details"
+      }
+    },
+    "break-started": {
+      "sound": "break-started",
+      "speech": {
+        "summary": "announcements.break-started.summary"
+      }
+    },
+    "short-break-started": {
+      "sound": "short-break-started",
+      "speech": {
+        "summary": "announcements.short-break-started.summary"
+      }
+    },
+    "lunch-started": {
+      "sound": "lunch-started",
+      "speech": {
+        "summary": "announcements.lunch-started.summary"
+      }
+    },
+    "trip-resumed-early": {
+      "sound": "trip-resumed-early",
+      "speech": {
+        "summary": "announcements.trip-resumed-early.summary",
+        "details": "announcements.trip-resumed-early.details"
+      }
+    },
+    "trip-resumed-automatically": {
+      "sound": "trip-resumed-automatically",
+      "speech": {
+        "summary": "announcements.trip-resumed-automatically.summary"
+      }
+    },
+    "trip-resumed-after-break": {
+      "sound": "trip-resumed-after-break",
+      "speech": {
+        "summary": "announcements.trip-resumed-after-break.summary",
+        "details": "announcements.trip-resumed-after-break.details"
+      }
+    },
+    "down-time-started": {
+      "sound": "down-time-started",
+      "speech": {
+        "summary": "announcements.down-time-started.summary"
+      }
+    },
+    "trip-resumed-from-down": {
+      "sound": "trip-resumed-from-down",
+      "speech": {
+        "summary": "announcements.trip-resumed-from-down.summary"
+      }
+    },
+    "trip-ended": {
+      "sound": "trip-ended",
+      "speech": {
+        "summary": "announcements.trip-ended.summary",
+        "total": "announcements.trip-ended.total",
+        "banked": "announcements.trip-ended.banked",
+        "over": "announcements.trip-ended.over",
+        "newTripPrompt": "announcements.trip-ended.newTripPrompt"
+      }
+    },
+    "goal-failed": {
+      "sound": "goal-failed",
+      "speech": {
+        "standard": "announcements.goal-failed.standard",
+        "trip": "announcements.goal-failed.trip",
+        "total": "announcements.goal-failed.total",
+        "details": "announcements.goal-failed.details",
+        "overtime": "announcements.goal-failed.overtime",
+        "combined": "announcements.goal-failed.combined"
+      }
+    },
+    "lunch-clock-out": {
+      "sound": "lunch-clock-out",
+      "speech": {
+        "summary": "announcements.lunch-clock-out.summary"
+      }
+    },
+    "lunch-clock-in": {
+      "sound": "lunch-clock-in",
+      "speech": {
+        "summary": "announcements.lunch-clock-in.summary"
+      }
+    },
+    "setting-change": {
+      "sound": "setting-on"
+    },
+    "goal-change": {
+      "sound": "setting-on"
+    },
+    "range-change": {
+      "sound": "scope-change"
+    },
+    "sync-state": {
+      "sound": null
+    },
+    "sync-goal": {
+      "sound": null
+    },
+    "setting-on": {
+      "sound": "setting-on"
+    },
+    "setting-off": {
+      "sound": "setting-off"
+    },
+    "setting-unchanged": {
+      "sound": "setting-unchanged"
+    },
+    "observer-message": {
+      "sound": "observer-message"
+    },
+    "time-reference": {
+      "sound": "time-reference"
+    },
+    "speech-rejected": {
+      "sound": "speech-rejected"
+    },
+    "syncTry": {
+      "speech": {
+        "on": "announcements.syncTry.on",
+        "off": "announcements.syncTry.off",
+        "offline": "announcements.syncTry.offline",
+        "blocked": "announcements.syncTry.blocked",
+        "dataUnavailable": "announcements.syncTry.dataUnavailable",
+        "failed": "announcements.syncTry.failed",
+        "goal": "announcements.syncTry.goal",
+        "override": "announcements.syncTry.override",
+        "newTripGoal": "announcements.syncTry.newTripGoal"
+      }
+    },
+    "voice-pad-recognition-required": {
+      "speech": {
+        "summary": "announcements.voice-pad-recognition-required.summary"
+      }
+    },
+    "voice-pad-number-pad": {
+      "speech": {
+        "summary": "announcements.voice-pad-number-pad.summary"
+      }
+    }
+  },
+  "templates": {
+    "announcements.lunch-clock-out.summary": "announcements.lunch-clock-out.summary",
+    "announcements.lunch-clock-in.summary": "announcements.lunch-clock-in.summary",
+    "announcements.break-started.summary": "announcements.break-started.summary",
+    "announcements.short-break-started.summary": "announcements.short-break-started.summary",
+    "announcements.lunch-started.summary": "announcements.lunch-started.summary",
+    "announcements.trip-resumed-early.summary": "announcements.trip-resumed-early.summary",
+    "announcements.trip-resumed-early.details": "announcements.trip-resumed-early.details",
+    "announcements.trip-resumed-automatically.summary": "announcements.trip-resumed-automatically.summary",
+    "announcements.trip-resumed-after-break.summary": "announcements.trip-resumed-after-break.summary",
+    "announcements.trip-resumed-after-break.details": "announcements.trip-resumed-after-break.details",
+    "announcements.down-time-started.summary": "announcements.down-time-started.summary",
+    "announcements.trip-resumed-from-down.summary": "announcements.trip-resumed-from-down.summary",
+    "announcements.trip-started.summary": "announcements.trip-started.summary",
+    "announcements.trip-started.inProgress": "announcements.trip-started.inProgress",
+    "announcements.trip-started.details": "announcements.trip-started.details",
+    "announcements.trip-started-early.summary": "announcements.trip-started-early.summary",
+    "announcements.trip-started-early.details": "announcements.trip-started-early.details",
+    "announcements.trip-started-late.summary": "announcements.trip-started-late.summary",
+    "announcements.trip-started-late.details": "announcements.trip-started-late.details",
+    "announcements.trip-ended.summary": "announcements.trip-ended.summary",
+    "announcements.trip-ended.total": "announcements.trip-ended.total",
+    "announcements.trip-ended.banked": "announcements.trip-ended.banked",
+    "announcements.trip-ended.over": "announcements.trip-ended.over",
+    "announcements.trip-ended.newTripPrompt": "announcements.trip-ended.newTripPrompt",
+    "announcements.goal-failed.standard": "announcements.goal-failed.standard",
+    "announcements.goal-failed.trip": "announcements.goal-failed.trip",
+    "announcements.goal-failed.total": "announcements.goal-failed.total",
+    "announcements.goal-failed.details": "announcements.goal-failed.details",
+    "announcements.goal-failed.overtime": "announcements.goal-failed.overtime",
+    "announcements.goal-failed.combined": "announcements.goal-failed.combined",
+    "announcements.syncTry.on": "announcements.syncTry.on",
+    "announcements.syncTry.off": "announcements.syncTry.off",
+    "announcements.syncTry.offline": "announcements.syncTry.offline",
+    "announcements.syncTry.blocked": "announcements.syncTry.blocked",
+    "announcements.syncTry.dataUnavailable": "announcements.syncTry.dataUnavailable",
+    "announcements.syncTry.failed": "announcements.syncTry.failed",
+    "announcements.syncTry.goal": "announcements.syncTry.goal",
+    "announcements.syncTry.override": "announcements.syncTry.override",
+    "announcements.syncTry.newTripGoal": "announcements.syncTry.newTripGoal",
+    "announcements.voice-pad-recognition-required.summary": "announcements.voice-pad-recognition-required.summary",
+    "announcements.voice-pad-number-pad.summary": "announcements.voice-pad-number-pad.summary",
+    "messages.goal.standard": "messages.goal.standard",
+    "messages.goal.trip": "messages.goal.trip",
+    "messages.goal.percent": "messages.goal.percent",
+    "messages.goal.label": "messages.goal.label",
+    "messages.goal.fallbackPercent": "messages.goal.fallbackPercent",
+    "messages.scope.standard": "messages.scope.standard",
+    "messages.scope.trip": "messages.scope.trip",
+    "messages.scope.day": "messages.scope.day",
+    "messages.scope.week": "messages.scope.week",
+    "messages.scope.pay-period": "messages.scope.pay-period",
+    "messages.scope.month": "messages.scope.month",
+    "messages.scope.year": "messages.scope.year",
+    "messages.scope.custom": "messages.scope.custom",
+    "messages.scope.auto": "messages.scope.auto",
+    "messages.speech.percent": "messages.speech.percent",
+    "messages.speech.percentSuffix": "messages.speech.percentSuffix",
+    "messages.settings.speechOn": "messages.settings.speechOn",
+    "messages.settings.speechOff": "messages.settings.speechOff",
+    "messages.settings.chimeOn": "messages.settings.chimeOn",
+    "messages.settings.chimeOff": "messages.settings.chimeOff",
+    "messages.settings.chimeRate": "messages.settings.chimeRate",
+    "messages.settings.speechRate": "messages.settings.speechRate",
+    "messages.settings.volume": "messages.settings.volume",
+    "messages.settings.viewing": "messages.settings.viewing",
+    "messages.settings.autoMode": "messages.settings.autoMode",
+    "messages.settings.mode": "messages.settings.mode",
+    "messages.settings.endTimeLocked": "messages.settings.endTimeLocked",
+    "messages.settings.standardTime": "messages.settings.standardTime",
+    "messages.settings.showingEnd": "messages.settings.showingEnd",
+    "messages.settings.showingElapsed": "messages.settings.showingElapsed",
+    "messages.settings.showingBanked": "messages.settings.showingBanked",
+    "messages.settings.showingOver": "messages.settings.showingOver",
+    "messages.settings.showingLeft": "messages.settings.showingLeft",
+    "messages.settings.goalSet": "messages.settings.goalSet",
+    "messages.settings.standardTimePrefix": "messages.settings.standardTimePrefix",
+    "messages.settings.endTimePrefix": "messages.settings.endTimePrefix",
+    "messages.settings.chimeSlow": "messages.settings.chimeSlow",
+    "messages.settings.chimeMedium": "messages.settings.chimeMedium",
+    "messages.settings.chimeFast": "messages.settings.chimeFast",
+    "messages.settings.goalChanged": "messages.settings.goalChanged",
+    "messages.settings.autoGoalRecalculated": "messages.settings.autoGoalRecalculated",
+    "messages.settings.syncValueChanged": "messages.settings.syncValueChanged",
+    "messages.settings.newTripGoal": "messages.settings.newTripGoal",
+    "messages.settings.goalCapped": "messages.settings.goalCapped",
+    "messages.settings.goalCappedNotice": "messages.settings.goalCappedNotice",
+    "messages.readback.metric": "messages.readback.metric",
+    "messages.readback.tripGoal": "messages.readback.tripGoal",
+    "messages.readback.endTime": "messages.readback.endTime",
+    "messages.readback.overBy": "messages.readback.overBy",
+    "messages.readback.mode": "messages.readback.mode",
+    "messages.voiceFeedback.entryCancelled": "messages.voiceFeedback.entryCancelled",
+    "messages.voiceFeedback.editCancelled": "messages.voiceFeedback.editCancelled",
+    "messages.voiceFeedback.scheduledCancelled": "messages.voiceFeedback.scheduledCancelled",
+    "messages.voiceFeedback.numberPad": "messages.voiceFeedback.numberPad",
+    "messages.voiceFeedback.deferred": "messages.voiceFeedback.deferred",
+    "messages.voiceFeedback.breakChoices": "messages.voiceFeedback.breakChoices",
+    "messages.voiceFeedback.breakSelected": "messages.voiceFeedback.breakSelected",
+    "messages.voiceFeedback.cancelledRunning": "messages.voiceFeedback.cancelledRunning",
+    "messages.voiceFeedback.cancelledDown": "messages.voiceFeedback.cancelledDown",
+    "messages.voiceFeedback.intervalContinues": "messages.voiceFeedback.intervalContinues",
+    "messages.voiceFeedback.downRemoved": "messages.voiceFeedback.downRemoved",
+    "messages.voiceFeedback.downContinues": "messages.voiceFeedback.downContinues",
+    "messages.voiceFeedback.settingsSaved": "messages.voiceFeedback.settingsSaved",
+    "messages.voiceFeedback.fieldSaved": "messages.voiceFeedback.fieldSaved",
+    "messages.voiceFeedback.logOpened": "messages.voiceFeedback.logOpened",
+    "messages.voiceFeedback.logClosed": "messages.voiceFeedback.logClosed",
+    "messages.voiceFeedback.sleeping": "messages.voiceFeedback.sleeping",
+    "messages.voiceFeedback.listening": "messages.voiceFeedback.listening",
+    "messages.voiceFeedback.off": "messages.voiceFeedback.off",
+    "messages.voiceFeedback.microphoneDeactivated": "messages.voiceFeedback.microphoneDeactivated",
+    "messages.voiceFeedback.microphoneActivated": "messages.voiceFeedback.microphoneActivated",
+    "messages.voiceFeedback.microphoneReactivated": "messages.voiceFeedback.microphoneReactivated",
+    "messages.voiceFeedback.syncAlready": "messages.voiceFeedback.syncAlready",
+    "messages.voiceFeedback.modeAlready": "messages.voiceFeedback.modeAlready",
+    "messages.voiceFeedback.standardAlready": "messages.voiceFeedback.standardAlready",
+    "messages.voiceFeedback.invalidValue": "messages.voiceFeedback.invalidValue",
+    "messages.voiceFeedback.breakEndQuestion": "messages.voiceFeedback.breakEndQuestion",
+    "messages.voiceFeedback.breakStartQuestion": "messages.voiceFeedback.breakStartQuestion",
+    "messages.voiceFeedback.breakNotStarted": "messages.voiceFeedback.breakNotStarted",
+    "messages.voiceFeedback.intervalTypes.break": "messages.voiceFeedback.intervalTypes.break",
+    "messages.voiceFeedback.intervalTypes.short-break": "messages.voiceFeedback.intervalTypes.short-break",
+    "messages.voiceFeedback.intervalTypes.lunch": "messages.voiceFeedback.intervalTypes.lunch",
+    "messages.voiceFeedback.summaryClosed": "messages.voiceFeedback.summaryClosed",
+    "messages.tripSummary.title": "messages.tripSummary.title",
+    "messages.tripSummary.range": "messages.tripSummary.range",
+    "messages.tripSummary.noData": "messages.tripSummary.noData",
+    "messages.tripSummary.loading": "messages.tripSummary.loading",
+    "messages.tripSummary.loadFailed": "messages.tripSummary.loadFailed",
+    "messages.tripSummary.tripCountLabel": "messages.tripSummary.tripCountLabel",
+    "messages.tripSummary.tripCount": "messages.tripSummary.tripCount",
+    "messages.tripSummary.standardLabel": "messages.tripSummary.standardLabel",
+    "messages.tripSummary.standard": "messages.tripSummary.standard",
+    "messages.tripSummary.actualLabel": "messages.tripSummary.actualLabel",
+    "messages.tripSummary.actual": "messages.tripSummary.actual",
+    "messages.tripSummary.countedLabel": "messages.tripSummary.countedLabel",
+    "messages.tripSummary.counted": "messages.tripSummary.counted",
+    "messages.tripSummary.percentLabel": "messages.tripSummary.percentLabel",
+    "messages.tripSummary.percent": "messages.tripSummary.percent",
+    "messages.tripSummary.bankedLabel": "messages.tripSummary.bankedLabel",
+    "messages.tripSummary.banked": "messages.tripSummary.banked",
+    "messages.tripSummary.overLabel": "messages.tripSummary.overLabel",
+    "messages.tripSummary.over": "messages.tripSummary.over",
+    "messages.tripSummary.totalLabel": "messages.tripSummary.totalLabel",
+    "messages.tripSummary.lastLabel": "messages.tripSummary.lastLabel",
+    "messages.tripSummary.activeLabel": "messages.tripSummary.activeLabel",
+    "messages.tripSummary.standardColumn": "messages.tripSummary.standardColumn",
+    "messages.tripSummary.actualColumn": "messages.tripSummary.actualColumn",
+    "messages.tripSummary.percentColumn": "messages.tripSummary.percentColumn",
+    "messages.tripSummary.lastActual": "messages.tripSummary.lastActual",
+    "messages.tripSummary.performances": "messages.tripSummary.performances",
+    "messages.tripSummary.lastPerformance": "messages.tripSummary.lastPerformance",
+    "messages.tripSummary.totalPerformance": "messages.tripSummary.totalPerformance",
+    "messages.tripSummary.activeStandard": "messages.tripSummary.activeStandard",
+    "messages.voiceLogin.idPrompt": "messages.voiceLogin.idPrompt",
+    "messages.voiceLogin.digitNames": "messages.voiceLogin.digitNames",
+    "messages.voiceLogin.confirmPrompt": "messages.voiceLogin.confirmPrompt",
+    "messages.voiceLogin.pinPrompt": "messages.voiceLogin.pinPrompt",
+    "messages.voiceLogin.invalid": "messages.voiceLogin.invalid",
+    "messages.voiceLogin.failed": "messages.voiceLogin.failed",
+    "messages.voiceLogin.userIdLabel": "messages.voiceLogin.userIdLabel",
+    "messages.voiceLogin.pinLabel": "messages.voiceLogin.pinLabel",
+    "messages.voiceLogin.adminTitle": "messages.voiceLogin.adminTitle",
+    "messages.voiceLogin.accountLabel": "messages.voiceLogin.accountLabel",
+    "messages.voiceLogin.assign": "messages.voiceLogin.assign",
+    "messages.voiceLogin.assigned": "messages.voiceLogin.assigned",
+    "messages.voiceLogin.success": "messages.voiceLogin.success",
+    "messages.voiceLogin.recognitionOff": "messages.voiceLogin.recognitionOff",
+    "messages.voiceLogin.recognitionSleeping": "messages.voiceLogin.recognitionSleeping",
+    "messages.voiceLogin.recognitionListening": "messages.voiceLogin.recognitionListening",
+    "messages.voiceLogin.enableRecognition": "messages.voiceLogin.enableRecognition",
+    "messages.voiceLogin.ok": "messages.voiceLogin.ok",
+    "messages.voiceLogin.cancel": "messages.voiceLogin.cancel",
+    "messages.voiceLogin.idDigit": "messages.voiceLogin.idDigit",
+    "messages.voiceLogin.pinDigit": "messages.voiceLogin.pinDigit",
+    "messages.voiceLogin.assignmentFailed": "messages.voiceLogin.assignmentFailed",
+    "messages.voiceLogin.unauthorized": "messages.voiceLogin.unauthorized",
+    "messages.voiceLogin.legacyLogin": "messages.voiceLogin.legacyLogin",
+    "messages.voiceLogin.usernameLabel": "messages.voiceLogin.usernameLabel",
+    "messages.voiceLogin.passwordLabel": "messages.voiceLogin.passwordLabel",
+    "messages.voiceLogin.voiceLogin": "messages.voiceLogin.voiceLogin",
+    "messages.voiceLogin.passwordModePrompt": "messages.voiceLogin.passwordModePrompt",
+    "messages.voiceLogin.recognitionPasswordListening": "messages.voiceLogin.recognitionPasswordListening",
+    "messages.voiceLogin.recognitionStarting": "messages.voiceLogin.recognitionStarting",
+    "messages.voiceLogin.recognitionSuspended": "messages.voiceLogin.recognitionSuspended",
+    "messages.voiceLogin.recognitionPasswordOff": "messages.voiceLogin.recognitionPasswordOff",
+    "messages.voiceLogin.recognitionPasswordSleeping": "messages.voiceLogin.recognitionPasswordSleeping",
+    "messages.voiceLogin.loginTitle": "messages.voiceLogin.loginTitle",
+    "messages.voiceLogin.loginAction": "messages.voiceLogin.loginAction",
+    "messages.voiceLogin.applicationStarting": "messages.voiceLogin.applicationStarting",
+    "messages.voiceLogin.enableAudioPrompt": "messages.voiceLogin.enableAudioPrompt",
+    "messages.voiceLogin.enableAudioAction": "messages.voiceLogin.enableAudioAction",
+    "messages.voiceLogin.legacyFailed": "messages.voiceLogin.legacyFailed",
+    "messages.standaloneBreakEnd.normal.break": "messages.standaloneBreakEnd.normal.break",
+    "messages.standaloneBreakEnd.normal.short-break": "messages.standaloneBreakEnd.normal.short-break",
+    "messages.standaloneBreakEnd.normal.lunch": "messages.standaloneBreakEnd.normal.lunch",
+    "messages.standaloneBreakEnd.early.break": "messages.standaloneBreakEnd.early.break",
+    "messages.standaloneBreakEnd.early.short-break": "messages.standaloneBreakEnd.early.short-break",
+    "messages.standaloneBreakEnd.early.lunch": "messages.standaloneBreakEnd.early.lunch",
+    "messages.standaloneBreakEnd.late.break": "messages.standaloneBreakEnd.late.break",
+    "messages.standaloneBreakEnd.late.short-break": "messages.standaloneBreakEnd.late.short-break",
+    "messages.standaloneBreakEnd.late.lunch": "messages.standaloneBreakEnd.late.lunch"
+  }
+}

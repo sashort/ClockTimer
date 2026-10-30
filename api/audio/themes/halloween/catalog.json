@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "theme": "halloween",
+  "format": "audio/wav",
+  "rates": [
+    0.8,
+    1,
+    1.2
+  ],
+  "instruments": [
+    {
+      "id": "legacy-square",
+      "label": "Legacy Square"
+    },
+    {
+      "id": "eighties-poly",
+      "label": "80s Poly"
+    },
+    {
+      "id": "cinematic-pulse-bass",
+      "label": "Cinematic Pulse Bass"
+    },
+    {
+      "id": "cinematic-pulse-bass-phone",
+      "label": "Cinematic Pulse Bass (Phone)"
+    },
+    {
+      "id": "warm-chorus-poly",
+      "label": "Warm Chorus Poly"
+    },
+    {
+      "id": "eighties-drum-kick",
+      "label": "80s Drum Kick"
+    },
+    {
+      "id": "gated-snare",
+      "label": "Gated Snare"
+    },
+    {
+      "id": "electro-tom",
+      "label": "Electro Tom"
+    },
+    {
+      "id": "breathy-flute",
+      "label": "Breathy Flute"
+    },
+    {
+      "id": "digital-reed",
+      "label": "Digital Reed"
+    },
+    {
+      "id": "synth-brass-stab",
+      "label": "Synth Brass Stab"
+    },
+    {
+      "id": "easter-egg-sub-bass",
+      "label": "Easter Egg Sub Bass"
+    },
+    {
+      "id": "easter-egg-tuba",
+      "label": "Easter Egg Tuba"
+    },
+    {
+      "id": "easter-egg-tuba-expressive",
+      "label": "Tuba â€” Expressive Reference"
+    },
+    {
+      "id": "steelpan-expressive",
+      "label": "Steel Pan â€” Expressive Preview"
+    },
+    {
+      "id": "easter-egg-lead-tuba",
+      "label": "Easter Egg Lead Tuba"
+    },
+    {
+      "id": "easter-egg-steady-beat",
+      "label": "Easter Egg Steady Beat"
+    },
+    {
+      "id": "easter-egg-lead-flute",
+      "label": "Easter Egg Recorded Flute"
+    },
+    {
+      "id": "easter-egg-featured-slides",
+      "label": "Easter Egg Featured Slides"
+    },
+    {
+      "id": "easter-egg-lead-oboe",
+      "label": "Easter Egg Recorded Oboe"
+    },
+    {
+      "id": "easter-egg-eighties-snare",
+      "label": "Easter Egg 80s Digital Snare"
+    },
+    {
+      "id": "easter-egg-eighties-kick",
+      "label": "Easter Egg 80s Electronic Kick"
+    },
+    {
+      "id": "easter-egg-lead-shawm",
+      "label": "Easter Egg Shawm-Inspired Reed"
+    },
+    {
+      "id": "dark-breathy-reed",
+      "label": "Dark Breathy Reed"
+    },
+    {
+      "id": "jx3p-inspired-lead",
+      "label": "JX-3P Inspired Rounded Lead"
+    },
+    {
+      "id": "jx3p-inspired-trumpet",
+      "label": "JX-3P Inspired Synth Trumpet"
+    },
+    {
+      "id": "easter-egg-pulse-lead",
+      "label": "Easter Egg Sustained Pulse Melody"
+    },
+    {
+      "id": "easter-egg-hiphop-hat",
+      "label": "80s Hip-Hop Closed Hat"
+    },
+    {
+      "id": "easter-egg-hiphop-clap",
+      "label": "80s Hip-Hop Handclap"
+    },
+    {
+      "id": "easter-egg-low-driving-beat",
+      "label": "Lower Driving Beat"
+    },
+    {
+      "id": "easter-egg-recorded-phrase-0",
+      "label": "Recorded Phrase G2"
+    },
+    {
+      "id": "easter-egg-recorded-phrase-1",
+      "label": "Recorded Phrase F2"
+    },
+    {
+      "id": "easter-egg-recorded-phrase-2",
+      "label": "Recorded Phrase Eb2"
+    },
+    {
+      "id": "easter-egg-recorded-phrase-3",
+      "label": "Recorded Phrase C2"
+    },
+    {
+      "id": "easter-egg-approved-render",
+      "label": "Approved Easter Egg Mix"
+    },
+    {
+      "id": "dark-eighties-approved-render",
+      "label": "Dark 80s approved mix"
+    },
+    {
+      "id": "microphone-bell",
+      "label": "Microphone Bell"
+    },
+    {
+      "id": "drop-in-message-knock",
+      "label": "Drop-In Eighties Attention Alert"
+    },
+    {
+      "id": "neon-countdown-render",
+      "label": "Neon Countdown stereo mix"
+    },
+    {
+      "id": "cinematic-robot-pulse",
+      "label": "Cinematic Robot Pulse"
+    },
+    {
+      "id": "cinematic-pulse-softened",
+      "label": "Cinematic Pulse — Softened"
+    }
+  ],
+  "profiles": {
+    "authored": "api/audio/themes/halloween/profiles/authored.json",
+    "legacy-square": "api/audio/themes/halloween/profiles/legacy-square.json",
+    "eighties-poly": "api/audio/themes/halloween/profiles/eighties-poly.json",
+    "cinematic-pulse-bass": "api/audio/themes/halloween/profiles/cinematic-pulse-bass.json",
+    "cinematic-pulse-bass-phone": "api/audio/themes/halloween/profiles/cinematic-pulse-bass-phone.json",
+    "warm-chorus-poly": "api/audio/themes/halloween/profiles/warm-chorus-poly.json",
+    "eighties-drum-kick": "api/audio/themes/halloween/profiles/eighties-drum-kick.json",
+    "gated-snare": "api/audio/themes/halloween/profiles/gated-snare.json",
+    "electro-tom": "api/audio/themes/halloween/profiles/electro-tom.json",
+    "breathy-flute": "api/audio/themes/halloween/profiles/breathy-flute.json",
+    "digital-reed": "api/audio/themes/halloween/profiles/digital-reed.json",
+    "synth-brass-stab": "api/audio/themes/halloween/profiles/synth-brass-stab.json",
+    "easter-egg-sub-bass": "api/audio/themes/halloween/profiles/easter-egg-sub-bass.json",
+    "easter-egg-tuba": "api/audio/themes/halloween/profiles/easter-egg-tuba.json",
+    "easter-egg-tuba-expressive": "api/audio/themes/halloween/profiles/easter-egg-tuba-expressive.json",
+    "steelpan-expressive": "api/audio/themes/halloween/profiles/steelpan-expressive.json",
+    "easter-egg-lead-tuba": "api/audio/themes/halloween/profiles/easter-egg-lead-tuba.json",
+    "easter-egg-steady-beat": "api/audio/themes/halloween/profiles/easter-egg-steady-beat.json",
+    "easter-egg-lead-flute": "api/audio/themes/halloween/profiles/easter-egg-lead-flute.json",
+    "easter-egg-featured-slides": "api/audio/themes/halloween/profiles/easter-egg-featured-slides.json",
+    "easter-egg-lead-oboe": "api/audio/themes/halloween/profiles/easter-egg-lead-oboe.json",
+    "easter-egg-eighties-snare": "api/audio/themes/halloween/profiles/easter-egg-eighties-snare.json",
+    "easter-egg-eighties-kick": "api/audio/themes/halloween/profiles/easter-egg-eighties-kick.json",
+    "easter-egg-lead-shawm": "api/audio/themes/halloween/profiles/easter-egg-lead-shawm.json",
+    "dark-breathy-reed": "api/audio/themes/halloween/profiles/dark-breathy-reed.json",
+    "jx3p-inspired-lead": "api/audio/themes/halloween/profiles/jx3p-inspired-lead.json",
+    "jx3p-inspired-trumpet": "api/audio/themes/halloween/profiles/jx3p-inspired-trumpet.json",
+    "easter-egg-pulse-lead": "api/audio/themes/halloween/profiles/easter-egg-pulse-lead.json",
+    "easter-egg-hiphop-hat": "api/audio/themes/halloween/profiles/easter-egg-hiphop-hat.json",
+    "easter-egg-hiphop-clap": "api/audio/themes/halloween/profiles/easter-egg-hiphop-clap.json",
+    "easter-egg-low-driving-beat": "api/audio/themes/halloween/profiles/easter-egg-low-driving-beat.json",
+    "easter-egg-recorded-phrase-0": "api/audio/themes/halloween/profiles/easter-egg-recorded-phrase-0.json",
+    "easter-egg-recorded-phrase-1": "api/audio/themes/halloween/profiles/easter-egg-recorded-phrase-1.json",
+    "easter-egg-recorded-phrase-2": "api/audio/themes/halloween/profiles/easter-egg-recorded-phrase-2.json",
+    "easter-egg-recorded-phrase-3": "api/audio/themes/halloween/profiles/easter-egg-recorded-phrase-3.json",
+    "easter-egg-approved-render": "api/audio/themes/halloween/profiles/easter-egg-approved-render.json",
+    "dark-eighties-approved-render": "api/audio/themes/halloween/profiles/dark-eighties-approved-render.json",
+    "microphone-bell": "api/audio/themes/halloween/profiles/microphone-bell.json",
+    "drop-in-message-knock": "api/audio/themes/halloween/profiles/drop-in-message-knock.json",
+    "neon-countdown-render": "api/audio/themes/halloween/profiles/neon-countdown-render.json",
+    "cinematic-robot-pulse": "api/audio/themes/halloween/profiles/cinematic-robot-pulse.json",
+    "cinematic-pulse-softened": "api/audio/themes/halloween/profiles/cinematic-pulse-softened.json"
+  }
+}

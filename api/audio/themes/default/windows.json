@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "windows": {
+    "numberpad": {
+      "sustained": {
+        "instrument": "keypad-dial-tone"
+      },
+      "controls": {
+        "press": {
+          "instrument": "keypad-dual-tone",
+          "kind": "dtmf"
+        }
+      }
+    }
+  }
+}

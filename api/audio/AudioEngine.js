@@ -10,7 +10,11 @@
         if (!cache.has(url)) cache.set(url, fetch(url).then(response => {
             if (!response.ok) throw new Error("Instrument sample could not be loaded: " + url);
             return response.arrayBuffer();
-        }).then(bytes => context.decodeAudioData(bytes)).catch(error => { cache.delete(url); throw error; }));
+        }).then(bytes => context.decodeAudioData(bytes)).then(buffer => {
+            // Active sources retain their own buffers; only idle cache ownership is evicted.
+            while (cache.size > 12) cache.delete(cache.keys().next().value);
+            return buffer;
+        }).catch(error => { cache.delete(url); throw error; }));
         return cache.get(url);
     }
 
@@ -169,14 +173,13 @@
                 );
 
             const unlock = () => {
-                void this.unlock();
+                if (!this.#context || this.#context.state !== "running") void this.unlock();
             };
 
             document.addEventListener(
                 "pointerdown",
                 unlock,
                 {
-                    once: true,
                     capture: true
                 }
             );
@@ -185,7 +188,6 @@
                 "keydown",
                 unlock,
                 {
-                    once: true,
                     capture: true
                 }
             );
@@ -524,7 +526,7 @@
                 this.#context = new AudioContextCtor();
             }
 
-            if (this.#context.state === "suspended") {
+            if (["suspended", "interrupted"].includes(this.#context.state)) {
                 await this.#context.resume();
             }
 
@@ -2475,8 +2477,7 @@
                 entry.expressiveVoices.set(originalInstrument, voices);
             }
             if (instrument.samples) {
-                if (tone.kind !== "note") throw new TypeError("Sample instruments currently require ordinary notes or bracketed rolls");
-                const frequency = this.#frequency(tone.note);
+                const frequency = this.#frequency(tone.note || tone.from);
                 const sample = model.sampleFor(frequency, instrument.__strikeStrength, event);
                 if (!sample.buffer) throw new Error("Instrument sample was not prepared");
                 const source = context.createBufferSource();
@@ -2487,6 +2488,12 @@
                 }
                 const playbackRate = frequency / sample.rootFrequency * 2 ** (instrument.__detuneVariation / 1200);
                 source.playbackRate.setValueAtTime(playbackRate, startAt);
+                if (tone.kind !== "note") {
+                    const rate = source.playbackRate;
+                    const frequencyParam = Object.fromEntries(["setValueAtTime", "linearRampToValueAtTime", "exponentialRampToValueAtTime"].map(method =>
+                        [method, (value, at) => rate[method](value / sample.rootFrequency, at)]));
+                    this.#schedulePitch({frequency:frequencyParam,detune:source.detune}, tone, startAt, effectEnd, instrumentForPitch, 1, instrument.__detuneVariation);
+                }
                 const sampleGain = (sample.gain ?? 1) * instrument.__gainVariation;
                 if (sample.naturalDecay) {
                     gain.gain.setValueAtTime(sampleGain, startAt);
@@ -3237,6 +3244,59 @@
                 sustainStartMs: notes.reduce((first, note) => note.sustainStartMs === null ? first : Math.min(first ?? Infinity, note.sustainStartMs), null) });
         }
 
+        async playSound(name, options = {}) {
+            if (options.signal?.aborted || options.includeTones === false) return null;
+            const output = this.outputSettings;
+            // Begin activation synchronously, before the first catalog/network await.
+            const contextTask = this.#audioContext();
+            const definitionTask = globalThis.WMOFSoundCatalog.resolve(name, options, output);
+            let deadline;
+            const ready = Promise.all([contextTask, definitionTask]).then(async ([context, definition]) => [context, definition, await loadSample(context, definition.clip.url)]);
+            const timeout = new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error("Audio preparation timed out")), 8000); });
+            let context, definition, buffer;
+            try { [context, definition, buffer] = await Promise.race([ready, timeout]); }
+            finally { clearTimeout(deadline); }
+            if (options.signal?.aborted) return null;
+            if (options.signal?.aborted || definition.theme !== globalThis.WMOFSoundCatalog.theme()) return null;
+            const source = context.createBufferSource(), gain = context.createGain();
+            source.buffer = buffer;
+            const velocity = definition.clip.existing ? definition.speed : 1;
+            source.playbackRate.value = velocity;
+            gain.gain.value = Math.max(0, Number(options.volume ?? 1)) * Math.max(0, Number(options.toneVolume ?? output.toneVolume));
+            source.connect(gain); gain.connect(this.#programOutputNode(context));
+            let at = context.currentTime + .015;
+            if (options.startAtPerformanceMs !== undefined) {
+                const delay = options.startAtPerformanceMs - performance.now();
+                if (!Number.isFinite(delay) || delay < 35) return null;
+                const stamp = context.getOutputTimestamp?.();
+                at = stamp?.performanceTime > 0 ? stamp.contextTime + (options.startAtPerformanceMs-stamp.performanceTime)/1000 : context.currentTime+delay/1000;
+            }
+            const startBeat = Math.max(0, Number(options.startBeat)||0);
+            const offset = startBeat * 60 / definition.bpm / definition.speed * velocity;
+            if (offset >= buffer.duration) return null;
+            const timing = this.songTiming(definition, {toneVelocity:definition.speed,startBeat});
+            const durationMs = (buffer.duration-offset) / velocity * 1000;
+            const musicalMs = definition.speechStartSeconds != null && !startBeat ? definition.speechStartSeconds*1000 : timing.durationMs;
+            let resolveFinished;
+            const finished = new Promise(resolve => {resolveFinished=resolve;});
+            const entry = {id:++this.#sequence,name,seasonal:definition.theme==='halloween',nodes:new Set([source,gain]),instrumentResources:new Set(),timers:new Set(),utterances:new Set(),pendingSpeech:0,resolveFinished};
+            this.#active.set(entry.id,entry);
+            if (options.signal) {
+                entry.abortSignal=options.signal;entry.onAbort=()=>this.#release(entry,"stopped");
+                options.signal.addEventListener("abort",entry.onAbort,{once:true});
+            }
+            source.addEventListener('ended',()=>this.#release(entry,"ended"),{once:true});
+            source.loop = options.loop ?? definition.loop;
+            if (options.signal?.aborted) {this.#release(entry,"stopped");return null;}
+            source.start(at,offset);
+            const delay = Math.max(0,(at-context.currentTime)*1000);
+            return Object.freeze({id:entry.id,name,bpm:definition.bpm*definition.speed,startBeat,hasChime:true,
+                timing,chimeDurationMs:musicalMs,chimeEndsInMs:delay+musicalMs,
+                audibleChimeDurationMs:durationMs,audibleChimeEndsInMs:delay+durationMs,
+                sustainStartsInMs:timing.sustainStartMs==null?null:delay+timing.sustainStartMs,
+                finished,stop:()=>this.#release(entry,"stopped")});
+        }
+
         async startSong(
             name,
             {
@@ -3256,20 +3316,24 @@
                 startBeat = 0,
                 normalizeLoudness = true,
                 startAtPerformanceMs,
+                signal,
                 seasonalNote
             } = {}
         ) {
-            let catalog = await this.prepare();
-            if (globalThis.WMOFHalloweenAudio?.isActive()) catalog = await globalThis.WMOFHalloweenAudio.catalogForSong(catalog,name,{toneVelocity:toneVelocity ?? this.#outputSettings.toneVelocity,bpm});
+            if (signal?.aborted) return null;
+            // Resume immediately, before any seasonal fetch/decode can leave the input gesture.
+            const [preparedCatalog, context] = await Promise.all([this.prepare(), this.#audioContext()]);
+            if (signal?.aborted) return null;
+            let catalog = preparedCatalog;
+
             const song = catalog?.songs?.[name];
 
             if (!song) {
                 throw new Error("Unknown song: " + name);
             }
 
-            const seasonalSong = Number.isFinite(song.seasonalGain);
+            const seasonalSong = false; // Development renderer uses only its supplied score catalog.
             if (seasonalSong) useSelectedInstrument = false;
-            const context = await this.#audioContext();
 
             this.#prepareAudioResources(
                 context
@@ -3427,7 +3491,7 @@
                 }));
             }
 
-            if (seasonalSong && !globalThis.WMOFHalloweenAudio?.isActive()) return null;
+            if (signal?.aborted || seasonalSong && !globalThis.WMOFHalloweenAudio?.isActive()) return null;
 
             let resolveFinished;
 
@@ -3548,8 +3612,7 @@
                 if (definition.samples && model) {
                     const shaped = model.forEvent(record.event, this.#dynamic(record.event.dynamic).start);
                     const tone = this.#parseTone(record.event.tone);
-                    if (tone.kind !== "note") throw new TypeError("Sample instruments currently require ordinary notes or bracketed rolls");
-                    const frequency = this.#frequency(tone.note);
+                    const frequency = this.#frequency(tone.note || tone.from);
                     const sample = model.sampleFor(frequency, shaped.__strikeStrength, record.event);
                     if (sample.naturalDecay) {
                         const rate = frequency / sample.rootFrequency * 2 ** (shaped.__detuneVariation / 1200);
@@ -3573,6 +3636,12 @@
                 entry.id,
                 entry
             );
+            if (signal) {
+                entry.abortSignal = signal;
+                entry.onAbort = () => this.#release(entry, "stopped");
+                signal.addEventListener("abort", entry.onAbort, {once:true});
+                if (signal.aborted) entry.onAbort();
+            }
 
             try {
                 const scheduleAheadSeconds =
@@ -4163,15 +4232,9 @@
         }
 
         async playNumberPadCue(kind) {
-            const seasonal = globalThis.WMOFHalloweenAudio;
-            if (!seasonal?.isActive()) return null;
-            try {
-                const context = await this.#audioContext();
-                return await seasonal.playCue(context, this.#programOutputNode(context), this.#outputSettings.toneVolume, kind);
-            } catch (error) {
-                console.warn('Halloween numberpad cue unavailable', error);
-                return null;
-            }
+            if (!globalThis.WMOFHalloweenAudio?.isActive()) return null;
+            if (kind !== "open") throw Error("Unknown keypad cue");
+            return this.playSound("keypad-open", {useSelectedInstrument:false});
         }
 
         async startFrequencies(

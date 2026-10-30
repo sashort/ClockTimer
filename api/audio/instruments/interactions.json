@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "instruments": {
+    "keypad-dial-tone": {
+      "kind": "frequencies",
+      "frequencies": [350, 440],
+      "waveform": "square",
+      "volume": 0.01,
+      "reason": "number-pad-ambient"
+    },
+    "keypad-dual-tone": {
+      "kind": "dtmf",
+      "waveform": "square",
+      "volume": 1
+    }
+  }
+}

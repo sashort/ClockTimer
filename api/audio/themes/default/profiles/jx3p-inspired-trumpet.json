@@ -1,0 +1,1435 @@
+{
+  "version": 1,
+  "theme": "default",
+  "profile": "jx3p-inspired-trumpet",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a8ec319fdf0354531cb86287.wav",
+          "key": "a8ec319fdf0354531cb86287"
+        },
+        "0.8": {
+          "url": "api/audio/wav/2a3d671c549e4548bbc0e695.wav",
+          "key": "2a3d671c549e4548bbc0e695"
+        },
+        "1.2": {
+          "url": "api/audio/wav/cdb784871d9c8ac5d58ffb16.wav",
+          "key": "cdb784871d9c8ac5d58ffb16"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1c042930ba0a1edd2a95de33.wav",
+          "key": "1c042930ba0a1edd2a95de33"
+        },
+        "0.8": {
+          "url": "api/audio/wav/563135b5e2fe458866acf70a.wav",
+          "key": "563135b5e2fe458866acf70a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/400a77e40afbc2bbc8cf7a1e.wav",
+          "key": "400a77e40afbc2bbc8cf7a1e"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/915ea08286bd3b108da59bf5.wav",
+          "key": "915ea08286bd3b108da59bf5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a67f729f2f17df4accceea25.wav",
+          "key": "a67f729f2f17df4accceea25"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ed20f623e656489088ed224f.wav",
+          "key": "ed20f623e656489088ed224f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/53425f53441de375291754bd.wav",
+          "key": "53425f53441de375291754bd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/99337c250954cc998248f53c.wav",
+          "key": "99337c250954cc998248f53c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7520367db1d07fadfec7c0c7.wav",
+          "key": "7520367db1d07fadfec7c0c7"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/03c6e702f42bcc4a90329f02.wav",
+          "key": "03c6e702f42bcc4a90329f02"
+        },
+        "0.8": {
+          "url": "api/audio/wav/9fda71664883c2259ef486e2.wav",
+          "key": "9fda71664883c2259ef486e2"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ea107d48e022d7584c0156ca.wav",
+          "key": "ea107d48e022d7584c0156ca"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/29c1798ddac84c46c862872b.wav",
+          "key": "29c1798ddac84c46c862872b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/1190c9aab72e7e3ae17020bc.wav",
+          "key": "1190c9aab72e7e3ae17020bc"
+        },
+        "1.2": {
+          "url": "api/audio/wav/0596f97a2c805c9dbbd4c466.wav",
+          "key": "0596f97a2c805c9dbbd4c466"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6754dd1625b3409395588c1d.wav",
+          "key": "6754dd1625b3409395588c1d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a77c090a2fa98dc90b2e40e6.wav",
+          "key": "a77c090a2fa98dc90b2e40e6"
+        },
+        "1.2": {
+          "url": "api/audio/wav/20a80f753412b947b8f90146.wav",
+          "key": "20a80f753412b947b8f90146"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0f4ce828ba8c71b3e78e6ece.wav",
+          "key": "0f4ce828ba8c71b3e78e6ece"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4c3e6095a2b36082efec5365.wav",
+          "key": "4c3e6095a2b36082efec5365"
+        },
+        "1.2": {
+          "url": "api/audio/wav/9e4c9149addad6ebe8e33666.wav",
+          "key": "9e4c9149addad6ebe8e33666"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/7505a9e5371f55f97cc2a712.wav",
+          "key": "7505a9e5371f55f97cc2a712"
+        },
+        "0.8": {
+          "url": "api/audio/wav/2e54c16d144df6834f1af937.wav",
+          "key": "2e54c16d144df6834f1af937"
+        },
+        "1.2": {
+          "url": "api/audio/wav/8e640362d308754c2ef3b57a.wav",
+          "key": "8e640362d308754c2ef3b57a"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c4e27890677e6a5b38f64975.wav",
+          "key": "c4e27890677e6a5b38f64975"
+        },
+        "0.8": {
+          "url": "api/audio/wav/146fb79bfe1dd72589791d12.wav",
+          "key": "146fb79bfe1dd72589791d12"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ad42a14482e9e80e2c547b2b.wav",
+          "key": "ad42a14482e9e80e2c547b2b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ec63fc781463bf7467c3ba0c.wav",
+          "key": "ec63fc781463bf7467c3ba0c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/605d79bf4f17e3eae6717cdc.wav",
+          "key": "605d79bf4f17e3eae6717cdc"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a185b0fdbab03f412a5020fb.wav",
+          "key": "a185b0fdbab03f412a5020fb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-out": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c4e27890677e6a5b38f64975.wav",
+          "key": "c4e27890677e6a5b38f64975"
+        },
+        "0.8": {
+          "url": "api/audio/wav/146fb79bfe1dd72589791d12.wav",
+          "key": "146fb79bfe1dd72589791d12"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ad42a14482e9e80e2c547b2b.wav",
+          "key": "ad42a14482e9e80e2c547b2b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-in": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c4e27890677e6a5b38f64975.wav",
+          "key": "c4e27890677e6a5b38f64975"
+        },
+        "0.8": {
+          "url": "api/audio/wav/146fb79bfe1dd72589791d12.wav",
+          "key": "146fb79bfe1dd72589791d12"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ad42a14482e9e80e2c547b2b.wav",
+          "key": "ad42a14482e9e80e2c547b2b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e1761000297df926b9733119.wav",
+          "key": "e1761000297df926b9733119"
+        },
+        "0.8": {
+          "url": "api/audio/wav/32d00e1e052d23191c599147.wav",
+          "key": "32d00e1e052d23191c599147"
+        },
+        "1.2": {
+          "url": "api/audio/wav/00a9e003a7b9eb0fafa989af.wav",
+          "key": "00a9e003a7b9eb0fafa989af"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e1761000297df926b9733119.wav",
+          "key": "e1761000297df926b9733119"
+        },
+        "0.8": {
+          "url": "api/audio/wav/32d00e1e052d23191c599147.wav",
+          "key": "32d00e1e052d23191c599147"
+        },
+        "1.2": {
+          "url": "api/audio/wav/00a9e003a7b9eb0fafa989af.wav",
+          "key": "00a9e003a7b9eb0fafa989af"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-late": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e1761000297df926b9733119.wav",
+          "key": "e1761000297df926b9733119"
+        },
+        "0.8": {
+          "url": "api/audio/wav/32d00e1e052d23191c599147.wav",
+          "key": "32d00e1e052d23191c599147"
+        },
+        "1.2": {
+          "url": "api/audio/wav/00a9e003a7b9eb0fafa989af.wav",
+          "key": "00a9e003a7b9eb0fafa989af"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/915ea08286bd3b108da59bf5.wav",
+          "key": "915ea08286bd3b108da59bf5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a67f729f2f17df4accceea25.wav",
+          "key": "a67f729f2f17df4accceea25"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ed20f623e656489088ed224f.wav",
+          "key": "ed20f623e656489088ed224f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "short-break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/915ea08286bd3b108da59bf5.wav",
+          "key": "915ea08286bd3b108da59bf5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a67f729f2f17df4accceea25.wav",
+          "key": "a67f729f2f17df4accceea25"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ed20f623e656489088ed224f.wav",
+          "key": "ed20f623e656489088ed224f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/915ea08286bd3b108da59bf5.wav",
+          "key": "915ea08286bd3b108da59bf5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a67f729f2f17df4accceea25.wav",
+          "key": "a67f729f2f17df4accceea25"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ed20f623e656489088ed224f.wav",
+          "key": "ed20f623e656489088ed224f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/53425f53441de375291754bd.wav",
+          "key": "53425f53441de375291754bd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/99337c250954cc998248f53c.wav",
+          "key": "99337c250954cc998248f53c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7520367db1d07fadfec7c0c7.wav",
+          "key": "7520367db1d07fadfec7c0c7"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-automatically": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/53425f53441de375291754bd.wav",
+          "key": "53425f53441de375291754bd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/99337c250954cc998248f53c.wav",
+          "key": "99337c250954cc998248f53c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7520367db1d07fadfec7c0c7.wav",
+          "key": "7520367db1d07fadfec7c0c7"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-after-break": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/53425f53441de375291754bd.wav",
+          "key": "53425f53441de375291754bd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/99337c250954cc998248f53c.wav",
+          "key": "99337c250954cc998248f53c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/7520367db1d07fadfec7c0c7.wav",
+          "key": "7520367db1d07fadfec7c0c7"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-ended": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/915ea08286bd3b108da59bf5.wav",
+          "key": "915ea08286bd3b108da59bf5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a67f729f2f17df4accceea25.wav",
+          "key": "a67f729f2f17df4accceea25"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ed20f623e656489088ed224f.wav",
+          "key": "ed20f623e656489088ed224f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1eff2d1155a9dbd2c36d0e89.wav",
+          "key": "1eff2d1155a9dbd2c36d0e89"
+        },
+        "0.8": {
+          "url": "api/audio/wav/1a796e5359e3ead286a45990.wav",
+          "key": "1a796e5359e3ead286a45990"
+        },
+        "1.2": {
+          "url": "api/audio/wav/48d19159fc1d390f17ed0e61.wav",
+          "key": "48d19159fc1d390f17ed0e61"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "down-time-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/447fd249dfe74250e113854d.wav",
+          "key": "447fd249dfe74250e113854d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0547ab36e69a328f4036cdd0.wav",
+          "key": "0547ab36e69a328f4036cdd0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4eb0945fb3e165c360aa2afd.wav",
+          "key": "4eb0945fb3e165c360aa2afd"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-from-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0f4ce828ba8c71b3e78e6ece.wav",
+          "key": "0f4ce828ba8c71b3e78e6ece"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4c3e6095a2b36082efec5365.wav",
+          "key": "4c3e6095a2b36082efec5365"
+        },
+        "1.2": {
+          "url": "api/audio/wav/9e4c9149addad6ebe8e33666.wav",
+          "key": "9e4c9149addad6ebe8e33666"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "goal-failed": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/447fd249dfe74250e113854d.wav",
+          "key": "447fd249dfe74250e113854d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0547ab36e69a328f4036cdd0.wav",
+          "key": "0547ab36e69a328f4036cdd0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4eb0945fb3e165c360aa2afd.wav",
+          "key": "4eb0945fb3e165c360aa2afd"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-on": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ec63fc781463bf7467c3ba0c.wav",
+          "key": "ec63fc781463bf7467c3ba0c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/605d79bf4f17e3eae6717cdc.wav",
+          "key": "605d79bf4f17e3eae6717cdc"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a185b0fdbab03f412a5020fb.wav",
+          "key": "a185b0fdbab03f412a5020fb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-off": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2/3",
+          "tone": "C2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/50ced60ddd1eb9d9687d1303.wav",
+          "key": "50ced60ddd1eb9d9687d1303"
+        },
+        "0.8": {
+          "url": "api/audio/wav/483c8194a5b76f37b1fb6138.wav",
+          "key": "483c8194a5b76f37b1fb6138"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f46e86a6c8c6b4f76cace90d.wav",
+          "key": "f46e86a6c8c6b4f76cace90d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-unchanged": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/2951ff60bf25bc4e35464b06.wav",
+          "key": "2951ff60bf25bc4e35464b06"
+        },
+        "0.8": {
+          "url": "api/audio/wav/33948e7414c4628320d5d09f.wav",
+          "key": "33948e7414c4628320d5d09f"
+        },
+        "1.2": {
+          "url": "api/audio/wav/172f6f3db41cc0fbbd8f8092.wav",
+          "key": "172f6f3db41cc0fbbd8f8092"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-activated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/35d41dd34378828bc96ef436.wav",
+          "key": "35d41dd34378828bc96ef436"
+        },
+        "0.8": {
+          "url": "api/audio/wav/16c5d45ac2657a78d0cf155a.wav",
+          "key": "16c5d45ac2657a78d0cf155a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f8870cf3cee53422a72db988.wav",
+          "key": "f8870cf3cee53422a72db988"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-deactivated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/05e3e3cffb4ede2c0cf20b19.wav",
+          "key": "05e3e3cffb4ede2c0cf20b19"
+        },
+        "0.8": {
+          "url": "api/audio/wav/60e248b3c4eca9e63f8e216a.wav",
+          "key": "60e248b3c4eca9e63f8e216a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/dcee9995763eff2d2e131e76.wav",
+          "key": "dcee9995763eff2d2e131e76"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "observer-message": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E6",
+          "length": "2/3",
+          "dynamic": "f",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "3/2",
+          "dynamic": "f",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/a9c39115c2f2e49fcbfa76fe.wav",
+          "key": "a9c39115c2f2e49fcbfa76fe"
+        },
+        "0.8": {
+          "url": "api/audio/wav/c1f63dd97b3dcfd04b314d89.wav",
+          "key": "c1f63dd97b3dcfd04b314d89"
+        },
+        "1.2": {
+          "url": "api/audio/wav/5508b2ac71ba9dd474d79ba4.wav",
+          "key": "5508b2ac71ba9dd474d79ba4"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "speech-rejected": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "0",
+          "tone": "D#2",
+          "length": "1/2",
+          "dynamic": "pp",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/87ed04f578d28179e4a72282.wav",
+          "key": "87ed04f578d28179e4a72282"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8274e8ac4747b793cd1b0781.wav",
+          "key": "8274e8ac4747b793cd1b0781"
+        },
+        "1.2": {
+          "url": "api/audio/wav/9974b11bf1f8e805b7f80b12.wav",
+          "key": "9974b11bf1f8e805b7f80b12"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ab23d93d1b0b55a602815001.wav",
+          "key": "ab23d93d1b0b55a602815001"
+        },
+        "0.8": {
+          "url": "api/audio/wav/693e6cd916dee99c1b58fcda.wav",
+          "key": "693e6cd916dee99c1b58fcda"
+        },
+        "1.2": {
+          "url": "api/audio/wav/70a766f58ade07b375ee2ed2.wav",
+          "key": "70a766f58ade07b375ee2ed2"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "scope-change": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "2/3",
+          "tone": "E2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        },
+        {
+          "offset": "1 1/3",
+          "tone": "D2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "jx3p-inspired-trumpet"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/b951e734f21ef382af46f56a.wav",
+          "key": "b951e734f21ef382af46f56a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4c09f615f9c4f579b58b1cd3.wav",
+          "key": "4c09f615f9c4f579b58b1cd3"
+        },
+        "1.2": {
+          "url": "api/audio/wav/a1b9c4a096199ff6fff61922.wav",
+          "key": "a1b9c4a096199ff6fff61922"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}

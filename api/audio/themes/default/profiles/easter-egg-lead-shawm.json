@@ -1,0 +1,1435 @@
+{
+  "version": 1,
+  "theme": "default",
+  "profile": "easter-egg-lead-shawm",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/af9a3f5c98c96de46d1128be.wav",
+          "key": "af9a3f5c98c96de46d1128be"
+        },
+        "0.8": {
+          "url": "api/audio/wav/3cc4787d113b7814f8100d32.wav",
+          "key": "3cc4787d113b7814f8100d32"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3788f866475b98f98b027825.wav",
+          "key": "3788f866475b98f98b027825"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/45d587a9f324bb477b814dd1.wav",
+          "key": "45d587a9f324bb477b814dd1"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8971bc76f2cba5a6123d25d9.wav",
+          "key": "8971bc76f2cba5a6123d25d9"
+        },
+        "1.2": {
+          "url": "api/audio/wav/be9bfb32aff0375f4c040e16.wav",
+          "key": "be9bfb32aff0375f4c040e16"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1e648d0b41a096c5c705835f.wav",
+          "key": "1e648d0b41a096c5c705835f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e942e5d3f6b30b332e1ada83.wav",
+          "key": "e942e5d3f6b30b332e1ada83"
+        },
+        "1.2": {
+          "url": "api/audio/wav/78127abbba4d07db6d66224b.wav",
+          "key": "78127abbba4d07db6d66224b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6a315cd6a30b06b17d992370.wav",
+          "key": "6a315cd6a30b06b17d992370"
+        },
+        "0.8": {
+          "url": "api/audio/wav/76184cb868817caa0af96e0a.wav",
+          "key": "76184cb868817caa0af96e0a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ffc7895aa77ac2e0ee5cfb41.wav",
+          "key": "ffc7895aa77ac2e0ee5cfb41"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/085276b36c4f7ef813a265a3.wav",
+          "key": "085276b36c4f7ef813a265a3"
+        },
+        "0.8": {
+          "url": "api/audio/wav/38f0a341399c8fb9549997d3.wav",
+          "key": "38f0a341399c8fb9549997d3"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ef7b1d0e53dbbabe85c0d7f0.wav",
+          "key": "ef7b1d0e53dbbabe85c0d7f0"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/90a7f63745e1a3470a54ce39.wav",
+          "key": "90a7f63745e1a3470a54ce39"
+        },
+        "0.8": {
+          "url": "api/audio/wav/93c9a80b4f1a6f2938ff7439.wav",
+          "key": "93c9a80b4f1a6f2938ff7439"
+        },
+        "1.2": {
+          "url": "api/audio/wav/91f9108f620b2ab7eeb67038.wav",
+          "key": "91f9108f620b2ab7eeb67038"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/fa48c926d41eb942cd53a801.wav",
+          "key": "fa48c926d41eb942cd53a801"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4c07483fef401a12908f9aaf.wav",
+          "key": "4c07483fef401a12908f9aaf"
+        },
+        "1.2": {
+          "url": "api/audio/wav/824ec25cb41e6a7d743739ac.wav",
+          "key": "824ec25cb41e6a7d743739ac"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/d7892b12f4be55ea2c43c69e.wav",
+          "key": "d7892b12f4be55ea2c43c69e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/1575b6ecb406eb2a75bdf03a.wav",
+          "key": "1575b6ecb406eb2a75bdf03a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4c2451f66dbeac87bd702afe.wav",
+          "key": "4c2451f66dbeac87bd702afe"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/ba03c89bfcab03b9117af167.wav",
+          "key": "ba03c89bfcab03b9117af167"
+        },
+        "0.8": {
+          "url": "api/audio/wav/44f2436bb99e81626d74f14d.wav",
+          "key": "44f2436bb99e81626d74f14d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/eede2766dfe61bacdfae80e4.wav",
+          "key": "eede2766dfe61bacdfae80e4"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/9b70351e45a6f68d4b655c86.wav",
+          "key": "9b70351e45a6f68d4b655c86"
+        },
+        "0.8": {
+          "url": "api/audio/wav/2a45ff2f2eaef35d2f0435cd.wav",
+          "key": "2a45ff2f2eaef35d2f0435cd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/c5902d42f0496dc7df16e2fd.wav",
+          "key": "c5902d42f0496dc7df16e2fd"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/f39b26ebd6aca642bd62fd3b.wav",
+          "key": "f39b26ebd6aca642bd62fd3b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/6c0b6abbe4938bc7893e4f51.wav",
+          "key": "6c0b6abbe4938bc7893e4f51"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3880aec0f99c1c47151d10f0.wav",
+          "key": "3880aec0f99c1c47151d10f0"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-out": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/9b70351e45a6f68d4b655c86.wav",
+          "key": "9b70351e45a6f68d4b655c86"
+        },
+        "0.8": {
+          "url": "api/audio/wav/2a45ff2f2eaef35d2f0435cd.wav",
+          "key": "2a45ff2f2eaef35d2f0435cd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/c5902d42f0496dc7df16e2fd.wav",
+          "key": "c5902d42f0496dc7df16e2fd"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-clock-in": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/9b70351e45a6f68d4b655c86.wav",
+          "key": "9b70351e45a6f68d4b655c86"
+        },
+        "0.8": {
+          "url": "api/audio/wav/2a45ff2f2eaef35d2f0435cd.wav",
+          "key": "2a45ff2f2eaef35d2f0435cd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/c5902d42f0496dc7df16e2fd.wav",
+          "key": "c5902d42f0496dc7df16e2fd"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e1397c3ff55ce67fc8d9242a.wav",
+          "key": "e1397c3ff55ce67fc8d9242a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/36e7c4138e1ee3aff5faf95e.wav",
+          "key": "36e7c4138e1ee3aff5faf95e"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2ffffbbd125abb4c78ac21e1.wav",
+          "key": "2ffffbbd125abb4c78ac21e1"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e1397c3ff55ce67fc8d9242a.wav",
+          "key": "e1397c3ff55ce67fc8d9242a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/36e7c4138e1ee3aff5faf95e.wav",
+          "key": "36e7c4138e1ee3aff5faf95e"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2ffffbbd125abb4c78ac21e1.wav",
+          "key": "2ffffbbd125abb4c78ac21e1"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-started-late": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "2.25",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2.77",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "3.29",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/e1397c3ff55ce67fc8d9242a.wav",
+          "key": "e1397c3ff55ce67fc8d9242a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/36e7c4138e1ee3aff5faf95e.wav",
+          "key": "36e7c4138e1ee3aff5faf95e"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2ffffbbd125abb4c78ac21e1.wav",
+          "key": "2ffffbbd125abb4c78ac21e1"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1e648d0b41a096c5c705835f.wav",
+          "key": "1e648d0b41a096c5c705835f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e942e5d3f6b30b332e1ada83.wav",
+          "key": "e942e5d3f6b30b332e1ada83"
+        },
+        "1.2": {
+          "url": "api/audio/wav/78127abbba4d07db6d66224b.wav",
+          "key": "78127abbba4d07db6d66224b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "short-break-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1e648d0b41a096c5c705835f.wav",
+          "key": "1e648d0b41a096c5c705835f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e942e5d3f6b30b332e1ada83.wav",
+          "key": "e942e5d3f6b30b332e1ada83"
+        },
+        "1.2": {
+          "url": "api/audio/wav/78127abbba4d07db6d66224b.wav",
+          "key": "78127abbba4d07db6d66224b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "lunch-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1e648d0b41a096c5c705835f.wav",
+          "key": "1e648d0b41a096c5c705835f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e942e5d3f6b30b332e1ada83.wav",
+          "key": "e942e5d3f6b30b332e1ada83"
+        },
+        "1.2": {
+          "url": "api/audio/wav/78127abbba4d07db6d66224b.wav",
+          "key": "78127abbba4d07db6d66224b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-early": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6a315cd6a30b06b17d992370.wav",
+          "key": "6a315cd6a30b06b17d992370"
+        },
+        "0.8": {
+          "url": "api/audio/wav/76184cb868817caa0af96e0a.wav",
+          "key": "76184cb868817caa0af96e0a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ffc7895aa77ac2e0ee5cfb41.wav",
+          "key": "ffc7895aa77ac2e0ee5cfb41"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-automatically": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6a315cd6a30b06b17d992370.wav",
+          "key": "6a315cd6a30b06b17d992370"
+        },
+        "0.8": {
+          "url": "api/audio/wav/76184cb868817caa0af96e0a.wav",
+          "key": "76184cb868817caa0af96e0a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ffc7895aa77ac2e0ee5cfb41.wav",
+          "key": "ffc7895aa77ac2e0ee5cfb41"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-after-break": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6a315cd6a30b06b17d992370.wav",
+          "key": "6a315cd6a30b06b17d992370"
+        },
+        "0.8": {
+          "url": "api/audio/wav/76184cb868817caa0af96e0a.wav",
+          "key": "76184cb868817caa0af96e0a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ffc7895aa77ac2e0ee5cfb41.wav",
+          "key": "ffc7895aa77ac2e0ee5cfb41"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-ended": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1e648d0b41a096c5c705835f.wav",
+          "key": "1e648d0b41a096c5c705835f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/e942e5d3f6b30b332e1ada83.wav",
+          "key": "e942e5d3f6b30b332e1ada83"
+        },
+        "1.2": {
+          "url": "api/audio/wav/78127abbba4d07db6d66224b.wav",
+          "key": "78127abbba4d07db6d66224b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/88445e9c5a2115fa8ef02cb6.wav",
+          "key": "88445e9c5a2115fa8ef02cb6"
+        },
+        "0.8": {
+          "url": "api/audio/wav/afeecf157e269eef980c9908.wav",
+          "key": "afeecf157e269eef980c9908"
+        },
+        "1.2": {
+          "url": "api/audio/wav/def1f385ab6acd594e5da566.wav",
+          "key": "def1f385ab6acd594e5da566"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "down-time-started": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/d5aca9e2bbbf2c2a49bc4b3a.wav",
+          "key": "d5aca9e2bbbf2c2a49bc4b3a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4e0f692a43f153ed9882930d.wav",
+          "key": "4e0f692a43f153ed9882930d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/c7c7f2347e04387ef040a560.wav",
+          "key": "c7c7f2347e04387ef040a560"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-resumed-from-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/d7892b12f4be55ea2c43c69e.wav",
+          "key": "d7892b12f4be55ea2c43c69e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/1575b6ecb406eb2a75bdf03a.wav",
+          "key": "1575b6ecb406eb2a75bdf03a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4c2451f66dbeac87bd702afe.wav",
+          "key": "4c2451f66dbeac87bd702afe"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "goal-failed": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G3\\C3...",
+          "length": "4, 9/2",
+          "dynamic": "f",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "17/2",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "Eb3",
+          "length": "17/2",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/d5aca9e2bbbf2c2a49bc4b3a.wav",
+          "key": "d5aca9e2bbbf2c2a49bc4b3a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4e0f692a43f153ed9882930d.wav",
+          "key": "4e0f692a43f153ed9882930d"
+        },
+        "1.2": {
+          "url": "api/audio/wav/c7c7f2347e04387ef040a560.wav",
+          "key": "c7c7f2347e04387ef040a560"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-on": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/f39b26ebd6aca642bd62fd3b.wav",
+          "key": "f39b26ebd6aca642bd62fd3b"
+        },
+        "0.8": {
+          "url": "api/audio/wav/6c0b6abbe4938bc7893e4f51.wav",
+          "key": "6c0b6abbe4938bc7893e4f51"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3880aec0f99c1c47151d10f0.wav",
+          "key": "3880aec0f99c1c47151d10f0"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-off": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2/3",
+          "tone": "C2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/658ae0f4c2174ab510ae0825.wav",
+          "key": "658ae0f4c2174ab510ae0825"
+        },
+        "0.8": {
+          "url": "api/audio/wav/7a2ed703e25eb60e0d666d74.wav",
+          "key": "7a2ed703e25eb60e0d666d74"
+        },
+        "1.2": {
+          "url": "api/audio/wav/15e8bf4b8c3da718ac7e3663.wav",
+          "key": "15e8bf4b8c3da718ac7e3663"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "setting-unchanged": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/454125c9d583742dee8568e5.wav",
+          "key": "454125c9d583742dee8568e5"
+        },
+        "0.8": {
+          "url": "api/audio/wav/045f209680abe37665851877.wav",
+          "key": "045f209680abe37665851877"
+        },
+        "1.2": {
+          "url": "api/audio/wav/d0aee50161e5b34715ff6337.wav",
+          "key": "d0aee50161e5b34715ff6337"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-activated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/8e750000d2739491396028d8.wav",
+          "key": "8e750000d2739491396028d8"
+        },
+        "0.8": {
+          "url": "api/audio/wav/1168bc4b1e11fe5f67c83666.wav",
+          "key": "1168bc4b1e11fe5f67c83666"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4345d8ed09552f23b8057435.wav",
+          "key": "4345d8ed09552f23b8057435"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "microphone-deactivated": {
+      "bpm": 500,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "B5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1",
+          "tone": "E5",
+          "length": "4",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/09ffa36e18af14e9fc96011d.wav",
+          "key": "09ffa36e18af14e9fc96011d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/f36f02cc989ab1456d2afc77.wav",
+          "key": "f36f02cc989ab1456d2afc77"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b3777dd6be39f2e183cc265d.wav",
+          "key": "b3777dd6be39f2e183cc265d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "observer-message": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "E6",
+          "length": "2/3",
+          "dynamic": "f",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1",
+          "tone": "B5",
+          "length": "3/2",
+          "dynamic": "f",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/9fb9290538465ec3ef458b53.wav",
+          "key": "9fb9290538465ec3ef458b53"
+        },
+        "0.8": {
+          "url": "api/audio/wav/c63b16afc3d07a7aa6ceddaf.wav",
+          "key": "c63b16afc3d07a7aa6ceddaf"
+        },
+        "1.2": {
+          "url": "api/audio/wav/512412b4c2b4e8cdff9bca91.wav",
+          "key": "512412b4c2b4e8cdff9bca91"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "speech-rejected": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "0",
+          "tone": "D#2",
+          "length": "1/2",
+          "dynamic": "pp",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/b3673b020fb9112201787ca6.wav",
+          "key": "b3673b020fb9112201787ca6"
+        },
+        "0.8": {
+          "url": "api/audio/wav/eb87765942ad90a12fcc104f.wav",
+          "key": "eb87765942ad90a12fcc104f"
+        },
+        "1.2": {
+          "url": "api/audio/wav/0353f9e3f04a90bff4987c50.wav",
+          "key": "0353f9e3f04a90bff4987c50"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/297d024597b468caad581786.wav",
+          "key": "297d024597b468caad581786"
+        },
+        "0.8": {
+          "url": "api/audio/wav/2c75ca7a178ddae83116085c.wav",
+          "key": "2c75ca7a178ddae83116085c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3127bf197c0670269ec77d99.wav",
+          "key": "3127bf197c0670269ec77d99"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "scope-change": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "2/3",
+          "tone": "E2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        },
+        {
+          "offset": "1 1/3",
+          "tone": "D2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "easter-egg-lead-shawm"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/5f9e0f62ff29d8b41cf3cdb9.wav",
+          "key": "5f9e0f62ff29d8b41cf3cdb9"
+        },
+        "0.8": {
+          "url": "api/audio/wav/1e5dc1a426e8c9a4a31ad962.wav",
+          "key": "1e5dc1a426e8c9a4a31ad962"
+        },
+        "1.2": {
+          "url": "api/audio/wav/f9bae6d8a4fd9d9b758d2e97.wav",
+          "key": "f9bae6d8a4fd9d9b758d2e97"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}

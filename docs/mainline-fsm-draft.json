@@ -18150,10 +18150,12 @@
         "halloweenThemeToggle reflects effective state and is disabled only during its save."
       ],
       "audio": [
-        "Opening numberpad plays the first Part 3 string chord; held digits cycle D2, D2, A2, D2, A2. One second of inactivity and Reset silently reset the sequence; OK is silent.",
-        "Trip start and end replace normal songs with approved ensemble segments; speech begins two seconds after audio start. Other events use the approved orchestral family.",
-        "Disabling stops pending and ringing seasonal audio. Saved audio preferences and full Easter Egg songs remain unchanged.",
-        "Trip Start/End at supported speeds use one pre-rendered cached buffer; warm only the selected speed, preserve pitch/tail and the two-second speech mark. Theme-off stops playback."
+        "Default and Halloween event cues resolve from per-theme WAV catalogs; startSong remains the development/offline renderer.",
+        "windows.json owns opening, sustained, closing and button phases. Omitted phases are silent. Shared instruments live under api/audio/instruments.",
+        "events.json owns sound selection and language-template references; translated text and placeholder values stay in the language system.",
+        "Default preserves live dual tones. Halloween held keys use D-minor arpeggios across four rows/octaves, including Clear/Reset and OK; release follows the instrument envelope.",
+        "Halloween keypad opening uses the approved string-chord WAV. Trip start/end use one cached WAV source with the authored two-second speech mark and complete recorded tail.",
+        "Closing windows, theme changes and canceled presses stop old owners and reject late-loading voices. WAV cues share the original semantic speech queue without a separate seasonal speech branch."
       ],
       "forbidden": [
         "Modify saved clock colors or timing/accounting state as part of theming.",
@@ -18166,7 +18168,9 @@
         "node tests/halloween-idle-audio.cjs",
         "node tests/halloween-keypad-browser.cjs",
         "node tests/audio-sample-cache.mjs",
-        "node tests/halloween-trip-playback-browser.cjs"
+        "node tests/halloween-trip-playback-browser.cjs",
+        "node tests/theme-audio-config.mjs",
+        "node tests/announcement-real-engine-browser.cjs"
       ]
     }
   },
@@ -19975,7 +19979,7 @@
           "action": "enable Halloween in Settings > Themes, then disable it"
         },
         "expect": {
-          "enabled": "palette, pumpkin, skeleton, five-note held keypad and approved seasonal event songs change together",
+          "enabled": "palette, pumpkin, skeleton, four-octave positional held keypad and approved seasonal event songs change together",
           "disabled": "normal colors, avatar and sounds return",
           "savedClockColors": "unchanged",
           "tripAccounting": "unchanged",

@@ -1,0 +1,10 @@
+<IfModule mod_headers.c>
+    <FilesMatch "^[0-9a-f]{24}\.wav$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header unset Pragma
+        Header unset Expires
+    </FilesMatch>
+</IfModule>
+<FilesMatch "\.(?:json|tmp)$">
+    Require all denied
+</FilesMatch>

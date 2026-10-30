@@ -1,0 +1,511 @@
+{
+  "version": 1,
+  "theme": "halloween",
+  "profile": "electro-tom",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/b0cda3382fde97015c89af2e.wav",
+          "key": "b0cda3382fde97015c89af2e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/3d6febcd23f694b298338b99.wav",
+          "key": "3d6febcd23f694b298338b99"
+        },
+        "1.2": {
+          "url": "api/audio/wav/ce64e978582a24a56ee92c6f.wav",
+          "key": "ce64e978582a24a56ee92c6f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/179031be23e27093a346c27c.wav",
+          "key": "179031be23e27093a346c27c"
+        },
+        "0.8": {
+          "url": "api/audio/wav/ad80028de44c75996874fa38.wav",
+          "key": "ad80028de44c75996874fa38"
+        },
+        "1.2": {
+          "url": "api/audio/wav/cfdc24b044d26fe3dbe110eb.wav",
+          "key": "cfdc24b044d26fe3dbe110eb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/b2a6750446f0dc0dd69bce45.wav",
+          "key": "b2a6750446f0dc0dd69bce45"
+        },
+        "0.8": {
+          "url": "api/audio/wav/b68180b27a81f93a8847c6cd.wav",
+          "key": "b68180b27a81f93a8847c6cd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/27c430f032ab9089a9bbfdeb.wav",
+          "key": "27c430f032ab9089a9bbfdeb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/d081597bbff373856d06e032.wav",
+          "key": "d081597bbff373856d06e032"
+        },
+        "0.8": {
+          "url": "api/audio/wav/71a305eb63400a6dc81b8f7b.wav",
+          "key": "71a305eb63400a6dc81b8f7b"
+        },
+        "1.2": {
+          "url": "api/audio/wav/6f65ab4d11bb003ed258c50b.wav",
+          "key": "6f65ab4d11bb003ed258c50b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/89e86214d6d7ff08e9422cdd.wav",
+          "key": "89e86214d6d7ff08e9422cdd"
+        },
+        "0.8": {
+          "url": "api/audio/wav/f7710bd39aa15ac2387e0462.wav",
+          "key": "f7710bd39aa15ac2387e0462"
+        },
+        "1.2": {
+          "url": "api/audio/wav/969bc0d6fd308730e858b81b.wav",
+          "key": "969bc0d6fd308730e858b81b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3f7720e642ce2c138ed6b05d.wav",
+          "key": "3f7720e642ce2c138ed6b05d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/dba9fd88cdf157ecaa7e9cfb.wav",
+          "key": "dba9fd88cdf157ecaa7e9cfb"
+        },
+        "1.2": {
+          "url": "api/audio/wav/c36bde3b78c2f24960ccc6c8.wav",
+          "key": "c36bde3b78c2f24960ccc6c8"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3770cb92aa53e51746e8537a.wav",
+          "key": "3770cb92aa53e51746e8537a"
+        },
+        "0.8": {
+          "url": "api/audio/wav/b8145eaf73e51da63f2dab16.wav",
+          "key": "b8145eaf73e51da63f2dab16"
+        },
+        "1.2": {
+          "url": "api/audio/wav/586790fa61a2ae6c913bcb0f.wav",
+          "key": "586790fa61a2ae6c913bcb0f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/0865e0d8732a69ef84baaa7d.wav",
+          "key": "0865e0d8732a69ef84baaa7d"
+        },
+        "0.8": {
+          "url": "api/audio/wav/7eb1c759939548dcfc68de04.wav",
+          "key": "7eb1c759939548dcfc68de04"
+        },
+        "1.2": {
+          "url": "api/audio/wav/fc23492747b937ef8de24712.wav",
+          "key": "fc23492747b937ef8de24712"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/473258e069fabe5b3394396f.wav",
+          "key": "473258e069fabe5b3394396f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/c7e6a22f2f2e7f6bc6aae9db.wav",
+          "key": "c7e6a22f2f2e7f6bc6aae9db"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3b8919a457763935b83f188d.wav",
+          "key": "3b8919a457763935b83f188d"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/20368045fa722e358ba14596.wav",
+          "key": "20368045fa722e358ba14596"
+        },
+        "0.8": {
+          "url": "api/audio/wav/4351b1d065c10d066ef1c05a.wav",
+          "key": "4351b1d065c10d066ef1c05a"
+        },
+        "1.2": {
+          "url": "api/audio/wav/3bc7415525a89a132b41770e.wav",
+          "key": "3bc7415525a89a132b41770e"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/1fb0986db0fbba06199bf2ae.wav",
+          "key": "1fb0986db0fbba06199bf2ae"
+        },
+        "0.8": {
+          "url": "api/audio/wav/206b2218e0846d4b30d5613c.wav",
+          "key": "206b2218e0846d4b30d5613c"
+        },
+        "1.2": {
+          "url": "api/audio/wav/50d118068119fcda6cf82e5c.wav",
+          "key": "50d118068119fcda6cf82e5c"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/3f23e34512f384ba9ddc4ca0.wav",
+          "key": "3f23e34512f384ba9ddc4ca0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/ac9745ac8da19e984a6512b5.wav",
+          "key": "ac9745ac8da19e984a6512b5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/37d451847f44bd9c59d6cf49.wav",
+          "key": "37d451847f44bd9c59d6cf49"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf",
+          "instrument": "electro-tom"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/162891757fb04759f1f31da6.wav",
+          "key": "162891757fb04759f1f31da6"
+        },
+        "0.8": {
+          "url": "api/audio/wav/f42cd96a848f6f9399dded61.wav",
+          "key": "f42cd96a848f6f9399dded61"
+        },
+        "1.2": {
+          "url": "api/audio/wav/142acb763659cbe4a32343cb.wav",
+          "key": "142acb763659cbe4a32343cb"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}

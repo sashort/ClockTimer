@@ -1,0 +1,511 @@
+{
+  "version": 1,
+  "theme": "halloween",
+  "profile": "breathy-flute",
+  "sounds": {
+    "bend-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3\\A2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/25c65998a72026831faaa907.wav",
+          "key": "25c65998a72026831faaa907"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0672dd08a6a139202d0e52f5.wav",
+          "key": "0672dd08a6a139202d0e52f5"
+        },
+        "1.2": {
+          "url": "api/audio/wav/018c8dc425272f2842642f24.wav",
+          "key": "018c8dc425272f2842642f24"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "bend-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "A2/D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/6183ac0adb6cd61700f3540f.wav",
+          "key": "6183ac0adb6cd61700f3540f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/923c2aab35f9f60b05a3b1b0.wav",
+          "key": "923c2aab35f9f60b05a3b1b0"
+        },
+        "1.2": {
+          "url": "api/audio/wav/6a0ea7a1cb5c73006b045234.wav",
+          "key": "6a0ea7a1cb5c73006b045234"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/8e788b3453f9efec94de8fe9.wav",
+          "key": "8e788b3453f9efec94de8fe9"
+        },
+        "0.8": {
+          "url": "api/audio/wav/807f622a6b5f1743dd865421.wav",
+          "key": "807f622a6b5f1743dd865421"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4b211ecf60950732a900bfa3.wav",
+          "key": "4b211ecf60950732a900bfa3"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "arpeggio-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "1.04",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/98b073f0fda683ac75d75486.wav",
+          "key": "98b073f0fda683ac75d75486"
+        },
+        "0.8": {
+          "url": "api/audio/wav/0fb9b28ddf249811fa6a1622.wav",
+          "key": "0fb9b28ddf249811fa6a1622"
+        },
+        "1.2": {
+          "url": "api/audio/wav/2f31df8e51e599089061eda4.wav",
+          "key": "2f31df8e51e599089061eda4"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/419fc20c0c2fd9a96b9d0d73.wav",
+          "key": "419fc20c0c2fd9a96b9d0d73"
+        },
+        "0.8": {
+          "url": "api/audio/wav/a4853098c4b65114693f91d6.wav",
+          "key": "a4853098c4b65114693f91d6"
+        },
+        "1.2": {
+          "url": "api/audio/wav/4e2d6d80b1712697acd7f268.wav",
+          "key": "4e2d6d80b1712697acd7f268"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-down-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "1.02",
+          "tone": "G2",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/79b902d9a566a611331e087e.wav",
+          "key": "79b902d9a566a611331e087e"
+        },
+        "0.8": {
+          "url": "api/audio/wav/211959608536caabf1daddbd.wav",
+          "key": "211959608536caabf1daddbd"
+        },
+        "1.2": {
+          "url": "api/audio/wav/9d376badc23330e43fccc866.wav",
+          "key": "9d376badc23330e43fccc866"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/fc0a6c37a81308846ed80aa7.wav",
+          "key": "fc0a6c37a81308846ed80aa7"
+        },
+        "0.8": {
+          "url": "api/audio/wav/61b0c94e52bdd02cc4fee0ec.wav",
+          "key": "61b0c94e52bdd02cc4fee0ec"
+        },
+        "1.2": {
+          "url": "api/audio/wav/904813b735f69afe685800a5.wav",
+          "key": "904813b735f69afe685800a5"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "note-up-long": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "1",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "1.02",
+          "tone": "D#3",
+          "length": "1 1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c580ef54c2b1f1d413630c4f.wav",
+          "key": "c580ef54c2b1f1d413630c4f"
+        },
+        "0.8": {
+          "url": "api/audio/wav/16a4ad169b1e7f964a3bed96.wav",
+          "key": "16a4ad169b1e7f964a3bed96"
+        },
+        "1.2": {
+          "url": "api/audio/wav/45d6b7fb4d60e116bece656b.wav",
+          "key": "45d6b7fb4d60e116bece656b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "2/3",
+          "tone": "D#3",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "2/3",
+          "tone": "B2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "2/3",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/c7e89f46a761c3968291a5c0.wav",
+          "key": "c7e89f46a761c3968291a5c0"
+        },
+        "0.8": {
+          "url": "api/audio/wav/9f1e535392ff366157e38757.wav",
+          "key": "9f1e535392ff366157e38757"
+        },
+        "1.2": {
+          "url": "api/audio/wav/0b76409087dbdfc771b91e6f.wav",
+          "key": "0b76409087dbdfc771b91e6f"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "long-polyharmonic-triplet": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "0",
+          "tone": "B2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "0",
+          "tone": "G2",
+          "length": "2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/41d36420c83dcb76a4e0c587.wav",
+          "key": "41d36420c83dcb76a4e0c587"
+        },
+        "0.8": {
+          "url": "api/audio/wav/8bd85567229a882404b46365.wav",
+          "key": "8bd85567229a882404b46365"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b0319dc066c31513cf1c6e17.wav",
+          "key": "b0319dc066c31513cf1c6e17"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "info-tone": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "C2",
+          "length": "2/3",
+          "dynamic": "p",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "2/3",
+          "tone": "G2",
+          "length": "1 1/3",
+          "dynamic": "p",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/54e09df2eb56ac81c6e400f9.wav",
+          "key": "54e09df2eb56ac81c6e400f9"
+        },
+        "0.8": {
+          "url": "api/audio/wav/b8756381607ab9a595983eec.wav",
+          "key": "b8756381607ab9a595983eec"
+        },
+        "1.2": {
+          "url": "api/audio/wav/9ab97fc69fb64ec9698669f4.wav",
+          "key": "9ab97fc69fb64ec9698669f4"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "trip-transition": {
+      "bpm": 225,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "0.52",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "1.04",
+          "tone": "G2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "1.56",
+          "tone": "B2",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        },
+        {
+          "offset": "2.08",
+          "tone": "D#3",
+          "length": "1/2",
+          "dynamic": "ff",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/48ffbf9e8828866a8522b211.wav",
+          "key": "48ffbf9e8828866a8522b211"
+        },
+        "0.8": {
+          "url": "api/audio/wav/24d1df21ca3366a83eef1830.wav",
+          "key": "24d1df21ca3366a83eef1830"
+        },
+        "1.2": {
+          "url": "api/audio/wav/b34c5b0360d6b1f894a9462b.wav",
+          "key": "b34c5b0360d6b1f894a9462b"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    },
+    "time-reference": {
+      "bpm": 300,
+      "events": [
+        {
+          "offset": "0",
+          "tone": "D5",
+          "length": "1",
+          "dynamic": "mf",
+          "instrument": "breathy-flute"
+        }
+      ],
+      "rates": {
+        "1": {
+          "url": "api/audio/wav/dd7c9847310b71bbf1293548.wav",
+          "key": "dd7c9847310b71bbf1293548"
+        },
+        "0.8": {
+          "url": "api/audio/wav/560e91c10435b25b5e5fe4e8.wav",
+          "key": "560e91c10435b25b5e5fe4e8"
+        },
+        "1.2": {
+          "url": "api/audio/wav/db5513efedde0086d487b617.wav",
+          "key": "db5513efedde0086d487b617"
+        }
+      },
+      "speechStartSeconds": null,
+      "loop": false
+    }
+  }
+}
