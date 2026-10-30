@@ -1807,7 +1807,7 @@
             const breakTransition = this.getBreakTransitionState(now);
             const timedPause = intervalType === "break" || intervalType === "lunch";
             const downPause = intervalType === "down";
-            const normalActions = !timedPause && !downPause;
+            const normalActions = !timedPause && !downPause && !this.#breakOnly;
             const breakLabel = `End ${intervalType === "lunch" ? "Lunch" : "Break"}`;
             const remaining = Number(interval?.remainingMilliseconds);
             const breakClock = `${remaining < 0 ? "+" : ""}${this.#actionClock(Math.abs(remaining)).replace(/^(\d):/, "0$1:")}`;
@@ -1815,7 +1815,7 @@
                 ? {action: "resume_trip", text: `Resume Trip : ${this.#actionClock(interval?.elapsedMilliseconds)}`, visible: true, enabled: true}
                 : intervalType === "break" || intervalType === "lunch"
                     ? {action: "end_interval", text: `${breakLabel} : ${breakClock}`, label: breakLabel, clock: breakClock, visible: true, enabled: true}
-                    : {action: "end_trip", text: "End Trip", visible: tripActive, enabled: tripActive};
+                    : {action: "end_trip", text: "End Trip", visible: tripActive && !this.#breakOnly, enabled: tripActive && !this.#breakOnly};
             const availableActions = Object.freeze({
                 start_trip: !tripActive,
                 end_trip: tripActive && normalActions,
