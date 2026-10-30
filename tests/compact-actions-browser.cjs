@@ -14,6 +14,7 @@ const fixture=require('./order-filler-master-fixture.cjs');
   await p.screenshot({path:require('node:path').resolve('../outputs/compact-live-'+name+'.png')});
  }
  await state('idle',['newTripButton','idleBreakButton'],['tripLogButton']);fullLogColors=await p.evaluate(()=>globalThis.fullLogColors);assert.deepEqual(await logColors(),fullLogColors,'Compact Trip Log matches the Full button colors');
+ await require('./break-only-entry-frames.cjs')(p,operation);
  for(const theme of ['default','halloween']){
   await operation(theme=>WMOFSeasonalTheme.setPreference(theme,{persist:false}),theme);
   for(const phase of ['opening','closing']){

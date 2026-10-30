@@ -91,7 +91,7 @@
             }
             delete app.dataset.compactTimed;return;
         }
-        const actions=down?['downResumeButton','downBreakButton','downCancelButton']:!active?['newTripButton','idleBreakButton']:paused?['endTripButton',...(controls.breakDownVisible?['breakDownButton']:[])]:['endTripButton',...(controls.breakVisible?['breakButton']:[]),...(controls.downVisible?['downButton']:[])];
+        const actions=down?['downResumeButton','downBreakButton','downCancelButton']:!active?['newTripButton','idleBreakButton']:paused?['endTripButton',...(controls.breakDownVisible?['breakDownButton']:[])]:[...(controls.primaryVisible!==false?['endTripButton']:[]),...(controls.breakVisible?['breakButton']:[]),...(controls.downVisible?['downButton']:[])];
         const information=[...(down?['downDetailsButton']:[]),...(app.dataset.tripLogPinned!=='false'?['tripLogButton']:[])];
         app.dataset.compactTimed=String(down||paused||Boolean(nextGoal));
         for(const [id,record] of buttons) {

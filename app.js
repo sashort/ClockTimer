@@ -17235,6 +17235,7 @@
         const kind = interval === "lunch" ? "lunch" : interval === "break"
             ? ["short", "short-break"].includes(timerState.active_break_type) ? "short-break" : "break" : null;
         const paused = interval === "break" || interval === "lunch" || interval === "down";
+        const breakOnlyTransition = live && timerState?.break_only && !paused;
         const surfaces = [...document.querySelectorAll('dialog[open]:not([data-speech-passive])')].map(element=>element.id);
         const focus = globalThis.SpeechMenu?.activeSurface?.id || surfaces.at(-1) || "main";
         const editor = interactionStateReady ? numberPadState : undefined;
@@ -17259,7 +17260,7 @@
             openVoicePad: speechRecognition === "listening",
             confirmSummary: Boolean(completedTripSummary && !completedTripSummary.loading),
             startTrip: !live && !newTripWorkflowLocked,
-            endTrip: live && !paused,
+            endTrip: live && !paused && !breakOnlyTransition,
             ready: live ? !paused : !newTripWorkflowLocked,
             // Explicit optimistic replacement commands remain available. A
             // duplicate break is validated asynchronously and can revert.
@@ -17326,11 +17327,11 @@
                 transient: endingTransient,
                 primaryText: live || endingTransient ? timerState?.controls?.primary_action?.text || "End Trip"
                     : globalThis.WMOFLanguagePack.text("1cf0b3f1-858c-50c8-8cb9-8b3af9e1decd"),
-                activeTripVisible: live || endingTransient, primaryVisible: interval !== "down",
+                activeTripVisible: live || endingTransient, primaryVisible: interval !== "down" && !breakOnlyTransition,
                 breakLabel: kind ? timerState?.controls?.primary_action?.label : null,
                 breakClock: kind ? timerState?.controls?.primary_action?.clock : null,
                 breakDownVisible: Boolean(clockTimer.getBreakTransitionState().canConvertBreak),
-                actionRowVisible: !paused, breakVisible: !paused, downVisible: !paused,
+                actionRowVisible: !paused && !breakOnlyTransition, breakVisible: !paused && !breakOnlyTransition, downVisible: !paused && !breakOnlyTransition,
                 downVisiblePanel: interval === "down"})
         };
         const key = JSON.stringify(value);

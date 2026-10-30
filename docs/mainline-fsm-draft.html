@@ -17706,7 +17706,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
       },
       "controls": {
         "selector": "OK disabled before a type is chosen",
-        "pending": "Visible disabled controls until owned effects settle"
+        "pending": "Visible disabled controls until owned effects settle",
+        "standaloneEntry": "A break-only owner without an interval is a transition, not a productive running trip. End Trip, Break and Down controls are unavailable/hidden during this state. Full and Compact use the same eligibility; Compact also honors primaryVisible when assembling its rail."
       },
       "audio": {
         "selector": "Say/press break type then OK.",
@@ -18041,7 +18042,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere}.audio-policy td{vertical-align:
         "node tests/goal-pad-layout-browser.cjs",
         "node tests/goal-bar-interactions-browser.cjs",
         "node tests/layout-mode-transitions-browser.cjs",
-        "node tests/goal-bar-browser.cjs"
+        "node tests/goal-bar-browser.cjs",
+        "tests/break-only-entry-frames.cjs (called by compact-actions-browser): delayed-persistence frame sampling of Break/Short Break/Lunch entry in Full/Compact x Classic/Bar"
       ]
     },
     "GOAL-AVATAR": {
