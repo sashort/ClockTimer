@@ -46,7 +46,8 @@ goal calculation, motion geometry and trip accounting do not change.
 The Halloween numberpad opens with Part 3 strings and cycles through five held
 Cinematic Pulse Bass notes. Inactivity and Reset silently reset the sequence;
 OK is silent. Seasonal trip-start/end ensemble arrangements allow speech at the
-two-second mark. The approved orchestral event family covers other notifications.
+two-second mark. Trip Start/End play cached pre-rendered clips at each supported
+speed to avoid live ensemble load on phones. The approved orchestral event family covers other notifications.
 Saved instruments, volume and mute remain governed by existing audio settings.
 Turning the theme off cancels seasonal playback and restores normal audio.
 See [halloween-audio.md](halloween-audio.md) for scores and event behavior.

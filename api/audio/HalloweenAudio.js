@@ -3,7 +3,7 @@
     const revision=globalThis.document?.currentScript?.src?.match(/[?&]build=([^&#]+)/)?.[1];
     const versioned=url=>url+(revision?'?build='+revision:'');
     let dataPromise,lastState,generation=0;
-    const states=new WeakMap(),buffers=new WeakMap(),catalogs=new WeakMap(),live=new Set();
+    const states=new WeakMap(),buffers=new WeakMap(),catalogs=new WeakMap(),playbackCatalogs=new WeakMap(),live=new Set();
     const frequency=note=>{const m=/^([A-G])([#b]?)(-?\d+)$/.exec(note);if(!m)throw Error('Invalid seasonal note');return 440*2**(((Number(m[3])+1)*12+{C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]+(m[2]==='#'?1:m[2]==='b'?-1:0)-69)/12);};
     function isActive(date=new Date()){
         if(globalThis.WMOFSeasonalTheme)return globalThis.WMOFSeasonalTheme.active;
@@ -11,18 +11,41 @@
     }
     function data(){return dataPromise||=fetch(versioned('api/audio/halloween.json')).then(r=>{if(!r.ok)throw Error('Halloween audio could not be loaded');return r.json();}).catch(e=>{dataPromise=undefined;throw e;});}
     function buffer(context,url){
+        if(globalThis.WMOFAudio?.loadSample)return globalThis.WMOFAudio.loadSample(context,versioned(url));
         let cache=buffers.get(context);if(!cache)buffers.set(context,cache=new Map());
         if(!cache.has(url))cache.set(url,fetch(versioned(url)).then(r=>{if(!r.ok)throw Error('Halloween recording unavailable');return r.arrayBuffer();}).then(b=>context.decodeAudioData(b)).catch(e=>{cache.delete(url);throw e;}));
         return cache.get(url);
     }
-    async function prepare(context){const d=await data();if(context)await Promise.all(d.instruments['halloween-opening-strings'].samples.map(s=>buffer(context,s.url)));return d;}
-    async function catalogForSong(base,name){
+    async function prepare(context){
+        const d=await data();if(!context)return d;
+        await Promise.all(d.instruments['halloween-opening-strings'].samples.map(s=>buffer(context,s.url)));
+        const speed=String(globalThis.WMOFAudio?.outputSettings?.toneVelocity ?? 1);
+        // Warm only the selected speed, sequentially, so decoding cannot burst on a phone.
+        for(const name of ['trip-started','trip-ended']){
+            if(!isActive()||String(globalThis.WMOFAudio?.outputSettings?.toneVelocity ?? 1)!==speed)break;
+            const variant=d.songs[name]?.renderedVariants?.[speed];
+            if(variant)await buffer(context,d.instruments[variant.instrument].samples[0].url);
+        }
+        return d;
+    }
+    async function catalogForSong(base,name,options={}){
         const seasonal=await data();if(!seasonal.songs[name])return base;
         if(!catalogs.has(base)){
             const definitions=Object.fromEntries(Object.entries(seasonal.instruments).map(([key,d])=>[key,{...d,...(d.samples?{samples:d.samples.map(sample=>({...sample,url:versioned(sample.url)}))}:{})}]));
             catalogs.set(base,{...base,instruments:{...base.instruments,...definitions},songs:{...base.songs,...seasonal.songs}});
         }
-        return catalogs.get(base);
+        const merged=catalogs.get(base),speed=String(options.toneVelocity ?? 1);
+        if(!seasonal.songs[name].renderedVariants?.[speed] || options.bpm!=null && Number(options.bpm)!==Number(seasonal.songs[name].bpm))return merged;
+        let variants=playbackCatalogs.get(merged);if(!variants)playbackCatalogs.set(merged,variants=new Map());
+        if(!variants.has(speed)){
+            const songs={...merged.songs};
+            for(const [key,song]of Object.entries(merged.songs)){
+                const v=song.renderedVariants?.[speed];if(!v)continue;
+                songs[key]={...song,instrument:v.instrument,seasonalGain:1,seasonalPreRendered:true,events:[{offset:'0',tone:'C4',length:String(v.seconds*song.bpm*Number(speed)/60),dynamic:'fff',instrument:v.instrument}]};
+            }
+            variants.set(speed,{...merged,songs});
+        }
+        return variants.get(speed);
     }
     function state(context){if(!states.has(context))states.set(context,{context,index:0,active:new Set(),releasedAt:-Infinity});return states.get(context);}
     function resetSequence(){if(lastState){lastState.index=0;lastState.releasedAt=-Infinity;}}
