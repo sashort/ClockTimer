@@ -84,8 +84,10 @@ module.exports = async function runMaster(method) {
    if(method==='voice'){await say('trip mode');await say('trip goal one hundred ten percent');await say('trip goal');}
    else {
     await tap('#scopeToggle');await tap('#scopeToggleDropdown [data-mode="trip"]');
-    await tap('#goalPercentValue');await touchPad();await page.locator('#numberPadClear').tap({position:{x:12,y:12}});assert.equal(await page.locator('#numberPadDisplay').textContent(),'---');
-    for(const digit of '110')await tap(`#numberPadGrid [data-number="${digit}"]`);
+    await tap('#goalPercentValue');await touchPad();const original=await page.locator('#numberPadDisplay').textContent();await page.locator('#numberPadClear').tap({position:{x:12,y:12}});assert.equal(await page.locator('#numberPadDisplay').textContent(),original,'Clear retains the value until first input');
+    assert.equal(await page.locator('#numberPadDisplay .number-pad-anchor-digit').count(),await page.locator('#numberPadDisplay [data-pad-digit]').count(),'Clear selects every digit');
+    await tap('#numberPadGrid [data-number="1"]');assert.equal(await page.locator('#numberPadDisplay').textContent(),'1%','first digit replaces the selected value');
+    for(const digit of '10')await tap(`#numberPadGrid [data-number="${digit}"]`);
     await tap('#numberPadConfirm');
    }
    assert.equal(await state(()=>document.querySelector('#clockTimer').uiState.trip_goal_component.value),1.1);
