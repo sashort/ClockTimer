@@ -119,3 +119,6 @@ html[data-seasonal-theme="halloween"] .trip-log-break-only-badge {background:#ff
 html[data-seasonal-theme="halloween"] .app[data-action-display="compact"][data-interval-state="down"] .compact-interval-timer {
     position:relative;z-index:3001;
 }
+
+html[data-seasonal-theme="halloween"] .app {--timer-attention-ink:#fff5e2;--timer-attention-fill:#24180f;--timer-attention-base:#e28b25;--timer-attention-mid:#ffd34e;--timer-attention-light:#fff0b0;--timer-attention-glow:rgb(239 151 43 / 22%);}
+html[data-seasonal-theme="halloween"] .timer-attention-gradient {background:conic-gradient(from var(--timer-attention-angle),#e28b25,#e28b25 32%,#9f75bb 43%,#ffd34e 51%,#fff0b0 58%,#ffd34e 66%,#e28b25 81%);}

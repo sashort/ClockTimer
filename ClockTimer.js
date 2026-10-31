@@ -1544,10 +1544,21 @@
             if(!Number.isFinite(standard)||!Number.isFinite(counted))return undefined;
             if(this.#renderedTimeMode==="remaining")return standard-counted;
             if(this.#renderedTimeMode==="elapsed")return Number(trip?.productiveTimeMilliseconds ?? Math.max(0,counted));
-            const current=Number(trip?.countedPercent);
-            const end=counted<=0?now.getTime():Number.isFinite(current)&&current>0
-                ? Date.parse(this.#calculateTripGoalRequirementsForGoal(current,{allowMissed:true}).adjustedEndTime):NaN;
-            return Number.isFinite(end)?end:undefined;
+            const productive=Number(trip?.productiveTimeMilliseconds);
+            const down=this.getActiveIntervalState(now)?.intervalType==="down";
+            const deadline=requirements=>{
+                const end=Date.parse(requirements?.adjustedEndTime);
+                if(Number.isFinite(end))return end;
+                // Down has no known end: project an immediate resume, then
+                // move that deadline forward as wall time passes while work freezes.
+                const required=requirements?.adjustedTimeElapsed;
+                return down&&Number.isFinite(required)&&Number.isFinite(productive)
+                    ? now.getTime()+Math.max(0,required-productive):NaN;
+            };
+            let end=deadline(this.#resolveGoalSelection().requirements);
+            if(!Number.isFinite(end)||end<now.getTime())
+                end=deadline(this.#calculateTripGoalRequirementsForGoal(1,{allowMissed:true}));
+            return Number.isFinite(end)?Math.max(now.getTime(),end):now.getTime();
         }
 
         #getCurrentTripTimeText(summary, now) {
@@ -1809,7 +1820,7 @@
             const downPause = intervalType === "down";
             const normalActions = !timedPause && !downPause && !this.#breakOnly;
             const breakLabel = `End ${intervalType === "lunch" ? "Lunch" : "Break"}`;
-            const remaining = Number(interval?.remainingMilliseconds);
+            const remaining = Number(interval?.countdownMilliseconds??interval?.remainingMilliseconds);
             const breakClock = `${remaining < 0 ? "+" : ""}${this.#actionClock(Math.abs(remaining)).replace(/^(\d):/, "0$1:")}`;
             const primaryAction = intervalType === "down"
                 ? {action: "resume_trip", text: `Resume Trip : ${this.#actionClock(interval?.elapsedMilliseconds)}`, visible: true, enabled: true}
@@ -7372,6 +7383,8 @@
             const buffer = ["start-buffer", "end-buffer"].includes(phase) && Number.isFinite(current?.end)
                 ? {phase, durationMilliseconds:current.end-current.start,
                     remainingMilliseconds:Math.max(0,current.end-timelineNow)} : null;
+            const breakEnd=this.#getIntervalRecordEnd(record);
+            const breakRemainingMilliseconds=["break","lunch"].includes(intervalType)&&Number.isFinite(breakEnd)?breakEnd-timelineNow:undefined;
             const elapsedMilliseconds = Math.max(0, timelineNow - start);
             const remainingMilliseconds = Number.isFinite(end)
                 ? end - timelineNow
@@ -7395,6 +7408,9 @@
                         ? record.clockTimerExtensionBoundaryTimeline : end),
                 elapsedMilliseconds,
                 remainingMilliseconds,
+                breakRemainingMilliseconds,
+                endBufferMilliseconds:Math.max(0,Number(this.#getIntervalBufferRecord(record,"end")?.rangeLength)||(Number.isFinite(end)&&Number.isFinite(breakEnd)?end-breakEnd:0)),
+                countdownMilliseconds:buffer?.remainingMilliseconds??(["break","lunch"].includes(phase)?breakRemainingMilliseconds:remainingMilliseconds),
                 buffer
             };
         }
@@ -27907,23 +27923,10 @@
             }
 
             if (this.#started && !allowMissed) {
-                const deadline =
-                    this.#calculateAdjustedEndTimeline(
-                        requirements.adjustedTimeElapsed
-                    );
-
-                const now =
-                    this.#getCurrentTimelineTime();
-
-                if (
-                    !Number.isFinite(deadline) ||
-                    (
-                        Number.isFinite(now) &&
-                        now > deadline
-                    )
-                ) {
-                    return this.#emptyGoalRequirements();
-                }
+                const productive=Math.max(0,this.#getCountedTimeBalance(this.#getCurrentTimelineTime())+this.#getEarlyStartAllowanceCredit());
+                // Goal viability depends on work consumed, including during
+                // an open Down interval whose wall-clock deadline is unknown.
+                if(productive>requirements.adjustedTimeElapsed)return this.#emptyGoalRequirements();
             }
 
             return requirements;
@@ -28141,23 +28144,9 @@
                 return empty;
             }
 
-            const adjustedEndTimeline =
-                this.#calculateAdjustedEndTimeline(
-                    calculated.adjustedTimeElapsed
-                );
-
-            const now =
-                this.#started
-                    ? this.#getCurrentTimelineTime()
-                    : undefined;
-
-            if (
-                !allowMissed &&
-                Number.isFinite(now) &&
-                Number.isFinite(adjustedEndTimeline) &&
-                adjustedEndTimeline < now
-            ) {
-                return empty;
+            if(!allowMissed&&this.#started){
+                const productive=Math.max(0,this.#getCountedTimeBalance(this.#getCurrentTimelineTime())+this.#getEarlyStartAllowanceCredit());
+                if(productive>requirements.adjustedTimeElapsed)return empty;
             }
 
             return this.#applyGoalBounding(requirements);

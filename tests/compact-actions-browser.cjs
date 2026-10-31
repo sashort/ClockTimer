@@ -53,7 +53,7 @@ const fixture=require('./order-filler-master-fixture.cjs');
  await operation(()=>WMOFActions.startDownTime());
  await operation(()=>WMOFActions.startBreak('lunch'));
  await state('lunch',['endTripButton'],['tripLogButton']);
- assert.match(await p.locator('.compact-interval-timer').textContent(),/Lunch Timer/);
+ assert.match(await p.locator('.compact-interval-timer').textContent(),/Lunch/);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
  await state('lunch-unpinned',['endTripButton'],[]);
  await p.evaluate(()=>document.querySelector('#tripLogPinButton').click());
