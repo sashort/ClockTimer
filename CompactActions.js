@@ -183,7 +183,11 @@
                 globalThis.WMOFTimerSummaryView?.refreshLayout(document);document.getElementById('clockTimer')?.refreshLayout?.();
             };
             try{
-                if(typeof document.startViewTransition==='function'){const transition=document.startViewTransition(update);await transition.finished;}
+                if(typeof document.startViewTransition==='function'){
+                    const transition=document.startViewTransition(update);
+                    // A skipped snapshot rejects ready even when the update and finished succeed.
+                    transition.ready.catch(()=>{});await transition.finished;
+                }
                 else{await update();const clock=document.getElementById('clockTimer');await clock?.animate?.([{opacity:.6},{opacity:1}],{duration:300,easing:'ease-in-out'})?.finished;}
             }finally{app.classList.remove('layout-switch-snap');delete document.documentElement.dataset.layoutTransition;}
           }finally{hideLayoutBusy();}
