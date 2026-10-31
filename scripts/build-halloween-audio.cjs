@@ -9,18 +9,10 @@ const instruments={'halloween-pulse':score.instruments['finale-pulse'],'hallowee
 function arrangement(events,definitions,prefix){return events.map(e=>{const name=prefix+e.instrument;instruments[name]=definitions[e.instrument];return {...e,instrument:name};});}
 // The former start (the score's final five onsets) is now the end cue.
 const endEvents=arrangement(score.song.events.filter(e=>Number(e.offset)>=cut).map(e=>({...e,offset:String(Number(e.offset)-cut)})),score.instruments,'halloween-score-');
-const pulse=first.slice(0,4),fourth=pulse[3],entry=score.partThree.startSeconds*score.song.bpm/60;
-const gateEnd=Number(fourth.offset)+Number(fourth.length);
-const startEvents=arrangement(score.song.events.filter(e=>Number(e.offset)>=entry&&Number(e.offset)<gateEnd-1e-8).map(e=>({...e,offset:String(Number(e.offset)-entry)})),score.instruments,'halloween-score-');
-const stringIds=['halloween-score-finale-violins','halloween-score-finale-opening-horror-strings'];
-const stringEnd=Math.max(...startEvents.filter(e=>stringIds.includes(e.instrument)).map(e=>(Number(e.offset)+Number(e.length))*60/score.song.bpm+instruments[e.instrument].envelope.release));
-const heldId='halloween-start-held-pulse';
-instruments[heldId]=structuredClone(score.instruments['finale-pulse']);
-instruments[heldId].envelope.release=stringEnd-(gateEnd-entry)*60/score.song.bpm;
-const last=startEvents.find(e=>e.instrument==='halloween-score-finale-pulse'&&Math.abs(Number(e.offset)-(Number(fourth.offset)-entry))<1e-8);
-last.instrument=heldId;
+// Start is only the original first long string chord, with its full release.
+const startEvents=arrangement(chord.map(e=>({...e,offset:'0'})),score.instruments,'halloween-score-');
 for(const name of ['trip-started','trip-started-early','trip-started-late'])songs[name]={bpm:score.song.bpm,instrument:startEvents[0].instrument,events:startEvents,
- seasonalSpeechStartBeat:Number(fourth.offset)-entry,releaseSync:{instrument:heldId,referenceInstruments:stringIds},seasonalGain:.45};
+ seasonalSpeechStartSeconds:1,seasonalGain:.45};
 songs['trip-ended']={bpm:score.song.bpm,instrument:endEvents[0].instrument,events:endEvents,seasonalSpeechStartSeconds:2,seasonalGain:.45};
 instruments['halloween-keypad-bell']=score.instruments['finale-bells'];
 songs['keypad-open']={bpm:120,instrument:'halloween-keypad-bell',seasonalGain:.45,events:[{offset:'0',tone:'D4',length:'1',instrument:'halloween-keypad-bell',dynamic:'ff'}]};
@@ -34,4 +26,4 @@ const aliases={
  '12-speech-rejected':['speech-rejected'],'13-drop-in-message':['observer-message']};
 for(const cue of cues.cues){const events=arrangement(cue.events,cues.instruments,'halloween-cue-');const gain=cues.reports.find(r=>r.id===cue.id&&r.speed===1).gain;for(const name of aliases[cue.id])songs[name]={bpm:120,instrument:events[0].instrument,events,seasonalGain:gain};}
 fs.writeFileSync(path.join(root,'api/audio/halloween.json'),JSON.stringify({instruments,songs,touchtones:{notes:first.map(e=>e.tone),pulseGain:.4,attackSeconds:.008,releaseSeconds:score.instruments['finale-pulse'].envelope.release,timeoutSeconds:1},opening:{cue:'keypad-open',instrument:'halloween-keypad-bell',note:'D4',naturalDecay:true}},null,2)+'\n');
-console.log('Built '+Object.keys(songs).length+' Halloween event mappings, bell opening and beat-aligned four-note start cue.');
+console.log('Built '+Object.keys(songs).length+' Halloween event mappings, bell opening and single opening-string start chord.');

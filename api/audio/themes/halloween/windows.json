@@ -16,7 +16,7 @@
             ["D4", "F4", "A4"],
             ["D5", "F5", "A5"]
           ],
-          "pulseGain": 0.4,
+          "pulseGain": 0.74,
           "attackSeconds": 0.008
         }
       }

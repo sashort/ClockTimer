@@ -25,7 +25,7 @@
    const plateau=Math.max(0,node.width/2-node.height),distance=Math.max(0,Math.abs(x-node.x)-plateau),reach=node.height*1.8+14;
    if(distance<reach)rise=Math.max(rise,base+Math.max(0,node.height+3-base)*(1+Math.cos(Math.PI*distance/reach))/2);
   }
-  return context.y-rise-16;
+  return context.y-rise-16*(context.avatarScale??1);
  }
  function armGeometry(progress){
   const upper=(150-45*progress)*Math.PI/180,fore=(-105-150*progress)*Math.PI/180,ex=-1+(9-2*progress)*Math.cos(upper),ey=-12+(9-2*progress)*Math.sin(upper);
@@ -52,15 +52,16 @@
  }
  class Avatar{
   constructor(svgRoot,row){
-   installStyle();this.svg=svgRoot;this.row=row;this.root=svg('g',{class:'goal-bar-avatar','aria-hidden':'true'});this.pose=svg('g');this.root.append(this.pose);svgRoot.append(this.root);
+   installStyle();this.svg=svgRoot;this.row=row;this.root=svg('g',{class:'goal-bar-avatar','aria-hidden':'true'});this.size=svg('g',{class:'goal-bar-avatar-size'});this.pose=svg('g');this.size.append(this.pose);this.root.append(this.size);svgRoot.append(this.root);
    this.canvas=document.createElement('canvas');this.canvas.className='goal-bar-confetti';this.canvas.setAttribute('aria-hidden','true');row.append(this.canvas);
    this.mode=null;this.visiblePose=null;this.session=null;this.initialized=false;this.enabled=false;this.sequence=0;this.animations=new Set();this.waiters=new Map();this.completed=new Set();this.burstTimers=[];this.context=null;this.rig=null;
    this.motionPreference=matchMedia('(prefers-reduced-motion: reduce)');this.visibility=()=>{if(document.hidden){this.cancel();this.root.hidden=true;this.root.style.display='none';}else if(this.enabled){this.root.style.display='';this.change(this.mode,{entryOnly:true});}};
-   this.themeChanged=()=>globalThis.WMOFHalloweenAvatar?.decorate(this.pose);window.addEventListener('wmof-seasonal-theme-change',this.themeChanged);
+   this.themeChanged=()=>{globalThis.WMOFHalloweenAvatar?.decorate(this.pose);this.position();};window.addEventListener('wmof-seasonal-theme-change',this.themeChanged);
    document.addEventListener('visibilitychange',this.visibility);this.preferenceChanged=()=>{if(this.enabled)this.change(this.mode,{entryOnly:true});};this.motionPreference.addEventListener?.('change',this.preferenceChanged);
   }
   reduced(){return this.motionPreference.matches;}
-  topSpace(state){return targetMode(state)==='down'?68:48;}
+  scale(){return globalThis.WMOFHalloweenAvatar?.scale??1;}
+  topSpace(state){return (targetMode(state)==='down'?68:48)*this.scale();}
   cancel(){
    ++this.sequence;for(const animation of this.animations)animation.cancel();this.animations.clear();
    for(const [timer,resolve] of this.waiters){clearTimeout(timer);resolve(false);}this.waiters.clear();
@@ -141,24 +142,24 @@
   }
   place(context){this.context=context;this.position();}
   position(){
-   if(!this.context||!this.visiblePose||!this.enabled)return;const {left,right,x}=this.context,top=surfaceY(this.context,right);
+   if(!this.context||!this.visiblePose||!this.enabled)return;const scale=this.scale();this.size.setAttribute('transform',`scale(${scale})`);const supportContext={...this.context,avatarScale:scale};const inset=16*(scale-1),left=this.context.left+inset,right=Math.max(left,this.context.right-inset),x=this.context.x,top=surfaceY(supportContext,right);
    if(this.visiblePose==='idle'){
     if(this.reduced()){this.root.style.transform=`translate(${right}px,${top}px)`;return;}
-    const key=JSON.stringify([left,right,this.context.y,this.context.thickness,this.context.obstacles]);if(this.walkKey===key)return;
+    const key=JSON.stringify([left,right,this.context.y,this.context.thickness,this.context.obstacles,scale]);if(this.walkKey===key)return;
     const time=this.walk?.currentTime||0;this.walk?.cancel();this.turn?.cancel();this.walkKey=key;
     const offsets=[...new Set([...Array.from({length:241},(_,i)=>i/240),.44,.5,.94])].sort((a,b)=>a-b);
-    const frames=offsets.map(offset=>{const px=offset<.44?lerp(left,right,offset/.44):offset<.5?right:offset<.94?lerp(right,left,(offset-.5)/.44):left;return{transform:`translate(${px}px,${surfaceY(this.context,px)}px)`,offset};});
+    const frames=offsets.map(offset=>{const px=offset<.44?lerp(left,right,offset/.44):offset<.5?right:offset<.94?lerp(right,left,(offset-.5)/.44):left;return{transform:`translate(${px}px,${surfaceY(supportContext,px)}px)`,offset};});
     this.walk=this.root.animate(frames,{duration:20000,iterations:Infinity,easing:'linear'});
     this.pose.style.transformOrigin='0px -3px';this.turn=this.pose.animate([{transform:'rotateY(180deg)',offset:0},{transform:'rotateY(180deg)',offset:.44,easing:'cubic-bezier(.4,0,.2,1)'},{transform:'rotateY(0deg)',offset:.5},{transform:'rotateY(0deg)',offset:.94,easing:'cubic-bezier(.4,0,.2,1)'},{transform:'rotateY(180deg)',offset:1}],{duration:20000,iterations:Infinity});this.walk.currentTime=this.turn.currentTime=time;
    }else{
     this.walk?.cancel();this.turn?.cancel();this.walk=this.turn=null;this.walkKey=null;this.pose.style.transform='';
     // Keep the complete settled chair/body to the left of Current's double line.
-    const anchor=this.visiblePose==='finish'?Math.max(left,Math.min(right,this.finishX??x)):x,px=anchor-20;
+    const anchor=this.visiblePose==='finish'?Math.max(left,Math.min(right,this.finishX??x)):x,px=anchor-20*scale;
     // The seated rig spans either side of its origin; clear bubbles beneath
     // the whole footprint, including when Current itself reaches a bubble.
-    const support={...this.context,obstacles:(this.context.obstacles||[]).map(node=>({...node,width:node.width+40}))};
+    const support={...supportContext,obstacles:(this.context.obstacles||[]).map(node=>({...node,width:node.width+40*scale}))};
     this.root.style.transform=`translate(${px}px,${surfaceY(support,px)}px)`;
-    const bubble=this.pose.querySelector('.bubble');if(bubble){const wrapper=bubble.parentElement,text=bubble.querySelector('text'),rightSide=px<78&&this.svg.getBoundingClientRect().width-px>78;wrapper.setAttribute('transform',rightSide?'translate(82 0) scale(-1 1)':'translate(-82 0)');text?.setAttribute('transform',rightSide?'translate(74 0) scale(-1 1)':'');}
+    const bubble=this.pose.querySelector('.bubble');if(bubble){const wrapper=bubble.parentElement,text=bubble.querySelector('text'),rightSide=px<78*scale&&this.svg.getBoundingClientRect().width-px>78*scale;wrapper.setAttribute('transform',rightSide?'translate(82 0) scale(-1 1)':'translate(-82 0)');text?.setAttribute('transform',rightSide?'translate(74 0) scale(-1 1)':'');}
    }
   }
   confetti(){
