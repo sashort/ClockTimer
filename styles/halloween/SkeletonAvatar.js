@@ -23,7 +23,7 @@
     }
     function decorate(pose) {
         const active = globalThis.WMOFSeasonalTheme?.active === true;
-        pose.parentElement?.classList.toggle('is-skeleton',active);
+        pose.closest('.goal-bar-avatar')?.classList.toggle('is-skeleton',active);
         if (!active) {remove(pose);return;}
         const previous = entries.get(pose);
         if (previous && !pose.contains(previous.head)) remove(pose);
@@ -42,5 +42,5 @@
         head.parentElement.append(skull); (spine?.parentElement || head.parentElement).append(ribs); pose.prepend(defs);
         entries.set(pose,{head,spine,skull,ribs,defs,bones,radius}); update(pose);
     }
-    globalThis.WMOFHalloweenAvatar = Object.freeze({decorate,update});
+    globalThis.WMOFHalloweenAvatar = Object.freeze({decorate,update,get scale(){return globalThis.WMOFSeasonalTheme?.active===true?2:1;}});
 })();
