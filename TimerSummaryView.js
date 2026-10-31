@@ -107,7 +107,7 @@
  class TimerSpaceLayout{
   static views=new WeakMap();
   static attach(app){if(!app?.querySelector('.clock-region')||this.views.has(app))return;this.views.set(app,new this(app));}
-  constructor(app){this.app=app;const schedule=()=>{if(this.frame)return;this.frame=requestAnimationFrame(()=>{this.frame=0;this.fit();});};this.resize=new ResizeObserver(schedule);this.resize.observe(app);this.mutations=new MutationObserver(schedule);this.mutations.observe(app,{attributes:true,attributeFilter:['data-percentage-display','data-action-display','data-trip-state','data-interval-state','data-speech-active','data-trip-log-pinned','data-compact-timed','data-goal-countdown']});schedule();}
+  constructor(app){this.app=app;const schedule=()=>{if(this.frame)return;this.frame=requestAnimationFrame(()=>{this.frame=0;this.fit();});};this.resize=new ResizeObserver(schedule);this.resize.observe(app);this.mutations=new MutationObserver(schedule);this.mutations.observe(app,{attributes:true,attributeFilter:['data-percentage-display','data-action-display','data-trip-state','data-interval-state','data-speech-active','data-trip-log-pinned','data-compact-timed','data-goal-countdown']});window.addEventListener('wmof-seasonal-theme-change',schedule);schedule();}
   fit(){
    const app=this.app;if(app.dataset.percentageDisplay!=='bar'||app.clientHeight<300)return;
    const style=getComputedStyle(app),px=name=>parseFloat(style.getPropertyValue(name))||0;
@@ -119,8 +119,9 @@
    const clock=down&&!compact?0:compact?Math.max(0,contentWidth-rails):contentWidth*.8;
    const controls=compact?0:down?(app.clientHeight<=650?156:230):app.querySelector('.trip-action-controls')?.getBoundingClientRect().height||0;
    const reserve=(compact&&app.dataset.compactTimed==='true'||app.dataset.goalCountdown==='true')?(app.clientHeight<=650?64:76):0;
-   const minimum=down?164:140;const spare=contentHeight-header-summary-footer-controls-reserve-clock-24-minimum;
-   const height=Math.round(Math.max(minimum,Math.min(200,minimum+Math.max(0,spare)*.5)));
+   const avatarExtra=(globalThis.WMOFHalloweenAvatar?.scale??1)-1,extra=(down?68:48)*avatarExtra;
+   const minimum=(down?164:140)+extra;const spare=contentHeight-header-summary-footer-controls-reserve-clock-24-minimum;
+   const height=Math.round(Math.max(minimum,Math.min(200+extra,minimum+Math.max(0,spare)*.5)));
    if(app.style.getPropertyValue('--goal-bar-height')!==height+'px')app.style.setProperty('--goal-bar-height',height+'px');
    const space=contentHeight-header-summary-footer-controls-reserve;const diameter=Math.max(0,Math.min(clock,space-height-16)),leading=down&&!compact?0:Math.max(0,(space-height-diameter-16)/2);
    for(const [name,value] of [['--goal-bar-leading-space',leading],['--clock-stage-diameter',diameter]])if(app.style.getPropertyValue(name)!==value+'px')app.style.setProperty(name,value+'px');

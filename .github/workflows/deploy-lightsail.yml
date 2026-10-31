@@ -243,6 +243,7 @@ jobs:
       - run: node tests/goal-bar-label-width-browser.cjs
       - run: node tests/goal-bar-avatar-browser.cjs
       - run: node tests/goal-bar-avatar-surface-browser.cjs
+      - run: node tests/halloween-avatar-layout-browser.cjs
       - run: node tests/goal-bar-ticks-browser.cjs
       - run: node tests/layout-mode-transitions-browser.cjs
       - run: node tests/layout-startup-browser.cjs
