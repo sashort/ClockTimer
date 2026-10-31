@@ -120,7 +120,7 @@
    const controls=compact?0:down?(app.clientHeight<=650?156:230):app.querySelector('.trip-action-controls')?.getBoundingClientRect().height||0;
    const reserve=(compact&&app.dataset.compactTimed==='true'||app.dataset.goalCountdown==='true')?(app.clientHeight<=650?64:76):0;
    const avatarExtra=(globalThis.WMOFHalloweenAvatar?.scale??1)-1,extra=(down?68:48)*avatarExtra;
-   const minimum=(down?164:140)+extra;const spare=contentHeight-header-summary-footer-controls-reserve-clock-24-minimum;
+   const minimum=(down?168:140)+extra;const spare=contentHeight-header-summary-footer-controls-reserve-clock-24-minimum;
    const height=Math.round(Math.max(minimum,Math.min(200+extra,minimum+Math.max(0,spare)*.5)));
    if(app.style.getPropertyValue('--goal-bar-height')!==height+'px')app.style.setProperty('--goal-bar-height',height+'px');
    const space=contentHeight-header-summary-footer-controls-reserve;const diameter=Math.max(0,Math.min(clock,space-height-16)),leading=down&&!compact?0:Math.max(0,(space-height-diameter-16)/2);
@@ -205,7 +205,7 @@
    const data=this.state?.goal_bar||{},width=this.svg.getBoundingClientRect().width,height=this.svg.getBoundingClientRect().height;if(!(width>0&&height>0))return;
    this.svg.setAttribute('viewBox',`0 0 ${width} ${height}`);
    const {raw,goals,available,allFailed,units}=this.makeUnits(data),active=data.active!==false,oldUnits=this.units;
-   const avatarSpace=this.avatar?.topSpace(this.state)||0;const count=units.length||1,r=Math.max(9,Math.min(25,height*.11)),preferred=Math.max(9,Math.min(28,height*.17,(width-12)/(count*4.1+1),(height-2*(r+5)-avatarSpace-12)/(active?2.6:1.15)));
+   const avatarSpace=this.avatar?.topSpace(this.state)||0;const count=units.length||1,r=Math.max(9,Math.min(25,height*.11)),preferred=Math.max(9,Math.min(28,height*.17,(width-12)/(count*4.1+1),(height-2*(r+5)-avatarSpace-16)/(active?2.6:1.15)));
    const at100=units.find(u=>u.id!=='standard'&&!u.current&&near(u.percent,100)),standard=units.find(u=>u.id==='standard');
    const labelUnits=units.filter(u=>u.id!=='standard'&&(u.current||!u.failed||allFailed&&near(u.percent,100))),padding=6,gap=7;
    const target=(!active&&this.state?.goal_type==="auto"?null:available.find(n=>n.id===this.state?.effective_goal_type))||available.toSorted((a,b)=>b.percent-a.percent)[0];let labelTarget=units.find(u=>u.members.includes(target?.id));if(labelTarget===standard&&at100)labelTarget=at100;
@@ -277,7 +277,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    }
    for(const unit of units)unit.labelX??=unit.x;
    const halfLine=r+5,timeOffset=halfLine+7+font,percentOffset=active?timeOffset+font*1.25:halfLine+5+font*.8;
-   const y=Math.max(halfLine+avatarSpace+2,height-percentOffset-font*.3-6),thickness=Math.max(14,r*1.3);
+   const y=Math.max(halfLine+avatarSpace+2,height-percentOffset-font*.35-6),thickness=Math.max(14,r*1.3);
    this.row.style.setProperty('--goal-bar-sync-offset',(y-height+20)+'px');this.svg.dataset.barY=String(y);this.svg.dataset.markerRadius=String(r);this.svg.dataset.labelLeft=String(labelLeft);this.svg.dataset.labelRight=String(labelRight);this.svg.dataset.visibleTop=String(y-halfLine-avatarSpace-1);this.svg.dataset.visibleBottom=String(y+percentOffset+font*.35+4);
    const appearance=getComputedStyle(this.row.closest('.app')||this.row),color=key=>appearance.getPropertyValue(key).trim(),trip=color('--timer-trip-color')||'#0053e2',overtime=color('--timer-overtime-color')||'#ff5c5c';
    const phase=data.all_failed||data.phase==='overtime'?overtime:data.phase==='b-game'?color('--timer-tolerance-color')||'#2e7d32':trip,segment=data.down?color('--timer-down-color')||'#5f6772':phase;
