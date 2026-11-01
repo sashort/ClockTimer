@@ -9592,6 +9592,8 @@
                 breakOnly
             };
 
+            const previousCreationDate = this.#getJSONCreationDate();
+
             this.#preserveInsertedOnClear =
                 true;
 
@@ -9648,6 +9650,27 @@
 
             this.#startedAtEpoch =
                 Date.now();
+
+            // Absolute interval dates survive a new trip; cached timeline
+            // offsets must move with them when its midnight anchor changes.
+            const creationDate = this.#getJSONCreationDate();
+            const anchorShift = previousCreationDate && creationDate
+                ? previousCreationDate.getTime() - creationDate.getTime() : 0;
+            if (anchorShift) {
+                for (const record of this.#insertedRanges) {
+                    for (const key of Object.keys(record)) {
+                        if (/^clockTimer.*Timeline$/.test(key) && Number.isFinite(record[key])) {
+                            record[key] += anchorShift;
+                        }
+                    }
+                    for (const snapshot of record.preservedAttributes || []) {
+                        for (const key of ['start', 'end']) {
+                            if (Number.isFinite(snapshot[key])) snapshot[key] += anchorShift;
+                        }
+                    }
+                }
+                if (Number.isFinite(this.#openEndedLastTick)) this.#openEndedLastTick += anchorShift;
+            }
 
             if (
                 scheduledStart ===
