@@ -97,11 +97,19 @@ const out = path.resolve(__dirname,'../../outputs/halloween-implemented'); fs.mk
         await op(()=>WMOFActions.openTripLog('pointer'));await p.waitForSelector('.trip-log-trip',{state:'attached'});
         await p.locator('.trip-log-trip.is-break-only').evaluate(e=>{for(let parent=e;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;});
         await p.locator('.trip-log-trip.is-break-only').waitFor({state:'visible'});
-        const breakContrast=await p.locator('.trip-log-trip.is-break-only').evaluate(e=>{
-            const luminance=color=>{const rgb=color.match(/[\d.]+/g).slice(0,3).map(Number).map(n=>{n/=255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
+        // Active-trip ticks can replace rows between resolving a Locator and
+        // evaluating its old element. Query and measure one current DOM snapshot.
+        const contrastHandle=await p.waitForFunction(()=>{
+            const e=document.querySelector('.trip-log-trip.is-break-only'),badgeElement=e?.querySelector('.trip-log-break-only-badge');
+            if(!e?.isConnected||!badgeElement)return false;
+            const row=getComputedStyle(e),badge=getComputedStyle(badgeElement),colors=[row.color,row.backgroundColor,badge.color,badge.backgroundColor];
+            if(!colors.every(color=>color&&CSS.supports('color',color)))return false;
+            const canvas=document.createElement('canvas');canvas.width=canvas.height=1;const context=canvas.getContext('2d',{willReadFrequently:true});
+            const luminance=color=>{context.clearRect(0,0,1,1);context.fillStyle=color;context.fillRect(0,0,1,1);const rgb=[...context.getImageData(0,0,1,1).data].slice(0,3).map(n=>{n/=255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};
             const ratio=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
-            const row=getComputedStyle(e),badge=getComputedStyle(e.querySelector('.trip-log-break-only-badge'));return{row:ratio(row.color,row.backgroundColor),badge:ratio(badge.color,badge.backgroundColor)};
-        });assert(breakContrast.row>=4.5&&breakContrast.badge>=4.5,'standalone-break row and badge contrast: '+JSON.stringify(breakContrast));
+            return{row:ratio(colors[0],colors[1]),badge:ratio(colors[2],colors[3])};
+        });const breakContrast=await contrastHandle.jsonValue();await contrastHandle.dispose();
+        assert(breakContrast.row>=4.5&&breakContrast.badge>=4.5,'standalone-break row and badge contrast: '+JSON.stringify(breakContrast));
         await p.locator('.trip-log-trip').first().evaluate(e=>{for(let a=e;a;a=a.parentElement)if(a.tagName==='DETAILS')a.open=true;});
         await shot('trip-log');
         await p.route('**/api/trip-editor/**',r=>r.fulfill({json:{revision:'theme-test',events:trips[0].events}}));
