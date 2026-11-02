@@ -183,7 +183,6 @@ jobs:
           node tests/app-state-transactions.mjs --summary-dialog --voice-feedback
           node tests/trip-replay-identity.mjs
           node tests/dst-timeline.mjs
-          node tests/invalid-trip-recovery-browser.cjs
           node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs
           node tests/spoken-duration.mjs
@@ -230,6 +229,7 @@ jobs:
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
+      - run: node tests/invalid-trip-recovery-browser.cjs
       - run: node tests/retained-page-operation-browser.cjs
       - run: node tests/trip-time-bank-browser.cjs
       - run: node tests/overtime-break-browser.cjs
