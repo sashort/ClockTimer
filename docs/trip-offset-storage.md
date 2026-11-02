@@ -47,3 +47,9 @@ canonical anchor/offset representation. Untouched instants survive scheduled-sta
 edits across UTC midnight. Offline edits rebase their queued offsets too. Editor
 clock labels use civil date/hour fields rather than elapsed hours since midnight;
 a 23- or 25-hour DST day must not shift the clock shown to the user.
+
+Older local completed-trip queues derive their own scheduled-start anchor from
+their saved start event before upload. They retain their original event instants,
+client tokens, account ownership and retry checkpoints; they never borrow the
+current timer's anchor. Old cached clients must reload before creating new trips
+against the upgraded schema.

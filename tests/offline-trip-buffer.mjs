@@ -20,7 +20,7 @@ window.fetch=async(url,options={})=>{
     requests.push({path,options,body});
     let data={};
     if(path.endsWith('/command-check/'))data={accepted:true};
-    else if(path.endsWith('/users/'))data={csrfToken:'a'.repeat(64),user:{id:userId,username:'test'}};
+    else if(path.endsWith('/users/'))data={csrfToken:'a'.repeat(64),user:{id:userId,username:'test'},tripStorageVersion:2};
     else if(path.endsWith('/trips/')&&options.method==='POST'){
         const id=tokens.get(body.clientToken)||nextTripId++;
         tokens.set(body.clientToken,id);
@@ -98,6 +98,10 @@ assert.equal((await storage.getItem(storageKey)).length,2);
 assert.equal((await storage.getItem(storageKey))[1].deleted,true);
 console.log('PASS deleting an offline trip keeps a hidden tombstone transaction');
 
+// Simulate the pre-offset local queue before reconnecting to the new API.
+const legacyQueue=await storage.getItem(storageKey);
+for(const trip of legacyQueue){delete trip.payload.scheduledStartTime;for(const event of trip.events){delete event.scheduledStartTime;if(event.event==='trip.started'){delete event.value.timelineVersion;for(const key of Object.keys(event.value))if(key.endsWith('OffsetMilliseconds'))delete event.value[key];}}}
+await storage.setItem(storageKey,legacyQueue);
 c.remove();c=clock();
 assert.equal(c.status,'ready');
 await storage.flush();
@@ -126,6 +130,7 @@ await c.connect('test','test');
 assert.equal(events.size,6);
 assert.equal(trips.size,1);
 assert.equal(requests.filter(r=>r.options.method==='DELETE').length,0);
+assert(requests.filter(r=>r.path.endsWith('/trip-events/')&&r.options.method==='POST').every(r=>Number.isSafeInteger(r.body.offsetMilliseconds)&&!('timestamp' in r.body)),'legacy queues upgrade to exact canonical transport');
 console.log('PASS reconnect after interrupted completion uploads both trips once with original timing and no DELETE');
 
 // A new active trip must not acquire any events from the completed queue.
