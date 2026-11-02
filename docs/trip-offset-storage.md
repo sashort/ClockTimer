@@ -44,9 +44,9 @@ transport, failed restoration, immutable records, audited rebasing and rollback.
 
 Trip Log settings transport exact edited instants, then normalize them to the
 canonical anchor/offset representation. Untouched instants survive scheduled-start
-edits across UTC midnight. Offline edits rebase their queued offsets too. Editor
-clock labels use civil date/hour fields rather than elapsed hours since midnight;
-a 23- or 25-hour DST day must not shift the clock shown to the user.
+edits across UTC midnight. Offline edits rebase their queued offsets too. Absolute-time
+editors pass the full saved instant to Numberpad, which derives its local clock
+and date directly; 23- and 25-hour days must not shift the displayed time.
 
 Older local completed-trip queues derive their own scheduled-start anchor from
 their saved start event before upload. They retain their original event instants,
