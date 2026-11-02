@@ -3328,6 +3328,11 @@
                 body.offsetMilliseconds=offset(body.timestamp);delete body.timestamp;
                 const v=body.value={...(body.value||{})};
                 if(body.event==='trip.started') {
+                    if(!Number.isSafeInteger(v.creationOffsetMilliseconds)){
+                        const midnight=v.creationAnchor?this.#parseTripEventTimestamp(v.creationAnchor).getTime():NaN,creation=TemporalFormat.parseDuration(v.creationTime);
+                        if(!Number.isFinite(midnight)||!Number.isFinite(creation))throw new Error('The saved offline trip has no creation-time anchor.');
+                        v.creationOffsetMilliseconds=midnight+creation-epoch;
+                    }
                     v.startOffsetMilliseconds=body.offsetMilliseconds;v.scheduledStartOffsetMilliseconds??=0;v.timelineVersion=2;
                     delete v.creationAnchor;delete v.creationTime;delete v.startTime;delete v.scheduledStart;delete v.scheduledStartTime;
                 }
@@ -3898,6 +3903,15 @@
                 this.#completedTripQueue = this.#completedTripQueue.map(item => item === originalTrip ? trip : item);
                 if (trip.userId !== undefined && trip.userId !== this.#syncUserId) continue;
                 trip.userId = this.#syncUserId;
+                if(!trip.payload.scheduledStartTime){
+                    // Upgrade older local queues without changing any recorded
+                    // instants or asking the current timer for another trip's anchor.
+                    const start=trip.events.find(e=>e.event==='trip.started'),v=start?.value;
+                    const midnight=v?.creationAnchor?this.#parseTripEventTimestamp(v.creationAnchor).getTime():NaN,scheduled=TemporalFormat.parseDuration(v?.scheduledStart);
+                    if(!Number.isFinite(midnight)||!Number.isFinite(scheduled))throw new Error('The saved offline trip has no scheduled-start anchor.');
+                    trip.payload.scheduledStartTime=new Date(midnight+scheduled).toISOString();
+                    if(!/^\d{4}-\d\d-\d\d[T ]/.test(trip.payload.startTime||''))trip.payload.startTime=start.timestamp;
+                }
                 if (!(await this.#saveCompletedTrips())) throw new Error("The offline trip checkpoint could not be saved.");
                 if (!Number.isInteger(trip.tripId)) {
                     const data = await this.#apiRequest("trips", {
