@@ -35,6 +35,10 @@ function trip_storage_production(array $values,array $current=[]): string {
     return !empty($values['non_production']??$current['non_production']??false)?'no':'yes';
 }
 function trip_storage_command(PDO $pdo,string $endpoint,array $input): array {
+    if(trip_storage_uses_offsets($pdo)&&$endpoint==='trips'&&
+        (isset($input['action'])||isset($input['startTime'])||isset($input['endTime'])||array_key_exists('standardTimeMilliseconds',$input))&&
+        ($input['timelineVersion']??null)!==2)
+        throw new InvalidArgumentException('Reload Order Filler to use the current trip timeline format.');
     if(isset($input['production'])) {$p=trip_storage_production($input);$input['breakOnly']=$p==='break-only';$input['nonProduction']=$p==='no';}
     $anchor=$input['scheduledStartTime']??null;
     if(is_string($anchor)) {
