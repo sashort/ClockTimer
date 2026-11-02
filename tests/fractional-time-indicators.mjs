@@ -35,7 +35,7 @@ try{
  for(const [worked,remaining,elapsed] of [[10250,'0:01:49⁺','0:00:11⁻'],[125250,'-0:00:05⁻','0:02:06⁻'],[10000,'0:01:50','0:00:10']]){
   const c=await make(epoch+(worked===10000?0:250),worked);
   const activeEnd=read(c,'calculated-end');assert.equal(/[⁺⁻]$/.test(activeEnd),worked!==10000,'End Time shows a fraction during active running');if(worked!==10000)assert(activeEnd.endsWith('⁺'),'floored clock time requires adding its omitted fraction');
-  await c.startInterval('break',60000);assert.equal(read(c,'remaining'),remaining);if(c.getUIState().goal_bar.next_goal)assert.equal(c.getUIState().goal_bar.next_goal.clock,remaining,'frozen countdown and main readout use the same fractional correction');assert.equal(read(c,'elapsed'),elapsed);assert.equal(read(c,'calculated-end'),activeEnd,'End Time marker is not break-dependent');await c.endInterval();
+  await c.startInterval('break',60000);assert.equal(read(c,'remaining'),remaining);if(c.getUIState().goal_bar.next_goal)assert.equal(c.getUIState().goal_bar.next_goal.clock,remaining,'frozen countdown and main readout use the same fractional correction');assert.equal(read(c,'elapsed'),elapsed);assert.equal(/[⁺⁻]$/.test(read(c,'calculated-end')),worked!==10000,'recalculated break End Time retains the exact fractional correction policy');await c.endInterval();
   await c.startInterval('down');const downEnd=read(c,'calculated-end');assert.equal(/[⁺⁻]$/.test(downEnd),worked!==10000,'Down also retains the End Time fraction marker');if(worked!==10000)assert(downEnd.endsWith('⁺'));
  }
  for(const worked of [0,1000,10250,11000,119000,119999,120000]){

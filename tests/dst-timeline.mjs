@@ -31,5 +31,6 @@ try{
  const transport=writes.filter(x=>new URL(x.url,'https://clock.example/').pathname.endsWith('/trip-events/')).map(x=>x.body);
  assert(transport.length>0);assert(transport.every(x=>Number.isSafeInteger(x.offsetMilliseconds)&&!('timestamp' in x)),'canonical event writes use signed offsets rather than independent datetimes');
  assert(transport.filter(x=>x.event==='trip.started').every(x=>!('creationAnchor' in x.value)&&!('startTime' in x.value)),'new start payloads do not duplicate absolute clocks');
+ replayEvents[0].value.startOffsetMilliseconds='invalid';await assert.rejects(legacy.loadTrip(99),/invalid millisecond offsets/);
  console.log('PASS exact DST start instants, fall/spring elapsed time and deadlines, repeated-hour reload, Down and legacy lunch recovery');
 }finally{for(const c of timers)c.remove();await w.happyDOM.close();}
