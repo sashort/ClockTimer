@@ -3742,6 +3742,25 @@
           "meaning": "Halloween palette, pumpkin clock, skeleton avatar and coordinated keypad sounds."
         }
       ]
+    },
+    {
+      "id": "tripRecovery",
+      "source": {
+        "file": "ClockTimer.js",
+        "owner": "get tripRecovery"
+      },
+      "values": [
+        {
+          "id": "TRIP-RECOVERY-NONE",
+          "value": "none",
+          "meaning": "No unresolved saved trip prevents starting another trip."
+        },
+        {
+          "id": "TRIP-RECOVERY-REQUIRED",
+          "value": "required",
+          "meaning": "Authentication remains usable, saved records are retained, and new trips are blocked pending repair or confirmed removal."
+        }
+      ]
     }
   ],
   "surfaces": [
@@ -4148,6 +4167,20 @@
       "stateIdPrefix": "SURFACE-GOAL-LIMIT-DIALOG",
       "kind": "dialog",
       "notes": "Speech-passive informational notice; does not acquire command focus or block later commands."
+    },
+    {
+      "id": "tripRecoveryDialog",
+      "selector": ".trip-recovery-dialog",
+      "source": "app.js",
+      "owner": "tripRecoveryRequired",
+      "kind": "dynamic",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-TRIP-RECOVERY"
     }
   ],
   "constraints": [
