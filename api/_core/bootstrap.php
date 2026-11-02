@@ -19,6 +19,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 require_once __DIR__ . '/database.php';
+require_once __DIR__ . '/trip_storage.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/permissions.php';
 require_once __DIR__ . '/access_tokens.php';

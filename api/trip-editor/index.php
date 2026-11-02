@@ -25,16 +25,19 @@ try {
         }
         $input['_actorId']=authenticated_user_id();
         $events=trip_edit_apply($existing,$input);$plan=trip_edit_persistence_plan($existing,$events);$ids=$plan['keep'];
+        if (($input['operation']??'')==='settings' && trip_storage_uses_offsets($pdo)) {
+            $settings=trip_edit_settings($events);
+            trip_storage_update($pdo,$tripId,['scheduled_start_time'=>trip_edit_clock_iso($settings['creationAnchor'],$settings['scheduledStart'])]);
+        }
         if($plan['delete'])$pdo->prepare('DELETE FROM trip_events WHERE trip_id=? AND id IN ('.implode(',',array_fill(0,count($plan['delete']),'?')).')')->execute([$tripId,...$plan['delete']]);
         foreach($plan['insert'] as $e) {
             $value=json_encode($e['value'],JSON_THROW_ON_ERROR);
             $typeId=str_starts_with($e['event'],'trip.official-percent-')?trip_official_event_type_id($pdo,$e['event']):require_trip_event_type_id($pdo,$e['event']);
-            $pdo->prepare('INSERT INTO trip_events (trip_id,event_type_id,timestamp,value) VALUES (:trip,:type,:time,:value)')->execute([':trip'=>$tripId,':type'=>$typeId,':time'=>$e['timestamp'],':value'=>$value]);
+            trip_storage_insert_event($pdo,['trip_id'=>$tripId,'event_type_id'=>$typeId,'timestamp'=>$e['timestamp'],'value'=>$value],$e['event'],true);
             $ids[]=(int)$pdo->lastInsertId();
         }
         $a=trip_edit_aggregate($events);
-        $pdo->prepare('UPDATE trips SET start_time=:start,end_time=:end,standard_time_ms=:standard,counted_time_ms=:counted,non_production=:non WHERE id=:id')->execute([
-            ':start'=>$a['startTime'],':end'=>$a['endTime'],':standard'=>$a['standard'],':counted'=>$a['counted'],':non'=>$a['nonProduction'],':id'=>$tripId]);
+        trip_storage_update($pdo,$tripId,['start_time'=>$a['startTime'],'end_time'=>$a['endTime'],'standard_time_ms'=>$a['standard'],'counted_time_ms'=>$a['counted'],'non_production'=>$a['nonProduction']]);
         $saved=fetch_trip_events($pdo,$tripId,'log');
         return ['tripId'=>$tripId,'events'=>$saved,'revision'=>trip_edit_revision($saved),'settings'=>trip_edit_settings($saved)];
     });

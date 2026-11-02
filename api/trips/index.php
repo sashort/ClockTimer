@@ -23,7 +23,7 @@ if ($method === 'GET') {
 
     if ($result === 'active') {
         $statement = db()->prepare(
-            'SELECT t.id FROM trips t '
+            'SELECT t.id FROM ' . trip_storage_read_table(db()) . ' t '
             . 'WHERE t.user_id = :user_id '
             . 'AND EXISTS ('
             . 'SELECT 1 FROM trip_events started '
@@ -159,7 +159,7 @@ if ($method === 'GET') {
             'SELECT COUNT(*) AS trip_count, '
             . 'COALESCE(SUM(standard_time_ms), 0) AS standard_time_ms, '
             . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, start_time, end_time)), 0) AS actual_time_us '
-            . 'FROM trips '
+            . 'FROM ' . trip_storage_read_table(db()) . ' '
             . 'WHERE user_id = :production_user_id '
             . 'AND start_time >= :production_min_date_time '
             . 'AND start_time <= :production_max_date_time '
@@ -212,7 +212,7 @@ if ($method === 'GET') {
 
     if ($result === 'count') {
         $statement = db()->prepare(
-            'SELECT COUNT(*) AS trip_count FROM trips t WHERE ' . $where
+            'SELECT COUNT(*) AS trip_count FROM ' . trip_storage_read_table(db()) . ' t WHERE ' . $where
         );
         $statement->execute($parameters);
         $row = $statement->fetch();
@@ -257,7 +257,7 @@ if ($method === 'GET') {
             'SELECT t.id, t.user_id, t.start_time, t.end_time, '
             . 't.standard_time_ms, t.counted_time_ms, t.non_production, t.break_only, t.created_at, '
             . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
-            . 'FROM trips t WHERE ' . $where . ' '
+            . 'FROM ' . trip_storage_read_table(db()) . ' t WHERE ' . $where . ' '
             . 'ORDER BY t.start_time DESC, t.id DESC '
             . 'LIMIT ' . $limit . ' OFFSET ' . $offset
         );
@@ -325,7 +325,7 @@ if ($method === 'GET') {
         . 'COALESCE(SUM(t.standard_time_ms), 0) AS standard_time_ms, '
         . 'COALESCE(SUM(t.counted_time_ms), 0) AS counted_time_ms, '
         . 'COALESCE(SUM(TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time)), 0) AS actual_time_us '
-        . 'FROM trips t WHERE ' . $where . ' AND t.break_only = 0'
+        . 'FROM ' . trip_storage_read_table(db()) . ' t WHERE ' . $where . ' AND t.break_only = 0'
     );
     $statement->execute($parameters);
     $row = $statement->fetch();
@@ -335,7 +335,7 @@ if ($method === 'GET') {
     $breakdownStatement = db()->prepare(
         'SELECT t.id, t.start_time, t.end_time, t.break_only, t.standard_time_ms, t.counted_time_ms, t.non_production, '
         . 'TIMESTAMPDIFF(MICROSECOND, t.start_time, t.end_time) AS actual_time_us '
-        . 'FROM trips t WHERE ' . $aggregateBaseWhere . ' '
+        . 'FROM ' . trip_storage_read_table(db()) . ' t WHERE ' . $aggregateBaseWhere . ' '
         . 'ORDER BY t.start_time ASC, t.id ASC'
     );
     $breakdownStatement->execute($aggregateBaseParameters);
@@ -488,7 +488,14 @@ if ($method === 'GET') {
     ]);
 }
 
-$input = json_input();
+try { $input = trip_storage_command(db(),'trips',json_input()); }
+catch(InvalidArgumentException $e){api_error($e->getMessage(),422,'invalid_argument');}
+$scheduledStartTime = isset($input['scheduledStartTime']) ? normalize_datetime(require_string($input,'scheduledStartTime'),'scheduledStartTime') : null;
+if (isset($input['production'])) {
+    $production = trip_storage_production($input);
+    $input['breakOnly'] = $production === 'break-only';
+    $input['nonProduction'] = $production === 'no';
+}
 require_csrf();
 
 $requireNonNegativeMilliseconds = static function (array $source, string $name): int {
@@ -543,9 +550,9 @@ if ($method === 'POST') {
             ->format('Y-m-d H:i:s.v');
 
         $tripId = audited_write(
-            static function (PDO $pdo) use ($startTime, $endTime, $clientToken): int {
+            static function (PDO $pdo) use ($scheduledStartTime, $startTime, $endTime, $clientToken): int {
                 $existing = $pdo->prepare(
-                    'SELECT id FROM trips WHERE user_id = :user_id AND client_token = :client_token LIMIT 1'
+                    'SELECT id FROM ' . trip_storage_read_table(db()) . ' WHERE user_id = :user_id AND client_token = :client_token LIMIT 1'
                 );
                 $existing->execute([
                     ':user_id' => authenticated_user_id(),
@@ -569,32 +576,32 @@ if ($method === 'POST') {
                         ':id' => $reclaimedId,
                     ]);
 
-                    $statement = $pdo->prepare(
-                        'INSERT INTO trips '
-                        . '(id, user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, pending, client_token) '
-                        . 'VALUES (:id, :user_id, :start_time, :end_time, 1, 0, 0, 1, :client_token)'
-                    );
-                    $statement->execute([
-                        ':id' => $reclaimedId,
-                        ':user_id' => authenticated_user_id(),
-                        ':start_time' => $startTime,
-                        ':end_time' => $endTime,
-                        ':client_token' => $clientToken,
+                    trip_storage_insert($pdo, [
+                        'id' => $reclaimedId,
+                        'user_id' => authenticated_user_id(),
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
+                        'standard_time_ms' => 1,
+                        'counted_time_ms' => 0,
+                        'non_production' => 0,
+                        'pending' => 1,
+                        'client_token' => $clientToken,
+                        ...($scheduledStartTime !== null ? ['scheduled_start_time'=>$scheduledStartTime] : []),
                     ]);
 
                     return $reclaimedId;
                 }
 
-                $statement = $pdo->prepare(
-                    'INSERT INTO trips '
-                    . '(user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, pending, client_token) '
-                    . 'VALUES (:user_id, :start_time, :end_time, 1, 0, 0, 1, :client_token)'
-                );
-                $statement->execute([
-                    ':user_id' => authenticated_user_id(),
-                    ':start_time' => $startTime,
-                    ':end_time' => $endTime,
-                    ':client_token' => $clientToken,
+                trip_storage_insert($pdo, [
+                    'user_id' => authenticated_user_id(),
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'standard_time_ms' => 1,
+                    'counted_time_ms' => 0,
+                    'non_production' => 0,
+                    'pending' => 1,
+                    'client_token' => $clientToken,
+                    ...($scheduledStartTime !== null ? ['scheduled_start_time'=>$scheduledStartTime] : []),
                 ]);
                 return (int) $pdo->lastInsertId();
             }
@@ -623,10 +630,10 @@ if ($method === 'POST') {
     }
 
     $tripId = audited_write(
-        static function (PDO $pdo) use ($startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $breakOnlyValue, $clientToken): int {
+        static function (PDO $pdo) use ($scheduledStartTime, $startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $breakOnlyValue, $clientToken): int {
             if ($clientToken !== null) {
                 $existing = $pdo->prepare(
-                    'SELECT id FROM trips WHERE user_id = :user_id AND client_token = :client_token LIMIT 1 FOR UPDATE'
+                    'SELECT id FROM ' . trip_storage_read_table(db()) . ' WHERE user_id = :user_id AND client_token = :client_token LIMIT 1 FOR UPDATE'
                 );
                 $existing->execute([
                     ':user_id' => authenticated_user_id(),
@@ -634,39 +641,31 @@ if ($method === 'POST') {
                 ]);
                 $existingId = (int) ($existing->fetchColumn() ?: 0);
                 if ($existingId > 0) {
-                    $update = $pdo->prepare(
-                        'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
-                        . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, break_only = :break_only, pending = 0 '
-                        . 'WHERE id = :trip_id AND user_id = :user_id'
-                    );
-                    $update->execute([
-                        ':start_time' => $startTime,
-                        ':end_time' => $endTime,
-                        ':standard_time_ms' => $standardTimeMilliseconds,
-                        ':counted_time_ms' => $countedTimeMilliseconds,
-                        ':non_production' => $nonProductionValue,
-                        ':break_only' => $breakOnlyValue,
-                        ':trip_id' => $existingId,
-                        ':user_id' => authenticated_user_id(),
-                    ]);
+                    trip_storage_update($pdo, $existingId, [
+                        'start_time' => $startTime,
+                        'end_time' => $endTime,
+                        'standard_time_ms' => $standardTimeMilliseconds,
+                        'counted_time_ms' => $countedTimeMilliseconds,
+                        'non_production' => $nonProductionValue,
+                        'break_only' => $breakOnlyValue,
+                        'pending' => 0,
+                        ...($scheduledStartTime !== null ? ['scheduled_start_time'=>$scheduledStartTime] : []),
+                    ], authenticated_user_id());
                     return $existingId;
                 }
             }
 
-            $statement = $pdo->prepare(
-                'INSERT INTO trips '
-                . '(user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, break_only, pending, client_token) '
-                . 'VALUES (:user_id, :start_time, :end_time, :standard_time_ms, :counted_time_ms, :non_production, :break_only, 0, :client_token)'
-            );
-            $statement->execute([
-                ':user_id' => authenticated_user_id(),
-                ':start_time' => $startTime,
-                ':end_time' => $endTime,
-                ':standard_time_ms' => $standardTimeMilliseconds,
-                ':counted_time_ms' => $countedTimeMilliseconds,
-                ':non_production' => $nonProductionValue,
-                ':break_only' => $breakOnlyValue,
-                ':client_token' => $clientToken,
+            trip_storage_insert($pdo, [
+                'user_id' => authenticated_user_id(),
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'standard_time_ms' => $standardTimeMilliseconds,
+                'counted_time_ms' => $countedTimeMilliseconds,
+                'non_production' => $nonProductionValue,
+                'break_only' => $breakOnlyValue,
+                'pending' => 0,
+                'client_token' => $clientToken,
+                ...($scheduledStartTime !== null ? ['scheduled_start_time'=>$scheduledStartTime] : []),
             ]);
             return (int) $pdo->lastInsertId();
         }
@@ -683,9 +682,9 @@ if ($method === 'DELETE' && !array_key_exists('tripId', $input)) {
 
     $ensureTripIdReclaimTable();
 
-    $reclaimedTripId = audited_write(static function (PDO $pdo) use ($clientToken): ?int {
+    $reclaimedTripId = audited_write(static function (PDO $pdo) use ($scheduledStartTime, $clientToken): ?int {
         $find = $pdo->prepare(
-            'SELECT id FROM trips '
+            'SELECT id FROM ' . trip_storage_read_table(db()) . ' '
             . 'WHERE user_id = :user_id AND client_token = :client_token AND pending = 1 '
             . 'LIMIT 1 FOR UPDATE'
         );
@@ -732,8 +731,8 @@ $tripId = require_positive_int($input, 'tripId');
 if ($method === 'DELETE') {
     $ensureTripIdReclaimTable();
 
-    $reclaimedTripId = audited_write(static function (PDO $pdo) use ($tripId): ?int {
-        $pdo->prepare('SELECT id FROM trips WHERE id=:id FOR UPDATE')->execute([':id'=>$tripId]);
+    $reclaimedTripId = audited_write(static function (PDO $pdo) use ($scheduledStartTime, $tripId): ?int {
+        $pdo->prepare('SELECT id FROM ' . trip_storage_read_table(db()) . ' WHERE id=:id FOR UPDATE')->execute([':id'=>$tripId]);
         $trip = require_trip_owner($pdo, $tripId);
         $pending = ((int) ($trip['pending'] ?? 0)) === 1;
 
@@ -791,25 +790,20 @@ if ($action === 'start') {
     }
 
     audited_write(
-        static function (PDO $pdo) use ($tripId, $startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $breakOnlyValue): void {
+        static function (PDO $pdo) use ($scheduledStartTime, $tripId, $startTime, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $nonProductionValue, $breakOnlyValue): void {
             require_trip_owner($pdo, $tripId);
-            $pdo->prepare('SELECT id FROM trips WHERE id=:id FOR UPDATE')->execute([':id'=>$tripId]);
+            $pdo->prepare('SELECT id FROM ' . trip_storage_read_table(db()) . ' WHERE id=:id FOR UPDATE')->execute([':id'=>$tripId]);
             if(trip_official_has_history(fetch_trip_events($pdo,$tripId,'log')))api_error('A reconciled completed trip cannot be restarted.',422,'protected_official_adjustment');
-            $statement = $pdo->prepare(
-                'UPDATE trips SET start_time = :start_time, end_time = :end_time, '
-                . 'standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms, non_production = :non_production, break_only = :break_only, pending = 0 '
-                . 'WHERE id = :trip_id AND user_id = :user_id'
-            );
-            $statement->execute([
-                ':start_time' => $startTime,
-                ':end_time' => $endTime,
-                ':standard_time_ms' => $standardTimeMilliseconds,
-                ':counted_time_ms' => $countedTimeMilliseconds,
-                ':non_production' => $nonProductionValue,
-                ':break_only' => $breakOnlyValue,
-                ':trip_id' => $tripId,
-                ':user_id' => authenticated_user_id(),
-            ]);
+            trip_storage_update($pdo, $tripId, [
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'standard_time_ms' => $standardTimeMilliseconds,
+                'counted_time_ms' => $countedTimeMilliseconds,
+                'non_production' => $nonProductionValue,
+                'break_only' => $breakOnlyValue,
+                'pending' => 0,
+                ...($scheduledStartTime !== null ? ['scheduled_start_time'=>$scheduledStartTime] : []),
+            ], authenticated_user_id());
         }
     );
 
@@ -825,7 +819,7 @@ if ($action === 'stop') {
     $countedTimeMilliseconds = $breakOnly ? 0 : $requireNonNegativeMilliseconds($input, 'countedTimeMilliseconds');
 
     audited_write(
-        static function (PDO $pdo) use ($tripId, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $breakOnly): void {
+        static function (PDO $pdo) use ($scheduledStartTime, $tripId, $endTime, $standardTimeMilliseconds, $countedTimeMilliseconds, $breakOnly): void {
             $trip = require_trip_owner($pdo, $tripId);
             if (((int) $trip['break_only'] === 1) !== $breakOnly) api_error('Session kind cannot change when stopping.', 422, 'invalid_argument');
 
@@ -833,17 +827,12 @@ if ($action === 'stop') {
                 api_error('endTime must be later than the trip start.', 422, 'invalid_argument');
             }
 
-            $statement = $pdo->prepare(
-                'UPDATE trips SET end_time = :end_time, standard_time_ms = :standard_time_ms, counted_time_ms = :counted_time_ms '
-                . 'WHERE id = :trip_id AND user_id = :user_id'
-            );
-            $statement->execute([
-                ':end_time' => $endTime,
-                ':standard_time_ms' => $standardTimeMilliseconds,
-                ':counted_time_ms' => $countedTimeMilliseconds,
-                ':trip_id' => $tripId,
-                ':user_id' => authenticated_user_id(),
-            ]);
+            trip_storage_update($pdo, $tripId, [
+                'end_time' => $endTime,
+                'standard_time_ms' => $standardTimeMilliseconds,
+                'counted_time_ms' => $countedTimeMilliseconds,
+                ...($scheduledStartTime !== null ? ['scheduled_start_time'=>$scheduledStartTime] : []),
+            ], authenticated_user_id());
         }
     );
 

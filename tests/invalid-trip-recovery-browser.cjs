@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict');
+const fixture=require('./order-filler-master-fixture.cjs');
+(async()=>{const f=await fixture();try{
+ const p=f.page;let assigned=true;
+ await p.route(/\/api\/trips\/\?.*result=active/,route=>route.fulfill({json:{activeTripId:assigned?77:null}}));
+ await p.route('**/api/trip-events/**',route=>route.fulfill({json:{tripId:77,events:[{id:1,event:'trip.started',timestamp:'2026-11-01T10:00:00Z',value:null}]}}));
+ await p.evaluate(()=>clockTimer.connect('test','test'));
+ await p.evaluate(()=>clockTimer.restoreActiveTrip());
+ await p.waitForFunction(()=>document.querySelector('.trip-recovery-dialog')?.open);
+ assert.equal(await p.evaluate(()=>clockTimer.networkStatus),'online');
+ assert.equal(await p.evaluate(()=>clockTimer.tripRecovery.tripId),77);
+ assert.equal(await p.evaluate(()=>clockTimer.exportTripRecovery().data.events[0].value),null);
+ assert.equal(await p.locator('#newTripButton').isDisabled(),true);
+ assigned=false;
+ await p.locator('.trip-recovery-dialog button').filter({hasText:/^Retry$/}).click();
+ await p.waitForFunction(()=>!clockTimer.tripRecovery&&!document.querySelector('.trip-recovery-dialog'));
+ assert.equal(await p.locator('#newTripButton').isDisabled(),false);
+ assert.deepEqual(f.errors,[]);
+ console.log('PASS invalid saved trip leaves login usable, preserves raw data, blocks replacement and recovers after assignment removal');
+}finally{await f.close();}})().catch(error=>{console.error(error);process.exit(1);});

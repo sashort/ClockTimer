@@ -6246,6 +6246,7 @@
             request:async (id,change)=>{
                 const result=await clockTimer.tripEditorRequest(id,change);
                 if(change){
+                    if(String(clockTimer.tripRecovery?.tripId)===String(id)) await clockTimer.restoreActiveTrip();
                     if (
                         endTimeGoalOverride &&
                         String(id) === String(clockTimer.currentTripId)
@@ -17357,11 +17358,11 @@
         $("#loginVoiceSwitch").disabled=!actions.loginSwitch || state.login.voiceRequested;
         for(const id of ["loginLegacyUsername","loginLegacyPassword"])$("#"+id).disabled=!actions.loginPassword;
         for(const input of loginDialog.querySelectorAll('[data-login-digit]'))input.disabled=!actions.loginDigits || input.dataset.loginDigit!==state.login.stage;
-        setInteractionDisabled(newTripButton, controls.busy || !actions.startTrip);
+        setInteractionDisabled(newTripButton, controls.busy || Boolean(clockTimer.tripRecovery) || !actions.startTrip);
         activeTripControls.hidden = !controls.activeTripVisible;
         const idleBreak = $("#idleBreakButton");
         idleBreak.hidden = controls.activeTripVisible;
-        setInteractionDisabled(idleBreak, controls.busy || !actions.openBreakSelector);
+        setInteractionDisabled(idleBreak, controls.busy || Boolean(clockTimer.tripRecovery) || !actions.openBreakSelector);
         const breakDown = $("#breakDownButton");
         const endRow = $("#breakEndRow");
         const entering = controls.breakDownVisible && endRow.dataset.downAvailable !== "true";
@@ -17374,7 +17375,7 @@
         }
         tripActionRow.hidden = !controls.actionRowVisible;
         breakButton.hidden = !controls.breakVisible;
-        setInteractionDisabled(breakButton, controls.busy || !actions.openBreakSelector);
+        setInteractionDisabled(breakButton, controls.busy || Boolean(clockTimer.tripRecovery) || !actions.openBreakSelector);
         if ($("#breakTypeOK")) setInteractionDisabled($("#breakTypeOK"), controls.busy || !breakDialog.allowOk);
         downButton.hidden = !controls.downVisible;
         setInteractionDisabled(downButton, controls.busy || !actions.startDown);
@@ -17396,7 +17397,7 @@
             endTripButton.removeAttribute("aria-label");
         }
         downTripControls.hidden = !controls.downVisiblePanel;
-        setInteractionDisabled(downBreakButton, controls.busy || !actions.openBreakSelector);
+        setInteractionDisabled(downBreakButton, controls.busy || Boolean(clockTimer.tripRecovery) || !actions.openBreakSelector);
         setInteractionDisabled(downCancelButton, controls.busy || !actions.cancelDown);
         setInteractionDisabled(downResumeButton, controls.busy || !actions.resume);
         setInteractionDisabled($("#tripTransitionSummaryOk"), controls.busy || !actions.confirmSummary);
@@ -20156,6 +20157,26 @@
     });
 
     clockTimer.addEventListener("tripLoaded", () => setTripControlState(!["ready","stopped"].includes(clockTimer.status)));
+    clockTimer.addEventListener("tripRecoveryRequired", () => {
+        if (document.querySelector('.trip-recovery-dialog')?.open) return;
+        const dialog=document.createElement('dialog');dialog.className='app-dialog trip-recovery-dialog';
+        const form=document.createElement('form');form.method='dialog';
+        const heading=document.createElement('h2');heading.textContent=globalThis.WMOFLanguagePack.text("5a155b7c-c98c-545f-aed9-92a7c0ee8ba3");
+        const notice=document.createElement('p');notice.textContent=globalThis.WMOFLanguagePack.text("7cf2b4fd-ca3b-5c11-8423-8ec6594e7090");
+        const status=document.createElement('p');status.setAttribute('role','status');
+        const buttons=document.createElement('div');buttons.className='dialog-actions';
+        const add=(label,action)=>{const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',action);buttons.append(button);return button;};
+        const retry=add(globalThis.WMOFLanguagePack.text("c9107f95-ae81-5a17-91d2-ae6608165c71"),async()=>{
+            retry.disabled=true;
+            try {const result=await clockTimer.restoreActiveTrip();if(result.reason!=='invalid-trip'){dialog.close();renderClockTimerUIState(clockTimer.uiState);}else status.textContent=clockTimer.tripRecovery?.message||'';}
+            catch(error){status.textContent=error.message;}finally{retry.disabled=false;}
+        });
+        add(globalThis.WMOFLanguagePack.text("7fc38831-7493-557b-8978-6382ab36cfa3"),()=>{dialog.close();void actions.openTripLog('recovery');});
+        add(globalThis.WMOFLanguagePack.text("2a85dfa6-149e-5dab-a4fd-3bc607cee03e"),()=>{const data=clockTimer.exportTripRecovery();if(!data)return;const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`trip-${data.tripId}-recovery.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+        add(globalThis.WMOFLanguagePack.text("a27509c7-9bc2-502f-953e-56e5a011f004"),()=>dialog.close());
+        form.append(heading,notice,status,buttons);dialog.append(form);document.body.append(dialog);
+        dialog.addEventListener('close',()=>dialog.remove(),{once:true});dialog.showModal();
+    });
     clockTimer.addEventListener("activeTripRestored", event => {
         const state = event.detail?.state || clockTimer.uiState;
         if (state) renderClockTimerUIState(state);

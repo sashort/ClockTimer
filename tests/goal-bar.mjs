@@ -34,7 +34,7 @@ assert.deepEqual(Array.from(bar.nodes,n=>Number(n.percent.toFixed(6))),[100,110,
 assert.deepEqual(Array.from(bar.nodes,n=>n.time),['0:00:00','0:02:43','0:06:00','0:10:00']);
 for(const mode of ['elapsed','calculated-end','remaining']){
  c.renderedTimeMode=mode;state=c.getUIState();bar=state.goal_bar;
- const now=new window.Date('2026-09-18T16:24:00Z');const tripEnd=[now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
+ const now=new window.Date();const tripEnd=[now.getHours(),now.getMinutes(),now.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':');
  assert.equal(bar.nodes.find(n=>n.current).time,mode==='remaining'?'0:10:00':mode==='elapsed'?'0:20:00':tripEnd,'Current uses trip '+mode+' readout');
  if(mode==='elapsed')assert.equal(bar.nodes.find(n=>n.id==='standard').time,'0:30:00','Standard elapsed is trip standard, without aggregate history');
  assert(bar.nodes.every(n=>typeof n.time==='string'&&n.time.length>0),'all '+mode+' positions have a time');
@@ -68,7 +68,7 @@ for (const timeMode of ['remaining','elapsed','calculated-end']) {
   if(timeMode==='remaining')assert.equal(ui.time_component.value,600000,'main remaining is Standard minus counted time, independent of goal');
   if(timeMode==='elapsed')assert.equal(ui.time_component.value,1200000,'main elapsed excludes prior aggregate trips');
   assert.deepEqual(Array.from(projected.nodes,n=>n.id),ids,goalMode+' visible nodes');
-  for(const node of projected.nodes){const original=baseline.nodes.find(n=>n.id===node.id);assert.equal(node.percent,original.percent);if(!(timeMode==='calculated-end'&&node.current))assert.equal(node.time,original.time,'trip-based '+timeMode+' label survives scope change');}
+  for(const node of projected.nodes){const original=baseline.nodes.find(n=>n.id===node.id);assert.equal(node.percent,original.percent);assert.equal(node.time,original.time,'trip-based '+timeMode+' label survives scope change');}
  }
 }
 c.renderedTimeMode='remaining';

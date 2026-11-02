@@ -7913,6 +7913,7 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 .goal-bar-avatar .bubble text {fill:#ffc220;}
 .compact-interval-timer,#endTripButton {position:relative;}
 .break-buffer-side {position:absolute;transform:translateY(-50%);display:grid;place-items:center;pointer-events:none;line-height:1.1;font-size:18px;font-variant-numeric:tabular-nums;border:0;}
+.break-buffer-countdown {grid-area:1/1;z-index:1;transform:translateX(var(--buffer-label-offset,0px));padding:2px 5px;border-radius:5px;background:rgb(0 20 50 / 78%);color:#fff;white-space:nowrap;}
 .break-buffer-track {grid-area:1/1;display:block;width:100%;height:100%;background:rgb(0 30 96 / 22%);border:0;border-radius:3px;overflow:hidden;}
 .break-buffer-track > i {display:block;width:100%;height:100%;background:currentColor;opacity:.35;transition:transform 1s linear;}
 .break-buffer-side.left i {transform-origin:right;}
@@ -8002,27 +8003,3 @@ shared-modal-host dialog#clockTimerSettingsFrameDialog:has(iframe:not([data-sett
 shared-modal-host dialog#clockTimerSettingsFrameDialog iframe:not([data-settings-surface="graphicalSettingsDialog"]) {
     max-height:calc(var(--shared-modal-safe-height,100dvh) - 16px);
 }
-
-/* A paint-only timer outline follows the full tracks during either buffer. */
-@property --timer-attention-angle {syntax:"<angle>";inherits:false;initial-value:0deg;}
-.app {--timer-attention-fill:#052357;--timer-attention-base:#4c91e3;--timer-attention-mid:#8edcff;--timer-attention-light:#fff;--timer-attention-ink:#fff;--timer-attention-glow:rgb(142 220 255 / 24%);}
-[data-timer-attention] {position:relative;}
-[data-timer-attention] > :is(.break-action-label,.break-action-clock,output),.compact-interval-timer[data-timer-attention] > span:not(.break-buffer-side) {position:relative;z-index:2;}
-[data-timer-attention] > :is(.break-action-label,.break-action-clock) {color:var(--timer-attention-ink);}
-[data-timer-attention] > :is(.break-action-clock,output) {font-variant-numeric:tabular-nums;}
-.break-buffer-side {z-index:1;}
-.timer-attention-frame {position:absolute;display:block;pointer-events:none;z-index:0;filter:drop-shadow(0 0 5px var(--timer-attention-glow));animation:timer-attention-arrive 650ms ease-out;}
-.timer-attention-frame[hidden] {display:none;}
-.timer-attention-frame > svg {display:block;width:100%;height:100%;overflow:visible;}
-.timer-attention-surface {fill:var(--timer-attention-fill);}
-.timer-attention-gradient {width:100%;height:100%;background:conic-gradient(from var(--timer-attention-angle),var(--timer-attention-base),var(--timer-attention-base) 33%,var(--timer-attention-mid) 48%,var(--timer-attention-light) 56%,var(--timer-attention-mid) 64%,var(--timer-attention-base) 81%);animation:timer-attention-travel 4s linear infinite;}
-.app[data-action-display="compact"][data-interval-state="down"] .compact-interval-timer {position:relative;z-index:3001;}
-@keyframes timer-attention-travel {to{--timer-attention-angle:360deg;}}
-@keyframes timer-attention-arrive {0%{filter:drop-shadow(0 0 0 transparent);}45%{filter:drop-shadow(0 0 10px var(--timer-attention-glow));}100%{filter:drop-shadow(0 0 5px var(--timer-attention-glow));}}
-@media(prefers-reduced-motion:reduce){.timer-attention-frame,.timer-attention-gradient {animation:none!important;}}
-
-/* Full break actions keep their hit area, with only the fitted timer outline visible. */
-.app[data-action-display="full"] #endTripButton[data-timer-attention] {background:transparent!important;border-color:transparent!important;box-shadow:none;}
-
-[data-timer-attention] .break-buffer-track {background:color-mix(in srgb,var(--timer-attention-mid) 12%,var(--timer-attention-fill));}
-[data-timer-attention] .break-buffer-track > i {background:var(--timer-attention-mid);opacity:.55;}

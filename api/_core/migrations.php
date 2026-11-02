@@ -14,7 +14,7 @@ function migration_directory(): string
     return dirname(__DIR__, 2) . '/migrations';
 }
 
-function migration_statements(string $id, ?string $directory = null): array
+function migration_statements(string $id, ?string $directory = null, ?PDO $pdo = null): array
 {
     if (!preg_match('/^[0-9]{3}_[a-z0-9_]{1,80}$/D', $id)) {
         throw new MigrationFailure('Invalid migration identifier.', 422, 'invalid_argument');
@@ -22,6 +22,7 @@ function migration_statements(string $id, ?string $directory = null): array
     $path = ($directory ?? migration_directory()) . '/' . $id . '.php';
     if (!is_file($path)) throw new MigrationFailure('Migration was not found.', 404, 'migration_not_found');
     $statements = require $path;
+    if (is_callable($statements)) $statements = $statements($pdo);
     if (!is_array($statements) || !array_is_list($statements) || $statements === []) {
         throw new MigrationFailure('Migration must return a nonempty SQL statement list.', 422, 'invalid_migration');
     }
@@ -98,7 +99,7 @@ function migration_status(PDO $pdo, ?string $directory = null): array
 
 function apply_migration(PDO $pdo, string $id, int $userId, ?string $directory = null): array
 {
-    $migration = migration_statements($id, $directory);
+    $migration = migration_statements($id, $directory, $pdo);
     return with_migration_lock($pdo, static function () use ($pdo, $migration, $userId, $directory): array {
         $id = $migration['id'];
         $find = $pdo->prepare('SELECT checksum, status FROM schema_migrations WHERE id = :id');

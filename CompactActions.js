@@ -24,78 +24,27 @@
         const reserve=host.dataset.bufferActive==='true'?Math.min(96,host.clientWidth*.28):0,available=Math.max(1,host.clientWidth-20-reserve),width=boxes.reduce((sum,r)=>sum+r.width,0),height=Math.max(...boxes.map(r=>r.height));
         host.style.setProperty('--break-action-font-size',Math.max(10,font*Math.min(1,available/Math.max(1,width),Math.max(1,host.clientHeight-8)/Math.max(1,height)))+'px');
     }
-    // A single paint-only frame follows the timer, and both full buffer tracks.
-    const attentionLayouts=new WeakMap(),bufferLayouts=new WeakMap();
-    const svgNS='http://www.w3.org/2000/svg';let attentionId=0;
-    function timerLabels(host){
-        return [...host.children].filter(e=>e.matches('.break-action-label,.break-action-clock,output')||host.classList.contains('compact-interval-timer')&&e.localName==='span'&&!e.classList.contains('break-buffer-side'));
-    }
-    function roundedOutline(points,radius=6){
-        const near=(a,b)=>{const length=Math.hypot(b[0]-a[0],b[1]-a[1]),t=length?Math.min(radius/length,.5):0;return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];};
-        const corners=points.map((v,i)=>({v,a:near(v,points[(i+points.length-1)%points.length]),b:near(v,points[(i+1)%points.length])}));
-        return'M '+corners[0].a.join(' ')+' '+corners.map(c=>'L '+c.a.join(' ')+' Q '+c.v.join(' ')+' '+c.b.join(' ')).join(' ')+' Z';
-    }
-    function attentionFrame(){
-        const frame=document.createElement('i'),svg=document.createElementNS(svgNS,'svg'),id='timer-attention-'+(++attentionId);
-        frame.className='timer-attention-frame';frame.setAttribute('aria-hidden','true');frame.hidden=true;
-        svg.innerHTML='<defs><mask id="'+id+'" maskUnits="userSpaceOnUse" x="0" y="0"><path class="timer-attention-outline" fill="none" stroke="#fff" stroke-width="3"/></mask></defs><path class="timer-attention-surface"/><foreignObject x="0" y="0" mask="url(#'+id+')"></foreignObject>';
-        const gradient=document.createElement('div');gradient.className='timer-attention-gradient';svg.querySelector('foreignObject').append(gradient);frame.append(svg);return frame;
-    }
-    function fitAttention(host){
-        const frame=host.querySelector(':scope > .timer-attention-frame');if(!frame||!host.isConnected)return;
-        const labels=timerLabels(host).map(e=>e.getBoundingClientRect());
-        if(!labels.length||!host.getBoundingClientRect().height){frame.hidden=true;return;}
-        const box=host.getBoundingClientRect(),group={left:Math.min(...labels.map(r=>r.left)),right:Math.max(...labels.map(r=>r.right)),top:Math.min(...labels.map(r=>r.top)),bottom:Math.max(...labels.map(r=>r.bottom))};
-        const full=host.id==='endTripButton',padX=Math.min(9,Math.max(0,(host.clientWidth-(group.right-group.left))/2-1)),padY=full?Math.min(7,Math.max(0,(host.clientHeight-(group.bottom-group.top))/2-1)):7;
-        const sides=[...host.querySelectorAll(':scope > .break-buffer-side')].map(e=>e.getBoundingClientRect()),buffered=sides.length===2&&host.dataset.bufferActive==='true';
-        const app=host.closest('.app'),area=app.getBoundingClientRect(),style=getComputedStyle(app),left=buffered?area.left+(parseFloat(style.paddingLeft)||0):group.left-padX,right=buffered?area.right-(parseFloat(style.paddingRight)||0):group.right+padX,top=group.top-padY,bottom=group.bottom+padY,width=right-left,height=bottom-top;
-        if(!(width>3&&height>3)){frame.hidden=true;return;}
-        for(const [key,value] of Object.entries({left:left-box.left-host.clientLeft,top:top-box.top-host.clientTop,width,height})){const text=value+'px';if(frame.style[key]!==text)frame.style[key]=text;}
-        const x1=1.5,x2=width-1.5,y1=1.5,y2=height-1.5,panelLeft=group.left-padX-left,panelRight=group.right+padX-left,armTop=Math.max(y1,Math.min(...sides.map(r=>r.top))-4-top),armBottom=Math.min(y2,Math.max(...sides.map(r=>r.bottom))+4-top);
-        const points=buffered?[[x1,armTop],[panelLeft,armTop],[panelLeft,y1],[panelRight,y1],[panelRight,armTop],[x2,armTop],[x2,armBottom],[panelRight,armBottom],[panelRight,y2],[panelLeft,y2],[panelLeft,armBottom],[x1,armBottom]]:[[x1,y1],[x2,y1],[x2,y2],[x1,y2]],d=roundedOutline(points);
-        frame.dataset.shape=buffered?'buffered':'timer';
-        const svg=frame.firstElementChild;svg.setAttribute('viewBox','0 0 '+width+' '+height);
-        for(const element of [svg.querySelector('mask'),svg.querySelector('foreignObject')]){element.setAttribute('width',width);element.setAttribute('height',height);}
-        for(const path of svg.querySelectorAll('path'))if(path.getAttribute('d')!==d)path.setAttribute('d',d);
-        frame.hidden=false;
-    }
-    function renderAttention(host,kind){
-        if(!host)return;let frame=host.querySelector(':scope > .timer-attention-frame');
-        if(!kind){frame?.remove();delete host.dataset.timerAttention;return;}
-        if(host.dataset.timerAttention!==kind){frame?.remove();frame=null;}host.dataset.timerAttention=kind;
-        if(!frame){frame=attentionFrame();host.append(frame);}
-        if(!attentionLayouts.has(host)){
-            let pending=false;const observer=new ResizeObserver(()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;fitBuffers(host);fitAttention(host);});});
-            observer.observe(host);if(host.closest('.app'))observer.observe(host.closest('.app'));for(const label of timerLabels(host))observer.observe(label);attentionLayouts.set(host,observer);
-        }
-        fitBuffers(host);fitAttention(host);
-    }
+    const bufferLayouts=new WeakMap();
     function fitBuffers(host){
         if(!host.isConnected)return;fitFullBreakText(host);const sides=[...host.querySelectorAll(':scope > .break-buffer-side')];if(!sides.length)return;
-        const labels=timerLabels(host).map(e=>e.getBoundingClientRect());if(!labels.length)return;
-        const box=host.getBoundingClientRect(),app=host.closest('.app'),a=(app||host).getBoundingClientRect(),style=getComputedStyle(app||host),paddingLeft=parseFloat(style.paddingLeft)||0,paddingRight=parseFloat(style.paddingRight)||0;
-        const group={left:Math.min(...labels.map(r=>r.left)),right:Math.max(...labels.map(r=>r.right)),top:Math.min(...labels.map(r=>r.top)),bottom:Math.max(...labels.map(r=>r.bottom))},left=a.left+paddingLeft+4,right=a.right-paddingRight-4,height=(group.bottom-group.top)/3;
-        for(const side of sides){const isLeft=side.classList.contains('left'),start=isLeft?left:group.right+paddingRight,end=isLeft?group.left-paddingLeft:right;side.style.left=(start-box.left-host.clientLeft)+'px';side.style.width=Math.max(0,end-start)+'px';side.style.height=height+'px';side.style.top=((group.top+group.bottom)/2-box.top-host.clientTop)+'px';}
-        fitAttention(host);
+        const labels=[...host.children].filter(e=>e.matches('.break-action-label,.break-action-clock,output')||host.classList.contains('compact-interval-timer')&&e.localName==='span'&&!e.classList.contains('break-buffer-side')).map(e=>e.getBoundingClientRect());
+        if(!labels.length)return;const box=host.getBoundingClientRect(),app=host.closest('.app'),a=(app||host).getBoundingClientRect(),style=getComputedStyle(app||host),paddingLeft=parseFloat(style.paddingLeft)||0,paddingRight=parseFloat(style.paddingRight)||0;
+        const group={left:Math.min(...labels.map(r=>r.left)),right:Math.max(...labels.map(r=>r.right)),top:Math.min(...labels.map(r=>r.top)),bottom:Math.max(...labels.map(r=>r.bottom))},left=a.left+paddingLeft,right=a.right-paddingRight,gapLeft=Math.max(0,paddingLeft),gapRight=Math.max(0,paddingRight),height=(group.bottom-group.top)/3;
+        for(const side of sides){const isLeft=side.classList.contains('left'),start=isLeft?left:group.right+gapRight,end=isLeft?group.left-gapLeft:right;side.style.left=(start-box.left-host.clientLeft)+'px';side.style.setProperty('--buffer-label-offset',((isLeft?gapLeft:-gapRight)/2)+'px');side.style.width=Math.max(0,end-start)+'px';side.style.height=height+'px';side.style.top=((group.top+group.bottom)/2-box.top-host.clientTop)+'px';side.style.fontSize=Math.max(10,Math.min(18,height*.8,(end-start)/3.8))+'px';}
     }
-    function renderBuffers(host,buffer){
-        if(!host)return;host.dataset.bufferActive=String(Boolean(buffer));host.dataset.bufferCounting=String(Boolean(buffer&&buffer.remainingMilliseconds>0));
+    function renderBuffers(host,buffer) {
+        if(!host)return;
+        host.dataset.bufferActive=String(Boolean(buffer&&buffer.remainingMilliseconds>0));
         let sides=[...host.querySelectorAll(':scope > .break-buffer-side')];
-        if(!buffer){for(const side of sides)side.remove();fitFullBreakText(host);fitAttention(host);return;}
-        if(!sides.length)for(const direction of ['left','right']){const side=document.createElement('span');side.className='break-buffer-side '+direction;side.setAttribute('aria-hidden','true');side.innerHTML='<span class="break-buffer-track"><i></i></span>';host.append(side);sides.push(side);}
-        for(const side of sides){side.querySelector('i').style.transform='scaleX('+Math.max(0,Math.min(1,buffer.remainingMilliseconds/buffer.durationMilliseconds))+')';side.dataset.phase=buffer.phase;}
-        if(!bufferLayouts.has(host)){let pending=false;const observer=new ResizeObserver(()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;fitBuffers(host);});});observer.observe(host);if(host.closest('.app'))observer.observe(host.closest('.app'));for(const label of timerLabels(host))observer.observe(label);bufferLayouts.set(host,observer);}
+        if(!buffer||buffer.remainingMilliseconds<=0){for(const side of sides)side.remove();fitFullBreakText(host);return;}
+        if(!sides.length)for(const direction of ['left','right']){
+            const side=document.createElement('span');side.className='break-buffer-side '+direction;
+            side.setAttribute('aria-hidden','true');side.innerHTML='<span class="break-buffer-countdown"></span><span class="break-buffer-track"><i></i></span>';host.append(side);sides.push(side);
+        }
+        const seconds=Math.ceil(buffer.remainingMilliseconds/1000),text=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+        for(const side of sides){side.querySelector('.break-buffer-countdown').textContent=text;side.querySelector('i').style.transform='scaleX('+Math.max(0,Math.min(1,buffer.remainingMilliseconds/buffer.durationMilliseconds))+')';side.dataset.phase=buffer.phase;}
+        if(!bufferLayouts.has(host)){let frame;const observer=new ResizeObserver(()=>{if(!frame)frame=requestAnimationFrame(()=>{frame=0;fitBuffers(host);});});observer.observe(host);if(host.closest('.app'))observer.observe(host.closest('.app'));for(const child of host.children)if(!child.classList.contains('break-buffer-side'))observer.observe(child);bufferLayouts.set(host,observer);}
         fitBuffers(host);
-    }
-    function visibleBuffer(state){
-        const interval=state?.clock?.interval_state;if(interval?.buffer)return interval.buffer;
-        if(["break","lunch"].includes(interval?.intervalType)&&interval.endBufferMilliseconds>0&&interval.remainingMilliseconds<=0)
-            return{phase:'end-buffer',durationMilliseconds:interval.endBufferMilliseconds,remainingMilliseconds:0,retained:true};
-        return null;
-    }
-    function breakCaption(state){
-        const kind=String(state?.tripStatus||'break').replaceAll('_','-'),ids={break:'02ed5f1f-4450-5830-bd59-d8a504774d62',lunch:'d2580406-52e9-59b4-bbd2-e3bb470a35dc','short-break':'b0525b2e-e64d-5c4c-97ac-45f51d84f9fb'},name=WMOFLanguagePack.text(ids[kind]||ids.break),phase=state?.clock?.interval_state?.buffer?.phase;
-        return phase==='start-buffer'?WMOFLanguagePack.text('f5a64f28-3d2b-5b65-9eca-172821913a61',{break:name}):phase==='end-buffer'?WMOFLanguagePack.text('84a45b7c-824a-56ee-bf20-586308afc432',{break:name}):name;
     }
     function init(app) {
         const buttons = new Map(ids.map(id => {
@@ -109,11 +58,8 @@
         const view={buttons,left,right,timer,state:null};views.set(app,view);return view;
     }
     function render(app, state, {totalLabel}={}) {
-        const buffer=visibleBuffer(state);
-        const primary=document.getElementById('endTripButton');
-        if(state?.controls?.breakLabel&&primary.querySelector('.break-action-label'))primary.querySelector('.break-action-label').textContent=breakCaption(state);
-        renderBuffers(primary,app.dataset.actionDisplay==='compact'?null:buffer);
-        renderAttention(primary,app.dataset.actionDisplay!=='compact'&&state?.controls?.breakLabel?String(state.tripStatus||'break').replaceAll('_','-'):null);
+        const buffer=state?.clock?.interval_state?.buffer;
+        renderBuffers(document.getElementById('endTripButton'),app.dataset.actionDisplay==='compact'?null:buffer);
         let view=views.get(app);
         if(!view && app.dataset.actionDisplay!=='compact'&&!(app.dataset.percentageDisplay==='bar'&&state?.clock?.goal_bar?.active))return;
         view ||= init(app);
@@ -133,17 +79,15 @@
         else if(compact){
             const kind=down?'down':String(view.state.tripStatus||'break').replaceAll('_','-');timer.dataset.kind=kind;
             const labelIds={"down": "ba94b593-7fb0-4360-8150-891bd4e56e6f", "break": "556c70ac-c40c-4976-b080-459c3d8e18f1", "short-break": "be9051c0-6763-43eb-8007-ef3c630bf924", "lunch": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5"};
-            timer.querySelector('span').textContent=down?WMOFLanguagePack.text(labelIds.down):breakCaption(view.state);
+            timer.querySelector('span').textContent=WMOFLanguagePack.text(labelIds[kind]||labelIds.break);
             timer.querySelector('output').textContent=down?document.getElementById('downElapsedValue').textContent:controls.breakClock;
             renderBuffers(timer,paused?buffer:null);
         }else renderBuffers(timer,null);
-        renderAttention(timer,timer.hidden?null:timer.dataset.kind);
         if(!compact) {
             for(const {button,anchor,ownedLabel} of buttons.values()) {
                 if(button.closest('dialog[open]'))continue;
-                // Re-inserting an already-restored button resets its CSS animations.
-                if(anchor.nextSibling!==button)anchor.after(button);button.querySelector(':scope > .compact-action-icon')?.remove();delete button.dataset.compactVisible;
-                if(ownedLabel&&!(button===primary&&controls.breakLabel))button.removeAttribute('aria-label');
+                anchor.after(button);button.querySelector(':scope > .compact-action-icon')?.remove();delete button.dataset.compactVisible;
+                if(ownedLabel)button.removeAttribute('aria-label');
             }
             delete app.dataset.compactTimed;return;
         }
@@ -183,11 +127,7 @@
                 globalThis.WMOFTimerSummaryView?.refreshLayout(document);document.getElementById('clockTimer')?.refreshLayout?.();
             };
             try{
-                if(typeof document.startViewTransition==='function'){
-                    const transition=document.startViewTransition(update);
-                    // A skipped snapshot rejects ready even when the update and finished succeed.
-                    transition.ready.catch(()=>{});await transition.finished;
-                }
+                if(typeof document.startViewTransition==='function'){const transition=document.startViewTransition(update);await transition.finished;}
                 else{await update();const clock=document.getElementById('clockTimer');await clock?.animate?.([{opacity:.6},{opacity:1}],{duration:300,easing:'ease-in-out'})?.finished;}
             }finally{app.classList.remove('layout-switch-snap');delete document.documentElement.dataset.layoutTransition;}
           }finally{hideLayoutBusy();}

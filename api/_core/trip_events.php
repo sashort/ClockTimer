@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/trip_storage.php';
 
 function normalize_trip_event_view(mixed $value): string
 {
@@ -197,6 +198,8 @@ function decode_trip_event_row(array $row): array
         );
     }
 
+    if(array_key_exists('offset_ms',$row) && is_array($value))$value=trip_storage_view_value((string)$row['event'],$value,(string)$row['scheduled_start_time'],(int)$row['offset_ms']);
+
     $value =
         normalize_trip_event_duration_values(
             (string) $row['event'],
@@ -209,6 +212,7 @@ function decode_trip_event_row(array $row): array
         'eventTypeId' => (int) $row['event_type_id'],
         'event' => (string) $row['event'],
         'timestamp' => (string) $row['timestamp'],
+        ...(array_key_exists('offset_ms',$row)?['offsetMilliseconds'=>(int)$row['offset_ms'],'scheduledStartTime'=>str_replace(' ','T',(string)$row['scheduled_start_time']).'Z']:[]),
         'value' => $value,
         'clientToken' => $row['client_token'] === null
             ? null
@@ -286,8 +290,8 @@ function fetch_trip_events_grouped(
 
     $statement = $pdo->prepare(
         'SELECT e.id, e.trip_id, e.event_type_id, et.name AS event, '
-        . 'et.reconstruction, e.timestamp, e.value, e.client_token, e.created_at '
-        . 'FROM trip_events e '
+        . 'et.reconstruction, e.timestamp, e.value, e.client_token, e.created_at ' . (trip_storage_uses_offsets($pdo)?', e.offset_ms, e.scheduled_start_time ':'')
+        . 'FROM ' . trip_storage_event_read_table($pdo) . ' e '
         . 'INNER JOIN event_types et ON et.id = e.event_type_id '
         . 'WHERE e.trip_id IN (' . implode(', ', $placeholders) . ') '
         . 'ORDER BY e.trip_id ASC, e.timestamp ASC, e.id ASC'

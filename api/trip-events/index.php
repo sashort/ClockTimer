@@ -11,9 +11,10 @@ if ($method === 'GET') {
     $view = normalize_trip_event_view($_GET['view'] ?? null);
 
     $pdo = db();
-    require_trip_owner($pdo, $tripId);
+    $trip = require_trip_owner($pdo, $tripId);
 
     json_response([
+        ...(isset($trip['scheduled_start_time'])?['scheduledStartTime'=>str_replace(' ','T',$trip['scheduled_start_time']).'Z']:[]),
         'tripId' => $tripId,
         'view' => $view,
         'events' => fetch_trip_events($pdo, $tripId, $view),
@@ -22,7 +23,8 @@ if ($method === 'GET') {
 
 require_csrf();
 
-$input = json_input();
+try { $input = trip_storage_command(db(),'trip-events',json_input()); }
+catch(InvalidArgumentException $e){api_error($e->getMessage(),422,'invalid_argument');}
 $tripId = require_positive_int($input, 'tripId');
 $event = trim(require_string($input, 'event'));
 
@@ -114,18 +116,16 @@ $eventId = audited_write(
 
         require_accepted_state_command(check_trip_event_command(fetch_trip_events($pdo, $tripId), $input));
 
-        $statement = $pdo->prepare(
-            'INSERT INTO trip_events '
-            . '(trip_id, event_type_id, timestamp, value, client_token) '
-            . 'VALUES (:trip_id, :event_type_id, :timestamp, :value, :client_token)'
-        );
-        $statement->execute([
-            ':trip_id' => $tripId,
-            ':event_type_id' => $eventTypeId,
-            ':timestamp' => $timestamp,
-            ':value' => $valueJson,
-            ':client_token' => $clientToken,
-        ]);
+        if ($event==='trip.scheduled-start-changed' && trip_storage_uses_offsets($pdo)) {
+            // The command's anchor is the newly chosen scheduled start. All
+            // existing event instants survive the representation change.
+            trip_storage_update($pdo,$tripId,['scheduled_start_time'=>$input['scheduledStartTime']]);
+        }
+
+        trip_storage_insert_event($pdo,[
+            'trip_id'=>$tripId,'event_type_id'=>$eventTypeId,'timestamp'=>$timestamp,
+            'value'=>$valueJson,'client_token'=>$clientToken
+        ],$event);
 
         return (int) $pdo->lastInsertId();
     }
