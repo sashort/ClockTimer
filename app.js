@@ -14189,9 +14189,12 @@
     }
 
     function getAbsolutePadInitial(value, creationDate) {
-        const milliseconds = parseTimelineTime(value);
-        const base = parseDateInput(creationDate) || getTripBaseDate();
-        const date = new Date(base.getTime() + (Number.isFinite(milliseconds) ? milliseconds : 0));
+        const exact=typeof value==='string'&&/^\d{4}-\d\d-\d\d[T ]/.test(value)?new Date(value):null;
+        const milliseconds = exact ? undefined : parseTimelineTime(value);
+        const base = exact ? null : parseDateInput(creationDate) || getTripBaseDate();
+        const date = exact || (Number.isFinite(milliseconds)&&milliseconds<86400000
+            ?new Date(base.getFullYear(),base.getMonth(),base.getDate(),Math.floor(milliseconds/3600000),Math.floor(milliseconds/60000)%60,Math.floor(milliseconds/1000)%60,milliseconds%1000)
+            :new Date(base.getTime() + (Number.isFinite(milliseconds) ? milliseconds : 0)));
         const hour24 = date.getHours();
         const military = clockTimer.getAttribute("military-time") !== "false";
         const meridiem = military ? null : (hour24 >= 12 ? "PM" : "AM");
