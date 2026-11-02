@@ -7110,6 +7110,18 @@
       "text": "{goals} Goal In",
       "default": "{goals} Goal In"
     },
+    "f5a64f28-3d2b-5b65-9eca-172821913a61": {
+      "id": "f5a64f28-3d2b-5b65-9eca-172821913a61",
+      "text": "{break} Starts",
+      "default": "{break} Starts",
+      "source": "CompactActions.js"
+    },
+    "84a45b7c-824a-56ee-bf20-586308afc432": {
+      "id": "84a45b7c-824a-56ee-bf20-586308afc432",
+      "text": "{break} Ends",
+      "default": "{break} Ends",
+      "source": "CompactActions.js"
+    },
     "4f163c6a-3526-4504-92af-9c7f0e91a223": {
       "id": "4f163c6a-3526-4504-92af-9c7f0e91a223",
       "text": "Standard In",

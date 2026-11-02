@@ -1,5 +1,10 @@
 # ClockTimer state dispatch
 
+The shared [buffer timer layout](buffer-timer-layout.md) defines the single
+phase countdown, retained empty wings, and the mirrored one-second transitions
+before the opening/closing buffer boundaries. These are presentation transitions;
+they do not change the underlying interval, accounting, or resume action.
+
 ## Saved-trip recovery and DST-safe time
 
 Authenticated restoration transitions either to the reconstructed trip state

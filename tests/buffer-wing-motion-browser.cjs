@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict'),fixture=require('./order-filler-master-fixture.cjs');
+(async()=>{const f=await fixture();try{const p=f.page,op=require('./retained-page-operation.cjs')(p);
+ await op(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();document.querySelector('#actionDisplayCompact').click();await WMOFLayoutMotion.whenSettled();await clockTimer.start({standardTime:'0:30:00'});await clockTimer.startInterval('break',10000,{},3000,3000);});
+ const progress=()=>p.locator('.compact-interval-timer').evaluate(e=>Number(e.style.getPropertyValue('--buffer-wing-open')));
+ const advance=async target=>{const delta=target-await p.evaluate(()=>Date.now());if(delta>0)await p.clock.runFor(delta);};
+ const startEnd=await p.evaluate(()=>Date.parse(clockTimer.getActiveIntervalState().buffer.endTime));
+ await advance(startEnd-1100);assert.equal(await progress(),1,'wings remain fully open before the last start-buffer second');
+ await advance(startEnd-500);assert(Math.abs(await progress()-.5)<.08,'start wings are halfway collapsed at the smooth transition midpoint');
+ await advance(startEnd+100);assert.equal(await progress(),0,'wings finish collapsing at the start-buffer boundary');
+ const endStart=await p.evaluate(()=>Date.parse(clockTimer.getActiveIntervalState().breakBoundaryTime));
+ await advance(endStart-1100);assert.equal(await progress(),0,'wings stay recessed during the break body');
+ await advance(endStart-500);assert(Math.abs(await progress()-.5)<.08,'end wings expand with the mirrored midpoint');
+ await advance(endStart+100);assert.equal(await progress(),1,'wings are fully expanded as the end buffer starts');
+ await advance(endStart+4100);assert.equal(await progress(),1,'empty wings stay after the end buffer');
+ assert.equal(await p.locator('.compact-interval-timer .break-buffer-countdown').count(),0,'there is only one countdown');
+ await op(()=>clockTimer.endInterval());assert.equal(await p.locator('.compact-interval-timer .break-buffer-side').count(),0,'resume removes wings and their motion');
+ assert.deepEqual(f.errors,[]);console.log('PASS exact one-second mirrored buffer wing motion, empty-wing retention and resume cleanup');
+}finally{await f.close();}})().catch(error=>{console.error(error);process.exit(1);});

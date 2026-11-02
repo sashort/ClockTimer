@@ -1823,7 +1823,7 @@
             const downPause = intervalType === "down";
             const normalActions = !timedPause && !downPause && !this.#breakOnly;
             const breakLabel = `End ${intervalType === "lunch" ? "Lunch" : "Break"}`;
-            const remaining = Number(interval?.remainingMilliseconds);
+            const remaining = Number(interval?.countdownMilliseconds??interval?.remainingMilliseconds);
             const breakClock = `${remaining < 0 ? "+" : ""}${this.#actionClock(Math.abs(remaining)).replace(/^(\d):/, "0$1:")}`;
             const primaryAction = intervalType === "down"
                 ? {action: "resume_trip", text: `Resume Trip : ${this.#actionClock(interval?.elapsedMilliseconds)}`, visible: true, enabled: true}
@@ -7482,7 +7482,10 @@
 
             const buffer = ["start-buffer", "end-buffer"].includes(phase) && Number.isFinite(current?.end)
                 ? {phase, durationMilliseconds:current.end-current.start,
+                    endTime:this.#timelineToISO(current.end),
                     remainingMilliseconds:Math.max(0,current.end-timelineNow)} : null;
+            const breakEnd=this.#getIntervalRecordEnd(record);
+            const breakRemainingMilliseconds=["break","lunch"].includes(intervalType)&&Number.isFinite(breakEnd)?breakEnd-timelineNow:undefined;
             const elapsedMilliseconds = Math.max(0, timelineNow - start);
             const remainingMilliseconds = Number.isFinite(end)
                 ? end - timelineNow
@@ -7506,6 +7509,10 @@
                         ? record.clockTimerExtensionBoundaryTimeline : end),
                 elapsedMilliseconds,
                 remainingMilliseconds,
+                breakRemainingMilliseconds,
+                breakBoundaryTime:Number.isFinite(breakEnd)?this.#timelineToISO(breakEnd):undefined,
+                endBufferMilliseconds:Math.max(0,Number(this.#getIntervalBufferRecord(record,"end")?.rangeLength)||(Number.isFinite(end)&&Number.isFinite(breakEnd)?end-breakEnd:0)),
+                countdownMilliseconds:buffer?.remainingMilliseconds??(["break","lunch"].includes(phase)?breakRemainingMilliseconds:remainingMilliseconds),
                 buffer
             };
         }
