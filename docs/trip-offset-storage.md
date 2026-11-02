@@ -41,3 +41,9 @@ from the saved interval timing; new v2 records retain strict validation.
 Verification: `tests/dst-timeline.mjs`, `tests/trip-replay-identity.mjs`, and
 `tests/trip-offset-storage.php` cover DST folds/gaps, reloads, Down, canonical
 transport, failed restoration, immutable records, audited rebasing and rollback.
+
+Trip Log settings transport exact edited instants, then normalize them to the
+canonical anchor/offset representation. Untouched instants survive scheduled-start
+edits across UTC midnight. Offline edits rebase their queued offsets too. Editor
+clock labels use civil date/hour fields rather than elapsed hours since midnight;
+a 23- or 25-hour DST day must not shift the clock shown to the user.

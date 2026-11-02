@@ -81,6 +81,16 @@ assert.equal(edited.nonProduction,true);
 assert(edited.events.some(event=>event.event==='interval.started'));
 assert.equal((await storage.getItem(storageKey))[0].payload.standardTimeMilliseconds,1500000);
 console.log('PASS buffered trips retain settings and entry edits while offline');
+
+const beforeRebase=(await storage.getItem(storageKey))[0],startedBefore=beforeRebase.events.find(e=>e.event==='trip.started'),stoppedBefore=beforeRebase.events.find(e=>e.event==='trip.stopped');
+const originalSchedule=beforeRebase.payload.scheduledStartTime,creationInstant=new Date(Date.parse(startedBefore.scheduledStartTime||originalSchedule)+startedBefore.value.creationOffsetMilliseconds).toISOString();
+const adjustedSchedule=new Date(Date.parse(originalSchedule)+3600000).toISOString();
+const shiftSettings=(await c.tripEditorRequest(editable.id)).settings;
+await c.tripEditorRequest(editable.id,{operation:'settings',settings:{...shiftSettings,instants:{creationTime:creationInstant,startTime:startedBefore.timestamp,scheduledStart:adjustedSchedule}}});
+const rebased=(await storage.getItem(storageKey))[0];assert.equal(rebased.payload.scheduledStartTime,adjustedSchedule);assert.equal(rebased.payload.startTime,startedBefore.timestamp);assert.equal(rebased.events.find(e=>e.event==='trip.stopped').timestamp,stoppedBefore.timestamp);assert.equal(rebased.events.find(e=>e.event==='trip.started').value.startOffsetMilliseconds,Date.parse(startedBefore.timestamp)-Date.parse(adjustedSchedule));
+await c.tripEditorRequest(editable.id,{operation:'settings',settings:{...shiftSettings,instants:{creationTime:creationInstant,startTime:startedBefore.timestamp,scheduledStart:originalSchedule}}});
+console.log('PASS offline scheduled-start rebase preserves actual event instants and exact canonical offsets');
+
 const removed=c.getLocalTripLog()[1];
 await c.tripEditorRequest(removed.id,{operation:'delete-trip',revision:'offline'});
 assert.equal(c.getLocalTripLog().length,1);
