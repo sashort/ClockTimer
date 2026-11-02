@@ -7917,6 +7917,9 @@ shared-modal-host > .number-pad-dialog {transition:height var(--trip-log-layout-
 .break-buffer-track > i {display:block;width:100%;height:100%;background:currentColor;opacity:.35;transition:transform 1s linear;}
 .break-buffer-side.left i {transform-origin:right;}
 .break-buffer-side.right i {transform-origin:left;}
+.break-buffer-side {transform:translateY(-50%) scaleX(var(--buffer-wing-open,1));}
+.break-buffer-side.left {transform-origin:right center;}
+.break-buffer-side.right {transform-origin:left center;}
 .app:not([data-action-display="compact"]) #endTripButton:has(> .break-action-label) {display:flex;flex-direction:row;align-items:center;justify-content:center;gap:0;font-size:var(--break-action-font-size,clamp(24px,8vw,48px));}
 .app:not([data-action-display="compact"]) #endTripButton:has(> .break-action-label) :is(.break-action-label,.break-action-clock) {font-size:inherit;line-height:1.1;}
 .app:not([data-action-display="compact"]) .break-end-row .break-action-clock::before {content:" : "!important;white-space:pre;}

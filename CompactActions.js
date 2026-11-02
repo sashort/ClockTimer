@@ -21,11 +21,11 @@
         if(host.id!=='endTripButton'||host.closest('.app')?.dataset.actionDisplay==='compact'||!host.querySelector(':scope > .break-action-label'))return;
         host.style.removeProperty('--break-action-font-size');
         const labels=[...host.querySelectorAll(':scope > .break-action-label,:scope > .break-action-clock')],style=getComputedStyle(host),font=parseFloat(style.fontSize),boxes=labels.map(e=>e.getBoundingClientRect());
-        const reserve=host.dataset.bufferActive==='true'?Math.min(96,host.clientWidth*.28):0,available=Math.max(1,host.clientWidth-20-reserve),width=boxes.reduce((sum,r)=>sum+r.width,0),height=Math.max(...boxes.map(r=>r.height));
+        const reserve=host.dataset.bufferCounting==='true'?Math.min(96,host.clientWidth*.28):host.dataset.bufferActive==='true'&&host.clientWidth<host.closest('.app').clientWidth*.75?32:0,available=Math.max(1,host.clientWidth-20-reserve),width=boxes.reduce((sum,r)=>sum+r.width,0),height=Math.max(...boxes.map(r=>r.height));
         host.style.setProperty('--break-action-font-size',Math.max(10,font*Math.min(1,available/Math.max(1,width),Math.max(1,host.clientHeight-8)/Math.max(1,height)))+'px');
     }
     // A single paint-only frame follows the timer, and both full buffer tracks.
-    const attentionLayouts=new WeakMap(),bufferLayouts=new WeakMap();
+    const attentionLayouts=new WeakMap(),bufferLayouts=new WeakMap(),wingMotions=new WeakMap();
     const svgNS='http://www.w3.org/2000/svg';let attentionId=0;
     function timerLabels(host){
         return [...host.children].filter(e=>e.matches('.break-action-label,.break-action-clock,output')||host.classList.contains('compact-interval-timer')&&e.localName==='span'&&!e.classList.contains('break-buffer-side'));
@@ -47,13 +47,14 @@
         if(!labels.length||!host.getBoundingClientRect().height){frame.hidden=true;return;}
         const box=host.getBoundingClientRect(),group={left:Math.min(...labels.map(r=>r.left)),right:Math.max(...labels.map(r=>r.right)),top:Math.min(...labels.map(r=>r.top)),bottom:Math.max(...labels.map(r=>r.bottom))};
         const full=host.id==='endTripButton',padX=Math.min(9,Math.max(0,(host.clientWidth-(group.right-group.left))/2-1)),padY=full?Math.min(7,Math.max(0,(host.clientHeight-(group.bottom-group.top))/2-1)):7;
-        const sides=[...host.querySelectorAll(':scope > .break-buffer-side')].map(e=>e.getBoundingClientRect()),buffered=sides.length===2&&host.dataset.bufferActive==='true';
-        const app=host.closest('.app'),area=app.getBoundingClientRect(),style=getComputedStyle(app),left=buffered?area.left+(parseFloat(style.paddingLeft)||0):group.left-padX,right=buffered?area.right-(parseFloat(style.paddingRight)||0):group.right+padX,top=group.top-padY,bottom=group.bottom+padY,width=right-left,height=bottom-top;
+        const sides=[...host.querySelectorAll(':scope > .break-buffer-side')].map(e=>e.getBoundingClientRect()),buffered=sides.length===2;
+        const app=host.closest('.app'),area=app.getBoundingClientRect(),style=getComputedStyle(app),split=full&&box.width<area.width*.75,left=buffered?Math.max(area.left+(parseFloat(style.paddingLeft)||0),split?box.left:-Infinity):group.left-padX,right=buffered?Math.min(area.right-(parseFloat(style.paddingRight)||0),split?box.right:Infinity):group.right+padX,top=group.top-padY,bottom=group.bottom+padY,width=right-left,height=bottom-top;
         if(!(width>3&&height>3)){frame.hidden=true;return;}
         for(const [key,value] of Object.entries({left:left-box.left-host.clientLeft,top:top-box.top-host.clientTop,width,height})){const text=value+'px';if(frame.style[key]!==text)frame.style[key]=text;}
         const x1=1.5,x2=width-1.5,y1=1.5,y2=height-1.5,panelLeft=group.left-padX-left,panelRight=group.right+padX-left,armTop=Math.max(y1,Math.min(...sides.map(r=>r.top))-4-top),armBottom=Math.min(y2,Math.max(...sides.map(r=>r.bottom))+4-top);
-        const points=buffered?[[x1,armTop],[panelLeft,armTop],[panelLeft,y1],[panelRight,y1],[panelRight,armTop],[x2,armTop],[x2,armBottom],[panelRight,armBottom],[panelRight,y2],[panelLeft,y2],[panelLeft,armBottom],[x1,armBottom]]:[[x1,y1],[x2,y1],[x2,y2],[x1,y2]],d=roundedOutline(points);
-        frame.dataset.shape=buffered?'buffered':'timer';
+        const progress=Number(host.style.getPropertyValue('--buffer-wing-open'))||0,wingLeft=panelLeft+(x1-panelLeft)*progress,wingRight=panelRight+(x2-panelRight)*progress;
+        const points=buffered&&progress>0?[[wingLeft,armTop],[panelLeft,armTop],[panelLeft,y1],[panelRight,y1],[panelRight,armTop],[wingRight,armTop],[wingRight,armBottom],[panelRight,armBottom],[panelRight,y2],[panelLeft,y2],[panelLeft,armBottom],[wingLeft,armBottom]]:buffered?[[panelLeft,y1],[panelRight,y1],[panelRight,y2],[panelLeft,y2]]:[[x1,y1],[x2,y1],[x2,y2],[x1,y2]],d=roundedOutline(points);
+        frame.dataset.shape=buffered&&progress>0?'buffered':'timer';
         const svg=frame.firstElementChild;svg.setAttribute('viewBox','0 0 '+width+' '+height);
         for(const element of [svg.querySelector('mask'),svg.querySelector('foreignObject')]){element.setAttribute('width',width);element.setAttribute('height',height);}
         for(const path of svg.querySelectorAll('path'))if(path.getAttribute('d')!==d)path.setAttribute('d',d);
@@ -74,21 +75,45 @@
         if(!host.isConnected)return;fitFullBreakText(host);const sides=[...host.querySelectorAll(':scope > .break-buffer-side')];if(!sides.length)return;
         const labels=timerLabels(host).map(e=>e.getBoundingClientRect());if(!labels.length)return;
         const box=host.getBoundingClientRect(),app=host.closest('.app'),a=(app||host).getBoundingClientRect(),style=getComputedStyle(app||host),paddingLeft=parseFloat(style.paddingLeft)||0,paddingRight=parseFloat(style.paddingRight)||0;
-        const group={left:Math.min(...labels.map(r=>r.left)),right:Math.max(...labels.map(r=>r.right)),top:Math.min(...labels.map(r=>r.top)),bottom:Math.max(...labels.map(r=>r.bottom))},left=a.left+paddingLeft+4,right=a.right-paddingRight-4,height=(group.bottom-group.top)/3;
+        const split=host.id==='endTripButton'&&box.width<a.width*.75;
+        const group={left:Math.min(...labels.map(r=>r.left)),right:Math.max(...labels.map(r=>r.right)),top:Math.min(...labels.map(r=>r.top)),bottom:Math.max(...labels.map(r=>r.bottom))},left=Math.max(a.left+paddingLeft+4,split?box.left+4:-Infinity),right=Math.min(a.right-paddingRight-4,split?box.right-4:Infinity),height=(group.bottom-group.top)/3;
         for(const side of sides){const isLeft=side.classList.contains('left'),start=isLeft?left:group.right+paddingRight,end=isLeft?group.left-paddingLeft:right;side.style.left=(start-box.left-host.clientLeft)+'px';side.style.width=Math.max(0,end-start)+'px';side.style.height=height+'px';side.style.top=((group.top+group.bottom)/2-box.top-host.clientTop)+'px';}
         fitAttention(host);
     }
     function renderBuffers(host,buffer){
-        if(!host)return;host.dataset.bufferActive=String(Boolean(buffer));host.dataset.bufferCounting=String(Boolean(buffer&&buffer.remainingMilliseconds>0));
+        if(!host)return;host.dataset.bufferCounting=String(Boolean(buffer&&!buffer.preview&&buffer.remainingMilliseconds>0));
         let sides=[...host.querySelectorAll(':scope > .break-buffer-side')];
-        if(!buffer){for(const side of sides)side.remove();fitFullBreakText(host);fitAttention(host);return;}
+        if(!buffer){const motion=wingMotions.get(host);if(motion){clearTimeout(motion.timer);cancelAnimationFrame(motion.frame);wingMotions.delete(host);}host.dataset.bufferActive='false';host.style.removeProperty('--buffer-wing-open');for(const side of sides)side.remove();fitFullBreakText(host);fitAttention(host);return;}
         if(!sides.length)for(const direction of ['left','right']){const side=document.createElement('span');side.className='break-buffer-side '+direction;side.setAttribute('aria-hidden','true');side.innerHTML='<span class="break-buffer-track"><i></i></span>';host.append(side);sides.push(side);}
         for(const side of sides){side.querySelector('i').style.transform='scaleX('+Math.max(0,Math.min(1,buffer.remainingMilliseconds/buffer.durationMilliseconds))+')';side.dataset.phase=buffer.phase;}
+        animateWings(host,buffer);
         if(!bufferLayouts.has(host)){let pending=false;const observer=new ResizeObserver(()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;fitBuffers(host);});});observer.observe(host);if(host.closest('.app'))observer.observe(host.closest('.app'));for(const label of timerLabels(host))observer.observe(label);bufferLayouts.set(host,observer);}
         fitBuffers(host);
     }
+    function animateWings(host,buffer){
+        const boundary=Date.parse(buffer.motionEndTime||buffer.endTime),collapse=buffer.phase==='start-buffer',preview=buffer.preview===true;
+        const key=[buffer.phase,boundary,preview].join(':');let motion=wingMotions.get(host);
+        if(motion?.key===key){motion.paint();return;}
+        if(motion){clearTimeout(motion.timer);cancelAnimationFrame(motion.frame);}
+        motion={key};wingMotions.set(host,motion);
+        const end=boundary,start=end-Math.min(1000,collapse?buffer.durationMilliseconds:1000),reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const paint=()=>{
+            if(wingMotions.get(host)!==motion||!host.isConnected)return;
+            const now=Date.now(),fraction=Number.isFinite(end)?Math.max(0,Math.min(1,(now-start)/(end-start||1))):1;
+            const eased=fraction*fraction*(3-2*fraction);
+            const open=reduced?(preview&&now<end?0:collapse&&now>=end?0:1):collapse?1-eased:preview?eased:1;
+            host.style.setProperty('--buffer-wing-open',String(open));host.dataset.bufferActive=String(open>0);
+            fitBuffers(host);
+        };
+        motion.paint=paint;
+        const step=()=>{paint();if(Date.now()<end)motion.frame=requestAnimationFrame(step);};
+        paint();
+        if(Number.isFinite(end)&&Date.now()<end){if(Date.now()<start)motion.timer=setTimeout(step,start-Date.now());else motion.frame=requestAnimationFrame(step);}
+    }
     function visibleBuffer(state){
         const interval=state?.clock?.interval_state;if(interval?.buffer)return interval.buffer;
+        if(["break","lunch"].includes(interval?.intervalType)&&["break","lunch"].includes(interval.phase)&&interval.endBufferMilliseconds>0&&interval.breakRemainingMilliseconds>0)
+            return{phase:'end-buffer',durationMilliseconds:interval.endBufferMilliseconds,remainingMilliseconds:interval.endBufferMilliseconds,preview:true,motionEndTime:interval.breakBoundaryTime};
         if(["break","lunch"].includes(interval?.intervalType)&&interval.endBufferMilliseconds>0&&interval.remainingMilliseconds<=0)
             return{phase:'end-buffer',durationMilliseconds:interval.endBufferMilliseconds,remainingMilliseconds:0,retained:true};
         return null;

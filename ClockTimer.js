@@ -7462,6 +7462,7 @@
 
             const buffer = ["start-buffer", "end-buffer"].includes(phase) && Number.isFinite(current?.end)
                 ? {phase, durationMilliseconds:current.end-current.start,
+                    endTime:this.#timelineToISO(current.end),
                     remainingMilliseconds:Math.max(0,current.end-timelineNow)} : null;
             const breakEnd=this.#getIntervalRecordEnd(record);
             const breakRemainingMilliseconds=["break","lunch"].includes(intervalType)&&Number.isFinite(breakEnd)?breakEnd-timelineNow:undefined;
@@ -7489,6 +7490,7 @@
                 elapsedMilliseconds,
                 remainingMilliseconds,
                 breakRemainingMilliseconds,
+                breakBoundaryTime:Number.isFinite(breakEnd)?this.#timelineToISO(breakEnd):undefined,
                 endBufferMilliseconds:Math.max(0,Number(this.#getIntervalBufferRecord(record,"end")?.rangeLength)||(Number.isFinite(end)&&Number.isFinite(breakEnd)?end-breakEnd:0)),
                 countdownMilliseconds:buffer?.remainingMilliseconds??(["break","lunch"].includes(phase)?breakRemainingMilliseconds:remainingMilliseconds),
                 buffer
