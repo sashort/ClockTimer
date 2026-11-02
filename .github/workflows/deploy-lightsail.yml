@@ -177,6 +177,7 @@ jobs:
           TZ=UTC node tests/trip-bank-goal-budget.mjs
           TZ=UTC node tests/goal-priority.mjs
           node tests/trip-log.mjs
+          node tests/trip-log-dst.mjs
           node tests/trip-summary.mjs
           node tests/trip-summary-presentation.mjs
           node tests/app-state-transactions.mjs --summary-dialog --voice-feedback

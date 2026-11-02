@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/trip_official_percent.php';
+require_once __DIR__.'/trip_storage.php';
 
 function trip_edit_revision(array $events): string {
     return hash('sha256', json_encode($events, JSON_THROW_ON_ERROR));
@@ -60,7 +61,7 @@ function trip_edit_iso(string $value): string {
 }
 
 function trip_edit_settings(array $events): array {
-    $settings=[];
+    $settings=[];$instants=[];
     foreach ($events as $event) {
         $v=$event['value'];
         if ($event['event']==='trip.started') $settings=$v;
@@ -69,12 +70,30 @@ function trip_edit_settings(array $events): array {
         if (isset($fields[$event['event']])) $settings[$fields[$event['event']]]=$v['value'];
         if ($event['event']==='trip.creation-date-changed' && isset($v['creationAnchor'])) $settings['creationAnchor']=$v['creationAnchor'];
         if (isset($v['nonProduction'])) $settings['nonProduction']=$v['nonProduction'];
+        if (isset($event['scheduledStartTime'])) {
+            $anchor=$event['scheduledStartTime'];
+            if($event['event']==='trip.started' && ($v['timelineVersion']??null)===2) {
+                foreach(['creationTime'=>'creationOffsetMilliseconds','scheduledStart'=>'scheduledStartOffsetMilliseconds','startTime'=>'startOffsetMilliseconds'] as $field=>$key)
+                    if(is_int($v[$key]??null))$instants[$field]=trip_storage_instant($anchor,$v[$key]);
+            }
+            $field=['trip.creation-date-changed'=>'creationTime','trip.creation-time-changed'=>'creationTime','trip.scheduled-start-changed'=>'scheduledStart','trip.start-time-changed'=>'startTime'][$event['event']]??null;
+            if($field!==null&&is_int($v['valueOffsetMilliseconds']??null))$instants[$field]=trip_storage_instant($anchor,$v['valueOffsetMilliseconds']);
+        }
+    }
+    if(count($instants)===3) {
+        $midnight=substr(min($instants),0,10).' 00:00:00.000';
+        $settings['creationAnchor']=str_replace(' ','T',$midnight).'Z';
+        foreach($instants as $field=>$instant)$settings[$field]=trip_edit_offset_clock(trip_storage_epoch_ms($instant)-trip_storage_epoch_ms($midnight));
     }
     if (($settings['breakOnly'] ?? false) === true) {
         $settings['standardTimeMilliseconds'] = null;
         $settings['nonProduction'] = false;
     }
     return $settings;
+}
+
+function trip_edit_offset_clock(int $ms): string {
+    return intdiv($ms,3600000).':'.str_pad((string)(intdiv($ms,60000)%60),2,'0',STR_PAD_LEFT).':'.str_pad((string)(intdiv($ms,1000)%60),2,'0',STR_PAD_LEFT).'.'.str_pad((string)($ms%1000),3,'0',STR_PAD_LEFT);
 }
 
 /** Edits preserve event IDs and interval keys; the normal ClockTimer replay remains authoritative. */
@@ -108,13 +127,20 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         if ((trip_edit_settings($events)['breakOnly'] ?? false) === true) throw new InvalidArgumentException('Standard time and production settings do not apply to break-only sessions.');
         $s=$input['settings']??null;
         if (!is_array($s) || !is_bool($s['nonProduction']??null)) throw new InvalidArgumentException('Invalid trip settings.');
+        $absolute=is_array($s['instants']??null);
+        if($absolute){
+            $instants=[];foreach(['creationTime','scheduledStart','startTime'] as $field)$instants[$field]=trip_edit_iso($s['instants'][$field]??'');
+            $midnight=substr(min($instants),0,10).' 00:00:00.000';$s['creationAnchor']=str_replace(' ','T',$midnight).'Z';
+            foreach($instants as $field=>$instant)$s[$field]=trip_edit_offset_clock(trip_storage_epoch_ms($instant)-trip_storage_epoch_ms($midnight));
+            unset($s['instants']);
+        }
         trip_edit_duration_milliseconds(
             $s['standardTimeMilliseconds'] ??
                 null
         );
         $anchor=trip_edit_iso($s['creationAnchor']??'');
         foreach (['creationTime','scheduledStart','startTime'] as $field) {
-            if (!preg_match('/^(\d+):([0-5]\d):([0-5]\d)(?:\.\d{1,3})?$/D',$s[$field]??'',$m) || ($field==='creationTime' && (int)$m[1]>23)) throw new InvalidArgumentException('Invalid trip time.');
+            if (!preg_match('/^(\d+):([0-5]\d):([0-5]\d)(?:\.\d{1,3})?$/D',$s[$field]??'',$m) || (!$absolute && $field==='creationTime' && (int)$m[1]>23)) throw new InvalidArgumentException('Invalid trip time.');
         }
         $effective=trip_edit_settings($events);
         $events=array_values(array_filter($events,static fn($e)=>!in_array($e['event'],[
@@ -122,6 +148,12 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         foreach ($events as &$e) if ($e['event']==='trip.started') {
             $e['value']=array_merge($effective,$s);
             $e['timestamp']=trip_edit_clock_iso($anchor,$s['startTime']);
+            if($absolute || ($e['value']['timelineVersion']??null)===2){
+                $scheduled=trip_edit_clock_iso($anchor,$s['scheduledStart']);$e['scheduledStartTime']=str_replace(' ','T',$scheduled).'Z';
+                foreach(['creationTime'=>'creationOffsetMilliseconds','scheduledStart'=>'scheduledStartOffsetMilliseconds','startTime'=>'startOffsetMilliseconds'] as $field=>$key)
+                    $e['value'][$key]=trip_storage_epoch_ms(trip_edit_clock_iso($anchor,$s[$field]))-trip_storage_epoch_ms($scheduled);
+                $e['value']['timelineVersion']=2;
+            }
         }
         unset($e);
     } elseif ($operation==='entry' || $operation==='add-entry' || $operation==='delete-entry') {
