@@ -21,7 +21,7 @@
         if(host.id!=='endTripButton'||host.closest('.app')?.dataset.actionDisplay==='compact'||!host.querySelector(':scope > .break-action-label'))return;
         host.style.removeProperty('--break-action-font-size');
         const labels=[...host.querySelectorAll(':scope > .break-action-label,:scope > .break-action-clock')],style=getComputedStyle(host),font=parseFloat(style.fontSize),boxes=labels.map(e=>e.getBoundingClientRect());
-        const reserve=host.dataset.bufferCounting==='true'?Math.min(96,host.clientWidth*.28):host.dataset.bufferActive==='true'&&host.clientWidth<host.closest('.app').clientWidth*.75?32:0,available=Math.max(1,host.clientWidth-20-reserve),width=boxes.reduce((sum,r)=>sum+r.width,0),height=Math.max(...boxes.map(r=>r.height));
+        const reserve=host.dataset.bufferCounting==='true'?Math.min(96,host.clientWidth*.28):0,available=Math.max(1,host.clientWidth-20-reserve),width=boxes.reduce((sum,r)=>sum+r.width,0),height=Math.max(...boxes.map(r=>r.height));
         host.style.setProperty('--break-action-font-size',Math.max(10,font*Math.min(1,available/Math.max(1,width),Math.max(1,host.clientHeight-8)/Math.max(1,height)))+'px');
     }
     // A single paint-only frame follows the timer, and both full buffer tracks.
