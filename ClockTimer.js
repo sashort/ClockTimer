@@ -5500,6 +5500,12 @@
 
             let startedStandardTimeMilliseconds;
 
+            if (startedValue.timelineVersion===2 &&
+                (data.scheduledStartTime || startedEvent.scheduledStartTime || startedValue.scheduledStartTime) &&
+                !['creationOffsetMilliseconds','startOffsetMilliseconds','scheduledStartOffsetMilliseconds'].every(key=>Number.isSafeInteger(startedValue[key]))) {
+                throw new Error("The trip.started event has invalid millisecond offsets.");
+            }
+
             try {
                 startedStandardTimeMilliseconds = startedValue.breakOnly === true ? 0 :
                     this.#serializedDurationToMilliseconds(
