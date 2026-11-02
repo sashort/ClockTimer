@@ -52,5 +52,6 @@ try {
     verify(count($events)===4&&$events[0]['scheduledStartTime']==='2026-11-01T07:00:00.000Z','API projection derives timestamps and publishes one canonical anchor');
     $command=trip_storage_command($pdo,'trip-events',['scheduledStartTime'=>'2026-11-01T07:00:00Z','offsetMilliseconds'=>-1]);
     verify($command['timestamp']==='2026-11-01 06:59:59.999','negative millisecond command offsets retain exact precision');
+    try{trip_storage_command($pdo,'trips',['startTime'=>'2026-11-01T07:00:00Z']);throw new RuntimeException('Outdated writer accepted');}catch(InvalidArgumentException $e){verify(str_contains($e->getMessage(),'Reload'),'outdated clients must reload before writing an orphan trip');}
     echo "PASS MariaDB offset migration and audited storage lifecycle\n";
 }finally{foreach(glob($directory.'/*')?:[] as $file)unlink($file);rmdir($directory);}
