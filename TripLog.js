@@ -239,7 +239,7 @@
                 onConfirm:async next=>{value=next;onChange(next);draw();}});}catch(e){this.error(e);}});button.setValue=next=>{value=next;draw();};form.append(button);return button;
         }
         date(value) {const d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-        clockValue(value,base) {const d=new Date(value),anchor=new Date((base||this.date(value))+"T00:00:00");return duration(d-anchor)+(d.getMilliseconds()?"."+String(d.getMilliseconds()).padStart(3,"0"):"");}
+        clockValue(value,base) {const d=new Date(value),anchor=new Date((base||this.date(value))+"T00:00:00"),days=(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(anchor.getFullYear(),anchor.getMonth(),anchor.getDate()))/86400000,ms=((days*24+d.getHours())*3600+d.getMinutes()*60+d.getSeconds())*1000;return duration(ms)+(d.getMilliseconds()?"."+String(d.getMilliseconds()).padStart(3,"0"):"");}
         footer(form,save,remove) {
             const error=node('p',undefined,'trip-log-error');error.setAttribute('role','alert');form.append(error);const actions=node('div',undefined,'dialog-actions two-actions');const cancel=node('button',globalThis.WMOFLanguagePack.text("8272b19f-0479-46fd-b1f8-13105354ce43"));cancel.type='button';cancel.addEventListener('click',()=>this.editor?.close());const submit=node('button',globalThis.WMOFLanguagePack.text("51fbcc20-278a-403f-891f-6312b48c1d42"));submit.type='submit';submit.className='primary-action';actions.append(cancel,submit);form.append(actions);
             if(remove){const del=node('button',globalThis.WMOFLanguagePack.text("522ad51e-f2b7-4203-8e4e-7e8139ae5473"),'danger');del.type='button';del.addEventListener('click',async()=>{if(!confirm(globalThis.WMOFLanguagePack.text("67216178-6d68-4008-9be1-a7b68fc086b5")))return;try{del.disabled=true;submit.disabled=true;await remove();this.editor?.close();await this.options.refresh();}catch(e){this.error(e);}finally{del.disabled=false;submit.disabled=false;}});form.append(del);}
@@ -291,7 +291,7 @@
                 const anchor=new Date(instants.creationTime);anchor.setUTCHours(0,0,0,0);
                 settings.creationAnchor=anchor.toISOString();
                 for(const field of ['creationTime','scheduledStart','startTime']){const ms=Date.parse(instants[field])-anchor.getTime();settings[field]=duration(ms)+(ms%1000?'.'+String(Math.abs(ms%1000)).padStart(3,'0'):'');}
-                return this.options.request(trip.id,{operation:'settings',revision:data.revision,settings});
+                return this.options.request(trip.id,{operation:'settings',revision:data.revision,settings:{...settings,instants}});
             });
         }
         async editOfficial(trip){

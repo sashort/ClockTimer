@@ -178,12 +178,12 @@ jobs:
           TZ=UTC node tests/trip-bank-goal-budget.mjs
           TZ=UTC node tests/goal-priority.mjs
           node tests/trip-log.mjs
+          node tests/trip-log-dst.mjs
           node tests/trip-summary.mjs
           node tests/trip-summary-presentation.mjs
           node tests/app-state-transactions.mjs --summary-dialog --voice-feedback
           node tests/trip-replay-identity.mjs
           node tests/dst-timeline.mjs
-          node tests/invalid-trip-recovery-browser.cjs
           node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs
           node tests/spoken-duration.mjs
@@ -230,6 +230,7 @@ jobs:
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
+      - run: node tests/invalid-trip-recovery-browser.cjs
       - run: node tests/retained-page-operation-browser.cjs
       - run: node tests/trip-time-bank-browser.cjs
       - run: node tests/overtime-break-browser.cjs

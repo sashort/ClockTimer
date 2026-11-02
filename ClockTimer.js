@@ -7851,7 +7851,8 @@
                         creationTime: buffered.payload.creationTime,
                         scheduledStart: buffered.payload.scheduledStart,
                         startTime: buffered.payload.startTime,
-                        nonProduction: buffered.payload.nonProduction === true
+                        nonProduction: buffered.payload.nonProduction === true,
+                        ...this.#bufferedTripTimeSettings(buffered)
                     },
                     revision: `offline-${buffered.payload.clientToken}`
                 });
@@ -7897,8 +7898,10 @@
                     return {...response(), offline:true};
                 }
                 if (change.operation === "settings") {
-                    Object.assign(buffered.payload, change.settings);
-                    Object.assign(buffered.log, change.settings);
+                    const {instants,...settings}=change.settings;
+                    const {creationAnchor,creationTime,scheduledStart,startTime,...metadata}=settings;
+                    Object.assign(buffered.payload, metadata);
+                    Object.assign(buffered.log, settings);
                     const standardTimeMilliseconds =
                         change.settings
                             .standardTimeMilliseconds;
@@ -7916,7 +7919,21 @@
                         if (stopped) stopped.value.standardTimeMilliseconds = standardTimeMilliseconds;
                     }
                     const start = buffered.events.find(event => event.event === "trip.started");
-                    if (start) Object.assign(start.value, change.settings);
+                    if (start) Object.assign(start.value, settings);
+                    const legacyBase=Date.parse(creationAnchor),legacyTimes={creationTime,scheduledStart,startTime};
+                    const moments=instants||(Number.isFinite(legacyBase)&&Object.values(legacyTimes).every(value=>Number.isFinite(TemporalFormat.parseDuration(value)))
+                        ?Object.fromEntries(Object.entries(legacyTimes).map(([key,value])=>[key,new Date(legacyBase+TemporalFormat.parseDuration(value)).toISOString()])):null);
+                    if(start && moments){
+                        const anchor=new Date(moments.scheduledStart).toISOString(),epoch=Date.parse(anchor);
+                        const rebase=(value,shift)=>{if(!value||typeof value!=="object")return;for(const key of Object.keys(value)){if(typeof value[key]==="object")rebase(value[key],shift);else if(Number.isSafeInteger(value[key])&&(/OffsetMilliseconds$|-offset-ms$/.test(key)))value[key]+=shift;}};
+                        for(const event of buffered.events){const shift=Date.parse(event.scheduledStartTime||buffered.payload.scheduledStartTime||anchor)-epoch;rebase(event.value,shift);event.scheduledStartTime=anchor;}
+                        start.timestamp=new Date(moments.startTime).toISOString();start.value.timelineVersion=2;
+                        for(const[field,key]of [['creationTime','creationOffsetMilliseconds'],['scheduledStart','scheduledStartOffsetMilliseconds'],['startTime','startOffsetMilliseconds']])start.value[key]=Date.parse(moments[field])-epoch;
+                        buffered.payload.scheduledStartTime=anchor;buffered.payload.startTime=start.timestamp;
+                        Object.assign(start.value,this.#bufferedTripTimeSettings(buffered));
+                        buffered.log.startTime=start.timestamp;
+                        for(const event of buffered.log.events||[])if(event.event==='trip.started'){event.timestamp=start.timestamp;event.value={...start.value};event.scheduledStartTime=anchor;}
+                    }
                 }
                 else {
                     const display = buffered.log.events || [];
@@ -7982,6 +7999,17 @@
             }
             return result;
             } finally {if(active && change && this.#needsTick()) this.#startTickTimer();}
+        }
+
+        #bufferedTripTimeSettings(buffered) {
+            const start=buffered.events.find(e=>e.event==='trip.started'),v=start?.value;
+            const root=Date.parse(start?.scheduledStartTime||buffered.payload.scheduledStartTime);
+            if(v?.timelineVersion!==2||!Number.isFinite(root)||!Number.isSafeInteger(v.creationOffsetMilliseconds))return {};
+            const instants={creationTime:root+v.creationOffsetMilliseconds,scheduledStart:Date.parse(buffered.payload.scheduledStartTime),startTime:Date.parse(start.timestamp)};
+            for(const event of buffered.events){const key={'trip.creation-date-changed':'creationTime','trip.creation-time-changed':'creationTime'}[event.event];if(key&&Number.isSafeInteger(event.value?.valueOffsetMilliseconds))instants[key]=Date.parse(event.scheduledStartTime||buffered.payload.scheduledStartTime)+event.value.valueOffsetMilliseconds;}
+            if(!Object.values(instants).every(Number.isFinite))return {};
+            const midnight=Math.floor(Math.min(...Object.values(instants))/ClockTimer.#DAY)*ClockTimer.#DAY;
+            return {creationAnchor:new Date(midnight).toISOString(),...Object.fromEntries(Object.entries(instants).map(([key,value])=>[key,this.#formatStandardTime(value-midnight,{includeHours:true})]))};
         }
 
         async downDetailsRequest(tripId,intervalKey,change) {

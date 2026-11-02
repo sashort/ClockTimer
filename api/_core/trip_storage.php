@@ -58,7 +58,7 @@ function trip_storage_encode_value(string $name,array $value,string $anchor,int 
         if($editor||!isset($value['creationOffsetMilliseconds']))$value['creationOffsetMilliseconds']=isset($value['creationTime'])?trip_storage_clock_offset($value['creationTime'],$midnight,$anchor):$offset;
         if($editor||!isset($value['scheduledStartOffsetMilliseconds']))$value['scheduledStartOffsetMilliseconds']=isset($value['scheduledStart'])?trip_storage_clock_offset($value['scheduledStart'],$midnight,$anchor):0;
         $value['startOffsetMilliseconds']=$offset;$value['timelineVersion']=2;
-        unset($value['creationAnchor'],$value['creationTime'],$value['startTime'],$value['scheduledStart'],$value['scheduledStartTime']);
+        unset($value['creationAnchor'],$value['creationTime'],$value['startTime'],$value['scheduledStart'],$value['scheduledStartTime'],$value['instants']);
     }
     if(in_array($name,['trip.creation-time-changed','trip.scheduled-start-changed','trip.start-time-changed'],true)) {
         if($editor||!isset($value['valueOffsetMilliseconds']))$value['valueOffsetMilliseconds']=trip_storage_clock_offset((string)($value['value']??''),$midnight,$anchor);
