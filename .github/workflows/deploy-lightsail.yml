@@ -180,6 +180,8 @@ jobs:
           node tests/trip-summary-presentation.mjs
           node tests/app-state-transactions.mjs --summary-dialog --voice-feedback
           node tests/trip-replay-identity.mjs
+          node tests/dst-timeline.mjs
+          node tests/invalid-trip-recovery-browser.cjs
           node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs
           node tests/spoken-duration.mjs
@@ -311,6 +313,10 @@ jobs:
       - run: php tests/trip_editor.php
       - run: php tests/migrations.php
       - run: php tests/break-only-migration.php
+        env:
+          CLOCKTIMER_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=clocktimer_test;charset=utf8mb4
+          CLOCKTIMER_TEST_PASSWORD: clocktimer-test
+      - run: php tests/trip-offset-storage.php
         env:
           CLOCKTIMER_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=clocktimer_test;charset=utf8mb4
           CLOCKTIMER_TEST_PASSWORD: clocktimer-test

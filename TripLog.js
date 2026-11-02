@@ -278,13 +278,21 @@
         async openSettings(trip) {
             const data=await this.options.request(trip.id),settings={...data.settings};const {form}=this.modal(globalThis.WMOFLanguagePack.text("e4524a84-e68f-4483-aca4-2fbb677695ff"));
             const original=new Date(settings.creationAnchor||iso(trip.startTime));let base=this.date(original);
+            const instants=Object.fromEntries(['creationTime','scheduledStart','startTime'].map(field=>[field,new Date(original.getTime()+timelineMilliseconds(settings[field])).toISOString()]));
             this.timeField(form,globalThis.WMOFLanguagePack.text("c1a768bf-c770-4812-b5ec-6d4257cca7bf"),settings.standardTimeMilliseconds,'duration',v=>settings.standardTimeMilliseconds=v);
             for(const [label,field] of [[globalThis.WMOFLanguagePack.text("b2cbecb7-1cd8-467c-a258-28fb5ed4f0ee"),'scheduledStart'],[globalThis.WMOFLanguagePack.text("5aabfe0a-74db-44f0-ab47-7bbfaadcacd8"),'startTime'],[globalThis.WMOFLanguagePack.text("4f361eb7-3f44-499c-8303-1121a2dde33e"),'creationTime']]) {
-                const value=new Date(original.getTime()+timelineMilliseconds(settings[field])).toISOString();
-                this.timeField(form,label,value,'absolute',v=>{if(field==='creationTime'){base=this.date(v);settings.creationAnchor=new Date(base+"T00:00:00").toISOString();}settings[field]=this.clockValue(v,base);},base);
+                const value=instants[field];
+                this.timeField(form,label,value,'absolute',v=>{instants[field]=v;},this.date(value));
             }
             const productive=node('label');const check=node('input');check.type='checkbox';check.checked=!settings.nonProduction;check.addEventListener('change',()=>settings.nonProduction=!check.checked);productive.append(check,document.createTextNode(globalThis.WMOFLanguagePack.text("1a53ccce-2778-593f-8c0c-6ca4af3f94d8")));form.append(productive);
-            this.footer(form,()=>this.options.request(trip.id,{operation:'settings',revision:data.revision,settings}));
+            this.footer(form,()=>{
+                // UTC civil aliases are transport compatibility only. Derive
+                // them from exact instants so editing one field cannot move others.
+                const anchor=new Date(instants.creationTime);anchor.setUTCHours(0,0,0,0);
+                settings.creationAnchor=anchor.toISOString();
+                for(const field of ['creationTime','scheduledStart','startTime']){const ms=Date.parse(instants[field])-anchor.getTime();settings[field]=duration(ms)+(ms%1000?'.'+String(Math.abs(ms%1000)).padStart(3,'0'):'');}
+                return this.options.request(trip.id,{operation:'settings',revision:data.revision,settings});
+            });
         }
         async editOfficial(trip){
             if(trip.running||breakOnly(trip)||this.editing.size)throw new Error(TripLog.officialText('completedOnly'));

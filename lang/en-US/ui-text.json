@@ -7114,6 +7114,36 @@
       "id": "4f163c6a-3526-4504-92af-9c7f0e91a223",
       "text": "Standard In",
       "default": "Standard In"
+    },
+    "5a155b7c-c98c-545f-aed9-92a7c0ee8ba3": {
+      "id": "5a155b7c-c98c-545f-aed9-92a7c0ee8ba3",
+      "text": "Saved Trip Needs Recovery",
+      "default": "Saved Trip Needs Recovery"
+    },
+    "7cf2b4fd-ca3b-5c11-8423-8ec6594e7090": {
+      "id": "7cf2b4fd-ca3b-5c11-8423-8ec6594e7090",
+      "text": "The saved trip could not be restored. Its records are unchanged. Review it in Trip Log or retry after repairing it.",
+      "default": "The saved trip could not be restored. Its records are unchanged. Review it in Trip Log or retry after repairing it."
+    },
+    "c9107f95-ae81-5a17-91d2-ae6608165c71": {
+      "id": "c9107f95-ae81-5a17-91d2-ae6608165c71",
+      "text": "Retry",
+      "default": "Retry"
+    },
+    "7fc38831-7493-557b-8978-6382ab36cfa3": {
+      "id": "7fc38831-7493-557b-8978-6382ab36cfa3",
+      "text": "Open Trip Log",
+      "default": "Open Trip Log"
+    },
+    "2a85dfa6-149e-5dab-a4fd-3bc607cee03e": {
+      "id": "2a85dfa6-149e-5dab-a4fd-3bc607cee03e",
+      "text": "Download Recovery Details",
+      "default": "Download Recovery Details"
+    },
+    "a27509c7-9bc2-502f-953e-56e5a011f004": {
+      "id": "a27509c7-9bc2-502f-953e-56e5a011f004",
+      "text": "Close",
+      "default": "Close"
     }
   }
 }

@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/trip_storage.php';
+require_once __DIR__ . '/trip_storage.php';
 
 function authenticated_user_id(): int
 {
@@ -40,7 +42,7 @@ function require_trip_owner(PDO $pdo, int $tripId): array
 {
     $statement = $pdo->prepare(
         'SELECT id, user_id, start_time, end_time, standard_time_ms, counted_time_ms, non_production, break_only, pending, client_token, created_at '
-        . 'FROM trips WHERE id = :id AND user_id = :user_id LIMIT 1'
+        . 'FROM ' . trip_storage_read_table($pdo) . ' WHERE id = :id AND user_id = :user_id LIMIT 1'
     );
     $statement->execute([
         ':id' => $tripId,
