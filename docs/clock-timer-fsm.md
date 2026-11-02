@@ -14,7 +14,7 @@ contract, scheduled-start rebasing, and daylight-saving behavior.
 
 Use the [searchable state map](application-state-inventory.html) and its
 [machine-readable inventory](application-state-inventory.json) for enumeration.
-The map currently records 126 regions with 470 named values, 33 surface types
+The map currently records 129 regions with 481 named values, 34 surface types
 with four lifecycle states each, nine aliases for useful combined states, and
 11 explicitly Debug-only manual-trip workflow entries. These are vocabulary
 counts, **not** the number of unique reachable application states or test cases.
