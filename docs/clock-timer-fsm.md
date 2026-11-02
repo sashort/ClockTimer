@@ -1,5 +1,15 @@
 # ClockTimer state dispatch
 
+## Saved-trip recovery and DST-safe time
+
+Authenticated restoration transitions either to the reconstructed trip state
+or to recovery when saved model data is invalid. Recovery preserves the raw
+events, keeps login available, and blocks new trips. Retry transitions to the
+restored state after repair, or to Ready after the server confirms no assignment.
+Network/authentication failures retain their normal error path. See
+[trip timeline storage](trip-offset-storage.md) for the signed-offset database
+contract, scheduled-start rebasing, and daylight-saving behavior.
+
 ## Current Debug state inventory
 
 Use the [searchable state map](application-state-inventory.html) and its

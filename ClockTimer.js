@@ -146,6 +146,9 @@
         #creationMilliseconds;
 
         #tripId;
+        #tripStorageVersion = 1;
+        #clockInputOffset;
+        #tripRecovery;
 
         #preparedTrip;
 
@@ -3152,6 +3155,7 @@
         }
 
         #setConnected(csrfToken, detail = {}) {
+            this.#tripStorageVersion = Number(detail.tripStorageVersion) === 2 ? 2 : 1;
             if (detail.user?.id !== undefined) this.#syncUserId = detail.user.id;
             const previousNetworkStatus =
                 this.networkStatus;
@@ -3308,8 +3312,38 @@
                 );
         }
 
+        #offsetStorageCommand(endpoint, input) {
+            const body={...input}, anchor=body.scheduledStartTime ||
+                (body.action==='prepare'?body.creationTime:this.#timelineToISO(this.#scheduledStartMilliseconds));
+            if (!anchor) throw new Error('The trip scheduled-start anchor is missing.');
+            const epoch=this.#parseTripEventTimestamp(anchor).getTime();
+            const offset=value=>this.#parseTripEventTimestamp(value).getTime()-epoch;
+            body.scheduledStartTime=new Date(epoch).toISOString();body.timelineVersion=2;
+            if(endpoint==='trips') {
+                body.production=body.breakOnly===true?'break-only':(body.nonProduction??this.#nonProduction)?'no':'yes';
+                if(body.startTime!==undefined){body.startOffsetMilliseconds=offset(body.startTime);delete body.startTime;}
+                if(body.endTime!==undefined){body.endOffsetMilliseconds=offset(body.endTime);delete body.endTime;}
+                delete body.breakOnly;delete body.nonProduction;
+            } else {
+                body.offsetMilliseconds=offset(body.timestamp);delete body.timestamp;
+                const v=body.value={...(body.value||{})};
+                if(body.event==='trip.started') {
+                    v.startOffsetMilliseconds=body.offsetMilliseconds;v.scheduledStartOffsetMilliseconds??=0;v.timelineVersion=2;
+                    delete v.creationAnchor;delete v.creationTime;delete v.startTime;delete v.scheduledStart;delete v.scheduledStartTime;
+                }
+                if(v.valueOffsetMilliseconds!==undefined){delete v.value;delete v.creationAnchor;}
+                for(const prefix of ['boundary','restart'])if(v[prefix+'Time']){v[prefix+'OffsetMilliseconds']=offset(v[prefix+'Time']);delete v[prefix+'Time'];}
+                if(v.attributes&&!Array.isArray(v.attributes)){v.attributes={...v.attributes};for(const suffix of ['scheduled-end','buffered-end','actual-end','early-start-end']){
+                    const key='clock-timer-'+suffix;if(v.attributes[key]){v.attributes[key+'-offset-ms']=offset(v.attributes[key]);delete v.attributes[key];}
+                }}
+            }
+            return body;
+        }
+
         async #apiRequest(endpoint, { method = "GET", body, csrf = false, query, signal } = {}) {
             if (this.#observerOnly) throw new Error("An observer timer cannot access persistence.");
+            if (this.#tripStorageVersion === 2 && body && ["trips","trip-events"].includes(endpoint) && !/^(GET|HEAD|DELETE)$/i.test(method)) body=this.#offsetStorageCommand(endpoint,body);
+
             const permission = globalThis.SpeechMenu?.executionContext?.persist ?? this.#stateTransaction?.remotePermission;
             if (permission === false) throw new Error("This speech command is client-only; speech-persist is required for server access.");
             signal ??= this.#stateTransactionSignal;
@@ -3438,7 +3472,7 @@
                     {
                         source: "resume",
                         user: data.user,
-                        calendars: data.calendars
+                        calendars: data.calendars, tripStorageVersion: data.tripStorageVersion
                     }
                 );
 
@@ -3622,7 +3656,12 @@
                 );
             }
 
+            const scheduledStartTime=this.#timelineToISO(this.#scheduledStartMilliseconds);
+            const targets={'trip.creation-time-changed':this.#creationMilliseconds,'trip.creation-date-changed':this.#creationMilliseconds,
+                'trip.scheduled-start-changed':this.#scheduledStartMilliseconds,'trip.start-time-changed':this.#getStartTimeMilliseconds()};
+            if(Number.isFinite(targets[name]))value={...(value||{}),valueOffsetMilliseconds:targets[name]-this.#scheduledStartMilliseconds};
             const queued = {
+                scheduledStartTime,
                 event:
                     name,
                 timestamp:
@@ -3681,7 +3720,7 @@
                             method: "POST",
                             csrf: true,
                             body: {
-                                tripId,
+                                tripId, scheduledStartTime: event.scheduledStartTime,
                                 event:
                                     event.event,
                                 timestamp:
@@ -3719,7 +3758,7 @@
                         method: "PATCH",
                         csrf: true,
                         body: {
-                            tripId,
+                            tripId, scheduledStartTime: event.scheduledStartTime,
                             action: "stop",
                             endTime: event.timestamp,
                             breakOnly: event.value.breakOnly === true,
@@ -3880,7 +3919,7 @@
                     if (event.synced) continue;
                     const data = await this.#apiRequest("trip-events", {
                         method: "POST", csrf: true,
-                        body: {tripId: trip.tripId, event: event.event,
+                        body: {tripId: trip.tripId, event: event.event, scheduledStartTime:event.scheduledStartTime||trip.payload.scheduledStartTime,
                             timestamp: event.timestamp, value: event.value,
                             clientToken: event.clientToken}
                     });
@@ -3890,7 +3929,7 @@
                     if (event.event === "trip.stopped") {
                         await this.#apiRequest("trips", {
                             method: "PATCH", csrf: true,
-                            body: {tripId: trip.tripId, action: "stop",
+                            body: {tripId: trip.tripId, action: "stop", scheduledStartTime:event.scheduledStartTime||trip.payload.scheduledStartTime,
                                 endTime: event.timestamp,
                                 breakOnly: event.value.breakOnly === true,
                                 standardTimeMilliseconds: event.value.standardTimeMilliseconds,
@@ -3962,6 +4001,7 @@
             }
 
             const payload = {
+                scheduledStartTime: this.#timelineToISO(this.#scheduledStartMilliseconds),
                 startTime,
                 endTime,
                 standardTimeMilliseconds: this.#breakOnly ? null : standardTimeMilliseconds,
@@ -4946,7 +4986,7 @@
                 {
                     source: "connect",
                     user: data.user,
-                    calendars: data.calendars
+                    calendars: data.calendars, tripStorageVersion: data.tripStorageVersion
                 }
             );
 
@@ -4979,10 +5019,20 @@
             const data = await this.#apiRequest("trips", {query: {result: "active"}});
             const tripId = Number(data?.activeTripId);
             if (!Number.isInteger(tripId) || tripId < 1) {
+                this.#tripRecovery = undefined;
                 this.#emitUIState("activeTripChecked");
                 return {restored: false, reason: "none", tripId: null, state: this.uiState};
             }
-            await this.loadTrip(tripId);
+            try { await this.loadTrip(tripId); }
+            catch (error) {
+                if (!error?.clockTimerInvalidTrip) throw error;
+                this.#clearLocal(); this.#tripId = undefined; this.#preparedTrip = undefined;
+                this.#pendingIntervalRecord = undefined; this.#pendingTripEvents = [];
+                this.#tripRecovery = {tripId, message:error.message, data:error.tripRecoveryData};
+                this.#emitUIState("tripRecoveryRequired");
+                this.#emitClockTimerEvent("tripRecoveryRequired",this.tripRecovery);
+                return {restored:false,reason:"invalid-trip",tripId,state:this.uiState};
+            }
             const state = this.getUIState(new Date(), {
                 previousState: "ready",
                 transition: "active_trip_restored",
@@ -5030,6 +5080,7 @@
         }
 
         async prepareTrip({ timeout = 5000, at } = {}) {
+            this.#assertTripRecovered();
             const timeoutMilliseconds = Number(timeout);
             if (!Number.isFinite(timeoutMilliseconds) || timeoutMilliseconds <= 0) {
                 throw new RangeError("timeout must be a positive number of milliseconds.");
@@ -5190,9 +5241,11 @@
         }
         #stateEvents() {
             if (!this.#hasStartProperties()) return [];
-            const events = [{event: "trip.started", timestamp: this.#timelineToISO(this.#getStartTimeMilliseconds()), value: {
+            const events = [{event: "trip.started", timestamp: this.#timelineToISO(this.#getStartTimeMilliseconds()), scheduledStartTime: this.#timelineToISO(this.#scheduledStartMilliseconds), value: {
                 standardTimeMilliseconds: this.#breakOnly ? null : this.#standardDuration,
-                creationTime: this.#formatStandardTime(this.#creationMilliseconds, {clock: true, includeHours: true}),
+                timelineVersion: 2, scheduledStartOffsetMilliseconds: 0, creationOffsetMilliseconds: this.#creationMilliseconds-this.#scheduledStartMilliseconds,
+                startOffsetMilliseconds: this.#getStartTimeMilliseconds()-this.#scheduledStartMilliseconds,
+                creationTime: this.#formatTimelineTime(this.#creationMilliseconds),
                 scheduledStart: this.#formatTimelineTime(this.#scheduledStartMilliseconds),
                 startTime: this.#formatTimelineTime(this.#getStartTimeMilliseconds()),
                 nonProduction: this.#nonProduction, breakOnly: this.#breakOnly, creationAnchor: this.#getJSONCreationDate()?.toISOString(),
@@ -5256,6 +5309,7 @@
             // Event clock strings belong to the publisher's civil day. Replay in
             // the observer's civil day while preserving the absolute instants.
             const events = snapshot.events.map(event => {
+                if (event.value?.timelineVersion===2 && (event.scheduledStartTime || snapshot.scheduledStartTime)) return event;
                 if (event.event !== 'trip.started' || !event.value?.creationAnchor) return event;
                 const anchor = Date.parse(event.value.creationAnchor);
                 const absolute = value => {
@@ -5369,7 +5423,26 @@
                     }
                 );
 
-            return this.#applyTripEvents(numericTripId, data);
+            try {
+                const result=this.#applyTripEvents(numericTripId, data);
+                this.#tripRecovery=undefined;
+                return result;
+            } catch(error) {
+                error.clockTimerInvalidTrip=true;
+                error.tripRecoveryData=JSON.parse(JSON.stringify(data));
+                throw error;
+            }
+        }
+
+        get tripRecovery() {
+            return this.#tripRecovery ? {tripId:this.#tripRecovery.tripId,message:this.#tripRecovery.message} : null;
+        }
+        exportTripRecovery() { return this.#tripRecovery ? JSON.parse(JSON.stringify(this.#tripRecovery)) : null; }
+        #assertTripRecovered() {
+            if(this.#tripRecovery && !this.#replayingTripEvents) {
+                this.#emitClockTimerEvent("tripRecoveryRequired",this.tripRecovery);
+                throw new Error("Recover the saved trip before starting another trip.");
+            }
         }
 
         #applyTripEvents(numericTripId, data, {now = new Date()} = {}) {
@@ -5479,6 +5552,12 @@
 
                 const startResult =
                     this.#startLocal({
+                        creationAnchor: startedValue.timelineVersion === 2 && (data.scheduledStartTime || startedEvent.scheduledStartTime || startedValue.scheduledStartTime) ? undefined : startedValue.creationAnchor,
+                        referenceTimestamp: startedEvent.timestamp,
+                        scheduledStartInstant: data.scheduledStartTime ?? startedEvent.scheduledStartTime ?? startedValue.scheduledStartTime,
+                        creationOffsetMilliseconds: startedValue.timelineVersion === 2 ? startedValue.creationOffsetMilliseconds : undefined,
+                        startOffsetMilliseconds: startedValue.timelineVersion === 2 ? startedValue.startOffsetMilliseconds : undefined,
+                        scheduledStartOffsetMilliseconds: startedValue.timelineVersion === 2 ? startedValue.scheduledStartOffsetMilliseconds : undefined,
                         tripId:
                             numericTripId,
                         standardTimeMilliseconds:
@@ -5664,6 +5743,8 @@
                                         eventDate
                                     );
 
+                                const boundary = this.#getPendingIntervalElapsedBoundary(record);
+                                if ((startedValue.timelineVersion !== 2 || (startedValue.legacyWallClockData === true || startedValue.legacyWallClockData === 1)) && Number.isFinite(boundary) && timeline < boundary) break;
                                 if (
                                     !this.#updateIntervalElapsed(
                                         timeline
@@ -5848,6 +5929,7 @@
                             break;
 
                         case "trip.creation-date-changed":
+                            if(Number.isFinite(value.valueOffsetMilliseconds)) {this.#replayOffsetTime("creationTime",value.valueOffsetMilliseconds,data.scheduledStartTime ?? startedEvent.scheduledStartTime ?? startedValue.scheduledStartTime);break;}
                             if (
                                 typeof value.creationAnchor ===
                                     "string"
@@ -5864,16 +5946,19 @@
                             break;
 
                         case "trip.creation-time-changed":
+                            if(Number.isFinite(value.valueOffsetMilliseconds)) {this.#replayOffsetTime("creationTime",value.valueOffsetMilliseconds,data.scheduledStartTime ?? startedEvent.scheduledStartTime ?? startedValue.scheduledStartTime);break;}
                             this.creationTime =
                                 value.value;
                             break;
 
                         case "trip.scheduled-start-changed":
+                            if(Number.isFinite(value.valueOffsetMilliseconds)) {this.#replayOffsetTime("scheduledStart",value.valueOffsetMilliseconds,data.scheduledStartTime ?? startedEvent.scheduledStartTime ?? startedValue.scheduledStartTime);break;}
                             this.scheduledStart =
                                 value.value;
                             break;
 
                         case "trip.start-time-changed":
+                            if(Number.isFinite(value.valueOffsetMilliseconds)) {this.#replayOffsetTime("startTime",value.valueOffsetMilliseconds,data.scheduledStartTime ?? startedEvent.scheduledStartTime ?? startedValue.scheduledStartTime);break;}
                             this.startTime =
                                 value.value;
                             break;
@@ -6008,6 +6093,7 @@
         }
 
         async start(options = {}) {
+            this.#assertTripRecovered();
             if (options === null || typeof options !== "object" || Array.isArray(options)) {
                 throw new TypeError("start options must be an object.");
             }
@@ -6119,18 +6205,12 @@
                 "trip.started",
                 startEventTime,
                 {
+                    timelineVersion: 2, scheduledStartOffsetMilliseconds: 0,
+                    creationOffsetMilliseconds: this.#creationMilliseconds-this.#scheduledStartMilliseconds,
+                    startOffsetMilliseconds: this.#getStartTimeMilliseconds()-this.#scheduledStartMilliseconds,
                     standardTimeMilliseconds:
                         this.#breakOnly ? null : this.#standardDuration,
-                    creationTime:
-                        this.#formatStandardTime(
-                            this.#creationMilliseconds,
-                            {
-                                clock:
-                                    true,
-                                includeHours:
-                                    true
-                            }
-                        ),
+                    creationTime: this.#formatTimelineTime(this.#creationMilliseconds),
                     scheduledStart:
                         this.#formatTimelineTime(
                             this.#scheduledStartMilliseconds
@@ -6395,8 +6475,8 @@
                         actualTimeMilliseconds: summary.actualTimeElapsedMilliseconds,
                         countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                         events: this.#stateEvents()},
-                    events: this.#pendingTripEvents.map(({event, timestamp, value, clientToken, synced}) =>
-                        ({event, timestamp, value, clientToken, synced}))
+                    events: this.#pendingTripEvents.map(({event, timestamp, scheduledStartTime, value, clientToken, synced}) =>
+                        ({event, timestamp, scheduledStartTime, value, clientToken, synced}))
                 }];
                 if (!(await this.#saveCompletedTrips())) {
                     this.#completedTripQueue = this.#completedTripQueue.slice(0, -1);
@@ -9545,7 +9625,7 @@
             startTime,
             scheduledStart,
             nonProduction = false,
-            breakOnly = false
+            breakOnly = false, creationAnchor, referenceTimestamp, scheduledStartInstant, creationOffsetMilliseconds, startOffsetMilliseconds, scheduledStartOffsetMilliseconds
         } = {}) {
             try {
                 if (
@@ -9608,6 +9688,7 @@
                 breakOnly
             };
 
+            const startReference = referenceTimestamp ? this.#parseTripEventTimestamp(referenceTimestamp) : new Date();
             const previousCreationDate = this.#getJSONCreationDate();
 
             this.#preserveInsertedOnClear =
@@ -9669,6 +9750,9 @@
 
             // Absolute interval dates survive a new trip; cached timeline
             // offsets must move with them when its midnight anchor changes.
+            this.#startedAtEpoch = startReference.getTime();
+            this.#creationDateOverride = creationAnchor ? this.#parseTripEventTimestamp(creationAnchor)
+                : new Date(startReference.getFullYear(), startReference.getMonth(), startReference.getDate());
             const creationDate = this.#getJSONCreationDate();
             const anchorShift = previousCreationDate && creationDate
                 ? previousCreationDate.getTime() - creationDate.getTime() : 0;
@@ -9688,6 +9772,12 @@
                 if (Number.isFinite(this.#openEndedLastTick)) this.#openEndedLastTick += anchorShift;
             }
 
+            const scheduleInstant = scheduledStartInstant ? this.#parseTripEventTimestamp(scheduledStartInstant) : null;
+            const scheduledOffset = scheduleInstant ? this.#dateToTimelineTime(scheduleInstant) : null;
+            this.#creationMilliseconds = Number.isFinite(creationOffsetMilliseconds) && Number.isFinite(scheduledOffset)
+                ? scheduledOffset + creationOffsetMilliseconds : this.#resolveNear(creation.total, this.#dateToTimelineTime(startReference));
+            this.#creationTime = this.#formatTimelineTime(this.#creationMilliseconds);
+            this.#ringAnchor = this.#creationMilliseconds;
             if (
                 scheduledStart ===
                     undefined
@@ -9708,6 +9798,7 @@
                     this.#creationMilliseconds
                 );
 
+            if (Number.isFinite(scheduledOffset)) this.#scheduledStartMilliseconds = scheduledOffset+(Number.isFinite(scheduledStartOffsetMilliseconds)?scheduledStartOffsetMilliseconds:0);
             this.#scheduledStart =
                 this.#formatTimelineTime(
                     this.#scheduledStartMilliseconds
@@ -9733,6 +9824,7 @@
                     );
             }
 
+            if (Number.isFinite(startOffsetMilliseconds) && Number.isFinite(scheduledOffset)) startTimeMilliseconds = scheduledOffset + startOffsetMilliseconds;
             this.#tripStartMilliseconds = startTimeMilliseconds;
             this.#timeRangeGroup.clear();
             this.#intervalTimeRangeGroup.clear();
@@ -28480,6 +28572,8 @@
         #dateToTimelineTime(
             date
         ) {
+            const anchor = this.#getJSONCreationDate();
+            if (anchor) return date.getTime() - anchor.getTime();
             const today =
                 new Date();
 
@@ -28512,15 +28606,6 @@
                 date.getSeconds() * 1000 +
                 date.getMilliseconds() +
                 dayDifference * ClockTimer.#DAY;
-
-            if (
-                this.#started
-            ) {
-                return this.#resolveNear(
-                    raw,
-                    this.#getCurrentTimelineTime()
-                );
-            }
 
             return raw;
         }
@@ -31391,7 +31476,9 @@
             } = {}
         ) {
             // Bind the view at creation; interval authority stays in the model.
-            const modelStart = TemporalFormat.parseDateTime(this.#formatTimelineTime(start), new Date());
+            const anchor=this.#getJSONCreationDate();
+            const modelStart = anchor ? new Date(anchor.getTime()+start)
+                : TemporalFormat.parseDateTime(this.#formatTimelineTime(start), new Date());
             const modelEnd = new Date(modelStart.getTime() + Math.max(0, end - start));
             const range = TimeRangeElement.create(TimeRange.create({
                 type: modelEnd > modelStart ? "Fixed" : "Expandable",
@@ -33340,74 +33427,41 @@
             });
         }
 
-        #getCurrentTimelineTime(
-            now = new Date()
-        ) {
-            if (
-                this.#creationMilliseconds ===
-                    undefined ||
-                this.#startedAtEpoch ===
-                    undefined
-            ) {
-                return (
-                    now.getHours() *
-                        ClockTimer.#HOUR
-                ) +
-                    (
-                        now.getMinutes() *
-                        60 *
-                        1000
-                    ) +
-                    (
-                        now.getSeconds() *
-                        1000
-                    ) +
-                    now.getMilliseconds();
-            }
+        #getCurrentTimelineTime(now = new Date()) {
+            const anchor = this.#getJSONCreationDate();
+            if (anchor) return now.getTime() - anchor.getTime();
+            return now.getHours() * ClockTimer.#HOUR + now.getMinutes() * 60000 +
+                now.getSeconds() * 1000 + now.getMilliseconds();
+        }
 
-            const raw =
-                (
-                    now.getHours() *
-                        ClockTimer.#HOUR
-                ) +
-                (
-                    now.getMinutes() *
-                        60 *
-                        1000
-                ) +
-                (
-                    now.getSeconds() *
-                        1000
-                ) +
-                now.getMilliseconds();
-
-            const expected =
-                this.#creationMilliseconds +
-                (
-                    now.getTime() -
-                    this.#startedAtEpoch
-                );
-
-            const dayOffset =
-                Math.round(
-                    (
-                        expected -
-                        raw
-                    ) /
-                        ClockTimer.#DAY
-                );
-
-            return (
-                raw +
-                dayOffset *
-                    ClockTimer.#DAY
-            );
+        #replayOffsetTime(property,offset,anchor) {
+            const target=this.#dateToTimelineTime(new Date(this.#parseTripEventTimestamp(anchor).getTime()+offset));
+            this.#clockInputOffset=target;
+            try {this[property]=this.#formatTimelineTime(target);}finally{this.#clockInputOffset=undefined;}
         }
 
         #resolveNear(
             rawMilliseconds,
             reference
         ) {
+            if(Number.isFinite(this.#clockInputOffset)){const result=this.#clockInputOffset;this.#clockInputOffset=undefined;return result;}
+            const anchor = this.#getJSONCreationDate();
+            if (anchor && rawMilliseconds >= 0 && rawMilliseconds < ClockTimer.#DAY) {
+                const referenceDate = new Date(anchor.getTime() + reference);
+                const referenceClock = referenceDate.getHours() * 3600000 + referenceDate.getMinutes() * 60000 + referenceDate.getSeconds() * 1000 + referenceDate.getMilliseconds();
+                const day = Math.round((referenceClock - rawMilliseconds) / ClockTimer.#DAY);
+                const civil = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate() + day);
+                const h = Math.floor(rawMilliseconds / 3600000), m = Math.floor(rawMilliseconds / 60000) % 60,
+                    sec = Math.floor(rawMilliseconds / 1000) % 60, ms = rawMilliseconds % 1000;
+                const nominal = Date.UTC(civil.getFullYear(), civil.getMonth(), civil.getDate(), h, m, sec, ms);
+                const offsets = new Set([-ClockTimer.#DAY,0,ClockTimer.#DAY].map(delta => new Date(nominal + delta).getTimezoneOffset()));
+                const candidates = [...offsets].map(offset => new Date(nominal + offset * 60000)).filter(date =>
+                    date.getFullYear() === civil.getFullYear() && date.getMonth() === civil.getMonth() && date.getDate() === civil.getDate() &&
+                    date.getHours() === h && date.getMinutes() === m && date.getSeconds() === sec && date.getMilliseconds() === ms);
+                if (!candidates.length) throw new RangeError('The clock time does not exist on this date.');
+                candidates.sort((a,b) => Math.abs(a.getTime()-anchor.getTime()-reference)-Math.abs(b.getTime()-anchor.getTime()-reference));
+                return candidates[0].getTime() - anchor.getTime();
+            }
             // Explicit multi-day timeline values already include their day offset.
             if (rawMilliseconds >= ClockTimer.#DAY) return rawMilliseconds;
             const dayOffset =
@@ -33763,6 +33817,8 @@
         #formatTimelineTime(
             milliseconds
         ) {
+            const anchor = this.#getJSONCreationDate();
+            if (anchor && Number.isFinite(milliseconds)) return this.#dateToStandardTime(new Date(anchor.getTime() + milliseconds));
             const value =
                 (
                     Math.round(
@@ -33842,7 +33898,7 @@
             return this.#formatStandardTime(
                 total,
                 {
-                    clock: true
+                    clock: true, includeHours: true
                 }
             );
         }

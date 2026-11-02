@@ -38,6 +38,7 @@ try {
         '013_user_middle_name',
         '014_break_only_sessions',
         '015_impersonation',
+        '016_trip_offsets',
     ] as $id) {
         $result = apply_migration($pdo, $id, 0);
         echo $id . ($result['alreadyApplied'] ? " already recorded.\n" : " applied and recorded.\n");

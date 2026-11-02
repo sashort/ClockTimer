@@ -69,10 +69,15 @@ try{
  assert.equal(timer.getSummarySnapshot().trip.available,false);
  assert.equal(timer.uiState.trip_active,false);
  assert.equal(renderedState.trip_active,false,'the UI receives the cleared replay state');
- await assert.rejects(timer.resumeConnection(),/unknown interval/);
+ await timer.resumeConnection();
+ assert.equal(timer.tripRecovery.tripId,77,'corrupt saved trip enters recovery without breaking login');
+ assert.match(timer.tripRecovery.message,/unknown interval/);
+ assert.equal(timer.exportTripRecovery().data.events.length,savedEvents.length,'raw saved events remain available for recovery');
+ await assert.rejects(timer.start({standardTime:'0:30:00'}),/Recover the saved trip/);
  assert.deepEqual(writes,[],'retrying a failed replay never POSTs the partial model');
  events=structuredClone(savedEvents);
  await timer.resumeConnection();
+ assert.equal(timer.tripRecovery,null,'successful retry clears recovery');
  assert.equal(timer.currentTripId,77);
  assert.equal(timer.getActiveIntervalState().intervalKey,'down-1');
 

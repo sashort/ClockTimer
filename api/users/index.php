@@ -45,6 +45,7 @@ if ($method === 'GET') {
     json_response([
         'user' => current_user(),
         'csrfToken' => csrf_token(),
+        'tripStorageVersion' => trip_storage_uses_offsets(db()) ? 2 : 1,
         'calendars' => calendar_login_records(db(), api_config()),
     ]);
 }
@@ -128,7 +129,7 @@ $credential = $action === 'connect-pin' ? ($input['pin'] ?? null) : ($input['pas
 $impersonationToken = impersonation_credential_token($credential);
 if ($impersonationToken !== null) {
     $user = impersonation_token_login($impersonationToken, $input);
-    json_response(['user'=>$user, 'csrfToken'=>csrf_token(), 'impersonating'=>true,
+    json_response(['user'=>$user, 'csrfToken'=>csrf_token(),'tripStorageVersion'=>trip_storage_uses_offsets(db())?2:1, 'impersonating'=>true,
         'calendars'=>calendar_login_records(db(), api_config())]);
 }
 
@@ -166,5 +167,6 @@ $user['permissions'] = (int) $user['permissions'];
 json_response([
     'user' => $user,
     'csrfToken' => $_SESSION['csrf_token'],
+    'tripStorageVersion' => trip_storage_uses_offsets(db()) ? 2 : 1,
     'calendars' => calendar_login_records(db(), api_config()),
 ]);

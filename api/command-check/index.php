@@ -12,6 +12,8 @@ $command = $input['command'] ?? null;
 if (!is_array($command)) api_error('command must be an object.', 422, 'invalid_argument');
 if (!in_array($endpoint, ['trips', 'trip-events', 'trip-editor'], true)) api_error('Unsupported command endpoint.', 422, 'invalid_argument');
 $pdo = db();
+try {$command=trip_storage_command($pdo,$endpoint,$command);}
+catch(InvalidArgumentException $error){json_response(['accepted'=>false,'reason'=>$error->getMessage()]);}
 authenticated_user_id();
 $tripId = isset($command['tripId']) ? require_positive_int($command, 'tripId') : null;
 if ($tripId !== null) require_trip_owner($pdo, $tripId);
