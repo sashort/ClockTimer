@@ -47,3 +47,12 @@ check(trip_edit_clock_iso($settings['creationAnchor'],$settings['scheduledStart'
 $changed=trip_edit_apply($canonical,['operation'=>'settings','settings'=>array_merge($settings,['instants'=>['creationTime'=>'2026-11-01T23:10:00.000Z','scheduledStart'=>'2026-11-01T22:00:00.000Z','startTime'=>'2026-11-01T23:40:00.125Z']])]);
 check($changed[0]['timestamp']===$canonical[0]['timestamp']&&$changed[1]['timestamp']===$canonical[1]['timestamp'],'changing scheduled start preserves factual start/end instants');
 check($changed[0]['scheduledStartTime']==='2026-11-01T22:00:00.000Z'&&$changed[0]['value']['startOffsetMilliseconds']===6000125,'canonical settings recalculate signed offsets against the new scheduled start');
+$public=trip_edit_api_settings($canonical);
+check(!array_intersect(['creationAnchor','creationTime','startTime','scheduledStart'],array_keys($public)),'public editor settings omit legacy anchors and clock aliases');
+check($public['instants']['creationTime']==='2026-11-01T23:10:00.000Z'&&$public['instants']['scheduledStart']==='2026-11-02T00:10:00.000Z','public settings carry exact instants across UTC midnight');
+$wire=trip_storage_view_value('trip.started',$canonical[0]['value'],'2026-11-02 00:10:00.000',-1799875);
+check(!isset($wire['creationAnchor'])&&$wire['creationOffsetMilliseconds']===-3600000,'event projection retains offsets without recreating a legacy anchor');
+$persisted=trip_storage_encode_value('trip.started',$wire,'2026-11-02 00:10:00.000',-1799875,true);
+check($persisted['creationOffsetMilliseconds']===-3600000,'editing a canonical event retains its independent creation offset');
+$moved=trip_edit_apply($canonical,['operation'=>'entry','entry'=>['eventId'=>81,'start'=>'2026-11-01T23:45:00.125Z']]);
+check($moved[0]['value']['startOffsetMilliseconds']===-1499875,'trip start entry edits use the canonical anchor without legacy fields');

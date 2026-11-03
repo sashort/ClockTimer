@@ -54,11 +54,16 @@ function trip_time_bank_base_projection(array $trip, array $events): ?array
         if (isset($ends[$key]) && in_array($type,['break','lunch'],true) && is_int($value['length'] ?? null))
             $credit += max(0,$value['length']+$duration($value['startBuffer'] ?? null)+$duration($value['endBuffer'] ?? null)-($right-$left));
     }
-    $anchor = $instant($started['value']['creationAnchor'] ?? null);
-    if ($anchor !== null && preg_match('/^(\d+):(\d+):(\d+(?:\.\d+)?)$/D',(string)($started['value']['scheduledStart'] ?? ''),$match)) {
-        $scheduled = $anchor + (int) round(((int)$match[1]*3600+(int)$match[2]*60+(float)$match[3])*1000);
-        if ($scheduled > $begin && $scheduled <= $finish) $segments[] = [$begin,$scheduled];
+    $scheduled = null;
+    $root = $instant($started['scheduledStartTime'] ?? null);
+    if($root !== null && is_int($started['value']['scheduledStartOffsetMilliseconds'] ?? null))
+        $scheduled = $root + $started['value']['scheduledStartOffsetMilliseconds'];
+    else {
+        $anchor = $instant($started['value']['creationAnchor'] ?? null);
+        if ($anchor !== null && preg_match('/^(\d+):(\d+):(\d+(?:\.\d+)?)$/D',(string)($started['value']['scheduledStart'] ?? ''),$match))
+            $scheduled = $anchor + (int) round(((int)$match[1]*3600+(int)$match[2]*60+(float)$match[3])*1000);
     }
+    if ($scheduled !== null && $scheduled > $begin && $scheduled <= $finish) $segments[] = [$begin,$scheduled];
     if (!$credit) return null;
     usort($segments,static fn($a,$b)=>$a[0]<=>$b[0]);$excluded=0;$cursor=$begin;
     foreach ($segments as [$left,$right]) if ($right > max($cursor,$left)) {$excluded += $right-max($cursor,$left);$cursor=$right;}

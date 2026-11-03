@@ -8,7 +8,7 @@ $tripId=require_positive_int($input,'tripId');
 $pdo=db();require_trip_owner($pdo,$tripId);
 if($method==='GET') {
     $events=fetch_trip_events($pdo,$tripId,'log');
-    json_response(['tripId'=>$tripId,'events'=>$events,'settings'=>trip_edit_settings($events),'revision'=>trip_edit_revision($events)]);
+    json_response(['tripId'=>$tripId,'events'=>$events,'settings'=>trip_edit_api_settings($events),'revision'=>trip_edit_revision($events)]);
 }
 require_csrf();
 try {
@@ -39,7 +39,7 @@ try {
         $a=trip_edit_aggregate($events);
         trip_storage_update($pdo,$tripId,['start_time'=>$a['startTime'],'end_time'=>$a['endTime'],'standard_time_ms'=>$a['standard'],'counted_time_ms'=>$a['counted'],'non_production'=>$a['nonProduction']]);
         $saved=fetch_trip_events($pdo,$tripId,'log');
-        return ['tripId'=>$tripId,'events'=>$saved,'revision'=>trip_edit_revision($saved),'settings'=>trip_edit_settings($saved)];
+        return ['tripId'=>$tripId,'events'=>$saved,'revision'=>trip_edit_revision($saved),'settings'=>trip_edit_api_settings($saved)];
     });
     json_response($result);
 } catch(InvalidArgumentException $error) {api_error($error->getMessage(),422,'invalid_trip_edit');}

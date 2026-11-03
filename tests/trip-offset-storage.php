@@ -50,6 +50,7 @@ try {
     verify($pdo->query('SELECT scheduled_start_time FROM trips WHERE id=1')->fetchColumn()==='2026-11-01 07:00:00.000','rebase rolls back atomically');
     $events=fetch_trip_events($pdo,1);
     verify(count($events)===4&&$events[0]['scheduledStartTime']==='2026-11-01T07:00:00.000Z','API projection derives timestamps and publishes one canonical anchor');
+    verify(!array_intersect(['creationAnchor','creationTime','startTime','scheduledStart'],array_keys($events[0]['value'])),'canonical API omits legacy midnight anchor and clock aliases');
     $command=trip_storage_command($pdo,'trip-events',['scheduledStartTime'=>'2026-11-01T07:00:00Z','offsetMilliseconds'=>-1]);
     verify($command['timestamp']==='2026-11-01 06:59:59.999','negative millisecond command offsets retain exact precision');
     try{trip_storage_command($pdo,'trips',['startTime'=>'2026-11-01T07:00:00Z']);throw new RuntimeException('Outdated writer accepted');}catch(InvalidArgumentException $e){verify(str_contains($e->getMessage(),'Reload'),'outdated clients must reload before writing an orphan trip');}

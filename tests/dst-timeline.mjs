@@ -32,5 +32,29 @@ try{
  assert(transport.length>0);assert(transport.every(x=>Number.isSafeInteger(x.offsetMilliseconds)&&!('timestamp' in x)),'canonical event writes use signed offsets rather than independent datetimes');
  assert(transport.filter(x=>x.event==='trip.started').every(x=>!('creationAnchor' in x.value)&&!('startTime' in x.value)),'new start payloads do not duplicate absolute clocks');
  replayEvents[0].value.startOffsetMilliseconds='invalid';await assert.rejects(legacy.loadTrip(99),/invalid millisecond offsets/);
- console.log('PASS exact DST start instants, fall/spring elapsed time and deadlines, repeated-hour reload, Down and legacy lunch recovery');
+ // The SQL read adapter includes UTC compatibility clock labels alongside v2
+ // offsets. Reload must never apply those legacy labels as a second anchor.
+ for(const {type,advance} of [{type:null,advance:300000},... [30000,300000,1380000,1560000].map(advance=>({type:'break',advance})),{type:'down',advance:300000}]){
+  const live=await make('2026-11-02T23:00:00Z');
+  w.__now+=300000;
+  if(type)await live.startInterval(type,type==='break'?1200000:undefined,{},type==='break'?150000:undefined,type==='break'?150000:undefined);
+  w.__now+=advance;live.renderedTimeMode='elapsed';
+  const beforeReload=elapsed(live),snapshot=live.captureState();
+  replayEvents=structuredClone(snapshot.events).map((e,i)=>({...e,id:i+1}));
+  const start=replayEvents.find(e=>e.event==='trip.started');
+  start.value.creationAnchor='2026-11-02T00:00:00.000Z';
+  start.value.creationTime=start.value.startTime=start.value.scheduledStart='23:00:00.000';
+  await legacy.loadTrip(99);legacy.renderedTimeMode='elapsed';
+  assert.equal(elapsed(legacy),beforeReload,`${type||'running'} API replay preserves counted elapsed despite UTC compatibility labels`);
+  if(type){assert.equal(legacy.getActiveIntervalState().intervalType,type,'reload preserves the active interval');assert.equal(legacy.getActiveIntervalState().phase,live.getActiveIntervalState().phase,'reload preserves the buffer/break phase');}
+  for(const mode of ['remaining','calculated-end']){
+   live.renderedTimeMode=legacy.renderedTimeMode=mode;live.testTick();legacy.testTick();
+   assert.equal(legacy.getUIState().time_component.value,live.getUIState().time_component.value,`${mode} is unchanged by ${type||'running'} reload at ${advance}ms`);
+  }
+  for(const key of ['creationAnchor','creationTime','scheduledStart','startTime'])delete start.value[key];
+  await legacy.loadTrip(99);legacy.renderedTimeMode='elapsed';
+  assert.equal(elapsed(legacy),beforeReload,'canonical API reload needs no legacy anchor or clock aliases');
+  live.remove();
+ }
+ console.log('PASS exact DST timeline and API-shaped running/Break/Down reload with UTC compatibility labels');
 }finally{for(const c of timers)c.remove();await w.happyDOM.close();}

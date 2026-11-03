@@ -67,7 +67,7 @@ function trip_edit_settings(array $events): array {
         if ($event['event']==='trip.started') $settings=$v;
         $fields=['trip.standard-time-changed'=>'standardTimeMilliseconds','trip.creation-time-changed'=>'creationTime',
             'trip.scheduled-start-changed'=>'scheduledStart','trip.start-time-changed'=>'startTime'];
-        if (isset($fields[$event['event']])) $settings[$fields[$event['event']]]=$v['value'];
+        if (isset($fields[$event['event']]) && array_key_exists('value',$v)) $settings[$fields[$event['event']]]=$v['value'];
         if ($event['event']==='trip.creation-date-changed' && isset($v['creationAnchor'])) $settings['creationAnchor']=$v['creationAnchor'];
         if (isset($v['nonProduction'])) $settings['nonProduction']=$v['nonProduction'];
         if (isset($event['scheduledStartTime'])) {
@@ -89,6 +89,18 @@ function trip_edit_settings(array $events): array {
         $settings['standardTimeMilliseconds'] = null;
         $settings['nonProduction'] = false;
     }
+    return $settings;
+}
+
+/** Public editor transport uses exact instants; legacy clock aliases remain import-only. */
+function trip_edit_api_settings(array $events): array {
+    $settings=trip_edit_settings($events);
+    $anchor=$settings['creationAnchor']??null;
+    if(is_string($anchor)){
+        foreach(['creationTime','scheduledStart','startTime'] as $field)
+            $settings['instants'][$field]=str_replace(' ','T',trip_edit_clock_iso($anchor,$settings[$field])).'Z';
+    }
+    unset($settings['creationAnchor'],$settings['creationTime'],$settings['scheduledStart'],$settings['startTime']);
     return $settings;
 }
 
@@ -195,6 +207,10 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
                 if (!in_array($e['event'],['trip.started','trip.stopped'],true)) throw new InvalidArgumentException('Select an interval or trip boundary.');
                 $found=true;$e['timestamp']=trip_edit_iso($entry['start']??'');
                 if ($e['event']==='trip.started') {
+                    if(($e['value']['timelineVersion']??null)===2 && isset($e['scheduledStartTime'])){
+                        $e['value']['startOffsetMilliseconds']=trip_storage_epoch_ms($e['timestamp'])-trip_storage_epoch_ms($e['scheduledStartTime']);
+                        continue;
+                    }
                     $anchor=$e['value']['creationAnchor']??null;
                     if (!$anchor) throw new InvalidArgumentException('Trip has no creation anchor.');
                     $ms=(int)round((strtotime($e['timestamp'].' UTC')-strtotime($anchor))*1000);

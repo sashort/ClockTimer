@@ -80,8 +80,11 @@
             if(end&&['break','lunch'].includes(type)&&Number.isSafeInteger(value.length))
                 credit+=Math.max(0,value.length+duration(value.startBuffer)+duration(value.endBuffer)-(right-left));
         }
-        const anchor=instant(started.value?.creationAnchor),clock=String(started.value?.scheduledStart||'').match(/^(\d+):(\d+):(\d+(?:\.\d+)?)$/);
-        if(Number.isFinite(anchor)&&clock){const scheduled=anchor+(Number(clock[1])*3600+Number(clock[2])*60+Number(clock[3]))*1000;if(scheduled>begin&&scheduled<=finish)segments.push([begin,scheduled]);}
+        const root=instant(started.scheduledStartTime),offset=started.value?.scheduledStartOffsetMilliseconds;
+        let scheduled;
+        if(Number.isFinite(root)&&Number.isSafeInteger(offset))scheduled=root+offset;
+        else{const anchor=instant(started.value?.creationAnchor),clock=String(started.value?.scheduledStart||'').match(/^(\d+):(\d+):(\d+(?:\.\d+)?)$/);if(Number.isFinite(anchor)&&clock)scheduled=anchor+(Number(clock[1])*3600+Number(clock[2])*60+Number(clock[3]))*1000;}
+        if(Number.isFinite(scheduled)&&scheduled>begin&&scheduled<=finish)segments.push([begin,scheduled]);
         segments.sort((a,b)=>a[0]-b[0]);let excluded=0,cursor=begin;
         for(const [left,right] of segments){if(right>Math.max(cursor,left)){excluded+=right-Math.max(cursor,left);cursor=right;}}
         const productive=Math.max(0,finish-begin-excluded);

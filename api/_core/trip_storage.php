@@ -59,13 +59,13 @@ function trip_storage_clock_offset(string $clock,string $midnight,string $anchor
 function trip_storage_encode_value(string $name,array $value,string $anchor,int $offset,bool $editor=false): array {
     $midnight=$value['creationAnchor']??substr($anchor,0,10).' 00:00:00.000';
     if($name==='trip.started') {
-        if($editor||!isset($value['creationOffsetMilliseconds']))$value['creationOffsetMilliseconds']=isset($value['creationTime'])?trip_storage_clock_offset($value['creationTime'],$midnight,$anchor):$offset;
-        if($editor||!isset($value['scheduledStartOffsetMilliseconds']))$value['scheduledStartOffsetMilliseconds']=isset($value['scheduledStart'])?trip_storage_clock_offset($value['scheduledStart'],$midnight,$anchor):0;
+        if(!isset($value['creationOffsetMilliseconds'])||($editor&&isset($value['creationTime'])))$value['creationOffsetMilliseconds']=isset($value['creationTime'])?trip_storage_clock_offset($value['creationTime'],$midnight,$anchor):$offset;
+        if(!isset($value['scheduledStartOffsetMilliseconds'])||($editor&&isset($value['scheduledStart'])))$value['scheduledStartOffsetMilliseconds']=isset($value['scheduledStart'])?trip_storage_clock_offset($value['scheduledStart'],$midnight,$anchor):0;
         $value['startOffsetMilliseconds']=$offset;$value['timelineVersion']=2;
         unset($value['creationAnchor'],$value['creationTime'],$value['startTime'],$value['scheduledStart'],$value['scheduledStartTime'],$value['instants']);
     }
     if(in_array($name,['trip.creation-time-changed','trip.scheduled-start-changed','trip.start-time-changed'],true)) {
-        if($editor||!isset($value['valueOffsetMilliseconds']))$value['valueOffsetMilliseconds']=trip_storage_clock_offset((string)($value['value']??''),$midnight,$anchor);
+        if(!isset($value['valueOffsetMilliseconds'])||($editor&&isset($value['value'])))$value['valueOffsetMilliseconds']=trip_storage_clock_offset((string)($value['value']??''),$midnight,$anchor);
         unset($value['value'],$value['creationAnchor']);
     }
     if($name==='trip.creation-date-changed') {
@@ -86,19 +86,12 @@ function trip_storage_shift_value(array $value,int $shift): array {
     }
     return $value;
 }
-/** Compatibility labels are derived on read; none are independently persisted. */
+/** Canonical responses expose one scheduled-start anchor, never a second midnight anchor. */
 function trip_storage_view_value(string $name,array $value,string $anchor,int $offset): array {
     $instant=static fn(int $ms):string=>trip_storage_instant($anchor,$ms);
-    $clock=static fn(int $ms):string=>substr($instant($ms),11);
-    if($name==='trip.started') {
-        $value['creationAnchor']=substr($anchor,0,10).'T00:00:00.000Z';
-        $value['creationTime']=$clock((int)($value['creationOffsetMilliseconds']??$offset));
-        $value['scheduledStart']=$clock((int)($value['scheduledStartOffsetMilliseconds']??0));$value['startTime']=$clock($offset);
-    }
-    if(isset($value['valueOffsetMilliseconds'])) {
-        if($name==='trip.creation-date-changed')$value['creationAnchor']=str_replace(' ','T',$instant((int)$value['valueOffsetMilliseconds'])).'Z';
-        else $value['value']=$clock((int)$value['valueOffsetMilliseconds']);
-    }
+    unset($value['creationAnchor']);
+    if($name==='trip.started')unset($value['creationTime'],$value['scheduledStart'],$value['startTime']);
+    if(isset($value['valueOffsetMilliseconds']))unset($value['value']);
     foreach(['boundary','restart'] as $prefix) if(isset($value[$prefix.'OffsetMilliseconds']))$value[$prefix.'Time']=str_replace(' ','T',$instant((int)$value[$prefix.'OffsetMilliseconds'])).'Z';
     foreach(['scheduled-end','buffered-end','actual-end','early-start-end'] as $suffix){$key='clock-timer-'.$suffix;if(isset($value['attributes'][$key.'-offset-ms']))$value['attributes'][$key]=str_replace(' ','T',$instant((int)$value['attributes'][$key.'-offset-ms'])).'Z';}
     return $value;

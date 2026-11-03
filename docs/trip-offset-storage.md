@@ -25,6 +25,13 @@ the anchor and offsets. API capability `tripStorageVersion: 2` selects the new
 client transport. Compatibility datetimes returned by reads are derived values,
 never independent sources of truth.
 
+Canonical event responses omit `creationAnchor` and the old `creationTime`,
+`scheduledStart`, and `startTime` clock aliases. Reconstruction uses only the
+scheduled-start instant and signed offsets. Editor settings expose exact `instants`
+instead of midnight-relative clock strings. Historical imports and old offline
+queues are normalized at the input boundary; they do not add compatibility anchors
+back to API responses. Bank calculations use the scheduled offset too.
+
 ClockTimer performs duration arithmetic on elapsed epoch milliseconds. Local
 clock fields are input/display only; repeated-hour inputs resolve near the
 reference instant, and nonexistent spring-forward clock inputs are rejected.

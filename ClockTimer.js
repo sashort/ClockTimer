@@ -5604,6 +5604,11 @@
                     numericTripId;
 
                 if (
+                    // Offset replay already established one consistent local
+                    // rendering anchor. API compatibility labels use UTC
+                    // midnight and must not replace it after offsets resolve.
+                    !(startedValue.timelineVersion === 2 &&
+                        (data.scheduledStartTime || startedEvent.scheduledStartTime || startedValue.scheduledStartTime)) &&
                     typeof startedValue.creationAnchor ===
                         "string"
                 ) {
