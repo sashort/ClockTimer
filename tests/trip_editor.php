@@ -56,3 +56,10 @@ $persisted=trip_storage_encode_value('trip.started',$wire,'2026-11-02 00:10:00.0
 check($persisted['creationOffsetMilliseconds']===-3600000,'editing a canonical event retains its independent creation offset');
 $moved=trip_edit_apply($canonical,['operation'=>'entry','entry'=>['eventId'=>81,'start'=>'2026-11-01T23:45:00.125Z']]);
 check($moved[0]['value']['startOffsetMilliseconds']===-1499875,'trip start entry edits use the canonical anchor without legacy fields');
+
+$stringOffsets=$canonical;foreach(['creationOffsetMilliseconds','scheduledStartOffsetMilliseconds','startOffsetMilliseconds'] as $key)$stringOffsets[0]['value'][$key]=(string)$stringOffsets[0]['value'][$key];
+check(trip_edit_api_settings($stringOffsets)['instants']===$public['instants'],'migrated string offsets reconstruct exact editor time settings');
+$stringWire=trip_storage_view_value('trip.started',$stringOffsets[0]['value'],'2026-11-02 00:10:00.000',-1799875);
+check(is_int($stringWire['creationOffsetMilliseconds'])&&$stringWire['creationOffsetMilliseconds']===-3600000,'canonical event reader normalizes migration string offsets');
+$shifted=trip_storage_shift_value(['creationOffsetMilliseconds'=>'0','attributes'=>['clock-timer-actual-end-offset-ms'=>'-250'],'other'=>'123'],60000);
+check($shifted===['creationOffsetMilliseconds'=>60000,'attributes'=>['clock-timer-actual-end-offset-ms'=>59750],'other'=>'123'],'scheduled-start rebasing shifts string offsets including nested boundaries');

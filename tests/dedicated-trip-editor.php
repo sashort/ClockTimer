@@ -29,3 +29,12 @@ $activePreview=trip_edit_preview($active,['changes'=>[]],41);editor_check($activ
 $scheduled=$settings;$scheduled['instants']['scheduledStart']='2026-11-03T09:55:00.125Z';
 $rebased=trip_edit_apply($events,['operation'=>'editor','settings'=>$scheduled,'changes'=>[]]);
 editor_check(array_values(array_filter($rebased,static fn($e)=>$e['event']==='interval.started'))[0]['timestamp']===$events[1]['timestamp'],'scheduled start edit preserves interval instants');
+
+$removed=trip_edit_apply($events,['operation'=>'editor','changes'=>[['operation'=>'delete-entry','entry'=>['eventId'=>4,'intervalKey'=>'d']]]]);
+editor_check(count(array_filter($removed,static fn($e)=>($e['value']['intervalKey']??null)==='d'))===0,'Down deletion removes all interval events');
+$plan=trip_edit_persistence_plan($events,$removed);editor_check(in_array(4,$plan['delete'],true)&&in_array(5,$plan['delete'],true),'Down deletion includes both stored boundaries');
+
+$migrated=$events;$migrated[0]['scheduledStartTime']='2026-11-03T10:00:00.125Z';$migrated[0]['value']=['timelineVersion'=>2,'creationOffsetMilliseconds'=>'0','scheduledStartOffsetMilliseconds'=>0,'startOffsetMilliseconds'=>0,'standardTimeMilliseconds'=>1800000,'nonProduction'=>false];
+$migratedSettings=trip_edit_api_settings($migrated);editor_check($migratedSettings['instants']['scheduledStart']==='2026-11-03T10:00:00.125Z','string-zero migrated creation offset does not hide scheduled start');
+$migratedSaved=trip_edit_apply($migrated,['operation'=>'editor','changes'=>[['operation'=>'delete-entry','entry'=>['eventId'=>4,'intervalKey'=>'d']]]]);
+editor_check(count(array_filter($migratedSaved,static fn($e)=>($e['value']['intervalKey']??null)==='d'))===0,'migrated string-offset trip saves Down deletion');

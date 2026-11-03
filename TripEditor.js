@@ -12,7 +12,7 @@
         constructor(trip,data,options,calendar){
             this.trip=copy(trip);this.original=copy(data.events);this.events=copy(data.events);this.settings=copy(data.settings);this.offline=data.offline===true;
             if(!this.settings.instants&&this.settings.creationAnchor){const base=time(this.settings.creationAnchor),duration=value=>{const [h,m,s]=String(value||'0:00:00').split(':').map(Number);return(h*3600+m*60+s)*1000;};this.settings.instants=Object.fromEntries(['creationTime','scheduledStart','startTime'].map(field=>[field,new Date(base+duration(this.settings[field])).toISOString()]));}
-            this.originalSettings=copy(this.settings);this.revision=data.revision;this.options=options;this.calendar=calendar;this.tab='timeline';this.official=[];this.previewTrip=trip;this.generation=0;this.dirty=false;
+            this.originalSettings=copy(this.settings);this.revision=data.revision;this.options=options;this.calendar=calendar;this.official=[];this.previewTrip=trip;this.generation=0;this.dirty=false;
             for(const event of this.events)event._editorSortTime=time(event.timestamp);
         }
         button(text,action,cls){const b=el('button',text,cls);if(typeof text==='string'&&(cls?.includes('trip-log-entry-time')||cls==='trip-editor-approval'))this.decorateTime(b,text);b.type='button';b.addEventListener('click',()=>Promise.resolve(action()).catch(e=>this.error(e)));return b;}
@@ -22,9 +22,8 @@
             const dialog=this.dialog=el('dialog',undefined,'app-dialog trip-log-editor dedicated-trip-editor');dialog.setAttribute('aria-label','Edit Trip');
             const header=el('header',undefined,'dialog-header');header.append(el('h2','Edit Trip'),this.button('×',()=>this.close(),'dialog-close'));dialog.append(header);
             this.subtitle=el('p',undefined,'trip-editor-subtitle');this.summary=el('section',undefined,'trip-editor-summary');dialog.append(this.subtitle,this.summary);
-            const tabs=el('div',undefined,'trip-editor-tabs');tabs.setAttribute('role','tablist');this.tabs={};
-            for(const [id,label] of [['timeline','Timeline'],['details','Details']]){const b=this.button(label,()=>{this.tab=id;this.render();});b.id='trip-editor-tab-'+id;b.setAttribute('role','tab');b.setAttribute('aria-controls','trip-editor-panel');this.tabs[id]=b;tabs.append(b);}tabs.addEventListener('keydown',event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();this.tab=event.key==='Home'?'timeline':event.key==='End'?'details':this.tab==='timeline'?'details':'timeline';this.render();this.tabs[this.tab].focus();});dialog.append(tabs);
-            this.body=el('section',undefined,'trip-editor-body');this.body.id='trip-editor-panel';this.body.setAttribute('role','tabpanel');dialog.append(this.body);
+            this.controls=el('section',undefined,'trip-editor-controls');dialog.append(this.controls);
+            this.body=el('section',undefined,'trip-editor-body');this.body.setAttribute('aria-label','Trip timeline');dialog.append(this.body);
             this.alert=el('p',undefined,'trip-log-error');this.alert.setAttribute('role','alert');dialog.append(this.alert);
             const footer=el('footer',undefined,'trip-editor-footer');footer.append(el('small','Preview your edits, then save all changes.'));
             const actions=el('div',undefined,'dialog-actions two-actions');this.saveButton=this.button('Save Changes',()=>this.save(),'primary-action');actions.append(this.button('Cancel',()=>this.close()),this.saveButton);footer.append(actions);dialog.append(footer);
@@ -47,16 +46,26 @@
             return result;
         }
         boundaryInvalid(event){const value=time(event.timestamp),start=time(this.events.find(e=>e.event==='trip.started')?.timestamp),stop=time(this.events.find(e=>e.event==='trip.stopped')?.timestamp);if(!Number.isFinite(value))return true;if(event.event==='trip.started')return (Number.isFinite(stop)&&value>stop)||this.intervals().some(e=>Number.isFinite(time(e.timestamp))&&value>time(e.timestamp));return value<start||this.intervals().some(e=>{const end=this.end(e);return end&&Number.isFinite(time(end.timestamp))&&value<time(end.timestamp);});}
-        hasInvalid(){return this.intervals().some(e=>Object.values(this.invalid(e)).some(Boolean))||this.events.filter(e=>['trip.started','trip.stopped'].includes(e.event)).some(e=>this.boundaryInvalid(e))||(!this.settings.breakOnly&&!(Number.isSafeInteger(this.settings.standardTimeMilliseconds)&&this.settings.standardTimeMilliseconds>0&&this.settings.standardTimeMilliseconds<=31536000000))||!Number.isFinite(time(this.settings.instants?.scheduledStart));}
+        validationMessage(){
+            const problems=[];
+            if(!Number.isFinite(time(this.settings.instants?.scheduledStart)))problems.push('set a valid Scheduled start');
+            if(!this.settings.breakOnly&&!(Number.isSafeInteger(this.settings.standardTimeMilliseconds)&&this.settings.standardTimeMilliseconds>0&&this.settings.standardTimeMilliseconds<=31536000000))problems.push('set Standard Time between one millisecond and one year');
+            if(this.events.filter(e=>['trip.started','trip.stopped'].includes(e.event)).some(e=>this.boundaryInvalid(e)))problems.push('correct the highlighted trip start or end time');
+            if(this.intervals().some(e=>Object.values(this.invalid(e)).some(Boolean)))problems.push('correct incomplete, overlapping, or out-of-trip interval times');
+            return problems.length?'Cannot save: '+problems.join('; ')+'.':'';
+        }
+        hasInvalid(){return Boolean(this.validationMessage());}
+        showValidation(){const message=this.validationMessage();if(message){this.error(message);const field=this.dialog.querySelector('[aria-invalid="true"]');field?.scrollIntoView({block:'nearest'});field?.focus();}return Boolean(message);}
+
         render(){
-            const scroll=this.body.scrollTop;this.body.replaceChildren();for(const [id,b] of Object.entries(this.tabs)){b.setAttribute('aria-selected',String(this.tab===id));b.tabIndex=this.tab===id?0:-1;}this.body.setAttribute('aria-labelledby',this.tabs[this.tab].id);
+            const scroll=this.body.scrollTop;this.body.replaceChildren();
             const start=this.events.find(e=>e.event==='trip.started'),stop=this.events.find(e=>e.event==='trip.stopped');this.subtitle.textContent=`${start?.timestamp?new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,dateStyle:'medium'}).format(new Date(iso(start.timestamp))):''} · ${this.trip.running?'Active trip':'Completed trip'}`;
-            this.drawSummary();if(this.tab==='timeline')this.drawTimeline();else this.drawDetails();this.body.scrollTop=scroll;
-            this.saveButton.disabled=this.saving||this.hasInvalid();
+            this.drawSummary();this.drawControls();this.drawTimeline();this.drawActions();this.body.scrollTop=scroll;
+            this.saveButton.disabled=Boolean(this.saving);const message=this.validationMessage();if(message)this.error(message);
         }
         drawSummary(){
             const trip=this.previewTrip,official=trip.officialCorrection;this.summary.replaceChildren();
-            const values=[['Standard',TripLog.duration(Number(this.settings.standardTimeMilliseconds))],['Actual',TripLog.duration(trip.productiveTimeMilliseconds??trip.countedTimeMilliseconds)],['Percentage',TripLog.percent([trip])]];
+            const values=[['Actual',TripLog.duration(trip.productiveTimeMilliseconds??trip.countedTimeMilliseconds)],['Percentage',TripLog.percent([trip])]];
             for(const [label,value] of values){const box=el('div');box.append(el('small',label));if(label==='Percentage'&&!this.trip.running&&!this.settings.breakOnly&&!this.offline){const b=this.button(value,()=>this.editOfficial(),'trip-editor-percent'+(official?' is-official-percent':''));box.append(b);if(official)box.append(el('small','OFFICIAL','trip-log-official-badge'));}else box.append(el('strong',this.settings.breakOnly?'—':value));this.summary.append(box);}
         }
         timeButton(event,field='timestamp',invalid=false){
@@ -67,10 +76,14 @@
             const toolbar=el('div',undefined,'trip-editor-toolbar');toolbar.append(this.button('+ Add Entry',()=>this.add(),'trip-log-add'));this.body.append(toolbar);
             const timeline=el('div',undefined,'trip-editor-timeline');this.body.append(timeline);
             const rows=this.sorted().filter(e=>e.event!=='interval.started'||!this.deleted().has(e.value.intervalKey));
+            rows.push({id:'scheduled-start',event:'trip.scheduled-start',timestamp:this.settings.instants?.scheduledStart,value:{}});
             const officialStart=this.previewTrip.officialCorrection?.startTime;if(officialStart)rows.push({id:'official-start',event:'trip.official-start',timestamp:officialStart,value:{}});
             rows.sort((a,b)=>order(a)-order(b));
             for(const event of rows){
                 const card=el('section',undefined,'trip-editor-card');card.dataset.eventId=event.id;if(event._draft)card.classList.add('is-new-entry');
+                if(event.event==='trip.scheduled-start'){
+                    card.classList.add('trip-editor-boundary','trip-editor-scheduled');card.append(el('strong','Scheduled start'),this.button(this.format(event.timestamp),()=>this.pad({mode:'absolute',source:'Scheduled start',title:'Scheduled start',initialValue:event.timestamp,onConfirm:value=>{this.settings.instants.scheduledStart=value;this.changed();}}),'trip-log-entry-time'));card.querySelector('button').setAttribute('aria-invalid',String(!Number.isFinite(time(event.timestamp))));timeline.append(card);continue;
+                }
                 if(event.event==='trip.official-start'){
                     card.append(el('strong','Official Start'),this.button(this.format(event.timestamp),()=>this.pad({mode:'absolute',source:'official-start-time',title:'Official Start',initialValue:event.timestamp,onConfirm:value=>{this.official=this.official.filter(e=>e.operation!=='official-start-time');this.official.push({operation:'official-start-time',startTime:iso(value)});this.changed();}}),'trip-log-entry-time'),this.button('Delete',()=>this.clearOfficial(),'danger'));timeline.append(card);continue;
                 }
@@ -95,11 +108,14 @@
             }
             const downSummary=this.downSummary();if(downSummary)this.body.append(downSummary);
         }
-        drawDetails(){
-            const settings=this.settings;const field=(label,value,mode,change)=>{const button=this.button(undefined,()=>this.pad({mode,source:label,title:label,initialValue:value,onConfirm:v=>{change(v);this.changed();}}),'trip-log-edit-field'),readout=el('strong');this.decorateTime(readout,mode==='absolute'?this.format(value):this.durationText(value));button.append(el('span',label),readout);this.body.append(button);};
-            field('Scheduled start',settings.instants?.scheduledStart,'absolute',value=>settings.instants.scheduledStart=value);
-            if(!settings.breakOnly){field('Standard Time',settings.standardTimeMilliseconds,'duration',value=>settings.standardTimeMilliseconds=value);const label=el('label',undefined,'trip-editor-production');label.append(el('span','Production'));const select=el('select');for(const [value,text] of [['yes','Yes'],['no','No']]){const option=el('option',text);option.value=value;select.append(option);}select.value=settings.nonProduction?'no':'yes';select.addEventListener('change',()=>{settings.nonProduction=select.value==='no';this.changed();});label.append(select);this.body.append(label);}else this.body.append(el('p','Break-only trip'));
-            this.body.append(el('p','Actual start and end times are edited in the Timeline.','trip-editor-note'));
+        drawControls(){
+            this.controls.replaceChildren();
+            if(this.settings.breakOnly){this.controls.append(el('p','Break-only trip'));return;}
+            const standard=this.button(undefined,()=>this.pad({mode:'duration',source:'Standard Time',title:'Standard Time',initialValue:this.settings.standardTimeMilliseconds,onConfirm:value=>{this.settings.standardTimeMilliseconds=value;this.changed();}}),'trip-log-edit-field trip-editor-standard'),readout=el('strong');
+            standard.setAttribute('aria-invalid',String(!(Number.isSafeInteger(this.settings.standardTimeMilliseconds)&&this.settings.standardTimeMilliseconds>0&&this.settings.standardTimeMilliseconds<=31536000000)));this.decorateTime(readout,this.durationText(this.settings.standardTimeMilliseconds));standard.append(el('span','Standard Time'),readout);
+            const productive=el('label',undefined,'trip-editor-production'),check=el('input');check.type='checkbox';check.checked=!this.settings.nonProduction;check.addEventListener('change',()=>{this.settings.nonProduction=!check.checked;this.changed();});productive.append(check,el('span','Productive'));this.controls.append(standard,productive);
+        }
+        drawActions(){
             if(this.previewTrip.officialCorrection)this.body.append(el('p','The official percentage is preserved when trip details change. Select the percentage above to change or clear it.','trip-editor-note'));
             this.body.append(this.button('Delete trip',async()=>{if(!confirm('Delete this trip and all its entries?'))return;await this.options.request(this.trip.id,{operation:'delete-trip',revision:this.revision});this.dirty=false;this.dialog.close();await this.options.refresh();},'danger'));
         }
@@ -151,11 +167,11 @@
         }
         async preview(){
             if(!this.dialog.open||this.hasInvalid())return;
-            const generation=++this.generation;try{const result=await this.options.request(this.trip.id,{...this.payload(),operation:'editor-preview',includePendingDownTime:this.options.showPendingDownTime?.()??true});if(generation!==this.generation||!this.dialog.open)return;const previousStart=this.previewTrip.officialCorrection?.startTime;this.previewTrip=result.trip;this.drawSummary();if(this.tab==='timeline'&&previousStart!==this.previewTrip.officialCorrection?.startTime)this.render();}catch(error){if(generation===this.generation&&this.dialog.open)this.error(error);}
+            const generation=++this.generation;try{const result=await this.options.request(this.trip.id,{...this.payload(),operation:'editor-preview',includePendingDownTime:this.options.showPendingDownTime?.()??true});if(generation!==this.generation||!this.dialog.open)return;const previousStart=this.previewTrip.officialCorrection?.startTime;this.previewTrip=result.trip;this.drawSummary();if(previousStart!==this.previewTrip.officialCorrection?.startTime)this.render();}catch(error){if(generation===this.generation&&this.dialog.open)this.error(error);}
         }
         async save(){
-            if(this.saving||this.hasInvalid())return;this.saving=true;this.saveButton.disabled=true;this.generation++;clearTimeout(this.previewTimer);
-            try{await this.options.request(this.trip.id,this.payload());this.dirty=false;this.dialog.close();await this.options.refresh();}catch(error){this.error(error);}finally{this.saving=false;if(this.dialog.open)this.saveButton.disabled=this.hasInvalid();}
+            if(this.saving||this.showValidation())return;this.saving=true;this.saveButton.disabled=true;this.saveButton.textContent='Saving�';this.generation++;clearTimeout(this.previewTimer);
+            try{await this.options.request(this.trip.id,this.payload());this.dirty=false;this.dialog.close();await this.options.refresh();}catch(error){this.error(error);}finally{this.saving=false;if(this.dialog.open){this.saveButton.disabled=false;this.saveButton.textContent='Save Changes';}}
         }
     }
     globalThis.TripEditor=TripEditor;

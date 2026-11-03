@@ -5,11 +5,10 @@ hamburger menu also opens that same editor. The former inline editing mode,
 long-press insertion/deletion controls and separate saved-trip settings dialog
 have been removed.
 
-The **Timeline** tab groups each interval's start and end in a single card.
+The single-view **Timeline** groups each interval's start and end in a single card.
 New cards stand out, valid times determine their chronological position, and
 invalid or overlapping times appear red. Actual trip boundaries are edited
-only in Timeline. **Details** contains scheduled start, Standard Time and
-production. Both tabs share one isolated draft and one **Save Changes** action.
+only in Timeline. Scheduled start appears in the timeline. The two-column header contains editable Standard Time and a Productive checkbox. All controls share one isolated draft and one **Save Changes** action.
 
 Down cards have a monochrome camera button opening the existing Down Details
 window for picture/description access. There are no camera buttons in Trip Log.
@@ -24,7 +23,7 @@ percentage simply removes that staged change.
 
 `editor-preview` is owner/CSRF/revision checked, uses the same validation and
 accounting as `editor`, and performs no database write or live-timer reload.
-Save locks/rechecks the revision and applies Details, Timeline and official
+Save locks/rechecks the revision and applies header settings, Timeline and official
 changes atomically. Invalid saves retain the draft. Scheduled-start changes
 rebase offsets while preserving the factual event instants.
 
@@ -52,3 +51,7 @@ directly to the mutation dispatcher. Both routes remain owner/CSRF/revision
 checked. Trip Log uses circles/lines for its read-only entries, omits the
 Trip Entries heading, and labels its effective deduction Applied when Pending
 is included, otherwise Approved.
+
+Validation blockers are shown beside Save and on the affected fields. Save remains actionable for invalid drafts: tapping it explains the blocker and focuses the first invalid field. During a request, it displays Saving; a failed request restores Save for retry. Timeline connectors run only between adjacent circles, with no line beyond either terminal, in both the editor and Trip Log.
+
+Migration-era integer strings in canonical millisecond offsets are normalized by the storage reader, editor settings reader, encoder and scheduled-start rebase. This prevents missing scheduled/creation instants from silently blocking edits on older trips, while retaining exact instants and leaving unrelated string values unchanged.

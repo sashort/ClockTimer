@@ -63,7 +63,7 @@ function trip_edit_iso(string $value): string {
 function trip_edit_settings(array $events): array {
     $settings=[];$instants=[];
     foreach ($events as $event) {
-        $v=$event['value'];
+        $v=trip_storage_normalize_offsets($event['value']);
         if ($event['event']==='trip.started') $settings=$v;
         $fields=['trip.standard-time-changed'=>'standardTimeMilliseconds','trip.creation-time-changed'=>'creationTime',
             'trip.scheduled-start-changed'=>'scheduledStart','trip.start-time-changed'=>'startTime'];

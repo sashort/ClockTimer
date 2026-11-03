@@ -26,6 +26,14 @@ function trip_storage_signed_ms(mixed $value,string $name): int {
     if($number===false || abs($number)>9007199254740991) throw new InvalidArgumentException($name.' exceeds exact millisecond precision.');
     return $number;
 }
+/** Migration-era JSON can contain integer offsets encoded as strings. */
+function trip_storage_normalize_offsets(array $value): array {
+    foreach($value as $key=>$item) {
+        if(is_array($item))$value[$key]=trip_storage_normalize_offsets($item);
+        elseif($item!==null&&(str_ends_with((string)$key,'OffsetMilliseconds')||str_ends_with((string)$key,'-offset-ms')))$value[$key]=trip_storage_signed_ms($item,(string)$key);
+    }
+    return $value;
+}
 function trip_storage_production(array $values,array $current=[]): string {
     if(array_key_exists('production',$values)) {
         if(!in_array($values['production'],['yes','no','break-only'],true)) throw new InvalidArgumentException('production must be yes, no, or break-only.');
@@ -57,6 +65,7 @@ function trip_storage_clock_offset(string $clock,string $midnight,string $anchor
     return trip_storage_epoch_ms($midnight)+((int)$m[1]*3600+(int)$m[2]*60+(int)$m[3])*1000+(int)str_pad($m[4]??'',3,'0')-trip_storage_epoch_ms($anchor);
 }
 function trip_storage_encode_value(string $name,array $value,string $anchor,int $offset,bool $editor=false): array {
+    $value=trip_storage_normalize_offsets($value);
     $midnight=$value['creationAnchor']??substr($anchor,0,10).' 00:00:00.000';
     if($name==='trip.started') {
         if(!isset($value['creationOffsetMilliseconds'])||($editor&&isset($value['creationTime'])))$value['creationOffsetMilliseconds']=isset($value['creationTime'])?trip_storage_clock_offset($value['creationTime'],$midnight,$anchor):$offset;
@@ -80,6 +89,7 @@ function trip_storage_encode_value(string $name,array $value,string $anchor,int 
     return $value;
 }
 function trip_storage_shift_value(array $value,int $shift): array {
+    $value=trip_storage_normalize_offsets($value);
     foreach($value as $key=>$item) {
         if(is_array($item))$value[$key]=trip_storage_shift_value($item,$shift);
         elseif(is_int($item)&&(str_ends_with((string)$key,'OffsetMilliseconds')||str_ends_with((string)$key,'-offset-ms')))$value[$key]+=$shift;
@@ -88,6 +98,7 @@ function trip_storage_shift_value(array $value,int $shift): array {
 }
 /** Canonical responses expose one scheduled-start anchor, never a second midnight anchor. */
 function trip_storage_view_value(string $name,array $value,string $anchor,int $offset): array {
+    $value=trip_storage_normalize_offsets($value);
     $instant=static fn(int $ms):string=>trip_storage_instant($anchor,$ms);
     unset($value['creationAnchor']);
     if($name==='trip.started')unset($value['creationTime'],$value['scheduledStart'],$value['startTime']);
