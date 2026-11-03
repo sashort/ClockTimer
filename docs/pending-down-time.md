@@ -6,7 +6,8 @@ new timeline entries start Pending. Entering an approved duration sets Approved
 Unapproved; cancelling leaves the previous state intact.
 
 The account setting `wmof.clock.includePendingDownTime` defaults on. Its menu
-label is **Deduct Pending Down Time**. It applies to all Pending intervals, both
+label is **Show Pending Down Time**, shared by the hamburger menu and Trip Log.
+Both surfaces read and write the same preference; it controls display and accounting together. It applies to all Pending intervals, both
 earlier intervals and the current open interval, and to aggregate projections.
 It never changes an interval's review status. Approved uses the entered amount;
 Unapproved counts as work. Physical Down state, controls and avatar do not
@@ -25,19 +26,24 @@ Trip Log has a collapsible Down Time section. Its summary shows Approved +
 Pending when the master is on, otherwise Approved. The expanded section shows
 Pending, Approved, Unapproved and Logged. A partially approved interval's
 unapproved remainder is included under Unapproved; approved surplus is retained.
-Category labels, seconds and `(### ms)` are left aligned. Totals append smaller
+When all three categories total zero, the section is hidden and its filter is
+disabled in settings with its saved check value retained and its label struck
+through. It does not filter while unavailable, and resumes when Down Time
+returns to the selected range. Category labels, seconds and `(### ms)` are left aligned. Totals append smaller
 milliseconds on the baseline; Logged uses full-size milliseconds.
 
 **Trips with Down Time only** is inside the expanded section. **Adjusted trips
 only** is in Trip Log settings. Both combine with existing date and production
 filters and intersect when enabled together. Cleared official corrections do
-not qualify. Filter/collapse/display choices are account preferences under
+not qualify. Filter and collapse choices are account preferences under
 `wmof.clock.tripLogView`. Filtering preserves the underlying source list and
 active edit drafts. Zero matching trips leaves controls available.
 
-**Show Pending Down Time** controls the Pending breakdown column. While the
-Down-only filter is on it is forced checked and disabled. Turning the filter
-off restores and re-enables the previous preference without changing the calculation master.
+**Show Pending Down Time** is the same global calculation/display master in
+Trip Log and the hamburger menu. While the
+Down-only filter is on, Pending is forced visible. The checkbox keeps its stored
+check value, becomes disabled, and its label is struck through while overridden. Turning the filter
+off restores and re-enables the previous preference without changing the shared calculation/display master.
 
 The completed summary's last-trip percentage opens the same official percentage
 editor as Trip Log, including Clear and the optional derived Official Start.

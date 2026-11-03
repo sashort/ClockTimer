@@ -58,7 +58,7 @@
                     <button id="goalBoundingButton" data-menu-toggle data-menu-icon="goal-bounding" type="button" role="switch" aria-checked="true"><span data-language-id="7f05505a-1327-5bb2-9804-4ecf0c78b536">{{text:7f05505a-1327-5bb2-9804-4ecf0c78b536:text0}}</span><span class="goal-bounding-toggle" aria-hidden="true"></span></button>
                     <button id="goalBoundingHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="goalBounding" aria-label="{{text:0ab8d3cc-a3d0-5072-8d06-55dff706addd:aria-label}}" data-language-id="0ab8d3cc-a3d0-5072-8d06-55dff706addd" data-menu-icon="settings">{{text:0ab8d3cc-a3d0-5072-8d06-55dff706addd:text0}}</button>
                 </div>
-                <button id="includePendingDownTimeButton" hidden data-menu-toggle data-menu-icon="settings" type="button" role="switch" aria-checked="true"><span data-language-id="d7300001-7888-4711-9000-000000000006">{{text:d7300001-7888-4711-9000-000000000006:text0}}</span></button>
+                <button id="includePendingDownTimeButton" hidden data-menu-toggle data-menu-icon="settings" type="button" role="switch" aria-checked="true"><span data-language-id="d7300001-7888-4711-9000-000000000007">{{text:d7300001-7888-4711-9000-000000000007:text0}}</span></button>
                 <div class="trip-menu-group main-menu-row">
 <button id="tripLogMenuParentButton" type="button" aria-expanded="false" aria-controls="tripLogSubmenu" data-menu-icon="list">{{text:758b0729-0d3e-5768-acd5-326ec90f35e9:text0}}</button>
 <button id="tripLogPinButton" data-menu-toggle class="menu-pin-button" type="button" aria-label="{{text:9ef29698-122f-59f2-8410-bb636061c726:aria-label}}" aria-pressed="true" title="{{text:9ef29698-122f-59f2-8410-bb636061c726:title}}" data-language-id="9ef29698-122f-59f2-8410-bb636061c726" data-menu-icon="pin"></button>
@@ -69,9 +69,10 @@
                     <select id="tripLogRangeSelect" aria-label="{{text:0c3e9731-ec7b-5fe5-a481-ead731262b88:aria-label}}" data-language-id="0c3e9731-ec7b-5fe5-a481-ead731262b88">{{options:0c3e9731-ec7b-5fe5-a481-ead731262b88}}</select>
                 </label>
                 <div class="trip-log-date-menu">
-                    <label for="tripLogStartDate" data-language-id="cb47bd54-b509-5823-85ad-d2c8cab78285">{{text:cb47bd54-b509-5823-85ad-d2c8cab78285:text0}}</label><input id="tripLogStartDate" type="date" aria-label="{{text:305d99aa-8c68-5a7e-beea-9056d17cca88:aria-label}}" disabled data-language-id="305d99aa-8c68-5a7e-beea-9056d17cca88">
+                    <label for="tripLogStartDate" data-language-id="cb47bd54-b509-5823-85ad-d2c8cab78285">{{text:cb47bd54-b509-5823-85ad-d2c8cab78285:text0}}</label><input id="tripLogStartDate" type="date" aria-label="{{text:305d99aa-8c68-5a7e-beea-9056d17cca88:aria-label}}" data-language-id="305d99aa-8c68-5a7e-beea-9056d17cca88">
                     <label for="tripLogEndDate" data-language-id="92a78904-7c6f-5666-9ad2-48301e067257">{{text:92a78904-7c6f-5666-9ad2-48301e067257:text0}}</label><input id="tripLogEndDate" type="date" aria-label="{{text:5b827a18-10f3-56fa-b022-4ccf3f47a04e:aria-label}}" disabled data-language-id="5b827a18-10f3-56fa-b022-4ccf3f47a04e">
                 </div>
+                <div id="tripLogHistoricalRange" class="historical-range-status" hidden role="status"><span></span><button type="button" data-menu-icon="calendar" data-return-current-range data-language-id="d7300001-7888-4711-9000-000000000010">{{text:d7300001-7888-4711-9000-000000000010:text0}}</button></div>
                 <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
                 </div></div>
                 <hr class="developer-menu-separator">
@@ -126,4 +127,5 @@
             <div class="scope-control">
                 {{include:shared/mode-button.html}}
                 <button id="scopeConnectionButton" class="scope-connection-button" type="button" data-cloud-state="offline" aria-label="{{text:45edd7ed-b34e-557c-a8f6-167fd6f3a9b1:aria-label}}" hidden data-language-id="45edd7ed-b34e-557c-a8f6-167fd6f3a9b1"></button>
+                <div id="historicalRangeBanner" class="historical-range-banner" hidden role="status"><span></span><button type="button" data-return-current-range data-language-id="d7300001-7888-4711-9000-000000000010">{{text:d7300001-7888-4711-9000-000000000010:text0}}</button></div>
             </div>

@@ -7213,11 +7213,6 @@
       "text": "Adjusted trips only",
       "default": "Adjusted trips only"
     },
-    "d7300001-7888-4711-9000-000000000006": {
-      "id": "d7300001-7888-4711-9000-000000000006",
-      "text": "Deduct Pending Down Time",
-      "default": "Deduct Pending Down Time"
-    },
     "d7300001-7888-4711-9000-000000000007": {
       "id": "d7300001-7888-4711-9000-000000000007",
       "text": "Show Pending Down Time",
@@ -7227,6 +7222,16 @@
       "id": "d7300001-7888-4711-9000-000000000008",
       "text": "Mark Down Time as",
       "default": "Mark Down Time as"
+    },
+    "d7300001-7888-4711-9000-000000000009": {
+      "id": "d7300001-7888-4711-9000-000000000009",
+      "text": "Historical",
+      "default": "Historical"
+    },
+    "d7300001-7888-4711-9000-000000000010": {
+      "id": "d7300001-7888-4711-9000-000000000010",
+      "text": "Return to Active",
+      "default": "Return to Active"
     }
   }
 }

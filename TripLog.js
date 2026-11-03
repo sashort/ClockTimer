@@ -49,7 +49,10 @@
             }
             return box;
         }
-        saveViewSettings() {this.options.onViewSettings?.({downTimeExpanded:this.downTimeExpanded,downTimeOnly:this.downTimeOnly,adjustedOnly:this.adjustedOnly,showPending:this.showPending});}
+        get showPendingPreference() {return this.options.showPendingDownTime?.()??this.options.includePendingDownTime?.()??this.showPending;}
+        get showPendingEffective() {return this.downTimeOnlyEnabled||this.showPendingPreference;}
+        get downTimeOnlyEnabled() {return Boolean(this.hasVisibleDownTime&&this.downTimeOnly);}
+        saveViewSettings() {this.options.onViewSettings?.({downTimeExpanded:this.downTimeExpanded,downTimeOnly:this.downTimeOnly,adjustedOnly:this.adjustedOnly});}
         hasOfficialPercent(trip) {
             const record=trip.events?.findLast(event=>['trip.official-percent-set','trip.official-percent-cleared'].includes(event.event));
             return record?record.event==='trip.official-percent-set':Boolean(trip.officialCorrection);
@@ -62,7 +65,8 @@
         downTimeSection(trips) {
             const text=id=>globalThis.WMOFLanguagePack.text(id);
             const totals=TripDowntimeSummary.breakdown(trips,{now:this.downtimeNow});
-            const includePending=this.options.includePendingDownTime?.()!==false;
+            if(totals.pendingMilliseconds+totals.approvedMilliseconds+totals.unapprovedMilliseconds===0)return undefined;
+            const includePending=this.showPendingEffective;
             const section=node('section',undefined,'trip-log-down-section');
             const details=node('details',undefined,'trip-log-down-breakdown');details.open=this.downTimeExpanded;
             details.addEventListener('toggle',()=>{if(details.isConnected&&this.downTimeExpanded!==details.open){this.downTimeExpanded=details.open;this.saveViewSettings();}});
@@ -71,12 +75,12 @@
             total.append(node('span',text(includePending?'d7300001-7888-4711-9000-000000000001':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39')),this.downTimeValue(includePending?totals.combinedMilliseconds:totals.approvedMilliseconds));summary.append(total);
             const content=node('div',undefined,'trip-log-down-content'),grid=node('div',undefined,'trip-log-down-grid');
             for(const [id,value,kind] of [['d7300001-7888-4711-9000-000000000002',totals.pendingMilliseconds,'pending'],['a6d2eeb0-2d5b-4a59-b059-4039e7492e39',totals.approvedMilliseconds,'approved'],['d7300001-7888-4711-9000-000000000003',totals.unapprovedMilliseconds,'unapproved']]){
-                if(kind==='pending'&&!this.downTimeOnly&&!this.showPending)continue;
+                if(kind==='pending'&&!this.showPendingEffective)continue;
                 const cell=node('div',undefined,'trip-log-down-'+kind);cell.append(node('span',text(id)),this.downTimeValue(value,true));grid.append(cell);
             }
             const logged=node('div',undefined,'trip-log-down-logged');logged.append(node('span',text('edb1ce75-f212-4577-a1b3-e88dc28bcb78')),this.downTimeValue(totals.loggedMilliseconds));
             content.append(grid,logged);details.append(summary,content);
-            const filter=node('label',undefined,'trip-log-down-filter'),check=node('input');check.type='checkbox';check.dataset.downTimeOnly='true';check.checked=this.downTimeOnly;
+            const filter=node('label',undefined,'trip-log-down-filter'),check=node('input');check.type='checkbox';check.dataset.downTimeOnly='true';check.checked=this.downTimeOnlyEnabled;check.disabled=!this.hasVisibleDownTime;
             check.addEventListener('change',()=>{this.downTimeOnly=check.checked;this.saveViewSettings();this.rerender();});filter.append(check,node('span',text('d7300001-7888-4711-9000-000000000004')));
             content.append(filter);section.append(details);return section;
         }
@@ -87,7 +91,7 @@
             this.activeSweepDelay=`-${Math.round(performance.now()%4200)}ms`;
             this.incomplete=Boolean(data.incomplete);this.offline=Boolean(data.offline);this.loginRequired=Boolean(data.loginRequired);
             const working=new Map((this.trips||[]).filter(t=>this.editing.has(t.id)).map(t=>[String(t.id),t.events]));
-            const trips=data.loginRequired?[]:data.trips.map(t=>TripTimeBank.withPendingPolicy({...t},this.options.includePendingDownTime?.()!==false,{now:this.downtimeNow}));const live=data.loginRequired?null:this.options.liveTrip?.();
+            const trips=data.loginRequired?[]:data.trips.map(t=>TripTimeBank.withPendingPolicy({...t},this.showPendingEffective,{now:this.downtimeNow}));const liveSource=data.loginRequired?null:this.options.liveTrip?.();const live=liveSource?TripTimeBank.withPendingPolicy(liveSource,this.showPendingEffective,{now:this.downtimeNow}):null;
             if(live && Date.parse(live.startTime)>=Date.parse(calendar.startTime) && Date.parse(live.startTime)<Date.parse(calendar.endTime)) {
                 const index=trips.findIndex(t=>String(t.id)===String(live.id));
                 const filter=this.options.filter();
@@ -98,7 +102,10 @@
             for(const trip of trips)if(working.has(String(trip.id)))trip.events=working.get(String(trip.id));
             trips.sort((a,b)=>Date.parse(iso(b.startTime))-Date.parse(iso(a.startTime))||b.id-a.id);
             this.trips=trips;
-            const visibleTrips=trips.filter(trip=>(!this.downTimeOnly||TripDowntimeSummary.breakdown([trip],{now:this.downtimeNow}).hasDowntime)&&(!this.adjustedOnly||this.hasOfficialPercent(trip)));
+            const matchingTrips=trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip));
+            const downTotals=TripDowntimeSummary.breakdown(matchingTrips,{now:this.downtimeNow});
+            this.hasVisibleDownTime=downTotals.pendingMilliseconds+downTotals.approvedMilliseconds+downTotals.unapprovedMilliseconds>0;
+            const visibleTrips=matchingTrips.filter(trip=>!this.downTimeOnlyEnabled||TripDowntimeSummary.breakdown([trip],{now:this.downtimeNow}).hasDowntime);
             this.aggregation=aggregate(visibleTrips,true,this.downtimeNow);const fragment=document.createDocumentFragment();
             if(!trips.length)this.settingsVisible=true;
             let settings=this.root.querySelector('.trip-log-settings');
@@ -108,29 +115,36 @@
             } else {
                 const selects=settings.querySelectorAll('select');selects[0].value=this.options.filter();selects[1].value=this.options.range();
                 const dates=window.CalendarRange.dates(calendar),inputs=settings.querySelectorAll('input[type=date]');
-                inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=this.options.range()!=='custom';});
+                inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=i===1&&this.options.range()!=='custom';});
                 const includeCurrent=settings.querySelector('input[data-include-current]');if(includeCurrent)includeCurrent.checked=Boolean(this.options.includeCurrent?.());
-                const pending=settings.querySelector('input[data-show-pending]');if(pending){pending.checked=this.downTimeOnly||this.showPending;pending.disabled=this.downTimeOnly;}
+                const pending=settings.querySelector('input[data-show-pending]');if(pending){pending.checked=this.showPendingPreference;pending.disabled=this.downTimeOnlyEnabled;pending.closest('label').classList.toggle('is-unavailable',this.downTimeOnlyEnabled);}
+                const fallback=settings.querySelector('[data-down-time-filter-fallback]');if(fallback){fallback.checked=this.downTimeOnly;fallback.disabled=!this.hasVisibleDownTime;fallback.closest('label').hidden=this.hasVisibleDownTime;fallback.closest('label').classList.toggle('is-unavailable',!this.hasVisibleDownTime);}
             }
             if(!reuseSettings)fragment.append(settings);
+            if(calendar.historical){
+                const status=node('section',undefined,'trip-log-range-status');status.setAttribute('role','status');const dates=CalendarRange.dates(calendar);
+                const label=globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000009');status.append(node('span',`${label} · ${dates.start} – ${dates.end}`));
+                const current=node('button',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000010'));current.type='button';current.dataset.returnCurrentRange='true';current.addEventListener('click',()=>this.options.onCurrent?.());status.append(current);fragment.append(status);
+            }
             this.root.classList.toggle('trip-log-empty',visibleTrips.length===0);
             if(visibleTrips.length) {
             const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
             emphasis.append(node('strong',`${this.aggregation.tripCount} ${this.aggregation.tripCount===1?globalThis.WMOFLanguagePack.text("3b289746-71b2-4ac3-90dd-00a0402ba34f"):globalThis.WMOFLanguagePack.text("1c1bf8a6-f452-4dfa-8d43-ed38d4bcae1f")}`),node('strong',percent(visibleTrips,true),'trip-log-actual'));
             if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());
-            const totals=aggregate(visibleTrips,true,this.downtimeNow);overview.append(emphasis,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.productiveTimeMilliseconds)}`,'trip-log-times'));fragment.append(overview,this.downTimeSection(trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip))));
+            const totals=aggregate(visibleTrips,true,this.downtimeNow);overview.append(emphasis,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.productiveTimeMilliseconds)}`,'trip-log-times'));fragment.append(overview);const down=this.downTimeSection(trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip)));if(down)fragment.append(down);
             const columns=node('div',undefined,'trip-log-column-header');columns.setAttribute('role','row');for(const label of [globalThis.WMOFLanguagePack.text("5e8f393d-72a7-4b30-ba1e-69bbd765354f"),globalThis.WMOFLanguagePack.text("07613a20-4d6c-4fdf-a16d-6c94d28e5590"),globalThis.WMOFLanguagePack.text("77f1eddd-89b9-4e22-9fe1-aeeb4d060722"),globalThis.WMOFLanguagePack.text("c755d5bf-3277-4630-a938-898b8b6172dd"),'']){const cell=node('span',label);cell.setAttribute('role','columnheader');columns.append(cell);}fragment.append(columns);
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
             const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
             fragment.append(this.groups(visibleTrips,levels,calendar));
             } else {
-                if(!data.loginRequired)fragment.append(this.downTimeSection(trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip))));
+                if(!data.loginRequired){const down=this.downTimeSection(trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip)));if(down)fragment.append(down);}
                 const message=node('p',data.loginRequired?globalThis.WMOFLanguagePack.text("1b02fb00-aed1-432b-9c06-2cc98704eea2"):data.offline?globalThis.WMOFLanguagePack.text("595de126-bd64-4acc-be0f-a314413c2bd6"):globalThis.WMOFLanguagePack.text("d621fec0-6ca8-42fd-a0cf-1894616fd377"),'trip-log-empty-message');
                 message.setAttribute('role','status');fragment.append(message);
             }
             if(reuseSettings){for(const child of [...this.root.children])if(child!==settings)child.remove();this.root.append(fragment);}
             else this.root.replaceChildren(fragment);
             this.setSettingsVisible(this.settingsVisible);
+            if(this.pendingOverrideReported!==this.downTimeOnlyEnabled){this.pendingOverrideReported=this.downTimeOnlyEnabled;this.options.onPendingOverride?.(this.downTimeOnlyEnabled);}
         }
         controls(calendar) {
             const box=node('section',undefined,'trip-log-controls');
@@ -139,14 +153,16 @@
             selectRow(globalThis.WMOFLanguagePack.text("2d7078b0-2daf-4ade-b37a-01f6e2ae734f"),[['day',globalThis.WMOFLanguagePack.text("86e12fa9-95ff-4a20-84bd-8d6744217a01")],['week',globalThis.WMOFLanguagePack.text("0589fe2c-5781-433b-855b-a30cbc304c15")],['pay-period',globalThis.WMOFLanguagePack.text("ff8216fc-6cdb-4cbb-a433-1d2bae1e8232")],['month',globalThis.WMOFLanguagePack.text("ed109a97-8e31-4c93-85cb-6dfb4480c0f7")],['year',globalThis.WMOFLanguagePack.text("c9de230e-c958-41be-ad35-70174a864a3f")],['custom',globalThis.WMOFLanguagePack.text("9e063c44-5f74-4196-bbab-3a49a72be041")]],this.options.range(),this.options.onRange);
             const dates=node('div',undefined,'trip-log-date-controls');const values=window.CalendarRange.dates(calendar);
             for(const [label,key] of [[globalThis.WMOFLanguagePack.text("c62f534c-5d7b-459f-bdc8-f14a3d2cbecf"),'start'],[globalThis.WMOFLanguagePack.text("4c0b0ee5-ddac-4e6a-b2b5-48f438f0cd92"),'end']]) {
-                const input=node('input');input.type='date';input.value=values[key];input.disabled=this.options.range()!=='custom';input.setAttribute('aria-label',key==='start'?globalThis.WMOFLanguagePack.text("6bd07958-dfbb-5e40-ab3c-c1347e5eac1c"):globalThis.WMOFLanguagePack.text("dcc024f5-cfbf-56cb-b10b-33c5367aed8b"));
+                const input=node('input');input.type='date';input.value=values[key];input.disabled=key==='end'&&this.options.range()!=='custom';input.setAttribute('aria-label',key==='start'?globalThis.WMOFLanguagePack.text("6bd07958-dfbb-5e40-ab3c-c1347e5eac1c"):globalThis.WMOFLanguagePack.text("dcc024f5-cfbf-56cb-b10b-33c5367aed8b"));
                 input.addEventListener('change',()=>this.options.onDate(key,input.value));dates.append(node('span',label),input);
             }
             box.append(dates);const include=node('label',undefined,'trip-log-include-current');const check=node('input');check.type='checkbox';check.dataset.includeCurrent='true';check.checked=Boolean(this.options.includeCurrent?.());check.addEventListener('change',()=>this.options.onIncludeCurrent?.(check.checked));include.append(node('span',globalThis.WMOFLanguagePack.text("d3df5443-5f50-4a22-b8e6-bdd43caf0d89")),check);box.append(include);
             const adjusted=node('label',undefined,'trip-log-include-current'),adjustedCheck=node('input');adjustedCheck.type='checkbox';adjustedCheck.dataset.adjustedOnly='true';adjustedCheck.checked=this.adjustedOnly;
             adjustedCheck.addEventListener('change',()=>{this.adjustedOnly=adjustedCheck.checked;this.saveViewSettings();this.rerender();});adjusted.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000005')),adjustedCheck);box.append(adjusted);
-            const pending=node('label',undefined,'trip-log-include-current'),pendingCheck=node('input');pendingCheck.type='checkbox';pendingCheck.dataset.showPending='true';pendingCheck.checked=this.downTimeOnly||this.showPending;pendingCheck.disabled=this.downTimeOnly;
-            pendingCheck.addEventListener('change',()=>{if(this.downTimeOnly)return;this.showPending=pendingCheck.checked;this.saveViewSettings();this.rerender();});pending.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000007')),pendingCheck);box.append(pending);return box;
+            const pending=node('label',undefined,'trip-log-include-current'),pendingCheck=node('input');pendingCheck.type='checkbox';pendingCheck.dataset.showPending='true';pendingCheck.checked=this.showPendingPreference;pendingCheck.disabled=this.downTimeOnlyEnabled;pending.classList.toggle('is-unavailable',this.downTimeOnlyEnabled);
+            pendingCheck.addEventListener('change',()=>{if(this.downTimeOnlyEnabled)return;this.showPending=pendingCheck.checked;if(this.options.onShowPendingDownTime)void this.options.onShowPendingDownTime(pendingCheck.checked);else{this.saveViewSettings();this.rerender();}});pending.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000007')),pendingCheck);box.append(pending);
+            const fallback=node('label',undefined,'trip-log-include-current'),fallbackCheck=node('input');fallbackCheck.type='checkbox';fallbackCheck.dataset.downTimeFilterFallback='true';fallbackCheck.checked=this.downTimeOnly;fallbackCheck.disabled=!this.hasVisibleDownTime;fallback.hidden=this.hasVisibleDownTime;fallback.classList.toggle('is-unavailable',!this.hasVisibleDownTime);
+            fallbackCheck.addEventListener('change',()=>{this.downTimeOnly=fallbackCheck.checked;this.saveViewSettings();this.rerender();});fallback.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000004')),fallbackCheck);box.append(fallback);return box;
         }
         civil(trip) {
             const parts=new Intl.DateTimeFormat('en-CA',{timeZone:this.calendar.timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso(trip.startTime)));

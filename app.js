@@ -69,6 +69,7 @@
         includePendingDownTime: "wmof.clock.includePendingDownTime",
         tripLogView: "wmof.clock.tripLogView",
         customTripLogDates: "wmof.clock.customTripLogDates",
+        tripLogAnchorDate: "wmof.clock.tripLogAnchorDate",
         audioSettings: "wmof.clock.audioSettings"
     };
 
@@ -2844,6 +2845,10 @@
     let tripRangeRevision = 0;
     let tripRangeRefreshCompletion = Promise.resolve();
     let selectedTripLogRange;
+    let selectedTripLogAnchorDate;
+    let resolvedTripLogCalendar;
+    let selectedPendingDownTimePreference;
+    let pendingDownTimeOverride=false;
     const toggleSyncMenuButton = $("#toggleSyncMenuButton");
     const syncGoalsMenuIcon = toggleSyncMenuButton?.querySelector(".sync-goals-menu-icon");
     const tripLogButton = $("#tripLogButton");
@@ -5551,7 +5556,7 @@
         }
 
         const custom = range === "custom";
-        if (tripLogStartDate) tripLogStartDate.disabled = !custom;
+        if (tripLogStartDate) tripLogStartDate.disabled = false;
         if (tripLogEndDate) tripLogEndDate.disabled = !custom;
         if (custom) {
             let saved;
@@ -5587,17 +5592,50 @@
         for (const input of [tripLogStartDate, tripLogEndDate]) input?.setAttribute("aria-invalid", String(Boolean(message)));
     }
 
+    function getTripLogAnchorDate() {
+        const value=selectedTripLogAnchorDate===undefined?safeStorageGet(STORAGE.tripLogAnchorDate):selectedTripLogAnchorDate;
+        return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)?value:undefined;
+    }
+    function renderHistoricalRangeState(calendar=resolvedTripLogCalendar) {
+        const selected=calendar&&calendar.range===getTripLogRange(),historical=selected&&!CalendarRange.containsNow(calendar);
+        const dates=selected?CalendarRange.dates(calendar):null;
+        const status=historical?`${globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000009')} · ${dates.start} – ${dates.end}`:'';
+        const banner=$('#historicalRangeBanner'),menu=$('#tripLogHistoricalRange');
+        if(banner){banner.hidden=!historical||clockTimer.percentMode==='trip';banner.querySelector('span').textContent=status;}
+        if(menu){menu.hidden=!historical;menu.querySelector('span').textContent=status;}
+    }
+    async function setTripLogDate(key,value) {
+        if(getTripLogRange()==='custom'){
+            (key==='start'?tripLogStartDate:tripLogEndDate).value=value;refreshTripLogSelection();return;
+        }
+        if(key!=='start')return;
+        const revision=++tripRangeRevision,range=getTripLogRange();
+        try{
+            const calendar=await calendarRanges.resolve({range,date:value});
+            if(revision!==tripRangeRevision||range!==getTripLogRange())return;
+            selectedTripLogAnchorDate=value;safeStorageSet(STORAGE.tripLogAnchorDate,value);
+            const dates=CalendarRange.dates(calendar);tripLogStartDate.value=dates.start;tripLogEndDate.value=dates.end;
+            refreshTripLogSelection();
+        }catch(error){if(revision===tripRangeRevision)showTripRangeError(error.message);}
+    }
+    function returnToCurrentTripRange() {
+        selectedTripLogAnchorDate=null;safeStorageSet(STORAGE.tripLogAnchorDate,null);
+        if(getTripLogRange()==='custom')setTripLogRange('day');else refreshTripLogSelection();
+    }
+
     async function resolveTripLogCalendar(range = getTripLogRange()) {
         const revision = tripRangeRevision;
         const calendar = range === "custom"
             ? CalendarRange.custom(tripLogStartDate.value, tripLogEndDate.value, calendarRanges.getTimezone())
-            : await calendarRanges.resolve({range});
+            : await calendarRanges.resolve({range,date:getTripLogAnchorDate()});
         if (revision === tripRangeRevision && range === getTripLogRange()) {
             const dates = CalendarRange.dates(calendar);
             if (range !== "custom") { tripLogStartDate.value = dates.start; tripLogEndDate.value = dates.end; }
+            resolvedTripLogCalendar={...calendar,historical:!CalendarRange.containsNow(calendar)};
+            renderHistoricalRangeState(resolvedTripLogCalendar);
             showTripRangeError();
         }
-        return calendar;
+        return {...calendar,historical:!CalendarRange.containsNow(calendar)};
     }
 
     function refreshTripLogSelection() {
@@ -6218,14 +6256,27 @@
         try{return JSON.parse(safeStorageGet(STORAGE.tripLogView))||{};}catch{return {};}
     }
     function saveTripLogViewSettings(value) {safeStorageSet(STORAGE.tripLogView,JSON.stringify(value));}
-    function getIncludePendingDownTime() {return safeStorageGet(STORAGE.includePendingDownTime)!=='false';}
+    function getIncludePendingDownTime() {return selectedPendingDownTimePreference??(safeStorageGet(STORAGE.includePendingDownTime)!=='false');}
     async function setIncludePendingDownTime(value) {
         tripRangeRevision++;
+        selectedPendingDownTimePreference=Boolean(value);
         safeStorageSet(STORAGE.includePendingDownTime,String(Boolean(value)));
-        clockTimer.includePendingDownTime=Boolean(value);
+        clockTimer.includePendingDownTime=pendingDownTimeOverride||Boolean(value);
         tripLogView?.rerender();renderSyncGoalsState();updateSummaryValues();
         try{await refreshGoalTotalsForRange(getTripLogRange());if(getTripListState()==='open')await dispatchTripListRequest('pending-down');}
         catch(error){console.warn('Pending Down totals refresh failed',error);}
+    }
+
+    function setPendingDownTimeOverride(value) {
+        if(pendingDownTimeOverride===Boolean(value))return;
+        pendingDownTimeOverride=Boolean(value);
+        const effective=pendingDownTimeOverride||getIncludePendingDownTime();
+        if(clockTimer.includePendingDownTime!==effective){
+            clockTimer.includePendingDownTime=effective;
+            tripRangeRevision++;
+            queueMicrotask(()=>{tripLogView?.rerender();void refreshGoalTotalsForRange(getTripLogRange()).catch(console.warn);});
+        }
+        renderSyncGoalsState();updateSummaryValues();
     }
 
     function offlineTripLogData(calendar) {
@@ -6256,11 +6307,13 @@
             range:getTripLogRange, filter:()=>clockTimer.productionFilter || "all",
             includeCurrent:getTripLogIncludeCurrent,
             includePendingDownTime:()=>clockTimer.includePendingDownTime,
+            showPendingDownTime:getIncludePendingDownTime,onShowPendingDownTime:setIncludePendingDownTime,onPendingOverride:setPendingDownTimeOverride,
             viewSettings:getTripLogViewSettings,onViewSettings:saveTripLogViewSettings,
             onIncludeCurrent:setTripLogIncludeCurrent,
             onRange:value=>setTripLogRange(value),
             onFilter:setTripProductionFilter,
-            onDate:(key,value)=>{(key === "start" ? tripLogStartDate : tripLogEndDate).value=value;refreshTripLogSelection();},
+            onDate:(key,value)=>void setTripLogDate(key,value),
+            onCurrent:()=>returnToCurrentTripRange(),
             numberPad:options=>openValueEditor(options,"touch"),
             request:async (id,change)=>{
                 const result=await clockTimer.tripEditorRequest(id,change);
@@ -7352,7 +7405,7 @@
         const enabled =
             getSyncGoalsState();
         const pendingButton=$("#includePendingDownTimeButton");
-        if(pendingButton){pendingButton.hidden=!clockTimer.hasDownTime;pendingButton.setAttribute("aria-checked",String(clockTimer.includePendingDownTime));}
+        if(pendingButton){pendingButton.hidden=!clockTimer.hasDownTime;pendingButton.setAttribute("aria-checked",String(getIncludePendingDownTime()));pendingButton.disabled=pendingDownTimeOverride;pendingButton.classList.toggle("is-unavailable",pendingDownTimeOverride);}
         const overrideButton = $("#goalBoundingButton");
         if (overrideButton) {
             overrideButton.setAttribute("aria-checked", String(clockTimer.goalBounding));
@@ -8965,6 +9018,7 @@
         scopeToggle.dataset.percentMode = actual;
 
         syncScopeConnectionCloud();
+        renderHistoricalRangeState();
         updateSummaryValues();
 
         if (persist) {
@@ -12384,7 +12438,7 @@
         globalThis.WMOFActions.openGoalEditor(choices?.length === 1 ? {scope:choices[0]} : {choices});
     });
 
-    $('#includePendingDownTimeButton')?.addEventListener('click',()=>void setIncludePendingDownTime(!clockTimer.includePendingDownTime));
+    $('#includePendingDownTimeButton')?.addEventListener('click',()=>void setIncludePendingDownTime(!getIncludePendingDownTime()));
 
     $("#goalBoundingButton")?.addEventListener("click", () => {
         globalThis.WMOFActions.changeGoalBounding(clockTimer.goalBounding ? "off" : "on");
@@ -12407,8 +12461,10 @@
     });
 
     for (const input of [tripLogStartDate, tripLogEndDate]) input?.addEventListener("change", () => {
-        if (getTripLogRange() === "custom") refreshTripLogSelection();
+        void setTripLogDate(input===tripLogStartDate?'start':'end',input.value);
     });
+
+    for(const button of document.querySelectorAll('[data-return-current-range]'))button.addEventListener('click',returnToCurrentTripRange);
 
     $("#tripProductionFilter").addEventListener("change",event=>setTripProductionFilter(event.target.value));
     tripLogRangeSelect?.addEventListener(
@@ -22638,6 +22694,7 @@
                 if(Number(signedInProfile?.id)!==owner)return;
                 await account.load(owner,session.csrfToken);
                 if(Number(signedInProfile?.id)!==owner)return;
+                selectedTripLogAnchorDate=undefined;resolvedTripLogCalendar=undefined;selectedPendingDownTimePreference=undefined;pendingDownTimeOverride=false;
                 const graphical=getGraphicalSettings(),preferences=getTripPreferences();
                 applyGraphicalSettings(graphical);fillGraphicalForm(graphical);fillTripPreferencesForm(preferences);
                 clockTimer.configure({auto_goal:preferences.syncGoals, goal_bounding:preferences.goalBounding,include_pending_down_time:getIncludePendingDownTime()});

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
-import { Window } from 'happy-dom';
+import { Window } from './LanguageWindow.mjs';
 
 const window = new Window({url: 'https://clock.example/'});
 const context = vm.createContext({Date, Intl, URL, URLSearchParams, location: {origin: 'https://clock.example'}, localStorage: window.localStorage});
@@ -60,7 +60,7 @@ try {
     window.addEventListener('wmof:trip-list-request', event => events.push(event.detail));
     const apiTrip = index => ({id: index, startTime: '2026-09-17 16:00:00.000', standardTimeMilliseconds: 1200000, actualTimeMilliseconds: 600000});
     const createHandlers = new Function('calendarRanges', 'CalendarRange', 'clockTimer', 'tripLogBody', 'getTripLogRange', 'window', 'document', 'fetch',
-        'const TripLog=window.TripLog; const API_BASE = window.location.origin + "/"; const CustomEvent = window.CustomEvent; let tripLogSettingsVisible=false; const openNumberPad=()=>{}; const tripIsLive=()=>false; let tripLogRequestSequence = 0; let tripTotalsRefreshQueue = Promise.resolve(); let tripRangeRevision = 0; const resolveTripLogCalendar = range => calendarRanges.resolve({range}); const updateSummaryValues = () => {};\n' + handlers + '\nreturn {dispatchTripListRequest, renderTripLog, updateTripTotals, refreshGoalTotalsForRange};');
+        'const globalThis=window; const safeStorageGet=()=>null, safeStorageSet=()=>{}, STORAGE={}; let signedInProfile=null, deliberatelyLoggedOut=false, selectedPendingDownTimePreference, pendingDownTimeOverride=false; const tripLogSettingsButton=null; const refreshTripLogBoundaryLayout=()=>{}; const requestAnimationFrame=fn=>fn(); const TripLog=window.TripLog; const API_BASE = window.location.origin + "/"; const CustomEvent = window.CustomEvent; let tripLogSettingsVisible=false; const openNumberPad=()=>{}; const tripIsLive=()=>false; let tripLogRequestSequence = 0; let tripTotalsRefreshQueue = Promise.resolve(); let tripRangeRevision = 0; const resolveTripLogCalendar = range => calendarRanges.resolve({range}); const updateSummaryValues = () => {};\n' + handlers + '\nreturn {dispatchTripListRequest, renderTripLog, updateTripTotals, refreshGoalTotalsForRange};');
     const app = createHandlers({resolve: async () => cached}, CalendarRange,
         {nonProductionFilter: 'none', calculateTripTotals: async (...args) => totals.push(args)}, body, () => 'week', window, window.document,
         async url => {calls.push(url.toString()); const offset = Number(url.searchParams.get('offset')); return {ok: true, json: async () => ({trips: offset ? [apiTrip(1001)] : Array.from({length: 1000}, (_, i) => apiTrip(i + 1))})};});

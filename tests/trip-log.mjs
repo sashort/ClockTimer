@@ -91,7 +91,7 @@ assert(root.querySelector('.trip-log-settings').classList.contains('is-open'));
 view.setSettingsVisible(false);
 assert(root.querySelector('.trip-log-settings-content').inert);
 console.log('PASS settings default hidden, toggle with divider, and remain open across data refreshes');
-const dates=root.querySelectorAll('input[type=date]');assert.equal(dates[0].value,'2026-09-05');assert.equal(dates[1].value,'2026-09-18');assert(dates[0].disabled);
+const dates=root.querySelectorAll('input[type=date]');assert.equal(dates[0].value,'2026-09-05');assert.equal(dates[1].value,'2026-09-18');assert(!dates[0].disabled,'preset Start date remains editable');assert(dates[1].disabled,'preset End date is derived');
 criteria='custom';view.render({trips},calendar);assert(!root.querySelector('input[type=date]').disabled);
 await view.openSettings(trips[1]);assert(view.editor.textContent.includes('Scheduled start'));assert(view.editor.textContent.includes('Productive'));view.editor.close();
 console.log('PASS shared date controls and trip settings editor');
@@ -165,6 +165,7 @@ assert(root.querySelector('.trip-log-group>summary .trip-log-downtime'));
 for(const group of root.querySelectorAll('.trip-log-group'))assert.equal([...group.children].filter(e=>e.classList.contains('trip-log-group-children')).length,1,'one guide-bearing child container per aggregate');
 view.render({trips:[noDown]},calendar);
 assert.equal(root.querySelector('.trip-log-downtime'),null,'omit zero downtime at every aggregate and trip level');
+assert.equal(root.querySelector('.trip-log-down-section'),null,'omit the entire dedicated section when all Down categories are zero');
 console.log('PASS logged/approved downtime summaries, zero omission and one grouping guide per aggregate');
 const standalone={id:910,startTime:'2026-09-18T13:00:00Z',endTime:'2026-09-18T13:15:00Z',breakOnly:true,nonProduction:false,
  standardTimeMilliseconds:null,countedTimeMilliseconds:0,actualTimeMilliseconds:900000,events:[{event:'trip.started',timestamp:'2026-09-18T13:00:00Z',value:{breakOnly:true}}]};

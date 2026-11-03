@@ -8069,3 +8069,18 @@ shared-modal-host dialog#clockTimerSettingsFrameDialog iframe:not([data-settings
 .trip-log-down-time.is-stacked .trip-log-down-milliseconds {font-size:.48em;}
 
 .trip-log-down-logged .trip-log-down-milliseconds {font-size:1em;font-weight:inherit;}
+
+.scope-control:has(.historical-range-banner:not([hidden])) .scope-toggle {padding-bottom:18px;}
+.scope-control:has(.historical-range-banner:not([hidden])) {border-color:#ffd778;}
+.historical-range-banner:not([hidden]) {position:absolute;bottom:3px;left:8px;right:8px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:10px;font-weight:600;color:#ffe6a1;line-height:1.2;}
+.historical-range-banner span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.historical-range-banner button {border:1px solid currentColor;border-radius:4px;background:rgb(0 0 0 / 25%);color:inherit;font:inherit;white-space:nowrap;padding:1px 4px;min-height:16px;}
+.trip-log-range-status,.historical-range-status:not([hidden]) {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 12px;color:#ffe6a1;background:rgb(0 0 0 / 25%);font-size:12px;}
+.trip-log-range-status {margin:0 12px 12px;border:1px solid currentColor;border-radius:8px;}
+.trip-log-range-status button {border:1px solid currentColor;border-radius:5px;background:transparent;color:inherit;font:inherit;padding:5px 8px;}
+
+.trip-log-controls label[hidden] {display:none;}
+
+.trip-log-controls label.is-unavailable>span {text-decoration:line-through;opacity:.65;}
+
+#includePendingDownTimeButton.is-unavailable>[data-language-id] {text-decoration:line-through;opacity:.65;}

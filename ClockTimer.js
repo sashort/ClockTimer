@@ -1589,9 +1589,10 @@
             now = new Date(),
             summary = this.#buildSummarySnapshot(now)
         ) {
-            // Active time readouts describe this trip, independent of the percent scope.
+            // A historical aggregate is independent of the still-running trip.
+            const liveTripTime=this.#started&&!this.#breakOnly&&!this.#viewingHistoricalTotals();
             const scope =
-                this.#started && !this.#breakOnly ? "trip" : summary.scope ||
+                liveTripTime ? "trip" : summary.scope ||
                 (
                     this.#percentMode ===
                         "total"
@@ -1618,7 +1619,7 @@
             const label =
                 suffix;
 
-            let text = this.#started && !this.#breakOnly
+            let text = liveTripTime
                 ? this.#getCurrentTripTimeText(summary, now) : selected?.renderedTime;
 
             let value;
@@ -1627,7 +1628,7 @@
             const totalOutsideTripRemaining =
                 scope === "total" &&
                 this.#renderedTimeMode === "remaining" &&
-                !this.#started;
+                (!this.#started||this.#viewingHistoricalTotals());
 
             if (totalOutsideTripRemaining) {
                 value =
@@ -1660,7 +1661,7 @@
                     );
             }
 
-            if(this.#started&&!this.#breakOnly){
+            if(liveTripTime){
                 const exact=this.#getCurrentTripTimeValue(summary,now);
                 if(Number.isFinite(exact)){value=exact;if(this.#renderedTimeMode==="calculated-end")date=new Date(exact);}
             }
@@ -1714,7 +1715,7 @@
             if (
                 actual.scope !== "total" ||
                 actual.mode !== "remaining" ||
-                this.#started ||
+                (this.#started&&!this.#viewingHistoricalTotals()) ||
                 !Number.isFinite(
                     actual.value
                 )
@@ -1789,7 +1790,8 @@
                     ? "End Time"
                     : "Time Remaining";
             const interval = this.getActiveIntervalState?.(now);
-            const standardText = this.#breakOnly ? undefined : summary.trip?.standardTime;
+            const standardSummary=this.#viewingHistoricalTotals()?summary.total:summary.trip;
+            const standardText = this.#breakOnly ? undefined : standardSummary?.standardTime;
             const effectiveTimeState =
                 this.#getEffectiveTimeState(
                     now,
@@ -1799,7 +1801,7 @@
                 effectiveTimeState
                     ?.text;
             const renderedText = effectiveTimeState?.virtual ? rawRenderedText
-                : this.#decorateTripTimeText(rawRenderedText, now,this.#started&&!this.#breakOnly?this.#getCurrentTripTimeValue(summary,now):effectiveTimeState?.value);
+                : this.#decorateTripTimeText(rawRenderedText, now,this.#started&&!this.#breakOnly&&!this.#viewingHistoricalTotals()?this.#getCurrentTripTimeValue(summary,now):effectiveTimeState?.value);
             const renderedDate =
                 effectiveTimeState
                     ?.date;
@@ -1885,7 +1887,7 @@
                 standard_time_header_text: "Standard Time",
                 standard_time_component: this.#component(
                     standardText,
-                    this.#breakOnly ? NaN : Number(summary.trip?.standardTimeMilliseconds),
+                    this.#breakOnly ? NaN : Number(standardSummary?.standardTimeMilliseconds),
                     null,
                     typeof standardText === "string" && Boolean(standardText)
                 ),
@@ -1943,7 +1945,7 @@
         getGoalEditorSnapshot(scope, percent) {
             const total = scope === "total";
             const actual = percent === undefined ? (total ? this.#getUserTotalGoal() : this.#getUserTripGoal()) * 100 : Number(percent);
-            const active = this.#started && !this.#breakOnly && this.#standardDuration > 0;
+            const active = this.#started && !this.#breakOnly && this.#standardDuration > 0 && (!total||this.#tripBelongsToAggregateWindow());
             const inferred = active && Number.isFinite(actual) && actual > 0
                 ? total ? this.#calculateTripGoalFromTotalDuration(this.#standardDuration, actual / 100).tripGoal * 100 : percent===undefined?this.#getTripGoal()*100:actual
                 : null;
@@ -1959,13 +1961,15 @@
             const showTotal = this.#percentMode !== "trip";
             const visibleGoal = node => node.id === "standard"
                 || (node.id === "trip" ? showTrip : showTotal);
-            if (!this.#started || this.#breakOnly || !(standard > 0)) {
+            if (!this.#started || this.#breakOnly || !(standard > 0)||this.#viewingHistoricalTotals()) {
                 const goals = [
                     {id:"standard", label:"Standard", percent:100},
                     {id:"trip", label:"Trip", percent:this.#getUserTripGoal()*100},
                     {id:"total", label:this.getAttribute("total-label") || "Total", percent:this.#getUserTotalGoal()*100}
                 ].filter(visibleGoal).map(node => Object.freeze({...node, time:null, failed:false}));
-                return Object.freeze({available:true, active:false, phase:"idle", all_failed:false, down:false,
+                const historical=this.#viewingHistoricalTotals(),percent=Number(summary.total?.countedPercent);
+                if(historical&&Number.isFinite(percent))goals.push(Object.freeze({id:'current',label:'Current',current:true,percent:percent*100,time:summary.total.renderedTime,failed:false}));
+                return Object.freeze({available:true, active:false, historical, phase:"idle", all_failed:false, down:false,
                     scale_min:0, scale_max:Math.min(150, Math.max(...goals.map(node=>node.percent))), nodes:Object.freeze(goals)});
             }
             const current = Number(summary.trip?.countedPercent);
@@ -4456,6 +4460,19 @@
                 ) &&
                 totals.countedTimeMilliseconds >= 0
             );
+        }
+
+        #tripBelongsToAggregateWindow() {
+            if(!this.#hasStartProperties()||!this.#tripTotals)return true;
+            const start=Date.parse(this.#tripTotals.startTime),end=Date.parse(this.#tripTotals.endTime);
+            if(!Number.isFinite(start)||!Number.isFinite(end))return true;
+            const actual=Date.parse(this.#timelineToISO(this.#getElapsedStartTimeMilliseconds()));
+            return Number.isFinite(actual)&&actual>=start&&actual<=end;
+        }
+        #viewingHistoricalTotals() {
+            if(this.#percentMode!=='total'||!this.#tripTotals)return false;
+            const at=Date.now(),start=Date.parse(this.#tripTotals.startTime),end=Date.parse(this.#tripTotals.endTime);
+            return !this.#tripBelongsToAggregateWindow()||(Number.isFinite(start)&&Number.isFinite(end)&&(at<start||at>end));
         }
 
         #canSelectTotalMode() {
@@ -27600,6 +27617,7 @@
         }
 
         #getTotalGoalAdjustedTimeElapsed() {
+            if(!this.#tripBelongsToAggregateWindow())return undefined;
             const totalGoal = this.#getTotalGoal();
             const totals = this.#tripTotals;
 
@@ -27629,7 +27647,7 @@
                 this.#tripTotals;
 
             if (
-                !this.#started ||
+                !this.#started || !this.#tripBelongsToAggregateWindow() ||
                 !Number.isFinite(totalGoal) ||
                 totalGoal <= 0 ||
                 !this.#hasUsableAggregateSnapshot() ||
@@ -28151,6 +28169,7 @@
         }
 
         #getTotalGoalRequirementFailureReason() {
+            if(!this.#tripBelongsToAggregateWindow())return "trip-outside-aggregate-range";
             const totalGoal =
                 this.#getTotalGoal();
 
@@ -28239,6 +28258,8 @@
                 tripGoal: null,
                 adjustedTimeElapsed: null
             };
+
+            if(!this.#tripBelongsToAggregateWindow())return empty;
 
             const totals =
                 this.#tripTotals;
@@ -33278,7 +33299,7 @@
             }
 
             remainingCountedTimeMilliseconds = countedTimeMilliseconds;
-            if (!this.#breakOnly && this.#hasStartProperties() && this.#tripAddedToAggregate !== true) {
+            if (!this.#breakOnly && this.#hasStartProperties() && this.#tripAddedToAggregate !== true && this.#tripBelongsToAggregateWindow()) {
                 standardTimeMilliseconds += Number(this.#standardDuration ?? 0);
                 actualTimeMilliseconds += this.#getTripActualTimeElapsed(timelineNow);
                 const balance = this.#getCountedTimeBalance(timelineNow);
@@ -33296,7 +33317,7 @@
             const percentGoal = this.#getScopePercentGoal("total");
             const activeTrip =
                 !this.#breakOnly && this.#started &&
-                this.#hasStartProperties();
+                this.#hasStartProperties() && this.#tripBelongsToAggregateWindow();
             const totalGoalRequirements =
                 activeTrip
                     ? this.#calculateTotalGoalRequirements({

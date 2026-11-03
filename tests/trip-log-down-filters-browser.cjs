@@ -14,7 +14,7 @@ const cleared={...adjusted,id:3,events:[...adjusted.events,{event:'trip.official
 const noDown={...trip,id:4,events:events.filter(e=>e.event.startsWith('trip.'))};
 globalThis.rows=[trip,adjusted,cleared,noDown];globalThis.calendar={range:'day',timezone:'UTC',startTime:'2026-11-03T00:00:00Z',endTime:'2026-11-04T00:00:00Z',rules:{weekStartDay:6,cutoffTime:'00:00:00'}};
 globalThis.includePending=true;
-globalThis.view=new TripLog(document.querySelector('#runtime'),{range:()=> 'day',filter:()=> 'all',includeCurrent:()=>true,includePendingDownTime:()=>includePending,onIncludeCurrent(){},onFilter(){},onRange(){},onDate(){}});
+globalThis.view=new TripLog(document.querySelector('#runtime'),{range:()=> 'day',filter:()=> 'all',includeCurrent:()=>true,includePendingDownTime:()=>includePending,showPendingDownTime:()=>includePending,onShowPendingDownTime:value=>{includePending=value;view.rerender();},onIncludeCurrent(){},onFilter(){},onRange(){},onDate(){}});
 view.render({trips:rows},calendar);
 const sample=(title,element,hint)=>{const article=document.createElement('article'),h=document.createElement('h2'),box=document.createElement('div');h.textContent=title;box.className='sample';box.append(element);article.append(h,box);if(hint){const p=document.createElement('p');p.className='hint';p.textContent=hint;article.append(p);}document.querySelector('#samples').append(article);};
 view.downTimeExpanded=true;sample('1 · Expanded',view.downTimeSection([trip]),'Pending is included by the master setting.');
@@ -33,12 +33,18 @@ assert.equal(await page.locator('#samples article').nth(1).locator('summary .tri
 await page.evaluate(()=>{
 const set=(selector,value)=>{const check=document.querySelector('#runtime '+selector);check.checked=value;check.dispatchEvent(new Event('change'));};
 set('[data-show-pending]',false);if(view.showPending!==false)throw Error('explicit pending preference not retained');
-set('[data-down-time-only]',true);if(!document.querySelector('#runtime [data-show-pending]').checked||!document.querySelector('#runtime [data-show-pending]').disabled)throw Error('Down-only must force Pending visible');
+set('[data-down-time-only]',true);if(document.querySelector('#runtime [data-show-pending]').checked||!document.querySelector('#runtime [data-show-pending]').disabled||!document.querySelector('#runtime [data-show-pending]').closest('label').classList.contains('is-unavailable'))throw Error('Pending override must retain the saved check value, disable and strike through');
+if(!document.querySelector('#runtime .trip-log-down-pending'))throw Error('effective override must still show Pending');
 if(document.querySelectorAll('#runtime .trip-log-trip').length!==3)throw Error('Down-only filter failed');
 set('[data-adjusted-only]',true);if(document.querySelectorAll('#runtime .trip-log-trip').length!==1)throw Error('Filters must intersect and ignore cleared overrides');
 set('[data-down-time-only]',false);if(document.querySelector('#runtime [data-show-pending]').checked||document.querySelector('#runtime [data-show-pending]').disabled)throw Error('original Pending visibility must be restored');
 set('[data-show-pending]',true);set('[data-adjusted-only]',false);if(document.querySelectorAll('#runtime .trip-log-trip').length!==4)throw Error('Unfilter must restore original rows');
 view.downTimeExpanded=false;view.rerender();view.rerender();if(document.querySelector('#runtime .trip-log-down-breakdown').open)throw Error('Collapsed state lost on rerender');
+view.downTimeOnly=true;view.render({trips:[rows[3]]},calendar);
+if(document.querySelector('#runtime .trip-log-down-section'))throw Error('zero Down section must be hidden');
+const emptyFilter=document.querySelector('#runtime [data-down-time-filter-fallback]');if(!emptyFilter.disabled||!emptyFilter.checked||!view.downTimeOnly||!emptyFilter.closest('label').classList.contains('is-unavailable'))throw Error('zero Down must disable and strike through while retaining its check value');
+view.render({trips:rows},calendar);if(!document.querySelector('#runtime [data-down-time-only]').checked||!document.querySelector('#runtime [data-show-pending]').disabled)throw Error('saved filter and Pending override must return when Down returns');
+
 });
 const styles=await page.evaluate(()=>{const cell=document.querySelector('#samples .trip-log-down-pending'),ms=document.querySelector('#samples .trip-log-down-logged .trip-log-down-milliseconds');return {align:getComputedStyle(cell).textAlign,ms:getComputedStyle(ms).fontSize,whole:getComputedStyle(ms.previousElementSibling).fontSize};});
 assert.equal(styles.align,'left');assert.equal(styles.ms,styles.whole,'Logged milliseconds use the same size');

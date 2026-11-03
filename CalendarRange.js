@@ -104,24 +104,30 @@
                 end: localParts(new Date(Date.parse(window.endTime) - 1), window.timezone).date};
         }
         static calculate(...args) { return calculate(...args); }
+        static containsNow(window,now=new Date()) {const at=new Date(now).getTime();return at>=Date.parse(window.startTime)&&at<Date.parse(window.endTime);}
         static tripWindow(window) {
             // Existing trips API includes maxDateTime. Keep the following period's midnight out.
             return {startTime: window.startTime, endTime: new Date(Date.parse(window.endTime) - 1).toISOString()};
         }
-        async resolve({range = "week", at = new Date(), timezone = Intl.DateTimeFormat().resolvedOptions().timeZone, profile = this.profile} = {}) {
+        async resolve({range = "week", at = new Date(), date, timezone = Intl.DateTimeFormat().resolvedOptions().timeZone, profile = this.profile} = {}) {
+            if(date!==undefined) civilDate(date);
+            if(date!==undefined&&!this.databaseOnly){
+                const record=await this.resolve({range,at:boundary(date,'12:00:00',timezone),timezone,profile});
+                return {...record,...calculate(record.rules,range,boundary(date,record.rules.cutoffTime,record.timezone||timezone),record.timezone||timezone)};
+            }
             if (this.databaseOnly) {
                 const instant = new Date(at);
                 const matching = this.databaseRecords.filter(record => record.profile === profile);
                 const selectedTimezone = matching[0]?.timezone || timezone;
-                const localDate = localParts(instant, selectedTimezone).date;
+                const localDate = date??localParts(instant, selectedTimezone).date;
                 const year = Number(localDate.slice(0, 4));
                 const record = matching.filter(record => record.searchedYear <= year &&
                     !(range === "pay-period" && record.rules.payPeriodAnchorBasis === "fiscal-year-start" &&
                         (record.rules.payPeriodAnchorDate > localDate ||
-                         (record.rules.payPeriodAnchorDate === localDate && localParts(instant, selectedTimezone).time < record.rules.cutoffTime))))
+                         (date===undefined && record.rules.payPeriodAnchorDate === localDate && localParts(instant, selectedTimezone).time < record.rules.cutoffTime))))
                     .sort((a, b) => b.searchedYear - a.searchedYear)[0];
                 if (!record) throw new Error("No stored calendar rules cover this date. Ask a superuser to save the calendar.");
-                const result = calculate(record.rules, range, at, record.timezone || timezone);
+                const result = calculate(record.rules, range, date===undefined?at:boundary(date,record.rules.cutoffTime,record.timezone||timezone), record.timezone || timezone);
                 return {...record, ...result, offline: false, refreshNeeded: record.searchedYear !== year,
                     warning: record.searchedYear !== year ? "Using previously saved rules; ask a superuser to verify this year's calendar." : null};
             }
