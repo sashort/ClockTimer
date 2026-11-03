@@ -12,6 +12,11 @@ if($method==='GET') {
 }
 require_csrf();
 try {
+    if(($input['operation']??'')==='editor-preview'){
+        $existing=fetch_trip_events($pdo,$tripId,'log');
+        if(!is_string($input['revision']??null)||!hash_equals(trip_edit_revision($existing),$input['revision']))api_error('This trip changed. Reopen the editor and try again.',409,'trip_edit_conflict');
+        json_response(['trip'=>trip_edit_preview($existing,$input,$tripId)]);
+    }
     $result=audited_write(static function(PDO $pdo) use($input,$tripId):array {
         $mysql=$pdo->getAttribute(PDO::ATTR_DRIVER_NAME)==='mysql';
         $lock=$pdo->prepare('SELECT id FROM trips WHERE id=:id'.($mysql?' FOR UPDATE':''));$lock->execute([':id'=>$tripId]);
@@ -25,7 +30,7 @@ try {
         }
         $input['_actorId']=authenticated_user_id();
         $events=trip_edit_apply($existing,$input);$plan=trip_edit_persistence_plan($existing,$events);$ids=$plan['keep'];
-        if (($input['operation']??'')==='settings' && trip_storage_uses_offsets($pdo)) {
+        if ((($input['operation']??'')==='settings'||(($input['operation']??'')==='editor'&&isset($input['settings']))) && trip_storage_uses_offsets($pdo)) {
             $settings=trip_edit_settings($events);
             trip_storage_update($pdo,$tripId,['scheduled_start_time'=>trip_edit_clock_iso($settings['creationAnchor'],$settings['scheduledStart'])]);
         }

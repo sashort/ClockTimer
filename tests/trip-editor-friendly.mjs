@@ -1,18 +1,16 @@
 import fs from 'node:fs';import assert from 'node:assert/strict';import {Window} from './LanguageWindow.mjs';
 const w=new Window();try{
-for(const name of ['CalendarRange','TripAggregates','TripLog'])w.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
-const trip={id:1,startTime:'2026-11-03T10:00:00Z',endTime:'2026-11-03T10:27:00Z',standardTimeMilliseconds:1800000,countedTimeMilliseconds:1620000,events:[{id:1,event:'trip.started',timestamp:'2026-11-03T10:00:00Z',value:{}},{id:2,event:'trip.stopped',timestamp:'2026-11-03T10:27:00Z',value:{}},{id:3,event:'trip.official-percent-set',timestamp:'2026-11-03T10:28:00Z',value:{percentTenths:1125,showOfficialStart:true}}]};
-const root=w.document.createElement('div');w.document.body.append(root);let pad;
-const view=new w.TripLog(root,{range:()=> 'day',filter:()=> 'all',numberPad:async options=>{pad=options;}}),calendar={range:'day',timezone:'UTC',startTime:'2026-11-03T00:00:00Z',endTime:'2026-11-04T00:00:00Z',rules:{weekStartDay:6,cutoffTime:'00:00:00'}};
-view.render({trips:[trip]},calendar);assert(root.querySelector('.is-official-start').textContent.includes('10:00'));
-view.editing.add(1);view.entrySessions.set('1',{original:structuredClone(trip.events),settings:{},revision:'test'});view.rerender();
-root.querySelector('.is-official-start .trip-log-entry-time').click();await pad.onConfirm('2026-11-03T10:00:30.123Z');
-assert.equal(w.TripTimeBank.project(trip).officialCorrection.startTime,'2026-11-03T10:00:30.123Z');assert.equal(view.entryChanges(trip).at(-1).operation,'official-start-time');assert.equal(trip.events[0].timestamp,'2026-11-03T10:00:00Z');
-root.querySelector('.is-official-start .trip-log-entry-remove').click();assert(!root.querySelector('.is-official-start'));assert(!root.querySelector('.is-official-percent'));assert.equal(view.entryChanges(trip).at(-1).operation,'official-start-delete');
-trip.events.splice(2);trip.events.push({id:4,event:'interval.started',timestamp:'2026-11-03T10:10:00Z',value:{type:'break',intervalKey:'existing'}},{id:5,event:'interval.ended',timestamp:'2026-11-03T10:15:00Z',value:{intervalKey:'existing'}});
-const draft={start:'2026-11-03T10:05:00Z'};view.newEntries.set('1',draft);view.placeNewEntry(trip,draft);assert.equal(view.addBefore.get('1'),'4');view.rerender();assert(root.querySelector('.trip-log-new-entry-pair'));
-draft.start='2026-11-03T10:12:00Z';view.placeNewEntry(trip,draft);view.rerender();assert.equal(root.querySelector('.trip-log-new-entry-pair .trip-log-entry-time').getAttribute('aria-invalid'),'true');assert.equal(view.addBefore.get('1'),'4','invalid time does not move the draft');
-draft.start='2026-11-03T10:00:00Z';draft.end='2026-11-03T10:05:00Z';assert.deepEqual(Object.values(view.validateNewEntry(trip,draft)),[false,false],'Down can be the first entry');
-draft.start='2026-11-03T10:05:00Z';draft.end='2026-11-03T10:20:00Z';assert.equal(view.validateNewEntry(trip,draft).endInvalid,true,'an enclosing overlap is invalid');
-console.log('PASS derived Official Start edits/deletion, factual-start preservation, highlighted drafts, valid ordering and invalid red time fields');
+for(const name of ['CalendarRange','TripAggregates','TripLog','TripEditor'])w.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+const events=[{id:1,event:'trip.started',timestamp:'2026-11-03T10:00:00Z',value:{}},{id:2,event:'interval.started',timestamp:'2026-11-03T10:10:00Z',value:{type:'break',length:300000,intervalKey:'b'}},{id:3,event:'interval.ended',timestamp:'2026-11-03T10:15:00Z',value:{intervalKey:'b'}},{id:4,event:'trip.stopped',timestamp:'2026-11-03T10:27:00Z',value:{}}];
+const trip={id:1,startTime:events[0].timestamp,endTime:events[3].timestamp,standardTimeMilliseconds:1800000,countedTimeMilliseconds:1320000,events},settings={nonProduction:false,standardTimeMilliseconds:1800000,instants:{creationTime:events[0].timestamp,scheduledStart:events[0].timestamp,startTime:events[0].timestamp}};
+let pad;const editor=new w.TripEditor(trip,{events,settings,revision:'test'},{numberPad:async options=>pad=options,request:async()=>({trip}),refresh:async()=>{}},{timezone:'UTC'});editor.show();
+assert.equal(w.document.querySelectorAll('[role=tab]').length,2);assert(!w.document.querySelector('.trip-log-entry-heading'));assert(!w.document.querySelector('.trip-log-down-detail-button'));
+editor.events.push({id:'new',event:'interval.started',timestamp:'2026-11-03T10:05:00Z',_draft:true,value:{type:'down',intervalKey:'new'}},{id:'new-end',event:'interval.ended',timestamp:'2026-11-03T10:08:00Z',_draft:true,value:{intervalKey:'new'}});editor.changed();
+assert.deepEqual([...w.document.querySelectorAll('.trip-editor-card')].map(e=>e.dataset.eventId),['1','new','2','4']);assert(w.document.querySelector('[data-event-id=new].is-new-entry'));assert(w.document.querySelector('.trip-editor-camera').disabled,'unsaved entry cannot upload under an unpersisted key');
+const draft=editor.events.find(e=>e.id==='new');draft.timestamp='2026-11-03T10:12:00Z';editor.changed();assert.equal(w.document.querySelector('[data-event-id=new] button.trip-log-entry-time').getAttribute('aria-invalid'),'true');assert(editor.saveButton.disabled);
+draft.timestamp='2026-11-03T10:00:00Z';editor.changed();assert(!editor.invalid(draft).start,'Down can be first');assert(!editor.saveButton.disabled);
+editor.events.find(e=>e.id==='new-end').timestamp='2026-11-03T10:20:00Z';editor.changed();assert(editor.invalid(draft).end,'enclosing overlap is invalid');
+const payload=editor.payload();assert.equal(payload.operation,'editor');assert.equal(payload.changes.at(-1).operation,'add-entry');assert.equal(events.length,4,'draft never mutates the Trip Log source');
+editor.tab='details';editor.render();assert.equal(editor.body.querySelectorAll('.trip-log-edit-field').length,2);assert(![...editor.body.querySelectorAll('button')].some(e=>e.textContent.includes('Actual start')||e.textContent.includes('Trip end')));
+editor.dirty=false;editor.close();console.log('PASS dedicated tabs, isolated chronological drafts, new-entry highlight, overlap validation, Down-first and timeline-only boundaries');
 }finally{await w.happyDOM.close();}

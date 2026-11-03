@@ -6317,7 +6317,7 @@
             numberPad:options=>openValueEditor(options,"touch"),
             request:async (id,change)=>{
                 const result=await clockTimer.tripEditorRequest(id,change);
-                if(change){
+                if(change&&change.operation!=="editor-preview"){
                     if(String(clockTimer.tripRecovery?.tripId)===String(id)) await clockTimer.restoreActiveTrip();
                     if (
                         endTimeGoalOverride &&
@@ -6337,7 +6337,7 @@
                     await loadTripSummary(completedTripSummary,clockTimer.getLocalTripLog(),tripSummaryRequestController.signal);
             },
             downDetailsInfo:(tripId,intervalKey)=>clockTimer.downDetailsRequest(tripId,intervalKey),
-            openDownDetails:(trip,intervalKey,editing)=>openDownDetailsModal(trip.id,intervalKey,{editing}),
+            openDownDetails:(trip,intervalKey,editing)=>openDownDetailsModal(trip.id,intervalKey,{editing,capture:editing}),
             liveTrip:()=>{
                 if (!tripIsLive()) return null;
                 const interval=clockTimer.getActiveIntervalState?.(new Date());
@@ -7405,6 +7405,8 @@
         const enabled =
             getSyncGoalsState();
         const pendingButton=$("#includePendingDownTimeButton");
+        const editTripButton=$("#editActiveTripButton");
+        if(editTripButton)editTripButton.hidden=!tripIsLive();
         if(pendingButton){pendingButton.hidden=!clockTimer.hasDownTime;pendingButton.setAttribute("aria-checked",String(getIncludePendingDownTime()));pendingButton.disabled=pendingDownTimeOverride;pendingButton.classList.toggle("is-unavailable",pendingDownTimeOverride);}
         const overrideButton = $("#goalBoundingButton");
         if (overrideButton) {
@@ -12439,6 +12441,10 @@
     });
 
     $('#includePendingDownTimeButton')?.addEventListener('click',()=>void setIncludePendingDownTime(!getIncludePendingDownTime()));
+    $('#editActiveTripButton')?.addEventListener('click',async()=>{
+        try{const view=ensureTripLogView(),trip=view?.options.liveTrip?.();if(!trip)return;view.calendar=await resolveTripLogCalendar();await view.openTripEditor(trip);}
+        catch(error){ensureTripLogView()?.error(error);}
+    });
 
     $("#goalBoundingButton")?.addEventListener("click", () => {
         globalThis.WMOFActions.changeGoalBounding(clockTimer.goalBounding ? "off" : "on");

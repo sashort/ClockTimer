@@ -90,8 +90,8 @@
     globalThis.TripDowntimeSummary = TripDowntimeSummary;
     // Work is a duration; unused break allowance is a separate credit to the bank.
     // Reconstruct old completed rows whose credited duration was clamped to zero.
-    function baseTimeBank(trip) {
-        if (Number.isSafeInteger(trip.productiveTimeMilliseconds) && trip.productiveTimeMilliseconds >= 0 &&
+    function baseTimeBank(trip,force=false) {
+        if (!force && Number.isSafeInteger(trip.productiveTimeMilliseconds) && trip.productiveTimeMilliseconds >= 0 &&
             Number.isSafeInteger(trip.allowanceCreditMilliseconds) && trip.allowanceCreditMilliseconds >= 0)
             return {productiveTimeMilliseconds:trip.productiveTimeMilliseconds,allowanceCreditMilliseconds:trip.allowanceCreditMilliseconds,
                 countedTimeBalanceMilliseconds:trip.productiveTimeMilliseconds-trip.allowanceCreditMilliseconds,bankCreditCarryMilliseconds:Math.max(0,trip.allowanceCreditMilliseconds-trip.productiveTimeMilliseconds)};
@@ -123,7 +123,7 @@
         for(const [left,right] of segments){if(right>Math.max(cursor,left)){excluded+=right-Math.max(cursor,left);cursor=right;}}
         const productive=Math.max(0,finish-begin-excluded);
         // Rows with no early-return credit keep their existing accounting contract.
-        if(!credit)return null;
+        if(!credit&&!force)return null;
         return {productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:productive-credit,bankCreditCarryMilliseconds:Math.max(0,credit-productive)};
     }
     function timeBank(trip){
@@ -153,7 +153,8 @@
         const productive=Math.max(0,work+(includePendingDownTime?-pending:pending)),balance=productive-credit;
         return {...trip,productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:balance,countedTimeMilliseconds:Math.max(0,balance),bankCreditCarryMilliseconds:Math.max(0,-balance),pendingDownIncluded:includePendingDownTime};
     }
-    globalThis.TripTimeBank=Object.freeze({project:timeBank,withPendingPolicy});
+    function recalculate(trip){const bank=baseTimeBank(trip,true);return bank?{...trip,...bank,countedTimeMilliseconds:Math.max(0,bank.countedTimeBalanceMilliseconds),pendingDownIncluded:true}:trip;}
+    globalThis.TripTimeBank=Object.freeze({project:timeBank,withPendingPolicy,recalculate});
     // Persisted counted time is authoritative; active trips use the allotted floor after unused break credit.
     const countedTime = trip => {
         const stored = Number.isSafeInteger(trip?.countedTimeMilliseconds) && trip.countedTimeMilliseconds >= 0

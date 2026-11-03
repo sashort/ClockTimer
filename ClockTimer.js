@@ -161,6 +161,7 @@
         #completedTripsRestored = false;
         #completedTripSyncPromise;
         #completedTripsReady = Promise.resolve();
+        #tripEditorBatch = false;
         #stateTransactionSignal;
         #stateTransaction;
 
@@ -7895,6 +7896,33 @@
             await this.#completedTripsReady;
             let buffered = this.#completedTripQueue.find(trip =>
                 String(trip.tripId || `offline-${trip.payload.clientToken}`) === String(tripId));
+            if(buffered&&this.#connectionState!=="connected"&&["editor","editor-preview"].includes(change?.operation)){
+                if(this.#tripEditorBatch)throw new Error("Another offline edit is in progress.");
+                if((change.official||[]).length)throw new Error("Connect before changing an official percentage.");
+                const previous=this.#completedTripQueue;this.#completedTripQueue=structuredClone(previous);this.#tripEditorBatch=true;
+                const draft=this.#completedTripQueue.find(trip=>String(trip.tripId||`offline-${trip.payload.clientToken}`)===String(tripId));draft.log.events=this.#bufferedEditorEvents(draft);
+                const preview=change.operation==="editor-preview";
+                try{
+                    if(change.settings)await this.tripEditorRequest(tripId,{operation:"settings",settings:change.settings});
+                    if((change.changes||[]).length)await this.tripEditorRequest(tripId,{operation:"entries",changes:change.changes});
+                    const current=this.#completedTripQueue.find(trip=>String(trip.tripId||`offline-${trip.payload.clientToken}`)===String(tripId));
+                    const rows=current.log.events,parse=value=>Date.parse(/Z$|[+-]\d\d:\d\d$/.test(value)?value:String(value).replace(' ','T')+'Z');
+                    const start=rows.find(e=>e.event==='trip.started'),stop=rows.find(e=>e.event==='trip.stopped');
+                    if(!start||!stop||parse(stop.timestamp)<parse(start.timestamp))throw new Error("Trip end must follow actual start.");
+                    const occupied=[];
+                    for(const event of rows.filter(e=>e.event==='interval.started')){const end=rows.find(e=>e.event==='interval.ended'&&e.value?.intervalKey===event.value?.intervalKey);const left=parse(event.timestamp),right=parse(end?.timestamp);if(!Number.isFinite(left)||!Number.isFinite(right)||left<parse(start.timestamp)||right>parse(stop.timestamp)||right<=left)throw new Error("Entry must fit within the trip.");occupied.push([left,right]);}
+                    occupied.sort((a,b)=>a[0]-b[0]);for(let i=1;i<occupied.length;i++)if(occupied[i][0]<occupied[i-1][1])throw new Error("Entries cannot overlap.");
+                    current.log.startTime=start.timestamp;current.log.endTime=stop.timestamp;current.payload.startTime=start.timestamp;current.payload.endTime=stop.timestamp;
+                    const projected=globalThis.TripTimeBank.recalculate({...current.log,id:tripId,standardTimeMilliseconds:current.payload.standardTimeMilliseconds,events:rows,running:false,breakOnly:current.payload.breakOnly===true});
+                    Object.assign(current.log,projected);current.payload.countedTimeMilliseconds=projected.countedTimeMilliseconds;
+                    for(const event of current.events.filter(e=>e.event==='trip.stopped'))event.value={...event.value,countedTimeMilliseconds:projected.countedTimeMilliseconds};
+                    const result={trip:globalThis.TripTimeBank.withPendingPolicy({...projected,buffered:true},change.includePendingDownTime!==false)};
+                    this.#tripEditorBatch=false;
+                    if(preview)this.#completedTripQueue=previous;
+                    else if(!(await this.#saveCompletedTrips()))throw new Error("The offline edit could not be saved.");
+                    return {...result,offline:true};
+                }catch(error){this.#completedTripQueue=previous;throw error;}finally{this.#tripEditorBatch=false;}
+            }
             if (buffered && this.#connectionState !== "connected") {
                 if (change) {
                     const original = buffered;
@@ -7902,9 +7930,10 @@
                     this.#completedTripQueue = this.#completedTripQueue.map(item => item === original ? buffered : item);
                 }
                 const response = () => ({
-                    tripId,
-                    events: buffered.log?.events || [],
+                    tripId,offline:true,
+                    events: this.#bufferedEditorEvents(buffered),
                     settings: {
+                        breakOnly:buffered.payload.breakOnly===true,
                         creationAnchor: buffered.payload.creationAnchor,
                         standardTimeMilliseconds: buffered.payload.standardTimeMilliseconds,
                         creationTime: buffered.payload.creationTime,
@@ -7918,7 +7947,7 @@
                 if (!change) return response();
                 if (change.operation === "delete-trip") {
                     buffered.deleted = true;
-                    if (!(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
+                    if (!this.#tripEditorBatch && !(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
                     return {tripId, deleted: true, queued: true, offline: true};
                 }
                 if (change.operation === "entries") {
@@ -7929,31 +7958,35 @@
                         const selected = display.find(event => String(event.id) === String(entry.eventId));
                         if (edit.operation === "entry" && selected && (selected.event === "trip.started" || selected.event === "trip.stopped")) {
                             const previousTimestamp=selected.timestamp,raw=working.events.find(event=>event.event===selected.event&&event.timestamp===previousTimestamp);
-                            selected.timestamp=entry.start;if(raw)raw.timestamp=entry.start;return;
+                            selected.timestamp=entry.start;if(raw){raw.timestamp=entry.start;if(raw.event==='trip.started'&&raw.value?.timelineVersion===2){raw.value.startOffsetMilliseconds=Date.parse(entry.start)-Date.parse(raw.scheduledStartTime||working.payload.scheduledStartTime);selected.value.startOffsetMilliseconds=raw.value.startOffsetMilliseconds;}}return;
                         }
                         const key = entry.intervalKey || selected?.value?.intervalKey || `offline-edit-${Date.now()}-${Math.random()}`;
                         const findRaw = event => event.event === "interval.started" &&
                             (event.value?.intervalKey === key || event.timestamp === selected?.timestamp);
                         const originalRaw = working.events.find(findRaw);
                         const rawKey = originalRaw?.value?.intervalKey || key;
+                        const metadata={type:entry.type,length:entry.length,approvedTime:entry.approvedTime,approvalState:entry.approvalState,intervalKey:key,attributes:{...(originalRaw?.value?.attributes||selected?.value?.attributes||{}),...(entry.breakType?{breakType:entry.breakType}:{})}};
+                        for(const attribute of Object.keys(metadata.attributes))if(attribute.startsWith('clock-timer-'))delete metadata.attributes[attribute];
+                        for(const event of [...display,...working.events])if(event.event==='interval.approval-changed'&&[key,rawKey].includes(event.value?.intervalKey)&&entry.approvalState){event.value.state=entry.approvalState;event.value.value=entry.approvedTime??0;}
+
                         if (edit.operation === "delete-entry") {
                             working.log.events = display.filter(event => event.value?.intervalKey !== key);
                             working.events = working.events.filter(event => event.value?.intervalKey !== rawKey);
                         } else if (edit.operation === "add-entry") {
-                            const started = {id:`offline-edit-${Date.now()}-${Math.random()}`,event:"interval.started",timestamp:entry.start,value:{type:entry.type,length:entry.length,intervalKey:key}};
+                            const started = {id:`offline-edit-${Date.now()}-${Math.random()}`,event:"interval.started",timestamp:entry.start,value:{...metadata}};
                             working.log.events.push(started);
                             working.events.push({event:started.event,timestamp:started.timestamp,value:{...started.value},clientToken:this.#createTripEventClientToken(),synced:false});
                             if (entry.end) {const ended={id:`${started.id}-end`,event:"interval.ended",timestamp:entry.end,value:{intervalKey:key}};working.log.events.push(ended);working.events.push({event:ended.event,timestamp:ended.timestamp,value:{...ended.value},clientToken:this.#createTripEventClientToken(),synced:false});}
                         } else if (edit.operation === "entry" && selected) {
-                            selected.timestamp=entry.start;Object.assign(selected.value,{type:entry.type,length:entry.length,intervalKey:key});
-                            if(originalRaw){originalRaw.timestamp=entry.start;Object.assign(originalRaw.value,{type:entry.type,length:entry.length});}
+                            selected.timestamp=entry.start;Object.assign(selected.value,metadata);
+                            if(originalRaw){originalRaw.timestamp=entry.start;Object.assign(originalRaw.value,{...metadata,intervalKey:rawKey});}
                             const ended=display.find(event=>event.event==="interval.ended"&&event.value?.intervalKey===key),rawEnded=working.events.find(event=>event.event==="interval.ended"&&event.value?.intervalKey===rawKey);
                             if(entry.end&&ended)ended.timestamp=entry.end;if(entry.end&&rawEnded)rawEnded.timestamp=entry.end;
                         } else throw new Error("Entry changed. Reopen the trip.");
                     };
                     for (const edit of change.changes || []) applyEntry(edit);
                     Object.assign(buffered, working);
-                    if (!(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
+                    if (!this.#tripEditorBatch && !(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
                     return {...response(), offline:true};
                 }
                 if (change.operation === "settings") {
@@ -8031,18 +8064,19 @@
                         if (entry.end && rawEnded) rawEnded.timestamp=entry.end;
                     }
                 }
-                if (!(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
+                if (!this.#tripEditorBatch && !(await this.#saveCompletedTrips())) throw new Error("The offline edit could not be saved.");
                 return {...response(), offline: true};
             }
             if (!(await this.#ensureConnected())) throw new Error("Connect before editing trips.");
             const active = Number(tripId) === this.#tripId && this.#hasStartProperties();
-            if (active && change) this.#stopTickTimer();
+            const writes = change && change.operation !== "editor-preview";
+            if (active && writes) this.#stopTickTimer();
             try {
             if (active) { await this.#ensureTripPersisted(); await this.#syncTripEvents(); }
             const result = await this.#apiRequest("trip-editor", change ? {
                 method:"POST",csrf:true,body:{tripId,...change}
             } : {query:{tripId}});
-            if (change && active) {
+            if (writes && active) {
                 if (change.operation === "delete-trip") {
                     this.#transitionLifecycle("stop");this.#clearLocal();this.#tripId=undefined;this.#pendingTripEvents=[];this.#preparedTrip=undefined;
                     this.#emitClockTimerEvent("cleared",{tripId,connected:true,synced:true});
@@ -8057,7 +8091,15 @@
                 }
             }
             return result;
-            } finally {if(active && change && this.#needsTick()) this.#startTickTimer();}
+            } finally {if(active && writes && this.#needsTick()) this.#startTickTimer();}
+        }
+
+        #bufferedEditorEvents(buffered) {
+            return (buffered.log?.events||[]).map(event=>{
+                if(!['trip.started','trip.stopped'].includes(event.event))return event;
+                const factual=buffered.events.find(row=>row.event===event.event);
+                return factual?{...event,timestamp:factual.timestamp,value:{...factual.value}}:event;
+            });
         }
 
         #bufferedTripTimeSettings(buffered) {

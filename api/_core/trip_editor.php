@@ -111,7 +111,16 @@ function trip_edit_offset_clock(int $ms): string {
 /** Edits preserve event IDs and interval keys; the normal ClockTimer replay remains authoritative. */
 function trip_edit_apply(array $events, array $input, bool $validate=true): array {
     $operation=$input['operation']??'';
-    if ($operation==='entries') {
+    if ($operation==='editor') {
+        if (isset($input['settings'])) $events=trip_edit_apply($events,['operation'=>'settings','settings'=>$input['settings'],'_editor'=>true],false);
+        $events=trip_edit_apply($events,['operation'=>'entries','changes'=>$input['changes']??[]],false);
+        $official=$input['official']??[];
+        if(!is_array($official)||count($official)>3)throw new InvalidArgumentException('Invalid official percentage changes.');
+        foreach($official as $change){
+            if(!is_array($change)||!in_array($change['operation']??'',['official-percent','official-percent-clear','official-start-time','official-start-delete'],true))throw new InvalidArgumentException('Invalid official percentage change.');
+            $change['_actorId']=$input['_actorId']??null;$events=trip_edit_apply($events,$change,false);
+        }
+    } elseif ($operation==='entries') {
         $changes=$input['changes']??null;
         if (!is_array($changes) || count($changes)>500) throw new InvalidArgumentException('Invalid entry changes.');
         foreach ($changes as $change) {
@@ -154,9 +163,12 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         $events[]=['id'=>null,'event'=>$operation==='official-percent-clear'?'trip.official-percent-cleared':'trip.official-percent-set','timestamp'=>$stamp->format('Y-m-d H:i:s.v'),
             'value'=>['percentTenths'=>$tenths,'showOfficialStart'=>$operation==='official-percent'&&$showStart,...($percent!==null?['percent'=>$percent]:[]),'createdBy'=>is_int($input['_actorId']??null)?$input['_actorId']:null]];
     } elseif ($operation==='settings') {
-        if ((trip_edit_settings($events)['breakOnly'] ?? false) === true) throw new InvalidArgumentException('Standard time and production settings do not apply to break-only sessions.');
+        $breakOnly=(trip_edit_settings($events)['breakOnly'] ?? false) === true;
+        if ($breakOnly&&empty($input['_editor'])) throw new InvalidArgumentException('Standard time and production settings do not apply to break-only sessions.');
         $s=$input['settings']??null;
         if (!is_array($s) || !is_bool($s['nonProduction']??null)) throw new InvalidArgumentException('Invalid trip settings.');
+        $s['breakOnly']=$breakOnly;
+        if($breakOnly){$s['standardTimeMilliseconds']=null;$s['nonProduction']=trip_edit_settings($events)['nonProduction']??false;}
         $absolute=is_array($s['instants']??null);
         if($absolute){
             $instants=[];foreach(['creationTime','scheduledStart','startTime'] as $field)$instants[$field]=trip_edit_iso($s['instants'][$field]??'');
@@ -164,7 +176,7 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
             foreach($instants as $field=>$instant)$s[$field]=trip_edit_offset_clock(trip_storage_epoch_ms($instant)-trip_storage_epoch_ms($midnight));
             unset($s['instants']);
         }
-        trip_edit_duration_milliseconds(
+        if(!$breakOnly)trip_edit_duration_milliseconds(
             $s['standardTimeMilliseconds'] ??
                 null
         );
@@ -268,7 +280,7 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         if (!$found) throw new InvalidArgumentException('Entry no longer exists.');
         $events=array_values(array_filter($events,static fn($e)=>!($e['_delete']??false)));
     } else throw new InvalidArgumentException('Unknown edit operation.');
-    usort($events,static fn($a,$b)=>strcmp($a['timestamp'],$b['timestamp'])?:((int)$a['id']<=>(int)$b['id']));
+    usort($events,static fn($a,$b)=>(trip_storage_epoch_ms($a['timestamp'])<=>trip_storage_epoch_ms($b['timestamp']))?:((int)$a['id']<=>(int)$b['id']));
     if ($validate) {trip_edit_aggregate($events);if(trip_official_has_history($events))trip_official_assert_completed($events);}
     return $events;
 }
@@ -278,6 +290,19 @@ function trip_edit_clock_iso(string $anchor,string $clock): string {
     $milliseconds=((int)$m[1]*3600+(int)$m[2]*60+(int)$m[3])*1000+(int)str_pad($m[4]??'',3,'0');
     $date=new DateTimeImmutable($anchor,new DateTimeZone('UTC'));
     return $date->modify('+'.$milliseconds.' milliseconds')->format('Y-m-d H:i:s.v');
+}
+
+/** Read-only editor preview uses the same validation and accounting as Save. */
+function trip_edit_preview(array $existing,array $input,int $tripId): array {
+    $events=trip_edit_apply($existing,[...$input,'operation'=>'editor']);$a=trip_edit_aggregate($events);
+    require_once __DIR__.'/trip_time_bank.php';
+    $started=array_values(array_filter($events,static fn($e)=>$e['event']==='trip.started'))[0];
+    $stops=array_values(array_filter($events,static fn($e)=>$e['event']==='trip.stopped'));$running=count($stops)===0;
+    $finish=$running?(new DateTimeImmutable('now',new DateTimeZone('UTC')))->format('Y-m-d H:i:s.v'):end($stops)['timestamp'];
+    $snapshot=$events;if($running)$snapshot[]=['event'=>'trip.stopped','timestamp'=>$finish,'value'=>[]];
+    $trip=['id'=>$tripId,'startTime'=>$started['timestamp'],'endTime'=>$finish,'standardTimeMilliseconds'=>$a['standard'],'countedTimeMilliseconds'=>$a['counted'],'running'=>false,'breakOnly'=>(trip_edit_settings($events)['breakOnly']??false),'events'=>$events];
+    $trip=array_merge($trip,trip_time_bank_projection($trip,$snapshot,($input['includePendingDownTime']??true)!==false)??[]);$trip['running']=$running;
+    return $trip;
 }
 
 function trip_edit_aggregate(array $events): array {

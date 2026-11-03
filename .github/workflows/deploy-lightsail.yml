@@ -251,6 +251,7 @@ jobs:
           php-version: '8.3'
       - run: node tests/official-percent-browser.cjs
       - run: node tests/live-trip-editor-browser.cjs
+      - run: node tests/dedicated-trip-editor-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
       - run: node tests/goal-bar-hit-area-browser.cjs
       - run: node tests/goal-bar-label-width-browser.cjs
@@ -324,6 +325,7 @@ jobs:
       - run: php -d extension=pdo_sqlite tests/official-percent.php
       - run: php tests/official-start.php
       - run: php tests/live-trip-editor.php
+      - run: php tests/dedicated-trip-editor.php
       - run: php -l api/trips/index.php
       - run: php -l api/_core/trip_editor.php
       - run: php -l database/apply_admin_permissions.php

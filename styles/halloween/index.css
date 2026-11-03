@@ -124,5 +124,6 @@ html[data-seasonal-theme="halloween"] .app {--timer-attention-ink:#fff5e2;--time
 html[data-seasonal-theme="halloween"] .trip-log-down-section {background:#291c10;color:#fff5e2;border-color:#ed972d;}
 html[data-seasonal-theme="halloween"] :is(.trip-log-down-content,.trip-log-down-logged,.trip-log-down-filter,.trip-log-down-grid>div) {border-color:#8b6338;}
 html[data-seasonal-theme="halloween"] .trip-log-down-approved {color:#ffd778;}
+html[data-seasonal-theme="halloween"] .dedicated-trip-editor {--editor-bg:#21170e;--editor-card:#372617;--editor-border:#b47b39;--editor-accent:#ffd778;background:var(--editor-bg);color:#fff5e2;}
 html[data-seasonal-theme="halloween"] .trip-log-down-filter input {accent-color:#ed972d;}
 html[data-seasonal-theme="halloween"] .timer-attention-gradient {background:conic-gradient(from var(--timer-attention-angle),#e28b25,#e28b25 32%,#9f75bb 43%,#ffd34e 51%,#fff0b0 58%,#ffd34e 66%,#e28b25 81%);}

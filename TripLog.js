@@ -6,13 +6,6 @@
         Number.isSafeInteger(value) && value >= 0
             ? value
             : 0;
-    const timelineMilliseconds = value => {
-        const text=String(value||'').trim(),match=text.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?$/);
-        if(!match)return 0;
-        const hours=Number(match[1]||0),minutes=Number(match[2]),seconds=Number(match[3]),fraction=Number(String(match[4]||'0').padEnd(3,'0'));
-        if(![hours,minutes,seconds,fraction].every(Number.isFinite)||minutes>59||seconds>59)return 0;
-        return (((hours*60)+minutes)*60+seconds)*1000+fraction;
-    };
     const durationOrDash = value =>
         Number.isSafeInteger(value) && value >= 0
             ? duration(value)
@@ -36,7 +29,7 @@
         return icon;
     };
     class TripLog {
-        constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editing=new Set();this.entrySessions=new Map();this.addBefore=new Map();this.newEntries=new Map();this.deleteVisible=new Set();this.editor=null;this.settingsVisible=false;this.downTimeExpanded=true;this.downTimeOnly=false;this.adjustedOnly=false;this.showPending=true;for(const key of ['downTimeExpanded','downTimeOnly','adjustedOnly','showPending'])if(typeof options.viewSettings?.()?.[key]==='boolean')this[key]=options.viewSettings()[key];this.outsideEntryPointer=event=>this.handleOutsideEntryPointer(event);document.addEventListener('pointerdown',this.outsideEntryPointer,true);}
+        constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editor=null;this.settingsVisible=false;this.downTimeExpanded=true;this.downTimeOnly=false;this.adjustedOnly=false;this.showPending=true;for(const key of ['downTimeExpanded','downTimeOnly','adjustedOnly','showPending'])if(typeof options.viewSettings?.()?.[key]==='boolean')this[key]=options.viewSettings()[key];}
         downtimeSummary(summary, overview=false) {
             if(!summary?.hasDowntime)return undefined;
             const box=node('div',undefined,'trip-log-downtime'+(overview?' trip-log-downtime-overview':''));
@@ -90,7 +83,6 @@
             this.calendar=calendar;this.downtimeNow=this.options.now?.()??Date.now();
             this.activeSweepDelay=`-${Math.round(performance.now()%4200)}ms`;
             this.incomplete=Boolean(data.incomplete);this.offline=Boolean(data.offline);this.loginRequired=Boolean(data.loginRequired);
-            const working=new Map((this.trips||[]).filter(t=>this.editing.has(t.id)).map(t=>[String(t.id),t.events]));
             const trips=data.loginRequired?[]:data.trips.map(t=>TripTimeBank.withPendingPolicy({...t},this.showPendingEffective,{now:this.downtimeNow}));const liveSource=data.loginRequired?null:this.options.liveTrip?.();const live=liveSource?TripTimeBank.withPendingPolicy(liveSource,this.showPendingEffective,{now:this.downtimeNow}):null;
             if(live && Date.parse(live.startTime)>=Date.parse(calendar.startTime) && Date.parse(live.startTime)<Date.parse(calendar.endTime)) {
                 const index=trips.findIndex(t=>String(t.id)===String(live.id));
@@ -99,7 +91,6 @@
                     if(index>=0) trips[index]={...trips[index],...live};else trips.push(live);
                 } else if(index>=0) trips.splice(index,1);
             }
-            for(const trip of trips)if(working.has(String(trip.id)))trip.events=working.get(String(trip.id));
             trips.sort((a,b)=>Date.parse(iso(b.startTime))-Date.parse(iso(a.startTime))||b.id-a.id);
             this.trips=trips;
             const matchingTrips=trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip));
@@ -206,41 +197,28 @@
                 if(!trip.running&&!this.offline&&!trip.buffered){const button=node('button',undefined,'trip-log-percent-button');button.type='button';button.setAttribute('aria-label',TripLog.officialText('edit'));button.append(...value.childNodes);value.append(button);button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();this.editOfficial(trip).catch(error=>this.error(error));});}
             }
             if(trip.buffered)summary.lastElementChild.append(uncertainIcon());
-            const menu=node('div',undefined,'trip-log-menu');const toggle=node('button','⋮');toggle.type='button';toggle.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("20d61461-e2f9-5bef-a66c-1effecbc1dab", {value0: (trip.id)}));toggle.setAttribute('aria-expanded','false');
+            const menu=node('div',undefined,'trip-log-menu'),toggle=node('button','⋮');toggle.type='button';toggle.setAttribute('aria-label','Trip actions');toggle.setAttribute('aria-expanded','false');
             const actions=node('div',undefined,'trip-log-menu-actions');actions.hidden=true;
-            for(const [label,action] of [...(!standalone?[[globalThis.WMOFLanguagePack.text("e467a304-0e63-42cf-8668-861ce62a7200"),()=>this.openSettings(trip)]]:[]),[globalThis.WMOFLanguagePack.text("d8e75f94-b2ac-484b-86f3-350c8b90433a"),()=>this.beginEntryEdit(trip)],[globalThis.WMOFLanguagePack.text("4f07c05e-91f4-4cfb-bb2c-f81e58259258"),()=>this.deleteTrip(trip)]]) {
-                const button=node('button',label);button.type='button';if(label==='Delete trip')button.className='danger';button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=true;toggle.setAttribute('aria-expanded','false');Promise.resolve(action()).catch(error=>this.error(error));});actions.append(button);
+            for(const [label,action] of [['Edit Trip',()=>this.openTripEditor(trip)],['Delete trip',()=>this.deleteTrip(trip)]]){const button=node('button',label);button.type='button';if(label==='Delete trip')button.className='danger';button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();actions.hidden=true;toggle.setAttribute('aria-expanded','false');Promise.resolve(action()).catch(error=>this.error(error));});actions.append(button);}
+            toggle.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!this.offline||trip.buffered)summary.append(menu);
+            const downtime=this.downtimeSummary(TripDowntimeSummary.trip(trip,{now:this.downtimeNow}));if(downtime)summary.append(downtime);details.append(summary);
+            const entries=node('div',undefined,'trip-log-entries');entries.append(node('strong','Trip entries','trip-log-entry-heading'));
+            const events=trip.events||[],deleted=new Set(events.filter(event=>event.event==='interval.deleted').map(event=>event.value?.intervalKey));
+            const visible=events.filter(event=>(!standalone&&['trip.started','trip.stopped'].includes(event.event))||(['interval.started','interval.ended'].includes(event.event)&&!deleted.has(event.value?.intervalKey)));
+            if(official?.startTime)visible.push({event:'trip.official-start',timestamp:official.startTime,value:{}});
+            visible.sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
+            const activeEntry=trip.running?(visible.find(event=>event.event==='interval.started'&&!events.some(e=>e.event==='interval.ended'&&e.value?.intervalKey===event.value?.intervalKey))||visible.find(event=>event.event==='trip.started')):null;
+            for(const event of visible){const started=event.event==='interval.ended'?events.find(e=>e.event==='interval.started'&&e.value?.intervalKey===event.value?.intervalKey):event,ended=started?.event==='interval.started'?events.find(e=>e.event==='interval.ended'&&e.value?.intervalKey===started.value?.intervalKey):null;
+                const row=node('div',undefined,'trip-log-entry');if(event.value?.intervalKey)row.dataset.intervalKey=event.value.intervalKey;
+                if(event.event==='trip.official-start')row.classList.add('is-official-start');
+                if(event===activeEntry){row.classList.add('is-active-entry');row.dataset.activeState=trip.activeState||'trip';row.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
+                row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),node('span',event.event==='trip.official-start'?TripLog.officialText('officialStart'):this.entryLabel(event,started,ended,events)));entries.append(row);
             }
-            toggle.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!this.offline||trip.buffered)summary.append(menu);const downtime=this.downtimeSummary(TripDowntimeSummary.trip(trip,{now:this.downtimeNow}));if(downtime)summary.append(downtime);details.append(summary);
-            const entryFmt=new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',...(this.editing.has(trip.id)?{second:'2-digit'}:{}),hourCycle:'h23'});
-            const entries=node('div',undefined,'trip-log-entries');const header=node('div',undefined,'trip-log-entry-heading');header.append(node('strong',this.editing.has(trip.id)?globalThis.WMOFLanguagePack.text("c2599142-6f20-4b53-b109-bd3aa79985dc"):globalThis.WMOFLanguagePack.text("d54c5628-5a22-4fb4-a3e9-e5674f490f25")));
-            if(this.editing.has(trip.id)){const done=node('button',globalThis.WMOFLanguagePack.text("c0534d6d-1102-4592-b5c7-eba1e33d05d5"));done.type='button';done.addEventListener('click',()=>this.finishEntryEdit(trip,done));header.append(done);entries.append(header,node('p',globalThis.WMOFLanguagePack.text("fa5d607f-0793-49d4-9d67-5b02f8263aea")));}else entries.append(header);
-            const events=trip.events||[];const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value.intervalKey));
-            const intervalEntries=events.filter(e=>['interval.started','interval.ended'].includes(e.event)&&!deleted.has(e.value.intervalKey));
-            const visible=events.filter(e=>!standalone&&['trip.started','trip.stopped'].includes(e.event)).concat(intervalEntries).sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
-            if(official?.startTime){visible.push({id:'official-start',event:'trip.official-start',timestamp:official.startTime,value:{}});visible.sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));}
-            const activeEntry=trip.running?(visible.find(event=>event.event==='interval.started'&&!events.some(candidate=>candidate.event==='interval.ended'&&candidate.value.intervalKey===event.value.intervalKey))||visible.find(event=>event.event==='trip.started')):null;
-            const tripKey=String(trip.id),draft=this.newEntries.get(tripKey),insertBefore=this.addBefore.get(tripKey);let addPlaced=false;
-            const addButton=()=>{const add=node('button','+ Add Entry','trip-log-add');add.type='button';add.addEventListener('click',()=>{this.newEntries.set(tripKey,{beforeEventId:this.addBefore.get(tripKey)});this.rerender();});return add;};
-            for(const event of visible){const eventKey=String(event.id),started=event.event==='interval.ended'?events.find(e=>e.event==='interval.started'&&e.value.intervalKey===event.value.intervalKey):event,ended=started?.event==='interval.started'?events.find(e=>e.event==='interval.ended'&&e.value.intervalKey===started.value.intervalKey):null;
-                if(this.editing.has(trip.id)&&insertBefore===eventKey){if(draft)entries.append(this.newEntryRows(trip,draft));else entries.append(addButton());addPlaced=true;}
-                if(event.event==='trip.official-start'){entries.append(this.officialStartRow(trip,event.timestamp,entryFmt));continue;}
-                const label=this.entryLabel(event,started,ended,events),separateAdjustment=event.event==='interval.ended'&&String(started?.value?.type||'').toLowerCase()==='down',parts=separateAdjustment?label.split(' · '):[label],displayLabel=parts[0],adjustment=parts.slice(1).join(' · ');
-                const row=node('div',undefined,'trip-log-entry');if(event._draft)row.classList.add('is-new-entry');if(event.value?.intervalKey)row.dataset.intervalKey=event.value.intervalKey;if(event===activeEntry){row.classList.add('is-active-entry');row.dataset.activeState=trip.activeState||'trip';row.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
-                if(this.editing.has(trip.id)){
-                    let suppressClick=false;const time=node('button',event.timestamp?entryFmt.format(new Date(iso(event.timestamp))):'---','trip-log-entry-time');time.type='button';time.addEventListener('click',()=>{if(suppressClick){suppressClick=false;return;}this.editEntryTime(trip,event,event.event==='interval.started'?ended:null,entries.querySelector('.trip-log-add')).catch(e=>this.error(e));});
-                    const editableType=event.event==='interval.started'&&['break','lunch','down'].includes(String(event.value?.type||'').toLowerCase());const name=node(editableType?'button':'span',displayLabel,'trip-log-entry-name');if(editableType){name.type='button';name.addEventListener('click',()=>{if(suppressClick){suppressClick=false;return;}this.editEntryName(trip,event,ended,name,entries.querySelector('.trip-log-add')).catch(e=>this.error(e));});}row.append(time,name);
-                    if(event.event==='interval.started'&&String(event.value?.type||'').toLowerCase()==='down'){const approvalState=TripDowntimeSummary.approvalState(event,events),approvalLabel=approvalState==='approved'?`Approved: ${durationOrDash(this.approvedTime(event,ended,events))}`:globalThis.WMOFLanguagePack.text(approvalState==='pending'?'d7300001-7888-4711-9000-000000000002':'d7300001-7888-4711-9000-000000000003');const approved=node('button',approvalLabel,'trip-log-entry-approved');approved.type='button';approved.addEventListener('click',()=>this.editApprovedTime(trip,event,ended,entries.querySelector('.trip-log-add')).catch(error=>this.error(error)));row.append(approved);row.classList.add('has-approved-time');}
-                    if(event.event==='interval.started'&&String(event.value?.type||'').toLowerCase()==='down'&&this.options.openDownDetails){const info=node('button','📷','trip-log-down-detail-edit');info.type='button';info.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("1d092868-3eea-5b34-a476-e934ca0ee439"));info.addEventListener('click',()=>this.options.openDownDetails(trip,event.value.intervalKey,true));row.append(info);row.classList.add('has-down-detail-edit');}
-                    if(adjustment){row.append(node('span',adjustment,'trip-log-entry-approved-value'));row.classList.add('has-approved-time');}
-                    const intervalAction=['interval.started','interval.ended'].includes(event.event),tripBoundary=['trip.started','trip.stopped'].includes(event.event),removableAction=intervalAction||tripBoundary,canInsertBefore=event.event!=='trip.started',deleteKey=`${tripKey}:${eventKey}`;
-                    if(removableAction&&this.deleteVisible.has(deleteKey)){const remove=node('button','×','trip-log-entry-remove');remove.type='button';const boundaryLabel=event.event==='trip.started'?globalThis.WMOFLanguagePack.text("c96903e5-c357-49cb-940b-7c32d7d75382"):event.event==='trip.stopped'?globalThis.WMOFLanguagePack.text("90664387-af1e-46c3-bbd1-ed9e3c651482"):String(started?.value?.type||globalThis.WMOFLanguagePack.text("f4025c01-0d6e-4b95-8be3-c7a6880370f8"));remove.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("f0d73aec-60fc-5acd-ad39-ebc99255ad7c", {value0: (boundaryLabel)}));remove.addEventListener('click',()=>Promise.resolve(tripBoundary?this.deleteTrip(trip):this.deleteEntry(trip,started)).catch(error=>this.error(error)));row.classList.add('has-entry-remove');row.append(remove);}
-                    if(removableAction||canInsertBefore){let gesture,timer;row.addEventListener('pointerdown',pointer=>{if(pointer.target.closest('button,select'))return;pointer.preventDefault();gesture={x:pointer.clientX,y:pointer.clientY};timer=setTimeout(()=>{timer=undefined;suppressClick=true;if(canInsertBefore){this.addBefore.set(tripKey,eventKey);this.newEntries.delete(tripKey);}if(removableAction)this.deleteVisible.add(deleteKey);this.rerender();},550);});row.addEventListener('pointermove',pointer=>{if(gesture&&(Math.abs(pointer.clientX-gesture.x)>10||Math.abs(pointer.clientY-gesture.y)>10)){clearTimeout(timer);timer=undefined;}});row.addEventListener('pointerup',()=>{clearTimeout(timer);timer=undefined;gesture=undefined;});row.addEventListener('pointercancel',()=>{clearTimeout(timer);timer=undefined;gesture=undefined;});row.addEventListener('contextmenu',pointer=>pointer.preventDefault());}
-                }else {row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),node('span',displayLabel));if(event.event==='interval.started'&&String(event.value?.type||'').toLowerCase()==='down'){row.append(node('span',`Approved: ${durationOrDash(this.approvedTime(event,ended,events))}`,'trip-log-entry-approved-value'));row.classList.add('has-approved-time');}if(adjustment){row.append(node('span',adjustment,'trip-log-entry-approved-value'));row.classList.add('has-approved-time');}}entries.append(row);
-            }
-            if(this.editing.has(trip.id)&&!addPlaced){if(draft)entries.append(this.newEntryRows(trip,draft));else entries.append(addButton());}
-            if(!this.editing.has(trip.id)&&this.options.openDownDetails){const downs=events.filter(event=>event.event==='interval.started'&&String(event.value?.type||'').toLowerCase()==='down'&&!deleted.has(event.value.intervalKey));if(downs.length){const bar=node('div',undefined,'trip-log-down-details');for(const down of downs){const button=node('button','', 'trip-log-down-detail-button');button.type='button';button.dataset.content='none';button.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("860d924a-0b3e-59f1-aab1-aca819eb4be4", {value0: (fmt.format(new Date(iso(down.timestamp))))}));let timer,long=false;button.addEventListener('pointerdown',event=>{event.preventDefault();long=false;timer=setTimeout(()=>{long=true;for(const row of entries.querySelectorAll('.trip-log-entry.is-down-highlighted'))row.classList.remove('is-down-highlighted');for(const row of entries.querySelectorAll('.trip-log-entry'))if(row.dataset.intervalKey===down.value.intervalKey)row.classList.add('is-down-highlighted');setTimeout(()=>{for(const row of entries.querySelectorAll('.trip-log-entry.is-down-highlighted'))row.classList.remove('is-down-highlighted');},4000);},550);});button.addEventListener('pointerup',()=>{clearTimeout(timer);if(!long)this.options.openDownDetails(trip,down.value.intervalKey,false);});button.addEventListener('pointercancel',()=>clearTimeout(timer));bar.append(button);Promise.resolve(this.options.downDetailsInfo?.(trip.id,down.value.intervalKey)).then(info=>{if(button.isConnected)button.dataset.content=info?.hasImage&&info?.notes?'both':info?.hasImage?'image':info?.notes?'notes':'none';}).catch(()=>{});}entries.append(bar);}}
             details.append(entries);return details;
+        }
+        async openTripEditor(trip){
+            if(this.tripEditor?.dialog.open){this.tripEditor.dialog.focus();return;}
+            this.tripEditor=await globalThis.TripEditor.open(trip,this.options,this.calendar);
         }
         entryLabel(event,started,ended,events=[]) {
             if(event.event==='trip.started')return globalThis.WMOFLanguagePack.text("d15209dd-a85c-4361-a2e5-d2271f5ec425");if(event.event==='trip.stopped')return globalThis.WMOFLanguagePack.text("5bf5c47c-e341-46b1-bdf5-a7a2e838b9ef");
@@ -255,157 +233,17 @@
         }
         entryKind(event) {const type=String(event?.value?.type||'').toLowerCase();const breakType=String(event?.value?.attributes?.breakType||event?.value?.breakType||'').toLowerCase();return type==='break'&&breakType==='short'?'short-break':type;}
         approvedTime(started,ended,events=[]) {return TripDowntimeSummary.approved(started,ended,events);}
-        officialStartRow(trip,time,format) {
-            const row=node('div',undefined,'trip-log-entry is-official-start'),label=node('span',TripLog.officialText('officialStart'),'trip-log-entry-name');
-            if(this.editing.has(trip.id)){
-                row.classList.add('has-entry-remove');
-                const edit=node('button',format.format(new Date(time)),'trip-log-entry-time');edit.type='button';
-                edit.addEventListener('click',async()=>{try{await this.numberPad({mode:'absolute',source:'official-start-time',title:TripLog.officialText('officialStart'),initialValue:time,tripDefaults:{creationDate:this.date(time)},onConfirm:async value=>{
-                    const bank=TripTimeBank.project(trip),actual=Date.parse(iso(trip.events.find(e=>e.event==='trip.started').timestamp)),productive=bank.productiveTimeMilliseconds,earned=trip.standardTimeMilliseconds+bank.officialCorrection.baseAllowanceCreditMilliseconds,target=actual+productive-Date.parse(iso(value));
-                    if(!(target>0))throw new Error('Official Start Time must leave positive counted time.');
-                    const percent=100*earned/target;if(!Number.isFinite(percent)||percent<=0)throw new Error('Invalid official percentage.');
-                    const record=trip.events.findLast(e=>e.event==='trip.official-percent-set');record.value={...record.value,percent,percentTenths:Math.round(percent*10),showOfficialStart:true};
-                    this.entrySessions.get(String(trip.id)).officialStartChange={operation:'official-start-time',startTime:iso(value)};this.rerender();
-                }});}catch(error){this.error(error);}});
-                const remove=node('button','×','trip-log-entry-remove');remove.type='button';remove.setAttribute('aria-label',TripLog.officialText('clear'));remove.addEventListener('click',()=>{
-                    this.entrySessions.get(String(trip.id)).officialStartChange={operation:'official-start-delete'};
-                    trip.events.push({id:'preview-official-clear',event:'trip.official-percent-cleared',timestamp:new Date().toISOString(),value:{}});this.rerender();
-                });row.append(edit,label,remove);
-            }else row.append(node('span',format.format(new Date(time))),label);
-            return row;
-        }
-        promptDownApprovalState() {
-            const {dialog,form}=this.modal(globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000008'));
-            return new Promise(resolve=>{const actions=node('div',undefined,'dialog-actions two-actions');for(const [id,state] of [['d7300001-7888-4711-9000-000000000003','unapproved'],['d7300001-7888-4711-9000-000000000002','pending']]){const button=node('button',globalThis.WMOFLanguagePack.text(id));button.type='button';button.dataset.downApprovalState=state;button.addEventListener('click',()=>{resolve(state);dialog.close();});actions.append(button);}form.append(actions);dialog.addEventListener('close',()=>resolve(undefined),{once:true});});
-        }
         promptOfficialStart() {
             const {dialog,form}=this.modal(TripLog.officialText('startPrompt'));dialog.classList.add('official-start-prompt');form.append(node('p',TripLog.officialText('startPromptDescription')));
             return new Promise(resolve=>{const actions=node('div',undefined,'dialog-actions two-actions');for(const [key,value]of [['no',false],['yes',true]]){const button=node('button',TripLog.officialText(key));button.type='button';button.dataset.officialStartChoice=key;button.addEventListener('click',()=>{resolve(value);dialog.close();});actions.append(button);}form.append(actions);dialog.addEventListener('close',()=>resolve(undefined),{once:true});});
         }
         rerender(){this.render({trips:this.trips,offline:this.offline,incomplete:this.incomplete,loginRequired:this.loginRequired},this.calendar);}
-        cancelNewEntry(trip) {const key=String(trip.id);this.newEntries.delete(key);this.addBefore.delete(key);this.rerender();}
-        validateNewEntry(trip,draft) {
-            const ms=value=>value?Date.parse(iso(value)):NaN,events=trip.events||[];
-            const begin=ms(events.find(e=>e.event==='trip.started')?.timestamp||trip.startTime),finish=trip.running?(this.options.now?.()??Date.now()):ms(events.find(e=>e.event==='trip.stopped')?.timestamp||trip.endTime);
-            const start=ms(draft.start),end=ms(draft.end);
-            let startInvalid=Boolean(draft.start)&&(!Number.isFinite(start)||start<begin||start>=finish);
-            let endInvalid=Boolean(draft.end)&&(!Number.isFinite(end)||end<=begin||end>finish||(Number.isFinite(start)&&end<=start));
-            const deleted=new Set(events.filter(e=>e.event==='interval.deleted').map(e=>e.value?.intervalKey));
-            for(const event of events.filter(e=>e.event==='interval.started'&&!deleted.has(e.value?.intervalKey))){
-                const left=ms(event.timestamp),right=ms(events.find(e=>e.event==='interval.ended'&&e.value?.intervalKey===event.value?.intervalKey)?.timestamp);
-                if(start>=left&&start<right)startInvalid=true;
-                if(end>left&&end<=right)endInvalid=true;
-                if(Number.isFinite(start)&&Number.isFinite(end)&&start<left&&end>right)endInvalid=true;
-            }
-            return {startInvalid,endInvalid};
-        }
-        placeNewEntry(trip,draft) {
-            const errors=this.validateNewEntry(trip,draft);
-            if(!draft.start||errors.startInvalid||errors.endInvalid)return;
-            const candidates=(trip.events||[]).filter(e=>['trip.started','trip.stopped','interval.started','interval.ended'].includes(e.event)),official=TripTimeBank.project(trip)?.officialCorrection;
-            if(official?.startTime)candidates.push({id:'official-start',timestamp:official.startTime});
-            const next=candidates.filter(e=>Date.parse(iso(e.timestamp))>Date.parse(iso(draft.start))).sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)))[0];
-            if(next)this.addBefore.set(String(trip.id),String(next.id));else this.addBefore.delete(String(trip.id));
-        }
-        newEntryRows(trip,draft) {
-            const pair=node('div',undefined,'trip-log-new-entry-pair'),row=node('div',undefined,'trip-log-entry trip-log-new-entry');
-            const time=node('button',draft.start?new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(draft.start)):'---','trip-log-entry-time');time.type='button';time.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("a61f7fa8-a2d4-5ded-9d3e-a0a6de8eada3"));
-            const type=node('select');type.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("cce87998-e856-5d4d-9ea0-e98ac9fc5847"));
-            const prompt=node('option',globalThis.WMOFLanguagePack.text("fa9eab4d-1861-4d6e-9fa4-f6d5676e8f47"));prompt.value='';type.append(prompt);
-            for(const [value,label] of [['break',globalThis.WMOFLanguagePack.text("b8acb08f-9510-44a2-9f87-02255b1236d8")],['short-break',globalThis.WMOFLanguagePack.text("db90e2a5-5c43-49e8-bd1b-7579721b1cfc")],['lunch',globalThis.WMOFLanguagePack.text("bc8b0d13-9d3a-438d-a96e-654cab1eb952")],['down',globalThis.WMOFLanguagePack.text("2b4d255e-4426-4612-b951-e9a26c338b8d")]]){const option=node('option',label);option.value=value;type.append(option);}
-            type.value=draft.type||'';const cancel=node('button',globalThis.WMOFLanguagePack.text("6aace411-fa42-4646-aa4e-724ebbddbb15"),'trip-log-entry-cancel');cancel.type='button';cancel.addEventListener('click',()=>this.cancelNewEntry(trip));row.classList.add('has-entry-cancel');
-            const commit=async()=>{if(!draft.start||!draft.end||!draft.type||Object.values(this.validateNewEntry(trip,draft)).some(Boolean))return;const key=`draft-${Date.now()}-${Math.random().toString(16).slice(2)}`,effectiveType=draft.type==='short-break'?'break':draft.type,attributes=effectiveType==='break'?{breakType:draft.type==='short-break'?'short':'break'}:{},actualMilliseconds=Date.parse(draft.end)-Date.parse(draft.start),approvedTime=effectiveType==='down'?(Number.isSafeInteger(draft.approvedTime)?draft.approvedTime:null):undefined;trip.events.push({id:key,event:'interval.started',timestamp:draft.start,value:{type:effectiveType,length:effectiveType==='down'?null:actualMilliseconds,approvedTime,approvalState:effectiveType==='down'?(draft.approvalState??(Number.isSafeInteger(approvedTime)?'approved':'pending')):undefined,attributes,intervalKey:key},_draft:true},{id:`${key}-end`,event:'interval.ended',timestamp:draft.end,value:{intervalKey:key},_draft:true});this.newEntries.delete(String(trip.id));this.rerender();};
-            time.addEventListener('click',async()=>{try{const session=this.entrySessions.get(String(trip.id)),base=this.date(session.settings.instants?.creationTime||session.settings.creationAnchor||trip.startTime);await this.numberPad({mode:'absolute',source:globalThis.WMOFLanguagePack.text("95a6db6b-b322-40dd-9b1b-f0785356ecad"),initialValue:draft.start?iso(draft.start):undefined,tripDefaults:{creationDate:base},title:globalThis.WMOFLanguagePack.text("5b1c3d96-f62b-520a-962e-049d5045032d"),allowEmpty:true,onConfirm:async value=>{draft.start=value;this.placeNewEntry(trip,draft);this.rerender();await commit();}});}catch(error){this.error(error);}});
-            type.addEventListener('change',async()=>{draft.type=type.value;this.rerender();await commit();});
-            row.append(time,type);if(draft.type==='down'){const approved=node('button',draft.approvalState==='approved'?`Approved: ${durationOrDash(draft.approvedTime)}`:globalThis.WMOFLanguagePack.text(draft.approvalState==='unapproved'?'d7300001-7888-4711-9000-000000000003':'d7300001-7888-4711-9000-000000000002'),'trip-log-entry-approved');approved.type='button';approved.addEventListener('click',()=>this.editDraftApprovedTime(trip,draft));row.append(approved);}row.append(cancel);
-            const endRow=node('div',undefined,'trip-log-entry trip-log-new-entry');const endTime=node('button',draft.end?new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(draft.end)):'---','trip-log-entry-time');endTime.type='button';endTime.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("60e8e57a-95ba-540a-af27-79987bf1922f"));endTime.addEventListener('click',async()=>{const session=this.entrySessions.get(String(trip.id)),base=this.date(session.settings.instants?.creationTime||session.settings.creationAnchor||trip.startTime);await this.numberPad({mode:'absolute',source:globalThis.WMOFLanguagePack.text("03e7f032-84af-47d3-a4e6-88e1d6b438e7"),initialValue:draft.end?iso(draft.end):undefined,tripDefaults:{creationDate:base},title:globalThis.WMOFLanguagePack.text("88407183-2ace-5fdd-96f4-aa22b76dd68a"),allowEmpty:true,onConfirm:async value=>{draft.end=value;this.placeNewEntry(trip,draft);this.rerender();await commit();}});});const draftTitle=draft.type==='short-break'?globalThis.WMOFLanguagePack.text("390e5e97-2037-49fa-8151-10bf69184a6b"):draft.type?draft.type.charAt(0).toUpperCase()+draft.type.slice(1):globalThis.WMOFLanguagePack.text("971971ce-7132-4a6e-a8db-44246b678427");endRow.append(endTime,node('span',`${draftTitle} Ended`,'trip-log-entry-name'));const errors=this.validateNewEntry(trip,draft);time.setAttribute('aria-invalid',String(errors.startInvalid));endTime.setAttribute('aria-invalid',String(errors.endInvalid));pair.append(row,endRow);return pair;
-        }
-        async editDraftApprovedTime(trip,draft){await this.numberPad({mode:'duration',source:globalThis.WMOFLanguagePack.text("1edd3076-327d-4742-9eed-e723a4ad597c"),initialValue:draft.approvedTime,title:globalThis.WMOFLanguagePack.text("dbaba9e7-efb7-54b1-bbf0-67f3def0969f"),allowEmpty:true,onConfirm:async milliseconds=>{const state=milliseconds===undefined?await this.promptDownApprovalState():'approved';if(!state)return;draft.approvedTime=milliseconds??null;draft.approvalState=state;draft.approvalOverridden=true;this.rerender();}});}
-        async beginEntryEdit(trip) {if(this.editing.size&&!this.editing.has(trip.id))throw new Error(globalThis.WMOFLanguagePack.text("bb50afda-3925-4e27-875b-9dec8cd3af60"));const data=await this.options.request(trip.id),key=String(trip.id);trip.events=clone(data.events);const current=this.trips?.find(value=>String(value.id)===key);if(current)current.events=trip.events;this.entrySessions.set(key,{revision:data.revision,original:clone(data.events),settings:data.settings});this.editing.add(trip.id);this.expanded.set(`trip${trip.id}`,true);this.rerender();}
-        entryChanges(trip) {
-            const session=this.entrySessions.get(String(trip.id)),before=session.original,after=trip.events||[],changes=[];
-            const end=(events,key)=>events.find(event=>event.event==='interval.ended'&&event.value?.intervalKey===key);
-            for(const original of before.filter(event=>['trip.started','trip.stopped','interval.started'].includes(event.event))){const key=original.value?.intervalKey,current=key?after.find(event=>event.event==='interval.started'&&event.value?.intervalKey===key):after.find(event=>String(event.id)===String(original.id));if(!current){if(key)changes.push({operation:'delete-entry',entry:{eventId:original.id,intervalKey:key}});continue;}const originalEnd=key?end(before,key):null,currentEnd=key?end(after,key):null,currentStart=current.timestamp?iso(current.timestamp):'',originalKind=this.entryKind(original),currentKind=this.entryKind(current);if(currentStart!==iso(original.timestamp)||currentKind!==originalKind||current.value?.approvedTime!==original.value?.approvedTime||current.value?.approvalState!==original.value?.approvalState||(originalEnd&&currentEnd&&iso(originalEnd.timestamp)!==iso(currentEnd.timestamp)))changes.push({operation:'entry',entry:{eventId:original.id,intervalKey:key,start:currentStart,type:current.value?.type,breakType:current.value?.attributes?.breakType,length:current.value?.length,approvedTime:current.value?.approvedTime,approvalState:current.value?.approvalState,end:currentEnd?iso(currentEnd.timestamp):undefined}});}
-            for(const current of after.filter(event=>event.event==='interval.started'&&event._draft)){const currentEnd=end(after,current.value.intervalKey);changes.push({operation:'add-entry',entry:{start:iso(current.timestamp),end:iso(currentEnd.timestamp),type:current.value.type,breakType:current.value?.attributes?.breakType,length:current.value.length,approvedTime:current.value.approvedTime,approvalState:current.value.approvalState}});}
-            if(session.officialStartChange)changes.push(session.officialStartChange);
-            return changes;
-        }
-        async finishEntryEdit(trip,button) {const key=String(trip.id),session=this.entrySessions.get(key);if(this.newEntries.has(key)){this.error(new Error('Complete or cancel the new entry before saving.'));return;}button.disabled=true;try{const changes=this.entryChanges(trip);if(changes.length)await this.options.request(trip.id,{operation:'entries',revision:session.revision,changes});this.editing.delete(trip.id);this.entrySessions.delete(key);this.addBefore.delete(key);this.newEntries.delete(key);this.root.querySelector(':scope>.trip-log-error')?.remove();await this.options.refresh();this.rerender();}catch(error){this.rerender();this.error(error);}finally{button.disabled=false;}}
-        handleOutsideEntryPointer(event) {for(const actions of this.root.querySelectorAll('.trip-log-menu-actions:not([hidden])')){if(actions.parentElement?.contains(event.target))continue;actions.hidden=true;actions.previousElementSibling?.setAttribute('aria-expanded','false');}if(!this.editing.size||event.target.closest('dialog'))return;const tripId=[...this.editing][0],key=String(tripId),entries=event.target.closest('.trip-log-entries'),container=entries?.closest('.trip-log-trip');if(container?.dataset.tripId===key)return;const trip=this.trips?.find(candidate=>String(candidate.id)===key),session=this.entrySessions.get(key);if(!trip||!session)return;const changed=this.entryChanges(trip).length>0||this.newEntries.has(key);if(changed&&!window.confirm(globalThis.WMOFLanguagePack.text("a28e06f9-b324-482c-abc3-205cbe1b93bb"))){event.preventDefault();event.stopImmediatePropagation();return;}event.preventDefault();event.stopImmediatePropagation();trip.events=clone(session.original);this.editing.delete(tripId);this.entrySessions.delete(key);this.addBefore.delete(key);this.newEntries.delete(key);for(const value of [...this.deleteVisible])if(value.startsWith(`${key}:`))this.deleteVisible.delete(value);this.expanded.set(`trip${tripId}`,false);this.rerender();}
         error(error) {if(this.editor){const msg=this.editor.querySelector('[role="alert"]');msg.textContent=error.message||String(error);}else {this.root.querySelector(':scope>.trip-log-error')?.remove();const msg=node('p',error.message||String(error),'trip-log-error');msg.setAttribute('role','alert');this.root.prepend(msg);}}
         modal(title) {
             this.editor?.remove();const dialog=node('dialog',undefined,'app-dialog trip-log-editor');const form=node('form');const heading=node('header',undefined,'dialog-header');heading.append(node('h2',title));const close=node('button','×');close.type='button';close.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("2db71c87-d3a0-5fa0-9144-6c0d21ad47c0"));close.addEventListener('click',()=>dialog.close());heading.append(close);form.append(heading);dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{dialog.remove();if(this.editor===dialog)this.editor=null;});this.editor=dialog;document.querySelector("shared-modal-host")?.register(dialog);dialog.showModal();return {dialog,form};
         }
-        timeField(form,label,value,mode,onChange,base) {
-            const button=node('button',undefined,'trip-log-edit-field');button.type='button';const text=node('span',label),display=node('strong');const draw=()=>display.textContent=mode===globalThis.WMOFLanguagePack.text("62a3f2f9-2396-5a32-a7ed-60753ee0d33d")?new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'medium'}).format(new Date(value)):mode===globalThis.WMOFLanguagePack.text("b834c74a-2fe5-56a5-b855-6db1d6248065")?durationOrDash(value):value;draw();button.append(text,display);
-            button.addEventListener('click',async()=>{try{await this.numberPad({mode,source:label,initialValue:mode==='absolute'?(value?iso(value):undefined):value,tripDefaults:{creationDate:base||this.date(value)},title:label,
-                onConfirm:async next=>{value=next;onChange(next);draw();}});}catch(e){this.error(e);}});button.setValue=next=>{value=next;draw();};form.append(button);return button;
-        }
-        date(value) {const d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-        clockValue(value,base) {const d=new Date(value),anchor=new Date((base||this.date(value))+"T00:00:00");return duration(d-anchor)+(d.getMilliseconds()?"."+String(d.getMilliseconds()).padStart(3,"0"):"");}
-        footer(form,save,remove) {
-            const error=node('p',undefined,'trip-log-error');error.setAttribute('role','alert');form.append(error);const actions=node('div',undefined,'dialog-actions two-actions');const cancel=node('button',globalThis.WMOFLanguagePack.text("8272b19f-0479-46fd-b1f8-13105354ce43"));cancel.type='button';cancel.addEventListener('click',()=>this.editor?.close());const submit=node('button',globalThis.WMOFLanguagePack.text("51fbcc20-278a-403f-891f-6312b48c1d42"));submit.type='submit';submit.className='primary-action';actions.append(cancel,submit);form.append(actions);
-            if(remove){const del=node('button',globalThis.WMOFLanguagePack.text("522ad51e-f2b7-4203-8e4e-7e8139ae5473"),'danger');del.type='button';del.addEventListener('click',async()=>{if(!confirm(globalThis.WMOFLanguagePack.text("67216178-6d68-4008-9be1-a7b68fc086b5")))return;try{del.disabled=true;submit.disabled=true;await remove();this.editor?.close();await this.options.refresh();}catch(e){this.error(e);}finally{del.disabled=false;submit.disabled=false;}});form.append(del);}
-            form.addEventListener('submit',async e=>{e.preventDefault();submit.disabled=true;try{await save();this.editor?.close();await this.options.refresh();}catch(e){this.error(e);}finally{submit.disabled=false;}});
-        }
-        async editEntryTime(trip,event,ended,addButton) {
-            this.root.querySelector(':scope>.trip-log-error')?.remove();
-            if(addButton)addButton.hidden=true;
-            try{const session=this.entrySessions.get(String(trip.id)),current=trip.events.find(candidate=>String(candidate.id)===String(event.id));
-                if(!current)throw new Error(globalThis.WMOFLanguagePack.text("62ac5c38-2fae-45c2-bae1-e21018bb48ea"));
-                const base=this.date(session.settings.instants?.creationTime||session.settings.creationAnchor||current.timestamp);
-                await this.numberPad({mode:'absolute',source:globalThis.WMOFLanguagePack.text("567a43c1-00f8-4e8b-80cf-b40702eb25cc"),initialValue:current.timestamp?iso(current.timestamp):undefined,tripDefaults:{creationDate:base},title:globalThis.WMOFLanguagePack.text("5b688ed9-0cd2-5317-b65a-d3c1db1f844b"),allowEmpty:true,onCancel:()=>{this.addBefore.delete(String(trip.id));this.rerender();},
-                    onConfirm:async value=>{current.timestamp=value||'';const key=current.value?.intervalKey,started=current.event==='interval.started'?current:trip.events.find(candidate=>candidate.event==='interval.started'&&candidate.value?.intervalKey===key),finished=current.event==='interval.ended'?current:trip.events.find(candidate=>candidate.event==='interval.ended'&&candidate.value?.intervalKey===key);this.addBefore.delete(String(trip.id));this.root.querySelector(':scope>.trip-log-error')?.remove();this.rerender();}});
-            }catch(error){if(addButton?.isConnected)addButton.hidden=false;throw error;}
-        }
-        async editEntryName(trip,event,ended,button,addButton) {
-            this.root.querySelector(':scope>.trip-log-error')?.remove();
-            if(button.parentElement?.querySelector('select'))return;
-            if(addButton)addButton.hidden=true;
-            const select=node('select');select.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("d4f60d13-9cab-5e1f-ab87-69baad47c0b8"));
-            const currentType=event.event==='interval.started'?this.entryKind(event):event.event;
-            const choices=event.event==='interval.started'?['break','short-break','lunch','down']: [currentType];
-            for(const value of choices){const option=node('option',value==='trip.started'?globalThis.WMOFLanguagePack.text("616197f7-881e-47fc-8c97-bb2478be7173"):value==='trip.stopped'?globalThis.WMOFLanguagePack.text("9e6c2b91-8fa1-48f6-a367-7a2807478028"):value.replace(/(^|-)(\w)/g,(_,dash,letter)=>`${dash?' ':''}${letter.toUpperCase()}`));option.value=value;select.append(option);}
-            select.value=currentType;button.replaceWith(select);const cancel=node('button',globalThis.WMOFLanguagePack.text("40d9da58-d7c9-4c96-b18a-0f17e0f63255"),'trip-log-entry-cancel');cancel.type='button';select.parentElement.classList.add('has-entry-cancel');select.parentElement.append(cancel);select.focus();
-            const restore=()=>{this.addBefore.delete(String(trip.id));if(select.isConnected){select.replaceWith(button);cancel.remove();button.parentElement.classList.remove('has-entry-cancel');}this.rerender();};cancel.addEventListener('pointerdown',event=>event.preventDefault());cancel.addEventListener('click',restore);
-            select.addEventListener('change',async()=>{if(event.event!=='interval.started'){restore();return;}const current=trip.events.find(candidate=>String(candidate.id)===String(event.id));if(!current){restore();this.error(new Error(globalThis.WMOFLanguagePack.text("5da304a7-9321-4056-8a63-f05bc1c994fb")));return;}current.value.type=select.value==='short-break'?'break':select.value;if(current.value.type==='break')current.value.attributes={...(current.value.attributes||{}),breakType:select.value==='short-break'?'short':'break'};else if(current.value.attributes)delete current.value.attributes.breakType;this.root.querySelector(':scope>.trip-log-error')?.remove();restore();});
-            select.addEventListener('blur',()=>{if(select.isConnected)restore();},{once:true});
-        }
-        async deleteEntry(trip,event) {
-            this.root.querySelector(':scope>.trip-log-error')?.remove();
-            const current=trip.events.find(candidate=>String(candidate.id)===String(event.id));
-            if(!current)throw new Error(globalThis.WMOFLanguagePack.text("ef3a33d9-6346-461f-be30-53d63fd87ada"));
-            const key=current.value?.intervalKey;trip.events=trip.events.filter(candidate=>candidate.value?.intervalKey!==key);for(const value of [...this.deleteVisible])if(value.startsWith(`${trip.id}:`))this.deleteVisible.delete(value);this.rerender();
-        }
-        async editApprovedTime(trip,event,ended,addButton){
-            if(addButton)addButton.hidden=true;
-            const current=trip.events.find(candidate=>String(candidate.id)===String(event.id));if(!current)throw new Error(globalThis.WMOFLanguagePack.text('46470b1f-d322-437e-ac59-52c8fefc384b'));
-            const state=TripDowntimeSummary.approvalState(current,trip.events),fallback=state==='approved'?this.approvedTime(current,ended,trip.events):undefined;
-            await this.numberPad({mode:'duration',source:globalThis.WMOFLanguagePack.text('e22b8ca4-3aeb-42de-99cd-44975a5d8485'),initialValue:fallback,title:globalThis.WMOFLanguagePack.text('2a93fe0f-1761-5ef0-afe0-088d856f8371'),allowEmpty:true,onCancel:()=>this.rerender(),onConfirm:async milliseconds=>{
-                const next=milliseconds===undefined?await this.promptDownApprovalState():'approved';if(!next)return;
-                current.value.approvedTime=next==='approved'?milliseconds:null;current.value.approvalState=next;current.value.approvalOverridden=true;
-                const approval=trip.events.findLast(candidate=>candidate.event==='interval.approval-changed'&&candidate.value?.intervalKey===current.value?.intervalKey);
-                if(approval){approval.value.state=next;approval.value.value=milliseconds??0;}
-                this.rerender();
-            }});
-        }
-        async openSettings(trip) {
-            const data=await this.options.request(trip.id),settings={...data.settings};const {form}=this.modal(globalThis.WMOFLanguagePack.text("e4524a84-e68f-4483-aca4-2fbb677695ff"));
-            const original=new Date(settings.creationAnchor||iso(trip.startTime));let base=this.date(original);
-            const instants=settings.instants?{...settings.instants}:Object.fromEntries(['creationTime','scheduledStart','startTime'].map(field=>[field,new Date(original.getTime()+timelineMilliseconds(settings[field])).toISOString()]));
-            this.timeField(form,globalThis.WMOFLanguagePack.text("c1a768bf-c770-4812-b5ec-6d4257cca7bf"),settings.standardTimeMilliseconds,'duration',v=>settings.standardTimeMilliseconds=v);
-            for(const [label,field] of [[globalThis.WMOFLanguagePack.text("b2cbecb7-1cd8-467c-a258-28fb5ed4f0ee"),'scheduledStart'],[globalThis.WMOFLanguagePack.text("4f361eb7-3f44-499c-8303-1121a2dde33e"),'creationTime']]) {
-                const value=instants[field];
-                this.timeField(form,label,value,'absolute',v=>{instants[field]=v;},this.date(value));
-            }
-            const productive=node('label');const check=node('input');check.type='checkbox';check.checked=!settings.nonProduction;check.addEventListener('change',()=>settings.nonProduction=!check.checked);productive.append(check,document.createTextNode(globalThis.WMOFLanguagePack.text("1a53ccce-2778-593f-8c0c-6ca4af3f94d8")));form.append(productive);
-            this.footer(form,()=>{
-                for(const field of ['creationAnchor','creationTime','scheduledStart','startTime'])delete settings[field];
-                return this.options.request(trip.id,{operation:'settings',revision:data.revision,settings:{...settings,instants}});
-            });
-        }
         async editOfficial(trip){
-            if(trip.running||breakOnly(trip)||this.editing.size)throw new Error(TripLog.officialText('completedOnly'));
+            if(trip.running||breakOnly(trip))throw new Error(TripLog.officialText('completedOnly'));
             const data=await this.options.request(trip.id),fresh={...trip,events:clone(data.events)},bank=TripTimeBank.project(fresh),productiveTime=bank?.productiveTimeMilliseconds??counted(fresh),baseCredit=bank?.officialCorrection?.baseAllowanceCreditMilliseconds??bank?.allowanceCreditMilliseconds??0;
             if(!(productiveTime>0))throw new Error(TripLog.officialText('completedOnly'));
             const official=bank?.officialCorrection,calculated=100*(fresh.standardTimeMilliseconds+baseCredit)/productiveTime;
@@ -415,7 +253,7 @@
                 onClearOfficial:official?async()=>{await this.options.request(trip.id,{operation:'official-percent-clear',revision:data.revision});await this.options.refresh();}:undefined,
                 onConfirm:async value=>{if(!(Number.isFinite(value)&&value>=0))return false;const showOfficialStart=await this.promptOfficialStart();if(showOfficialStart===undefined)return false;if(official?.percent===value&&Boolean(official.startTime)===showOfficialStart)return true;await this.options.request(trip.id,{operation:'official-percent',revision:data.revision,percentTenths:Math.round(value*10),showOfficialStart});await this.options.refresh();return true;}});
         }
-        async deleteTrip(trip) {if(!confirm(`Delete ${trip.running?'the running trip':'this trip'} and all its entries?`))return;const data=await this.options.request(trip.id);await this.options.request(trip.id,{operation:'delete-trip',revision:data.revision});this.editing.delete(trip.id);this.entrySessions.delete(String(trip.id));this.addBefore.delete(String(trip.id));this.newEntries.delete(String(trip.id));for(const key of [...this.deleteVisible])if(key.startsWith(`${trip.id}:`))this.deleteVisible.delete(key);await this.options.refresh();}
+        async deleteTrip(trip) {if(!confirm(`Delete ${trip.running?'the running trip':'this trip'} and all its entries?`))return;const data=await this.options.request(trip.id);await this.options.request(trip.id,{operation:'delete-trip',revision:data.revision});await this.options.refresh();}
     }
     TripLog.officialIds={"official": "5ac2a49f-40b1-5037-bf9f-5111fcbcb88c", "edit": "dc01bd88-a3bb-5316-b67e-1ea9d911c42b", "title": "a6d82e93-de2e-5e13-a5e8-ebe46c684f3f", "calculated": "290630bd-1932-5cbd-873f-344f6c5d03d8", "adjustment": "355aa22d-6418-512e-819b-7b696959a7bc", "clear": "d2c8a2d1-708f-5f70-8b5e-293d5cb0b614", "cleared": "008effdd-f693-5e3c-9add-dad7388a7d28", "protected": "028e0529-dfe2-5ede-a55f-187800e89aa2", "superseded": "82dba04f-f42c-5b8c-8bbd-925a7ace0197", "completedOnly": "934af6eb-d600-5932-9c1c-5a95b581a140"};
     Object.assign(TripLog.officialIds,{officialStart:'0f346711-8b90-4f57-ac4a-fc9b968f2190',startPrompt:'cd75d332-a92d-4472-a81d-bf58e1065def',startPromptDescription:'081d34a1-7bdf-49b0-bb44-05f9be74dfb4',yes:'4f6541f4-61d9-4e23-858c-5d2c7ecb37d8',no:'9db027f8-1bd5-4c06-8ef0-235f4587c5f2'});

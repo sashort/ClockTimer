@@ -40,7 +40,7 @@ window.fetch=async(url,options={})=>{
     }else if(path.endsWith('/trips/'))data={trips:[...trips.values()]};
     return {ok:true,status:200,json:async()=>data,text:async()=>JSON.stringify(data),clone(){return this;}};
 };
-for(const name of ['TemporalFormat','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
+for(const name of ['TemporalFormat','TripAggregates','RingContainer','TimeRangeModel', 'TimeRangeElement','ClockTimer'])window.eval(fs.readFileSync(new URL('../'+name+'.js',import.meta.url),'utf8'));
 const storageKey='test.completedTrips';
 function clock(){const c=window.document.createElement('clock-timer');c.setAttribute('offline-trip-storage-key',storageKey);window.document.body.append(c);return c;}
 let c=clock();await c.connect('test','test');
@@ -81,6 +81,16 @@ assert.equal(edited.nonProduction,true);
 assert(edited.events.some(event=>event.event==='interval.started'));
 assert.equal((await storage.getItem(storageKey))[0].payload.standardTimeMilliseconds,1500000);
 console.log('PASS buffered trips retain settings and entry edits while offline');
+const offlineBefore=JSON.stringify(await storage.getItem(storageKey)),batchSettings=(await c.tripEditorRequest(editable.id)).settings;
+const batch={operation:'editor',settings:{...batchSettings,standardTimeMilliseconds:1800000},changes:[]};
+const preview=await c.tripEditorRequest(editable.id,{...batch,operation:'editor-preview'});
+assert.equal(preview.trip.standardTimeMilliseconds,1800000);assert.equal(JSON.stringify(await storage.getItem(storageKey)),offlineBefore,'preview never writes buffered storage');
+assert.equal(c.getLocalTripLog().find(t=>String(t.id)===String(editable.id)).standardTimeMilliseconds,1500000,'preview does not alter live buffered rows');
+await c.tripEditorRequest(editable.id,batch);assert.equal(c.getLocalTripLog().find(t=>String(t.id)===String(editable.id)).standardTimeMilliseconds,1800000);
+const validOffline=JSON.stringify(await storage.getItem(storageKey));
+await assert.rejects(()=>c.tripEditorRequest(editable.id,{...batch,changes:[{operation:'add-entry',entry:{type:'down',start:'2026-09-18T12:02:10Z',end:'2026-09-18T12:02:20Z'}}]}),/overlap/);
+assert.equal(JSON.stringify(await storage.getItem(storageKey)),validOffline,'rejected batch leaves stored queue unchanged');
+console.log('PASS atomic offline editor Save, read-only preview and invalid-batch rollback');
 
 const beforeRebase=(await storage.getItem(storageKey))[0],startedBefore=beforeRebase.events.find(e=>e.event==='trip.started'),stoppedBefore=beforeRebase.events.find(e=>e.event==='trip.stopped');
 const originalSchedule=beforeRebase.payload.scheduledStartTime,creationInstant=new Date(Date.parse(startedBefore.scheduledStartTime||originalSchedule)+startedBefore.value.creationOffsetMilliseconds).toISOString();
@@ -120,7 +130,7 @@ c.remove();c=clock();await c.connect('test','test');
 assert.equal(trips.size,1);
 assert.equal(events.size,6);
 assert.equal((await storage.getItem(storageKey)).length,0);
-assert.deepEqual([...trips.values()].map(t=>[t.standardTimeMilliseconds,t.countedTimeMilliseconds]),[[1500000,480000]]);
+assert.deepEqual([...trips.values()].map(t=>[t.standardTimeMilliseconds,t.countedTimeMilliseconds]),[[1800000,420000]]);
 for(const trip of trips.values()){
     const tripEvents=[...events.values()].filter(e=>e.tripId===trip.id);
     assert.equal(tripEvents.filter(e=>e.event==='trip.started').length,1);
