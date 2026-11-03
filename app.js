@@ -2878,6 +2878,7 @@
     const scheduledStartStandard = $("#scheduledStartStandard");
     const scheduledStartStandardValue = $("#scheduledStartStandardValue");
     const scheduledStartAuto = $("#scheduledStartAuto");
+    const scheduledStartInDown = $("#scheduledStartInDown");
     const scheduledStartAutoOption = $("#scheduledStartAutoOption");
     const scheduledStartMessage = $("#scheduledStartMessage");
     const scheduledStartNow = $("#scheduledStartNow");
@@ -17690,6 +17691,7 @@
                     ?.standardTimeMilliseconds
             ) ||
             "---";
+        scheduledStartInDown.checked = tripDraft?.startInDownTime === true;
         const scheduledTimeReached = remaining <= 0;
         const canStart = tripDraftCanStart(tripDraft);
         if (scheduledTimeReached && scheduledStartAutoArmed && canStart) {
@@ -17761,6 +17763,14 @@
                         )
             )
     );
+
+    scheduledStartInDown.addEventListener("change", globalThis.WMOFInteractionFunctions.define(
+        "changeScheduledStartInDownInput", () => {
+            if (!tripDraft) return false;
+            tripDraft.startInDownTime = scheduledStartInDown.checked;
+            return true;
+        }
+    ));
 
     globalThis
         .WMOFInteractionFunctions
@@ -17957,7 +17967,8 @@
             nonProduction: draft.nonProduction === true,
             creationTime: draft.creationTime,
             scheduledStart: draft.scheduledStart,
-            startTime: draft.startTime
+            startTime: draft.startTime,
+            startInDownTime: draft.startInDownTime === true
         });
         if (draft.creationDate && clockTimer.creationDate !== draft.creationDate) {
             clockTimer.creationDate = draft.creationDate;
@@ -17992,6 +18003,7 @@
             scheduledStart: live ? (clockTimer.scheduledStart || "") : (draft.scheduledStart || ""),
             startTime: live ? (clockTimer.startTime || "") : (draft.startTime || ""),
             deferred: !live && Boolean(draft.deferred),
+            startInDownTime: !live && draft.startInDownTime === true,
             nonProduction: live ? clockTimer.nonProduction : draft.nonProduction === true,
             syncGoals: live
                 ? Boolean(clockTimer.autoSyncTripGoal)
@@ -18019,6 +18031,7 @@
         return {
             ...tripDraft,
             deferred: Boolean(values.deferred),
+            startInDownTime: values.startInDownTime === true,
             nonProduction: values.nonProduction === true,
             standardTimeMilliseconds: values.standardTimeMilliseconds,
             creationTime: values.creationTime,
@@ -18188,6 +18201,7 @@
         const values = tripSettingsSession.original;
         Object.assign(tripDraft, {
             deferred: Boolean(values.deferred),
+            startInDownTime: values.startInDownTime === true,
             nonProduction: values.nonProduction === true,
             standardTimeMilliseconds: values.standardTimeMilliseconds,
             creationTime: values.creationTime,
@@ -18207,6 +18221,7 @@
             if (!tripDraft) return false;
             Object.assign(tripDraft, {
                 deferred: Boolean(values.deferred),
+                startInDownTime: values.startInDownTime === true,
                 nonProduction: values.nonProduction === true,
                 standardTimeMilliseconds: values.standardTimeMilliseconds,
                 creationTime: values.creationTime,
@@ -18351,6 +18366,8 @@
         $("#tripProductive").checked = !settingsValues?.nonProduction;
         $("#tripDefer").checked = Boolean(settingsValues?.deferred);
         $("#tripDefer").disabled = live || !draft;
+        $("#tripStartInDownOption").hidden = live || !draft;
+        $("#tripStartInDown").checked = settingsValues?.startInDownTime === true;
         tripSettingsTitle.textContent = draft ? globalThis.WMOFLanguagePack.text("663e4656-b18e-5a0b-8e71-434afa06e206") : globalThis.WMOFLanguagePack.text("203ed173-27ac-5160-93ce-2e3551b37211");
         const futureTrip = Boolean(draft && !settingsValues?.deferred && tripDraftHasFutureStart(getTripSettingsCandidateDraft()));
         tripSettingsPrimary.dataset.futureTrip = String(futureTrip);
@@ -19035,6 +19052,15 @@
         button.classList.toggle("has-deferred-trip", Boolean(tripDraft?.deferred));
         button.title = tripDraft?.deferred ? globalThis.WMOFLanguagePack.text("d2bcf8dd-8724-50f1-b9e1-5c15d9b0a021") : globalThis.WMOFLanguagePack.text("4a08539e-5b49-5f21-aa5e-4784470146d0");
     }
+
+    $("#tripStartInDown").addEventListener("change", globalThis.WMOFInteractionFunctions.define(
+        "changeTripStartInDownInput", event => {
+            const session = tripSettingsSession || beginTripSettingsSession();
+            if (!session || session.live) return false;
+            session.values.startInDownTime = event.target.checked;
+            return true;
+        }
+    ));
 
     globalThis
         .WMOFInteractionFunctions

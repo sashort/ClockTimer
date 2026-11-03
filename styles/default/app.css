@@ -5831,6 +5831,14 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 
 .trip-settings-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:center;}
 .trip-settings-options label {min-width:0;justify-content:center;}
+.trip-settings-options #tripStartInDownOption {grid-column:1 / -1;}
+shared-modal-host > .trip-settings-dialog {
+    bottom:calc(100dvh - var(--shared-modal-safe-height,100dvh));
+    max-height:calc(var(--shared-modal-safe-height,100dvh) - 16px);
+}
+shared-modal-host > .trip-settings-dialog .dialog-actions {
+    position:sticky;bottom:0;z-index:2;background:var(--wm-blue-dark);padding-top:8px;
+}
 .trip-now-actions {width:100%;max-width:100%;min-width:0;}
 .trip-settings-dialog form > .trip-now-actions {width:auto;max-width:none;justify-self:stretch;}
 .trip-now-action {box-sizing:border-box;max-width:100%;min-width:0;overflow:hidden;}

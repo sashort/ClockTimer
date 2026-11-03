@@ -7156,6 +7156,12 @@
       "id": "a27509c7-9bc2-502f-953e-56e5a011f004",
       "text": "Close",
       "default": "Close"
+    },
+    "10aef1b8-aa9e-4308-b9d7-5e995527e464": {
+      "id": "10aef1b8-aa9e-4308-b9d7-5e995527e464",
+      "text": "Start in Down Time",
+      "default": "Start in Down Time",
+      "text0": "Start in Down Time"
     }
   }
 }

@@ -60,3 +60,10 @@ their saved start event before upload. They retain their original event instants
 client tokens, account ownership and retry checkpoints; they never borrow the
 current timer's anchor. Old cached clients must reload before creating new trips
 against the upgraded schema.
+
+New-trip settings and the scheduled-trip window share an unchecked-by-default
+`Start in Down Time` draft option. Confirming it creates the normal trip-start
+event followed by an open Down interval at that exact same instant. No new
+classification or timestamp column is required. Counted work remains zero until
+Resume; canonical replay restores this first-entry Down like any other interval.
+The option is hidden for an already-running trip and is not a saved user preference.

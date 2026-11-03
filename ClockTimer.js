@@ -6257,6 +6257,12 @@
                 }
             );
 
+            // Queue Down at the exact actual-start instant before yielding to
+            // persistence, so no productive time is counted before Resume.
+            if (options.startInDownTime === true && !this.#breakOnly) {
+                await this.startInterval("down", undefined, undefined, undefined, undefined, new Date(startEventTime));
+            }
+
             let synced = false;
             if (this.#connectionState === "connected") {
                 try {

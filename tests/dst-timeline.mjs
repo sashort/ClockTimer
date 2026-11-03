@@ -13,7 +13,7 @@ for(const file of ['TemporalFormat','RingContainer','TimeRangeModel','TimeRangeE
 let id=1,replayEvents=[],writes=[];
 w.fetch=async (url,options={})=>{if(options.method==='POST'&&options.body)writes.push({url,body:JSON.parse(options.body)});const p=new URL(url,'https://clock.example/').pathname,d=p.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2},calendars:[],tripStorageVersion:2}:p.endsWith('/trip-events/')?{eventId:id++,events:replayEvents}:{tripId:99};return{ok:true,status:200,json:async()=>({...d,accepted:true}),clone(){return this;}};};
 const timers=[];
-async function make(at){w.__now=Date.parse(at);const c=w.document.createElement('clock-timer');w.document.body.append(c);timers.push(c);c.configure({goal_type:'trip',trip_goal:'100%',goal_bounding:false,rendered_time_type:'calculated_start_time'});await c.connect('test','test');await c.start({standardTime:'0:30:00'});await c.persistCurrentTrip();return c;}
+async function make(at,options={}){w.__now=Date.parse(at);const c=w.document.createElement('clock-timer');w.document.body.append(c);timers.push(c);c.configure({goal_type:'trip',trip_goal:'100%',goal_bounding:false,rendered_time_type:'calculated_start_time'});await c.connect('test','test');await c.start({standardTime:'0:30:00',...options});await c.persistCurrentTrip();return c;}
 const elapsed=c=>{c.testTick();return c.getUIState().time_component.value;};
 try{
  for(const at of ['2026-11-01T04:10:00Z','2026-11-01T15:00:00Z','2026-11-01T06:10:00Z','2026-11-01T05:59:00Z','2027-03-14T06:59:00Z']){
@@ -56,5 +56,12 @@ try{
   assert.equal(elapsed(legacy),beforeReload,'canonical API reload needs no legacy anchor or clock aliases');
   live.remove();
  }
- console.log('PASS exact DST timeline and API-shaped running/Break/Down reload with UTC compatibility labels');
+ const initialDown=await make('2026-11-02T23:00:00Z',{startInDownTime:true});w.__now+=300000;
+ assert.equal(elapsed(initialDown),0,'a trip beginning in Down counts no productive time');
+ assert.equal(initialDown.getActiveIntervalState().intervalType,'down');
+ replayEvents=structuredClone(initialDown.captureState().events).map((e,i)=>({...e,id:i+1}));
+ assert.equal(replayEvents.find(e=>e.event==='interval.started').timestamp,replayEvents.find(e=>e.event==='trip.started').timestamp,'first Down begins at the exact trip start');
+ await legacy.loadTrip(99);legacy.renderedTimeMode='elapsed';assert.equal(elapsed(legacy),0,'first-entry Down survives reload');
+ await initialDown.endInterval();w.__now+=1000;assert.equal(elapsed(initialDown),1000,'Resume begins counting work');initialDown.remove();
+ console.log('PASS exact DST timeline, canonical interval reload, and trips starting directly in Down');
 }finally{for(const c of timers)c.remove();await w.happyDOM.close();}
