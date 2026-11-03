@@ -36,8 +36,10 @@
             const title=globalThis.WMOFLanguagePack.text('e09300d4-7ac5-4678-9f45-f5cc4500ff6d');
             box.setAttribute('role','group');box.setAttribute('aria-label',title);
             box.append(node('strong',title,'trip-log-downtime-title'));
-            for(const [label,value,kind] of [[globalThis.WMOFLanguagePack.text('edb1ce75-f212-4577-a1b3-e88dc28bcb78'),summary.loggedMilliseconds,'logged'],[globalThis.WMOFLanguagePack.text('a6d2eeb0-2d5b-4a59-b059-4039e7492e39'),summary.approvedMilliseconds,'approved']]) {
+            const includePending=this.showPendingEffective;
+            for(const [label,value,kind] of [[globalThis.WMOFLanguagePack.text('edb1ce75-f212-4577-a1b3-e88dc28bcb78'),summary.loggedMilliseconds,'logged'],[globalThis.WMOFLanguagePack.text(includePending?'d7300001-7888-4711-9000-000000000011':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39'),summary.approvedMilliseconds+(includePending?(summary.pendingMilliseconds||0):0),'approved']]) {
                 const cell=node('span',undefined,'trip-log-downtime-'+kind);
+                if(kind==='approved'){cell.dataset.pendingIncluded=String(includePending);cell.title=includePending?globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000001'):label;}
                 cell.append(node('span',label+' '),node('strong',duration(value)));box.append(cell);
             }
             return box;
@@ -65,7 +67,7 @@
             details.addEventListener('toggle',()=>{if(details.isConnected&&this.downTimeExpanded!==details.open){this.downTimeExpanded=details.open;this.saveViewSettings();}});
             const summary=node('summary');summary.append(node('strong',text('e09300d4-7ac5-4678-9f45-f5cc4500ff6d')));
             const total=node('span',undefined,'trip-log-down-effective');
-            total.append(node('span',text(includePending?'d7300001-7888-4711-9000-000000000001':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39')),this.downTimeValue(includePending?totals.combinedMilliseconds:totals.approvedMilliseconds));summary.append(total);
+            total.append(node('span',text(includePending?'d7300001-7888-4711-9000-000000000011':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39')),this.downTimeValue(includePending?totals.combinedMilliseconds:totals.approvedMilliseconds));summary.append(total);
             const content=node('div',undefined,'trip-log-down-content'),grid=node('div',undefined,'trip-log-down-grid');
             for(const [id,value,kind] of [['d7300001-7888-4711-9000-000000000002',totals.pendingMilliseconds,'pending'],['a6d2eeb0-2d5b-4a59-b059-4039e7492e39',totals.approvedMilliseconds,'approved'],['d7300001-7888-4711-9000-000000000003',totals.unapprovedMilliseconds,'unapproved']]){
                 if(kind==='pending'&&!this.showPendingEffective)continue;
@@ -202,7 +204,7 @@
             for(const [label,action] of [['Edit Trip',()=>this.openTripEditor(trip)],['Delete trip',()=>this.deleteTrip(trip)]]){const button=node('button',label);button.type='button';if(label==='Delete trip')button.className='danger';button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();actions.hidden=true;toggle.setAttribute('aria-expanded','false');Promise.resolve(action()).catch(error=>this.error(error));});actions.append(button);}
             toggle.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();actions.hidden=!actions.hidden;toggle.setAttribute('aria-expanded',String(!actions.hidden));});menu.append(toggle,actions);if(!this.offline||trip.buffered)summary.append(menu);
             const downtime=this.downtimeSummary(TripDowntimeSummary.trip(trip,{now:this.downtimeNow}));if(downtime)summary.append(downtime);details.append(summary);
-            const entries=node('div',undefined,'trip-log-entries');entries.append(node('strong','Trip entries','trip-log-entry-heading'));
+            const entries=node('div',undefined,'trip-log-entries'),timeline=node('div',undefined,'trip-log-timeline');entries.append(timeline);
             const events=trip.events||[],deleted=new Set(events.filter(event=>event.event==='interval.deleted').map(event=>event.value?.intervalKey));
             const visible=events.filter(event=>(!standalone&&['trip.started','trip.stopped'].includes(event.event))||(['interval.started','interval.ended'].includes(event.event)&&!deleted.has(event.value?.intervalKey)));
             if(official?.startTime)visible.push({event:'trip.official-start',timestamp:official.startTime,value:{}});
@@ -212,7 +214,7 @@
                 const row=node('div',undefined,'trip-log-entry');if(event.value?.intervalKey)row.dataset.intervalKey=event.value.intervalKey;
                 if(event.event==='trip.official-start')row.classList.add('is-official-start');
                 if(event===activeEntry){row.classList.add('is-active-entry');row.dataset.activeState=trip.activeState||'trip';row.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
-                row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),node('span',event.event==='trip.official-start'?TripLog.officialText('officialStart'):this.entryLabel(event,started,ended,events)));entries.append(row);
+                row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),node('span',event.event==='trip.official-start'?TripLog.officialText('officialStart'):this.entryLabel(event,started,ended,events)));timeline.append(row);
             }
             details.append(entries);return details;
         }

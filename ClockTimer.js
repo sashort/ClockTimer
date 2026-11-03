@@ -3360,7 +3360,8 @@
             const permission = globalThis.SpeechMenu?.executionContext?.persist ?? this.#stateTransaction?.remotePermission;
             if (permission === false) throw new Error("This speech command is client-only; speech-persist is required for server access.");
             signal ??= this.#stateTransactionSignal;
-            if (["trips", "trip-events", "trip-editor"].includes(endpoint) && !/^(GET|HEAD)$/i.test(method)) {
+            const editorPreview=endpoint==="trip-editor"&&body?.operation==="editor-preview";
+            if (["trips", "trip-events", "trip-editor"].includes(endpoint) && !/^(GET|HEAD)$/i.test(method)&&!editorPreview) {
                 const decision = await this.#apiRequest("command-check", {method: "POST", csrf: true, signal,
                     body: {endpoint, method, command: body}});
                 if (decision.accepted !== true) {

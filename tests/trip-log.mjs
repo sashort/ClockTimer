@@ -154,6 +154,16 @@ view.render({trips:[noDown]},calendar);
 assert.equal(root.querySelector('.trip-log-downtime'),null,'omit zero downtime at every aggregate and trip level');
 assert.equal(root.querySelector('.trip-log-down-section'),null,'omit the entire dedicated section when all Down categories are zero');
 console.log('PASS logged/approved downtime summaries, zero omission and one grouping guide per aggregate');
+const pendingDown={...withDown,id:303,events:withDown.events.map(e=>({...e,value:{...e.value,approvedTime:undefined,approvalState:'pending'}}))};
+let showPending=true;view.options.showPendingDownTime=()=>showPending;view.render({trips:[withDown,pendingDown]},calendar);
+assert(root.querySelector('.trip-log-group>summary .trip-log-downtime-approved').textContent.includes('Applied 0:13:00'));
+assert(root.querySelector('[data-trip-id="303"] .trip-log-downtime-approved').textContent.includes('Applied 0:08:00'));
+assert.equal(root.querySelector('.trip-log-down-effective>span').textContent,'Applied');
+showPending=false;view.rerender();assert(root.querySelector('.trip-log-group>summary .trip-log-downtime-approved').textContent.includes('Approved 0:05:00'));
+assert(root.querySelector('[data-trip-id="303"] .trip-log-downtime-approved').textContent.includes('Approved 0:00:00'));
+view.downTimeOnly=true;view.rerender();assert(root.querySelector('.trip-log-group>summary .trip-log-downtime-approved').textContent.includes('Applied 0:13:00'),'forced Pending uses the effective setting');
+view.downTimeOnly=false;view.options.showPendingDownTime=undefined;
+console.log('PASS Applied/Approved ledger labels and values follow the effective Pending setting at trip and aggregate levels');
 const standalone={id:910,startTime:'2026-09-18T13:00:00Z',endTime:'2026-09-18T13:15:00Z',breakOnly:true,nonProduction:false,
  standardTimeMilliseconds:null,countedTimeMilliseconds:0,actualTimeMilliseconds:900000,events:[{event:'trip.started',timestamp:'2026-09-18T13:00:00Z',value:{breakOnly:true}}]};
 view.render({trips:[...trips,standalone]},calendar);

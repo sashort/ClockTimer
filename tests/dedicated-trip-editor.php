@@ -11,6 +11,8 @@ $events=[
  ['id'=>6,'event'=>'trip.stopped','timestamp'=>'2026-11-03 10:40:00.125','value'=>[]]
 ];
 $original=json_encode($events);$settings=trip_edit_api_settings($events);$settings['standardTimeMilliseconds']=2400000;
+trip_edit_validate_command($events,['operation'=>'editor-preview','changes'=>[],'tripId'=>41]);
+editor_check(json_encode($events)===$original,'command preflight accepts an unchanged preview without mutation');
 $change=['operation'=>'editor','settings'=>$settings,'changes'=>[['operation'=>'entry','entry'=>['eventId'=>4,'intervalKey'=>'d','start'=>'2026-11-03T10:15:00.125Z','end'=>'2026-11-03T10:19:00.125Z','type'=>'down','approvedTime'=>120000,'approvalState'=>'approved']]],'official'=>[['operation'=>'official-percent','percentTenths'=>1200,'showOfficialStart'=>true]],'_actorId'=>2];
 $preview=trip_edit_preview($events,$change,41);$saved=trip_edit_apply($events,$change);
 editor_check($preview['standardTimeMilliseconds']===2400000,'preview combines Details and Timeline');

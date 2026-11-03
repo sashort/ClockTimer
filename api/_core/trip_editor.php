@@ -292,6 +292,13 @@ function trip_edit_clock_iso(string $anchor,string $clock): string {
     return $date->modify('+'.$milliseconds.' milliseconds')->format('Y-m-d H:i:s.v');
 }
 
+/** Used by command preflight, including clients that preflight read-only previews. */
+function trip_edit_validate_command(array $events,array $command): void {
+    if(($command['operation']??'')==='delete-trip')return;
+    if(($command['operation']??'')==='editor-preview'){trip_edit_preview($events,$command,(int)($command['tripId']??0));return;}
+    trip_edit_apply($events,$command);
+}
+
 /** Read-only editor preview uses the same validation and accounting as Save. */
 function trip_edit_preview(array $existing,array $input,int $tripId): array {
     $events=trip_edit_apply($existing,[...$input,'operation'=>'editor']);$a=trip_edit_aggregate($events);

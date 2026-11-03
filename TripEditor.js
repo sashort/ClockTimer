@@ -15,7 +15,9 @@
             this.originalSettings=copy(this.settings);this.revision=data.revision;this.options=options;this.calendar=calendar;this.tab='timeline';this.official=[];this.previewTrip=trip;this.generation=0;this.dirty=false;
             for(const event of this.events)event._editorSortTime=time(event.timestamp);
         }
-        button(text,action,cls){const b=el('button',text,cls);b.type='button';b.addEventListener('click',()=>Promise.resolve(action()).catch(e=>this.error(e)));return b;}
+        button(text,action,cls){const b=el('button',text,cls);if(typeof text==='string'&&(cls?.includes('trip-log-entry-time')||cls==='trip-editor-approval'))this.decorateTime(b,text);b.type='button';b.addEventListener('click',()=>Promise.resolve(action()).catch(e=>this.error(e)));return b;}
+        decorateTime(target,text){const match=String(text).match(/^(.*)(\.\d{3})$/);if(!match){target.textContent=text;return;}target.replaceChildren(document.createTextNode(match[1]),el('small',match[2],'trip-editor-time-fraction'));}
+        durationText(value){const milliseconds=Math.max(0,Math.round(Number(value)||0));return TripLog.duration(milliseconds)+'.'+String(milliseconds%1000).padStart(3,'0');}
         show(){
             const dialog=this.dialog=el('dialog',undefined,'app-dialog trip-log-editor dedicated-trip-editor');dialog.setAttribute('aria-label','Edit Trip');
             const header=el('header',undefined,'dialog-header');header.append(el('h2','Edit Trip'),this.button('×',()=>this.close(),'dialog-close'));dialog.append(header);
@@ -31,7 +33,7 @@
         }
         close(){if(this.saving)return;if(this.dirty&&!confirm('Discard changes to this trip?'))return;this.dialog.close();}
         error(error){this.alert.textContent=error.message||String(error);}
-        format(value){if(!Number.isFinite(time(value)))return 'Set time';return new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'numeric',minute:'2-digit',second:'2-digit'}).format(new Date(time(value)));}
+        format(value){if(!Number.isFinite(time(value)))return 'Set time';return new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(time(value)))+'.'+String(new Date(time(value)).getUTCMilliseconds()).padStart(3,'0');}
         async pad(options){return this.options.numberPad({cancelTarget:'none',confirmTarget:'none',...options});}
         changed(){this.dirty=true;this.alert.textContent='';for(const event of this.intervals())if(!Object.values(this.invalid(event)).some(Boolean))event._editorSortTime=time(event.timestamp);this.render();clearTimeout(this.previewTimer);this.previewTimer=setTimeout(()=>this.preview(),200);}
         sorted(){return [...this.events].filter(e=>['trip.started','trip.stopped','interval.started'].includes(e.event)).sort((a,b)=>order(a)-order(b));}
@@ -62,7 +64,7 @@
             b.setAttribute('aria-invalid',String(invalid));b.dataset.eventId=event.id;return b;
         }
         drawTimeline(){
-            const toolbar=el('div',undefined,'trip-editor-toolbar');toolbar.append(el('span',`${this.intervals().length} intervals`),this.button('+ Add Entry',()=>this.add(),'trip-log-add'));this.body.append(toolbar);
+            const toolbar=el('div',undefined,'trip-editor-toolbar');toolbar.append(this.button('+ Add Entry',()=>this.add(),'trip-log-add'));this.body.append(toolbar);
             const timeline=el('div',undefined,'trip-editor-timeline');this.body.append(timeline);
             const rows=this.sorted().filter(e=>e.event!=='interval.started'||!this.deleted().has(e.value.intervalKey));
             const officialStart=this.previewTrip.officialCorrection?.startTime;if(officialStart)rows.push({id:'official-start',event:'trip.official-start',timestamp:officialStart,value:{}});
@@ -84,16 +86,17 @@
                 if(errors.start||errors.end)card.append(el('small','Choose times inside the trip without overlapping another entry.','trip-editor-invalid'));
                 if(event.value.type==='down'){
                     const approval=this.events.findLast(e=>e.event==='interval.approval-changed'&&e.value?.intervalKey===event.value.intervalKey),state=approval?.value?.state??event.value.approvalState??(Number.isSafeInteger(event.value.approvedTime)?'approved':'pending');
-                    card.append(this.button(state==='approved'?`Approved: ${TripLog.duration(approval?.value?.value??event.value.approvedTime)}`:state==='unapproved'?'Unapproved':'Pending',()=>this.editApproval(event,state),'trip-editor-approval'));
-                    card.append(el('small','Use the camera to view or edit the picture and description.','trip-editor-note'));
+                    card.append(this.downAccounting(event,state,approval));
+                    card.append(el('small','Tap the camera to view or edit the picture and description.','trip-editor-note'));
                 }else{
-                    const planned=event.value.length;card.append(this.button(`Break length: ${Number.isSafeInteger(planned)?TripLog.duration(planned):'Set duration'}`,()=>this.pad({mode:'duration',source:'entry-length',title:'Break length',initialValue:planned,onConfirm:value=>{event.value.length=value;this.changed();}}),'trip-editor-approval'));
+                    const planned=event.value.length;card.append(this.button(`Break length: ${Number.isSafeInteger(planned)?this.durationText(planned):'Set duration'}`,()=>this.pad({mode:'duration',source:'entry-length',title:'Break length',initialValue:planned,onConfirm:value=>{event.value.length=value;this.changed();}}),'trip-editor-approval'));
                 }
                 timeline.append(card);
             }
+            const downSummary=this.downSummary();if(downSummary)this.body.append(downSummary);
         }
         drawDetails(){
-            const settings=this.settings;const field=(label,value,mode,change)=>{const button=this.button(undefined,()=>this.pad({mode,source:label,title:label,initialValue:value,onConfirm:v=>{change(v);this.changed();}}),'trip-log-edit-field');button.append(el('span',label),el('strong',mode==='absolute'?this.format(value):TripLog.duration(value)));this.body.append(button);};
+            const settings=this.settings;const field=(label,value,mode,change)=>{const button=this.button(undefined,()=>this.pad({mode,source:label,title:label,initialValue:value,onConfirm:v=>{change(v);this.changed();}}),'trip-log-edit-field'),readout=el('strong');this.decorateTime(readout,mode==='absolute'?this.format(value):this.durationText(value));button.append(el('span',label),readout);this.body.append(button);};
             field('Scheduled start',settings.instants?.scheduledStart,'absolute',value=>settings.instants.scheduledStart=value);
             if(!settings.breakOnly){field('Standard Time',settings.standardTimeMilliseconds,'duration',value=>settings.standardTimeMilliseconds=value);const label=el('label',undefined,'trip-editor-production');label.append(el('span','Production'));const select=el('select');for(const [value,text] of [['yes','Yes'],['no','No']]){const option=el('option',text);option.value=value;select.append(option);}select.value=settings.nonProduction?'no':'yes';select.addEventListener('change',()=>{settings.nonProduction=select.value==='no';this.changed();});label.append(select);this.body.append(label);}else this.body.append(el('p','Break-only trip'));
             this.body.append(el('p','Actual start and end times are edited in the Timeline.','trip-editor-note'));
@@ -104,6 +107,29 @@
         async choice(title,choices){
             const dialog=el('dialog',undefined,'app-dialog trip-editor-choice');dialog.append(el('h2',title));const actions=el('div',undefined,'dialog-actions');dialog.append(actions);document.body.append(dialog);document.querySelector('shared-modal-host')?.register(dialog);
             return new Promise(resolve=>{for(const [label,value] of choices)actions.append(this.button(label,()=>{resolve(value);dialog.close();}));dialog.addEventListener('close',()=>{resolve(undefined);dialog.remove();},{once:true});dialog.showModal();});
+        }
+        downAccounting(event,state,approval){
+            const recorded=Math.max(0,(time(this.end(event)?.timestamp)||Date.now())-time(event.timestamp)),approved=state==='approved'?Number(approval?.value?.value??event.value.approvedTime??0):0;
+            const strip=el('div',undefined,'trip-editor-down-accounting');strip.dataset.approvalState=state;
+            const cell=(label,value,editable=false,signed=false)=>strip.append(this.downAmountCell(label,value,editable?()=>this.editApproval(event,state):undefined,signed));
+            cell('Recorded',recorded);
+            if(state==='pending')cell('Pending',recorded,true);
+            else{cell('Approved',approved,true);cell('Unapproved',Math.max(0,recorded-approved));cell('Net',approved-recorded,false,true);}
+            return strip;
+        }
+        downAmountCell(label,value,edit,signed=false){
+            const node=edit?this.button(undefined,edit,'trip-editor-approval trip-editor-accounting-cell'):el('span',undefined,'trip-editor-accounting-cell');
+            const magnitude=Math.round(Math.abs(value)),whole=TripLog.duration(magnitude).replace(/^0:/,''),readout=el('strong');if(Number.isFinite(value))readout.append(document.createTextNode((signed?(value<0?'−':value>0?'+':''):'')+whole),el('small','.'+String(magnitude%1000).padStart(3,'0'),'trip-editor-accounting-fraction'));else readout.textContent='—';
+            node.append(el('small',label),readout);node.dataset.downAmount=label.toLowerCase();if(signed){node.title='Approved − Recorded';if(value<0)node.classList.add('is-deficit');}return node;
+        }
+        downSummary(){
+            const downs=this.intervals().filter(e=>e.value.type==='down');if(downs.length<2)return;
+            const states=downs.map(e=>TripDowntimeSummary.approvalState(e,this.events)),reviewed=states.some(state=>state==='approved'||state==='unapproved');
+            const totals=TripDowntimeSummary.breakdown([{...this.trip,events:this.events}]),incomplete=downs.some(e=>Object.values(this.invalid(e)).some(Boolean));
+            const values=[['Recorded',totals.loggedMilliseconds]];if(states.includes('pending'))values.push(['Pending',totals.pendingMilliseconds]);
+            if(reviewed)values.push(['Approved',totals.approvedMilliseconds],['Unapproved',totals.unapprovedMilliseconds],['Net',totals.approvedMilliseconds-totals.loggedMilliseconds]);
+            const section=el('section',undefined,'trip-editor-down-summary');section.append(el('h3','Down Time'));const strip=el('div',undefined,'trip-editor-down-accounting');strip.style.setProperty('--down-columns',String(values.length));
+            for(const [label,value] of values)strip.append(this.downAmountCell(label,incomplete?NaN:value,undefined,label==='Net'));section.append(strip);return section;
         }
         async editApproval(event,state){await this.pad({mode:'duration',source:'approved-down-time',title:'Approved Down Time',allowEmpty:true,initialValue:state==='approved'?(this.events.findLast(e=>e.event==='interval.approval-changed'&&e.value?.intervalKey===event.value.intervalKey)?.value.value??event.value.approvedTime):undefined,onConfirm:async value=>{const next=value===undefined?await this.choice('Down Time status',[['Unapproved','unapproved'],['Pending','pending']]):'approved';if(!next)return;event.value.approvedTime=value??null;event.value.approvalState=next;for(const approval of this.events.filter(e=>e.event==='interval.approval-changed'&&e.value?.intervalKey===event.value.intervalKey)){approval.value.state=next;approval.value.value=value??0;}this.changed();}});}
         async editOfficial(){

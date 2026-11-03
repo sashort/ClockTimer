@@ -38,3 +38,17 @@ modal host. Its footer, and the Down Details footer, stay above the Mic Bar.
 The Halloween palette uses the same layout. Menu toggles retain saved values
 and use strikethrough while disabled; the existing pending stopwatch states and
 Goal Bounding icon remain consistent with that convention.
+
+Times in the editor use 24-hour notation with smaller milliseconds; the top
+summary keeps its existing precision. Each Down card shows Recorded and its
+applicable review values. Pending cards omit Approved, Unapproved and Net.
+Reviewed cards show the signed Net (Approved minus Recorded). With multiple
+Down intervals, a bottom Timeline summary always shows Recorded, shows Pending
+when present, and adds Approved/Unapproved/Net only after a review decision.
+
+Read-only previews bypass mutation-command preflight. The preflight validator
+also recognizes previews for older clients; it must not send `editor-preview`
+directly to the mutation dispatcher. Both routes remain owner/CSRF/revision
+checked. Trip Log uses circles/lines for its read-only entries, omits the
+Trip Entries heading, and labels its effective deduction Applied when Pending
+is included, otherwise Approved.

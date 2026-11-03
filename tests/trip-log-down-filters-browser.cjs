@@ -26,7 +26,7 @@ includePending=true;
 assert.equal(await page.locator('#samples article').nth(0).locator('.trip-log-down-grid').isVisible(),true);
 assert.equal(await page.locator('#samples article').nth(1).locator('.trip-log-down-grid').isVisible(),false);
 assert.equal(await page.locator('#samples article').nth(1).locator('.trip-log-down-filter').isVisible(),false);
-assert.match(await page.locator('#samples article').nth(1).locator('summary').innerText(),/Approved \+ Pending\s+0:20:00/);
+assert.match(await page.locator('#samples article').nth(1).locator('summary').innerText(),/Applied\s+0:20:00/);
 assert.match(await page.locator('#samples article').nth(2).locator('summary').innerText(),/Approved\s+0:12:00/);
 assert.equal(await page.locator('#samples article').nth(0).locator('.trip-log-down-pending .trip-log-down-milliseconds').innerText(),'(125 ms)');
 assert.equal(await page.locator('#samples article').nth(1).locator('summary .trip-log-down-milliseconds').innerText(),'.375');

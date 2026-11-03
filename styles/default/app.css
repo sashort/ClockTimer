@@ -5727,6 +5727,10 @@ clock-timer[hide-latency] time-range[type="latency"] {
 .trip-log-entry-heading {display:flex;justify-content:space-between;align-items:center;}
 .trip-log-entries p {font-size:13px;font-weight:400;}
 .trip-log-entry {display:grid;grid-template-columns:65px minmax(0,1fr);gap:8px;width:100%;padding:8px 0;text-align:left;font-size:15px;font-weight:400;color:white;-webkit-touch-callout:none;user-select:none;}
+.trip-log-timeline {--trip-log-timeline-accent:var(--wm-blue-light,#a9ddf7);margin:0 0 0 7px;padding-left:16px;border-left:2px solid var(--trip-log-timeline-accent);}
+.trip-log-timeline>.trip-log-entry {position:relative;box-sizing:border-box;min-width:0;}
+.trip-log-timeline>.trip-log-entry::before {content:'';position:absolute;left:-24px;top:12px;box-sizing:content-box;width:10px;height:10px;border:2px solid var(--trip-log-timeline-accent);border-radius:50%;background:var(--wm-gray,#5f6772);pointer-events:none;}
+.trip-log-timeline>.trip-log-entry>span:last-child {min-width:0;overflow-wrap:anywhere;}
 button.trip-log-entry {padding:10px;margin-top:5px;border:1px solid #92a0ae;border-radius:5px;background:transparent;}
 button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a9ddf7;background:#a9ddf720;}
 .trip-log-entry-time,.trip-log-entry-name {
@@ -5847,7 +5851,7 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-editor-tabs button {flex:1;border:0;border-bottom:4px solid transparent;background:transparent;color:inherit;padding:12px 8px;font-size:17px;font-weight:700;}
 .trip-editor-tabs [aria-selected=true] {background:var(--editor-card);border-bottom-color:var(--editor-accent);border-radius:9px 9px 0 0;}
 .trip-editor-body {overflow:auto;min-height:0;flex:1;padding:0 2px 8px;overscroll-behavior:contain;}
-.trip-editor-toolbar {display:flex;justify-content:space-between;align-items:center;gap:10px;margin:4px 0 12px;font-size:13px;}
+.trip-editor-toolbar {display:flex;justify-content:flex-end;align-items:center;gap:10px;margin:4px 0 12px;font-size:13px;}
 .trip-editor-toolbar>span {white-space:nowrap;}
 .trip-editor-toolbar .trip-log-add {width:auto;flex:none;}
 .trip-editor-timeline {display:flex;flex-direction:column;gap:12px;border-left:2px solid var(--editor-border);margin:0 0 0 7px;padding:0 0 0 16px;}
@@ -5866,6 +5870,19 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .trip-editor-camera svg {display:block;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .trip-editor-camera:disabled {opacity:.45;}
 .trip-editor-approval {align-self:flex-start;background:var(--editor-bg);border:1px solid var(--editor-border);border-radius:6px;color:var(--editor-accent);padding:6px 9px;font-size:13px;}
+.trip-editor-down-accounting {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--editor-border);border-radius:7px;overflow:hidden;min-width:0;}
+.trip-editor-down-accounting[data-approval-state="pending"] {grid-template-columns:repeat(2,minmax(0,1fr));}
+.trip-editor-accounting-cell {display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-width:0;padding:5px 4px;}
+.trip-editor-accounting-cell+.trip-editor-accounting-cell {border-left:1px solid var(--editor-border);}
+.trip-editor-down-accounting .trip-editor-approval {align-self:stretch;border:0;border-left:1px solid var(--editor-border);border-radius:0;background:var(--editor-bg);font:inherit;cursor:pointer;}
+.trip-editor-accounting-cell>small {font-size:clamp(8px,2.2vw,10px);}
+.trip-editor-accounting-cell>strong {font-size:clamp(9px,2.5vw,12px);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.trip-editor-accounting-cell .trip-editor-accounting-fraction {font-size:.72em;}
+.trip-editor-time-fraction {font-size:.65em;font-variant-numeric:tabular-nums;}
+.trip-editor-accounting-cell.is-deficit>strong {color:#ffb1ba;}
+.trip-editor-down-summary {margin-top:16px;padding:10px;border:1px solid var(--editor-border);border-radius:8px;background:var(--editor-card);}
+.trip-editor-down-summary h3 {font-size:14px;margin:0 0 9px;}
+.trip-editor-down-summary .trip-editor-down-accounting {grid-template-columns:repeat(var(--down-columns),minmax(0,1fr));}
 .trip-editor-note {font-size:12px;line-height:1.5;opacity:.85;margin:0;}
 .trip-editor-invalid {color:#ffb1ba;}
 .dedicated-trip-editor .trip-log-edit-field {display:flex;flex-direction:row;justify-content:space-between;align-items:center;width:100%;margin-bottom:10px;background:var(--editor-card);color:inherit;border-color:var(--editor-border);gap:10px;}

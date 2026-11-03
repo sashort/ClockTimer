@@ -51,7 +51,7 @@
         }
         static trip(trip, {now = Date.now()} = {}) {
             if (trip.breakOnly || trip.events?.some(event => event.event === "trip.started" && event.value?.breakOnly === true)) {
-                return Object.freeze({loggedMilliseconds:0, approvedMilliseconds:0, intervalCount:0, hasDowntime:false});
+                return Object.freeze({loggedMilliseconds:0, approvedMilliseconds:0, pendingMilliseconds:0, intervalCount:0, hasDowntime:false});
             }
             const events = trip.events || [], starts = new Map(), ends = new Map(), deleted = new Set();
             for (const event of events) {
@@ -61,7 +61,7 @@
                 if (event.event === 'interval.started' && String(event.value?.type || '').toLowerCase() === 'down') starts.set(key, event);
                 if (event.event === 'interval.ended') ends.set(key, event);
             }
-            let loggedMilliseconds = 0, approvedMilliseconds = 0, intervalCount = 0;
+            let loggedMilliseconds = 0, approvedMilliseconds = 0, pendingMilliseconds = 0, intervalCount = 0;
             for (const [key, started] of starts) {
                 if (deleted.has(key)) continue;
                 const ended = ends.get(key), start = instant(started.timestamp);
@@ -70,20 +70,22 @@
                 if (!Number.isSafeInteger(elapsed) || elapsed < 0) continue;
                 loggedMilliseconds += elapsed;
                 approvedMilliseconds += this.approvalState(started,events)==='approved'?duration(this.approved(started, ended, events)):0;
+                if(this.approvalState(started,events)==='pending')pendingMilliseconds+=elapsed;
                 intervalCount++;
             }
-            return Object.freeze({loggedMilliseconds, approvedMilliseconds, intervalCount,
+            return Object.freeze({loggedMilliseconds, approvedMilliseconds, pendingMilliseconds, intervalCount,
                 hasDowntime: loggedMilliseconds > 0 || approvedMilliseconds > 0});
         }
         static calculate(trips, options) {
-            let loggedMilliseconds = 0, approvedMilliseconds = 0, intervalCount = 0;
+            let loggedMilliseconds = 0, approvedMilliseconds = 0, pendingMilliseconds = 0, intervalCount = 0;
             for (const trip of trips) {
                 const summary = this.trip(trip, options);
                 loggedMilliseconds += summary.loggedMilliseconds;
                 approvedMilliseconds += summary.approvedMilliseconds;
+                pendingMilliseconds += summary.pendingMilliseconds;
                 intervalCount += summary.intervalCount;
             }
-            return Object.freeze({loggedMilliseconds, approvedMilliseconds, intervalCount,
+            return Object.freeze({loggedMilliseconds, approvedMilliseconds, pendingMilliseconds, intervalCount,
                 hasDowntime: loggedMilliseconds > 0 || approvedMilliseconds > 0});
         }
     }

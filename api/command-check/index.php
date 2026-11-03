@@ -29,7 +29,7 @@ if ($endpoint === 'trip-editor') {
     if (!is_string($command['revision'] ?? null) || !hash_equals(trip_edit_revision($events), $command['revision'])) {
         json_response(['accepted' => false, 'reason' => 'The trip changed. Reopen the editor.']);
     }
-    try {if (($command['operation'] ?? '') !== 'delete-trip') trip_edit_apply($events, $command);}
+    try {trip_edit_validate_command($events, $command);}
     catch (InvalidArgumentException $error) {json_response(['accepted' => false, 'reason' => $error->getMessage()]);}
 }
 if ($endpoint === 'trips') {
