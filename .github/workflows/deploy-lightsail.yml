@@ -188,6 +188,7 @@ jobs:
           node tests/app-state-transactions.mjs --summary-dialog --voice-feedback
           node tests/trip-replay-identity.mjs
           node tests/dst-timeline.mjs
+          node tests/dst-completion.mjs
           node tests/async-persistence.mjs
           node tests/vosk-phrase-list-compiler.mjs
           node tests/spoken-duration.mjs
@@ -249,6 +250,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
+      - run: node tests/trip-editor-dst-matrix.cjs
       - run: node tests/official-percent-browser.cjs
       - run: node tests/live-trip-editor-browser.cjs
       - run: node tests/dedicated-trip-editor-browser.cjs
