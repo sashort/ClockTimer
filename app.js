@@ -66,6 +66,8 @@
         tripLogPinned: "wmof.clock.tripLogPinned",
         tripLogRange: "wmof.clock.tripLogRange",
         tripLogIncludeCurrent: "wmof.clock.tripLogIncludeCurrent",
+        includePendingDownTime: "wmof.clock.includePendingDownTime",
+        tripLogView: "wmof.clock.tripLogView",
         customTripLogDates: "wmof.clock.customTripLogDates",
         audioSettings: "wmof.clock.audioSettings"
     };
@@ -6083,7 +6085,7 @@
             const url = new URL("api/trips/", API_BASE);
             url.search = new URLSearchParams({
                 result: "list", minDateTime: tripWindow.startTime, maxDateTime: tripWindow.endTime,
-                nonProductionFilter: "all", productionFilter: clockTimer.productionFilter || "all", verbose:"true", limit: "1000"
+                nonProductionFilter: "all", productionFilter: clockTimer.productionFilter || "all", includePendingDownTime:String(clockTimer.includePendingDownTime),verbose:"true", limit: "1000"
             });
             const data = {trips: []};
             let page;
@@ -6212,6 +6214,20 @@
         tripLogView?.rerender();
     }
 
+    function getTripLogViewSettings() {
+        try{return JSON.parse(safeStorageGet(STORAGE.tripLogView))||{};}catch{return {};}
+    }
+    function saveTripLogViewSettings(value) {safeStorageSet(STORAGE.tripLogView,JSON.stringify(value));}
+    function getIncludePendingDownTime() {return safeStorageGet(STORAGE.includePendingDownTime)!=='false';}
+    async function setIncludePendingDownTime(value) {
+        tripRangeRevision++;
+        safeStorageSet(STORAGE.includePendingDownTime,String(Boolean(value)));
+        clockTimer.includePendingDownTime=Boolean(value);
+        tripLogView?.rerender();renderSyncGoalsState();updateSummaryValues();
+        try{await refreshGoalTotalsForRange(getTripLogRange());if(getTripListState()==='open')await dispatchTripListRequest('pending-down');}
+        catch(error){console.warn('Pending Down totals refresh failed',error);}
+    }
+
     function offlineTripLogData(calendar) {
         let cached;
         try {const raw = safeStorageGet("wmof.tripLogCache"); cached = typeof raw === "string" ? JSON.parse(raw) : raw;} catch {}
@@ -6234,11 +6250,13 @@
         return {trips, allTrips: [...allTrips.values()], loginRequired, offline: true, incomplete: true};
     }
 
-    function renderTripLog(data, calendar) {
+    function ensureTripLogView() {
         if (!tripLogBody) return;
         tripLogView ||= new TripLog(tripLogBody, {
             range:getTripLogRange, filter:()=>clockTimer.productionFilter || "all",
             includeCurrent:getTripLogIncludeCurrent,
+            includePendingDownTime:()=>clockTimer.includePendingDownTime,
+            viewSettings:getTripLogViewSettings,onViewSettings:saveTripLogViewSettings,
             onIncludeCurrent:setTripLogIncludeCurrent,
             onRange:value=>setTripLogRange(value),
             onFilter:setTripProductionFilter,
@@ -6260,7 +6278,11 @@
                 }
                 return result;
             },
-            refresh:()=>dispatchTripListRequest("edit"),
+            refresh:async()=>{
+                await dispatchTripListRequest('edit');
+                if(completedTripSummary&&!completedTripSummary.loading&&tripSummaryRequestController)
+                    await loadTripSummary(completedTripSummary,clockTimer.getLocalTripLog(),tripSummaryRequestController.signal);
+            },
             downDetailsInfo:(tripId,intervalKey)=>clockTimer.downDetailsRequest(tripId,intervalKey),
             openDownDetails:(trip,intervalKey,editing)=>openDownDetailsModal(trip.id,intervalKey,{editing}),
             liveTrip:()=>{
@@ -6287,7 +6309,7 @@
                     totalSummary.countedPercent<totalSummary.percentGoal;
                 const start=clockTimer.uiState?.trip_start_component?.date?.toISOString?.();
                 if(!start) return null;
-                return {id:clockTimer.currentTripId,running:true,activeState,breakOnly:clockTimer.breakOnly,
+                return {id:clockTimer.currentTripId,running:true,activeState,pendingDownIncluded:clockTimer.includePendingDownTime,events:clockTimer.exportObserverSnapshot().events,productiveTimeMilliseconds:summary.productiveTimeMilliseconds,breakOnly:clockTimer.breakOnly,
                     includeInParentPercent:getTripLogIncludeCurrent()||tripGoalMissed||totalGoalMissed,startTime:start,endTime:new Date().toISOString(),
                     standardTimeMilliseconds:summary.standardTimeMilliseconds,
                     allottedTimeMilliseconds:summary.allottedTimeMilliseconds,
@@ -6296,6 +6318,11 @@
                     countedTimeMilliseconds:summary.countedTimeElapsedMilliseconds,nonProduction:clockTimer.nonProduction};
             }
         });
+        return tripLogView;
+    }
+
+    function renderTripLog(data, calendar) {
+        if(!ensureTripLogView())return;
         tripLogView.render(data,calendar);
         if (!tripLogView.trips.length) {
             tripLogSettingsVisible = true;
@@ -7324,6 +7351,8 @@
         if(renderedScope&&typeof renderedScope==="object")renderedScope=state.effective_goal_type;
         const enabled =
             getSyncGoalsState();
+        const pendingButton=$("#includePendingDownTimeButton");
+        if(pendingButton){pendingButton.hidden=!clockTimer.hasDownTime;pendingButton.setAttribute("aria-checked",String(clockTimer.includePendingDownTime));}
         const overrideButton = $("#goalBoundingButton");
         if (overrideButton) {
             overrideButton.setAttribute("aria-checked", String(clockTimer.goalBounding));
@@ -12354,6 +12383,8 @@
         const choices = event.detail?.choices;
         globalThis.WMOFActions.openGoalEditor(choices?.length === 1 ? {scope:choices[0]} : {choices});
     });
+
+    $('#includePendingDownTimeButton')?.addEventListener('click',()=>void setIncludePendingDownTime(!clockTimer.includePendingDownTime));
 
     $("#goalBoundingButton")?.addEventListener("click", () => {
         globalThis.WMOFActions.changeGoalBounding(clockTimer.goalBounding ? "off" : "on");
@@ -21464,7 +21495,10 @@
             );
 
         if(item.presentation)tripTransitionOverlayDetails.replaceChildren(
-            TripSummary.render(document,item.presentation,tripSummaryText));
+            TripSummary.render(document,item.presentation,tripSummaryText,async(trip,button)=>{
+                button.disabled=true;
+                try{await ensureTripLogView().editOfficial(trip);}catch(error){console.error(error);const message=document.createElement('p');message.className='trip-log-error';message.setAttribute('role','alert');message.textContent=error.message||String(error);tripTransitionOverlayDetails.querySelector('.trip-log-error')?.remove();tripTransitionOverlayDetails.append(message);}finally{button.disabled=false;}
+            }));
 
         tripTransitionOverlay.hidden =
             false;
@@ -21636,7 +21670,7 @@
         if (!deliberatelyLoggedOut && clockTimer.networkStatus !== "offline") {
             const url = new URL("api/trips/", API_BASE);
             url.search = new URLSearchParams({result: "list", minDateTime: rangeWindow.startTime, maxDateTime: rangeWindow.endTime,
-                nonProductionFilter: "all", productionFilter: "all", limit: "1000"});
+                nonProductionFilter: "all", productionFilter: "all", includePendingDownTime:String(clockTimer.includePendingDownTime),limit: "1000"});
             const loaded = [];
             let page;
             do {
@@ -21650,7 +21684,7 @@
             trips = loaded;
         }
         if (signal.aborted || completedTripSummary?.requestId !== request.requestId || request.range !== tripSummaryRange()) return;
-        const allTrips=[...trips,...localTrips];
+        const allTrips=[...localTrips,...trips];
         const activeTrip=activeTripSummaryProjection() || assignedTrip;
         const summary = TripAggregates.calculate({trips:allTrips,rangeWindow,
             currentTripId:activeTrip?.id ?? request.currentTripId,includeActiveTrip:false,goalPercent:request.goalPercent});
@@ -22606,7 +22640,7 @@
                 if(Number(signedInProfile?.id)!==owner)return;
                 const graphical=getGraphicalSettings(),preferences=getTripPreferences();
                 applyGraphicalSettings(graphical);fillGraphicalForm(graphical);fillTripPreferencesForm(preferences);
-                clockTimer.configure({auto_goal:preferences.syncGoals, goal_bounding:preferences.goalBounding});
+                clockTimer.configure({auto_goal:preferences.syncGoals, goal_bounding:preferences.goalBounding,include_pending_down_time:getIncludePendingDownTime()});
                 applyScope(safeStorageGet(STORAGE.percentMode)||'trip',false);
                 applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode)||'remaining',false);
                 setTripLogRange(safeStorageGet(STORAGE.tripLogRange),{persist:false,notify:false});
@@ -28638,7 +28672,7 @@
                 const graphics = getGraphicalSettings(), preferences = getTripPreferences();
                 applyGraphicalSettings(graphics); fillGraphicalForm(graphics); fillTripPreferencesForm(preferences);
                 applyAudioOutputSettings();
-                clockTimer.configure({auto_goal: preferences.syncGoals, goal_bounding:preferences.goalBounding});
+                clockTimer.configure({auto_goal: preferences.syncGoals, goal_bounding:preferences.goalBounding,include_pending_down_time:getIncludePendingDownTime()});
                 clockTimer.autoRestartTripAfterLateBreak = preferences.lateBreakBehavior === "autoRestartTrip";
                 applyScope(safeStorageGet(STORAGE.percentMode) || "trip", false);
                 applyRenderedTimeMode(safeStorageGet(STORAGE.renderedTimeMode) || "remaining", false);
@@ -28712,6 +28746,7 @@
     clockTimer.autoRestartTripAfterLateBreak =
         tripPreferences.lateBreakBehavior === "autoRestartTrip";
     clockTimer.configure({
+        include_pending_down_time:getIncludePendingDownTime(),
         auto_goal: tripPreferences.syncGoals,
         goal_bounding: tripPreferences.goalBounding
     });

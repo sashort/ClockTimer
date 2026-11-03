@@ -21,7 +21,9 @@
             finished.sort((a,b) => timestamp(b) - timestamp(a));
             const last = finished[0];
             const counted = trip => known(trip?.countedTimeMilliseconds) ? trip.countedTimeMilliseconds : trip?.countedTimeElapsedMilliseconds;
-            const lastActual = globalThis.TripTimeBank?.project(last||{})?.productiveTimeMilliseconds ?? counted(last);
+            const lastBank=globalThis.TripTimeBank?.project(last||{});
+            const official=lastBank?.officialCorrection;
+            const lastActual=official ? (official.percent>0?(Number(last.standardTimeMilliseconds)+Number(official.baseAllowanceCreditMilliseconds||0))*100/official.percent:undefined) : lastBank?.productiveTimeMilliseconds??counted(last);
             const lastPercent = globalThis.TripAggregates ? (TripAggregates.performance(last) ?? undefined) : known(last?.standardTimeMilliseconds) && counted(last) > 0
                 ? last.standardTimeMilliseconds / counted(last) : undefined;
             const activeActual = globalThis.TripTimeBank?.project(activeTrip||{})?.productiveTimeMilliseconds ?? counted(activeTrip);
@@ -44,7 +46,7 @@
             const hasData=rows.some(row=>[row.standard,row.actual,row.percent].some(value=>value!=='---'));
             return Object.freeze({rows:Object.freeze(rows),speech:speech.join(' ') || text(hasData?'title':'noData'),lastTrip:last || null,activeTrip:activeTrip || null});
         }
-        static render(document, presentation, text) {
+        static render(document, presentation, text, onEditOfficial) {
             const table=document.createElement('table');table.className='trip-summary-table';
             const head=table.createTHead().insertRow();
             for(const label of ['',text('standardColumn'),text('actualColumn'),text('percentColumn')]){
@@ -53,7 +55,15 @@
             const body=table.createTBody();
             for(const row of presentation.rows){const tr=body.insertRow();tr.dataset.tripSummaryRow=row.key;
                 const label=document.createElement('th');label.scope='row';label.textContent=row.label;tr.append(label);
-                for(const value of [row.standard,row.actual,row.percent]){const cell=tr.insertCell();cell.textContent=value;}
+                for(const [index,value] of [row.standard,row.actual,row.percent].entries()){
+                    const cell=tr.insertCell();
+                    if(index===2&&row.key==='last'&&onEditOfficial&&presentation.lastTrip?.id&&!presentation.lastTrip.breakOnly){
+                        const button=document.createElement('button');button.type='button';button.className='trip-summary-percent-button';button.textContent=value;
+                        button.setAttribute('aria-label',globalThis.TripLog?.officialText('edit')||'Edit official percentage');
+                        if(globalThis.TripTimeBank?.project(presentation.lastTrip)?.officialCorrection)button.classList.add('is-official-percent');
+                        button.addEventListener('click',()=>onEditOfficial(presentation.lastTrip,button));cell.append(button);
+                    }else cell.textContent=value;
+                }
             }
             return table;
         }

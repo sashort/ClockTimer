@@ -41,14 +41,14 @@ assert.equal(ctx.TripDowntimeSummary.trip(surplus).approvedMilliseconds,900000,'
 const deleted={...downTrip,events:[...downEvents,{event:'interval.deleted',value:{intervalKey:'down-a'}}]};
 assert.equal(ctx.TripDowntimeSummary.trip(deleted).hasDowntime,false);
 const defaultApproved={...downTrip,events:downEvents.map(e=>({...e,value:{...e.value,approvedTime:undefined}}))};
-assert.equal(ctx.TripDowntimeSummary.trip(defaultApproved).approvedMilliseconds,600000,'preserve existing default approval');
+assert.equal(ctx.TripDowntimeSummary.trip(defaultApproved).approvedMilliseconds,0,'missing approval remains Pending');
 const open={...downTrip,id:'open-down',running:true,events:[downEvents[0]]};
 const options={trips:[downTrip,downTrip,open],rangeWindow,now:Date.parse('2026-10-07T10:03:00Z')};
 assert.equal(ctx.TripAggregates.calculate(options).downtime.loggedMilliseconds,600000,'deduplicate and exclude active exactly like performance totals');
 assert.equal(ctx.TripAggregates.calculate({...options,includeActiveTrip:true}).downtime.loggedMilliseconds,780000);
 assert.equal(ctx.TripDowntimeSummary.trip({...downTrip,events:[...downEvents,downEvents[0]]}).intervalCount,1,'duplicate starts cannot double count');
 assert.equal(ctx.TripDowntimeSummary.trip({...downTrip,events:downEvents.map(e=>({...e,value:{...e.value,type:'break'}}))}).hasDowntime,false,'breaks are not downtime');
-console.log('PASS downtime approval precedence, surplus, deletion, default approval, active inclusion, deduplication and event immutability');
+console.log('PASS downtime approval precedence, surplus, deletion, Pending default, active inclusion, deduplication and event immutability');
 
 const standalone={...downTrip,id:'standalone',breakOnly:true,standardTimeMilliseconds:999999999,actualTimeMilliseconds:999999999,countedTimeMilliseconds:999999999};
 const ordinary=ctx.TripAggregates.calculate({trips:[downTrip],includeActiveTrip:true});

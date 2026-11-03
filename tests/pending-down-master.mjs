@@ -1,0 +1,42 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {Window} from 'happy-dom';
+process.env.TZ='America/New_York';
+const w=new Window({url:'https://clock.example/'});
+w.__now=Date.parse('2026-11-01T15:00:00Z');
+w.eval(`const NativeDate=Date;window.Date=class extends NativeDate{constructor(...a){super(...(a.length?a:[window.__now]));}static now(){return window.__now;}};`);
+const css=w.CSS;css.registerProperty=()=>{};Object.defineProperty(w,'CSS',{value:css});
+Object.defineProperty(w,'AbortController',{value:globalThis.AbortController});Object.defineProperty(w,'AbortSignal',{value:globalThis.AbortSignal});
+Object.defineProperty(w,'structuredClone',{value:globalThis.structuredClone});
+w.Element.prototype.animate=()=>({finished:Promise.resolve(),cancel(){},finish(){},play(){},pause(){},effect:{getComputedTiming(){return{progress:1}}}});
+for(const file of ['TemporalFormat','RingContainer','TimeRangeModel','TimeRangeElement','ClockTimer'])w.eval(fs.readFileSync(new URL('../'+file+'.js',import.meta.url),'utf8').replace('        #tick(now = new Date()) {','        testTick(){this.#tick();}\n        #tick(now = new Date()) {'));
+let id=1,replayEvents=[],writes=[];
+w.fetch=async (url,options={})=>{if(options.method==='POST'&&options.body)writes.push({url,body:JSON.parse(options.body)});const p=new URL(url,'https://clock.example/').pathname,d=p.endsWith('/users/')?{csrfToken:'a'.repeat(64),user:{id:2},calendars:[],tripStorageVersion:2}:p.endsWith('/trip-events/')?{eventId:id++,events:replayEvents}:{tripId:99};return{ok:true,status:200,json:async()=>({...d,accepted:true}),clone(){return this;}};};
+const timers=[];
+async function make(at,options={}){w.__now=Date.parse(at);const c=w.document.createElement('clock-timer');w.document.body.append(c);timers.push(c);c.configure({goal_type:'trip',trip_goal:'100%',goal_bounding:false,rendered_time_type:'calculated_start_time'});await c.connect('test','test');await c.start({standardTime:'0:30:00',...options});await c.persistCurrentTrip();return c;}
+const elapsed=c=>{c.testTick();return c.getUIState().time_component.value;};
+try{
+ const c=await make('2026-11-03T12:00:00Z'),start=w.__now;
+ w.__now=start+60000;await c.startInterval('down');
+ w.__now=start+180000;assert.equal(elapsed(c),60000,'pending defaults to deducted');
+ assert(c.hasDownTime);assert.equal(c.captureState().events.find(e=>e.event==='interval.approval-changed')?.value.state,'pending','new Down remains explicitly Pending');
+ c.includePendingDownTime=false;assert.equal(elapsed(c),180000,'master counts the whole current pending interval');
+ w.__now=start+240000;assert.equal(elapsed(c),240000,'elapsed resumes ticking while pending is counted');
+ c.includePendingDownTime=true;assert.equal(elapsed(c),60000);
+ await c.endInterval();w.__now=start+300000;assert.equal(elapsed(c),120000);
+ await c.startInterval('down');w.__now=start+330000;assert.equal(elapsed(c),120000);
+ c.includePendingDownTime=false;assert.equal(elapsed(c),330000,'master includes earlier Pending as well as current Pending');
+ assert.equal(c.getActiveIntervalState().intervalType,'down','accounting policy does not resume physical Down');
+ c.renderedTimeMode='remaining';c.testTick();assert.equal(c.uiState.time_component.value,1470000);
+ c.renderedTimeMode='calculated-end';c.testTick();assert.equal(c.uiState.time_component.value,start+1800000,'non-deducted Down keeps a fixed end time');
+ w.__now+=1000;c.testTick();assert.equal(c.uiState.time_component.value,start+1800000);
+ c.includePendingDownTime=true;c.testTick();assert.equal(c.uiState.time_component.value,start+2011000,'deducted Down advances end time by all Pending');
+ const snapshot=c.captureState(),restored=w.document.createElement('clock-timer');w.document.body.append(restored);timers.push(restored);restored.restoreState(snapshot);restored.renderedTimeMode='elapsed';assert.equal(elapsed(restored),120000,'reload preserves Pending state and canonical deducted accounting');
+ assert(c.captureState().events.filter(e=>e.event==='interval.approval-changed').every(e=>e.value.state==='pending'),'master never approves Pending');
+ c.includePendingDownTime=false;await c.endInterval();await c.stop();
+ const stopped=writes.filter(x=>x.body.event==='trip.stopped').at(-1);assert.equal(stopped.body.value.countedTimeMilliseconds,120000,'stored counted totals stay canonical even with master off');
+ const review=await make('2026-11-03T14:00:00Z');w.__now+=10000;await review.startInterval('down');w.__now+=60000;await review.endInterval();const range=review.querySelector('time-range[type="down"]');await review.setIntervalApproval(range,90000);assert(review.querySelector('time-range[type="approval-surplus"]'));
+ await review.setIntervalApprovalState(range,'pending');assert.equal(review.querySelector('time-range[type="approval-surplus"]'),null,'Pending removes stale approval surplus');review.includePendingDownTime=false;assert.equal(elapsed(review),70000,'master counts cleared approval as Pending');
+ const off=review.captureState();restored.restoreState(off);restored.renderedTimeMode='elapsed';assert.equal(restored.includePendingDownTime,false,'snapshot carries master policy');assert.equal(elapsed(restored),70000);
+ console.log('PASS master includes all Pending, phase preservation, live ticking/end projection, reload, and canonical persistence');
+}finally{for(const c of timers)c.remove();w.happyDOM.abort();}

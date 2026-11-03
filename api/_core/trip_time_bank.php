@@ -3,13 +3,13 @@ declare(strict_types=1);
 
 require_once __DIR__.'/trip_official_percent.php';
 
-function trip_time_bank_projection(array $trip,array $events): ?array {
-    return trip_official_projection($trip,$events,trip_time_bank_base_projection($trip,$events));
+function trip_time_bank_projection(array $trip,array $events,bool $includePendingDownTime=true): ?array {
+    return trip_official_projection($trip,$events,trip_time_bank_base_projection($trip,$events,$includePendingDownTime));
 }
 
 // Read projection only. Factual events and persisted legacy counted durations
 // remain unchanged; unused allowance is bank credit, never negative work.
-function trip_time_bank_base_projection(array $trip, array $events): ?array
+function trip_time_bank_base_projection(array $trip, array $events, bool $includePendingDownTime=true): ?array
 {
     if (!empty($trip['breakOnly']) || !empty($trip['running'])) return null;
     $instant = static function ($value): ?int {
@@ -46,7 +46,9 @@ function trip_time_bank_base_projection(array $trip, array $events): ?array
         $excluded = $right - $left;
         if ($type === 'down') {
             $approval = $approvals[$key] ?? null;
-            if (($approval['state'] ?? null) === 'unapproved') $excluded = 0;
+            $state=$approval['state']??$value['approvalState']??(is_int($value['approvedTime']??null)?'approved':'pending');
+            if ($state==='pending') $excluded=$includePendingDownTime?$right-$left:0;
+            elseif ($state === 'unapproved') $excluded = 0;
             elseif (($approval['state'] ?? null) === 'approved' && is_int($approval['value'] ?? null)) $excluded = $duration($approval['value']);
             elseif (is_int($value['approvedTime'] ?? null)) $excluded = $duration($value['approvedTime']);
         }
@@ -64,7 +66,7 @@ function trip_time_bank_base_projection(array $trip, array $events): ?array
             $scheduled = $anchor + (int) round(((int)$match[1]*3600+(int)$match[2]*60+(float)$match[3])*1000);
     }
     if ($scheduled !== null && $scheduled > $begin && $scheduled <= $finish) $segments[] = [$begin,$scheduled];
-    if (!$credit) return null;
+    if (!$credit && $includePendingDownTime) return null;
     usort($segments,static fn($a,$b)=>$a[0]<=>$b[0]);$excluded=0;$cursor=$begin;
     foreach ($segments as [$left,$right]) if ($right > max($cursor,$left)) {$excluded += $right-max($cursor,$left);$cursor=$right;}
     $productive=max(0,$finish-$begin-$excluded);$balance=$productive-$credit;

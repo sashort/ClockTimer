@@ -7187,6 +7187,46 @@
       "id": "9db027f8-1bd5-4c06-8ef0-235f4587c5f2",
       "text": "No",
       "default": "No"
+    },
+    "d7300001-7888-4711-9000-000000000001": {
+      "id": "d7300001-7888-4711-9000-000000000001",
+      "text": "Approved + Pending",
+      "default": "Approved + Pending"
+    },
+    "d7300001-7888-4711-9000-000000000002": {
+      "id": "d7300001-7888-4711-9000-000000000002",
+      "text": "Pending",
+      "default": "Pending"
+    },
+    "d7300001-7888-4711-9000-000000000003": {
+      "id": "d7300001-7888-4711-9000-000000000003",
+      "text": "Unapproved",
+      "default": "Unapproved"
+    },
+    "d7300001-7888-4711-9000-000000000004": {
+      "id": "d7300001-7888-4711-9000-000000000004",
+      "text": "Trips with Down Time only",
+      "default": "Trips with Down Time only"
+    },
+    "d7300001-7888-4711-9000-000000000005": {
+      "id": "d7300001-7888-4711-9000-000000000005",
+      "text": "Adjusted trips only",
+      "default": "Adjusted trips only"
+    },
+    "d7300001-7888-4711-9000-000000000006": {
+      "id": "d7300001-7888-4711-9000-000000000006",
+      "text": "Deduct Pending Down Time",
+      "default": "Deduct Pending Down Time"
+    },
+    "d7300001-7888-4711-9000-000000000007": {
+      "id": "d7300001-7888-4711-9000-000000000007",
+      "text": "Show Pending Down Time",
+      "default": "Show Pending Down Time"
+    },
+    "d7300001-7888-4711-9000-000000000008": {
+      "id": "d7300001-7888-4711-9000-000000000008",
+      "text": "Mark Down Time as",
+      "default": "Mark Down Time as"
     }
   }
 }

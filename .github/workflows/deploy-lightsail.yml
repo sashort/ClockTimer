@@ -182,6 +182,8 @@ jobs:
           node tests/trip-log-dst.mjs
           node tests/trip-summary.mjs
           node tests/trip-summary-presentation.mjs
+          node tests/pending-down-master.mjs
+          node tests/down-approval-editor.mjs
           node tests/app-state-transactions.mjs --summary-dialog --voice-feedback
           node tests/trip-replay-identity.mjs
           node tests/dst-timeline.mjs
@@ -274,6 +276,10 @@ jobs:
       - run: node tests/hamburger-menu-coverage-browser.cjs
       - run: node tests/mic-modal-browser.cjs
       - run: node tests/trip-log-downtime-browser.cjs
+      - run: node tests/trip-log-down-filters-browser.cjs
+      - run: node tests/pending-down-master-browser.cjs
+      - run: node tests/summary-official-percent-browser.cjs
+      - run: php tests/pending-down-accounting.php
       - run: node tests/break-session-browser.cjs
       - run: node tests/break-only-log-browser.cjs
       - run: node tests/impersonation-portal-browser.cjs

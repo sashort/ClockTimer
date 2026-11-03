@@ -7639,6 +7639,23 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .trip-log-downtime-overview>span strong {font-size:20px;font-weight:700;}
 
 .trip-log-downtime {background:#090b0d;border-radius:6px;padding:6px 9px;}
+.trip-log-down-section {margin:0 12px 14px;border:1px solid #91a3b2;border-radius:10px;overflow:hidden;background:#27333e;color:#fff;flex-shrink:0;}
+.trip-log-down-breakdown>summary {display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;list-style:none;}
+.trip-log-down-breakdown>summary::-webkit-details-marker {display:none;}
+.trip-log-down-breakdown>summary::before {content:'▸';font-size:16px;}
+.trip-log-down-breakdown[open]>summary::before {content:'▾';}
+.trip-log-down-breakdown>summary>strong {font-size:17px;white-space:nowrap;}
+.trip-log-down-effective {display:grid;gap:3px;margin-left:auto;text-align:right;font-size:11px;}
+.trip-log-down-effective strong {font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.trip-log-down-content {border-top:1px solid #718392;background:rgb(255 255 255 / 4%);}
+.trip-log-down-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:16px 4px;}
+.trip-log-down-grid>div {display:grid;gap:7px;text-align:left;padding:0 8px;border-right:1px solid #647786;font-size:11px;}
+.trip-log-down-grid>div:last-child {border-right:0;}
+.trip-log-down-grid strong {font-size:clamp(17px,4.5vw,25px);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.trip-log-down-pending {color:#ffdc83;}.trip-log-down-approved {color:#b5e4d3;}.trip-log-down-unapproved {color:#e9b5bb;}
+.trip-log-down-logged {display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-top:1px solid #718392;font-size:12px;color:#d0d9e1;}
+.trip-log-down-filter {display:flex;align-items:center;gap:9px;border-top:1px solid #718392;padding:11px 12px;font-size:13px;cursor:pointer;}
+.trip-log-down-filter input {margin:0;width:20px;height:20px;accent-color:var(--wm-blue);}
 .trip-log-trip>summary>.trip-log-downtime {padding:6px 9px;}
 /* One guide per group, aligned with its disclosure arrow. Ancestors stay visible. */
 .trip-log-group {border-top:0;}
@@ -8041,3 +8058,14 @@ shared-modal-host dialog#clockTimerSettingsFrameDialog iframe:not([data-settings
 
 [data-timer-attention] .break-buffer-track {background:color-mix(in srgb,var(--timer-attention-mid) 12%,var(--timer-attention-fill));}
 [data-timer-attention] .break-buffer-track > i {background:var(--timer-attention-mid);opacity:.55;}
+
+.trip-summary-percent-button {border:0;border-radius:5px;background:transparent;color:inherit;font:inherit;padding:2px;text-decoration:underline;text-underline-offset:4px;cursor:pointer;}
+.trip-summary-percent-button.is-official-percent {outline:1px solid currentColor;outline-offset:2px;}
+.trip-log-down-grid:has(>div:nth-child(2):last-child) {grid-template-columns:repeat(2,minmax(0,1fr));}
+
+.trip-log-down-time {display:inline-flex;justify-content:center;align-items:baseline;gap:1px;font-variant-numeric:tabular-nums;}
+.trip-log-down-milliseconds {font-size:.5em;font-weight:500;line-height:1;}
+.trip-log-down-time.is-stacked {display:grid;justify-items:start;justify-content:start;gap:7px;}
+.trip-log-down-time.is-stacked .trip-log-down-milliseconds {font-size:.48em;}
+
+.trip-log-down-logged .trip-log-down-milliseconds {font-size:1em;font-weight:inherit;}

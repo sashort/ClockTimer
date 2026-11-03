@@ -301,7 +301,8 @@ if ($method === 'GET') {
 
             foreach ($tripIndexes as $tripId => $tripIndex) {
                 $events = $eventsByTrip[$tripId] ?? [];
-                $bank = trip_time_bank_projection($trips[$tripIndex], $events);
+                $bank = trip_time_bank_projection($trips[$tripIndex], $events, ($_GET['includePendingDownTime']??'true')!=='false');
+                $trips[$tripIndex]['pendingDownIncluded']=($_GET['includePendingDownTime']??'true')!=='false';
                 if ($bank !== null) $trips[$tripIndex] = array_merge($trips[$tripIndex], $bank);
                 if ($verbose) {
                     $trips[$tripIndex]['events'] = $events;
@@ -367,7 +368,7 @@ if ($method === 'GET') {
 
     foreach ($breakdownRows as $breakdownRow) {
         $bank = trip_time_bank_projection(['startTime'=>$breakdownRow['start_time'],'endTime'=>$breakdownRow['end_time'],
-            'breakOnly'=>(bool)$breakdownRow['break_only'],'standardTimeMilliseconds'=>(int)$breakdownRow['standard_time_ms'],'countedTimeMilliseconds'=>(int)$breakdownRow['counted_time_ms']], $bankEvents[(int)$breakdownRow['id']] ?? []) ?? [];
+            'breakOnly'=>(bool)$breakdownRow['break_only'],'standardTimeMilliseconds'=>(int)$breakdownRow['standard_time_ms'],'countedTimeMilliseconds'=>(int)$breakdownRow['counted_time_ms']], $bankEvents[(int)$breakdownRow['id']] ?? [], ($_GET['includePendingDownTime']??'true')!=='false') ?? [];
         $standardMilliseconds =
             (int) ($breakdownRow['standard_time_ms'] ?? 0);
         $tripActualMicroseconds =

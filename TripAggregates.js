@@ -5,10 +5,44 @@
     // Shares approval precedence with the entry editor; totals never invent a
     // separate approval policy or clamp an approved surplus to the logged time.
     class TripDowntimeSummary {
+        static approvalState(started, events = []) {
+            const approval = [...events].reverse().find(event => event.event === 'interval.approval-changed' && event.value?.intervalKey === started.value?.intervalKey);
+            const state = approval?.value?.state ?? started.value?.approvalState;
+            if (['approved', 'unapproved', 'pending'].includes(state)) return state;
+            return Number.isSafeInteger(started.value?.approvedTime) ? 'approved' : 'pending';
+        }
+        static breakdown(trips, {now = Date.now()} = {}) {
+            const result = {pendingMilliseconds:0, approvedMilliseconds:0, unapprovedMilliseconds:0, loggedMilliseconds:0, intervalCount:0};
+            for (const trip of trips) {
+                if (trip.breakOnly || trip.events?.some(event => event.event === 'trip.started' && event.value?.breakOnly === true)) continue;
+                const events = trip.events || [], deleted = new Set(events.filter(event => event.event === 'interval.deleted').map(event => event.value?.intervalKey));
+                const starts = new Map(events.filter(event => event.event === 'interval.started' && String(event.value?.type).toLowerCase() === 'down').map(event => [event.value.intervalKey,event]));
+                for (const [key, started] of starts) {
+                    if (deleted.has(key)) continue;
+                    const ended = events.findLast(event => event.event === 'interval.ended' && event.value?.intervalKey === key);
+                    const finish = ended ? instant(ended.timestamp) : trip.running ? now : NaN;
+                    const elapsed = finish - instant(started.timestamp);
+                    if (!Number.isSafeInteger(elapsed) || elapsed < 0) continue;
+                    const state = this.approvalState(started, events);
+                    result.intervalCount++;
+                    result.loggedMilliseconds += elapsed;
+                    if (state === 'pending') result.pendingMilliseconds += elapsed;
+                    else if (state === 'unapproved') result.unapprovedMilliseconds += elapsed;
+                    else {
+                        const approved = duration(this.approved(started, ended, events));
+                        result.approvedMilliseconds += approved;
+                        result.unapprovedMilliseconds += Math.max(0, elapsed - approved);
+                    }
+                }
+            }
+            return Object.freeze({...result, combinedMilliseconds:result.pendingMilliseconds + result.approvedMilliseconds, hasDowntime:result.intervalCount > 0});
+        }
         static approved(started, ended, events = []) {
             if (String(started?.value?.type || '').toLowerCase() !== 'down') return undefined;
             const approval = [...events].reverse().find(event => event.event === 'interval.approval-changed' && event.value?.intervalKey === started.value?.intervalKey);
-            if (approval?.value?.state === 'unapproved') return 0;
+            const state=this.approvalState(started,events);
+            if (state==='unapproved') return 0;
+            if(state==='pending'){const elapsed=instant(ended?.timestamp)-instant(started.timestamp);return Number.isSafeInteger(elapsed)&&elapsed>=0?elapsed:undefined;}
             if (approval?.value?.state === 'approved' && Number.isSafeInteger(approval.value.value) && approval.value.value >= 0) return approval.value.value;
             if (Number.isSafeInteger(started.value.approvedTime) && started.value.approvedTime >= 0) return started.value.approvedTime;
             if (!started.timestamp || !ended?.timestamp) return undefined;
@@ -35,7 +69,7 @@
                 const elapsed = finish - start;
                 if (!Number.isSafeInteger(elapsed) || elapsed < 0) continue;
                 loggedMilliseconds += elapsed;
-                approvedMilliseconds += duration(this.approved(started, ended, events));
+                approvedMilliseconds += this.approvalState(started,events)==='approved'?duration(this.approved(started, ended, events)):0;
                 intervalCount++;
             }
             return Object.freeze({loggedMilliseconds, approvedMilliseconds, intervalCount,
@@ -111,7 +145,15 @@
         return {...bank,productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:balance,bankCreditCarryMilliseconds:Math.max(0,-balance),
             officialCorrection:{percentTenths:tenths,percent,startTime:Number.isFinite(officialStart)&&Math.abs(officialStart)<=8640000000000000?new Date(officialStart).toISOString():null,adjustmentMilliseconds:credit-baseCredit,baseAllowanceCreditMilliseconds:baseCredit,calculatedPercent:100*(standard+baseCredit)/productive,eventId:record?.id??prior?.eventId,createdBy:record?.value?.createdBy??prior?.createdBy,recordedAt:record?.timestamp??prior?.recordedAt}};
     }
-    globalThis.TripTimeBank=Object.freeze({project:timeBank});
+    function withPendingPolicy(trip,includePendingDownTime=true,{now=Date.now()}={}) {
+        if((trip.pendingDownIncluded!==false)===includePendingDownTime)return trip;
+        const pending=TripDowntimeSummary.breakdown([trip],{now}).pendingMilliseconds;
+        const bank=timeBank(trip),credit=bank?.officialCorrection?.baseAllowanceCreditMilliseconds??bank?.allowanceCreditMilliseconds??0;
+        const work=bank?.productiveTimeMilliseconds??countedTime(trip)+credit;
+        const productive=Math.max(0,work+(includePendingDownTime?-pending:pending)),balance=productive-credit;
+        return {...trip,productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:balance,countedTimeMilliseconds:Math.max(0,balance),bankCreditCarryMilliseconds:Math.max(0,-balance),pendingDownIncluded:includePendingDownTime};
+    }
+    globalThis.TripTimeBank=Object.freeze({project:timeBank,withPendingPolicy});
     // Persisted counted time is authoritative; active trips use the allotted floor after unused break credit.
     const countedTime = trip => {
         const stored = Number.isSafeInteger(trip?.countedTimeMilliseconds) && trip.countedTimeMilliseconds >= 0

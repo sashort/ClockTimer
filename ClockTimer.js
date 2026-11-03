@@ -501,6 +501,7 @@
         #openEndedRange;
 
         #openEndedLastTick;
+        #includePendingDownTime = true;
 
         #overwriteRanges =
             [];
@@ -3348,6 +3349,7 @@
 
         async #apiRequest(endpoint, { method = "GET", body, csrf = false, query, signal } = {}) {
             if (this.#observerOnly) throw new Error("An observer timer cannot access persistence.");
+            if(endpoint==="trips" && method==="GET") query={...query,includePendingDownTime:String(this.#includePendingDownTime)};
             if (this.#tripStorageVersion === 2 && body && ["trips","trip-events"].includes(endpoint) && !/^(GET|HEAD|DELETE)$/i.test(method)) body=this.#offsetStorageCommand(endpoint,body);
 
             const permission = globalThis.SpeechMenu?.executionContext?.persist ?? this.#stateTransaction?.remotePermission;
@@ -3858,7 +3860,7 @@
                 const payload = this.#tripPersistencePayload();
                 const summary = this.#buildSummarySnapshot(new Date()).trip;
                 trips.push({id: this.#tripId || `offline-${this.#preparedTrip?.clientToken || "active"}`,
-                    ...payload, running: this.#started, buffered: this.networkStatus === "offline",
+                    ...payload, running: this.#started, pendingDownIncluded:this.#includePendingDownTime, buffered: this.networkStatus === "offline",
                     actualTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     allottedTimeMilliseconds: summary.allottedTimeMilliseconds,
@@ -3873,7 +3875,8 @@
         calculateOfflineTripTotals(trips, startTime, endTime) {
             const production = this.#emptyTripAggregateSummary();
             const nonProduction = [];
-            for (const trip of trips) {
+            for (const source of trips) {
+                const trip=globalThis.TripTimeBank?.withPendingPolicy(source,this.#includePendingDownTime)??source;
                 const start = Date.parse(/Z$|[+-]\d\d:\d\d$/.test(trip.startTime) ? trip.startTime : trip.startTime.replace(" ", "T") + "Z");
                 if (trip.running || Number(trip.id) === this.#tripId ||
                     start < Date.parse(startTime) || start >= Date.parse(endTime)) continue;
@@ -4003,7 +4006,7 @@
                 this.#standardDuration;
             const countedTimeMilliseconds =
                 this.#getCountedTimeElapsed(
-                    timelineNow
+                    timelineNow,{includePendingDownTime:true}
                 );
 
             if (
@@ -5294,7 +5297,7 @@
         }
         captureState() {
             // Checkpoints use model records, never the rendered ring DOM.
-            return {goalBounding:this.goalBounding,syncOverride:this.#syncOverride, activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
+            return {includePendingDownTime:this.#includePendingDownTime,goalBounding:this.goalBounding,syncOverride:this.#syncOverride, activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
                 attributes: [...this.attributes].map(attribute => [attribute.name, attribute.value]),
                 preparedTrip: this.#preparedTrip && {...this.#preparedTrip},
                 pending: this.#pendingTripEvents.map(event => ({...event, value: structuredClone(event.value)})),
@@ -5305,7 +5308,7 @@
         exportObserverSnapshot() {
             // Only the active timer's model and aggregate totals. No queued trips,
             // persistence keys, user credentials, endpoints or pending writes.
-            return {events:this.#stateEvents(), started:this.#started, tripId:this.#tripId,
+            return {includePendingDownTime:this.#includePendingDownTime,events:this.#stateEvents(), started:this.#started, tripId:this.#tripId,
                 attributes:[...this.attributes].filter(attribute => ClockTimer.observedAttributes.includes(attribute.name))
                     .map(attribute => [attribute.name,attribute.value]),
                 totals:this.#cloneAggregateSnapshot(this.#tripTotals), addedToAggregate:this.#tripAddedToAggregate,
@@ -5372,6 +5375,7 @@
             return {uiState:this.getUIState(now), remaining};
         }
         restoreState(snapshot, {observerModelSignature, now} = {}) {
+            if(typeof snapshot.includePendingDownTime==='boolean')this.#includePendingDownTime=snapshot.includePendingDownTime;
             const incomingObserverModel = this.#observerOnly && observerModelSignature !== undefined;
             const modelChanged = this.#started !== snapshot.started || this.#tripId !== snapshot.tripId ||
                 (incomingObserverModel ? this.#observerModelSignature !== observerModelSignature :
@@ -5698,6 +5702,9 @@
                                     "A replayed interval record could not be resolved."
                                 );
                             }
+
+                            if(value.type==='down' && (value.approvalState || Number.isSafeInteger(value.approvedTime)))
+                                this.#setIntervalApprovalAttributes(record,value.approvalState??'approved',value.approvedTime??0);
 
                             record.clockTimerEventKey =
                                 String(
@@ -6384,12 +6391,14 @@
                 this.#standardDuration;
             const aggregateCountedTime =
                 this.#getCountedTimeElapsed(
-                    stopTimeline, {completedAt: stopTimeline}
+                    stopTimeline, {completedAt: stopTimeline,includePendingDownTime:true}
                 );
-            const aggregateBalance = this.#getCountedTimeBalance(stopTimeline,{completedAt:stopTimeline});
+            const aggregateBalance = this.#getCountedTimeBalance(stopTimeline,{completedAt:stopTimeline,includePendingDownTime:true});
             const aggregateCredit = this.#getEarlyStartAllowanceCredit();
             const aggregateProductive = Math.max(0,aggregateBalance+aggregateCredit);
             const aggregateCarry = Math.max(0,-aggregateBalance);
+            const viewBalance=this.#getCountedTimeBalance(stopTimeline,{completedAt:stopTimeline});
+            const viewCounted=Math.max(0,viewBalance),viewProductive=Math.max(0,viewBalance+aggregateCredit),viewCarry=Math.max(0,-viewBalance);
             const aggregateNonProduction =
                 this.#nonProduction;
 
@@ -6418,10 +6427,10 @@
                         stopTimeline -
                         aggregateStartTimeline,
                     countedTimeMilliseconds:
-                        aggregateCountedTime,
-                    productiveTimeMilliseconds:aggregateProductive,
+                        viewCounted,
+                    productiveTimeMilliseconds:viewProductive,
                     allowanceCreditMilliseconds:aggregateCredit,
-                    bankCreditCarryMilliseconds:aggregateCarry,
+                    bankCreditCarryMilliseconds:viewCarry,
                     nonProduction:
                         aggregateNonProduction
                 });
@@ -6505,7 +6514,7 @@
                     payload,
                     log: {...payload,
                         actualTimeMilliseconds: summary.actualTimeElapsedMilliseconds,
-                        countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
+                        countedTimeMilliseconds: payload.countedTimeMilliseconds,
                         events: this.#stateEvents()},
                     events: this.#pendingTripEvents.map(({event, timestamp, scheduledStartTime, value, clientToken, synced}) =>
                         ({event, timestamp, scheduledStartTime, value, clientToken, synced}))
@@ -7122,7 +7131,7 @@
                 );
 
             if (
-                current.value ===
+                current.state === "approved" && current.value ===
                     normalized.value
             ) {
                 return {
@@ -7147,10 +7156,16 @@
 
             return this.#commitIntervalApproval(
                 record,
-                current.state,
+                "approved",
                 normalized.value,
                 "intervalApprovalChanged"
             );
+        }
+
+        async setIntervalApprovalState(interval,state) {
+            if(!['pending','unapproved'].includes(state))throw RangeError('Expected pending or unapproved.');
+            const record=this.#resolveIntervalApprovalRecord(interval);
+            return this.#commitIntervalApproval(record,state,0,'intervalApprovalChanged');
         }
 
         async deleteInterval(
@@ -7293,6 +7308,7 @@
                         );
                     }
                 }
+                if (has("include_pending_down_time")) this.includePendingDownTime=Boolean(configuration.include_pending_down_time);
                 if (has("goal_bounding")) this.goalBounding=Boolean(configuration.goal_bounding);
                 if (!has("goal_bounding") && has("sync_override")) {
                     this.syncOverride = Boolean(configuration.sync_override);
@@ -8107,6 +8123,14 @@
             );
         }
 
+        get includePendingDownTime() { return this.#includePendingDownTime; }
+        get hasDownTime() { return this.#hasStartProperties() && this.#insertedRanges.some(record=>String(record.type).toLowerCase()==='down' && !record.clockTimerPendingDelete); }
+        set includePendingDownTime(value) {
+            if(typeof value!=='boolean')throw TypeError('includePendingDownTime must be a boolean.');
+            if(value===this.#includePendingDownTime)return;
+            this.#includePendingDownTime=value;
+            this.#handleTripGoalChange('user');
+        }
         get goalBounding() { return !this.#syncOverride; }
         set goalBounding(value) {
             if(typeof value!=="boolean")throw TypeError("goalBounding must be a boolean.");
@@ -11882,6 +11906,7 @@
             return Boolean(
                 record &&
                 (
+                    String(record.type).toLowerCase() === "down" ||
                     record.clockTimerApprovalManaged ===
                         true ||
                     this.#findIntervalAttribute(
@@ -11923,8 +11948,10 @@
                 approved ??
                 unapproved;
 
+            const pending=this.#findIntervalAttribute(record,"pending");
             if (!entry) {
-                return undefined;
+                return pending || String(record.type).toLowerCase()==='down'
+                    ? {state:'pending',value:0,duration:this.#getIntervalActualDuration(record)??0} : undefined;
             }
 
             let duration;
@@ -12019,8 +12046,7 @@
             if (
                 !this.#isIntervalApprovalManaged(
                     record
-                ) ||
-                record.openEnded === true
+                )
             ) {
                 return actual;
             }
@@ -12034,6 +12060,7 @@
                 return actual;
             }
 
+            if(approval.state==="pending")return this.#includePendingDownTime?actual:0;
             return approval.state ===
                 "approved"
                 ? approval.duration
@@ -12098,10 +12125,10 @@
         ) {
             if (
                 state !== "approved" &&
-                state !== "unapproved"
+                state !== "unapproved" && state !== "pending"
             ) {
                 throw new RangeError(
-                    "approval state must be approved or unapproved."
+                    "approval state must be approved, unapproved or pending."
                 );
             }
 
@@ -12115,7 +12142,7 @@
 
                 if (
                     normalized === "approved" ||
-                    normalized === "unapproved"
+                    normalized === "unapproved" || normalized === "pending"
                 ) {
                     delete attributes[name];
                 }
@@ -27403,6 +27430,11 @@
             const record =
                 this.#openEndedRange;
 
+            if(record && String(record.type).toLowerCase()==='down') {
+                const approval=this.#getIntervalApprovalState(record);
+                if(approval?.state==='unapproved'||(approval?.state==='pending'&&!this.#includePendingDownTime))return false;
+            }
+
             const scheduledStart =
                 this.#scheduledStartMilliseconds;
 
@@ -29912,6 +29944,7 @@
             this.#removeDiscrepancyRangesForRecord(
                 record
             );
+            if(approval.state==='pending')return !this.#includePendingDownTime;
 
             if (
                 !Number.isFinite(start) ||
@@ -33017,7 +33050,7 @@
                 : undefined;
         }
 
-        #getAccountingExclusions({ forGoal = false } = {}) {
+        #getAccountingExclusions({ forGoal = false, includePendingDownTime = this.#includePendingDownTime } = {}) {
             let segments = [];
             for (const record of this.#insertedRanges) {
                 if (record.clockTimerPendingDelete === true ||
@@ -33028,13 +33061,10 @@
                     : Number.isFinite(record.rangeLength)
                         ? start + record.rangeLength
                         : this.#accountingTimelineForDate(record.endDate);
-                if (record.openEnded !== true &&
-                    this.#isIntervalApprovalManaged(record)) {
+                if (this.#isIntervalApprovalManaged(record)) {
                     const approval = this.#getIntervalApprovalState(record);
-                    if (approval) {
-                        end = start + (approval.state === "approved"
-                            ? approval.duration : 0);
-                    }
+                    if (approval?.state==='pending') { if(!includePendingDownTime)end=start; }
+                    else if (approval) end=start+(approval.state==='approved'?approval.duration:0);
                 }
                 if (record.clockTimerExplicitlyEnded === true &&
                     Number.isFinite(record.clockTimerExplicitEndTimeline)) {
@@ -33084,11 +33114,11 @@
 
         // Keep an unused allowance even when it exceeds productive time so
         // remaining time can carry the full gain; persisted durations stay >= 0.
-        #getCountedTimeBalance(timelineNow, {completedAt = this.#countedStopTime} = {}) {
-            return this.#getProductiveTimeBalance(timelineNow, this.#getCountedStartTimeMilliseconds(completedAt));
+        #getCountedTimeBalance(timelineNow, {completedAt = this.#countedStopTime, includePendingDownTime = this.#includePendingDownTime} = {}) {
+            return this.#getProductiveTimeBalance(timelineNow, this.#getCountedStartTimeMilliseconds(completedAt),includePendingDownTime);
         }
 
-        #getProductiveTimeBalance(timelineNow, start) {
+        #getProductiveTimeBalance(timelineNow, start, includePendingDownTime = this.#includePendingDownTime) {
             if (!Number.isFinite(start) || !Number.isFinite(timelineNow)) return 0;
             const end = Number.isFinite(this.#countedStopTime)
                 ? Math.min(timelineNow, this.#countedStopTime) : timelineNow;
@@ -33096,7 +33126,7 @@
             const required = Number.isFinite(goal) && goal > 0 && Number.isFinite(this.#standardDuration)
                 ? this.#standardDuration / goal : 0;
             this.#timeRangeGroup.updateAccounting(start, end,
-                this.#getAccountingExclusions(), required);
+                this.#getAccountingExclusions({includePendingDownTime}), required);
             return this.#timeRangeGroup.elapsedCountedTime - this.#getEarlyStartAllowanceCredit();
         }
 
