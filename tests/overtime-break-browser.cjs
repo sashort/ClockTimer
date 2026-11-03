@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const fixture=require('./order-filler-master-fixture.cjs');
 (async()=>{const f=await fixture({input:'transcript'});try{
  const p=f.page,operation=require('./retained-page-operation.cjs')(p);
+ await p.route('**/api/trips/**',async route=>{const url=new URL(route.request().url());if(route.request().method()==='GET'&&url.searchParams.has('startTime'))return route.fulfill({json:{tripId:41,aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}}});return route.fallback();});
  await(await p.context().newCDPSession(p)).send('Emulation.setTimezoneOverride',{timezoneId:'UTC'});
  await p.evaluate(()=>{window.overtimeSetup=(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();const Real=Date;window.overtimeNow=Date.parse('2026-10-31T23:30:00.000Z');window.Date=class extends Real{constructor(...a){super(...(a.length?a:[overtimeNow]));}static now(){return overtimeNow;}static [Symbol.hasInstance](v){return v instanceof Real;}};})().then(()=>{window.overtimeSetupDone=true;},error=>{window.overtimeSetupError=String(error.stack||error);});});await p.waitForFunction(()=>window.overtimeSetupDone||window.overtimeSetupError);assert.equal(await p.evaluate(()=>window.overtimeSetupError),undefined);
  const step=async ms=>{await p.evaluate(ms=>overtimeNow+=ms,ms);await p.clock.runFor(1200);};
@@ -18,6 +19,9 @@ const fixture=require('./order-filler-master-fixture.cjs');
   await operation(()=>clockTimer.stop());
  }
  for(const type of ['radial-overflow','radial-fitted']){
+  // This scenario uses a fixed clock crossing midnight. Its aggregate window
+  // must contain that simulated trip, rather than the runner's actual date.
+  await operation(()=>clockTimer.calculateTripTotals(new Date(overtimeNow-86400000).toISOString(),new Date(overtimeNow+86400000).toISOString()));
   await operation(type=>{clockTimer.setAttribute('timer-type',type);clockTimer.configure({goal_type:'auto',trip_goal:'100%',total_goal:'40%',auto_goal:false});const at=new Date().toTimeString().split(' ')[0];return clockTimer.start({standardTime:'0:22:56',creationTime:at,startTime:at,scheduledStart:at});},type);await p.waitForTimeout(1500);await step(40*60000);
   assert.equal(await p.evaluate(()=>clockTimer.getUIState().effective_goal_type),'total','Auto falls back to the lower aggregate goal');
   const ranges=await p.evaluate(()=>{return [...clockTimer.querySelectorAll('time-range')].filter(e=>e.timeRangeExiting!==true&&['overtime','remaining'].includes(e.getAttribute('type'))).map(e=>({type:e.getAttribute('type'),start:Number(e.clockTimerStart),end:Number(e.clockTimerEnd)}));});
