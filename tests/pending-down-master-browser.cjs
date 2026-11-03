@@ -25,7 +25,16 @@ await p.waitForFunction(()=>clockTimer.includePendingDownTime===false&&!document
 await op(()=>document.querySelector('#includePendingDownTimeButton').click());await p.waitForFunction(()=>clockTimer.includePendingDownTime===true&&document.querySelector('[data-show-pending]').checked);
 await op(()=>WMOFActions.closeTripLog('pointer'));await p.locator('#menuButton').click();await p.waitForSelector('#includePendingDownTimeButton',{state:'visible'});await p.clock.runFor(800);
 assert.equal(await p.locator('#includePendingDownTimeButton').textContent(),'Show Pending Down Time');
-if(process.env.PENDING_MENU_SCREENSHOT_DIR){fs.mkdirSync(process.env.PENDING_MENU_SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.PENDING_MENU_SCREENSHOT_DIR,'show-pending-menu.png')});}
+if(process.env.PENDING_MENU_SCREENSHOT_DIR){
+ const dir=process.env.PENDING_MENU_SCREENSHOT_DIR;fs.mkdirSync(dir,{recursive:true});await p.screenshot({path:path.join(dir,'show-pending-menu.png')});
+ const onMask=await p.locator('#includePendingDownTimeButton').evaluate(e=>getComputedStyle(e,'::before').maskImage);
+ await p.locator('#includePendingDownTimeButton').click();await p.waitForFunction(()=>!clockTimer.includePendingDownTime);await p.clock.runFor(800);
+ const offMask=await p.locator('#includePendingDownTimeButton').evaluate(e=>getComputedStyle(e,'::before').maskImage);assert.notEqual(onMask,offMask,'check and X masks differ');
+ const context=await p.context().browser().newContext(),preview=await context.newPage();await preview.setViewportSize({width:820,height:430});
+ const css=fs.readFileSync(path.resolve(__dirname,'../styles/default/MenuIcons.css'),'utf8');
+ await preview.setContent('<style>'+css+'body{margin:0;padding:22px;background:#12283b;color:#fff;font:16px Arial}main{display:flex;gap:20px}section{width:378px}h2{font-size:18px;margin:0 0 14px}.card{background:#001e60;border:1px solid #96a9c0;border-radius:12px;padding:18px}.row{display:flex;align-items:center;gap:0;min-height:58px;font-size:19px;font-weight:bold}.on{color:#a9ddf7}.off{color:#9da6b3}.large{font-size:96px;margin:26px 0 8px;text-align:center}.large:before{margin:0}.hint{font-size:12px;color:#bac8d6;text-align:center}</style><main><section><h2>On · check</h2><div class="card"><div class="row on" data-menu-icon="pending-down" aria-checked="true">Show Pending Down Time</div><div class="large on" data-menu-icon="pending-down" aria-checked="true"></div><p class="hint">Enlarged icon detail</p></div></section><section><h2>Off · X</h2><div class="card"><div class="row off" data-menu-icon="pending-down" aria-checked="false">Show Pending Down Time</div><div class="large off" data-menu-icon="pending-down" aria-checked="false"></div><p class="hint">Enlarged icon detail</p></div></section></main>');
+ await preview.screenshot({path:path.join(dir,'pending-stopwatch-icons.png'),fullPage:true});await context.close();
+}
 console.log('PASS menu and Trip Log share one preference, display/calculation update together, and forced override restores saved value');
 console.log('PASS shared pending master across Full/Compact and Classic/Bar, immediate readouts and physical Down state');
 }finally{await f.close();}})().catch(error=>{console.error(error.stack);process.exitCode=1});

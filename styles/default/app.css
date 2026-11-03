@@ -7707,11 +7707,6 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 .trip-log-trip.is-break-only .trip-log-menu-actions {color:#fff;}
 
 /* Sync keeps the existing arrow and badge artwork; Override is a separate switch. */
-#goalBoundingButton { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; }
-.goal-bounding-toggle { display:inline-block; position:relative; flex:0 0 38px; height:22px; border-radius:12px; background:#425466; }
-.goal-bounding-toggle::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:white; transition:transform 180ms ease; }
-#goalBoundingButton[aria-checked="true"] .goal-bounding-toggle { background:#239c92; }
-#goalBoundingButton[aria-checked="true"] .goal-bounding-toggle::after { transform:translateX(16px); }
 
 /* Brackets and tint identify the automatically selected target. */
 #scopeToggle[data-percent-mode="auto"] { color: #a9ddf7; }
