@@ -11,21 +11,35 @@ function trip_official_assert_completed(array $events): void {
     foreach($events as $event){if($event['event']==='trip.started'){$started=$event;$stopped=null;}if($event['event']==='trip.stopped')$stopped=$event;}
     if(!$started||!$stopped||!empty($started['value']['breakOnly']))throw new InvalidArgumentException('Official percentages require a completed trip.');
 }
+function trip_official_start_time(array $events,float $productive,float $earned,float $percent): ?string {
+    if($percent<=0||$earned<=0)return null;
+    $start=null;foreach($events as $event)if($event['event']==='trip.started'){$start=$event['timestamp'];break;}
+    if(!is_string($start))return null;
+    $date=new DateTimeImmutable($start,new DateTimeZone('UTC'));
+    $epoch=(int)$date->format('U')*1000+(int)$date->format('v');
+    $value=round($epoch+$productive-$earned*100/$percent);
+    if(!is_finite($value)||abs($value)>8640000000000000)return null;
+    $seconds=(int)floor($value/1000);$fraction=(int)($value-$seconds*1000);
+    return gmdate('Y-m-d\TH:i:s',$seconds).'.'.str_pad((string)$fraction,3,'0',STR_PAD_LEFT).'Z';
+}
 function trip_official_projection(array $trip,array $events,?array $bank=null): ?array {
     $record=trip_official_record($events);
     if(!$record||!empty($trip['running'])||!empty($trip['breakOnly']))return $bank;
     trip_official_assert_completed($events);
     $tenths=$record['value']['percentTenths']??null;
     if(!is_int($tenths)||$tenths<0)return $bank;
+    $percent=$record['value']['percent']??$tenths/10;
+    if(!is_numeric($percent)||!is_finite((float)$percent)||$percent<0)return $bank;
     $productive=$bank['productiveTimeMilliseconds']??$trip['countedTimeMilliseconds']??0;
     $standard=$trip['standardTimeMilliseconds']??0;
     if(!is_numeric($productive)||$productive<=0||!is_numeric($standard)||$standard<=0)return $bank;
     $baseCredit=$bank['allowanceCreditMilliseconds']??0;
-    $credit=($tenths/1000)*$productive-$standard;
+    $credit=($percent/100)*$productive-$standard;
     $balance=$productive-$credit;
     return array_merge($bank??[],['productiveTimeMilliseconds'=>$productive,'allowanceCreditMilliseconds'=>$credit,
         'countedTimeBalanceMilliseconds'=>$balance,'bankCreditCarryMilliseconds'=>max(0,-$balance),
-        'officialCorrection'=>['percentTenths'=>$tenths,'percent'=>$tenths/10,'adjustmentMilliseconds'=>$credit-$baseCredit,
+        'officialCorrection'=>['percentTenths'=>$tenths,'percent'=>$percent,'adjustmentMilliseconds'=>$credit-$baseCredit,
+            'startTime'=>!empty($record['value']['showOfficialStart'])?trip_official_start_time($events,(float)$productive,(float)($standard+$baseCredit),(float)$percent):null,
             'baseAllowanceCreditMilliseconds'=>$baseCredit,'calculatedPercent'=>100*($standard+$baseCredit)/$productive,
             'eventId'=>$record['id']??null,'createdBy'=>$record['value']['createdBy']??null,'recordedAt'=>$record['timestamp']]]);
 }

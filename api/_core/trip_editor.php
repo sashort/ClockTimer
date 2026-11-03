@@ -115,17 +115,35 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         $changes=$input['changes']??null;
         if (!is_array($changes) || count($changes)>500) throw new InvalidArgumentException('Invalid entry changes.');
         foreach ($changes as $change) {
-            if (!is_array($change) || !in_array($change['operation']??'', ['entry','add-entry','delete-entry'], true)) throw new InvalidArgumentException('Invalid entry change.');
+            if (!is_array($change) || !in_array($change['operation']??'', ['entry','add-entry','delete-entry','official-start-time','official-start-delete'], true)) throw new InvalidArgumentException('Invalid entry change.');
             $events=trip_edit_apply($events,$change,false);
         }
-    } elseif (in_array($operation,['official-percent','official-percent-clear'],true)) {
+    } elseif (in_array($operation,['official-percent','official-percent-clear','official-start-time','official-start-delete'],true)) {
         trip_official_assert_completed($events);
+        $timeEdit=$operation==='official-start-time';
+        if($timeEdit||$operation==='official-start-delete'){
+            $record=trip_official_record($events);
+            if(empty($record['value']['showOfficialStart']))throw new InvalidArgumentException('No Official Start Time entry is currently applied.');
+            if($operation==='official-start-delete')$operation='official-percent-clear';
+        }
         $tenths=$input['percentTenths']??null;
         if($operation==='official-percent'&&(!is_int($tenths)||$tenths<0||$tenths>9007199254740991))throw new InvalidArgumentException('Enter a non-negative official percentage with one decimal place.');
         $aggregate=trip_edit_aggregate($events);
         require_once __DIR__.'/trip_time_bank.php';
         $trip=['startTime'=>$aggregate['startTime'],'endTime'=>$aggregate['endTime'],'standardTimeMilliseconds'=>$aggregate['standard'],'countedTimeMilliseconds'=>$aggregate['counted']];
         $base=trip_time_bank_base_projection($trip,$events);
+        $percent=null;
+        if($timeEdit){
+            $start=array_values(array_filter($events,static fn($e)=>$e['event']==='trip.started'))[0];
+            $productive=$base['productiveTimeMilliseconds']??$aggregate['counted'];
+            $target=trip_storage_epoch_ms($start['timestamp'])+$productive-trip_storage_epoch_ms(trip_edit_iso($input['startTime']??''));
+            if($target<=0)throw new InvalidArgumentException('Official Start Time must leave positive counted time.');
+            $percent=100*($aggregate['standard']+($base['allowanceCreditMilliseconds']??0))/$target;
+            if(!is_finite($percent)||$percent<=0||$percent>900719925474099.1)throw new InvalidArgumentException('Official Start Time produces an invalid percentage.');
+            $tenths=(int)round($percent*10);$operation='official-percent';
+        }
+        $showStart=$timeEdit||($input['showOfficialStart']??false)===true;
+        if($operation==='official-percent'&&$showStart&&($percent??$tenths/10)<=0)throw new InvalidArgumentException('Official Start Time requires a positive official percentage.');
         if($operation==='official-percent'&&($base['productiveTimeMilliseconds']??$aggregate['counted'])<=0)throw new InvalidArgumentException('Official percentages require positive worked time.');
         $stop=array_values(array_filter($events,static fn($e)=>$e['event']==='trip.stopped'));
         $stamp=new DateTimeImmutable('now',new DateTimeZone('UTC'));$end=new DateTimeImmutable(end($stop)['timestamp'],new DateTimeZone('UTC'));
@@ -134,7 +152,7 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         if($stamp<=$end)$stamp=$end->modify('+1 millisecond');
         if($operation==='official-percent-clear'&&!trip_official_record($events))throw new InvalidArgumentException('No official percentage is currently applied.');
         $events[]=['id'=>null,'event'=>$operation==='official-percent-clear'?'trip.official-percent-cleared':'trip.official-percent-set','timestamp'=>$stamp->format('Y-m-d H:i:s.v'),
-            'value'=>['percentTenths'=>$tenths,'createdBy'=>is_int($input['_actorId']??null)?$input['_actorId']:null]];
+            'value'=>['percentTenths'=>$tenths,'showOfficialStart'=>$operation==='official-percent'&&$showStart,...($percent!==null?['percent'=>$percent]:[]),'createdBy'=>is_int($input['_actorId']??null)?$input['_actorId']:null]];
     } elseif ($operation==='settings') {
         if ((trip_edit_settings($events)['breakOnly'] ?? false) === true) throw new InvalidArgumentException('Standard time and production settings do not apply to break-only sessions.');
         $s=$input['settings']??null;
@@ -170,6 +188,7 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
         unset($e);
     } elseif ($operation==='entry' || $operation==='add-entry' || $operation==='delete-entry') {
         $entry=$input['entry']??[];$key=$entry['intervalKey']??null;$found=false;
+        $reschedule=false;
         if ($operation==='add-entry') {
             $key='edit-'.bin2hex(random_bytes(16));
             $entry['intervalKey']=$key;
@@ -187,6 +206,7 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
                 $found=true;
                 if ($operation==='delete-entry') {$e['_delete']=true;continue;}
                 if ($e['event']==='interval.started') {
+                    $reschedule=$reschedule||trip_storage_epoch_ms($e['timestamp'])!==trip_storage_epoch_ms(trip_edit_iso($entry['start']??''))||($entry['type']??null)!==($e['value']['type']??null)||(isset($entry['length'])&&$entry['length']!==($e['value']['length']??null));
                     $e['timestamp']=trip_edit_iso($entry['start']??'');
                     if (!in_array($entry['type']??null,['break','lunch','down'],true)) throw new InvalidArgumentException('Unknown entry type.');
                     $e['value']['type']=$entry['type'];
@@ -201,7 +221,10 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
                         if($approvedTime!==null && $approvedTime!=='') trip_edit_duration_milliseconds($approvedTime, true);
                         $e['value']['approvedTime']=$approvedTime;
                     } else unset($e['value']['approvedTime']);
-                } elseif ($e['event']==='interval.ended' && isset($entry['end'])) $e['timestamp']=trip_edit_iso($entry['end']);
+                } elseif ($e['event']==='interval.ended' && isset($entry['end'])) {
+                    $reschedule=$reschedule||trip_storage_epoch_ms($e['timestamp'])!==trip_storage_epoch_ms(trip_edit_iso($entry['end']));
+                    $e['timestamp']=trip_edit_iso($entry['end']);
+                }
             } elseif ($key===null && (int)($entry['eventId']??0)===(int)($e['id']??-1)) {
                 if ($operation==='delete-entry') throw new InvalidArgumentException('Trip start and end cannot be removed.');
                 if (!in_array($e['event'],['trip.started','trip.stopped'],true)) throw new InvalidArgumentException('Select an interval or trip boundary.');
@@ -220,6 +243,19 @@ function trip_edit_apply(array $events, array $input, bool $validate=true): arra
             }
         }
         unset($e);
+        if($reschedule&&$key!==null){
+            // Cached phase boundaries describe the old interval. Replay must
+            // derive them from the edited start/duration and the current time.
+            foreach($events as &$e)if(($e['value']['intervalKey']??null)===$key){
+                if($e['event']==='interval.elapsed')$e['_delete']=true;
+                if($e['event']==='interval.started'){
+                    foreach(array_keys($e['value']['attributes']??[]) as $attribute)if(str_starts_with((string)$attribute,'clock-timer-'))unset($e['value']['attributes'][$attribute]);
+                    if($e['value']['type']==='down'){$e['value']['length']=null;$e['value']['startBuffer']=null;$e['value']['endBuffer']=null;}
+                }
+                if($e['event']==='interval.approval-changed'&&trip_storage_epoch_ms($e['timestamp'])<trip_storage_epoch_ms($entry['start']))$e['timestamp']=trip_edit_iso($entry['start']);
+            }
+            unset($e);
+        }
         if(in_array($operation,['entry','add-entry'],true)) {
             $type=$entry['type']??'';$approvedTime=$entry['approvedTime']??null;$approvalFound=false;
             foreach($events as &$e)if(($e['event']??'')==='interval.approval-changed'&&($e['value']['intervalKey']??null)===$key){$approvalFound=true;if($type==='down'){$e['value']['state']='approved';$e['value']['value']=$approvedTime;}else $e['_delete']=true;}

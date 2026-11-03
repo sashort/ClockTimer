@@ -628,3 +628,14 @@ below-floor in use. Underlying aggregate settings never change as a side effect.
 Earned time is Standard plus unused allowance; performance divides earned time by
 productive work. End Time floors absolute timestamps and shows ⁺ for a nonzero
 fraction in Running, Break and Down. Exact seconds have no marker.
+
+## Editing and deletion of an active trip
+
+Trip Log may edit settings and timeline events in Running, Break and Down. The
+clock keeps running while a draft is open. Save replays authoritative events and
+derives the resulting phase; stale interval elapsed boundaries are rebuilt.
+Official percentages still require a completed trip.
+
+Deleting the active trip transitions to Ready and clears pending interval state.
+`trip_completed` is false for deletion/reset, so the avatar returns to idle without
+finish/confetti. A normal trip stop retains its completed state and celebration.

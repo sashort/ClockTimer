@@ -16,7 +16,7 @@ const w=new Window();try{
  const instants={creationTime:'2026-11-01T23:10:00.000Z',scheduledStart:'2026-11-02T00:10:00.000Z',startTime:'2026-11-01T23:40:00.125Z'},fields=[];let submit,submitted;
  const view={options:{request:async(id,change)=>{if(change)submitted=change;return{settings:{standardTimeMilliseconds:3600000,instants},revision:'test'};}},modal:()=>({form:w.document.createElement('form')}),date:w.TripLog.prototype.date,timeField:(form,label,value,mode)=>fields.push({value,mode}),footer:(form,callback)=>{submit=callback;}};
  await w.TripLog.prototype.openSettings.call(view,{id:1,startTime:instants.startTime});
- assert.deepEqual(fields.filter(f=>f.mode==='absolute').map(f=>f.value),[instants.scheduledStart,instants.startTime,instants.creationTime]);await submit();
+ assert.deepEqual(fields.filter(f=>f.mode==='absolute').map(f=>f.value),[instants.scheduledStart,instants.creationTime]);await submit();
  assert.equal(JSON.stringify(submitted.settings.instants),JSON.stringify(instants));assert(!('creationAnchor' in submitted.settings),'editor never sends a legacy midnight anchor');
  console.log('PASS exact Trip Log/Numberpad instants and canonical editor settings without legacy anchors');
 }finally{await w.happyDOM.close();}

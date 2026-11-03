@@ -101,11 +101,15 @@
         if(record?.event==='trip.official-percent-cleared')return bank;
         const tenths=record?.value?.percentTenths??prior?.percentTenths;
         if(!Number.isSafeInteger(tenths)||tenths<0)return bank;
+        const percent=record?.value?.percent??(record?tenths/10:prior?.percent??tenths/10);
+        if(!Number.isFinite(percent)||percent<0)return bank;
         const productive=bank?.productiveTimeMilliseconds??countedTime(trip),standard=Number(trip.standardTimeMilliseconds)||0,baseCredit=bank?.allowanceCreditMilliseconds??0;
         if(!(productive>0&&standard>0))return bank;
-        const credit=tenths/1000*productive-standard,balance=productive-credit;
+        const credit=percent/100*productive-standard,balance=productive-credit;
+        const showStart=record?record.value.showOfficialStart===true:Boolean(prior?.startTime),actualStart=instant((trip.events||[]).find(e=>e.event==='trip.started')?.timestamp||trip.startTime);
+        const officialStart=showStart&&percent>0?Math.round(actualStart+productive-(standard+baseCredit)*100/percent):NaN;
         return {...bank,productiveTimeMilliseconds:productive,allowanceCreditMilliseconds:credit,countedTimeBalanceMilliseconds:balance,bankCreditCarryMilliseconds:Math.max(0,-balance),
-            officialCorrection:{percentTenths:tenths,percent:tenths/10,adjustmentMilliseconds:credit-baseCredit,baseAllowanceCreditMilliseconds:baseCredit,calculatedPercent:100*(standard+baseCredit)/productive,eventId:record?.id??prior?.eventId,createdBy:record?.value?.createdBy??prior?.createdBy,recordedAt:record?.timestamp??prior?.recordedAt}};
+            officialCorrection:{percentTenths:tenths,percent,startTime:Number.isFinite(officialStart)&&Math.abs(officialStart)<=8640000000000000?new Date(officialStart).toISOString():null,adjustmentMilliseconds:credit-baseCredit,baseAllowanceCreditMilliseconds:baseCredit,calculatedPercent:100*(standard+baseCredit)/productive,eventId:record?.id??prior?.eventId,createdBy:record?.value?.createdBy??prior?.createdBy,recordedAt:record?.timestamp??prior?.recordedAt}};
     }
     globalThis.TripTimeBank=Object.freeze({project:timeBank});
     // Persisted counted time is authoritative; active trips use the allotted floor after unused break credit.

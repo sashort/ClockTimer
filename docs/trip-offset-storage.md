@@ -67,3 +67,36 @@ event followed by an open Down interval at that exact same instant. No new
 classification or timestamp column is required. Counted work remains zero until
 Resume; canonical replay restores this first-entry Down like any other interval.
 The option is hidden for an already-running trip and is not a saved user preference.
+
+## Official Start Time and entry drafts
+
+After entering an official percentage, the user chooses whether to show an
+Official Start Time. No keeps the existing adjustment-only flow. Yes exposes
+an editable derived timeline entry, without changing the factual trip start.
+For factual productive duration `W`, earned time `E` (Standard plus original
+unused break/buffer credit), and official ratio `P`, its instant is factual
+start plus `W - E/P`. Editing that instant reverses the calculation. The
+time-derived percentage retains full precision rather than rounding to tenths;
+the percentage numberpad still accepts tenths when entered directly.
+
+The entry is a projection of the current official record, not a second stored
+datetime. Subsequent factual edits preserve the official percentage and derive
+the entry again. Deleting it clears the official percentage in the same audited
+edit transaction; clearing the percentage also removes the entry. Audit records
+remain internal and are not separate visible timeline entries.
+
+New interval drafts are highlighted until saved. Valid times move them into
+chronological order; out-of-trip, reversed, or overlapping times are red and do
+not commit the draft. First-entry Down at the actual trip start is valid.
+Existing-trip Details omit Actual Start and Trip End; Timeline owns those edits.
+
+Running trips expose Settings, timeline editing, and Delete Trip. Saving an active
+edit reloads the authoritative event stream before rebuilding its readouts and
+controls. Editing an interval removes stale derived phase boundaries so Running,
+Break, and Down reflect the edited timestamps. Tick-driven log refreshes retain
+the user's draft; failed/conflicting saves retain it for review. Official
+percentages remain completed-only.
+
+Deleting the active trip clears the model, pending interval reference, and edit
+session. UI state distinguishes a completed trip from a cleared/deleted trip;
+only completion plays the finish animation. Deletion returns to the idle controls.

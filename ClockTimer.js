@@ -1482,7 +1482,7 @@
                 downTimeStarted: "down_started",
                 intervalStarted: "interval_started",
                 intervalEnded: "interval_ended",
-                cleared: "trip_ended",
+                cleared: "trip_cleared",
                 prepared: "trip_deferred",
                 percentModeChanged: "configured",
                 renderedTimeModeChanged: "configured",
@@ -1922,6 +1922,7 @@
                 ),
                 active_interval_type: interval?.open === false ? null : (interval?.intervalType || null),
                 trip_active: tripActive,
+                trip_completed: this.#hasStartProperties() && !this.#started,
                 trip_start_component: this.#component(
                     this.startTime,
                     tripStartDate?.getTime(),
@@ -15149,6 +15150,8 @@
             ) {
                 this.#insertedRanges =
                     [];
+
+                this.#pendingIntervalRecord = undefined;
 
                 this.#openEndedRange =
                     undefined;

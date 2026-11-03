@@ -5789,7 +5789,11 @@ button.trip-log-entry:hover,button.trip-log-entry:focus-visible {border-color:#a
 .down-details-dialog .dialog-actions button {min-height:64px;border:3px solid var(--wm-blue-light);border-radius:13px;color:white;background:#001e60;font-size:clamp(22px,4vw,32px);font-weight:700;}
 .down-details-dialog .dialog-actions .primary-action {color:white;background:var(--wm-blue);}
 .trip-log-entry-remove {align-self:stretch;min-width:42px;border:1px solid #ff6b72;border-radius:5px;color:#ff6b72;background:transparent;font:inherit;font-size:25px;line-height:1;}
-.trip-log-new-entry-pair {display:contents;}
+.trip-log-new-entry-pair {display:grid;gap:4px;padding:8px;border:2px solid var(--wm-blue-light,#a9ddf7);border-radius:9px;background:color-mix(in srgb,var(--wm-blue-light,#a9ddf7) 12%,transparent);margin:8px 0;}
+.trip-log-entry.is-new-entry {border-left:3px solid var(--wm-blue-light,#a9ddf7);background:color-mix(in srgb,var(--wm-blue-light,#a9ddf7) 12%,transparent);padding-left:8px;}
+.trip-log-entry-time[aria-invalid="true"] {color:#ffd5da!important;background:#6f1727!important;border:2px solid #ff8d9b!important;border-radius:5px;}
+.trip-log-entry.is-official-start {border-left:3px solid var(--wm-blue-light);padding-left:8px;background:color-mix(in srgb,var(--wm-blue-light) 10%,transparent);}
+.official-start-prompt {max-width:min(94vw,480px);}
 .trip-log-entry.is-active-entry {
     --trip-log-active-sweep-color: var(--timer-trip-color, #0053e2);
     background-image:linear-gradient(105deg,transparent 0%,transparent 32%,color-mix(in srgb,var(--trip-log-active-sweep-color) 10%,transparent) 42%,color-mix(in srgb,var(--trip-log-active-sweep-color) 42%,transparent) 50%,color-mix(in srgb,var(--trip-log-active-sweep-color) 10%,transparent) 58%,transparent 68%,transparent 100%);
