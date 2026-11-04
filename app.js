@@ -14804,7 +14804,7 @@
             initialMilliseconds, milliseconds: initialMilliseconds,
             mode: normalizedMode,
             anchorDigit, previewOfficial, onClearOfficial, confirmUnchanged,
-            presentation: presentation === "trip-editor" ? "trip-editor" : "",
+            presentation: presentation === "trip-editor" || source === "official-percent" ? "trip-editor" : "",
             onConfirm,
             onCancel,
             source,
