@@ -267,7 +267,7 @@ if(process.argv.includes('--state-contract')) {
   await window.WMOFActions.changeGoalMode('total');await settle();
   await window.WMOFActions.changeGoalMode('trip');await settle();
   assert(!timer.hasAttribute('trip-goal'),'Trip goal uses its default');
-  assert.equal(timer.getAttribute('total-goal'),'100%','unconfigured aggregate scopes start at 100%');
+  assert.equal(timer.getGoalEditorSnapshot('total').actual_percent,100,'unconfigured aggregate scopes start at 100%');
   assert(!Object.keys(accountBlob.orderFiller).some(key=>/tripLogRange|totalGoal|tripGoal/.test(key)),'server has no saved scope or goals');
  }
  if(scenario.group==='time') {

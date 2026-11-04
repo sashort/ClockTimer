@@ -5524,7 +5524,14 @@
     function autoGoalIdentity(){hydrateGoalPreferences();if(autoOverrideState===undefined){const value=safeStorageGet(STORAGE.autoGoalOverride);autoOverrideState=[...aggregateScopes,'trip','standard'].includes(value)?value:null;}return autoOverrideState;}
     function writeAutoGoalIdentity(value){hydrateGoalPreferences();autoOverrideState=value||null;return safeStorageSet(STORAGE.autoGoalOverride,value||null);}
     function setAutoGoalIdentity(value){const work=writeAutoGoalIdentity(value);clockTimer.configure({auto_goal_override:aggregateScopes.includes(value)?'total':value});syncScopeUI();return work;}
-    function applyAggregateGoal(){applyingAggregateGoal=true;try{clockTimer.configure({total_goal:aggregateGoals()[getTripLogRange()]+'%',auto_goal_override:aggregateScopes.includes(autoGoalIdentity())?'total':autoGoalIdentity()});}finally{applyingAggregateGoal=false;}}
+    function applyAggregateGoal(){
+        const goal=aggregateGoals()[getTripLogRange()],identity=autoGoalIdentity(),override=aggregateScopes.includes(identity)?'total':identity;
+        const configuration={};
+        if(Number.parseFloat(clockTimer.getAttribute('total-goal')||'100')!==goal)configuration.total_goal=goal+'%';
+        if(clockTimer.captureState().autoGoalOverride!==override)configuration.auto_goal_override=override;
+        if(!Object.keys(configuration).length)return;
+        applyingAggregateGoal=true;try{clockTimer.configure(configuration);}finally{applyingAggregateGoal=false;}
+    }
     function fiscalWeekLabel(date){
         const calendar=scopeCalendars.get('week')||resolvedTripLogCalendar;
         const localParts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:calendarRanges.getTimezone(),year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(part=>[part.type,part.value]));
