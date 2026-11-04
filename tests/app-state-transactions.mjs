@@ -508,7 +508,7 @@ if(process.argv.includes('--summary-dialog')) {
  await say('unrelated nonsense');assert(dialog.open,'junk does not dismiss summary');
  const command=await say('auto mode');assert(!command.digestExecutionFailed&&command.hadCommittedCommand);
  assert(!dialog.open);assert.equal(timer.percentMode,'auto','another valid command dismisses and executes normally');
- for(const [phrase,label] of [['week mode','Week'],['money mode','Money'],['year mode','Year'],['trip mode','Day'],['auto mode','Day']]) {
+ for(const [phrase,label] of [['week mode','Week 36'],['money mode','Money'],['year mode','Year'],['trip mode','Day'],['auto mode','Day']]) {
   await say(phrase);await say('trip summary');assert.equal(rows()[0].children[0].textContent,label,phrase+' summary scope');await say('close');
  }
  holdSummaryRead=true;await say('trip summary');
@@ -1294,7 +1294,7 @@ if(process.argv.includes('--scope-feedback')) {
   if(keepRange)assert.equal(window.WMOFInteractionState.state.tripLogRange,previousRange,value+' must not alter the date filter');
  };
  await select('day','Day');await select('trip','Trip',{keepRange:true});await select('auto','Auto',{keepRange:true});
- await select('week','Week');await select('trip','Trip',{pointer:true,keepRange:true});
+ await select('week','Week 36');await select('trip','Trip',{pointer:true,keepRange:true});
  await select('auto','Auto',{pointer:true,keepRange:true});await select('pay-period','Money',{pointer:true});
  await select('trip','Trip',{pointer:true,keepRange:true});await select('trip','Trip',{unchanged:true,keepRange:true});
  await select('month','Month');await select('year','Year');await select('auto','Auto',{keepRange:true});
@@ -1346,7 +1346,7 @@ if(process.argv.includes('--auto-selector')) {
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();
  await timer.start({standardTime:'0:30:00'});timer.configure({goal_type:'auto',trip_goal:'110%',total_goal:'120%',auto_goal:false});await settle();
  assert.equal(window.document.querySelector('#scopeToggle').textContent,'[Day] - 120%','Auto aggregate target includes its configured goal');
- for(const [range,label] of [['week','Week'],['money','Money'],['month','Month'],['year','Year']]){
+ for(const [range,label] of [['week','Week 36'],['money','Money'],['month','Month'],['year','Year']]){
   await window.WMOFActions.changeGoalMode(range);await settle();timer.configure({goal_type:'auto',trip_goal:'110%',total_goal:'120%',auto_goal:false});await settle();
   assert.equal(window.document.querySelector('#scopeToggle').textContent,`[${label}] - 120%`,range+' keeps its configured goal in Auto');
  }

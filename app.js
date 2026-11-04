@@ -5527,7 +5527,8 @@
     function applyAggregateGoal(){applyingAggregateGoal=true;try{clockTimer.configure({total_goal:aggregateGoals()[getTripLogRange()]+'%',auto_goal_override:aggregateScopes.includes(autoGoalIdentity())?'total':autoGoalIdentity()});}finally{applyingAggregateGoal=false;}}
     function fiscalWeekLabel(date){
         const calendar=scopeCalendars.get('week')||resolvedTripLogCalendar;
-        const day=date||(calendar?.range==='week'?CalendarRange.dates(calendar).start:null);
+        const localParts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:calendarRanges.getTimezone(),year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(part=>[part.type,part.value]));
+        const day=date||(calendar?.range==='week'?CalendarRange.dates(calendar).start:`${localParts.year}-${localParts.month}-${localParts.day}`);
         const week=day?calendarRanges.weekNumber(day):null;
         return announcementText('messages.scope.week')+(week?' '+week:'');
     }
@@ -21927,7 +21928,7 @@
             reason: automatic ? "trip-ended" : "requested",
             method: automatic ? "system" : globalThis.SpeechMenu?.executionContext ? "voice" : "pointer"
         }), requestId: ++tripSummaryRequestSequence,
-            range: tripSummaryRange(), scope: announcementText(`messages.scope.${tripSummaryRange()}`),
+            range: tripSummaryRange(), scope: aggregateScopeLabel(tripSummaryRange()),
             currentTripId: tripIsLive() ? clockTimer.currentTripId ?? null : null,
             goalPercent: clockTimer.getSummarySnapshot().total?.percentGoal || 1, loading: true});
         const localTrips = clockTimer.getLocalTripLog().map(trip => ({...trip}));

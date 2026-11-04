@@ -9,7 +9,10 @@ const fixture=require('./order-filler-master-fixture.cjs');
  const check=async label=>{const data=await p.evaluate(()=>{const ranges=[...clockTimer.querySelectorAll('time-range')].filter(e=>!e.timeRangeExiting);return{arcs:ranges.filter(e=>e.getAttribute('type')==='overtime'&&e.clockTimerOverwrite===undefined).map(e=>({start:Number(e.clockTimerStart),end:Number(e.clockTimerEnd),animations:e.getAnimations({subtree:true}).filter(a=>a.playState==='running').length})),pauses:ranges.filter(e=>e.clockTimerInserted!==undefined||e.clockTimerOverwrite!==undefined).map(e=>({start:Number(e.clockTimerStart),end:Number(e.clockTimerEnd)}))};});assert(data.arcs.length,label+' retains earned overtime');for(const arc of data.arcs){for(const pause of data.pauses)assert(Math.min(arc.end,pause.end)<=Math.max(arc.start,pause.start),label+' overtime cannot consume pause/overwrite: '+JSON.stringify({arc,pause}));assert.equal(arc.animations,0,label+' has no per-tick grow tween');}};
  for(const type of ['radial-overflow','radial-fitted']){
   await operation(type=>{clockTimer.setAttribute('timer-type',type);const at=new Date().toTimeString().split(' ')[0];return clockTimer.start({standardTime:'0:02:00',creationTime:at,startTime:at,scheduledStart:at});},type);await p.waitForTimeout(1500);
-  await step(180000);await operation(()=>clockTimer.startInterval('break',60000,{},15000,15000));
+  // Keep this case beyond Standard after both retained and newly inserted pauses.
+  await step(360000);
+  assert((await p.evaluate(()=>clockTimer.getSummarySnapshot().trip.productiveTimeMilliseconds))>120000,type+' is past Standard before the break');
+  await operation(()=>clockTimer.startInterval('break',60000,{},15000,15000));
   await step(5000);await check(type+' start buffer');
   await step(20000);await check(type+' break');
   await operation(()=>clockTimer.endInterval());await step(1000);await check(type+' early end');
