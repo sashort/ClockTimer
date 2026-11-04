@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fixture=require('./order-filler-master-fixture.cjs');
 (async()=>{const f=await fixture({input:'transcript'});try{const p=f.page,op=require('./retained-page-operation.cjs')(p);
 await op(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();await WMOFSeasonalTheme.setPreference('halloween',{persist:false});document.querySelector('#percentageDisplayBar').click();await clockTimer.start({standardTime:'0:30:00'});});
-for(const height of [560,844])for(const layout of ['full','compact']){
+for(const theme of ['default','halloween']){await op(theme=>WMOFSeasonalTheme.setPreference(theme,{persist:false}),theme);for(const height of [560,844])for(const layout of ['full','compact']){
  await p.setViewportSize({width:390,height});await op(async layout=>{document.querySelector(layout==='full'?'#actionDisplayFull':'#actionDisplayCompact').click();await WMOFLayoutMotion.whenSettled();},layout);
  for(const interval of [null,'break','down']){
   if(interval)await op(type=>clockTimer.startInterval(type,type==='break'?900000:undefined),interval);
@@ -10,8 +10,10 @@ for(const height of [560,844])for(const layout of ['full','compact']){
   assert.equal(bounds.scale,'scale(2)');assert(bounds.bottom<=bounds.slotBottom+1,JSON.stringify({height,layout,interval,bounds}));
   // Allow a fractional CSS-pixel rounding difference while retaining a clear gap.
   if(layout==='full')assert(bounds.bottom<=bounds.controlsTop-2,JSON.stringify({height,layout,interval,bounds}));
+  if(process.env.AVATAR_RELEASE_SCREENSHOTS&&height===844&&layout==='compact'){const fs=require('node:fs'),path=require('node:path');fs.mkdirSync(process.env.AVATAR_RELEASE_SCREENSHOTS,{recursive:true});await p.screenshot({path:path.join(process.env.AVATAR_RELEASE_SCREENSHOTS,theme+'-'+(interval||'running')+'.png')});}
   if(interval)await op(()=>clockTimer.endInterval());
  }
 }
-assert.deepEqual(f.errors,[]);console.log('PASS doubled Halloween figure and labels fit Full/Compact Bar slots at short/tall heights during running, Break and Down');
+}
+assert.deepEqual(f.errors,[]);console.log('PASS doubled Default/Halloween figure and labels fit Full/Compact Bar slots at short/tall heights during running, Break and Down');
 }finally{await f.close();}})().catch(e=>{console.error(e);process.exitCode=1});

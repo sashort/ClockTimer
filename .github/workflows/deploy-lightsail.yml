@@ -176,6 +176,8 @@ jobs:
           node tests/official-percent.mjs
           node tests/trip-editor-friendly.mjs
           node tests/numberpad-anchors.mjs
+          node tests/numberpad-clipboard.mjs
+          node tests/observer-goal-pad.mjs
           TZ=UTC node tests/trip-bank-goal-budget.mjs
           TZ=UTC node tests/goal-priority.mjs
           node tests/trip-log.mjs
@@ -251,6 +253,7 @@ jobs:
         with:
           php-version: '8.3'
       - run: node tests/trip-editor-dst-matrix.cjs
+      - run: node tests/numberpad-clipboard-browser.cjs
       - run: node tests/official-percent-browser.cjs
       - run: node tests/live-trip-editor-browser.cjs
       - run: node tests/dedicated-trip-editor-browser.cjs

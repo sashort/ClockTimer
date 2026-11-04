@@ -14008,6 +14008,10 @@
                 numberPadAM = $("#numberPadAM");
                 numberPadPM = $("#numberPadPM");
                 bindNumberPadEvents();
+                for(const [id,action] of [['numberPadCopy','saveNumberPadClipboard'],['numberPadPaste','applyNumberPadClipboard']])globalThis.WMOFInteractionFunctions.bindAction({element:$('#'+id),event:'click',name:action+'Click',action});
+                numberPadDialog.addEventListener('paste',event=>{if(event.target.matches('input,textarea')||event.target.isContentEditable)return;const text=event.clipboardData?.getData('text/plain');if(parseNumberPadClipboard(text,numberPadState)){event.preventDefault();void actions.applyNumberPadClipboard(text);}});
+                window.addEventListener('focus',()=>{void refreshNumberPadClipboard();});
+                navigator.clipboard?.addEventListener?.('clipboardchange',()=>{void refreshNumberPadClipboard();});
                 setOkAllowed(
                     numberPadDialog,
                     false
@@ -14539,6 +14543,7 @@
 
     function refreshNumberPad() {
         if (!numberPadState || !numberPadDialog) return;
+        updateNumberPadClipboardControls();
         numberPadDialog.dataset.presentation = numberPadState.presentation || "";
         const percentMode = numberPadState.mode === "percent";
         const absoluteMode = numberPadState.mode === "absolute";
@@ -14868,6 +14873,56 @@
         return state;
     }
 
+    // Clipboard values are plain, formatted text. Parsing never changes the editor.
+    function parseNumberPadClipboard(text,state) {
+        if(!state||typeof text!=='string'||text.length>512)return null;
+        const value=text.trim();
+        if(state.mode==='percent'){
+            if(!/^\d+(?:\.\d+)?%?$/.test(value))return null;
+            const percent=Number(value.replace(/%$/,'')),scaled=percent/(state.anchorDigit??1),rounded=Math.round(scaled);
+            if(!Number.isSafeInteger(rounded)||Math.abs(scaled-rounded)>1e-6||percent<0||(!percent&&state.source!=='official-percent'))return null;
+            return {pending:String(rounded),milliseconds:0};
+        }
+        if(state.mode==='duration'){
+            const m=value.match(/^(\d+):([0-5]\d)(?::([0-5]\d))?(?:\.(\d{1,3}))?$/);if(!m)return null;
+            const seconds=m[3]===undefined?Number(m[1])*60+Number(m[2]):Number(m[1])*3600+Number(m[2])*60+Number(m[3]);
+            const ms=seconds*1000+Number((m[4]||'').padEnd(3,'0'));if(!Number.isSafeInteger(ms)||ms>31536000000)return null;
+            return {pending:String(Math.floor(seconds/3600))+String(Math.floor(seconds/60)%60).padStart(2,'0')+String(seconds%60).padStart(2,'0'),milliseconds:ms%1000};
+        }
+        const m=value.match(/^(?:(\d{4}-\d\d-\d\d)[T ])?(\d{1,2}):([0-5]\d)(?::([0-5]\d)(?:\.(\d{1,3}))?)?\s*(AM|PM)?$/i);if(!m)return null;
+        let hour=Number(m[2]);const period=m[6]?.toUpperCase();if(period?(hour<1||hour>12):hour>23)return null;
+        if(period)hour=hour%12+(period==='PM'?12:0);
+        const date=m[1]??state.pendingDate;if(!date||!/^\d{4}-\d\d-\d\d$/.test(date)||Number(date.slice(0,4))<1)return null;
+        const parsed=new Date(date+'T12:00:00Z');if(!Number.isFinite(parsed.getTime())||parsed.toISOString().slice(0,10)!==date)return null;
+        const meridiem=state.meridiem?(hour>=12?'PM':'AM'):null,displayHour=meridiem?(hour%12||12):hour;
+        return {pending:String(displayHour)+m[3]+(m[4]||'00'),milliseconds:Number((m[5]||'').padEnd(3,'0')),pendingDate:date,meridiem};
+    }
+    let numberPadClipboardText='',numberPadCopiedText='';
+    function numberPadClipboardCandidate(text=numberPadClipboardText){return parseNumberPadClipboard(text,numberPadState);}
+    function numberPadCopyText(){return numberPadState?.pending?numberPadDisplayString()+(numberPadState.mode==='absolute'&&numberPadState.meridiem?' '+numberPadState.meridiem:''):'';}
+    function updateNumberPadClipboardControls(){
+        const copy=$('#numberPadCopy'),paste=$('#numberPadPaste');if(!copy||!paste)return;
+        copy.disabled=!numberPadState?.pending||!numberPadValueValid()||!navigator.clipboard?.writeText;copy.classList.toggle('is-copied',Boolean(numberPadCopiedText&&numberPadCopiedText===numberPadCopyText()));
+        copy.setAttribute('aria-label',copy.classList.contains('is-copied')?'Copied':'Copy value');copy.title=copy.getAttribute('aria-label');
+        paste.hidden=!numberPadClipboardCandidate();
+    }
+    async function refreshNumberPadClipboard(){
+        if(!numberPadDialog?.open||!navigator.clipboard?.readText)return;
+        const state=numberPadState;
+        try{const permission=await navigator.permissions?.query({name:'clipboard-read'});if(permission?.state!=='granted')return;const text=await navigator.clipboard.readText();if(state!==numberPadState)return;numberPadClipboardText=text.length<=512?text:'';if(text!==numberPadCopiedText)numberPadCopiedText='';updateNumberPadClipboardControls();}catch{}
+    }
+    async function saveNumberPadClipboard(){
+        const text=numberPadCopyText(),status=$('#numberPadClipboardStatus');if(!text||!numberPadValueValid())return false;
+        try{await navigator.clipboard.writeText(text);numberPadClipboardText=text;numberPadCopiedText=text;if(status)status.textContent='Copied';updateNumberPadClipboardControls();return true;}catch{if(status)status.textContent='Clipboard access is unavailable.';return false;}
+    }
+    async function applyNumberPadClipboard(suppliedText){
+        const state=numberPadState;if(!state)return false;let text=suppliedText;
+        if(typeof text!=='string'){try{text=await navigator.clipboard.readText();}catch{const status=$('#numberPadClipboardStatus');if(status)status.textContent='Clipboard access is unavailable.';return false;}}
+        if(state!==numberPadState)return false;const candidate=parseNumberPadClipboard(text,state);numberPadClipboardText=typeof text==='string'&&text.length<=512?text:'';
+        if(!candidate){updateNumberPadClipboardControls();return false;}
+        Object.assign(state,candidate);state.anchorRange=undefined;state.anchorInputBuffer=false;state.fractionEditBuffer=undefined;state.anchorFractionSide=false;state.replaceOnNextDigit=false;state.everEdited=true;selectNumberPadValue(state);refreshNumberPad();return true;
+    }
+
     function voicePadAvailable() {
         if (interactionStateReady) return readInteractionState().actions.openVoicePad;
         return speechRecognitionEnabled() && Boolean(globalThis.SpeechMenu?.started) &&
@@ -14969,6 +15024,8 @@
                     `number-pad:${state.source}`
             });
         }
+
+        void refreshNumberPadClipboard();
 
         requestAnimationFrame(
             () => {
@@ -16632,6 +16689,7 @@
                 reason: "trip-settings-return"
             });
         }
+        void refreshNumberPadClipboard();
 
         queueMicrotask(
             () =>
@@ -16648,6 +16706,7 @@
         // Active clock/percent editors install their own context when opened.
         installVoiceEntrySpeechCommands();
         if (numberPadDisplay) numberPadDisplay.textContent = "";
+        if($("#numberPadClipboardStatus"))$("#numberPadClipboardStatus").textContent="";
         if (numberPadContext) numberPadContext.textContent = globalThis.WMOFLanguagePack.text("048501aa-538c-5fcf-a827-2b93385ab99b");
         if (numberPadDate) numberPadDate.value = "";
         if (numberPadClear) {
@@ -17209,6 +17268,17 @@
         refreshNumberPad();
 
         return true;
+    }
+
+    function clearNumberPadPendingValue() {
+        if(!numberPadState)return;
+        const state=numberPadState;
+        if(state.mode==='absolute'){
+            const empty=getAbsolutePadInitial(undefined,state.tripDefaults?.creationDate);
+            state.pending=empty.digits;state.pendingDate=empty.date;state.meridiem=empty.meridiem;state.milliseconds=empty.milliseconds;
+        }else{state.pending='';state.milliseconds=0;}
+        state.anchorRange=undefined;state.anchorInputBuffer=false;state.fractionEditBuffer=undefined;state.anchorFractionSide=false;state.replaceOnNextDigit=false;state.everEdited=true;
+        if(state.pending)selectNumberPadValue(state);refreshNumberPad();
     }
 
     function resetNumberPadPendingValue() {
@@ -26548,9 +26618,10 @@
                 return true;
             },
 
+            saveNumberPadClipboard: {metadata:{transaction:false},implementation(){return saveNumberPadClipboard();}},
+            applyNumberPadClipboard: {metadata:{transaction:false},implementation(text){return applyNumberPadClipboard(text);}},
             clearNumberPadValue() {
-                selectNumberPadValue();
-                refreshNumberPad();
+                clearNumberPadPendingValue();
 
                 return Boolean(
                     numberPadState

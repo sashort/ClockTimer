@@ -1,6 +1,11 @@
 <dialog id="numberPadDialog" data-audio-window="numberpad" class="number-pad-dialog" data-speech-input="disabled" aria-label="Number pad">
     <section class="number-pad-shell">
-        <button id="numberPadCancel" class="dialog-close number-pad-close" type="button" aria-label="Cancel"></button>
+        <div class="number-pad-header-actions">
+            <button id="numberPadPaste" class="number-pad-tool" type="button" aria-label="Paste value" title="Paste value" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5v17h14V4h-4"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 12h8m-3-3 3 3-3 3"/></svg></button>
+            <button id="numberPadCopy" class="number-pad-tool" type="button" aria-label="Copy value" title="Copy value"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="copy-glyph"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></g><path class="copy-check" d="m4 12 5 5L20 6"/></svg></button>
+            <button id="numberPadCancel" class="dialog-close number-pad-close" type="button" aria-label="Cancel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5 5 19"/></svg></button>
+            <span id="numberPadClipboardStatus" class="number-pad-clipboard-status" role="status"></span>
+        </div>
         <div id="numberPadContext" class="number-pad-context">Standard Time</div>
         <div class="number-pad-header">
             <div id="numberPadReadout" class="number-pad-readout">

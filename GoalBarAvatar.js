@@ -1,5 +1,6 @@
 (() => {
  'use strict';
+ const avatarScale=()=>Math.max(2,globalThis.WMOFHalloweenAvatar?.scale??2);
  const ns='http://www.w3.org/2000/svg',assets=globalThis.WMOFGoalBarAvatarAssets;
  if(!assets)return;
  const svg=(tag,attrs={})=>{const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);return e;};
@@ -60,7 +61,7 @@
    document.addEventListener('visibilitychange',this.visibility);this.preferenceChanged=()=>{if(this.enabled)this.change(this.mode,{entryOnly:true});};this.motionPreference.addEventListener?.('change',this.preferenceChanged);
   }
   reduced(){return this.motionPreference.matches;}
-  scale(){return globalThis.WMOFHalloweenAvatar?.scale??1;}
+  scale(){return avatarScale();}
   topSpace(state){return (targetMode(state)==='down'?68:48)*this.scale();}
   cancel(){
    ++this.sequence;for(const animation of this.animations)animation.cancel();this.animations.clear();
@@ -170,5 +171,5 @@
   }
   dispose(){this.cancel();window.removeEventListener('wmof-seasonal-theme-change',this.themeChanged);document.removeEventListener('visibilitychange',this.visibility);this.motionPreference.removeEventListener?.('change',this.preferenceChanged);this.root.remove();this.canvas.remove();this.enabled=false;}
  }
- globalThis.WMOFGoalBarAvatar=Object.freeze({create:(svg,row)=>new Avatar(svg,row),modeFor:targetMode,breakGeometry,armGeometry,surfaceY});
+ globalThis.WMOFGoalBarAvatar=Object.freeze({get scale(){return avatarScale();},create:(svg,row)=>new Avatar(svg,row),modeFor:targetMode,breakGeometry,armGeometry,surfaceY});
 })();

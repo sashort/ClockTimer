@@ -119,7 +119,7 @@
    const clock=down&&!compact?0:compact?Math.max(0,contentWidth-rails):contentWidth*.8;
    const controls=compact?0:down?(app.clientHeight<=650?156:230):app.querySelector('.trip-action-controls')?.getBoundingClientRect().height||0;
    const reserve=(compact&&app.dataset.compactTimed==='true'||app.dataset.goalCountdown==='true')?(app.clientHeight<=650?64:76):0;
-   const avatarExtra=(globalThis.WMOFHalloweenAvatar?.scale??1)-1,extra=(down?68:48)*avatarExtra;
+   const avatarExtra=(globalThis.WMOFGoalBarAvatar?.scale??2)-1,extra=(down?68:48)*avatarExtra;
    const minimum=(down?168:140)+extra;const spare=contentHeight-header-summary-footer-controls-reserve-clock-24-minimum;
    const height=Math.round(Math.max(minimum,Math.min(200+extra,minimum+Math.max(0,spare)*.5)));
    if(app.style.getPropertyValue('--goal-bar-height')!==height+'px')app.style.setProperty('--goal-bar-height',height+'px');

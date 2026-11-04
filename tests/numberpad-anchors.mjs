@@ -33,7 +33,7 @@ for(const [mode,initial,precision,typed,expected] of [
  assert.equal(controller.text(),expected,'full replacement uses the default precision for '+mode);
  assert.equal(controller.get().anchorRange.start,controller.get().anchorRange.stop,'first replacement collapses the anchors');
  assert.equal(controller.get().meridiem,'PM');assert.equal(controller.get().pendingDate,'2026-10-30');
- controller.selectAll();controller.edit(null);assert.equal(controller.get().pending,'','Backspace removes the entire initial/Clear selection');
+ controller.selectAll();controller.edit(null);assert.equal(controller.get().pending,'','Backspace removes the entire initial/Select All selection');
 }
 controller.set(state('',undefined,'duration'));controller.selectAll();controller.edit('7');assert.equal(controller.text(),'0:00:07.000','empty input keeps the seconds entry position');
-console.log('PASS initial/Clear whole-value selection, replacement precision, collapsed caret, Backspace and unchanged date/meridiem');
+console.log('PASS initial/Select All whole-value selection, replacement precision, collapsed caret, Backspace and unchanged date/meridiem');

@@ -54,7 +54,7 @@ module.exports=async function createMasterFixture({input='transcript',beforeAudi
   }
   await page.goto(url.href);
   if(process.env.CLOCKTIMER_TEST_LOCALE)assert.equal((await page.locator('html').getAttribute('lang')).toLowerCase(),process.env.CLOCKTIMER_TEST_LOCALE.toLowerCase(),'server must render the requested locale');
-  await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar'));
+  await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true'&&globalThis.SpeechMenu&&customElements.get('speech-mic-bar')).catch(error=>{console.error('Fixture bootstrap errors:',errors);throw error;});
   await page.waitForTimeout(1000);
   if(!acoustic){
   assert(await page.evaluate(()=>typeof SpeechMenu.testActivate==='function'),'SpeechMenu test hook must attach to the served runtime');
