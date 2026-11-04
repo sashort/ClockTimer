@@ -8415,3 +8415,13 @@ shared-modal-host > dialog:not(.number-pad-dialog) {
 shared-modal-host > dialog:not(.number-pad-dialog):not(.login-dialog) {
     bottom:calc(100dvh - var(--shared-modal-safe-height,100dvh) + 8px);
 }
+
+/* Use the host's preferred size once; the iframe already excludes the Mic Bar. */
+shared-modal-host > dialog.graphical-dialog {
+    height:min(90dvh,calc(var(--shared-modal-safe-height,100dvh) - 16px));
+}
+.settings-embedded .graphical-dialog {
+    min-height:0;
+    height:min(calc(var(--graphical-host-viewport-height,100dvh) * .9),100dvh);
+    max-height:100dvh;
+}

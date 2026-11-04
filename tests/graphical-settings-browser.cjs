@@ -30,19 +30,22 @@ const server=http.createServer((req,res)=>{
     return [selector,{x:r.x-outer.x,y:r.y-outer.y,width:r.width,height:r.height,font:css.font,padding:css.padding,background:css.backgroundColor}];
    }));
   };
-  for(const [width,height] of [[1280,900],[750,900],[390,844]]) {
+  for(const [width,height] of [[1280,900],[750,900],[390,844],[390,600]]) {
    await page.setViewportSize({width,height});
    await page.goto(base+'/order-filler.php');
    await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true');
    await page.evaluate(()=>{window.__settingsHostIdentity=WMOFCoordinator;});
    await page.evaluate(()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());const d=document.querySelector('#graphicalSettingsDialog');d.dispatchEvent(new Event('opening'));d.showModal();d.dispatchEvent(new Event('opened'));});
-   await page.waitForTimeout(350);
+   await page.waitForTimeout(1500);
    const original=await page.evaluate(metrics);
    await page.evaluate(()=>{document.querySelector('#graphicalSettingsDialog').close();document.querySelector('#openGraphicalSettingsFrame').click();});
    const frame=await page.waitForSelector('#clockTimerSettingsFrame');const child=await frame.contentFrame();
    await child.waitForFunction(()=>document.documentElement.dataset.settingsReady==='true');
-   await page.waitForTimeout(350);
+   await page.waitForTimeout(1500);
    const extracted=await child.evaluate(metrics);
+   const boundary=await page.evaluate(()=>({bottom:document.querySelector('#clockTimerSettingsFrameDialog').getBoundingClientRect().bottom,safe:document.querySelector('#speechMicBar').getSafeTop()}));
+   assert(boundary.bottom<=boundary.safe+1,'embedded settings remain above Mic Bar '+JSON.stringify(boundary));
+   assert(await child.evaluate(()=>{const d=document.querySelector('#graphicalSettingsDialog').getBoundingClientRect();return d.top>=-1&&d.bottom<=innerHeight+1;}),'inner settings dialog fits its constrained iframe');
    for(const selector of Object.keys(original))for(const property of Object.keys(original[selector])) {
     const expected=original[selector][property],actual=extracted[selector][property];
     if(typeof expected==='number')assert(Math.abs(actual-expected)<1.1,JSON.stringify({width,selector,property,actual,expected}));

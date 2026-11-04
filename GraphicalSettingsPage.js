@@ -1,7 +1,16 @@
 (async () => {
     'use strict';
     const embedded = window.self !== window.top;
-    if (embedded) document.documentElement.classList.add('settings-embedded');
+    if (embedded) {
+        document.documentElement.classList.add('settings-embedded');
+        const syncHostViewport=()=>{
+            let height=innerHeight;
+            try {height=parent.innerHeight;} catch {}
+            document.documentElement.style.setProperty('--graphical-host-viewport-height',height+'px');
+        };
+        syncHostViewport();
+        window.addEventListener('resize',syncHostViewport);
+    }
     const dialog = document.querySelector('#graphicalSettingsDialog');
     const form = document.querySelector('#graphicalSettingsForm');
     const preview = document.querySelector('#clockPreview');
