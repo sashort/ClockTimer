@@ -30,6 +30,7 @@ assert.match(await page.locator('#samples article').nth(1).locator('summary').in
 assert.match(await page.locator('#samples article').nth(2).locator('summary').innerText(),/Approved\s+0:12:00/);
 assert.equal(await page.locator('#samples article').nth(0).locator('.trip-log-down-pending .trip-log-down-milliseconds').innerText(),'(125 ms)');
 assert.equal(await page.locator('#samples article').nth(1).locator('summary .trip-log-down-milliseconds').innerText(),'.375');
+for(const block of await page.locator('#samples .trip-log-down-effective').all()){const aligned=await block.evaluate(e=>Math.abs(e.firstElementChild.getBoundingClientRect().left-e.lastElementChild.getBoundingClientRect().left)<1);assert(aligned,'Applied/Approved caption aligns with its time');}
 await page.evaluate(()=>{
 const set=(selector,value)=>{const check=document.querySelector('#runtime '+selector);check.checked=value;check.dispatchEvent(new Event('change'));};
 set('[data-show-pending]',false);if(view.showPending!==false)throw Error('explicit pending preference not retained');

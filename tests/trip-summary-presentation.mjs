@@ -40,3 +40,10 @@ for(const [ratio,expected] of [[1.23499,"123.4"],[1.001,"100.1"],[1.999999,"199.
  assert(truncated.rows.every(row=>row.percent===expected+"%"),"every summary row truncates: "+ratio);
  assert(truncated.speech.includes("Your performance was "+expected+" percent, and your day performance is "+expected+" percent."),"speech matches displayed precision");
 }
+
+const server={id:9,startTime:'2026-11-03T21:25:00Z',standardTimeMilliseconds:1316000,countedTimeMilliseconds:0},local={...server,id:'9',pendingSync:true,countedTimeMilliseconds:1362185,productiveTimeMilliseconds:1362185,allowanceCreditMilliseconds:0};
+const merged=context.TripSummary.mergeTrips([server],[local]);assert.equal(merged.length,1);assert.equal(merged[0].countedTimeMilliseconds,1362185,'pending completion beats the stale server row');
+const fresh={...server,countedTimeMilliseconds:1300000,officialCorrection:{percent:101.2}};
+assert.equal(context.TripSummary.mergeTrips([fresh],[{...local,pendingSync:false}])[0],fresh,'acknowledged local data cannot hide newer server edits');
+assert.equal(context.TripSummary.mergeTrips([server],[{...local,pendingSync:false,buffered:true}])[0].countedTimeMilliseconds,1362185,'offline completed work also wins until synchronized');
+console.log('PASS pending completion summary precedence and fresh server edits after acknowledgement');

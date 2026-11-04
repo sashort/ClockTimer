@@ -35,7 +35,7 @@
             const box=node('div',undefined,'trip-log-downtime'+(overview?' trip-log-downtime-overview':''));
             const title=globalThis.WMOFLanguagePack.text('e09300d4-7ac5-4678-9f45-f5cc4500ff6d');
             box.setAttribute('role','group');box.setAttribute('aria-label',title);
-            box.append(node('strong',title,'trip-log-downtime-title'));
+            const heading=node('strong',undefined,'trip-log-downtime-title'),icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.classList.add('trip-log-downtime-icon');icon.innerHTML='<path d="M9 2h6M12 2v3M18 6l2-2"/><circle cx="12" cy="14" r="8"/><path d="M12 9v5l3 2"/>';heading.append(icon,document.createTextNode(title));box.append(heading);
             const includePending=this.showPendingEffective;
             for(const [label,value,kind] of [[globalThis.WMOFLanguagePack.text('edb1ce75-f212-4577-a1b3-e88dc28bcb78'),summary.loggedMilliseconds,'logged'],[globalThis.WMOFLanguagePack.text(includePending?'d7300001-7888-4711-9000-000000000011':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39'),summary.approvedMilliseconds+(includePending?(summary.pendingMilliseconds||0):0),'approved']]) {
                 const cell=node('span',undefined,'trip-log-downtime-'+kind);
@@ -121,14 +121,12 @@
             }
             this.root.classList.toggle('trip-log-empty',visibleTrips.length===0);
             if(visibleTrips.length) {
-            const overview=node('section',undefined,'trip-log-overview');const emphasis=node('div',undefined,'trip-log-emphasis');
-            emphasis.append(node('strong',`${this.aggregation.tripCount} ${this.aggregation.tripCount===1?globalThis.WMOFLanguagePack.text("3b289746-71b2-4ac3-90dd-00a0402ba34f"):globalThis.WMOFLanguagePack.text("1c1bf8a6-f452-4dfa-8d43-ed38d4bcae1f")}`),node('strong',percent(visibleTrips,true),'trip-log-actual'));
-            if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());
-            const totals=aggregate(visibleTrips,true,this.downtimeNow);overview.append(emphasis,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.productiveTimeMilliseconds)}`,'trip-log-times'));fragment.append(overview);const down=this.downTimeSection(trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip)));if(down)fragment.append(down);
-            const columns=node('div',undefined,'trip-log-column-header');columns.setAttribute('role','row');for(const label of [globalThis.WMOFLanguagePack.text("5e8f393d-72a7-4b30-ba1e-69bbd765354f"),globalThis.WMOFLanguagePack.text("07613a20-4d6c-4fdf-a16d-6c94d28e5590"),globalThis.WMOFLanguagePack.text("77f1eddd-89b9-4e22-9fe1-aeeb4d060722"),globalThis.WMOFLanguagePack.text("c755d5bf-3277-4630-a938-898b8b6172dd"),'']){const cell=node('span',label);cell.setAttribute('role','columnheader');columns.append(cell);}fragment.append(columns);
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
-            const levels=days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
-            fragment.append(this.groups(visibleTrips,levels,calendar));
+            const levels=(days>370||this.options.range()==='year')?['year','month','week','day']:days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
+            const stamp=[calendar.startTime,calendar.endTime,this.options.range()].join('|');
+            if(this.scopeStamp!==stamp){this.selectedScope=null;this.scopeStamp=stamp;}
+            this.scopePanels(fragment,visibleTrips,matchingTrips,levels,calendar);
+
             } else {
                 if(!data.loginRequired){const down=this.downTimeSection(trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip)));if(down)fragment.append(down);}
                 const message=node('p',data.loginRequired?globalThis.WMOFLanguagePack.text("1b02fb00-aed1-432b-9c06-2cc98704eea2"):data.offline?globalThis.WMOFLanguagePack.text("595de126-bd64-4acc-be0f-a314413c2bd6"):globalThis.WMOFLanguagePack.text("d621fec0-6ca8-42fd-a0cf-1894616fd377"),'trip-log-empty-message');
@@ -164,25 +162,42 @@
             return day;
         }
         key(trip,level) {
-            const day=this.civil(trip);if(level==='month') return day.slice(0,7);if(level==='day') return day;
+            const day=this.civil(trip);if(level==='year')return day.slice(0,4);if(level==='month') return day.slice(0,7);if(level==='day') return day;
             const d=new Date(day+"T12:00:00Z");d.setUTCDate(d.getUTCDate()-(d.getUTCDay()-(this.calendar.rules?.weekStartDay??6)+7)%7);return d.toISOString().slice(0,10);
         }
         label(key,level) {
+            if(level==='year')return key;
             if(level==='month') return new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(key+'-01T12:00:00Z'));
             if(level==='day') return new Intl.DateTimeFormat(undefined,{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(key+"T12:00:00Z"));
             const d=new Date(key+"T12:00:00Z"),end=new Date(d);end.setUTCDate(d.getUTCDate()+6);
             const fmt=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',timeZone:'UTC'});
             return `Week · ${fmt.format(d)}–${fmt.format(end)}`;
         }
-        groups(trips,levels,calendar) {
-            const fragment=document.createDocumentFragment();if(!levels.length){for(const trip of trips)fragment.append(this.trip(trip));return fragment;}
-            const [level,...rest]=levels;const groups=new Map();for(const trip of trips){const key=this.key(trip,level);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(trip);}
-            for(const [key,group] of groups){const id=level+key,details=node('details',undefined,'trip-log-group'),active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
-                const summary=node('summary');const heading=node('div',undefined,'trip-log-group-heading');heading.append(node('strong',this.label(key,level)),node('span',`${aggregate(group,true,this.downtimeNow).tripCount} trips · ${percent(group,true)}`,'trip-log-actual'));
-                if(this.incomplete)heading.lastElementChild.append(uncertainIcon());
-                const totals=aggregate(group,true,this.downtimeNow);summary.append(heading,node('div',`Standard ${duration(totals.standardTimeMilliseconds)} · Actual ${duration(totals.productiveTimeMilliseconds)}`,'trip-log-times'));const downtime=this.downtimeSummary(totals.downtime);if(downtime)summary.append(downtime);const children=node('div',undefined,'trip-log-group-children');children.append(this.groups(group,rest,calendar));details.append(summary,children);fragment.append(details);}
-            return fragment;
+        scopePanels(fragment,trips,matchingTrips,levels,calendar) {
+            const header=node('div',undefined,'trip-log-scope-header'),split=node('section',undefined,'trip-log-split'),upper=node('nav',undefined,'trip-log-aggregate-pane'),path=node('div',undefined,'trip-log-aggregate-path'),tree=node('div',undefined,'trip-log-aggregate-tree'),lower=node('section',undefined,'trip-log-trips-pane'),separator=node('div',undefined,'trip-log-splitter');
+            upper.setAttribute('aria-label','Aggregate scopes');lower.setAttribute('aria-label','Trips in selected scope');lower.tabIndex=0;upper.append(path,tree);
+            separator.tabIndex=0;separator.setAttribute('role','separator');separator.setAttribute('aria-label','Resize aggregate and trip panes');separator.setAttribute('aria-orientation','horizontal');separator.setAttribute('aria-valuemin','15');separator.setAttribute('aria-valuemax','40');
+            const resize=value=>{this.aggregateShare=Math.min(40,Math.max(15,value));split.style.setProperty('--trip-log-aggregate-share',`${this.aggregateShare}%`);separator.setAttribute('aria-valuenow',String(Math.round(this.aggregateShare)));};resize(this.aggregateShare??32);
+            separator.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();resize(e.key==='Home'?15:e.key==='End'?40:this.aggregateShare+(e.key==='ArrowDown'?3:-3));});
+            separator.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();separator.setPointerCapture(e.pointerId);const move=event=>{const box=split.getBoundingClientRect();if(box.height)resize((event.clientY-box.top)/box.height*100);},end=()=>{separator.removeEventListener('pointermove',move);separator.removeEventListener('pointerup',end);separator.removeEventListener('pointercancel',end);};separator.addEventListener('pointermove',move);separator.addEventListener('pointerup',end);separator.addEventListener('pointercancel',end);});
+            const scopes=[];
+            const select=scope=>{
+                this.selectedScope=scope?.id??null;const rows=scope?.trips??trips;this.aggregation=aggregate(rows,true,this.downtimeNow);
+                const overview=node('section',undefined,'trip-log-overview'),emphasis=node('div',undefined,'trip-log-emphasis');emphasis.append(node('strong',`${this.aggregation.tripCount} ${globalThis.WMOFLanguagePack.text(this.aggregation.tripCount===1?'3b289746-71b2-4ac3-90dd-00a0402ba34f':'1c1bf8a6-f452-4dfa-8d43-ed38d4bcae1f')}`),node('strong',percent(rows,true),'trip-log-actual'));if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());overview.append(emphasis,node('div',`Standard ${duration(this.aggregation.standardTimeMilliseconds)} · Actual ${duration(this.aggregation.productiveTimeMilliseconds)}`,'trip-log-times'));
+                const ledgerRows=scope?matchingTrips.filter(trip=>[...scope.parents,scope].every(item=>this.key(trip,item.level)===item.key)):matchingTrips,down=this.downTimeSection(ledgerRows);header.replaceChildren(overview,...(down?[down]:[]));
+                const columns=node('div',undefined,'trip-log-column-header');columns.setAttribute('role','row');for(const id of ['5e8f393d-72a7-4b30-ba1e-69bbd765354f','07613a20-4d6c-4fdf-a16d-6c94d28e5590','77f1eddd-89b9-4e22-9fe1-aeeb4d060722','c755d5bf-3277-4630-a938-898b8b6172dd',null]){const cell=node('span',id?globalThis.WMOFLanguagePack.text(id):'');cell.setAttribute('role','columnheader');columns.append(cell);}lower.replaceChildren(columns,...rows.map(trip=>this.trip(trip)));lower.scrollTop=0;
+                path.replaceChildren();for(const item of [null,...(scope?[...scope.parents,scope]:[])]){const button=node('button',item?item.label:`${CalendarRange.dates(calendar).start} – ${CalendarRange.dates(calendar).end}`);button.type='button';button.setAttribute('aria-pressed',String(item===scope));button.addEventListener('click',()=>select(item));path.append(button);}
+                tree.querySelectorAll('[data-scope-id]').forEach(el=>el.classList.toggle('is-selected-scope',el.dataset.scopeId===this.selectedScope));
+            };
+            const build=(rows,remaining,parents=[])=>{
+                const result=document.createDocumentFragment();if(!remaining.length)return result;const [level,...rest]=remaining,groups=new Map();for(const trip of rows){const key=this.key(trip,level);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(trip);}
+                for(const [key,group] of groups){const id=parents.map(parent=>parent.id).join('/')+level+key,scope={id,key,level,trips:group,label:this.label(key,level),parents},details=node('details',undefined,'trip-log-group'),summary=node('summary'),heading=node('div',undefined,'trip-log-group-heading');scopes.push(scope);details.dataset.scopeId=id;details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));const active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
+                    heading.append(node('strong',scope.label),node('span',`${aggregate(group,true,this.downtimeNow).tripCount} trips · ${percent(group,true)}`,'trip-log-actual'));if(this.incomplete)heading.lastElementChild.append(uncertainIcon());summary.append(heading);const ledger=this.downtimeSummary(aggregate(group,true,this.downtimeNow).downtime);if(ledger)summary.append(ledger);summary.addEventListener('click',()=>select(scope));const children=node('div',undefined,'trip-log-group-children');children.append(build(group,rest,[...parents,scope]));details.append(summary,children);result.append(details);
+                }return result;
+            };
+            tree.append(build(trips,levels));select(scopes.find(scope=>scope.id===this.selectedScope)??null);split.classList.toggle('has-aggregates',levels.length>0);split.append(upper,separator,lower);fragment.append(header,split);
         }
+
         trip(trip) {
             const standalone=breakOnly(trip);const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.classList.toggle('is-break-only',standalone);details.dataset.tripId=String(trip.id);details.classList.toggle('is-active-trip',Boolean(trip.running));if(trip.running){details.dataset.activeState=trip.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
             const summary=node('summary');const fmt=new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});

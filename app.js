@@ -17578,6 +17578,10 @@
         return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="${centerX}" cy="${centerY}" r="6.5"/><path d="M${centerX} ${centerY}L${hourX.toFixed(2)} ${hourY.toFixed(2)}M${centerX} ${centerY}L${minuteX.toFixed(2)} ${minuteY.toFixed(2)}M15.8 5.6a8.7 8.7 0 0 1 3.2 5.7M19.6 8.5l-.6 2.8-2.8-.6"/></svg>`;
     }
 
+    function tripDraftStartsEarlyInDown(draft = tripDraft) {
+        return draft?.startInDownTime === true && parseTimelineTime(draft.startTime) < parseTimelineTime(draft.scheduledStart);
+    }
+
     function tripDraftCanRequestStart(draft = tripDraft) {
         if (tripDraftCanStart(draft)) return true;
         if (!draft || draft.deferred || !tripDraftHasFutureStart(draft)) return false;
@@ -17680,6 +17684,7 @@
     }
 
     async function beginScheduledTrip(mode) {
+        if (tripDraft?.startInDownTime && tripDraftHasFutureStart(tripDraft)) return false;
         if (!tripDraftCanStart(tripDraft)) {
             flagScheduledStandardTime();
             return false;
@@ -17804,7 +17809,7 @@
         }
         scheduledStartAuto.disabled = scheduledTimeReached;
         const missingRequiredStandard = scheduledTimeReached && !canStart;
-        scheduledStartNow.disabled = missingRequiredStandard;
+        scheduledStartNow.disabled = missingRequiredStandard || (tripDraft?.startInDownTime === true && remaining > 0);
         scheduledStartOnTime.disabled = missingRequiredStandard;
         if (missingRequiredStandard) {
             scheduledStartNeedsResolution = true;
@@ -17861,6 +17866,7 @@
         "changeScheduledStartInDownInput", () => {
             if (!tripDraft) return false;
             tripDraft.startInDownTime = scheduledStartInDown.checked;
+            updateScheduledStartDialog();
             return true;
         }
     ));
@@ -18001,7 +18007,7 @@
                 standardTimeMilliseconds
             ) ||
             standardTimeMilliseconds <= 0 ||
-            !tripDraftCanStart(draft)
+            !tripDraftCanStart(draft) || tripDraftStartsEarlyInDown(draft)
         ) {
             return false;
         }
@@ -18475,7 +18481,7 @@
             tripSettingsPrimary.removeAttribute("title");
         }
         tripSettingsPrimary.value = draft ? "start" : "save";
-        tripSettingsPrimary.disabled = Boolean(draft && !tripDraftCanRequestStart(getTripSettingsCandidateDraft()));
+        tripSettingsPrimary.disabled = Boolean(draft && (!tripDraftCanRequestStart(getTripSettingsCandidateDraft()) || tripDraftStartsEarlyInDown(getTripSettingsCandidateDraft())));
         syncTripStartsNowUI();
         if (settingsValues?.deferred) tripSetStartsNow.disabled = true;
     }
@@ -19151,6 +19157,7 @@
             const session = tripSettingsSession || beginTripSettingsSession();
             if (!session || session.live) return false;
             session.values.startInDownTime = event.target.checked;
+            refreshTripSettingsValues();
             return true;
         }
     ));
@@ -21746,7 +21753,7 @@
             trips = loaded;
         }
         if (signal.aborted || completedTripSummary?.requestId !== request.requestId || request.range !== tripSummaryRange()) return;
-        const allTrips=[...localTrips,...trips];
+        const allTrips=TripSummary.mergeTrips(trips,localTrips);
         const activeTrip=activeTripSummaryProjection() || assignedTrip;
         const summary = TripAggregates.calculate({trips:allTrips,rangeWindow,
             currentTripId:activeTrip?.id ?? request.currentTripId,includeActiveTrip:false,goalPercent:request.goalPercent});
@@ -27394,6 +27401,7 @@
                         !tripIsLive()
                     );
 
+                if(startingDraft && tripDraftStartsEarlyInDown(getTripSettingsCandidateDraft())){refreshTripSettingsValues();return false;}
                 if (
                     !applyTripSettingsSession()
                 ) {

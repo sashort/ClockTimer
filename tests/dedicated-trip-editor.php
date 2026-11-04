@@ -38,3 +38,7 @@ $migrated=$events;$migrated[0]['scheduledStartTime']='2026-11-03T10:00:00.125Z';
 $migratedSettings=trip_edit_api_settings($migrated);editor_check($migratedSettings['instants']['scheduledStart']==='2026-11-03T10:00:00.125Z','string-zero migrated creation offset does not hide scheduled start');
 $migratedSaved=trip_edit_apply($migrated,['operation'=>'editor','changes'=>[['operation'=>'delete-entry','entry'=>['eventId'=>4,'intervalKey'=>'d']]]]);
 editor_check(count(array_filter($migratedSaved,static fn($e)=>($e['value']['intervalKey']??null)==='d'))===0,'migrated string-offset trip saves Down deletion');
+
+$earlyDown=$events;$earlyDown[3]['timestamp']=$events[0]['timestamp'];$earlyDown=array_values(array_filter($earlyDown,static fn($e)=>!in_array($e['id'],[2,3],true)));$earlySettings=trip_edit_api_settings($earlyDown);$earlySettings['instants']['scheduledStart']='2026-11-03T10:01:00.125Z';
+try{trip_edit_apply($earlyDown,['operation'=>'editor','settings'=>$earlySettings,'changes'=>[]]);throw new RuntimeException('Early Down accepted');}catch(InvalidArgumentException $error){editor_check(str_contains($error->getMessage(),'cannot start before Scheduled Start'),'backend rejects an edit creating an early first Down');}
+$earlySettings['instants']['scheduledStart']=$earlySettings['instants']['startTime'];editor_check(is_array(trip_edit_apply($earlyDown,['operation'=>'editor','settings'=>$earlySettings,'changes'=>[]])),'matching Scheduled Start allows the first Down');

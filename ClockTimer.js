@@ -3867,6 +3867,7 @@
                 const summary = this.#buildSummarySnapshot(new Date()).trip;
                 trips.push({id: this.#tripId || `offline-${this.#preparedTrip?.clientToken || "active"}`,
                     ...payload, running: this.#started, pendingDownIncluded:this.#includePendingDownTime, buffered: this.networkStatus === "offline",
+                    pendingSync:this.#pendingTripEvents.some(event=>event.synced!==true),
                     actualTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     countedTimeMilliseconds: summary.countedTimeElapsedMilliseconds,
                     allottedTimeMilliseconds: summary.allottedTimeMilliseconds,
@@ -6232,6 +6233,12 @@
             delete localOptions.standardTime;
             delete localOptions.standardTimeMilliseconds;
 
+            if(options.startInDownTime===true && localOptions.startTime!==undefined){
+                const creation=this.#validateClockTime(localOptions.creationTime??this.#dateToStandardTime(new Date()),'creationTime').total;
+                const actual=this.#resolveNear(this.#validateClockTime(localOptions.startTime,'startTime').total,creation);
+                const scheduled=this.#resolveNear(this.#validateClockTime(localOptions.scheduledStart??localOptions.creationTime??localOptions.startTime,'scheduledStart').total,creation);
+                if(actual<scheduled)throw new Error('A trip starting in Down Time cannot start before Scheduled Start.');
+            }
             const localResult = this.#startLocal({
                 ...localOptions,
                 tripId: preparedTripId,

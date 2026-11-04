@@ -335,6 +335,7 @@ function trip_edit_aggregate(array $events): array {
     $excluded=[];$occupied=[];
     foreach($intervals as $key=>$i) {
         if(isset($deleted[$key])) continue;
+        if($i['type']==='down'&&$i['start']===$start&&$start<$scheduled)throw new InvalidArgumentException('A trip starting in Down Time cannot start before Scheduled Start.');
         $finish=$i['end']??$terminal;
         if($finish<=$i['start'] || $i['start']<$start || $finish>$terminal) throw new InvalidArgumentException('Entry must fit within the trip and end after its start.');
         $occupied[]=[$i['start'],$finish];

@@ -18,19 +18,20 @@ assert.equal(await page.locator('.trip-log-down-section').count(),1);
 const geometry=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,guides:[...document.querySelectorAll('.trip-log-group')].map(group=>{
 const summary=group.querySelector(':scope>summary'),child=group.querySelector(':scope>.trip-log-group-children'),marker=getComputedStyle(summary,'::before'),connector=getComputedStyle(summary,'::after'),box=summary.getBoundingClientRect(),r=child.getBoundingClientRect();return {arrow:box.left+parseFloat(marker.left)+parseFloat(marker.width)/2,line:r.left+parseFloat(getComputedStyle(child).borderLeftWidth)/2,arrowBottom:box.top+parseFloat(marker.top)+parseFloat(marker.height),connectorTop:box.top+parseFloat(connector.top),connectorBottom:box.top+parseFloat(connector.top)+parseFloat(connector.height),childTop:r.top};}),ledger:getComputedStyle(document.querySelector('.trip-log-downtime')).backgroundColor}));
 assert(geometry.scroll<=geometry.width+1,'nested layout must fit '+JSON.stringify(geometry));
-assert.equal(geometry.ledger,'rgb(9, 11, 13)');
+assert.equal(geometry.ledger,'rgba(0, 0, 0, 0)');assert(await page.locator('.trip-log-downtime-icon').count()>0,'Down ledgers have a stopwatch identifier');
 const overlaps=await page.evaluate(()=>[...document.querySelectorAll('.trip-log-trip>summary')].flatMap(summary=>{
  const cells=[...summary.children].filter(e=>!e.classList.contains('trip-log-menu')&&!e.classList.contains('trip-log-downtime')).slice(0,4);
  const rects=cells.map(cell=>{const r=document.createRange();r.selectNodeContents(cell);return r.getBoundingClientRect();});
  return rects.slice(1).filter((r,i)=>rects[i].right>r.left+1).map(r=>({x:r.x,width:r.width}));
 }));assert.deepEqual(overlaps,[],'trip time/performance columns remain readable');
-for(const g of geometry.guides){assert(Math.abs(g.arrow-g.line)<=1,'guide aligned beneath its own arrow '+JSON.stringify(g));assert(Math.abs(g.arrowBottom-g.connectorTop)<=1,'guide starts directly below the arrow');assert(Math.abs(g.connectorBottom-g.childTop)<=1,'no gap between header guide and children '+JSON.stringify(g));}
+assert.equal(await page.locator('.trip-log-aggregate-pane .trip-log-trip').count(),0,'trip rows live only below the splitter');
+assert.equal(await page.locator('.trip-log-aggregate-tree .trip-log-group-children').first().evaluate(e=>getComputedStyle(e).borderLeftWidth),'0px','aggregate nesting has no guide lines');
 const group=page.locator('.trip-log-group').first();await group.locator(':scope>summary').click();assert.equal(await group.locator(':scope>.trip-log-group-children').isVisible(),false);await group.locator(':scope>summary').click();
 await page.locator('[data-trip-id="1"]').evaluate(e=>e.open=true);
 const timelineGeometry=await page.locator('[data-trip-id="1"] .trip-log-timeline').evaluate(e=>{const box=e.getBoundingClientRect(),line=box.left+parseFloat(getComputedStyle(e).borderLeftWidth)/2;return [...e.children].map(row=>{const marker=getComputedStyle(row,'::before'),segment=getComputedStyle(row,'::after'),r=row.getBoundingClientRect();return {terminal:row===e.lastElementChild,segment:segment.content,segmentTop:parseFloat(segment.top),markerCenter:parseFloat(marker.top)+7,line,center:r.left+parseFloat(marker.left)+parseFloat(marker.borderLeftWidth)+parseFloat(marker.width)/2,right:r.right,viewport:innerWidth};});});
 assert(timelineGeometry.length>0);for(const marker of timelineGeometry){assert(Math.abs(marker.center-marker.line)<=1,'timeline circle centered on its line '+JSON.stringify(marker));assert(marker.right<=marker.viewport+1);if(marker.terminal)assert(['none','normal'].includes(marker.segment),'last marker has no downward connector');else assert.equal(marker.segmentTop,marker.markerCenter,'connector begins at circle center, never above first marker');}
 assert.equal(await page.locator('.trip-log-entry-heading').count(),0,'Trip Entries heading removed');
 if(process.env.TRIP_LOG_SCREENSHOT_DIR){fs.mkdirSync(process.env.TRIP_LOG_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.TRIP_LOG_SCREENSHOT_DIR,'downtime-'+width+'.png'),fullPage:true});}
-await page.close();console.log('PASS downtime mobile layout, black ledgers, zero omission and arrow-aligned guides at '+width+'px');
+await page.close();console.log('PASS downtime mobile layout, icon-led downtime ledgers, zero omission and separate aggregate/trip panes at '+width+'px');
 }
 }finally{await browser.close();}})().catch(error=>{console.error(error);process.exitCode=1;});

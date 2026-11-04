@@ -279,10 +279,12 @@ jobs:
       - run: node tests/shared-modal-browser.cjs
       - run: node tests/hamburger-menu-coverage-browser.cjs
       - run: node tests/mic-modal-browser.cjs
+      - run: node tests/trip-log-splitter-browser.cjs
       - run: node tests/trip-log-downtime-browser.cjs
       - run: node tests/trip-log-down-filters-browser.cjs
       - run: node tests/pending-down-master-browser.cjs
       - run: node tests/historical-range-browser.cjs
+      - run: node tests/completed-summary-sync-browser.cjs
       - run: node tests/summary-official-percent-browser.cjs
       - run: php tests/pending-down-accounting.php
       - run: node tests/break-session-browser.cjs

@@ -2,6 +2,14 @@
     'use strict';
     // Presentation contract only; fetching, assignment and persistence stay outside.
     class TripSummary {
+        // Completed local data remains authoritative until its final write is
+        // acknowledged. A fresh server row wins again once that write settles.
+        static mergeTrips(serverTrips=[],localTrips=[]) {
+            const unique=new Map(),key=trip=>trip.id==null?trip:String(trip.id);
+            for(const trip of [...localTrips,...serverTrips])unique.set(key(trip),trip);
+            for(const trip of localTrips)if(!trip.running&&(trip.pendingSync||trip.buffered))unique.set(key(trip),trip);
+            return [...unique.values()];
+        }
         static build({trips = [], totals, activeTrip, scope, scopeLabel = scope, text, duration, percent, spokenDuration, spokenPercent}) {
             const breakOnly = trip => trip?.breakOnly || trip?.events?.some(event => event.event === "trip.started" && event.value?.breakOnly === true);
             if (breakOnly(activeTrip)) activeTrip = undefined;

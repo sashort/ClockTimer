@@ -30,6 +30,7 @@ async function fresh({testEpoch=epoch,...options}={}) {
 const advance = milliseconds => window.__testTime += milliseconds;
 const counted = timer => timer.getSummarySnapshot().trip.countedTimeElapsedMilliseconds;
 try {
+    const rejected=window.document.createElement('clock-timer');window.document.body.append(rejected);await assert.rejects(rejected.start({standardTime:'0:01:00',creationTime:'12:00:00',scheduledStart:'12:01:00',startTime:'12:00:00',startInDownTime:true}),/cannot start before Scheduled Start/);assert.equal(rejected.getSummarySnapshot().trip.available,false,'rejected early Down does not mutate trip state');rejected.remove();
     const normal = await fresh();
     advance(600000);
     assert.equal(counted(normal),600000,'a delayed tick accounts for the whole elapsed interval');
@@ -74,6 +75,12 @@ try {
     await cancel.cancelInterval();
     assert.equal(counted(cancel),40000,'cancel removes the prior exclusion');
     cancel.remove();
+
+    for(const finish of [30000,130000]){
+        const initialDown=await fresh({standardTime:'0:01:00',startInDownTime:true});
+        advance(10000);await initialDown.cancelInterval();advance(finish-10000);await initialDown.stop();
+        const completed=initialDown.getLocalTripLog()[0];assert.equal(completed.countedTimeMilliseconds,finish,'canceled first-entry Down returns all elapsed time before/after goal failure');assert.equal(completed.productiveTimeMilliseconds,finish);assert.equal(initialDown.getSummarySnapshot().trip.countedTimeElapsedMilliseconds,finish);initialDown.remove();
+    }
 
     const early = await fresh({startTime:'11:59:00'});
     assert.equal(counted(early),0,'early work does not count before the scheduled boundary');
