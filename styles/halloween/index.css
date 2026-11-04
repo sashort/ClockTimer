@@ -129,3 +129,5 @@ html[data-seasonal-theme="halloween"] .trip-log-timeline>.trip-log-entry::before
 html[data-seasonal-theme="halloween"] .dedicated-trip-editor {--editor-bg:#21170e;--editor-card:#372617;--editor-border:#b47b39;--editor-accent:#ffd778;background:var(--editor-bg);color:#fff5e2;}
 html[data-seasonal-theme="halloween"] .trip-log-down-filter input {accent-color:#ed972d;}
 html[data-seasonal-theme="halloween"] .timer-attention-gradient {background:conic-gradient(from var(--timer-attention-angle),#e28b25,#e28b25 32%,#9f75bb 43%,#ffd34e 51%,#fff0b0 58%,#ffd34e 66%,#e28b25 81%);}
+
+html[data-seasonal-theme="halloween"] .trip-log-body {--trip-log-year-bg:#21150c;--trip-log-month-bg:#3c2511;--trip-log-week-bg:#583718;--trip-log-day-bg:#714c22;}

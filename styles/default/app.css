@@ -7708,7 +7708,7 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 #tripTransitionSummaryCancel[hidden]{display:none}
 
 /* Downtime remains subordinate to the existing performance columns. */
-.trip-log-downtime {display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:4px 14px;margin-top:7px;font-size:13px;font-weight:400;line-height:1.5;text-align:left;}
+.trip-log-downtime {display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 14px;margin-top:7px;font-size:13px;font-weight:400;line-height:1.5;text-align:left;}
 .trip-log-downtime-title {color:inherit;font-size:inherit;opacity:.82;}
 .trip-log-downtime span strong {font-weight:500;font-variant-numeric:tabular-nums;}
 .trip-log-downtime-approved {color:#a9ddf7;}
@@ -7719,6 +7719,7 @@ shared-modal-host > .number-pad-dialog {height:var(--shared-modal-safe-height, 1
 
 .trip-log-downtime {background:transparent;border-radius:6px;padding:6px 9px;}
 .trip-log-downtime-title {display:inline-flex;align-items:center;gap:6px;}
+.trip-log-downtime>span {display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
 .trip-log-downtime-icon {width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .trip-log-down-section {margin:0 12px 14px;border:1px solid #91a3b2;border-radius:10px;overflow:hidden;background:#27333e;color:#fff;flex-shrink:0;}
 .trip-log-down-breakdown>summary {display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;list-style:none;}
@@ -8211,3 +8212,16 @@ html .number-pad-dialog[data-presentation="trip-editor"] input {color:inherit;co
 html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-display {color:var(--wm-white);}
 html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-clear-reset {background:var(--pad-editor-card);color:var(--wm-white);}
 html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-split-action {background:transparent;color:inherit;}
+
+/* Aggregate level colors remain distinct from the selected-scope marker. */
+.trip-log-body {--trip-log-year-bg:#273746;--trip-log-month-bg:#35434f;--trip-log-week-bg:#46535f;--trip-log-day-bg:#4d5c69;}
+.trip-log-aggregate-tree .trip-log-group[data-scope-level="year"]>summary,.trip-log-aggregate-path button[data-scope-level="year"] {background:var(--trip-log-year-bg);}
+.trip-log-aggregate-tree .trip-log-group[data-scope-level="month"]>summary,.trip-log-aggregate-path button[data-scope-level="month"] {background:var(--trip-log-month-bg);}
+.trip-log-aggregate-tree .trip-log-group[data-scope-level="week"]>summary,.trip-log-aggregate-path button[data-scope-level="week"] {background:var(--trip-log-week-bg);}
+.trip-log-aggregate-tree .trip-log-group[data-scope-level="day"]>summary,.trip-log-aggregate-path button[data-scope-level="day"] {background:var(--trip-log-day-bg);}
+.trip-log-aggregate-tree .trip-log-group.is-selected-scope>summary {outline:1px solid var(--wm-blue-light);outline-offset:-1px;}
+/* Flat day headings identify trips without reintroducing nesting guides. */
+.trip-log-trips-pane .trip-log-column-header {line-height:16px;}
+.trip-log-day-section {position:relative;display:flow-root;}
+.trip-log-day-heading {position:sticky;top:36px;z-index:7;display:block;margin:0 12px;padding:9px 8px;border-bottom:1px solid rgb(255 255 255 / 40%);background:var(--trip-log-year-bg);color:var(--wm-white);font-size:13px;line-height:18px;box-shadow:0 3px 5px rgb(0 0 0 / 15%);}
+.trip-log-day-section+.trip-log-day-section {margin-top:12px;}
