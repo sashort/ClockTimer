@@ -7387,6 +7387,91 @@
       "id": "d7400002-0000-4000-8000-000000000005",
       "text": "View Trip Log",
       "default": "View Trip Log"
+    },
+    "781a123f-d439-55b5-b4b0-b76fc9beef4c": {
+      "id": "781a123f-d439-55b5-b4b0-b76fc9beef4c",
+      "text": "Timer",
+      "default": "Timer"
+    },
+    "4f6e1b96-f64a-5b5e-8277-47dac39c46f0": {
+      "id": "4f6e1b96-f64a-5b5e-8277-47dac39c46f0",
+      "text": "Time",
+      "default": "Time"
+    },
+    "4ae025d7-fba2-5582-bf1f-2e174c1f5383": {
+      "id": "4ae025d7-fba2-5582-bf1f-2e174c1f5383",
+      "text": "Style",
+      "default": "Style"
+    },
+    "ed2aa7c9-f4a5-5913-afec-7a5bbc291451": {
+      "id": "ed2aa7c9-f4a5-5913-afec-7a5bbc291451",
+      "text": "Preview 1",
+      "default": "Preview 1"
+    },
+    "a38708ce-ce42-501e-9818-b157d7043591": {
+      "id": "a38708ce-ce42-501e-9818-b157d7043591",
+      "text": "Preview 2",
+      "default": "Preview 2"
+    },
+    "59f7381d-5ebd-57a2-8147-f2ef237a2194": {
+      "id": "59f7381d-5ebd-57a2-8147-f2ef237a2194",
+      "text": "Sample range legend",
+      "default": "Sample range legend"
+    },
+    "b11d4e43-74ae-5662-a4c9-5406146569f5": {
+      "id": "b11d4e43-74ae-5662-a4c9-5406146569f5",
+      "text": "Preview Ranges",
+      "default": "Preview Ranges"
+    },
+    "5f3b053b-884f-5f02-9735-c02ee861d31e": {
+      "id": "5f3b053b-884f-5f02-9735-c02ee861d31e",
+      "text": "Productive Work",
+      "default": "Productive Work"
+    },
+    "76514e6b-dd45-5816-8679-56ac0b810405": {
+      "id": "76514e6b-dd45-5816-8679-56ac0b810405",
+      "text": "Early Start",
+      "default": "Early Start"
+    },
+    "523992d5-bf10-51ee-9896-0a937f90822a": {
+      "id": "523992d5-bf10-51ee-9896-0a937f90822a",
+      "text": "Lunch",
+      "default": "Lunch"
+    },
+    "7331a561-6a67-583c-94ae-49386f019d72": {
+      "id": "7331a561-6a67-583c-94ae-49386f019d72",
+      "text": "Break Buffers",
+      "default": "Break Buffers"
+    },
+    "355164aa-7393-54fa-8742-91078b551c21": {
+      "id": "355164aa-7393-54fa-8742-91078b551c21",
+      "text": "Late Return",
+      "default": "Late Return"
+    },
+    "a7f3763f-611c-54d6-a6db-3352496188c1": {
+      "id": "a7f3763f-611c-54d6-a6db-3352496188c1",
+      "text": "Down Time",
+      "default": "Down Time"
+    },
+    "ac03aa14-9f95-5b8e-a478-8d69d392c11d": {
+      "id": "ac03aa14-9f95-5b8e-a478-8d69d392c11d",
+      "text": "Approval Surplus",
+      "default": "Approval Surplus"
+    },
+    "e445b97e-2751-5986-a570-4635660c8037": {
+      "id": "e445b97e-2751-5986-a570-4635660c8037",
+      "text": "Approval Deficit",
+      "default": "Approval Deficit"
+    },
+    "4e9841ee-677a-5df5-a371-94be5bc0e6ca": {
+      "id": "4e9841ee-677a-5df5-a371-94be5bc0e6ca",
+      "text": "B-Game",
+      "default": "B-Game"
+    },
+    "d01c97fd-cc7b-5c7a-83ad-fab369695d3e": {
+      "id": "d01c97fd-cc7b-5c7a-83ad-fab369695d3e",
+      "text": "Overtime",
+      "default": "Overtime"
     }
   }
 }

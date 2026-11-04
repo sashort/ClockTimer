@@ -94,8 +94,12 @@ const server=http.createServer((req,res)=>{
   assert.deepEqual(await page.evaluate(()=>handoffConfirmed),[660000],'confirmation callback survives both input modes');
   assert.equal(await page.evaluate(()=>WMOFCoordinator.lockCount),0);
   await page.evaluate(()=>document.querySelector('#loginDialog').showModal());await page.waitForTimeout(100);
-  await page.locator('#loginButton').click();await page.waitForTimeout(300);
-  assert(await page.evaluate(()=>Boolean(document.fullscreenElement)),'login activation enters real browser fullscreen');
+  // This section tests fullscreen modal geometry independently of authentication.
+  // Actual login/IME sequencing is covered by login-fullscreen-browser.cjs.
+  await page.evaluate(()=>{const b=document.createElement('button');b.id='fullscreenGeometryProbe';b.textContent='Fullscreen';b.onclick=()=>void document.documentElement.requestFullscreen();document.querySelector('#loginDialog').append(b);});
+  await page.locator('#fullscreenGeometryProbe').click();
+  await page.waitForFunction(()=>Boolean(document.fullscreenElement));
+  await page.locator('#fullscreenGeometryProbe').evaluate(e=>e.remove());
   if(await page.evaluate(()=>SpeechMenu.muted))await tapMic();
   const viewportSession=await page.context().newCDPSession(page);
   for(const height of [600,844,720,844]){

@@ -25,7 +25,7 @@ const server=http.createServer((req,res)=>{
   const base=`http://127.0.0.1:${server.address().port}`;
   const metrics=()=>{
    const dialog=document.querySelector('#graphicalSettingsDialog'),outer=dialog.getBoundingClientRect();
-   return Object.fromEntries(['#graphicalSettingsForm','.dialog-header','.graphical-settings-actions','.graphical-settings-grid','.settings-groups','.clock-preview','details summary'].map(selector=>{
+   return Object.fromEntries(['#graphicalSettingsForm','.dialog-header','.graphical-settings-actions','.graphical-settings-grid','.graphical-tabs','.graphical-tab-panes','.graphical-tab-panel:not([hidden])'].map(selector=>{
     const e=dialog.querySelector(selector),r=e.getBoundingClientRect(),css=getComputedStyle(e);
     return [selector,{x:r.x-outer.x,y:r.y-outer.y,width:r.width,height:r.height,font:css.font,padding:css.padding,background:css.backgroundColor}];
    }));
@@ -34,7 +34,11 @@ const server=http.createServer((req,res)=>{
    await page.setViewportSize({width,height});
    await page.goto(base+'/order-filler.php');
    await page.waitForFunction(()=>document.documentElement.dataset.clocktimerAppReady==='true');
-   await page.evaluate(()=>{window.__settingsHostIdentity=WMOFCoordinator;});
+   // Compare both hosts against one available rectangle. Startup recognition
+   // text can change the Mic Bar's height between the two captures; real
+   // dynamic boundaries are covered by dialog-safe-boundary-browser.cjs.
+   await page.waitForFunction(()=>typeof document.querySelector('#speechMicBar')?.getSafeTop==='function');
+   await page.evaluate(()=>{window.__settingsHostIdentity=WMOFCoordinator;const bar=document.querySelector('#speechMicBar');const top=bar.getSafeTop();bar.getSafeTop=()=>top;});
    await page.evaluate(()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());const d=document.querySelector('#graphicalSettingsDialog');d.dispatchEvent(new Event('opening'));d.showModal();d.dispatchEvent(new Event('opened'));});
    await page.waitForTimeout(1500);
    const original=await page.evaluate(metrics);
@@ -53,7 +57,7 @@ const server=http.createServer((req,res)=>{
    }
    assert.equal(await child.evaluate(()=>Boolean(globalThis.SpeechMenu||globalThis.WMOFActions||document.querySelector('#app'))),false,'iframe never boots Order Filler or speech');
    if(process.env.SETTINGS_SCREENSHOTS){fs.mkdirSync(process.env.SETTINGS_SCREENSHOTS,{recursive:true});await page.screenshot({path:path.join(process.env.SETTINGS_SCREENSHOTS,`settings-${width}.png`)});}
-   await child.locator('details > summary').first().click();
+   await child.locator('[data-graphical-tab=timer]').click();
    const originalColor=await child.locator('[name=tripColor]').inputValue();
    await child.locator('[name=tripColor]').evaluate(e=>{e.value='#123456';e.dispatchEvent(new Event('input',{bubbles:true}));});
    await child.locator('[data-close-dialog]').last().click();
@@ -66,7 +70,7 @@ const server=http.createServer((req,res)=>{
    const reopened=await page.locator('#clockTimerSettingsFrame').elementHandle();const next=await reopened.contentFrame();
    await next.waitForFunction(()=>document.documentElement.dataset.settingsReady==='true');
    assert.equal(await next.locator('[name=tripColor]').inputValue(),originalColor,'Cancel discards the draft');
-   await next.locator('details > summary').first().click();
+   await next.locator('[data-graphical-tab=timer]').click();
    await next.locator('[name=tripColor]').evaluate(e=>{e.value='#123456';e.dispatchEvent(new Event('input',{bubbles:true}));});
    await page.evaluate(()=>{window.__saveSettings=WMOFGraphicalSettingsHost.save;WMOFGraphicalSettingsHost.save=async()=>{throw Error('Fixture save rejected');};});
    await next.locator('button[value=save]').click();
@@ -88,7 +92,7 @@ const server=http.createServer((req,res)=>{
   await page.evaluate(()=>document.querySelector('#dropInClockSettingsButton').click());
   const drop=await(await page.locator('#clockTimerSettingsFrame').elementHandle()).contentFrame();
   await drop.waitForFunction(()=>document.documentElement.dataset.settingsReady==='true');
-  await drop.locator('details > summary').first().click();
+  await drop.locator('[data-graphical-tab=timer]').click();
   await drop.locator('[name=tripColor]').evaluate(e=>{e.value='#abcdef';e.dispatchEvent(new Event('input',{bubbles:true}));});
   await drop.locator('button[value=save]').click();
   await page.waitForFunction(()=>!document.querySelector('#clockTimerSettingsFrameDialog').open);

@@ -6948,6 +6948,62 @@
         "text0": "d7400002-0000-4000-8000-000000000005"
       },
       "attributes": {}
+    },
+    "781a123f-d439-55b5-b4b0-b76fc9beef4c": {
+      "elementId": "781a123f-d439-55b5-b4b0-b76fc9beef4c",
+      "source": "graphicalSettingsTabs",
+      "texts": {
+        "text0": "781a123f-d439-55b5-b4b0-b76fc9beef4c"
+      },
+      "attributes": {}
+    },
+    "4f6e1b96-f64a-5b5e-8277-47dac39c46f0": {
+      "elementId": "4f6e1b96-f64a-5b5e-8277-47dac39c46f0",
+      "source": "graphicalSettingsTabs",
+      "texts": {
+        "text0": "4f6e1b96-f64a-5b5e-8277-47dac39c46f0"
+      },
+      "attributes": {}
+    },
+    "4ae025d7-fba2-5582-bf1f-2e174c1f5383": {
+      "elementId": "4ae025d7-fba2-5582-bf1f-2e174c1f5383",
+      "source": "graphicalSettingsTabs",
+      "texts": {
+        "text0": "4ae025d7-fba2-5582-bf1f-2e174c1f5383"
+      },
+      "attributes": {}
+    },
+    "ed2aa7c9-f4a5-5913-afec-7a5bbc291451": {
+      "elementId": "ed2aa7c9-f4a5-5913-afec-7a5bbc291451",
+      "source": "graphicalSettingsTabs",
+      "texts": {
+        "text0": "ed2aa7c9-f4a5-5913-afec-7a5bbc291451"
+      },
+      "attributes": {}
+    },
+    "a38708ce-ce42-501e-9818-b157d7043591": {
+      "elementId": "a38708ce-ce42-501e-9818-b157d7043591",
+      "source": "graphicalSettingsTabs",
+      "texts": {
+        "text0": "a38708ce-ce42-501e-9818-b157d7043591"
+      },
+      "attributes": {}
+    },
+    "59f7381d-5ebd-57a2-8147-f2ef237a2194": {
+      "elementId": "59f7381d-5ebd-57a2-8147-f2ef237a2194",
+      "source": "graphicalSettingsTabs",
+      "texts": {
+        "text0": "59f7381d-5ebd-57a2-8147-f2ef237a2194"
+      },
+      "attributes": {}
+    },
+    "b11d4e43-74ae-5662-a4c9-5406146569f5": {
+      "elementId": "b11d4e43-74ae-5662-a4c9-5406146569f5",
+      "source": "graphicalSettingsTabs",
+      "texts": {
+        "text0": "b11d4e43-74ae-5662-a4c9-5406146569f5"
+      },
+      "attributes": {}
     }
   },
   "selects": {

@@ -4191,6 +4191,18 @@
         "closing"
       ],
       "stateIdPrefix": "SURFACE-TRIP-RECOVERY"
+    },
+    {
+      "id": "graphicalPreviewLegend",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-GRAPHICAL-PREVIEW-LEGEND",
+      "kind": "popover"
     }
   ],
   "constraints": [

@@ -4,11 +4,10 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
     const $ = selector => document.querySelector(selector);
     const graphicalDialog = $('#graphicalSettingsDialog');
     const GRAPHICAL_DEFAULTS = WMOFTimerAppearance.graphicalDefaults;
-    const settingsHelpRevealTimers = new WeakMap(), graphicalDetailsAnimations = new WeakMap();
-    const GRAPHICAL_DETAILS_DURATION = 180;
+    const settingsHelpRevealTimers = new WeakMap();
     const SETTINGS_HELP_FADE_DURATION = 250;
     const SETTINGS_HELP_VISIBLE_DURATION = 4000;
-    let activeSettingsHelpButton, graphicalHelpVisible = false, graphicalPreviewAnimationFrame, graphicalPreviewResizeObserver, settingsHelpAnimation;
+    let activeSettingsHelpButton, graphicalHelpVisible = false, settingsHelpAnimation;
     if (clockPreview) clockPreview.keepAspectRatio = true;
     const GRAPHICAL_HELP = {
         timerMode: {
@@ -656,53 +655,11 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
         );
     }
 
-    function formatPreviewDate(value) {
-        const pad = (part, length = 2) => String(part).padStart(length, "0");
-        return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}.${pad(value.getMilliseconds(), 3)}`;
-    }
-
-    function renderClockPreviewRanges(settings = settingsFromForm($("#graphicalSettingsForm"))) {
-        if (!clockPreview) return;
-
-        clockPreview.querySelector('[data-settings-preview="ranges"]')?.remove();
-
-        const ring = document.createElement("ring-container");
-        ring.dataset.settingsPreview = "ranges";
-        ring.clockTimerRing = 0;
-        ring.clockTimerRingIndex = 0;
-        ring.clockTimerExternalRangeLayout =
-            settings.timerType === "radial-fitted";
-        ring.setAttribute("width", "18px");
-        ring.setAttribute("inset", "18px");
-
-        const segments = [
-            ["trip", 5],
-            [settings.showEarlyStart ? "earlystart" : "trip", 10],
-            ["break", 10],
-            [settings.showBreakBuffer ? "buffer" : "break", 10],
-            ["lunch", 15],
-            ["down", 10],
-            ["approval-surplus", 5],
-            ["approval-deficit", 5],
-            [settings.showOvertime ? "overtime" : "trip", 5],
-            [settings.showTolerance === false ? "trip" : "tolerance", 5],
-            [settings.showLatency ? "latency" : "trip", 10]
-        ];
-        let cursor = new Date();
-        cursor.setSeconds(0, 0);
-        cursor = new Date(cursor.getTime() - 45 * 60 * 1000);
-
-        for (const [type, minutes] of segments) {
-            const end = new Date(cursor.getTime() + minutes * 60 * 1000);
-            const range = document.createElement("time-range");
-            range.setAttribute("type", type);
-            range.setAttribute("start-time", formatPreviewDate(cursor));
-            range.setAttribute("end-time", formatPreviewDate(end));
-            ring.append(range);
-            cursor = end;
-        }
-
-        clockPreview.prepend(ring);
+    const previewTimers = [clockPreview, $('#clockPreview2')].filter(Boolean);
+    const previews = previewTimers.map((timer,index) => WMOFClockTimerPreview.create(timer,index+1));
+    function renderClockPreviewRanges(settings = settingsFromForm($('#graphicalSettingsForm'))) {
+        previews.forEach(preview => preview.apply(settings));
+        renderPreviewLegend();
     }
 
     function installGraphicalHelpButtons() {
@@ -1199,663 +1156,66 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
         });
     }
 
-    function getGraphicalSettingsLayout() {
-        const groups =
-            graphicalDialog.querySelector(
-                ".graphical-settings-grid > .settings-groups"
-            );
-
-        const preview =
-            graphicalDialog.querySelector(
-                ".graphical-settings-grid > .clock-preview"
-            );
-
-        const categories =
-            Array.from(
-                graphicalDialog.querySelectorAll(
-                    ".settings-category"
-                )
-            );
-
-        return {
-            groups,
-            preview,
-            categories
-        };
+    let activeTab = 'timer';
+    const tabs = [...graphicalDialog.querySelectorAll('[data-graphical-tab]')];
+    const legend = $('#graphicalPreviewLegend');
+    const legendLabels = {"tripColor":"5f3b053b-884f-5f02-9735-c02ee861d31e","earlyStartColor":"76514e6b-dd45-5816-8679-56ac0b810405","lunchColor":"523992d5-bf10-51ee-9896-0a937f90822a","breakBufferColor":"7331a561-6a67-583c-94ae-49386f019d72","latencyColor":"355164aa-7393-54fa-8742-91078b551c21","downColor":"a7f3763f-611c-54d6-a6db-3352496188c1","approvalSurplusColor":"ac03aa14-9f95-5b8e-a478-8d69d392c11d","approvalDeficitColor":"e445b97e-2751-5986-a570-4635660c8037","toleranceColor":"4e9841ee-677a-5df5-a371-94be5bc0e6ca","overtimeColor":"d01c97fd-cc7b-5c7a-83ad-fab369695d3e"};
+    function renderPreviewLegend() {
+        if (!legend) return;
+        const settings = settingsFromForm($('#graphicalSettingsForm'));
+        const keys = activeTab === 'preview2'
+            ? ['tripColor','downColor','approvalSurplusColor','approvalDeficitColor','toleranceColor','overtimeColor']
+            : ['tripColor','earlyStartColor','lunchColor','breakBufferColor','latencyColor','downColor','toleranceColor'];
+        legend.querySelector('[data-preview-legend-rows]').replaceChildren(...keys.map(key => {
+            const row = document.createElement('div'); row.className = 'preview-legend-row';
+            const swatch = document.createElement('span'); swatch.style.backgroundColor = settings[key] || GRAPHICAL_DEFAULTS[key];
+            row.append(swatch,document.createTextNode(WMOFLanguagePack.text(legendLabels[key])));
+            return row;
+        }));
     }
-
-    function graphicalRectsOverlap(first, second) {
-        return (
-            first.right > second.left &&
-            first.left < second.right &&
-            first.bottom > second.top &&
-            first.top < second.bottom
-        );
-    }
-
-    function updateGraphicalPreviewOverlap({
-        immediate = false
-    } = {}) {
-        const {
-            groups,
-            preview,
-            categories
-        } = getGraphicalSettingsLayout();
-
-        if (!groups || !preview) return;
-
-        const applyOverlap = () => {
-            if (!graphicalDialog.open) {
-                preview.classList.remove(
-                    "has-settings-overlap"
-                );
-                return;
-            }
-
-            const previewRect =
-                preview.getBoundingClientRect();
-
-            const groupsRect =
-                groups.getBoundingClientRect();
-
-            const visiblePreviewRect = {
-                top: Math.max(
-                    previewRect.top,
-                    groupsRect.top
-                ),
-                right: Math.min(
-                    previewRect.right,
-                    groupsRect.right
-                ),
-                bottom: Math.min(
-                    previewRect.bottom,
-                    groupsRect.bottom
-                ),
-                left: Math.max(
-                    previewRect.left,
-                    groupsRect.left
-                )
-            };
-
-            const hasVisiblePreviewArea =
-                visiblePreviewRect.right >
-                    visiblePreviewRect.left &&
-                visiblePreviewRect.bottom >
-                    visiblePreviewRect.top;
-
-            const overlaps =
-                hasVisiblePreviewArea &&
-                categories.some(
-                    category => {
-                        const rect =
-                            category.getBoundingClientRect();
-
-                        return (
-                            rect.width > 0 &&
-                            rect.height > 0 &&
-                            graphicalRectsOverlap(
-                                rect,
-                                visiblePreviewRect
-                            )
-                        );
-                    }
-                );
-
-            preview.classList.toggle(
-                "has-settings-overlap",
-                overlaps
-            );
-        };
-
-        if (!immediate) {
-            applyOverlap();
-            return;
+    function selectGraphicalTab(key,{focus=false}={}) {
+        activeTab = key;
+        legend?.hidePopover?.();
+        previews.forEach(preview => preview.stop());
+        for (const tab of tabs) {
+            const selected = tab.dataset.graphicalTab === key;
+            tab.setAttribute('aria-selected',String(selected)); tab.tabIndex = selected ? 0 : -1;
+            $('#'+tab.getAttribute('aria-controls')).hidden = !selected;
+            if (selected && focus) tab.focus();
         }
-
-        const previousTransition =
-            preview.style.transition;
-
-        preview.style.transition =
-            "none";
-
-        applyOverlap();
-
-        void preview.offsetWidth;
-
-        if (previousTransition) {
-            preview.style.transition =
-                previousTransition;
-        }
-        else {
-            preview.style.removeProperty(
-                "transition"
-            );
+        renderClockPreviewRanges();
+        if (key.startsWith('preview')) {
+            const preview = previews[Number(key.slice(-1))-1];
+            preview?.start();
+            requestAnimationFrame(() => previewTimers[Number(key.slice(-1))-1]?.refreshLayout());
         }
     }
-
-    function scheduleGraphicalPreviewOverlap() {
-        if (graphicalPreviewAnimationFrame) return;
-
-        graphicalPreviewAnimationFrame =
-            requestAnimationFrame(
-                () => {
-                    graphicalPreviewAnimationFrame =
-                        undefined;
-
-                    updateGraphicalPreviewOverlap();
-                }
-            );
-    }
-
-    function cancelGraphicalDetailsAnimation(category) {
-        const state =
-            graphicalDetailsAnimations.get(
-                category
-            );
-
-        if (!state) return;
-
-        state.heightAnimation?.cancel();
-        state.contentAnimation?.cancel();
-
-        graphicalDetailsAnimations.delete(
-            category
-        );
-    }
-
-    function finishGraphicalCategoryAnimation(
-        category,
-        shouldOpen,
-        token
-    ) {
-        const state =
-            graphicalDetailsAnimations.get(
-                category
-            );
-
-        if (!state || state.token !== token) {
-            return;
-        }
-
-        state.heightAnimation?.cancel();
-        state.contentAnimation?.cancel();
-
-        if (!shouldOpen) {
-            category.open = false;
-        }
-
-        category.style.removeProperty(
-            "height"
-        );
-
-        category.classList.remove(
-            "is-opening",
-            "is-closing"
-        );
-
-        graphicalDetailsAnimations.delete(
-            category
-        );
-
-        scheduleGraphicalPreviewOverlap();
-    }
-
-    function followGraphicalDetailsAnimation(
-        animation,
-        token,
-        category
-    ) {
-        const tick = () => {
-            const state =
-                graphicalDetailsAnimations.get(
-                    category
-                );
-
-            if (
-                !state ||
-                state.token !== token ||
-                (
-                    animation.playState !== "running" &&
-                    animation.playState !== "pending"
-                )
-            ) {
-                updateGraphicalPreviewOverlap();
-                return;
-            }
-
-            updateGraphicalPreviewOverlap();
-
-            requestAnimationFrame(
-                tick
-            );
-        };
-
-        requestAnimationFrame(
-            tick
-        );
-    }
-
-    function animateGraphicalCategory(
-        category,
-        shouldOpen
-    ) {
-        const summary =
-            category.querySelector(
-                ":scope > summary"
-            );
-
-        const content =
-            category.querySelector(
-                ":scope > .settings-category-content"
-            );
-
-        if (!summary || !content) return;
-
-        const existing =
-            graphicalDetailsAnimations.get(
-                category
-            );
-
-        const currentlyTargetedOpen =
-            existing?.shouldOpen ??
-            category.open;
-
-        if (
-            currentlyTargetedOpen === shouldOpen &&
-            existing
-        ) {
-            return;
-        }
-
-        const startHeight =
-            category.getBoundingClientRect()
-                .height;
-
-        const renderedContentOpacity =
-            Number.parseFloat(
-                getComputedStyle(
-                    content
-                ).opacity
-            );
-
-        const wasOpen =
-            category.open;
-
-        cancelGraphicalDetailsAnimation(
-            category
-        );
-
-        category.style.removeProperty(
-            "height"
-        );
-
-        category.classList.remove(
-            "is-opening",
-            "is-closing"
-        );
-
-        if (shouldOpen) {
-            category.open = true;
-            category.classList.add(
-                "is-opening"
-            );
-        }
-        else {
-            category.classList.add(
-                "is-closing"
-            );
-        }
-
-        const categoryStyle =
-            getComputedStyle(
-                category
-            );
-
-        const borderHeight =
-            (
-                Number.parseFloat(
-                    categoryStyle.borderTopWidth
-                ) || 0
-            ) +
-            (
-                Number.parseFloat(
-                    categoryStyle.borderBottomWidth
-                ) || 0
-            );
-
-        const endHeight =
-            shouldOpen
-                ? category.getBoundingClientRect()
-                    .height
-                : summary.getBoundingClientRect()
-                    .height + borderHeight;
-
-        const reducedMotion =
-            typeof matchMedia === "function" &&
-            matchMedia(
-                "(prefers-reduced-motion: reduce)"
-            ).matches;
-
-        const duration =
-            reducedMotion
-                ? 0
-                : GRAPHICAL_DETAILS_DURATION;
-
-        if (
-            duration === 0 ||
-            typeof category.animate !== "function"
-        ) {
-            category.open =
-                shouldOpen;
-
-            category.style.removeProperty(
-                "height"
-            );
-
-            category.classList.remove(
-                "is-opening",
-                "is-closing"
-            );
-
-            updateGraphicalPreviewOverlap({
-                immediate: true
+    function installGraphicalTabs() {
+        tabs.forEach((tab,index) => {
+            tab.addEventListener('click',() => selectGraphicalTab(tab.dataset.graphicalTab));
+            tab.addEventListener('keydown',event => {
+                let next;
+                if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index+1)%tabs.length;
+                if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index+tabs.length-1)%tabs.length;
+                if (event.key === 'Home') next = 0;
+                if (event.key === 'End') next = tabs.length-1;
+                if (next === undefined) return;
+                event.preventDefault();selectGraphicalTab(tabs[next].dataset.graphicalTab,{focus:true});
             });
-
-            return;
-        }
-
-        category.style.height =
-            `${startHeight}px`;
-
-        const startOpacity =
-            shouldOpen && !wasOpen
-                ? 0
-                : Number.isFinite(
-                    renderedContentOpacity
-                )
-                    ? renderedContentOpacity
-                    : 1;
-
-        const token =
-            Symbol(
-                "graphical-details-animation"
-            );
-
-        const heightAnimation =
-            category.animate(
-                [
-                    {
-                        height:
-                            `${startHeight}px`
-                    },
-                    {
-                        height:
-                            `${endHeight}px`
-                    }
-                ],
-                {
-                    duration,
-                    easing:
-                        "cubic-bezier(.2,.8,.2,1)",
-                    fill: "both"
-                }
-            );
-
-        const contentAnimation =
-            content.animate(
-                [
-                    {
-                        opacity:
-                            startOpacity
-                    },
-                    {
-                        opacity:
-                            shouldOpen
-                                ? 1
-                                : 0
-                    }
-                ],
-                {
-                    duration:
-                        Math.min(
-                            duration,
-                            150
-                        ),
-                    easing: "ease-out",
-                    fill: "both"
-                }
-            );
-
-        graphicalDetailsAnimations.set(
-            category,
-            {
-                token,
-                shouldOpen,
-                heightAnimation,
-                contentAnimation
-            }
-        );
-
-        followGraphicalDetailsAnimation(
-            heightAnimation,
-            token,
-            category
-        );
-
-        heightAnimation.finished
-            .then(
-                () =>
-                    finishGraphicalCategoryAnimation(
-                        category,
-                        shouldOpen,
-                        token
-                    )
-            )
-            .catch(
-                () => {}
-            );
-    }
-
-    function toggleGraphicalCategory(
-        category
-    ) {
-        const categories =
-            getGraphicalSettingsLayout()
-                .categories;
-
-        const state =
-            graphicalDetailsAnimations.get(
-                category
-            );
-
-        const shouldOpen =
-            !(
-                state?.shouldOpen ??
-                category.open
-            );
-
-        if (shouldOpen) {
-            for (const other of categories) {
-                if (other === category) continue;
-
-                const otherState =
-                    graphicalDetailsAnimations.get(
-                        other
-                    );
-
-                if (
-                    otherState?.shouldOpen ??
-                    other.open
-                ) {
-                    animateGraphicalCategory(
-                        other,
-                        false
-                    );
-                }
-            }
-        }
-
-        animateGraphicalCategory(
-            category,
-            shouldOpen
-        );
-    }
-
-    function resetGraphicalSettingsAccordion() {
-        const {
-            groups,
-            preview,
-            categories
-        } = getGraphicalSettingsLayout();
-
-        if (graphicalPreviewAnimationFrame) {
-            cancelAnimationFrame(
-                graphicalPreviewAnimationFrame
-            );
-
-            graphicalPreviewAnimationFrame =
-                undefined;
-        }
-
-        for (const category of categories) {
-            cancelGraphicalDetailsAnimation(
-                category
-            );
-
-            category.open = false;
-
-            category.style.removeProperty(
-                "height"
-            );
-
-            category.classList.remove(
-                "is-opening",
-                "is-closing"
-            );
-        }
-
-        if (groups) {
-            groups.scrollTop = 0;
-        }
-
-        preview?.classList.remove(
-            "has-settings-overlap"
-        );
-    }
-
-    function installGraphicalSettingsAccordion() {
-        const {
-            groups,
-            preview,
-            categories
-        } = getGraphicalSettingsLayout();
-
-        for (const category of categories) {
-            const summary =
-                category.querySelector(
-                    ":scope > summary"
-                );
-
-            summary?.addEventListener(
-                "click",
-                event => {
-                    event.preventDefault();
-
-                    toggleGraphicalCategory(
-                        category
-                    );
-                }
-            );
-        }
-
-        groups?.addEventListener(
-            "scroll",
-            scheduleGraphicalPreviewOverlap,
-            {
-                passive: true
-            }
-        );
-
-        window.addEventListener(
-            "resize",
-            scheduleGraphicalPreviewOverlap,
-            {
-                passive: true
-            }
-        );
-
-        if (
-            typeof ResizeObserver ===
-            "function"
-        ) {
-            graphicalPreviewResizeObserver =
-                new ResizeObserver(
-                    scheduleGraphicalPreviewOverlap
-                );
-
-            if (groups) {
-                graphicalPreviewResizeObserver.observe(
-                    groups
-                );
-            }
-
-            if (preview) {
-                graphicalPreviewResizeObserver.observe(
-                    preview
-                );
-            }
-
-            for (const category of categories) {
-                graphicalPreviewResizeObserver.observe(
-                    category
-                );
-            }
-        }
-
-        graphicalDialog.addEventListener(
-            "opening",
-            resetGraphicalSettingsAccordion
-        );
-
-        graphicalDialog.addEventListener(
-            "closed",
-            resetGraphicalSettingsAccordion
-        );
-
-        graphicalDialog.addEventListener(
-            "opened",
-            () => {
-                resetGraphicalSettingsAccordion();
-
-                requestAnimationFrame(
-                    () => {
-                        applyGraphicalSettings(
-                            settingsFromForm(
-                                $("#graphicalSettingsForm")
-                            ),
-                            clockPreview
-                        );
-
-                        requestAnimationFrame(
-                            () => {
-                                clockPreview
-                                    ?.refreshLayout?.();
-
-                                updateGraphicalPreviewOverlap({
-                                    immediate: true
-                                });
-                            }
-                        );
-                    }
-                );
-            }
-        );
-
-        resetGraphicalSettingsAccordion();
+        });
+        graphicalDialog.querySelectorAll('[data-preview-legend]').forEach(button => button.addEventListener('click',() => {
+            renderPreviewLegend();legend.togglePopover();
+        }));
+        legend?.querySelector('[data-close-preview-legend]').addEventListener('click',() => legend.hidePopover());
+        graphicalDialog.addEventListener('opening',() => selectGraphicalTab('timer'));
+        graphicalDialog.addEventListener('opened',() => selectGraphicalTab('timer'));
+        const stop = () => {previews.forEach(preview => preview.stop());legend?.hidePopover?.();};
+        graphicalDialog.addEventListener('closed',stop);graphicalDialog.addEventListener('close',stop);
+        selectGraphicalTab('timer');
     }
 
     installGraphicalHelpButtons();
-    installGraphicalSettingsAccordion();
+    installGraphicalTabs();
     installClockFontPicker();
     renderClockPreviewRanges();
     setGraphicalHelpVisibility(false);
@@ -1976,7 +1336,6 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
         syncTimeFormatForMilitaryToggle,
         syncMilitaryToggleForTimeFormat,
         refreshActiveGraphicalHelpState,
-        updateGraphicalPreviewOverlap,
         closeSettingsHelpPopover
     };
 }};

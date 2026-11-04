@@ -2107,7 +2107,6 @@
         syncTimeFormatForMilitaryToggle,
         syncMilitaryToggleForTimeFormat,
         refreshActiveGraphicalHelpState,
-        updateGraphicalPreviewOverlap,
         closeSettingsHelpPopover
     } = WMOFGraphicalSettings.create({clockTimer, clockPreview});
     const stateDialog = $("#stateSettingsDialog");
@@ -12308,15 +12307,6 @@
             reason
         });
 
-        if (
-            opened &&
-            dialog === graphicalDialog
-        ) {
-            updateGraphicalPreviewOverlap({
-                immediate: true
-            });
-        }
-
         if (!opened) {
             if (caller) popUIReturnFrame(caller);
             return false;
@@ -12804,13 +12794,24 @@
             )
     );
 
-    // Fullscreen must begin inside the Login click's user activation.
+    // Android can retain its pre-fullscreen viewport if fullscreen begins with the IME open.
     function enterPortraitFullscreen() {
         if (fullscreenLoginAttempt || speechEditorPreview) return;
 
-        const fullscreen = document.fullscreenElement
-            ? Promise.resolve()
-            : document.documentElement.requestFullscreen?.();
+        const fullscreen = (async () => {
+            if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
+            const deadline = performance.now() + 30000;
+            // A successful final OK refreshes transient activation. Do not fullscreen
+            // between ID and PIN, or while Chrome is still dismissing the keyboard.
+            while (performance.now() < deadline) {
+                if (!loginIsOpen() && !loginConfirmedThisLoad) return;
+                if (loginConfirmedThisLoad && !loginIsOpen() &&
+                    (!window.visualViewport || window.visualViewport.height >= innerHeight - 1)) {
+                    return document.documentElement.requestFullscreen();
+                }
+                await new Promise(resolve => setTimeout(resolve, 35));
+            }
+        })();
 
         fullscreenLoginAttempt = Promise.resolve(fullscreen)
             .then(async () => {

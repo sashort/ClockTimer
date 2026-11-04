@@ -5397,6 +5397,7 @@
             this.configure(configuration);
             const remaining = this.getUIState(now).time_component.text;
             this.renderedTimeMode = timeDisplay || snapshot.timeDisplay || 'remaining';
+            this.#tick(now);
             this.#synchronizeHands(now);
             this.#updateDisplay(now);
             this.refreshLayout();
@@ -15780,13 +15781,15 @@
             range.timeRangeFullEntry =
                 true;
 
-            ring.appendChild(
-                range
-            );
-
-            this.#prepareTimerTypeTransitionVisualRange(
-                range
-            );
+            // Restored discrepancy views remain read-only to callers. Moving
+            // them into a renderer layer still requires its internal slot tag.
+            range.clockTimerInternalMutation = true;
+            try {
+                ring.appendChild(range);
+                this.#prepareTimerTypeTransitionVisualRange(range);
+            } finally {
+                delete range.clockTimerInternalMutation;
+            }
 
             return range;
         }

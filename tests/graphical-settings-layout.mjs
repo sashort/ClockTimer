@@ -12,56 +12,15 @@ assert(dialogStart >= 0 && dialogEnd > dialogStart, 'Clock/Timer Settings dialog
 
 const dialog = html.slice(dialogStart, dialogEnd);
 const gridStart = dialog.indexOf('<div class="settings-grid graphical-settings-grid">');
-const groupsStart = dialog.indexOf('<div class="settings-groups">', gridStart);
-const previewStart = dialog.indexOf('<aside class="clock-preview"', gridStart);
-assert(gridStart >= 0, 'graphical settings content region exists');
-assert(groupsStart > gridStart, 'settings groups exist inside the graphical settings region');
-assert(previewStart > groupsStart, 'live preview is ordered after the settings groups at the bottom of the region');
-assert(!dialog.includes('Live Preview'), 'Live Preview title is removed');
-
-const detailsTags = dialog.match(/<details\b[^>]*class="settings-category[^"]*"[^>]*>/g) || [];
-assert.equal(detailsTags.length, 3, 'Clock/Timer Settings contains three top-level categories');
-for (const tag of detailsTags) {
-    assert(!/\sopen(?:\s|>)/.test(tag), 'every Clock/Timer category starts collapsed');
-    assert(!/name="clock-timer-settings-category"/.test(tag), 'native named-details exclusivity is disabled for managed animation');
-}
-
-const overlayMarker = css.indexOf('graphical-settings-scroll-overlay-v3');
-assert(overlayMarker >= 0, 'Clock/Timer settings v3 overlay styles are present');
-const overlayCss = css.slice(overlayMarker);
-
-assert.match(overlayCss, /\.graphical-dialog\s*\{[^}]*min-height:\s*90dvh;[^}]*height:\s*90dvh;[^}]*max-height:\s*90dvh;[^}]*overflow:\s*hidden;/s);
-assert.match(overlayCss, /#graphicalSettingsForm\s*\{[^}]*height:\s*100%;[^}]*max-height:\s*100%;[^}]*block-size:\s*100%;[^}]*display:\s*grid;[^}]*grid-template-rows:\s*auto auto minmax\(0, 1fr\);/s);
-assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid\s*\{[^}]*--graphical-settings-inline-gap:\s*16px;[^}]*overflow:\s*hidden;[^}]*display:\s*block;/s);
-assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*padding:\s*12px var\(--graphical-settings-inline-gap\) 16px;[^}]*overflow-y:\s*auto;[^}]*touch-action:\s*pan-y;/s);
-assert.match(overlayCss, /\.graphical-dialog \.graphical-settings-grid > \.settings-groups::after\s*\{[^}]*inline-size:\s*100%;[^}]*aspect-ratio:\s*1 \/ 1;/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview\s*\{[^}]*position:\s*absolute;[^}]*aspect-ratio:\s*1 \/ 1;[^}]*background:\s*transparent;[^}]*box-shadow:\s*none;[^}]*pointer-events:\s*none !important;/s);
-assert.doesNotMatch(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap\s*\{/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*inline-size:\s*100%;[^}]*block-size:\s*100%;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*aspect-ratio:\s*1 \/ 1;[^}]*--clock-timer-face-background-color:\s*transparent;[^}]*--clock-timer-active-ring-background-color:\s*transparent;[^}]*pointer-events:\s*none !important;[^}]*opacity:\s*1;[^}]*transition:\s*opacity 150ms ease-out;/s);
-assert.match(overlayCss, /\.graphical-dialog \.clock-preview\.has-settings-overlap clock-timer\s*\{[^}]*opacity:\s*0\.68;/s);
-assert.match(overlayCss, /\.graphical-dialog \.settings-category > summary\s*\{[^}]*min-height:\s*38px;[^}]*padding:\s*7px 36px 7px 12px;[^}]*font-size:\s*17px;/s);
-assert.match(overlayCss, /\.graphical-dialog \.settings-category\.is-closing > summary::after\s*\{[^}]*rotate\(0deg\);/s);
-assert.match(overlayCss, /@media \(max-width:\s*720px\)[\s\S]*?--graphical-settings-inline-gap:\s*12px;[\s\S]*?padding:\s*10px var\(--graphical-settings-inline-gap\) 12px;[\s\S]*?\.graphical-dialog \.clock-preview\s*\{[\s\S]*?var\(--graphical-settings-inline-gap\)/s);
-assert.match(overlayCss, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.graphical-dialog \.clock-preview clock-timer\s*\{[^}]*transition-duration:\s*0ms;/s);
-
-assert.match(js, /clockPreview\.keepAspectRatio\s*=\s*true;/);
-assert.match(js, /const GRAPHICAL_DETAILS_DURATION = 180;/);
-assert.match(js, /function updateGraphicalPreviewOverlap\(/);
-assert.match(js, /graphicalRectsOverlap\(\s*rect,\s*visiblePreviewRect\s*\)/s);
-assert.match(js, /preview\.classList\.toggle\(\s*"has-settings-overlap",\s*overlaps\s*\)/s);
-assert.match(js, /function animateGraphicalCategory\(/);
-assert.match(js, /category\.animate\([\s\S]*?cubic-bezier\(\.2,\.8,\.2,1\)/s);
-assert.match(js, /content\.animate\([\s\S]*?Math\.min\(\s*duration,\s*150\s*\)/s);
-assert.match(js, /summary\?\.addEventListener\(\s*"click",[\s\S]*?event\.preventDefault\(\);[\s\S]*?toggleGraphicalCategory/s);
-assert.match(js, /graphicalDialog\.addEventListener\(\s*"opening",\s*resetGraphicalSettingsAccordion\s*\)/s);
-assert.match(js, /category\.open = false;/);
-assert.match(js, /groups\.scrollTop = 0;/);
-assert.match(js, /groups\?\.addEventListener\(\s*"scroll",\s*scheduleGraphicalPreviewOverlap/s);
-assert.match(js, /new ResizeObserver\(\s*scheduleGraphicalPreviewOverlap\s*\)/s);
-assert.match(js, /opened &&\s*dialog === graphicalDialog[\s\S]*?updateGraphicalPreviewOverlap\(\{\s*immediate:\s*true\s*\}\)/s);
-assert.match(js, /graphicalDialog\.addEventListener\(\s*"opened",[\s\S]*?resetGraphicalSettingsAccordion\(\)[\s\S]*?applyGraphicalSettings\([\s\S]*?clockPreview[\s\S]*?requestAnimationFrame\([\s\S]*?clockPreview\s*\?\.refreshLayout\?\.\(\)/s);
-assert.match(dialog, /<summary[^>]*>Clock Font, Hand and Colors<\/summary>/);
-assert.doesNotMatch(dialog, /<summary>Hand Styling<\/summary>/);
+const tabs = dialog.match(/data-graphical-tab="[^"]+"/g)||[];
+assert.equal(tabs.length,5,'five tabs share a multi-row tablist');
+assert.equal((dialog.match(/role="tabpanel"/g)||[]).length,5);
+assert.equal((dialog.match(/role="tabpanel"[^>]* hidden/g)||[]).length,4,'one pane initially visible');
+assert(!dialog.includes('<details'),'old accordion removed');
+assert(!js.includes('has-settings-overlap'),'overlap opacity implementation removed');
+assert.match(css,/\.graphical-tab-row \{display:flex;gap:6px;background:transparent;/);
+assert.match(css,/\.graphical-tab-panel\[hidden\] \{display:none!important;/);
+assert.match(js,/enableObserverMode|WMOFClockTimerPreview/);
 assert.match(dialog, /Boring Old Basics/);
 assert.match(dialog, /name="borderColor"/);
 assert.match(dialog, /\+ Add New Font/);
@@ -99,4 +58,4 @@ assert.match(clockTimerSource, /refreshLayout\(\)\s*\{[\s\S]*?#layoutRenderer\(\
 assert.match(clockTimerSource, /#startSizeObserver\(\)\s*\{[\s\S]*?ResizeObserver[\s\S]*?#layoutRenderer\(\)[\s\S]*?#refreshTimeRangeVisualGeometry\(\)/s);
 assert.match(clockTimerSource, /#updateResponsiveMetrics\(\)\s*\{[\s\S]*?this\.#getEffectiveRenderDiameter\(\)/s);
 
-console.log('PASS Clock/Timer settings use the rebuilt render box, transparent preview surfaces, and unified square/ellipse geometry');
+console.log('PASS tabbed Clock/Timer settings preserve centralized renderer and square/ellipse geometry');

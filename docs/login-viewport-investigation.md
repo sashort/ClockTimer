@@ -1,10 +1,30 @@
 # Navy gap below the mic bar after login
 
-Reported symptom: after ID/PIN login on Android Chrome, a navy region sometimes
-remains below the mic bar. Fullscreen and the software keyboard are suspected
-triggers, not established causes. A photo confirms a substantial gap; actual device viewport metrics
-have not yet been captured. No application behavior has been changed for this
-investigation.
+## Confirmed Pixel 6 reproduction and fix (November 4, 2026)
+
+On the connected Pixel 6 running Android 17 / Chrome 155, the actual login
+flow reproduced the gap. Entering fullscreen between ID and PIN, while the
+Android keyboard was visible, left Chrome reporting about 785 CSS pixels of
+height after the keyboard closed, even though fullscreen was active. The app
+and Mic Bar correctly followed that incorrectly short browser viewport.
+
+Requesting fullscreen after successful authentication and after visualViewport
+recovered from the keyboard restored about 914 CSS pixels. The app filled that
+height and the Mic Bar retained only its normal 8-pixel inset. This was captured
+on the physical device using a temporary requestFullscreen interception. The
+production implementation now defers the same API request until authentication
+has succeeded, Login is closed and the visual viewport is no longer shortened.
+Both ID/PIN and password submit paths use the shared function. No PIN digits
+are reset and canceled/failed authentication does not enter fullscreen.
+
+The browser regression models successful authentication while the visual
+viewport remains shortened, verifies zero fullscreen requests in that state,
+then restores the viewport and verifies one fullscreen request. It also checks
+PIN preservation while the request waits. Desktop emulation does not substitute
+for retesting the deployed build on the actual phone.
+
+The earlier investigation below is retained as historical evidence; its
+unconfirmed hypotheses predate the physical-device measurements above.
 
 ## Photo evidence from the affected device
 

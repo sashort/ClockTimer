@@ -13,10 +13,14 @@
             </div>
 
             <div class="settings-grid graphical-settings-grid">
+                <div class="graphical-tabs" role="tablist" aria-label="Clock/Timer Settings">
+                    <div class="graphical-tab-row"><button type="button" role="tab" id="graphical-tab-timer" aria-controls="graphical-pane-timer" aria-selected="true" tabindex="0" data-graphical-tab="timer" data-language-id="781a123f-d439-55b5-b4b0-b76fc9beef4c">{{text:781a123f-d439-55b5-b4b0-b76fc9beef4c:text0}}</button><button type="button" role="tab" id="graphical-tab-time" aria-controls="graphical-pane-time" aria-selected="false" tabindex="-1" data-graphical-tab="time" data-language-id="4f6e1b96-f64a-5b5e-8277-47dac39c46f0">{{text:4f6e1b96-f64a-5b5e-8277-47dac39c46f0:text0}}</button><button type="button" role="tab" id="graphical-tab-style" aria-controls="graphical-pane-style" aria-selected="false" tabindex="-1" data-graphical-tab="style" data-language-id="4ae025d7-fba2-5582-bf1f-2e174c1f5383">{{text:4ae025d7-fba2-5582-bf1f-2e174c1f5383:text0}}</button></div>
+                    <div class="graphical-tab-row graphical-preview-tabs"><button type="button" role="tab" id="graphical-tab-preview1" aria-controls="graphical-pane-preview1" aria-selected="false" tabindex="-1" data-graphical-tab="preview1" data-language-id="ed2aa7c9-f4a5-5913-afec-7a5bbc291451">{{text:ed2aa7c9-f4a5-5913-afec-7a5bbc291451:text0}}</button><button type="button" role="tab" id="graphical-tab-preview2" aria-controls="graphical-pane-preview2" aria-selected="false" tabindex="-1" data-graphical-tab="preview2" data-language-id="a38708ce-ce42-501e-9818-b157d7043591">{{text:a38708ce-ce42-501e-9818-b157d7043591:text0}}</button></div>
+                </div>
+                <div class="graphical-tab-panes">
 
-                <div class="settings-groups">
-                    <details class="settings-category timer-settings-fieldset">
-                        <summary data-language-id="e3d5bd7e-0ea9-5d4e-85ab-155d6b62d92a">{{text:e3d5bd7e-0ea9-5d4e-85ab-155d6b62d92a:text0}}</summary>
+
+                    <section id="graphical-pane-timer" class="settings-category graphical-tab-panel" role="tabpanel" aria-labelledby="graphical-tab-timer">
                         <div class="settings-category-content">
                         <label data-language-id="432c4180-3b15-53e6-963f-050b90fc59b1">{{text:432c4180-3b15-53e6-963f-050b90fc59b1:text0}}<select name="timerMode" data-language-id="3a0b82c7-c5d3-5719-bd57-ae3469627cd2">{{options:3a0b82c7-c5d3-5719-bd57-ae3469627cd2}}</select>
                         </label>
@@ -109,10 +113,9 @@
                         </div>
 
                         </div>
-                    </details>
+                    </section>
 
-                    <details class="settings-category">
-                        <summary data-language-id="41963fb4-2179-52ad-adb4-1ef48cb6c897">{{text:41963fb4-2179-52ad-adb4-1ef48cb6c897:text0}}</summary>
+                    <section id="graphical-pane-time" class="settings-category graphical-tab-panel" role="tabpanel" aria-labelledby="graphical-tab-time" hidden>
                         <div class="settings-category-content">
                         <label class="toggle-row" data-language-id="d9278d69-e096-513a-b0dd-4cd6fa6d69c7">{{text:d9278d69-e096-513a-b0dd-4cd6fa6d69c7:text0}}<input name="militaryTime" type="checkbox" checked></label>
                         <div class="settings-help-row">
@@ -138,10 +141,9 @@
                         <label data-language-id="170c3180-75e1-58d8-a7c0-6ab392107802">{{text:170c3180-75e1-58d8-a7c0-6ab392107802:text0}}<input name="indicatorSymbol" value="▲"></label>
 
                         </div>
-                    </details>
+                    </section>
 
-                    <details class="settings-category">
-                        <summary data-language-id="80b10f89-a7ed-50be-a908-8206ff4956e5">{{text:80b10f89-a7ed-50be-a908-8206ff4956e5:text0}}</summary>
+                    <section id="graphical-pane-style" class="settings-category graphical-tab-panel" role="tabpanel" aria-labelledby="graphical-tab-style" hidden>
                         <div class="settings-category-content">
                             <div class="clock-font-setting">
                                 <span class="clock-font-label" data-language-id="21f1d899-6d13-5a2c-8e78-8581ba6dade0">{{text:21f1d899-6d13-5a2c-8e78-8581ba6dade0:text0}}</span>
@@ -187,25 +189,26 @@
                                 <label data-language-id="a1e730b2-fdca-5385-953c-113ed9fd033a">{{text:a1e730b2-fdca-5385-953c-113ed9fd033a:text0}}<input name="borderColor" type="color" value="#001e60"></label>
                             </div>
                         </div>
-                    </details>
+                    </section>
+
+
+<section id="graphical-pane-preview1" class="clock-preview graphical-tab-panel" role="tabpanel" aria-labelledby="graphical-tab-preview1" hidden>
+                    <button type="button" class="preview-legend-button" data-preview-legend="1" aria-label="{{text:59f7381d-5ebd-57a2-8147-f2ef237a2194:text0}}">?</button>
+                    <clock-timer id="clockPreview" military-time="true" time-format="HHmm" visible-hours="12,3,6,9" tick-marks="[10]" indicator-symbol="▲"></clock-timer>
+                </section><section id="graphical-pane-preview2" class="clock-preview graphical-tab-panel" role="tabpanel" aria-labelledby="graphical-tab-preview2" hidden>
+                    <button type="button" class="preview-legend-button" data-preview-legend="2" aria-label="{{text:59f7381d-5ebd-57a2-8147-f2ef237a2194:text0}}">?</button>
+                    <clock-timer id="clockPreview2" military-time="true" time-format="HHmm" visible-hours="12,3,6,9" tick-marks="[10]" indicator-symbol="▲"></clock-timer>
+                </section>
 
                 </div>
-
-            <aside class="clock-preview" aria-label="{{text:8f91b0e8-d060-57f2-a712-eeb0d7a7daf2:aria-label}}" data-language-id="8f91b0e8-d060-57f2-a712-eeb0d7a7daf2">
-                <clock-timer
-                    id="clockPreview"
-                    military-time="true"
-                    time-format="HHmm"
-                    visible-hours="12,3,6,9"
-                    tick-marks="[10]"
-                    indicator-symbol="▲"
-                ></clock-timer>
-            </aside>
-
             </div>
 
         </form>
 
+        <div id="graphicalPreviewLegend" class="settings-help-popover graphical-preview-legend" popover="auto" role="dialog" aria-label="{{text:b11d4e43-74ae-5662-a4c9-5406146569f5:text0}}">
+            <header class="settings-help-header"><h3>{{text:b11d4e43-74ae-5662-a4c9-5406146569f5:text0}}</h3><button type="button" class="settings-help-close" data-close-preview-legend aria-label="Close">×</button></header>
+            <div data-preview-legend-rows></div>
+        </div>
         <div id="graphicalHelpPopover" class="settings-help-popover" popover="manual" role="dialog" aria-labelledby="graphicalHelpTitle">
             <header class="settings-help-header">
                 <h3 id="graphicalHelpTitle"></h3>
