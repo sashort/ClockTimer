@@ -57,7 +57,7 @@ const out = path.resolve(__dirname,'../../outputs/halloween-implemented'); fs.mk
         const saved = settings.orderFiller['wmof.clock.graphicalSettings'];
         const original = await p.evaluate(() => getComputedStyle(document.querySelector('.app')).backgroundImage);
         await p.locator('#menuButton').click(); await p.locator('#settingsMenuButton').click();
-        await p.locator('#themesMenuButton').click(); await p.locator('label.halloween-theme-option').click();
+        await p.locator('#visualSettingsMenuButton').click();await p.locator('#themesMenuButton').click(); await p.locator('label.halloween-theme-option').click();
         await p.waitForFunction(() => WMOFSeasonalTheme.active && !document.querySelector('#halloweenThemeToggle').disabled);
         assert.equal(settings.orderFiller['wmof.clock.theme'],'halloween');
         await shot('themes-menu');
@@ -118,7 +118,7 @@ const out = path.resolve(__dirname,'../../outputs/halloween-implemented'); fs.mk
         await p.locator('#numberPadCancel').click(); await p.waitForFunction(()=>!document.querySelector('#numberPadDialog').open);
         await op(()=>WMOFActions.closeTripLog('pointer'));
         await p.locator('#menuButton').click();await p.locator('#settingsMenuButton').click();
-        await p.locator('#openGraphicalSettingsFrame').click();await p.waitForSelector('#clockTimerSettingsFrameDialog[open]');
+        await p.locator('#visualSettingsMenuButton').click();await p.locator('#openGraphicalSettingsFrame').click();await p.waitForSelector('#clockTimerSettingsFrameDialog[open]');
         await p.waitForTimeout(1000);await shot('clock-settings');
         const frame = p.frames().find(frame=>frame.url().includes('graphical-settings'));
         if(frame) assert.equal(await frame.evaluate(()=>WMOFSeasonalTheme.active),true,'embedded settings follow the same theme');

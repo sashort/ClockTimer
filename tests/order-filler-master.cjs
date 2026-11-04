@@ -95,7 +95,7 @@ module.exports = async function runMaster(method) {
   await check('sync on and off',async()=>{
    for(const enabled of [true,false]) {
     if(method==='voice')await say('sync '+(enabled?'on':'off'));
-    else {await tap('#menuButton');await tap('#toggleSyncMenuButton');await tap('#menuButton');}
+    else {await tap('#menuButton');await tap('#goalSettingsMenuButton');await tap('#toggleSyncMenuButton');await tap('#menuButton');}
     assert.equal(await state(()=>document.querySelector('#clockTimer').autoSyncTripGoal),enabled);
    }
   });
