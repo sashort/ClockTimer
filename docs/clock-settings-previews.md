@@ -8,7 +8,7 @@ its aspect ratio and sizes itself within the preview panel. No overlap fading
 or settings accordion is used.
 
 Both preview clocks share the same unsaved graphical settings. Preview 1 replays
-an early start, lunch with start/end buffers, a late return, pending Down Time
+an early start, lunch and an ordinary break with start/end buffers, late returns, pending Down Time
 and a B-Game target. Preview 2 replays approved Down intervals with surplus and
 deficit, plus tolerance and overtime. The blue question button in the upper-right
 of each pane opens an opaque legend for that sample. The normal visibility

@@ -20,6 +20,7 @@
         };
         if (kind === 1) {
             interval('lunch','lunch',25,20,52,2,2);
+            interval('break','break',58,8,70,1,1);
             interval('down','down',75,0,85);
         } else {
             interval('surplus','down',20,0,28,0,0,12);

@@ -1159,16 +1159,19 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
     let activeTab = 'timer';
     const tabs = [...graphicalDialog.querySelectorAll('[data-graphical-tab]')];
     const legend = $('#graphicalPreviewLegend');
-    const legendLabels = {"tripColor":"5f3b053b-884f-5f02-9735-c02ee861d31e","earlyStartColor":"76514e6b-dd45-5816-8679-56ac0b810405","lunchColor":"523992d5-bf10-51ee-9896-0a937f90822a","breakBufferColor":"7331a561-6a67-583c-94ae-49386f019d72","latencyColor":"355164aa-7393-54fa-8742-91078b551c21","downColor":"a7f3763f-611c-54d6-a6db-3352496188c1","approvalSurplusColor":"ac03aa14-9f95-5b8e-a478-8d69d392c11d","approvalDeficitColor":"e445b97e-2751-5986-a570-4635660c8037","toleranceColor":"4e9841ee-677a-5df5-a371-94be5bc0e6ca","overtimeColor":"d01c97fd-cc7b-5c7a-83ad-fab369695d3e"};
+    const legendLabels = {"breakColor":"aee419c2-4c28-54b6-822a-e65a8ca28c10","tripColor":"5f3b053b-884f-5f02-9735-c02ee861d31e","earlyStartColor":"76514e6b-dd45-5816-8679-56ac0b810405","lunchColor":"523992d5-bf10-51ee-9896-0a937f90822a","breakBufferColor":"7331a561-6a67-583c-94ae-49386f019d72","latencyColor":"355164aa-7393-54fa-8742-91078b551c21","downColor":"a7f3763f-611c-54d6-a6db-3352496188c1","approvalSurplusColor":"ac03aa14-9f95-5b8e-a478-8d69d392c11d","approvalDeficitColor":"e445b97e-2751-5986-a570-4635660c8037","toleranceColor":"4e9841ee-677a-5df5-a371-94be5bc0e6ca","overtimeColor":"d01c97fd-cc7b-5c7a-83ad-fab369695d3e"};
     function renderPreviewLegend() {
         if (!legend) return;
         const settings = settingsFromForm($('#graphicalSettingsForm'));
         const keys = activeTab === 'preview2'
             ? ['tripColor','downColor','approvalSurplusColor','approvalDeficitColor','toleranceColor','overtimeColor']
-            : ['tripColor','earlyStartColor','lunchColor','breakBufferColor','latencyColor','downColor','toleranceColor'];
+            : ['tripColor','earlyStartColor','breakColor','lunchColor','breakBufferColor','latencyColor','downColor','toleranceColor'];
         legend.querySelector('[data-preview-legend-rows]').replaceChildren(...keys.map(key => {
             const row = document.createElement('div'); row.className = 'preview-legend-row';
-            const swatch = document.createElement('span'); swatch.style.backgroundColor = settings[key] || GRAPHICAL_DEFAULTS[key];
+            const swatch = document.createElement('span');
+            const timer = previewTimers[activeTab === 'preview2' ? 1 : 0];
+            const variable = '--clock-timer-' + key.replace(/[A-Z]/g,c => '-'+c.toLowerCase());
+            swatch.style.backgroundColor = (timer && getComputedStyle(timer).getPropertyValue(variable).trim()) || settings[key] || GRAPHICAL_DEFAULTS[key];
             row.append(swatch,document.createTextNode(WMOFLanguagePack.text(legendLabels[key])));
             return row;
         }));

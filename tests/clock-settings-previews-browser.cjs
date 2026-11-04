@@ -35,7 +35,7 @@ const server=http.createServer((req,res)=>{
    await page.clock.runFor(300);
    const before=await metrics(id);assert(before.elapsed>=7195000&&before.elapsed<7196000);
    assert(before.height>200&&before.width>200,'preview fills the constrained pane');
-   const expected=index===1?['earlystart','lunch','buffer','latency','down','tolerance']:['down','approval-surplus','approval-deficit','tolerance','overtime'];
+   const expected=index===1?['earlystart','break','lunch','buffer','latency','down','tolerance']:['down','approval-surplus','approval-deficit','tolerance','overtime'];
    for(const range of expected)assert(before.types.includes(range),type+' preview '+index+' missing '+range);
    if(type==='radial-overflow')assert.deepEqual(before.active,[1]);else assert.deepEqual(before.base,[0],'fitted uses one base ring');
    await page.clock.runFor(4400);if(type==='radial-overflow')assert.deepEqual((await metrics(id)).active,before.active,'no premature ring switch');else assert.deepEqual((await metrics(id)).base,[0]);

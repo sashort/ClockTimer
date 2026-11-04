@@ -7472,6 +7472,11 @@
       "id": "d01c97fd-cc7b-5c7a-83ad-fab369695d3e",
       "text": "Overtime",
       "default": "Overtime"
+    },
+    "aee419c2-4c28-54b6-822a-e65a8ca28c10": {
+      "id": "aee419c2-4c28-54b6-822a-e65a8ca28c10",
+      "text": "Break",
+      "default": "Break"
     }
   }
 }
