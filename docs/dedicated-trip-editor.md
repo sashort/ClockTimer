@@ -65,3 +65,5 @@ The timeline body reserves a stable scrollbar gutter and a separate right inset,
 Scheduled Start sorts before Actual Start at equal instants and has a dashed accent with a clock marker. Add Entry aligns with the timeline cards, excluding the circle gutter. Unsaved intervals use Cancel; saved intervals use Delete. Underlined timeline and approval values are editable; derived accounting values are plain.
 
 Trip Log separates aggregate navigation above a keyboard/pointer-resizable splitter from an independently scrolling trip list below. A sticky scope path returns to parent scopes or the full date range. Selecting an aggregate updates the overview, main Down Time ledger and trip list together. The aggregate pane is capped at 40% of the split region, leaving at least 150px for trips; single-day views omit aggregate navigation. Range changes reset the selected scope, while refreshes preserve it when available.
+
+Category backgrounds match between individual Down intervals and the combined read-only footer. Editor-origin numberpads carry a presentation hint, using neutral Trip Log surfaces and the theme accent; other callers retain the standard keypad palette.

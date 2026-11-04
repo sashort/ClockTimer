@@ -14539,6 +14539,7 @@
 
     function refreshNumberPad() {
         if (!numberPadState || !numberPadDialog) return;
+        numberPadDialog.dataset.presentation = numberPadState.presentation || "";
         const percentMode = numberPadState.mode === "percent";
         const absoluteMode = numberPadState.mode === "absolute";
         numberPadContext.textContent = numberPadState.title;
@@ -14736,7 +14737,8 @@
         anchorDigit = 1,
         previewOfficial,
         onClearOfficial,
-        confirmUnchanged = false
+        confirmUnchanged = false,
+        presentation
     } = {}) {
         if (
             typeof confirmTarget !== "string" ||
@@ -14802,6 +14804,7 @@
             initialMilliseconds, milliseconds: initialMilliseconds,
             mode: normalizedMode,
             anchorDigit, previewOfficial, onClearOfficial, confirmUnchanged,
+            presentation: presentation === "trip-editor" ? "trip-editor" : "",
             onConfirm,
             onCancel,
             source,

@@ -8192,3 +8192,22 @@ shared-modal-host dialog#clockTimerSettingsFrameDialog iframe:not([data-settings
 .trip-editor-scheduled>strong::before {content:'◷ ';color:var(--wm-blue-light);}
 
 .trip-editor-down-accounting button.trip-editor-accounting-cell>strong {text-decoration:underline;text-underline-offset:3px;}
+
+/* Category fills stay identical in individual intervals and the read-only total. */
+.trip-editor-accounting-cell {background:var(--editor-card);}
+.trip-editor-accounting-cell:is([data-down-amount="pending"],[data-down-amount="approved"]) {background:var(--editor-bg);}
+
+/* Editor-origin numberpads retain their caller's neutral surfaces. */
+html .number-pad-dialog[data-presentation="trip-editor"] {--pad-editor-bg:#303b45;--pad-editor-card:#46515c;--pad-editor-accent:var(--wm-blue-light);color:var(--wm-white);background:var(--pad-editor-bg);}
+html[data-seasonal-theme="halloween"] .number-pad-dialog[data-presentation="trip-editor"] {--pad-editor-bg:#21170f;--pad-editor-card:#382717;}
+html .number-pad-dialog[data-presentation="trip-editor"] :is(.number-pad-shell,.number-pad-header,.number-pad-readout,.number-pad-grid) {background:var(--pad-editor-bg);}
+html .number-pad-dialog[data-presentation="trip-editor"] :is(.number-pad-context,.number-pad-voice-switch,.number-pad-settings,.number-pad-key,.number-pad-ampm,.number-pad-date) {background:var(--pad-editor-card);color:var(--wm-white);border-color:rgb(255 255 255 / 30%);}
+html .number-pad-dialog[data-presentation="trip-editor"] :is(.number-pad-display,.number-pad-backspace,.number-pad-close) {color:var(--pad-editor-accent);}
+html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-close {background:var(--pad-editor-bg);border:1px solid var(--pad-editor-accent);}
+html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-confirm {background:var(--pad-editor-accent);color:#112431;}
+html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-ampm[aria-pressed="true"] {background:var(--pad-editor-accent);color:#112431;}
+html .number-pad-dialog[data-presentation="trip-editor"] input {color:inherit;color-scheme:dark;}
+
+html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-display {color:var(--wm-white);}
+html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-clear-reset {background:var(--pad-editor-card);color:var(--wm-white);}
+html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-split-action {background:transparent;color:inherit;}

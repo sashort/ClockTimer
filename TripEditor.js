@@ -33,7 +33,7 @@
         close(){if(this.saving)return;if(this.dirty&&!confirm('Discard changes to this trip?'))return;this.dialog.close();}
         error(error){this.alert.textContent=error.message||String(error);}
         format(value){if(!Number.isFinite(time(value)))return 'Set time';return new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(time(value)))+'.'+String(new Date(time(value)).getUTCMilliseconds()).padStart(3,'0');}
-        async pad(options){return this.options.numberPad({cancelTarget:'none',confirmTarget:'none',...options});}
+        async pad(options){return this.options.numberPad({cancelTarget:'none',confirmTarget:'none',...options,presentation:'trip-editor'});}
         changed(){this.dirty=true;this.alert.textContent='';for(const event of this.intervals())if(!Object.values(this.invalid(event)).some(Boolean))event._editorSortTime=time(event.timestamp);this.render();clearTimeout(this.previewTimer);this.previewTimer=setTimeout(()=>this.preview(),200);}
         sorted(){return [...this.events].filter(e=>['trip.started','trip.stopped','interval.started'].includes(e.event)).sort((a,b)=>order(a)-order(b));}
         deleted(){return new Set(this.events.filter(e=>e.event==='interval.deleted').map(e=>e.value?.intervalKey));}
