@@ -29,7 +29,7 @@
         return icon;
     };
     class TripLog {
-        constructor(root,options) {this.root=root;this.options=options;this.expanded=new Map();this.editor=null;this.settingsVisible=false;this.downTimeExpanded=true;this.downTimeOnly=false;this.adjustedOnly=false;this.showPending=true;for(const key of ['downTimeExpanded','downTimeOnly','adjustedOnly','showPending'])if(typeof options.viewSettings?.()?.[key]==='boolean')this[key]=options.viewSettings()[key];}
+        constructor(root,options) {this.root=root;this.options=options;this.trips=[];this.expanded=new Map();this.editor=null;this.settingsVisible=false;this.downTimeExpanded=true;this.downTimeOnly=false;this.adjustedOnly=false;this.showPending=true;for(const key of ['downTimeExpanded','downTimeOnly','adjustedOnly','showPending'])if(typeof options.viewSettings?.()?.[key]==='boolean')this[key]=options.viewSettings()[key];}
         downtimeSummary(summary, overview=false) {
             if(!summary?.hasDowntime)return undefined;
             const box=node('div',undefined,'trip-log-downtime'+(overview?' trip-log-downtime-overview':''));
@@ -57,31 +57,95 @@
             const result=node('strong',undefined,'trip-log-down-time'+(stacked?' is-stacked':''));
             result.append(node('span',duration(milliseconds),'trip-log-down-whole'),node('small',stacked?`(${digits} ms)`:`.${digits}`,'trip-log-down-milliseconds'));return result;
         }
+        downCategoryButton(kind,label,value,className,stacked=false) {
+            const button=node('button',undefined,className+' trip-log-down-category');button.type='button';button.dataset.downCategory=kind;button.disabled=!(value>0);
+            button.setAttribute('aria-label',globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000024',{category:label}));
+            button.append(node('span',label),this.downTimeValue(value,stacked));button.addEventListener('click',()=>void this.applyDownShortcut(kind).catch(error=>this.error(error)));return button;
+        }
+        closestDownSettings(category,trips=this.downSummaryTrips||[]) {
+            const rows=trips.map(trip=>({trip,down:TripDowntimeSummary.breakdown([trip],{now:this.downtimeNow}),adjusted:this.hasOfficialPercent(trip)}));
+            const keys={pending:'pendingMilliseconds',approved:'approvedMilliseconds',unapproved:'unapprovedMilliseconds',logged:'loggedMilliseconds',applied:'combinedMilliseconds'},key=keys[category];if(!key)return null;
+            const contributing=rows.filter(row=>row.down[key]>0);if(!contributing.length)return null;
+            const required=new Set(contributing.map(row=>row.trip)),needsPending=category==='pending'||category==='applied'&&contributing.some(row=>row.down.pendingMilliseconds>0),needsActive=contributing.some(row=>row.trip.running);
+            const current={includeCurrent:Boolean(this.options.includeCurrent?.()),showPending:this.showPendingPreference,downTimeOnly:this.downTimeOnly,adjustedOnly:this.adjustedOnly};let best=null;
+            const less=(a,b)=>{for(let i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]<b[i];return false;};
+            for(let mask=0;mask<16;mask++){
+                const candidate={includeCurrent:Boolean(mask&1),showPending:Boolean(mask&2),downTimeOnly:Boolean(mask&4),adjustedOnly:Boolean(mask&8)};
+                const matching=rows.filter(row=>!candidate.adjustedOnly||row.adjusted),hasDown=matching.some(row=>row.down.hasDowntime),effectivePending=candidate.showPending||candidate.downTimeOnly&&hasDown;
+                if(needsPending&&!effectivePending||needsActive&&!candidate.includeCurrent)continue;
+                const visible=matching.filter(row=>(candidate.includeCurrent||!row.trip.running)&&(!candidate.downTimeOnly||!hasDown||row.down.hasDowntime));if(!contributing.every(row=>visible.includes(row)))continue;
+                const changed=Object.keys(current).filter(key=>current[key]!==candidate[key]);
+                const extra=visible.filter(row=>!required.has(row.trip)).length,extraActive=candidate.includeCurrent?visible.filter(row=>row.trip.running&&!required.has(row.trip)).length:0,extraPending=effectivePending&&!needsPending?visible.filter(row=>row.down.pendingMilliseconds>0).length:0,score=[extra,extraActive+extraPending,changed.length];
+                if(!best||less(score,best.score))best={...candidate,changed,score,contributors:contributing.map(row=>row.trip.id)};
+            }
+            return best;
+        }
+        async applyDownShortcut(category) {
+            if(this.downShortcutBusy)return false;
+            const next=this.closestDownSettings(category);if(!next)return false;
+            this.downDialog?.close();if(!next.changed.length)return true;
+            this.downShortcutBusy=true;
+            try{
+                const changed=new Set(next.changed),oldPending=this.showPendingEffective;
+                this.downTimeOnly=next.downTimeOnly;this.adjustedOnly=next.adjustedOnly;this.showPending=next.showPending;this.saveViewSettings();
+                if(changed.has('includeCurrent'))await this.options.onIncludeCurrent?.(next.includeCurrent);
+                if(changed.has('showPending'))await this.options.onShowPendingDownTime?.(next.showPending);
+                this.rerender();if(oldPending!==this.showPendingEffective)changed.add('showPending');
+                this.setSettingsVisible(true);
+                const selectors={includeCurrent:'[data-include-current]',showPending:'[data-show-pending]',downTimeOnly:'[data-down-time-filter-fallback]',adjustedOnly:'[data-adjusted-only]'};
+                for(const key of changed)this.settings.querySelector(selectors[key])?.closest('label').classList.add('is-shortcut-updated');
+                const notice=node('span',globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000025'),'trip-log-shortcut-status');notice.setAttribute('role','status');this.settingsDialog.append(notice);
+                await new Promise(resolve=>setTimeout(resolve,1600));
+                this.settings.querySelectorAll('.is-shortcut-updated').forEach(label=>label.classList.remove('is-shortcut-updated'));notice.remove();this.setSettingsVisible(false);return true;
+            }finally{this.downShortcutBusy=false;}
+        }
         downTimeSection(trips) {
             const text=id=>globalThis.WMOFLanguagePack.text(id);
             const totals=TripDowntimeSummary.breakdown(trips,{now:this.downtimeNow});
             if(totals.pendingMilliseconds+totals.approvedMilliseconds+totals.unapprovedMilliseconds===0)return undefined;
             const includePending=this.showPendingEffective;
             const section=node('section',undefined,'trip-log-down-section');
-            const details=node('details',undefined,'trip-log-down-breakdown');details.open=this.downTimeExpanded;
-            details.addEventListener('toggle',()=>{if(details.isConnected&&this.downTimeExpanded!==details.open){this.downTimeExpanded=details.open;this.saveViewSettings();}});
-            const summary=node('summary');summary.append(node('strong',text('e09300d4-7ac5-4678-9f45-f5cc4500ff6d')));
-            const total=node('span',undefined,'trip-log-down-effective');
-            total.append(node('span',text(includePending?'d7300001-7888-4711-9000-000000000011':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39')),this.downTimeValue(includePending?totals.combinedMilliseconds:totals.approvedMilliseconds));summary.append(total);
+            const details=node('section',undefined,'trip-log-down-breakdown');
+            const summary=node('header');summary.append(node('strong',text('e09300d4-7ac5-4678-9f45-f5cc4500ff6d')));
+            const total=this.downCategoryButton(includePending?'applied':'approved',text(includePending?'d7300001-7888-4711-9000-000000000011':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39'),includePending?totals.combinedMilliseconds:totals.approvedMilliseconds,'trip-log-down-effective');summary.append(total);
             const content=node('div',undefined,'trip-log-down-content'),grid=node('div',undefined,'trip-log-down-grid');
             for(const [id,value,kind] of [['d7300001-7888-4711-9000-000000000002',totals.pendingMilliseconds,'pending'],['a6d2eeb0-2d5b-4a59-b059-4039e7492e39',totals.approvedMilliseconds,'approved'],['d7300001-7888-4711-9000-000000000003',totals.unapprovedMilliseconds,'unapproved']]){
                 if(kind==='pending'&&!this.showPendingEffective)continue;
-                const cell=node('div',undefined,'trip-log-down-'+kind);cell.append(node('span',text(id)),this.downTimeValue(value,true));grid.append(cell);
+                const cell=this.downCategoryButton(kind,text(id),value,'trip-log-down-'+kind,true);grid.append(cell);
             }
-            const logged=node('div',undefined,'trip-log-down-logged');logged.append(node('span',text('edb1ce75-f212-4577-a1b3-e88dc28bcb78')),this.downTimeValue(totals.loggedMilliseconds));
+            const logged=this.downCategoryButton('logged',text('edb1ce75-f212-4577-a1b3-e88dc28bcb78'),totals.loggedMilliseconds,'trip-log-down-logged');
             content.append(grid,logged);details.append(summary,content);
-            const filter=node('label',undefined,'trip-log-down-filter'),check=node('input');check.type='checkbox';check.dataset.downTimeOnly='true';check.checked=this.downTimeOnlyEnabled;check.disabled=!this.hasVisibleDownTime;
-            check.addEventListener('change',()=>{this.downTimeOnly=check.checked;this.saveViewSettings();this.rerender();});filter.append(check,node('span',text('d7300001-7888-4711-9000-000000000004')));
-            content.append(filter);section.append(details);return section;
+            section.append(details);return section;
         }
         numberPad(options={}) {return this.options.numberPad({cancelTarget:'none',confirmTarget:'none',...options});}
-        setSettingsVisible(visible) {this.settingsVisible=Boolean(visible);const box=this.root.querySelector('.trip-log-settings');if(box){box.classList.toggle('is-open',this.settingsVisible);box.firstElementChild.inert=!this.settingsVisible;box.setAttribute('aria-hidden',String(!this.settingsVisible));const sync=()=>this.root.style.setProperty('--trip-log-settings-height',`${this.settingsVisible?box.getBoundingClientRect().height:0}px`);requestAnimationFrame(sync);box.addEventListener('transitionend',sync,{once:true});}}
-        render(data,calendar) {
+        overlay(kind,title) {
+            const key=kind+'Dialog';if(this[key])return this[key];
+            const dialog=node('dialog',undefined,'app-dialog trip-log-'+kind+'-dialog'),head=node('header',undefined,'dialog-header'),heading=node('h2',title),close=node('button','×');if(kind==='down'){const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('class','trip-log-downtime-icon');icon.setAttribute('aria-hidden','true');icon.innerHTML='<path d="M9 2h6M12 2v3M18 6l2-2"/><circle cx="12" cy="14" r="8"/><path d="M12 9v5l3 2"/>';heading.prepend(icon);}close.type='button';close.setAttribute('aria-label',globalThis.WMOFLanguagePack.text('2db71c87-d3a0-5fa0-9144-6c0d21ad47c0'));close.addEventListener('click',()=>dialog.close());head.append(heading,close);dialog.append(head,node('div',undefined,'trip-log-overlay-content'));document.body.append(dialog);document.querySelector('shared-modal-host')?.register(dialog);this[key]=dialog;return dialog;
+        }
+        setSettingsVisible(visible) {
+            this.settingsVisible=Boolean(visible);this.root.style.setProperty('--trip-log-settings-height','0px');
+            if(!this.settings)return;
+            const dialog=this.overlay('settings',globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000015'));
+            if(!dialog.contains(this.settings))dialog.lastElementChild.append(this.settings);
+            this.settings.classList.add('is-open');this.settings.firstElementChild.inert=false;this.settings.removeAttribute('aria-hidden');
+            if(visible&&!dialog.open){dialog.showModal();this.options.onSettingsOpened?.();}else if(!visible&&dialog.open)dialog.close();
+            if(!dialog.dataset.bound){dialog.dataset.bound='true';dialog.addEventListener('close',()=>{this.settingsVisible=false;this.options.onSettingsClosed?.();});}
+        }
+        showDownSummary() {
+            if(!this.downSummaryTrips?.length)return;
+            const section=this.downTimeSection(this.downSummaryTrips);if(!section)return;
+            const dialog=this.overlay('down',globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000017'));dialog.lastElementChild.replaceChildren(section);
+            if(!dialog.open)dialog.showModal();
+        }
+        updateDownSummary(trips) {
+            this.downSummaryTrips=trips;const totals=TripDowntimeSummary.breakdown(trips,{now:this.downtimeNow});
+            this.options.onDownAvailable?.(totals.pendingMilliseconds+totals.approvedMilliseconds+totals.unapprovedMilliseconds>0);
+            if(this.downDialog?.open){const section=this.downTimeSection(trips);if(section){this.downDialog.lastElementChild.replaceChildren(section);}else this.downDialog.close();}
+        }
+
+        render(data,calendar,{liveUpdate=false}={}) {
+            const scroll=[...this.root.querySelectorAll('.trip-log-aggregate-pane,.trip-log-trips-pane')].map(e=>[e.className,e.scrollTop,e.scrollLeft]);
+            const rootScroll=this.root.scrollTop;
             this.calendar=calendar;this.downtimeNow=this.options.now?.()??Date.now();
             this.activeSweepDelay=`-${Math.round(performance.now()%4200)}ms`;
             this.incomplete=Boolean(data.incomplete);this.offline=Boolean(data.offline);this.loginRequired=Boolean(data.loginRequired);
@@ -99,21 +163,21 @@
             const downTotals=TripDowntimeSummary.breakdown(matchingTrips,{now:this.downtimeNow});
             this.hasVisibleDownTime=downTotals.pendingMilliseconds+downTotals.approvedMilliseconds+downTotals.unapprovedMilliseconds>0;
             const visibleTrips=matchingTrips.filter(trip=>!this.downTimeOnlyEnabled||TripDowntimeSummary.breakdown([trip],{now:this.downtimeNow}).hasDowntime);
-            this.aggregation=aggregate(visibleTrips,true,this.downtimeNow);const fragment=document.createDocumentFragment();
-            if(!trips.length)this.settingsVisible=true;
-            let settings=this.root.querySelector('.trip-log-settings');
+            this.visibleTrips=visibleTrips;this.matchingTrips=matchingTrips;this.aggregation=aggregate(visibleTrips,true,this.downtimeNow);const fragment=document.createDocumentFragment();
+
+            let settings=this.settings||this.root.querySelector('.trip-log-settings');
             const reuseSettings=Boolean(settings);
             if(!settings){settings=node('section',undefined,'trip-log-settings');settings.id='tripLogSettings';
-                const contents=node('div',undefined,'trip-log-settings-content');contents.append(this.controls(calendar),node('hr',undefined,'trip-log-settings-divider'));settings.append(contents);
+                const contents=node('div',undefined,'trip-log-settings-content');contents.append(this.controls(calendar),node('hr',undefined,'trip-log-settings-divider'));settings.append(contents);this.settings=settings;
             } else {
                 const selects=settings.querySelectorAll('select');selects[0].value=this.options.filter();selects[1].value=this.options.range();
                 const dates=window.CalendarRange.dates(calendar),inputs=settings.querySelectorAll('input[type=date]');
                 inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=i===1&&this.options.range()!=='custom';});
-                const includeCurrent=settings.querySelector('input[data-include-current]');if(includeCurrent)includeCurrent.checked=Boolean(this.options.includeCurrent?.());
+                const includeCurrent=settings.querySelector('input[data-include-current]');if(includeCurrent){includeCurrent.checked=Boolean(this.options.includeCurrent?.());includeCurrent.disabled=false;includeCurrent.closest('label').classList.toggle('is-unavailable',!Boolean(this.options.liveTrip?.()||trips.some(t=>t.running)));}
                 const pending=settings.querySelector('input[data-show-pending]');if(pending){pending.checked=this.showPendingPreference;pending.disabled=this.downTimeOnlyEnabled;pending.closest('label').classList.toggle('is-unavailable',this.downTimeOnlyEnabled);}
-                const fallback=settings.querySelector('[data-down-time-filter-fallback]');if(fallback){fallback.checked=this.downTimeOnly;fallback.disabled=!this.hasVisibleDownTime;fallback.closest('label').hidden=this.hasVisibleDownTime;fallback.closest('label').classList.toggle('is-unavailable',!this.hasVisibleDownTime);}
+                const fallback=settings.querySelector('[data-down-time-filter-fallback]');if(fallback){fallback.checked=this.downTimeOnly;fallback.disabled=false;fallback.closest('label').hidden=false;fallback.closest('label').classList.toggle('is-unavailable',!this.hasVisibleDownTime);}
             }
-            if(!reuseSettings)fragment.append(settings);
+
             if(calendar.historical){
                 const status=node('section',undefined,'trip-log-range-status');status.setAttribute('role','status');const dates=CalendarRange.dates(calendar);
                 const label=globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000009');status.append(node('span',`${label} · ${dates.start} – ${dates.end}`));
@@ -128,18 +192,42 @@
             this.scopePanels(fragment,visibleTrips,matchingTrips,levels,calendar);
 
             } else {
-                if(!data.loginRequired){const down=this.downTimeSection(trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip)));if(down)fragment.append(down);}
+                this.updateDownSummary(trips);
                 const message=node('p',data.loginRequired?globalThis.WMOFLanguagePack.text("1b02fb00-aed1-432b-9c06-2cc98704eea2"):data.offline?globalThis.WMOFLanguagePack.text("595de126-bd64-4acc-be0f-a314413c2bd6"):globalThis.WMOFLanguagePack.text("d621fec0-6ca8-42fd-a0cf-1894616fd377"),'trip-log-empty-message');
-                message.setAttribute('role','status');fragment.append(message);
+                message.setAttribute('role','status');if(!data.loginRequired&&!data.offline){const range=this.options.range(),labels={day:'86e12fa9-95ff-4a20-84bd-8d6744217a01',week:'0589fe2c-5781-433b-855b-a30cbc304c15','pay-period':'ff8216fc-6cdb-4cbb-a433-1d2bae1e8232',month:'ed109a97-8e31-4c93-85cb-6dfb4480c0f7',year:'c9de230e-c958-41be-ad35-70174a864a3f',custom:'9e063c44-5f74-4196-bbab-3a49a72be041'};let label=this.options.rangeLabel?.()||globalThis.WMOFLanguagePack.text(labels[range]);if(range==='week'&&!this.options.rangeLabel){const number=this.options.weekNumber?.(CalendarRange.dates(calendar).start)??CalendarRange.weekNumber(calendar,CalendarRange.dates(calendar).start);if(number)label+=' '+number;}if(range==='day'&&calendar.historical)label+=' - '+CalendarRange.dates(calendar).start;message.replaceChildren(node('strong',globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000016')),node('small',label));}fragment.append(message);
             }
-            if(reuseSettings){for(const child of [...this.root.children])if(child!==settings)child.remove();this.root.append(fragment);}
+            if(liveUpdate&&reuseSettings&&this.root.querySelector('.trip-log-split')){
+                // Preserve animation timelines and scroll containers on tick-only updates.
+                const reconcile=(old,fresh)=>{
+                    if(old.nodeType!==fresh.nodeType||old.nodeName!==fresh.nodeName){old.replaceWith(fresh);return;}
+                    if(old.nodeType===3){if(old.nodeValue!==fresh.nodeValue)old.nodeValue=fresh.nodeValue;return;}
+                    if(old.nodeType!==1)return;
+                    const identity=e=>[e.dataset.scopeId,e.dataset.tripId,e.dataset.intervalKey,e.dataset.activeState,e.className].join('|');
+                    if(identity(old)!==identity(fresh)||old.childNodes.length!==fresh.childNodes.length){old.replaceWith(fresh);return;}
+                    for(const attribute of fresh.attributes){if(attribute.name==='style'&&old.style.getPropertyValue('--trip-log-active-sweep-delay'))continue;if(old.getAttribute(attribute.name)!==attribute.value)old.setAttribute(attribute.name,attribute.value);}
+                    for(const attribute of [...old.attributes])if(!fresh.hasAttribute(attribute.name))old.removeAttribute(attribute.name);
+                    const freshChildren=[...fresh.childNodes];[...old.childNodes].forEach((child,i)=>reconcile(child,freshChildren[i]));
+                };
+                const old=[...this.root.children].filter(e=>e!==settings),fresh=[...fragment.children];
+                if(old.length===fresh.length)old.forEach((e,i)=>reconcile(e,fresh[i]));else{old.forEach(e=>e.remove());this.root.append(fragment);}
+            }
+            else if(reuseSettings){for(const child of [...this.root.children])if(child!==settings)child.remove();this.root.append(fragment);}
             else this.root.replaceChildren(fragment);
+            for(const [name,top,left] of scroll){const pane=[...this.root.querySelectorAll('.trip-log-aggregate-pane,.trip-log-trips-pane')].find(e=>e.className===name);if(pane){pane.scrollTop=top;pane.scrollLeft=left;}}
+            this.root.scrollTop=rootScroll;
+            const include=settings.querySelector('[data-include-current]'),pending=settings.querySelector('[data-show-pending]'),only=settings.querySelector('[data-down-time-filter-fallback]');
+            if(include)this.settingEffect(include,Boolean(include.checked&&(this.options.liveTrip?.()||trips.some(t=>t.running))));
+            if(pending)this.settingEffect(pending,this.showPendingEffective);
+            if(only)this.settingEffect(only,this.downTimeOnlyEnabled);
             this.setSettingsVisible(this.settingsVisible);
             if(this.pendingOverrideReported!==this.downTimeOnlyEnabled){this.pendingOverrideReported=this.downTimeOnlyEnabled;this.options.onPendingOverride?.(this.downTimeOnlyEnabled);}
         }
+        settingEffect(input,effective) {
+            let control=input.closest('.trip-log-setting-control');if(!control){control=node('span',undefined,'trip-log-setting-control');input.before(control);control.append(input);}control.classList.toggle('is-overridden',input.checked!==effective);input.closest('label').classList.toggle('is-overridden',input.checked!==effective);
+        }
         controls(calendar) {
             const box=node('section',undefined,'trip-log-controls');
-            const selectRow=(label,choices,value,handler)=>{const row=node('label');row.append(node('span',label));const select=node('select');for(const [v,text] of choices){const option=node('option',text);option.value=v;select.append(option);}select.value=value;select.addEventListener('change',()=>handler(select.value));row.append(select);box.append(row);};
+            const selectRow=(label,choices,value,handler)=>{const row=node('label');row.append(node('span',label));const select=node('select');for(const [v,text] of choices){const option=node('option',v==='week'?(this.options.rangeLabelFor?.('week')||text):text);option.value=v;select.append(option);}select.value=value;select.addEventListener('change',()=>handler(select.value));row.append(select);box.append(row);};
             selectRow(globalThis.WMOFLanguagePack.text("9931b905-cc82-4afe-8b33-a9d31454146a"),[['all',globalThis.WMOFLanguagePack.text("96f27252-e455-45f0-876c-c6f604ad486b")],['productive',globalThis.WMOFLanguagePack.text("e9a19871-eb83-4f78-85a2-8dcbbc2b3f6d")],['non-productive',globalThis.WMOFLanguagePack.text("c62239f7-fec2-4242-bbb4-ad8759017128")]],this.options.filter(),this.options.onFilter);
             selectRow(globalThis.WMOFLanguagePack.text("2d7078b0-2daf-4ade-b37a-01f6e2ae734f"),[['day',globalThis.WMOFLanguagePack.text("86e12fa9-95ff-4a20-84bd-8d6744217a01")],['week',globalThis.WMOFLanguagePack.text("0589fe2c-5781-433b-855b-a30cbc304c15")],['pay-period',globalThis.WMOFLanguagePack.text("ff8216fc-6cdb-4cbb-a433-1d2bae1e8232")],['month',globalThis.WMOFLanguagePack.text("ed109a97-8e31-4c93-85cb-6dfb4480c0f7")],['year',globalThis.WMOFLanguagePack.text("c9de230e-c958-41be-ad35-70174a864a3f")],['custom',globalThis.WMOFLanguagePack.text("9e063c44-5f74-4196-bbab-3a49a72be041")]],this.options.range(),this.options.onRange);
             const dates=node('div',undefined,'trip-log-date-controls');const values=window.CalendarRange.dates(calendar);
@@ -147,13 +235,13 @@
                 const input=node('input');input.type='date';input.value=values[key];input.disabled=key==='end'&&this.options.range()!=='custom';input.setAttribute('aria-label',key==='start'?globalThis.WMOFLanguagePack.text("6bd07958-dfbb-5e40-ab3c-c1347e5eac1c"):globalThis.WMOFLanguagePack.text("dcc024f5-cfbf-56cb-b10b-33c5367aed8b"));
                 input.addEventListener('change',()=>this.options.onDate(key,input.value));dates.append(node('span',label),input);
             }
-            box.append(dates);const include=node('label',undefined,'trip-log-include-current');const check=node('input');check.type='checkbox';check.dataset.includeCurrent='true';check.checked=Boolean(this.options.includeCurrent?.());check.addEventListener('change',()=>this.options.onIncludeCurrent?.(check.checked));include.append(node('span',globalThis.WMOFLanguagePack.text("d3df5443-5f50-4a22-b8e6-bdd43caf0d89")),check);box.append(include);
+            box.append(dates);const include=node('label',undefined,'trip-log-include-current');const check=node('input');check.type='checkbox';check.dataset.includeCurrent='true';check.checked=Boolean(this.options.includeCurrent?.());check.disabled=false;include.classList.toggle('is-unavailable',!Boolean(this.options.liveTrip?.()||this.trips?.some(t=>t.running)));check.addEventListener('change',()=>this.options.onIncludeCurrent?.(check.checked));include.append(node('span',globalThis.WMOFLanguagePack.text("d3df5443-5f50-4a22-b8e6-bdd43caf0d89")),check);box.append(include);
             const adjusted=node('label',undefined,'trip-log-include-current'),adjustedCheck=node('input');adjustedCheck.type='checkbox';adjustedCheck.dataset.adjustedOnly='true';adjustedCheck.checked=this.adjustedOnly;
             adjustedCheck.addEventListener('change',()=>{this.adjustedOnly=adjustedCheck.checked;this.saveViewSettings();this.rerender();});adjusted.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000005')),adjustedCheck);box.append(adjusted);
             const pending=node('label',undefined,'trip-log-include-current'),pendingCheck=node('input');pendingCheck.type='checkbox';pendingCheck.dataset.showPending='true';pendingCheck.checked=this.showPendingPreference;pendingCheck.disabled=this.downTimeOnlyEnabled;pending.classList.toggle('is-unavailable',this.downTimeOnlyEnabled);
             pendingCheck.addEventListener('change',()=>{if(this.downTimeOnlyEnabled)return;this.showPending=pendingCheck.checked;if(this.options.onShowPendingDownTime)void this.options.onShowPendingDownTime(pendingCheck.checked);else{this.saveViewSettings();this.rerender();}});pending.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000007')),pendingCheck);box.append(pending);
-            const fallback=node('label',undefined,'trip-log-include-current'),fallbackCheck=node('input');fallbackCheck.type='checkbox';fallbackCheck.dataset.downTimeFilterFallback='true';fallbackCheck.checked=this.downTimeOnly;fallbackCheck.disabled=!this.hasVisibleDownTime;fallback.hidden=this.hasVisibleDownTime;fallback.classList.toggle('is-unavailable',!this.hasVisibleDownTime);
-            fallbackCheck.addEventListener('change',()=>{this.downTimeOnly=fallbackCheck.checked;this.saveViewSettings();this.rerender();});fallback.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000004')),fallbackCheck);box.append(fallback);return box;
+            const fallback=node('label',undefined,'trip-log-include-current'),fallbackCheck=node('input');fallbackCheck.type='checkbox';fallbackCheck.dataset.downTimeFilterFallback='true';fallbackCheck.checked=this.downTimeOnly;fallbackCheck.disabled=false;fallback.hidden=false;fallback.classList.toggle('is-unavailable',!this.hasVisibleDownTime);
+            fallbackCheck.addEventListener('change',()=>{this.downTimeOnly=fallbackCheck.checked;this.saveViewSettings();this.rerender();});fallback.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000004')),fallbackCheck);const checks=node('div',undefined,'trip-log-settings-checks');checks.append(adjusted,include,fallback,pending);box.append(checks);const help=node('div',undefined,'trip-log-range-help');const grid=node('div',undefined,'trip-log-range-help-grid');for(const [tag,id] of [['strong',19],['strong',20],['p',21],['p',22]])grid.append(node(tag,globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-'+String(id).padStart(12,'0'))));const helpHeading=node('h3');const info=node('span','?','trip-log-range-info');info.setAttribute('aria-hidden','true');const title=node('span',globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000023'),'trip-log-range-help-title');title.prepend(info);helpHeading.append(title);help.append(node('hr'),helpHeading,grid);box.append(help);return box;
         }
         civil(trip) {
             const parts=new Intl.DateTimeFormat('en-CA',{timeZone:this.calendar.timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso(trip.startTime)));
@@ -171,20 +259,21 @@
             if(level==='day') return new Intl.DateTimeFormat(undefined,{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(key+"T12:00:00Z"));
             const d=new Date(key+"T12:00:00Z"),end=new Date(d);end.setUTCDate(d.getUTCDate()+6);
             const fmt=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',timeZone:'UTC'});
-            return `Week · ${fmt.format(d)}–${fmt.format(end)}`;
+            const number=this.options.weekNumber?.(key)??CalendarRange.weekNumber(this.calendar,key);
+            return `${globalThis.WMOFLanguagePack.text('0589fe2c-5781-433b-855b-a30cbc304c15')}${number?' '+number:''} · ${fmt.format(d)}–${fmt.format(end)}`;
         }
         scopePanels(fragment,trips,matchingTrips,levels,calendar) {
             const header=node('div',undefined,'trip-log-scope-header'),split=node('section',undefined,'trip-log-split'),upper=node('nav',undefined,'trip-log-aggregate-pane'),path=node('div',undefined,'trip-log-aggregate-path'),tree=node('div',undefined,'trip-log-aggregate-tree'),lower=node('section',undefined,'trip-log-trips-pane'),separator=node('div',undefined,'trip-log-splitter');
-            upper.setAttribute('aria-label','Aggregate scopes');lower.setAttribute('aria-label','Trips in selected scope');lower.tabIndex=0;upper.append(path,tree);
+            upper.setAttribute('aria-label','Aggregate scopes');lower.setAttribute('aria-label','Trips in selected scope');lower.tabIndex=0;upper.append(header,path,tree);
             separator.tabIndex=0;separator.setAttribute('role','separator');separator.setAttribute('aria-label','Resize aggregate and trip panes');separator.setAttribute('aria-orientation','horizontal');separator.setAttribute('aria-valuemin','15');separator.setAttribute('aria-valuemax','40');
             const resize=value=>{this.aggregateShare=Math.min(40,Math.max(15,value));split.style.setProperty('--trip-log-aggregate-share',`${this.aggregateShare}%`);separator.setAttribute('aria-valuenow',String(Math.round(this.aggregateShare)));};resize(this.aggregateShare??32);
             separator.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();resize(e.key==='Home'?15:e.key==='End'?40:this.aggregateShare+(e.key==='ArrowDown'?3:-3));});
             separator.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();separator.setPointerCapture(e.pointerId);const move=event=>{const box=split.getBoundingClientRect();if(box.height)resize((event.clientY-box.top)/box.height*100);},end=()=>{separator.removeEventListener('pointermove',move);separator.removeEventListener('pointerup',end);separator.removeEventListener('pointercancel',end);};separator.addEventListener('pointermove',move);separator.addEventListener('pointerup',end);separator.addEventListener('pointercancel',end);});
             const scopes=[];
-            const select=scope=>{
-                this.selectedScope=scope?.id??null;const rows=scope?.trips??trips;this.aggregation=aggregate(rows,true,this.downtimeNow);
+            const select=scope=>{if(scope)scope=this.scopeData?.get(scope.id)??scope;
+                this.selectedScope=scope?.id??null;const rows=scope?.trips??this.visibleTrips;this.aggregation=aggregate(rows,true,this.downtimeNow);
                 const overview=node('section',undefined,'trip-log-overview'),emphasis=node('div',undefined,'trip-log-emphasis');emphasis.append(node('strong',`${this.aggregation.tripCount} ${globalThis.WMOFLanguagePack.text(this.aggregation.tripCount===1?'3b289746-71b2-4ac3-90dd-00a0402ba34f':'1c1bf8a6-f452-4dfa-8d43-ed38d4bcae1f')}`),node('strong',percent(rows,true),'trip-log-actual'));if(this.incomplete)emphasis.lastElementChild.append(uncertainIcon());overview.append(emphasis,node('div',`Standard ${duration(this.aggregation.standardTimeMilliseconds)} · Actual ${duration(this.aggregation.productiveTimeMilliseconds)}`,'trip-log-times'));
-                const ledgerRows=scope?matchingTrips.filter(trip=>[...scope.parents,scope].every(item=>this.key(trip,item.level)===item.key)):matchingTrips,down=this.downTimeSection(ledgerRows);header.replaceChildren(overview,...(down?[down]:[]));
+                const ledgerRows=scope?this.trips.filter(trip=>[...scope.parents,scope].every(item=>this.key(trip,item.level)===item.key)):this.trips;this.updateDownSummary(ledgerRows);header.replaceChildren(overview);
                 const columns=node('div',undefined,'trip-log-column-header');columns.setAttribute('role','row');for(const id of ['5e8f393d-72a7-4b30-ba1e-69bbd765354f','07613a20-4d6c-4fdf-a16d-6c94d28e5590','77f1eddd-89b9-4e22-9fe1-aeeb4d060722','c755d5bf-3277-4630-a938-898b8b6172dd',null]){const cell=node('span',id?globalThis.WMOFLanguagePack.text(id):'');cell.setAttribute('role','columnheader');columns.append(cell);}lower.replaceChildren(columns,this.daySections(rows));lower.scrollTop=0;
                 path.replaceChildren();for(const item of [null,...(scope?[...scope.parents,scope]:[])]){const button=node('button',item?item.label:`${CalendarRange.dates(calendar).start} – ${CalendarRange.dates(calendar).end}`);button.type='button';if(item)button.dataset.scopeLevel=item.level;button.setAttribute('aria-pressed',String(item===scope));button.addEventListener('click',()=>select(item));path.append(button);}
                 tree.querySelectorAll('[data-scope-id]').forEach(el=>el.classList.toggle('is-selected-scope',el.dataset.scopeId===this.selectedScope));
@@ -195,7 +284,7 @@
                     heading.append(node('strong',scope.label),node('span',`${aggregate(group,true,this.downtimeNow).tripCount} trips · ${percent(group,true)}`,'trip-log-actual'));if(this.incomplete)heading.lastElementChild.append(uncertainIcon());summary.append(heading);const ledger=this.downtimeSummary(aggregate(group,true,this.downtimeNow).downtime);if(ledger)summary.append(ledger);summary.addEventListener('click',()=>select(scope));const children=node('div',undefined,'trip-log-group-children');children.append(build(group,rest,[...parents,scope]));details.append(summary,children);result.append(details);
                 }return result;
             };
-            tree.append(build(trips,levels));select(scopes.find(scope=>scope.id===this.selectedScope)??null);split.classList.toggle('has-aggregates',levels.length>0);split.append(upper,separator,lower);fragment.append(header,split);
+            tree.append(build(trips,levels));this.scopeData=new Map(scopes.map(scope=>[scope.id,scope]));select(scopes.find(scope=>scope.id===this.selectedScope)??null);split.classList.toggle('has-aggregates',levels.length>0);split.append(upper,separator,lower);fragment.append(split);
         }
 
         daySections(trips) {
@@ -263,7 +352,7 @@
             const {dialog,form}=this.modal(TripLog.officialText('startPrompt'));dialog.classList.add('official-start-prompt');form.append(node('p',TripLog.officialText('startPromptDescription')));
             return new Promise(resolve=>{const actions=node('div',undefined,'dialog-actions two-actions');for(const [key,value]of [['no',false],['yes',true]]){const button=node('button',TripLog.officialText(key));button.type='button';button.dataset.officialStartChoice=key;button.addEventListener('click',()=>{resolve(value);dialog.close();});actions.append(button);}form.append(actions);dialog.addEventListener('close',()=>resolve(undefined),{once:true});});
         }
-        rerender(){this.render({trips:this.trips,offline:this.offline,incomplete:this.incomplete,loginRequired:this.loginRequired},this.calendar);}
+        rerender(){if(!this.calendar)return;this.render({trips:this.trips,offline:this.offline,incomplete:this.incomplete,loginRequired:this.loginRequired},this.calendar);}
         error(error) {if(this.editor){const msg=this.editor.querySelector('[role="alert"]');msg.textContent=error.message||String(error);}else {this.root.querySelector(':scope>.trip-log-error')?.remove();const msg=node('p',error.message||String(error),'trip-log-error');msg.setAttribute('role','alert');this.root.prepend(msg);}}
         modal(title) {
             this.editor?.remove();const dialog=node('dialog',undefined,'app-dialog trip-log-editor');const form=node('form');const heading=node('header',undefined,'dialog-header');heading.append(node('h2',title));const close=node('button','×');close.type='button';close.setAttribute('aria-label',globalThis.WMOFLanguagePack.text("2db71c87-d3a0-5fa0-9144-6c0d21ad47c0"));close.addEventListener('click',()=>dialog.close());heading.append(close);form.append(heading);dialog.append(form);document.body.append(dialog);dialog.addEventListener('close',()=>{dialog.remove();if(this.editor===dialog)this.editor=null;});this.editor=dialog;document.querySelector("shared-modal-host")?.register(dialog);dialog.showModal();return {dialog,form};

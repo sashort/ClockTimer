@@ -103,6 +103,18 @@
             return {start: localParts(new Date(window.startTime), window.timezone).date,
                 end: localParts(new Date(Date.parse(window.endTime) - 1), window.timezone).date};
         }
+        static weekNumber(record, date) {
+            const rules=record?.rules||record;
+            if(rules?.payPeriodAnchorBasis!=="fiscal-year-start"||!rules.payPeriodAnchorDate)return null;
+            try{const day=civilDate(date),anchor=civilDate(rules.payPeriodAnchorDate),week=Math.floor((day-anchor)/dayMilliseconds/7)+1;
+                return week>=1&&week<=53?week:null;
+            }catch{return null;}
+        }
+        weekNumber(date, profile=this.profile) {
+            const records=this.databaseRecords.filter(r=>r.profile===profile&&r.rules?.payPeriodAnchorBasis==='fiscal-year-start'&&r.rules.payPeriodAnchorDate<=date)
+                .sort((a,b)=>b.rules.payPeriodAnchorDate.localeCompare(a.rules.payPeriodAnchorDate));
+            return CalendarRange.weekNumber(records[0],date);
+        }
         static calculate(...args) { return calculate(...args); }
         static containsNow(window,now=new Date()) {const at=new Date(now).getTime();return at>=Date.parse(window.startTime)&&at<Date.parse(window.endTime);}
         static tripWindow(window) {

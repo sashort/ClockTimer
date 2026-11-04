@@ -5311,9 +5311,9 @@
     },
     "d3df5443-5f50-4a22-b8e6-bdd43caf0d89": {
       "id": "d3df5443-5f50-4a22-b8e6-bdd43caf0d89",
-      "text": "Include active trip",
+      "text": "Include Active Trip",
       "source": "TripLog.js:10296",
-      "default": "Include active trip"
+      "default": "Include Active Trip"
     },
     "e467a304-0e63-42cf-8668-861ce62a7200": {
       "id": "e467a304-0e63-42cf-8668-861ce62a7200",
@@ -7210,13 +7210,13 @@
     },
     "d7300001-7888-4711-9000-000000000004": {
       "id": "d7300001-7888-4711-9000-000000000004",
-      "text": "Trips with Down Time only",
-      "default": "Trips with Down Time only"
+      "text": "Show Trips With Down Time Only",
+      "default": "Show Trips With Down Time Only"
     },
     "d7300001-7888-4711-9000-000000000005": {
       "id": "d7300001-7888-4711-9000-000000000005",
-      "text": "Adjusted trips only",
-      "default": "Adjusted trips only"
+      "text": "Adjusted Trips Only",
+      "default": "Adjusted Trips Only"
     },
     "d7300001-7888-4711-9000-000000000007": {
       "id": "d7300001-7888-4711-9000-000000000007",
@@ -7237,6 +7237,131 @@
       "id": "d7300001-7888-4711-9000-000000000010",
       "text": "Return to Active",
       "default": "Return to Active"
+    },
+    "d7400001-0000-4000-8000-000000000001": {
+      "id": "d7400001-0000-4000-8000-000000000001",
+      "text": "Back",
+      "default": "Back"
+    },
+    "d7400001-0000-4000-8000-000000000002": {
+      "id": "d7400001-0000-4000-8000-000000000002",
+      "text": "Derived Trip Goals",
+      "default": "Derived Trip Goals"
+    },
+    "d7400001-0000-4000-8000-000000000003": {
+      "id": "d7400001-0000-4000-8000-000000000003",
+      "text": "Lock goal",
+      "default": "Lock goal"
+    },
+    "d7400001-0000-4000-8000-000000000004": {
+      "id": "d7400001-0000-4000-8000-000000000004",
+      "text": "Goal",
+      "default": "Goal"
+    },
+    "d7400001-0000-4000-8000-000000000005": {
+      "id": "d7400001-0000-4000-8000-000000000005",
+      "text": "Fallback",
+      "default": "Fallback"
+    },
+    "d7400001-0000-4000-8000-000000000006": {
+      "id": "d7400001-0000-4000-8000-000000000006",
+      "text": "Target",
+      "default": "Target"
+    },
+    "d7400001-0000-4000-8000-000000000007": {
+      "id": "d7400001-0000-4000-8000-000000000007",
+      "text": "Tap again to set.",
+      "default": "Tap again to set."
+    },
+    "d7400001-0000-4000-8000-000000000008": {
+      "id": "d7400001-0000-4000-8000-000000000008",
+      "text": "Edit goal",
+      "default": "Edit goal"
+    },
+    "d7400001-0000-4000-8000-000000000009": {
+      "id": "d7400001-0000-4000-8000-000000000009",
+      "text": "Trip Standard",
+      "default": "Trip Standard"
+    },
+    "d7400001-0000-4000-8000-000000000010": {
+      "id": "d7400001-0000-4000-8000-000000000010",
+      "text": "{goal} Remaining",
+      "default": "{goal} Remaining"
+    },
+    "d7400001-0000-4000-8000-000000000011": {
+      "id": "d7400001-0000-4000-8000-000000000011",
+      "text": "{goal} End",
+      "default": "{goal} End"
+    },
+    "d7400001-0000-4000-8000-000000000012": {
+      "id": "d7400001-0000-4000-8000-000000000012",
+      "text": "Banked {goal}",
+      "default": "Banked {goal}"
+    },
+    "d7400001-0000-4000-8000-000000000013": {
+      "id": "d7400001-0000-4000-8000-000000000013",
+      "text": "{goal} Over By",
+      "default": "{goal} Over By"
+    },
+    "d7400001-0000-4000-8000-000000000014": {
+      "id": "d7400001-0000-4000-8000-000000000014",
+      "text": "{goal} Elapsed",
+      "default": "{goal} Elapsed"
+    },
+    "d7400001-0000-4000-8000-000000000015": {
+      "id": "d7400001-0000-4000-8000-000000000015",
+      "text": "Trip Log Settings",
+      "default": "Trip Log Settings"
+    },
+    "d7400001-0000-4000-8000-000000000016": {
+      "id": "d7400001-0000-4000-8000-000000000016",
+      "text": "No trips in range",
+      "default": "No trips in range"
+    },
+    "d7400001-0000-4000-8000-000000000017": {
+      "id": "d7400001-0000-4000-8000-000000000017",
+      "text": "Down Time Details",
+      "default": "Down Time Details"
+    },
+    "d7400001-0000-4000-8000-000000000018": {
+      "id": "d7400001-0000-4000-8000-000000000018",
+      "text": "Historical: change Start to a date in the period you want to view. Custom: choose Custom, then set both Start and End.",
+      "default": "Historical: change Start to a date in the period you want to view. Custom: choose Custom, then set both Start and End."
+    },
+    "d7400001-0000-4000-8000-000000000019": {
+      "id": "d7400001-0000-4000-8000-000000000019",
+      "text": "Historical Range",
+      "default": "Historical Range"
+    },
+    "d7400001-0000-4000-8000-000000000020": {
+      "id": "d7400001-0000-4000-8000-000000000020",
+      "text": "Custom Range",
+      "default": "Custom Range"
+    },
+    "d7400001-0000-4000-8000-000000000021": {
+      "id": "d7400001-0000-4000-8000-000000000021",
+      "text": "Change Start to a date in the period you want to view.",
+      "default": "Change Start to a date in the period you want to view."
+    },
+    "d7400001-0000-4000-8000-000000000022": {
+      "id": "d7400001-0000-4000-8000-000000000022",
+      "text": "Choose Custom, then set both Start and End.",
+      "default": "Choose Custom, then set both Start and End."
+    },
+    "d7400001-0000-4000-8000-000000000023": {
+      "id": "d7400001-0000-4000-8000-000000000023",
+      "text": "Date Ranges",
+      "default": "Date Ranges"
+    },
+    "d7400001-0000-4000-8000-000000000024": {
+      "id": "d7400001-0000-4000-8000-000000000024",
+      "text": "Show trips contributing to {category}",
+      "default": "Show trips contributing to {category}"
+    },
+    "d7400001-0000-4000-8000-000000000025": {
+      "id": "d7400001-0000-4000-8000-000000000025",
+      "text": "Trip Log filters updated.",
+      "default": "Trip Log filters updated."
     }
   }
 }

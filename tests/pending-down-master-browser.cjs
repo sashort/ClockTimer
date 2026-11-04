@@ -16,14 +16,14 @@ await op(()=>WMOFActions.openTripLog('pointer'));await p.waitForSelector('[data-
 await op(()=>document.querySelector('#tripLogSettingsButton').click());
 await op(()=>{const check=document.querySelector('[data-show-pending]');check.checked=false;check.dispatchEvent(new Event('change'));});
 await p.waitForFunction(()=>clockTimer.includePendingDownTime===false&&document.querySelector('#includePendingDownTimeButton').getAttribute('aria-checked')==='false');
-await op(()=>{const check=document.querySelector('[data-down-time-only]');check.checked=true;check.dispatchEvent(new Event('change'));});
+await op(()=>{const check=document.querySelector('[data-down-time-filter-fallback]');check.checked=true;check.dispatchEvent(new Event('change'));});
 await p.waitForFunction(()=>clockTimer.includePendingDownTime===true&&document.querySelector('#includePendingDownTimeButton').disabled);
 assert.equal(await p.locator('#includePendingDownTimeButton').getAttribute('aria-checked'),'false','overridden master retains saved Off state');
 assert.equal(await p.locator('[data-show-pending]').isChecked(),false);assert.equal(await p.locator('[data-show-pending]').isDisabled(),true);
-await op(()=>{const check=document.querySelector('[data-down-time-only]');check.checked=false;check.dispatchEvent(new Event('change'));});
+await op(()=>{const check=document.querySelector('[data-down-time-filter-fallback]');check.checked=false;check.dispatchEvent(new Event('change'));});
 await p.waitForFunction(()=>clockTimer.includePendingDownTime===false&&!document.querySelector('#includePendingDownTimeButton').disabled);
 await op(()=>document.querySelector('#includePendingDownTimeButton').click());await p.waitForFunction(()=>clockTimer.includePendingDownTime===true&&document.querySelector('[data-show-pending]').checked);
-await op(()=>WMOFActions.closeTripLog('pointer'));await p.locator('#menuButton').click();await p.waitForSelector('#includePendingDownTimeButton',{state:'visible'});await p.clock.runFor(800);
+await op(()=>WMOFActions.closeTripLog('pointer'));assert.equal(await p.locator('.trip-log-settings-dialog').evaluate(e=>e.open),false,'closing Trip Log also closes Settings');await p.locator('#menuButton').click();await p.waitForSelector('#includePendingDownTimeButton',{state:'visible'});await p.clock.runFor(800);
 assert.equal(await p.locator('#includePendingDownTimeButton').textContent(),'Show Pending Down Time');
 if(process.env.PENDING_MENU_SCREENSHOT_DIR){
  const dir=process.env.PENDING_MENU_SCREENSHOT_DIR;fs.mkdirSync(dir,{recursive:true});await p.screenshot({path:path.join(dir,'show-pending-menu.png')});

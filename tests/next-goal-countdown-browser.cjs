@@ -7,7 +7,7 @@ await p.evaluate(()=>clockTimer.configure({goal_type:'trip',trip_goal:'90%',goal
 await p.waitForFunction(()=>document.querySelector('.compact-interval-timer > span').textContent==='Standard In');
 for(const scope of ['day','week','year']){
  await p.evaluate(scope=>{const select=document.querySelector('#tripLogRangeSelect');select.value=scope;select.dispatchEvent(new Event('change',{bubbles:true}));clockTimer.configure({goal_type:'total',total_goal:'120%'});},scope);
- const title=scope[0].toUpperCase()+scope.slice(1);await p.waitForFunction(title=>document.querySelector('.compact-interval-timer > span').textContent===title+' Goal In',title);
+ const title=scope==='week'?'Week 40':scope[0].toUpperCase()+scope.slice(1);await p.waitForFunction(title=>document.querySelector('.compact-interval-timer > span').textContent===title+' Goal In',title);
  await p.evaluate(()=>clockTimer.configure({goal_type:'auto',trip_goal:'120%',total_goal:'120%'}));await p.waitForFunction(title=>document.querySelector('.compact-interval-timer > span').textContent==='Trip/'+title+' Goal In',title);
 }
 await p.evaluate(()=>clockTimer.configure({goal_type:'trip',trip_goal:'120%'}));await p.waitForFunction(()=>document.querySelector('.compact-interval-timer > span').textContent==='Trip Goal In');

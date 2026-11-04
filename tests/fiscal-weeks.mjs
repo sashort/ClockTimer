@@ -1,0 +1,7 @@
+import fs from 'node:fs';import vm from 'node:vm';import assert from 'node:assert/strict';
+const ctx=vm.createContext({Date,Intl,URL,URLSearchParams,location:{origin:'https://example.test'}});vm.runInContext(fs.readFileSync(new URL('../CalendarRange.js',import.meta.url),'utf8'),ctx);const Range=ctx.CalendarRange,client=new Range({databaseOnly:true});
+client.setDatabaseRecords([['2024-02-03',2024],['2025-02-01',2025],['2026-01-31',2026],['2027-01-30',2027],['2028-01-29',2028]].map(([anchor,year])=>({profile:'walmart-us',searchedYear:year,rules:{weekStartDay:6,cutoffTime:'04:00:00',payPeriodDays:14,payPeriodAnchorDate:anchor,payPeriodAnchorBasis:'fiscal-year-start',recurring:true,effectiveFrom:'1970-01-01'}})));
+for(const [date,week]of [['2026-01-30',52],['2026-01-31',1],['2026-02-07',2],['2026-11-04',40],['2027-01-29',52],['2027-01-30',1],['2028-02-29',5]])assert.equal(client.weekNumber(date),week,date);
+assert.equal(Range.weekNumber({payPeriodAnchorBasis:'period-start',payPeriodAnchorDate:'2026-01-31'},'2026-11-04'),null,'a pay-period anchor is not implicitly a fiscal-year anchor');
+assert.equal(Range.weekNumber({payPeriodAnchorBasis:'fiscal-year-start',payPeriodAnchorDate:'2026-01-31'},'2026-01-30'),null);assert.equal(Range.weekNumber({payPeriodAnchorBasis:'fiscal-year-start',payPeriodAnchorDate:'2026-01-31'},'2030-01-01'),null,'never invent multi-year numbering');
+console.log('PASS fiscal weeks from stored anchors, year transitions, leap day, and missing/non-fiscal anchors without network');

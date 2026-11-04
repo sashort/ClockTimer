@@ -18,6 +18,7 @@
         if(icon.dataset.icon!==kind){icon.dataset.icon=kind;icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+iconPaths[kind]+'</svg>';}
     }
     function fitFullBreakText(host){
+        if(host.dataset.breakOverGoal==='true')return;
         if(host.id!=='endTripButton'||host.closest('.app')?.dataset.actionDisplay==='compact'||!host.querySelector(':scope > .break-action-label'))return;
         host.style.removeProperty('--break-action-font-size');
         const labels=[...host.querySelectorAll(':scope > .break-action-label,:scope > .break-action-clock')],style=getComputedStyle(host),font=parseFloat(style.fontSize),boxes=labels.map(e=>e.getBoundingClientRect());
@@ -46,6 +47,7 @@
         const labels=timerLabels(host).map(e=>e.getBoundingClientRect());
         if(!labels.length||!host.getBoundingClientRect().height){frame.hidden=true;return;}
         const box=host.getBoundingClientRect(),group={left:Math.min(...labels.map(r=>r.left)),right:Math.max(...labels.map(r=>r.right)),top:Math.min(...labels.map(r=>r.top)),bottom:Math.max(...labels.map(r=>r.bottom))};
+        fitOverGoal(host);
         const full=host.id==='endTripButton',padX=Math.min(9,Math.max(0,(host.clientWidth-(group.right-group.left))/2-1)),padY=full?Math.min(7,Math.max(0,(host.clientHeight-(group.bottom-group.top))/2-1)):7;
         const sides=[...host.querySelectorAll(':scope > .break-buffer-side')].map(e=>e.getBoundingClientRect()),buffered=sides.length===2;
         const app=host.closest('.app'),area=app.getBoundingClientRect(),style=getComputedStyle(app),split=full&&box.width<area.width*.75,left=buffered?Math.max(area.left+(parseFloat(style.paddingLeft)||0),split?box.left:-Infinity):group.left-padX,right=buffered?Math.min(area.right-(parseFloat(style.paddingRight)||0),split?box.right:Infinity):group.right+padX,top=group.top-padY,bottom=group.bottom+padY,width=right-left,height=bottom-top;
@@ -133,10 +135,18 @@
         app.append(left,right);app.querySelector('.trip-summary').append(timer);
         const view={buttons,left,right,timer,state:null};views.set(app,view);return view;
     }
+    function goalCaption(nextGoal,clock,totalLabel){return nextGoal.ids.length===1&&nextGoal.ids[0]==='standard'?WMOFLanguagePack.text('4f163c6a-3526-4504-92af-9c7f0e91a223'):WMOFLanguagePack.text('4b7e5e4c-8c49-4d50-9313-2a7436e4ac12',{goals:nextGoal.ids.map(id=>id==='total'&&totalLabel?totalLabel:clock.goal_bar.nodes.find(node=>node.id===id)?.label).filter(Boolean).reverse().join('/')});}
+    function overClock(state){const milliseconds=Number(state?.clock?.interval_state?.remainingMilliseconds)||0,seconds=Math.floor(Math.abs(milliseconds)/1000),minutes=Math.floor(seconds/60);return '(−'+minutes+':'+String(seconds%60).padStart(2,'0')+')';}
+    function fitOverGoal(host){if(!host||host.dataset.breakOverGoal!=='true')return;const labels=timerLabels(host),app=host.closest('.app');if(!app)return;const width=Math.max(1,Math.min(host.clientWidth,app.clientWidth)-32);for(const label of labels){label.style.fontSize='';const style=getComputedStyle(label),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d'),base=parseFloat(style.fontSize);ctx.font=style.fontWeight+' '+base+'px '+style.fontFamily;const text=label.firstChild?.nodeType===3?label.firstChild.textContent:label.textContent;if(text)label.style.fontSize=Math.min(base,base*width/Math.max(1,ctx.measureText(text).width))+'px';}}
     function render(app, state, {totalLabel}={}) {
         const buffer=visibleBuffer(state);
+        const overGoal=app.dataset.percentageDisplay==='bar'&&buffer?.retained&&!state?.clock?.break_only?(state?.clock?.goal_bar?.next_goal||state?.clock?.goal_bar?.target_goal):null;
         const primary=document.getElementById('endTripButton');
         if(state?.controls?.breakLabel&&primary.querySelector('.break-action-label'))primary.querySelector('.break-action-label').textContent=breakCaption(state);
+        primary.dataset.breakOverGoal=String(Boolean(overGoal&&app.dataset.actionDisplay!=='compact'));
+        if(overGoal&&app.dataset.actionDisplay!=='compact'){
+            primary.querySelector('.break-action-label').textContent=goalCaption(overGoal,state.clock,totalLabel);const clock=primary.querySelector('.break-action-clock');clock.textContent=overGoal.clock;const small=document.createElement('small');small.className='break-over-duration';small.textContent=overClock(state);clock.append(small);fitOverGoal(primary);
+        }else primary.querySelector('.break-over-duration')?.remove();
         renderBuffers(primary,app.dataset.actionDisplay==='compact'?null:buffer);
         renderAttention(primary,app.dataset.actionDisplay!=='compact'&&state?.controls?.breakLabel?String(state.tripStatus||'break').replaceAll('_','-'):null);
         let view=views.get(app);
@@ -152,14 +162,17 @@
         const controls=view.state?.controls;if(!controls)return;
         const active=controls.activeTripVisible, down=controls.downVisiblePanel, paused=Boolean(controls.breakLabel);
         const nextGoal=app.dataset.percentageDisplay==='bar'&&active&&!down&&!paused?view.state?.clock?.goal_bar?.next_goal:null;
+        if(!overGoal){delete timer.dataset.breakOverGoal;timer.querySelector('.break-over-duration')?.remove();}
         app.dataset.goalCountdown=String(Boolean(nextGoal));
         timer.hidden=!(nextGoal||compact&&(down||paused));
-        if(nextGoal){timer.dataset.kind='goal';timer.querySelector('span').textContent=nextGoal.ids.length===1&&nextGoal.ids[0]==='standard'?WMOFLanguagePack.text('4f163c6a-3526-4504-92af-9c7f0e91a223'):WMOFLanguagePack.text('4b7e5e4c-8c49-4d50-9313-2a7436e4ac12',{goals:nextGoal.ids.map(id=>id==='total'&&view.totalLabel?view.totalLabel:view.state.clock.goal_bar.nodes.find(node=>node.id===id)?.label).filter(Boolean).reverse().join('/')});timer.querySelector('output').textContent=nextGoal.clock;renderBuffers(timer,null);}
+        if(nextGoal){timer.dataset.kind='goal';timer.querySelector('span').textContent=goalCaption(nextGoal,view.state.clock,view.totalLabel);timer.querySelector('output').textContent=nextGoal.clock;renderBuffers(timer,null);}
         else if(compact){
             const kind=down?'down':String(view.state.tripStatus||'break').replaceAll('_','-');timer.dataset.kind=kind;
             const labelIds={"down": "ba94b593-7fb0-4360-8150-891bd4e56e6f", "break": "556c70ac-c40c-4976-b080-459c3d8e18f1", "short-break": "be9051c0-6763-43eb-8007-ef3c630bf924", "lunch": "9c9e46b8-a798-423f-a09f-bb5e477cd0a5"};
-            timer.querySelector('span').textContent=down?WMOFLanguagePack.text(labelIds.down):breakCaption(view.state);
-            timer.querySelector('output').textContent=down?document.getElementById('downElapsedValue').textContent:controls.breakClock;
+            timer.dataset.breakOverGoal=String(Boolean(overGoal));
+            timer.querySelector('span').textContent=overGoal?goalCaption(overGoal,view.state.clock,view.totalLabel):down?WMOFLanguagePack.text(labelIds.down):breakCaption(view.state);
+            timer.querySelector('output').textContent=overGoal?overGoal.clock:down?document.getElementById('downElapsedValue').textContent:controls.breakClock;
+            if(overGoal){const small=document.createElement('small');small.className='break-over-duration';small.textContent=overClock(view.state);timer.querySelector('output').append(small);fitOverGoal(timer);}
             renderBuffers(timer,paused?buffer:null);
         }else renderBuffers(timer,null);
         renderAttention(timer,timer.hidden?null:timer.dataset.kind);

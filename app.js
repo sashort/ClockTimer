@@ -57,6 +57,8 @@
     let tripLogRequestSequence = 0;
     let tripTotalsRefreshQueue = Promise.resolve();
     const STORAGE = {
+        aggregateGoals: "wmof.clock.aggregateGoals",
+        autoGoalOverride: "wmof.clock.autoGoalOverride",
         percentMode: "wmof.clock.percentMode",
         renderedTimeMode: "wmof.clock.renderedTimeMode",
         graphicalSettings: "wmof.clock.graphicalSettings",
@@ -2847,6 +2849,7 @@
     let selectedTripLogRange;
     let selectedTripLogAnchorDate;
     let resolvedTripLogCalendar;
+    let selectedTripLogIncludeCurrentPreference;
     let selectedPendingDownTimePreference;
     let pendingDownTimeOverride=false;
     const toggleSyncMenuButton = $("#toggleSyncMenuButton");
@@ -2854,6 +2857,7 @@
     const tripLogButton = $("#tripLogButton");
     const tripLogCloseButton = $("#tripLogCloseButton");
     const tripLogSettingsButton = $("#tripLogSettingsButton");
+    const tripLogDownButton=document.createElement('button');tripLogDownButton.id='tripLogDownButton';tripLogDownButton.type='button';tripLogDownButton.className='trip-log-down-button trip-log-settings-button';tripLogDownButton.hidden=true;tripLogDownButton.setAttribute('aria-label',WMOFLanguagePack.text('e09300d4-7ac5-4678-9f45-f5cc4500ff6d'));tripLogDownButton.innerHTML='<svg class="trip-log-downtime-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6M12 2v3M18 6l2-2"/><circle cx="12" cy="14" r="8"/><path d="M12 9v5l3 2"/></svg>';tripLogSettingsButton.after(tripLogDownButton);tripLogDownButton.addEventListener('click',()=>tripLogView?.showDownSummary());
     let tripLogSettingsVisible = false;
     const tripLogBody = $("#tripLogBody");
     const toggleSyncGoalButton = $("#toggleSyncGoalButton");
@@ -5510,8 +5514,52 @@
         globalThis.WMOFCompactActions?.render(app,state,{totalLabel:totalScopeLabel()});
     }
 
-    function totalScopeLabel() {
-        return announcementText(`messages.scope.${getTripLogRange()}`);
+    const aggregateScopes=['day','week','pay-period','month','year','custom'];
+    let applyingAggregateGoal=false;
+    const aggregateMenuCache=new Map(),scopeCalendars=new Map();
+    let goalSettingsKey,aggregateGoalState,autoOverrideState;
+    function hydrateGoalPreferences(){const account=globalThis.WMOFAccountSettings;const key=[account?.owner??'local',account?.generation??0,account?.loaded??true].join(':');if(key===goalSettingsKey)return;goalSettingsKey=key;aggregateGoalState=null;autoOverrideState=undefined;}
+    function aggregateGoals(){hydrateGoalPreferences();if(!aggregateGoalState){let values;try{values=JSON.parse(safeStorageGet(STORAGE.aggregateGoals)||'{}');}catch{}aggregateGoalState=Object.fromEntries(aggregateScopes.map(scope=>[scope,Number.isFinite(values?.[scope])&&values[scope]>0&&values[scope]<=150?values[scope]:100]));}return {...aggregateGoalState};}
+    function saveAggregateGoals(goals){hydrateGoalPreferences();aggregateGoalState={...goals};return safeStorageSet(STORAGE.aggregateGoals,JSON.stringify(goals));}
+    function autoGoalIdentity(){hydrateGoalPreferences();if(autoOverrideState===undefined){const value=safeStorageGet(STORAGE.autoGoalOverride);autoOverrideState=[...aggregateScopes,'trip','standard'].includes(value)?value:null;}return autoOverrideState;}
+    function writeAutoGoalIdentity(value){hydrateGoalPreferences();autoOverrideState=value||null;return safeStorageSet(STORAGE.autoGoalOverride,value||null);}
+    function setAutoGoalIdentity(value){const work=writeAutoGoalIdentity(value);clockTimer.configure({auto_goal_override:aggregateScopes.includes(value)?'total':value});syncScopeUI();return work;}
+    function applyAggregateGoal(){applyingAggregateGoal=true;try{clockTimer.configure({total_goal:aggregateGoals()[getTripLogRange()]+'%',auto_goal_override:aggregateScopes.includes(autoGoalIdentity())?'total':autoGoalIdentity()});}finally{applyingAggregateGoal=false;}}
+    function fiscalWeekLabel(date){
+        const calendar=scopeCalendars.get('week')||resolvedTripLogCalendar;
+        const day=date||(calendar?.range==='week'?CalendarRange.dates(calendar).start:null);
+        const week=day?calendarRanges.weekNumber(day):null;
+        return announcementText('messages.scope.week')+(week?' '+week:'');
+    }
+    function aggregateScopeLabel(scope){return scope==='week'?fiscalWeekLabel():scope==='custom'?WMOFLanguagePack.text('9e063c44-5f74-4196-bbab-3a49a72be041'):announcementText(`messages.scope.${scope}`);}
+    function totalScopeLabel() {return aggregateScopeLabel(getTripLogRange());}
+    async function autoMenuRows(pending){
+        return Promise.all([...aggregateScopes,'standard'].map(async scope=>{
+            if(scope==='standard')return{id:scope,label:WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000009'),goal:100,target:100};
+            let calendar,details;
+            try{
+                calendar=scope==='custom'?CalendarRange.custom(pending.customDates?.start||tripLogStartDate.value,pending.customDates?.end||tripLogEndDate.value,calendarRanges.getTimezone()):await calendarRanges.resolve({range:scope,date:getTripLogAnchorDate()});scopeCalendars.set(scope,calendar);
+                const window=CalendarRange.tripWindow(calendar),key=JSON.stringify([scope,window,clockTimer.currentTripId,clockTimer.productionFilter,clockTimer.includePendingDownTime]);
+                if(scope===getTripLogRange())details=clockTimer.getGoalEditorSnapshot('total',pending.goals[scope]);
+                else if(clockTimer.getUIState().trip_active&&clockTimer.networkStatus!=='offline'){
+                    let request=aggregateMenuCache.get(key);
+                    if(!request){const url=new URL('api/trips/',API_BASE);url.search=new URLSearchParams({result:'totals',startTime:window.startTime,endTime:window.endTime,excludeTripId:clockTimer.currentTripId||'',productionFilter:clockTimer.productionFilter||'all',includePendingDownTime:String(clockTimer.includePendingDownTime)});request=fetch(url,{credentials:'same-origin'}).then(async r=>{if(!r.ok)throw Error('Aggregate goals unavailable');return r.json();}).catch(error=>{aggregateMenuCache.delete(key);throw error;});aggregateMenuCache.set(key,request);}
+                    details=clockTimer.previewAggregateGoal(pending.goals[scope],await request,window);
+                }
+            }catch{}
+            return{id:scope,label:aggregateScopeLabel(scope),goal:pending.goals[scope],raw:details?.raw_inferred_percent,target:clockTimer.getUIState().trip_active?(details?.inferred_percent??null):pending.goals[scope],adjusted:Boolean(details?.bounding?.adjusted)};
+        }));
+    }
+    function editAutoCustomRange(dates,onExit){
+        const view=ensureTripLogView();if(!view){onExit();return;}
+        const selected={start:dates?.start||tripLogStartDate.value,end:dates?.end||tripLogEndDate.value},calendar=CalendarRange.custom(selected.start,selected.end,calendarRanges.getTimezone());
+        const draft=new TripLog(document.createElement('div'),{...view.options,range:()=> 'custom',onRange(){},onDate:(key,value)=>selected[key]=value});draft.trips=view.trips||[];draft.hasVisibleDownTime=view.hasVisibleDownTime;
+        const dialog=view.overlay('settings',WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000015')),body=dialog.lastElementChild,original=[...body.childNodes],controls=draft.controls(calendar);controls.querySelectorAll('select')[1].disabled=true;
+        body.replaceChildren(controls);dialog.addEventListener('close',()=>{body.replaceChildren(...original);let valid;try{CalendarRange.custom(selected.start,selected.end,calendarRanges.getTimezone());valid=selected;}catch{}onExit(valid);},{once:true});dialog.showModal();controls.querySelector('input[type=date]').focus();
+    }
+    async function editMenuAggregateGoal(scope,value,onValue,onExit){
+        const opened=await openNumberPad({mode:'percent',source:'aggregate-menu-goal',title:aggregateScopeLabel(scope)+' Goal',initialValue:value,confirmUnchanged:true,cancelTarget:'none',confirmTarget:'none',inputMode:'touch',onConfirm:value=>{if(!(value>0&&value<=150))return false;onValue(value);return true;}});
+        if(!opened){onExit();return;}numberPadDialog.addEventListener('close',()=>setTimeout(onExit,300),{once:true});
     }
 
     function userFacingTotalText(value) {
@@ -5542,6 +5590,8 @@
             normalizeTripLogRange(value);
         // Display and calculations use the current selection while its save is pending.
         selectedTripLogRange = range;
+        if(previousRange!==range){const override=autoGoalIdentity();if(aggregateScopes.includes(override)&&override!==range)void writeAutoGoalIdentity(null);}
+        applyAggregateGoal();
 
         if (tripLogRangeSelect) {
             tripLogRangeSelect.value =
@@ -5631,7 +5681,10 @@
         if (revision === tripRangeRevision && range === getTripLogRange()) {
             const dates = CalendarRange.dates(calendar);
             if (range !== "custom") { tripLogStartDate.value = dates.start; tripLogEndDate.value = dates.end; }
+            scopeCalendars.set(range,calendar);
             resolvedTripLogCalendar={...calendar,historical:!CalendarRange.containsNow(calendar)};
+            clockTimer.setAttribute('total-label',totalScopeLabel());
+            updateScopeTargetLabel(clockTimer.getUIState());
             renderHistoricalRangeState(resolvedTripLogCalendar);
             showTripRangeError();
         }
@@ -6056,9 +6109,10 @@
 
         tripLogCloseButton.style.top =
             `${rect.top + (rect.height - height) / 2}px`;
+        if(tripLogDownButton){tripLogDownButton.style.left=`${rect.left+48}px`;tripLogDownButton.style.top=`${rect.top+(rect.height-40)/2}px`;tripLogDownButton.hidden=getTripListState()!=='open'||tripLogDownButton.dataset.available!=='true';}
         if (tripLogSettingsButton) {
             tripLogSettingsButton.style.left = `${rect.left + 8}px`;
-            tripLogSettingsButton.style.top = tripLogCloseButton.style.top;
+            tripLogSettingsButton.style.top = `${rect.top+(rect.height-40)/2}px`;
             tripLogSettingsButton.style.color = getComputedStyle(tripLogButton).color;
         }
     }
@@ -6244,12 +6298,13 @@
     }
 
     function getTripLogIncludeCurrent() {
-        return safeStorageGet(STORAGE.tripLogIncludeCurrent) === "true";
+        return selectedTripLogIncludeCurrentPreference??(safeStorageGet(STORAGE.tripLogIncludeCurrent) === "true");
     }
 
     function setTripLogIncludeCurrent(value) {
-        safeStorageSet(STORAGE.tripLogIncludeCurrent, String(Boolean(value)));
-        tripLogView?.rerender();
+        selectedTripLogIncludeCurrentPreference=Boolean(value);
+        const saved=safeStorageSet(STORAGE.tripLogIncludeCurrent, String(Boolean(value)));
+        tripLogView?.rerender();return saved;
     }
 
     function getTripLogViewSettings() {
@@ -6310,6 +6365,12 @@
             showPendingDownTime:getIncludePendingDownTime,onShowPendingDownTime:setIncludePendingDownTime,onPendingOverride:setPendingDownTimeOverride,
             viewSettings:getTripLogViewSettings,onViewSettings:saveTripLogViewSettings,
             onIncludeCurrent:setTripLogIncludeCurrent,
+            onSettingsOpened:()=>{tripLogSettingsVisible=true;tripLogSettingsButton?.setAttribute('aria-expanded','true');},
+            onSettingsClosed:()=>{tripLogSettingsVisible=false;tripLogSettingsButton?.setAttribute('aria-expanded','false');},
+            onDownAvailable:visible=>{if(tripLogDownButton){tripLogDownButton.dataset.available=String(visible);tripLogDownButton.hidden=!visible||getTripListState()!=='open';}},
+            rangeLabelFor:scope=>aggregateScopeLabel(scope),
+            rangeLabel:()=>totalScopeLabel(),
+            weekNumber:date=>calendarRanges.weekNumber(date),
             onRange:value=>setTripLogRange(value),
             onFilter:setTripProductionFilter,
             onDate:(key,value)=>void setTripLogDate(key,value),
@@ -6377,11 +6438,6 @@
     function renderTripLog(data, calendar) {
         if(!ensureTripLogView())return;
         tripLogView.render(data,calendar);
-        if (!tripLogView.trips.length) {
-            tripLogSettingsVisible = true;
-            tripLogSettingsButton?.setAttribute("aria-expanded", "true");
-            tripLogSettingsButton?.setAttribute("aria-label", globalThis.WMOFLanguagePack.text("6753d87f-95b6-5469-8e1c-f0c6b8408f0e"));
-        }
         tripLogView.setSettingsVisible(tripLogSettingsVisible);
         // Data changes can replace the list with settings or change the home
         // trip state. Reconcile the open shell, never the closed button slot.
@@ -6628,6 +6684,7 @@
         tripLogCloseButton.hidden =
             false;
         tripLogSettingsButton.hidden = false;
+        tripLogDownButton.hidden=tripLogDownButton.dataset.available!=="true";
 
         requestAnimationFrame(
             () => {
@@ -6678,13 +6735,14 @@
         if (tripLogCloseButton) {
             tripLogCloseButton.hidden =
                 true;
-            tripLogSettingsButton.hidden = true;
+            tripLogSettingsButton.hidden = true;tripLogDownButton.hidden=true;tripLogView?.downDialog?.close();
         }
 
         clearTripLogMergeDuration();
     }
 
     function restoreClosedTripLog() {
+        tripLogView?.setSettingsVisible(false);tripLogView?.downDialog?.close();
         tripListTransitionRevision++;
         tripListButtonAnimation?.cancel();tripListButtonAnimation=undefined;
         if(tripListBodyAnimationFrame!==undefined)cancelAnimationFrame(tripListBodyAnimationFrame);
@@ -6825,6 +6883,7 @@
     }
 
     async function closeTripList(source = "close") {
+        tripLogView?.setSettingsVisible(false);tripLogView?.downDialog?.close();
         if(getTripListState()==='opening'){restoreClosedTripLog();return true;}
         if (
             !tripLogButton ||
@@ -9002,9 +9061,12 @@
         if (mode !== "auto" || (state?.trip_active && !state?.break_only)) {
             const scope = mode === "auto" ? target : mode;
             const percent = scope === "standard" ? 100 : clockTimer.getGoalEditorSnapshot(scope === "total" ? "total" : "trip").actual_percent;
-            if (Number.isFinite(percent)) label += ` - ${Number(percent.toFixed(2))}%`;
+            if (Number.isFinite(percent)) label += ` - ${Math.ceil(percent-1e-9)}%`;
         }
         scopeToggle.textContent = label;
+        const host=scopeToggle.closest('.scope-control');let icon=host.querySelector('.auto-goal-header-lock');
+        if(!icon){icon=document.createElement('span');icon.className='auto-goal-header-lock';icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/></svg>';icon.setAttribute('aria-label',WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000003'));host.append(icon);}
+        icon.hidden=mode!=='auto'||!autoGoalIdentity();
         scopeToggle.setAttribute("aria-label", globalThis.WMOFLanguagePack.text(
             "ecd0c7da-90cb-5248-9723-f38b68114550", {value0: label}));
     }
@@ -9046,7 +9108,7 @@
             normalizePercentMode(mode);
 
         clockTimer.configure({
-            goal_type: requested
+            goal_type: requested,auto_goal_override:aggregateScopes.includes(autoGoalIdentity())?"total":autoGoalIdentity()
         });
 
         return syncScopeUI(persist);
@@ -9383,8 +9445,15 @@
                     state.time_header_text
                 );
         }
-        if (globalThis.WMOFTimerSummaryView) WMOFTimerSummaryView.render(document,
+        if (globalThis.WMOFTimerSummaryView) {WMOFTimerSummaryView.render(document,
             {...state, goal_bar_total_label:totalScopeLabel()});
+        if(state.rendered_time_type||state.time_component){
+            const mode=state.time_mode||clockTimer.renderedTimeMode,target=state.effective_goal_type;
+            const goal=target==='total'?totalScopeLabel():target==='standard'?'Standard':'Trip';
+            const caption=state.time_header_text==='Banked'?['d7400001-0000-4000-8000-000000000012',totalScopeLabel()]:state.time_header_text==='Over By'?['d7400001-0000-4000-8000-000000000013',totalScopeLabel()]:mode==='remaining'?['d7400001-0000-4000-8000-000000000010',app.dataset.percentageDisplay==='bar'&&state.trip_active?'Standard':goal]:mode==='calculated-end'?['d7400001-0000-4000-8000-000000000011',goal]:null;
+            if(caption)renderedLabel.textContent=WMOFLanguagePack.text(caption[0],{goal:caption[1]});
+        }
+        globalThis.WMOFTimerSummaryView?.fitHeaders(document);}
         else { $("#standardTimeValue").textContent = state.standard_time_component.text;
         $("#renderedTimeValue").textContent = state.time_component.text;
         $("#currentPercentValue").textContent = state.current_percent_component.text;
@@ -12246,14 +12315,21 @@
         return true;
     }
 
-    globalThis.WMOFModeMenu?.bind(scopeToggle, {
+    const mainModeMenu=globalThis.WMOFModeMenu?.bind(scopeToggle, {
+        getOptionDetails:value=>aggregateScopes.includes(value)?{label:aggregateScopeLabel(value)}:null,
+        autoGoals:{getState:()=>{aggregateMenuCache.clear();return {scope:getTripLogRange(),override:autoGoalIdentity(),goals:aggregateGoals()};},getRows:autoMenuRows,
+            customRange:editAutoCustomRange,edit:editMenuAggregateGoal,commit:async pending=>{
+                if(pending.scope==='custom'&&pending.customDates){CalendarRange.custom(pending.customDates.start,pending.customDates.end,calendarRanges.getTimezone());tripLogStartDate.value=pending.customDates.start;tripLogEndDate.value=pending.customDates.end;await safeStorageSet(STORAGE.customTripLogDates,JSON.stringify(pending.customDates));}
+                await saveAggregateGoals(pending.goals);
+                setTripLogRange(pending.scope,{announce:false});const savedOverride=setAutoGoalIdentity(pending.override);applyScope('auto');await savedOverride;await tripRangeRefreshCompletion;announceScopeSelection('auto');
+            }},
         getValue: () => clockTimer.percentMode === 'total' ? getTripLogRange() : clockTimer.percentMode,
         getDates: () => ({start:tripLogStartDate.value,end:tripLogEndDate.value}),
         onSelect: (value,dates) => {
             if(dates){tripLogStartDate.value=dates.start;tripLogEndDate.value=dates.end;safeStorageSet(STORAGE.customTripLogDates,JSON.stringify(dates));}
             const previousMode = normalizePercentMode(clockTimer.percentMode);
             const previousRange = getTripLogRange();
-            if (['trip','auto'].includes(value)) applyScope(value);
+            if (['trip','auto'].includes(value)){if(value==='auto')setAutoGoalIdentity(null);applyScope(value);}
             else {setTripLogRange(value, {announce:false});applyScope('total');}
             if (dates || previousMode !== normalizePercentMode(clockTimer.percentMode) || previousRange !== getTripLogRange())
                 announceScopeSelection(normalizePercentMode(clockTimer.percentMode));
@@ -12435,6 +12511,13 @@
             next.focus();next.click();
         });
     }
+    document.querySelector('.percent-summary')?.addEventListener('goal-bar-select',event=>{
+        if(clockTimer.percentMode!=='auto')return;
+        const choices=event.detail?.choices||[],identity=autoGoalIdentity(),selected=aggregateScopes.includes(identity)?'total':identity;
+        if(choices.includes(selected)){setAutoGoalIdentity(null);return;}
+        if(choices.length===1)setAutoGoalIdentity(choices[0]==='total'?getTripLogRange():choices[0]);
+        else openAutoGoalDialog({choices,intent:'select'});
+    });
     document.querySelector(".percent-summary")?.addEventListener("goal-bar-edit", event => {
         const choices = event.detail?.choices;
         globalThis.WMOFActions.openGoalEditor(choices?.length === 1 ? {scope:choices[0]} : {choices});
@@ -16991,11 +17074,12 @@
         }
     }
 
-    function openAutoGoalDialog({choices = ["trip", "total"]} = {}) {
+    function openAutoGoalDialog({choices = ["trip", "total"],intent="edit"} = {}) {
         if (!autoGoalDialog) {
             return false;
         }
 
+        autoGoalDialog.dataset.intent=intent;
         const offered = new Set(choices);
         for (const button of autoGoalDialog.querySelectorAll("[data-auto-goal-scope]"))
             button.hidden = !offered.has(button.dataset.autoGoalScope);
@@ -17487,6 +17571,7 @@
             goalSequence: timerState?.auto_goal_order || Object.freeze([]),
             goals: Object.freeze({trip: timerState?.trip_goal_component?.value ?? null,
                 total: timerState?.total_goal_component?.value ?? null,
+                aggregateGoals:aggregateGoals(),autoOverride:autoGoalIdentity(),
                 autoOrder: Object.freeze([...(timerState?.auto_goal_order || [])])}),
             editor: Object.freeze({open: Boolean(editor), valid: actions.confirmValue,
                 source: editor?.source || null, value: editor?.pending || "", mode: editor?.mode || null,
@@ -19659,7 +19744,8 @@
                         }
                     );
 
-                    void globalThis.WMOFActions.openGoalEditor({scope});
+                    if(autoGoalDialog.dataset.intent==='select')setAutoGoalIdentity(scope==='total'?getTripLogRange():scope);
+                    else void globalThis.WMOFActions.openGoalEditor({scope});
                 }
             );
         });
@@ -20388,10 +20474,10 @@
         clockTimer.addEventListener(event,()=>{if(getTripListState()==="open") void dispatchTripListRequest("trip-change");});
     }
     setInterval(()=>{
-        if(tripIsLive() && getTripListState()==="open" && tripLogView && !tripLogView.editor && !numberPadDialog?.open &&
+        if(tripIsLive() && getTripListState()==="open" && tripLogView?.calendar && !tripLogView.editor && !numberPadDialog?.open &&
             (!tripLogBody.contains(document.activeElement) || document.activeElement?.matches("summary")) &&
             !tripLogBody.querySelector(".trip-log-menu-actions:not([hidden])")) {
-            tripLogView.render({trips:tripLogView.trips, offline:tripLogView.offline, incomplete:tripLogView.incomplete, loginRequired:tripLogView.loginRequired},tripLogView.calendar);
+            tripLogView.render({trips:tripLogView.trips, offline:tripLogView.offline, incomplete:tripLogView.incomplete, loginRequired:tripLogView.loginRequired},tripLogView.calendar,{liveUpdate:true});
         }
     },1000);
 
@@ -22086,7 +22172,9 @@
         showTripEndTransitionOverlay(event.detail);
     }
 
+    clockTimer.addEventListener('goalChanged',event=>{if(event.detail?.goal==='total'&&event.detail.value===null&&!applyingAggregateGoal){const goals=aggregateGoals();goals[getTripLogRange()]=100;void saveAggregateGoals(goals);}});
     function onTotalGoalSet(event) {
+        if(!applyingAggregateGoal&&(!globalThis.WMOFAccountSettings||globalThis.WMOFAccountSettings.loaded)){const goals=aggregateGoals(),value=clockTimer.getGoalEditorSnapshot('total').actual_percent;if(value>0&&value<=150){goals[getTripLogRange()]=value;void saveAggregateGoals(goals);}aggregateMenuCache.clear();}
         reserveSemanticEvent(event, "Total goal explicitly set");
     }
 
@@ -22780,7 +22868,7 @@
                 if(Number(signedInProfile?.id)!==owner)return;
                 await account.load(owner,session.csrfToken);
                 if(Number(signedInProfile?.id)!==owner)return;
-                selectedTripLogAnchorDate=undefined;resolvedTripLogCalendar=undefined;selectedPendingDownTimePreference=undefined;pendingDownTimeOverride=false;
+                selectedTripLogAnchorDate=undefined;resolvedTripLogCalendar=undefined;selectedPendingDownTimePreference=undefined;selectedTripLogIncludeCurrentPreference=undefined;pendingDownTimeOverride=false;
                 const graphical=getGraphicalSettings(),preferences=getTripPreferences();
                 applyGraphicalSettings(graphical);fillGraphicalForm(graphical);fillTripPreferencesForm(preferences);
                 clockTimer.configure({auto_goal:preferences.syncGoals, goal_bounding:preferences.goalBounding,include_pending_down_time:getIncludePendingDownTime()});
@@ -25680,6 +25768,7 @@
             },
 
             openGoalEditor({scope, choices} = {}) {
+                if(scope==='standard')return globalThis.WMOFActions.openStandardTimeSettings({tripScope:true});
                 if (["trip", "total"].includes(scope)) {
                     if ((endTimeGoalOverride?.scopes || []).includes(scope)) {flashEndTimeGoalLock();return false;}
                     void openPercentGoalNumberPad(scope).catch(() => {});

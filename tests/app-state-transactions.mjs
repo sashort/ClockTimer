@@ -266,7 +266,8 @@ if(process.argv.includes('--state-contract')) {
   // Exercise mode transitions without selecting or persisting a Total scope.
   await window.WMOFActions.changeGoalMode('total');await settle();
   await window.WMOFActions.changeGoalMode('trip');await settle();
-  assert(!timer.hasAttribute('trip-goal')&&!timer.hasAttribute('total-goal'),'fixture goals are unspecified');
+  assert(!timer.hasAttribute('trip-goal'),'Trip goal uses its default');
+  assert.equal(timer.getAttribute('total-goal'),'100%','unconfigured aggregate scopes start at 100%');
   assert(!Object.keys(accountBlob.orderFiller).some(key=>/tripLogRange|totalGoal|tripGoal/.test(key)),'server has no saved scope or goals');
  }
  if(scenario.group==='time') {
@@ -439,7 +440,7 @@ if(process.argv.includes('--goal-cascade')) {
  await say('week goal one hundred five percent');
  assert.equal(timer.percentMode,'auto');assert.equal(timer.autoSyncTripGoal,true);
  assert.equal(timer.calculatedTripGoal,1.05);
- assert(spoken.includes('Week goal set to 105 percent. Auto goal recalculated. New trip goal 105 percent.'),JSON.stringify(spoken));
+ assert(spoken.includes('Week 36 goal set to 105 percent. Auto goal recalculated. New trip goal 105 percent.'),JSON.stringify(spoken));
  await window.WMOFActions.changeGoalMode('trip');await settle();spoken.length=0;
  await say('day goal one hundred ten percent');
  assert.equal(timer.calculatedTripGoal,1.1);assert.equal(timer.autoSyncTripGoal,true);
@@ -680,10 +681,10 @@ if(process.argv.includes('--range-permissions')) {
  await window.SpeechMenu.testTranscript(continuation,'trip goal one hundred fifteen percent',true);await continuation.digestQueue;await settle();
  assert.equal(timer.getSummarySnapshot().trip.percentGoal,1.15);
  for(const phrase of ['trip goal','day goal','week goal','money goal','month goal','year goal']) {
-  const before=[timer.getAttribute('trip-goal'),timer.getAttribute('total-goal')];
+  const before=[timer.getAttribute('trip-goal'),JSON.stringify(window.WMOFInteractionState.state.goals.aggregateGoals)];
   const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,phrase,true);await u.digestQueue;await settle();
   assert(u.hadCommittedCommand&&!u.digestExecutionFailed,phrase+' reads back');
-  assert.deepEqual([timer.getAttribute('trip-goal'),timer.getAttribute('total-goal')],before,'readback does not set a percentage');
+  assert.deepEqual([timer.getAttribute('trip-goal'),JSON.stringify(window.WMOFInteractionState.state.goals.aggregateGoals)],before,'readback does not change any scope goal');
  }
  // Both keyword choices and word orders use the same scoped setters.
  for(const target of ['trip','day','week','money','month','year']) {

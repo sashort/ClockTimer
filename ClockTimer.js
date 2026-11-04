@@ -199,6 +199,7 @@
         #renderedPercentGoal =
             1;
 
+        #autoGoalOverride = null;
         #percentMode =
             "auto";
 
@@ -1874,6 +1875,7 @@
                 timestamp: new Date(now.getTime()),
                 rendered_time_type: this.#renderedTimeType(),
                 goal_type: this.#percentMode,
+                auto_goal_override: this.#percentMode === "auto" ? this.#autoGoalOverride : null,
                 effective_goal_type: scope,
                 auto_goal_active: this.#percentMode === "auto" && this.#autoSyncTripGoal,
                 sync_enabled: this.#autoSyncTripGoal,
@@ -1943,12 +1945,16 @@
 
         // Goal-bar durations use counted trip time: Standard is zero Remaining
         // and the standard duration in Elapsed mode. All labels stay trip-scoped.
-        getGoalEditorSnapshot(scope, percent) {
+        previewAggregateGoal(percent, data, window) {
+            const totals={...window,...this.#composeAggregateSummary(this.#normalizeAggregateBreakdown(data?.aggregateBreakdown),this.#nonProductionFilter)};
+            return this.getGoalEditorSnapshot('total',percent,totals);
+        }
+        getGoalEditorSnapshot(scope, percent, aggregateTotals) {
             const total = scope === "total";
             const actual = percent === undefined ? (total ? this.#getUserTotalGoal() : this.#getUserTripGoal()) * 100 : Number(percent);
             const active = this.#started && !this.#breakOnly && this.#standardDuration > 0 && (!total||this.#tripBelongsToAggregateWindow());
             const inferred = active && Number.isFinite(actual) && actual > 0
-                ? total ? this.#calculateTripGoalFromTotalDuration(this.#standardDuration, actual / 100).tripGoal * 100 : percent===undefined?this.#getTripGoal()*100:actual
+                ? total ? this.#calculateTripGoalFromTotalDuration(this.#standardDuration, actual / 100, aggregateTotals).tripGoal * 100 : percent===undefined?this.#getTripGoal()*100:actual
                 : null;
             const bounding=active&&Number.isFinite(inferred)?this.#goalBoundingProjection(inferred/100):null;
             return Object.freeze({bounding,raw_inferred_percent:inferred,trip_active:active,actual_percent:Number.isFinite(actual)&&actual>0?Number(actual.toFixed(6)):null,
@@ -1992,7 +1998,7 @@
                 const text = mode === "elapsed" ? this.#formatElapsedRenderedDuration(productiveTarget)
                     : mode === "calculated-end" ? this.#formatSummaryEndTime(end ? new Date(end) : undefined)
                     : duration(standard-position);
-                return Object.freeze({...node, remaining_milliseconds:Number.isFinite(productiveTarget)&&Number.isFinite(summary.trip?.productiveTimeMilliseconds)?Math.max(0,productiveTarget-summary.trip.productiveTimeMilliseconds):null, counted_position:position, time:text,
+                return Object.freeze({...node, remaining_milliseconds:Number.isFinite(productiveTarget)&&Number.isFinite(summary.trip?.productiveTimeMilliseconds)?productiveTarget-summary.trip.productiveTimeMilliseconds:null, counted_position:position, time:text,
                     failed:Number.isFinite(current) && current*100 < node.percent-1e-7});
             });
             nodes.push(Object.freeze({id:"current", label:"Current", current:true,
@@ -2008,7 +2014,9 @@
                 const remaining=upcoming[0].remaining_milliseconds;
                 nextGoal=Object.freeze({ids:Object.freeze(shared.map(node=>node.id)),label:shared.map(node=>node.label).reverse().join("/"),remaining_milliseconds:remaining,clock:this.#decorateTripTimeText(this.#formatRemainingRenderedDuration(remaining),now,remaining,"remaining")});
             }
-            return Object.freeze({available:true, active:true, next_goal:nextGoal, time_mode:mode, nodes:Object.freeze(nodes),
+            const targetNode=nodes.find(n=>n.id===this.#getRenderedPercentScope())||nodes.find(n=>n.id==='standard');
+            const targetGoal=targetNode&&Number.isFinite(targetNode.remaining_milliseconds)?Object.freeze({ids:Object.freeze([targetNode.id]),label:targetNode.label,remaining_milliseconds:targetNode.remaining_milliseconds,clock:this.#decorateTripTimeText(this.#formatRemainingRenderedDuration(targetNode.remaining_milliseconds),now,targetNode.remaining_milliseconds,'remaining')}):null;
+            return Object.freeze({available:true, active:true, next_goal:nextGoal, target_goal:targetGoal,time_mode:mode, nodes:Object.freeze(nodes),
                 all_failed:failed,
                 phase:failed || (Number.isFinite(current) && current<1) ? "overtime"
                     : Number.isFinite(current) && current<this.#renderedPercentGoal ? "b-game" : "trip",
@@ -5317,7 +5325,7 @@
         }
         captureState() {
             // Checkpoints use model records, never the rendered ring DOM.
-            return {includePendingDownTime:this.#includePendingDownTime,goalBounding:this.goalBounding,syncOverride:this.#syncOverride, activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
+            return {autoGoalOverride:this.#autoGoalOverride,includePendingDownTime:this.#includePendingDownTime,goalBounding:this.goalBounding,syncOverride:this.#syncOverride, activeInterval: this.getActiveIntervalState?.(), events: this.#stateEvents(), started: this.#started, tripId: this.#tripId,
                 attributes: [...this.attributes].map(attribute => [attribute.name, attribute.value]),
                 preparedTrip: this.#preparedTrip && {...this.#preparedTrip},
                 pending: this.#pendingTripEvents.map(event => ({...event, value: structuredClone(event.value)})),
@@ -5328,7 +5336,7 @@
         exportObserverSnapshot() {
             // Only the active timer's model and aggregate totals. No queued trips,
             // persistence keys, user credentials, endpoints or pending writes.
-            return {includePendingDownTime:this.#includePendingDownTime,events:this.#stateEvents(), started:this.#started, tripId:this.#tripId,
+            return {autoGoalOverride:this.#autoGoalOverride,includePendingDownTime:this.#includePendingDownTime,events:this.#stateEvents(), started:this.#started, tripId:this.#tripId,
                 attributes:[...this.attributes].filter(attribute => ClockTimer.observedAttributes.includes(attribute.name))
                     .map(attribute => [attribute.name,attribute.value]),
                 totals:this.#cloneAggregateSnapshot(this.#tripTotals), addedToAggregate:this.#tripAddedToAggregate,
@@ -5382,7 +5390,7 @@
                 }
             }
             const configuration = {goal_type:mode || this.percentMode,
-                auto_goal:sync ?? snapshot.sync, goal_bounding:typeof snapshot.goalBounding==="boolean"?snapshot.goalBounding:snapshot.syncOverride!==true, rendered_time_type:'time_remaining'};
+                auto_goal_override:['trip','total','standard'].includes(snapshot.autoGoalOverride)?snapshot.autoGoalOverride:null,auto_goal:sync ?? snapshot.sync, goal_bounding:typeof snapshot.goalBounding==="boolean"?snapshot.goalBounding:snapshot.syncOverride!==true, rendered_time_type:'time_remaining'};
             for (const scope of ['trip','total']) if (Number.isFinite(Number(goals?.[scope])) && Number(goals[scope]) > 0) configuration[scope+'_goal'] = `${goals[scope]}%`;
             if (Number.isFinite(goal) && goal > 0) configuration[goalScope === 'total' ? 'total_goal' : 'trip_goal'] = `${goal}%`;
             if (totalLabel) this.setAttribute('total-label', totalLabel);
@@ -5408,6 +5416,7 @@
                     this.#transitionLifecycle("stop"); this.#clearLocal();
                 }
             }
+            this.#autoGoalOverride=['trip','total','standard'].includes(snapshot.autoGoalOverride)?snapshot.autoGoalOverride:null;
             this.#syncOverride = typeof snapshot.goalBounding==="boolean"?!snapshot.goalBounding:snapshot.syncOverride === true;
             this.#tripId = snapshot.tripId;
             this.#preparedTrip = snapshot.preparedTrip;
@@ -7275,6 +7284,11 @@
                     const rendered = aliases[String(configuration[renderedKey]).trim().toLowerCase()];
                     if (!rendered) throw new RangeError("rendered_time_type is invalid.");
                     this.renderedTimeMode = rendered;
+                }
+                if (has("auto_goal_override")) {
+                    const value=configuration.auto_goal_override;
+                    if(value!==null&&!["trip","total","standard"].includes(value))throw new RangeError("Invalid Auto goal override.");
+                    this.#autoGoalOverride=value;
                 }
                 if (has("goal_type")) this.percentMode = configuration.goal_type;
                 if (has("trip_goal")) {
@@ -28302,17 +28316,18 @@
 
         #calculateTripGoalFromTotalDuration(
             standardDuration = this.#standardDuration,
-            totalGoal = this.#getTotalGoal()
+            totalGoal = this.#getTotalGoal(),
+            previewTotals
         ) {
             const empty = {
                 tripGoal: null,
                 adjustedTimeElapsed: null
             };
 
-            if(!this.#tripBelongsToAggregateWindow())return empty;
-
-            const totals =
-                this.#tripTotals;
+            const totals=previewTotals??this.#tripTotals;
+            if(previewTotals){const at=Date.parse(this.#timelineToISO(this.#getElapsedStartTimeMilliseconds()));
+                if(Number.isFinite(at)&&(at<Date.parse(totals.startTime)||at>Date.parse(totals.endTime)))return empty;
+            }else if(!this.#tripBelongsToAggregateWindow())return empty;
 
             if (
                 !Number.isFinite(totalGoal) ||
@@ -28500,6 +28515,11 @@
                 return Number.isFinite(aggregate.requirements.adjustedTimeElapsed) &&
                     Math.abs(aggregate.requirements.adjustedTimeElapsed-explicit.requirements.adjustedTimeElapsed)<0.5
                     ? aggregate : explicit;
+            }
+            if(this.#autoGoalOverride){
+                const pinned=this.#getGoalCandidates({allowMissed:true})[this.#autoGoalOverride];
+                if(Number.isFinite(pinned.requirements.adjustedTimeElapsed)&&pinned.requirements.adjustedTimeElapsed>0)return pinned;
+                if(!this.#started)return pinned;
             }
             const candidates = this.#getGoalCandidates();
             return this.#dispatch("selectGoal", ["auto", this.#getPercentageOrder(candidates)], candidates);

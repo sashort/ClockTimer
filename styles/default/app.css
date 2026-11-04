@@ -8242,3 +8242,121 @@ html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-meridiem {b
 html .number-pad-dialog[data-presentation="trip-editor"] .number-pad-meridiem.is-selected {background:var(--pad-editor-accent);border-color:var(--pad-editor-accent);color:#112431;}
 
 .number-pad-dialog .number-pad-context>:is(.goal-details,.number-pad-official-details) {margin-top:12px;margin-right:-120px;max-width:none;}
+/* Derived goals: columns have fixed numerical tracks; edits never move the icon columns. */
+.mode-dropdown.is-auto-goals{overflow-y:auto;overflow-x:hidden;padding:6px;max-width:calc(100vw - 24px)}
+.auto-pane-head{display:flex;justify-content:space-between;align-items:center;padding:6px 6px 12px;border-bottom:1px solid rgb(255 255 255 / 25%);gap:8px}
+.auto-pane-head strong{font-size:16px;color:var(--wm-blue-light);white-space:nowrap}
+.mode-dropdown .auto-pane-back{width:auto;padding:5px 0;min-height:30px;font-size:13px;background:transparent}
+.mode-dropdown .auto-pane-back::before,.mode-dropdown .auto-goal-edit::before{content:none}
+.auto-column-head,.auto-scope-choice{display:grid;grid-template-columns:22px minmax(0,1fr) 52px 64px;column-gap:8px;align-items:center;padding:10px 6px;font-variant-numeric:tabular-nums}
+.auto-column-head{font-size:10px;font-weight:700;color:var(--wm-blue-light);padding-block:9px}
+.auto-lock-column svg{width:15px;height:15px;display:block;margin:auto}
+.auto-column-fallback,.auto-scope-fallback{text-align:center}
+.auto-column-target,.auto-scope-target{text-align:right;white-space:nowrap}
+.auto-scope-choice{min-height:60px;font-size:14px;border:1px solid transparent;border-radius:5px;cursor:pointer}
+.auto-scope-choice.selected{background:color-mix(in srgb,var(--wm-blue-light) 17%,transparent);border-color:var(--wm-blue-light)}
+.auto-override-check{appearance:auto;accent-color:var(--wm-blue-light);width:20px;height:20px;margin:0;cursor:pointer}
+.auto-goal-name{display:flex;align-items:center;gap:6px;min-width:0}
+.auto-goal-copy{min-height:36px;display:flex;flex-direction:column;justify-content:center;min-width:0;font-weight:700}
+.auto-goal-title{white-space:nowrap}
+.auto-aggregate-percent{font:inherit}
+.auto-confirm-hint{font-size:10px;line-height:14px;color:var(--wm-blue-light);font-weight:400;white-space:nowrap}
+.mode-dropdown .auto-goal-edit{width:26px;min-width:26px;min-height:30px;height:30px;flex:none;padding:4px;display:grid;place-items:center;border:1px solid var(--wm-blue-light);border-radius:5px;background:color-mix(in srgb,var(--wm-blue-light) 10%,transparent);color:var(--wm-blue-light)}
+.auto-goal-edit svg{width:16px;height:16px}
+.auto-scope-fallback{font-size:12px;opacity:.8;white-space:nowrap}
+.auto-scope-target{font-weight:700}
+.auto-bounding{color:#7de2bd;margin-right:3px;font-size:1em}
+html[data-seasonal-theme=halloween] .auto-bounding{color:#ffab53}
+.auto-standard-choice{margin-top:8px;border-top-color:var(--wm-blue-light);background:color-mix(in srgb,var(--wm-blue-light) 8%,transparent);cursor:default}
+.auto-scope-choice.selected:has(.auto-confirm-hint){animation:auto-goal-await 650ms ease-out 2}
+@keyframes auto-goal-await{50%{box-shadow:inset 0 0 0 2px var(--wm-blue-light)}}
+@media(prefers-reduced-motion:reduce){.auto-scope-choice.selected:has(.auto-confirm-hint){animation:none;box-shadow:inset 0 0 0 1px var(--wm-blue-light)}}
+.auto-goal-header-lock{position:absolute;left:6px;top:6px;width:40px;height:40px;display:grid;place-items:center;color:var(--wm-blue-light);pointer-events:none}
+.auto-goal-header-lock[hidden]{display:none}
+.auto-goal-header-lock svg{width:28px;height:28px}
+.goal-bar-override-pin{color:var(--wm-blue-light,#a9ddf7);pointer-events:none}
+.goal-bar-node[data-auto-locked=true] .goal-bar-target-frame{stroke:var(--wm-blue-light,#a9ddf7)}
+.trip-summary .summary-label{white-space:nowrap}
+.trip-log-settings-dialog,.trip-log-down-dialog{width:min(94vw,520px);max-height:90dvh;padding:0;overflow:hidden;background:var(--ui-gray-gradient,var(--wm-gray));color:var(--wm-white)}
+.trip-log-overlay-content{max-height:calc(90dvh - 76px);overflow-y:auto;padding:12px}
+.trip-log-settings-dialog .trip-log-settings{position:static;display:block;opacity:1;transform:none;overflow:visible;background:transparent;transition:none}
+.trip-log-settings-dialog .trip-log-settings-content{overflow:visible}
+.trip-log-settings-dialog .trip-log-settings-divider{display:none}
+.trip-log-down-dialog .trip-log-down-section{margin:0}
+.trip-log-down-button{position:fixed;z-index:22000;width:52px;height:52px;padding:10px;border:0;border-radius:6px;background:transparent;color:var(--wm-blue-light,#a9ddf7);cursor:pointer}
+.trip-log-down-button[hidden]{display:none}
+.trip-log-down-button svg{width:28px;height:28px}
+.trip-log-down-button:hover{background:color-mix(in srgb,var(--wm-blue-light) 15%,transparent)}
+.app[data-trip-list-state=open] #tripLogButton{padding-inline:112px 60px;font-size:clamp(22px,5vw,36px)}
+.trip-log-settings-checks{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 16px;grid-column:1/-1;margin-top:8px}
+.trip-log-controls .trip-log-settings-checks .trip-log-include-current{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;min-width:0;grid-column:auto;font-size:14px}
+.trip-log-settings-checks input{flex:none;width:20px;height:20px}
+.app[data-trip-list-state=open] #tripLogButton{font-size:clamp(28px,8vw,40px)}
+.app[data-trip-list-state=open] #tripLogButton{padding-inline:88px;text-align:center;font-size:clamp(28px,8vw,40px)}
+#tripLogSettingsButton,#tripLogDownButton{width:40px;height:40px;padding:6px}
+.trip-log-empty-message{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px}
+.trip-log-empty-message small{font-size:16px;color:var(--wm-blue-light)}
+.trip-log-settings-checks input{accent-color:var(--wm-blue-light,#a9ddf7);color-scheme:dark}
+#tripLogSettingsButton,#tripLogDownButton{display:grid;place-items:center;box-sizing:border-box;line-height:1}
+#tripLogSettingsButton[hidden],#tripLogDownButton[hidden]{display:none}
+#tripLogSettingsButton svg,#tripLogDownButton svg{width:28px;height:28px;margin:0;display:block}
+.trip-log-down-breakdown>header{display:flex;align-items:center;gap:10px;padding:12px}
+.trip-log-down-breakdown>header>strong{font-size:17px;white-space:nowrap}
+.break-over-duration{display:block;font-size:12px;line-height:1.3;margin-top:3px;font-weight:500;text-align:center}
+#endTripButton[data-break-over-goal=true]{flex-direction:column;gap:3px}
+[data-break-over-goal=true]>.break-action-label{white-space:nowrap;font-size:16px}
+[data-break-over-goal=true]>.break-action-clock{font-size:30px;line-height:1.15}
+.compact-interval-timer[data-break-over-goal=true]{min-height:90px}
+.compact-interval-timer[data-break-over-goal=true]>span:not(.break-buffer-side){white-space:nowrap;font-size:16px}
+.trip-log-range-help{grid-column:1/-1;font-size:13px;line-height:1.45;color:var(--wm-blue-light);margin-top:4px}
+.trip-log-range-help hr{border:0;border-top:1px solid rgb(255 255 255 / 30%);margin:8px 0 12px}
+.trip-log-range-help p{margin:0}
+.trip-log-down-dialog .dialog-header h2{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--wm-blue-light)}
+.trip-log-down-dialog .dialog-header h2 svg{width:26px;height:26px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7}
+.trip-log-controls .trip-log-settings-checks .trip-log-include-current input{accent-color:var(--wm-blue-light,#a9ddf7)}
+.trip-log-settings-checks{border-top:1px dotted rgb(255 255 255 / 45%);padding-top:14px}
+.trip-log-range-help{color:#26323d}
+.trip-log-settings-checks{border-top-color:#35414c}
+html[data-seasonal-theme=halloween] .trip-log-range-help{color:#b8ada1}
+html[data-seasonal-theme=halloween] .trip-log-settings-checks{border-top-color:#817466}
+/* Move the live highlight on the compositor; do not repaint a 300%-wide background every frame. */
+.trip-log-group.has-active-trip>summary,.trip-log-trip.is-active-trip>summary,.trip-log-entry.is-active-entry{position:relative;isolation:isolate;overflow:hidden;animation:none;background-image:none}
+.trip-log-aggregate-tree .trip-log-group.has-active-trip>summary::after,.trip-log-trip.is-active-trip>summary::after,.trip-log-entry.is-active-entry::after{content:'';display:block;position:absolute;inset:0;left:0;top:0;bottom:0;border:0;pointer-events:none;z-index:-1;background:linear-gradient(105deg,transparent 15%,color-mix(in srgb,var(--trip-log-active-sweep-color) 35%,transparent) 45%,color-mix(in srgb,var(--trip-log-active-sweep-color) 55%,transparent) 50%,transparent 80%);transform:translateX(-100%);animation:trip-log-live-slide 4.2s linear infinite;animation-delay:var(--trip-log-active-sweep-delay,0ms);will-change:transform}
+@keyframes trip-log-live-slide{to{transform:translateX(100%)}}
+@media(prefers-reduced-motion:reduce){.trip-log-aggregate-tree .trip-log-group.has-active-trip>summary::after,.trip-log-trip.is-active-trip>summary::after,.trip-log-entry.is-active-entry::after{animation:none;transform:none;will-change:auto}}
+.trip-log-range-help,html[data-seasonal-theme=halloween] .trip-log-range-help{color:var(--wm-white)}
+.trip-log-range-help hr{border-top-style:dotted;border-top-color:rgb(255 255 255 / 45%)}
+.trip-log-range-help-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px}
+.trip-log-range-help-grid p{font-weight:400}
+.trip-log-settings-checks,html[data-seasonal-theme=halloween] .trip-log-settings-checks{border-top:0;padding-top:0}
+.trip-log-setting-control{position:relative;display:inline-flex;align-items:center;flex:none;line-height:1}
+.trip-log-setting-control.is-overridden::after{content:'';position:absolute;left:-3px;right:-3px;top:50%;height:2px;background:#253544;box-shadow:0 0 0 1px rgb(255 255 255 / 70%);pointer-events:none}
+.trip-log-setting-control.is-overridden::after{transform:rotate(-35deg);transform-origin:center}
+.trip-log-controls label.is-unavailable>span{text-decoration:none;opacity:.65}
+.trip-log-controls label.is-overridden>span:not(.trip-log-setting-control){text-decoration:line-through;opacity:.65}
+.trip-log-controls .trip-log-setting-control{text-decoration:none;opacity:1}
+.trip-log-range-help h3{font-size:14px;margin:0 0 10px;text-align:left}
+.trip-log-range-help h3{display:flex;align-items:center;gap:7px}
+.trip-log-range-info{display:inline-grid;place-items:center;width:20px;height:20px;flex:none;border-radius:50%;background:var(--wm-blue);color:var(--wm-white);font-size:14px;font-weight:700;line-height:1;border:1px solid var(--wm-blue-light)}
+html[data-seasonal-theme=halloween] .trip-log-range-info{background:#73408a;color:#fff2d4;border-color:#d7b2ed}
+.trip-log-range-help h3{width:100%;justify-content:center;padding:10px 12px;margin:0 0 12px;font-size:17px;line-height:1.3;background:var(--ui-charcoal-gradient,#263441);border-radius:5px;color:var(--wm-white)}
+.trip-log-range-help h3{display:block;text-align:center;padding-inline:40px}
+.trip-log-range-help-title{position:relative;display:inline-block}
+.trip-log-range-help-title .trip-log-range-info{position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%)}
+.trip-log-dialog[open] #tripLogButton{padding-inline:88px;text-align:center;font-size:clamp(28px,8vw,40px)}
+.trip-log-settings-dialog>.dialog-header,.trip-log-down-dialog>.dialog-header{padding:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--ui-charcoal-gradient,#263441)}
+.trip-log-settings-dialog>.dialog-header h2,.trip-log-down-dialog>.dialog-header h2{font-size:22px;margin:0;min-width:0}
+.trip-log-settings-dialog>.dialog-header button,.trip-log-down-dialog>.dialog-header button{display:grid;place-items:center;flex:none;width:36px;height:36px;padding:0;border:1px solid #899aaa;border-radius:6px;background:transparent;color:inherit;font-size:26px;line-height:1}
+.trip-log-down-category{appearance:none;color:inherit;font:inherit;background:transparent;cursor:pointer;border:0;text-align:left;border-radius:3px}
+.trip-log-down-category:not(:disabled):hover{background:rgb(255 255 255 / 7%);outline:1px solid var(--wm-blue-light)}
+.trip-log-down-category:focus-visible{outline:2px solid var(--wm-blue-light);outline-offset:2px}
+.trip-log-down-category:disabled{cursor:default}
+.trip-log-down-grid>.trip-log-down-category{display:grid;gap:7px;text-align:left;padding:0 8px;border-right:1px solid #647786;font-size:11px}
+.trip-log-down-grid>.trip-log-down-category:last-child{border-right:0}
+.trip-log-down-grid:has(>.trip-log-down-category:nth-child(2):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}
+button.trip-log-down-effective{font-size:11px;padding:0}
+button.trip-log-down-logged{width:100%;border-top:1px solid #718392;padding:10px 12px;font-size:12px;color:#d0d9e1}
+.trip-log-settings-checks label.is-shortcut-updated{animation:trip-log-check-updated 700ms ease-in-out 2;border-radius:4px}
+@keyframes trip-log-check-updated{50%{background:color-mix(in srgb,var(--wm-blue-light) 25%,transparent);box-shadow:0 0 0 2px var(--wm-blue-light)}}
+@media(prefers-reduced-motion:reduce){.trip-log-settings-checks label.is-shortcut-updated{animation:none;outline:2px solid var(--wm-blue-light);outline-offset:2px}}
+.trip-log-shortcut-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}

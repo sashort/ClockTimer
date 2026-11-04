@@ -185,6 +185,8 @@ jobs:
           node tests/trip-summary.mjs
           node tests/trip-summary-presentation.mjs
           node tests/calendar-historical.mjs
+          node tests/fiscal-weeks.mjs
+          node tests/trip-log-category-shortcuts.mjs
           node tests/pending-down-master.mjs
           node tests/down-approval-editor.mjs
           node tests/app-state-transactions.mjs --summary-dialog --voice-feedback
@@ -268,6 +270,7 @@ jobs:
       - run: node tests/layout-mode-transitions-browser.cjs
       - run: node tests/layout-startup-browser.cjs
       - run: node tests/goal-bar-interactions-browser.cjs
+      - run: node tests/auto-goals-browser.cjs
       - run: node tests/compact-actions-browser.cjs
       - run: node tests/start-in-down-browser.cjs
       - run: node tests/goal-pad-layout-browser.cjs

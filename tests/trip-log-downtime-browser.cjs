@@ -14,7 +14,7 @@ logView.render({trips:rows},{range:'custom',timezone:'UTC',startTime:'2026-10-01
 });
 assert.equal(await page.locator('.trip-log-group').count(),3);
 assert.equal(await page.locator('[data-trip-id="2"] .trip-log-downtime').count(),0);
-assert.equal(await page.locator('.trip-log-down-section').count(),1);
+assert.equal(await page.locator('#log .trip-log-down-section').count(),0);await page.evaluate(()=>logView.showDownSummary());assert.equal(await page.locator('.trip-log-down-section').count(),1);await page.evaluate(()=>logView.downDialog.close());
 const geometry=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,guides:[...document.querySelectorAll('.trip-log-group')].map(group=>{
 const summary=group.querySelector(':scope>summary'),child=group.querySelector(':scope>.trip-log-group-children'),marker=getComputedStyle(summary,'::before'),connector=getComputedStyle(summary,'::after'),box=summary.getBoundingClientRect(),r=child.getBoundingClientRect();return {arrow:box.left+parseFloat(marker.left)+parseFloat(marker.width)/2,line:r.left+parseFloat(getComputedStyle(child).borderLeftWidth)/2,arrowBottom:box.top+parseFloat(marker.top)+parseFloat(marker.height),connectorTop:box.top+parseFloat(connector.top),connectorBottom:box.top+parseFloat(connector.top)+parseFloat(connector.height),childTop:r.top};}),ledger:getComputedStyle(document.querySelector('.trip-log-downtime')).backgroundColor}));
 assert(geometry.scroll<=geometry.width+1,'nested layout must fit '+JSON.stringify(geometry));

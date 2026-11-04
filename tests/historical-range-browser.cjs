@@ -29,7 +29,7 @@ if(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR&&range==='week'){
 
 }
 await op(()=>WMOFActions.openTripLog('pointer'));await p.waitForSelector('.trip-log-range-status');await op(()=>document.querySelector('#tripLogSettingsButton').click());await p.clock.runFor(500);
-assert.equal(await p.locator('#tripLogBody input[type="date"]').first().isDisabled(),false);assert.equal(await p.locator('#tripLogBody input[type="date"]').nth(1).isDisabled(),true);
+assert.equal(await p.locator('.trip-log-settings-dialog input[type="date"]').first().isDisabled(),false);assert.equal(await p.locator('.trip-log-settings-dialog input[type="date"]').nth(1).isDisabled(),true);
 if(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR){
  await p.screenshot({path:path.join(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR,'historical-trip-log.png')});
  const previewContext=await p.context().browser().newContext(),preview=await previewContext.newPage(),dir=process.env.HISTORICAL_RANGE_SCREENSHOT_DIR;
