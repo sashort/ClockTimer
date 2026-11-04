@@ -1,7 +1,6 @@
 const assert=require('node:assert/strict'),fixture=require('./order-filler-master-fixture.cjs');
-(async()=>{const f=await fixture({input:'transcript'});try{const p=f.page,operation=require('./retained-page-operation.cjs')(p);
-// Keep the countdown scenarios in one aggregate day; the host may run near midnight.
-await p.clock.setSystemTime(new Date('2026-11-03T17:00:00Z'));
+(async()=>{const f=await fixture({input:'transcript',clockTime:'2026-11-03T17:00:00Z',timezoneId:process.env.CLOCKTIMER_TEST_TIMEZONE});try{const p=f.page,operation=require('./retained-page-operation.cjs')(p);
+// The fixture clock is fixed before bootstrap so initial and refreshed ranges share one day.
 await p.route('**/api/settings/',route=>route.fulfill({json:{userId:2,settings:{version:1}}}));await operation(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();while(!WMOFAccountSettings.loaded)await new Promise(r=>setTimeout(r,20));clockTimer.configure({goal_type:'trip',trip_goal:'120%',goal_bounding:false,auto_goal:false});document.querySelector('#percentageDisplayBar').click();await WMOFLayoutMotion.whenSettled();await clockTimer.start({standardTime:'0:30:00'});});console.log('setup complete');await p.clock.fastForward(20*60000);await p.waitForTimeout(500);
 const timer=p.locator('.compact-interval-timer'),read=()=>p.evaluate(()=>({next:clockTimer.uiState.goal_bar.next_goal,text:document.querySelector('.compact-interval-timer output').textContent,caption:document.querySelector('.compact-interval-timer > span').textContent,top:document.querySelector('#renderedTimeValue').textContent}));
 await p.evaluate(()=>clockTimer.configure({goal_type:'trip',trip_goal:'90%',goal_bounding:false}));

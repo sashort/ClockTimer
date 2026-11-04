@@ -27,7 +27,7 @@ function createServer(acoustic){return http.createServer((req,res)=>{
  res.end(instrument(pathname,source,acoustic));
 });}
 
-module.exports=async function createMasterFixture({input='transcript',beforeAudioStart,recognitionMode,speechOptions={}}={}){
+module.exports=async function createMasterFixture({input='transcript',beforeAudioStart,recognitionMode,speechOptions={},clockTime,timezoneId}={}){
  if(!['audio','transcript'].includes(input))throw Error('Choose audio or explicitly select transcript simulation');
  const acoustic=input==='audio';
  const locale=process.env.CLOCKTIMER_TEST_LOCALE||'en-US',profile=require('./languages/'+locale+'/profile.cjs');
@@ -38,9 +38,9 @@ module.exports=async function createMasterFixture({input='transcript',beforeAudi
  const browser=await chromium.launch({headless:true,args:['--autoplay-policy=no-user-gesture-required'],...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});
 
  try {
-  const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});const errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')console.log('browser error:',m.text());});
+  const page=await browser.newPage({timezoneId,viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:'block'});const errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')console.log('browser error:',m.text());});
   // Install before app timers are registered so virtual advancement controls every tick.
-  await page.clock.install();
+  await page.clock.install(clockTime?{time:new Date(clockTime)}:undefined);
   if(acoustic)await DiagnosticSpeechAudio.install(page);
   await page.addInitScript(()=>{if('serviceWorker' in navigator)Object.defineProperty(navigator.serviceWorker,'register',{value:async()=>{throw new Error('Service worker disabled in isolated regression fixture');}});window.testShadows=new WeakMap();const attach=Element.prototype.attachShadow;Element.prototype.attachShadow=function(options){const result=attach.call(this,options);testShadows.set(this,result);return result;};});
   if(process.env.ORDER_FILLER_TEST_BASE_URL)await page.route('**/*',async route=>{const pathname=new URL(route.request().url()).pathname;if(!pathname.endsWith('.js'))return route.fallback();const response=await route.fetch();const body=instrument(pathname,await response.text(),acoustic);if(pathname==='/SpeechMenu.js'&&!acoustic)assert(body.includes('static testActivate()'),'Remote SpeechMenu hook boundary is missing');await route.fulfill({response,body});});
