@@ -78,7 +78,7 @@
             const pause = () => new Promise(resolve => setTimeout(resolve, 0));
             // Legacy Web Storage can only be read on the window thread. Import it
             // once, between tasks, before interactive command handling starts.
-            let length; try {length = storage.length;} catch {return;}
+            let length; try {storage.removeItem?.("wmof-recognizer-names-v1");length = storage.length;} catch {return;}
             for (let index = 0; index < length; index++) {
                 await pause();
                 const key = storage.key(index);

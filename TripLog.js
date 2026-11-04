@@ -171,6 +171,7 @@
                 const contents=node('div',undefined,'trip-log-settings-content');contents.append(this.controls(calendar),node('hr',undefined,'trip-log-settings-divider'));settings.append(contents);this.settings=settings;
             } else {
                 const selects=settings.querySelectorAll('select');selects[0].value=this.options.filter();selects[1].value=this.options.range();
+                const week=selects[1].querySelector('option[value="week"]');if(week&&this.options.rangeLabelFor)week.textContent=this.options.rangeLabelFor('week');
                 const dates=window.CalendarRange.dates(calendar),inputs=settings.querySelectorAll('input[type=date]');
                 inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=i===1&&this.options.range()!=='custom';});
                 const includeCurrent=settings.querySelector('input[data-include-current]');if(includeCurrent){includeCurrent.checked=Boolean(this.options.includeCurrent?.());includeCurrent.disabled=false;includeCurrent.closest('label').classList.toggle('is-unavailable',!Boolean(this.options.liveTrip?.()||trips.some(t=>t.running)));}
@@ -211,7 +212,7 @@
                 const old=[...this.root.children].filter(e=>e!==settings),fresh=[...fragment.children];
                 if(old.length===fresh.length)old.forEach((e,i)=>reconcile(e,fresh[i]));else{old.forEach(e=>e.remove());this.root.append(fragment);}
             }
-            else if(reuseSettings){for(const child of [...this.root.children])if(child!==settings)child.remove();this.root.append(fragment);}
+            else if(reuseSettings){for(const child of [...this.root.childNodes])if(child!==settings)child.remove();this.root.append(fragment);}
             else this.root.replaceChildren(fragment);
             for(const [name,top,left] of scroll){const pane=[...this.root.querySelectorAll('.trip-log-aggregate-pane,.trip-log-trips-pane')].find(e=>e.className===name);if(pane){pane.scrollTop=top;pane.scrollLeft=left;}}
             this.root.scrollTop=rootScroll;
@@ -266,8 +267,9 @@
             const header=node('div',undefined,'trip-log-scope-header'),split=node('section',undefined,'trip-log-split'),upper=node('nav',undefined,'trip-log-aggregate-pane'),path=node('div',undefined,'trip-log-aggregate-path'),tree=node('div',undefined,'trip-log-aggregate-tree'),lower=node('section',undefined,'trip-log-trips-pane'),separator=node('div',undefined,'trip-log-splitter');
             upper.setAttribute('aria-label','Aggregate scopes');lower.setAttribute('aria-label','Trips in selected scope');lower.tabIndex=0;upper.append(header,path,tree);
             separator.tabIndex=0;separator.setAttribute('role','separator');separator.setAttribute('aria-label','Resize aggregate and trip panes');separator.setAttribute('aria-orientation','horizontal');separator.setAttribute('aria-valuemin','15');separator.setAttribute('aria-valuemax','40');
-            const resize=value=>{this.aggregateShare=Math.min(40,Math.max(15,value));split.style.setProperty('--trip-log-aggregate-share',`${this.aggregateShare}%`);separator.setAttribute('aria-valuenow',String(Math.round(this.aggregateShare)));};resize(this.aggregateShare??32);
-            separator.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();resize(e.key==='Home'?15:e.key==='End'?40:this.aggregateShare+(e.key==='ArrowDown'?3:-3));});
+            const maximumShare=()=>{const height=split.getBoundingClientRect().height;if(!height)return 85;const style=getComputedStyle(upper),padding=(parseFloat(style.paddingTop)||0)+(parseFloat(style.paddingBottom)||0);const content=header.offsetHeight+path.offsetHeight+tree.scrollHeight+padding;const available=height-separator.getBoundingClientRect().height-Math.min(150,height*.45);return Math.max(15,Math.min(available,Math.max(60,content))/height*100);};
+            const resize=value=>{const maximum=maximumShare();this.aggregateShare=Math.min(maximum,Math.max(15,value));split.style.setProperty('--trip-log-aggregate-share',`${this.aggregateShare}%`);separator.setAttribute('aria-valuemax',String(Math.round(maximum)));separator.setAttribute('aria-valuenow',String(Math.round(this.aggregateShare)));};resize(this.aggregateShare??32);
+            separator.addEventListener('keydown',e=>{if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;e.preventDefault();resize(e.key==='Home'?15:e.key==='End'?maximumShare():this.aggregateShare+(e.key==='ArrowDown'?3:-3));});
             separator.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();separator.setPointerCapture(e.pointerId);const move=event=>{const box=split.getBoundingClientRect();if(box.height)resize((event.clientY-box.top)/box.height*100);},end=()=>{separator.removeEventListener('pointermove',move);separator.removeEventListener('pointerup',end);separator.removeEventListener('pointercancel',end);};separator.addEventListener('pointermove',move);separator.addEventListener('pointerup',end);separator.addEventListener('pointercancel',end);});
             const scopes=[];
             const select=scope=>{if(scope)scope=this.scopeData?.get(scope.id)??scope;
@@ -284,7 +286,7 @@
                     heading.append(node('strong',scope.label),node('span',`${aggregate(group,true,this.downtimeNow).tripCount} trips · ${percent(group,true)}`,'trip-log-actual'));if(this.incomplete)heading.lastElementChild.append(uncertainIcon());summary.append(heading);const ledger=this.downtimeSummary(aggregate(group,true,this.downtimeNow).downtime);if(ledger)summary.append(ledger);summary.addEventListener('click',()=>select(scope));const children=node('div',undefined,'trip-log-group-children');children.append(build(group,rest,[...parents,scope]));details.append(summary,children);result.append(details);
                 }return result;
             };
-            tree.append(build(trips,levels));this.scopeData=new Map(scopes.map(scope=>[scope.id,scope]));select(scopes.find(scope=>scope.id===this.selectedScope)??null);split.classList.toggle('has-aggregates',levels.length>0);split.append(upper,separator,lower);fragment.append(split);
+            tree.append(build(trips,levels));this.scopeData=new Map(scopes.map(scope=>[scope.id,scope]));select(scopes.find(scope=>scope.id===this.selectedScope)??null);split.classList.toggle('has-aggregates',levels.length>0);split.append(upper,separator,lower);fragment.append(split);requestAnimationFrame(()=>{if(split.isConnected)resize(this.aggregateShare??32);});
         }
 
         daySections(trips) {

@@ -2124,7 +2124,7 @@
             if (
                 !mainMenu ||
                 !event?.target ||
-                event.target.closest?.("#goalBoundingButton") ||
+                event.target.closest?.("#goalBoundingButton,#toggleSyncMenuButton") ||
                 !mainMenu.contains(
                     event.target
                 )
@@ -5516,6 +5516,7 @@
 
     const aggregateScopes=['day','week','pay-period','month','year','custom'];
     let applyingAggregateGoal=false;
+    let mainModeMenu;
     const aggregateMenuCache=new Map(),scopeCalendars=new Map();
     let goalSettingsKey,aggregateGoalState,autoOverrideState;
     function hydrateGoalPreferences(){const account=globalThis.WMOFAccountSettings;const key=[account?.owner??'local',account?.generation??0,account?.loaded??true].join(':');if(key===goalSettingsKey)return;goalSettingsKey=key;aggregateGoalState=null;autoOverrideState=undefined;}
@@ -5533,13 +5534,14 @@
         applyingAggregateGoal=true;try{clockTimer.configure(configuration);}finally{applyingAggregateGoal=false;}
     }
     function fiscalWeekLabel(date){
-        const calendar=scopeCalendars.get('week')||resolvedTripLogCalendar;
+        const calendar=resolvedTripLogCalendar?.range==='week'?resolvedTripLogCalendar:scopeCalendars.get('week');
         const localParts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:calendarRanges.getTimezone(),year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(part=>[part.type,part.value]));
-        const day=date||(calendar?.range==='week'?CalendarRange.dates(calendar).start:`${localParts.year}-${localParts.month}-${localParts.day}`);
+        const day=date||getTripLogAnchorDate()||(calendar?.range==='week'?CalendarRange.dates(calendar).start:`${localParts.year}-${localParts.month}-${localParts.day}`);
         const week=day?calendarRanges.weekNumber(day):null;
         return announcementText('messages.scope.week')+(week?' '+week:'');
     }
     function aggregateScopeLabel(scope){return scope==='week'?fiscalWeekLabel():scope==='custom'?WMOFLanguagePack.text('9e063c44-5f74-4196-bbab-3a49a72be041'):announcementText(`messages.scope.${scope}`);}
+    function dropdownScopeLabel(scope){const label=aggregateScopeLabel(scope);return scope==='week'?label.replace(/ (\d+)$/,' [$1]'):label;}
     function totalScopeLabel() {return aggregateScopeLabel(getTripLogRange());}
     async function autoMenuRows(pending){
         return Promise.all([...aggregateScopes,'standard'].map(async scope=>{
@@ -5555,7 +5557,7 @@
                     details=clockTimer.previewAggregateGoal(pending.goals[scope],await request,window);
                 }
             }catch{}
-            return{id:scope,label:aggregateScopeLabel(scope),goal:pending.goals[scope],raw:details?.raw_inferred_percent,target:clockTimer.getUIState().trip_active?(details?.inferred_percent??null):pending.goals[scope],adjusted:Boolean(details?.bounding?.adjusted)};
+            return{id:scope,label:dropdownScopeLabel(scope),goal:pending.goals[scope],raw:details?.raw_inferred_percent,target:clockTimer.getUIState().trip_active?(details?.inferred_percent??null):pending.goals[scope],adjusted:Boolean(details?.bounding?.adjusted)};
         }));
     }
     function editAutoCustomRange(dates,onExit){
@@ -5661,6 +5663,7 @@
         const banner=$('#historicalRangeBanner'),menu=$('#tripLogHistoricalRange');
         if(banner){banner.hidden=!historical||clockTimer.percentMode==='trip';banner.querySelector('span').textContent=status;}
         if(menu){menu.hidden=!historical;menu.querySelector('span').textContent=status;}
+        const returnButton=$('#tripLogReturnActiveButton');if(returnButton)returnButton.hidden=!historical;
     }
     async function setTripLogDate(key,value) {
         if(getTripLogRange()==='custom'){
@@ -5693,6 +5696,10 @@
             resolvedTripLogCalendar={...calendar,historical:!CalendarRange.containsNow(calendar)};
             clockTimer.setAttribute('total-label',totalScopeLabel());
             updateScopeTargetLabel(clockTimer.getUIState());
+            renderClockTimerUIState(clockTimer.uiState);
+            const weekOption=tripLogRangeSelect?.querySelector('option[value=week]');if(weekOption)weekOption.textContent=dropdownScopeLabel('week');
+            mainModeMenu?.refresh();
+            refreshAutoGoalDialog();
             renderHistoricalRangeState(resolvedTripLogCalendar);
             showTripRangeError();
         }
@@ -6164,7 +6171,7 @@
         const range = getTripLogRange();
         if (tripLogBody) {
             tripLogBody.setAttribute("aria-busy", "true");
-            if (!tripLogBody.querySelector('.trip-log-settings')) tripLogBody.textContent = globalThis.WMOFLanguagePack.text("ee9123ac-dfed-5d34-aff5-c694acf48758");
+            if (!tripLogView?.calendar) tripLogBody.textContent = globalThis.WMOFLanguagePack.text("ee9123ac-dfed-5d34-aff5-c694acf48758");
         }
         try {
             const calendar = await resolveTripLogCalendar(range);
@@ -6223,7 +6230,7 @@
                     return;
                 } catch {}
             }
-            if (tripLogView && tripLogBody?.querySelector('.trip-log-settings')) tripLogView.error(error);
+            if (tripLogView?.calendar) tripLogView.error(error);
             else if (tripLogBody) tripLogBody.textContent = error.message || globalThis.WMOFLanguagePack.text("e7f5cf65-a6a5-5f2b-8f8d-3225af1b90e9");
             window.dispatchEvent(new CustomEvent("wmof:trip-log-error", {detail: {range, message: error.message}}));
         } finally {
@@ -6376,7 +6383,7 @@
             onSettingsOpened:()=>{tripLogSettingsVisible=true;tripLogSettingsButton?.setAttribute('aria-expanded','true');},
             onSettingsClosed:()=>{tripLogSettingsVisible=false;tripLogSettingsButton?.setAttribute('aria-expanded','false');},
             onDownAvailable:visible=>{if(tripLogDownButton){tripLogDownButton.dataset.available=String(visible);tripLogDownButton.hidden=!visible||getTripListState()!=='open';}},
-            rangeLabelFor:scope=>aggregateScopeLabel(scope),
+            rangeLabelFor:scope=>dropdownScopeLabel(scope),
             rangeLabel:()=>totalScopeLabel(),
             weekNumber:date=>calendarRanges.weekNumber(date),
             onRange:value=>setTripLogRange(value),
@@ -9458,7 +9465,7 @@
         if(state.rendered_time_type||state.time_component){
             const mode=state.time_mode||clockTimer.renderedTimeMode,target=state.effective_goal_type;
             const goal=target==='total'?totalScopeLabel():target==='standard'?'Standard':'Trip';
-            const caption=state.time_header_text==='Banked'?['d7400001-0000-4000-8000-000000000012',totalScopeLabel()]:state.time_header_text==='Over By'?['d7400001-0000-4000-8000-000000000013',totalScopeLabel()]:mode==='remaining'?['d7400001-0000-4000-8000-000000000010',app.dataset.percentageDisplay==='bar'&&state.trip_active?'Standard':goal]:mode==='calculated-end'?['d7400001-0000-4000-8000-000000000011',goal]:null;
+            const caption=state.time_header_text==='Banked'?['d7400001-0000-4000-8000-000000000012',totalScopeLabel()]:state.time_header_text==='Over By'?['d7400001-0000-4000-8000-000000000013',totalScopeLabel()]:mode==='remaining'?['d7400001-0000-4000-8000-000000000010',app.dataset.percentageDisplay==='bar'&&state.trip_active?'Standard':goal]:mode==='calculated-end'?['d7400001-0000-4000-8000-000000000011',goal]:mode==='elapsed'?['d7400002-0000-4000-8000-000000000004',goal]:null;
             if(caption)renderedLabel.textContent=WMOFLanguagePack.text(caption[0],{goal:caption[1]});
         }
         globalThis.WMOFTimerSummaryView?.fitHeaders(document);}
@@ -12323,8 +12330,8 @@
         return true;
     }
 
-    const mainModeMenu=globalThis.WMOFModeMenu?.bind(scopeToggle, {
-        getOptionDetails:value=>aggregateScopes.includes(value)?{label:aggregateScopeLabel(value)}:null,
+    mainModeMenu=globalThis.WMOFModeMenu?.bind(scopeToggle, {
+        getOptionDetails:value=>aggregateScopes.includes(value)?{label:dropdownScopeLabel(value)}:null,
         autoGoals:{getState:()=>{aggregateMenuCache.clear();return {scope:getTripLogRange(),override:autoGoalIdentity(),goals:aggregateGoals()};},getRows:autoMenuRows,
             customRange:editAutoCustomRange,edit:editMenuAggregateGoal,commit:async pending=>{
                 if(pending.scope==='custom'&&pending.customDates){CalendarRange.custom(pending.customDates.start,pending.customDates.end,calendarRanges.getTimezone());tripLogStartDate.value=pending.customDates.start;tripLogEndDate.value=pending.customDates.end;await safeStorageSet(STORAGE.customTripLogDates,JSON.stringify(pending.customDates));}
@@ -12563,6 +12570,7 @@
 
     for(const button of document.querySelectorAll('[data-return-current-range]'))button.addEventListener('click',returnToCurrentTripRange);
 
+    globalThis.WMOFInteractionFunctions.bindAction({element:$("#tripLogOpenButton"),event:"click",name:"openTripLogFromMenu",action:"openTripLog",args:()=>{mainMenu?.hidePopover();return ["pointer"];}});
     $("#tripProductionFilter").addEventListener("change",event=>setTripProductionFilter(event.target.value));
     tripLogRangeSelect?.addEventListener(
         "change",

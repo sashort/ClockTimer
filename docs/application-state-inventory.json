@@ -2743,9 +2743,19 @@
           "meaning": "settingsSubmenu"
         },
         {
-          "id": "MENU-PANE__RECOGNIZERNAMESUBMENU",
-          "value": "recognizerNameSubmenu",
-          "meaning": "recognizerNameSubmenu"
+          "id": "MENU-PANE__VISUALSETTINGSSUBMENU",
+          "value": "visualSettingsSubmenu",
+          "meaning": "visualSettingsSubmenu"
+        },
+        {
+          "id": "MENU-PANE__LAYOUTSETTINGSSUBMENU",
+          "value": "layoutSettingsSubmenu",
+          "meaning": "layoutSettingsSubmenu"
+        },
+        {
+          "id": "MENU-PANE__GOALSETTINGSSUBMENU",
+          "value": "goalSettingsSubmenu",
+          "meaning": "goalSettingsSubmenu"
         },
         {
           "id": "MENU-PANE__TRIPLOGSUBMENU",

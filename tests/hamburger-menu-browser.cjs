@@ -26,7 +26,7 @@ try{
  const moving=samples.filter(s=>s.progress>.02&&s.progress<.98);assert(moving.length>2,'sample intermediate animation positions');
  for(const s of moving)assert(Math.abs(s.progress-s.thumb)<.025,JSON.stringify(s));
 
- for(const [page,menuId,parents] of [['order-filler','mainMenu',['settingsMenuButton','tripLogMenuParentButton','recognizerNameMenuButton']]]){
+ for(const [page,menuId,parents] of [['order-filler','mainMenu',['settingsMenuButton','tripLogMenuParentButton','goalSettingsMenuButton']]]){
   await call('Page.navigate',{url:'about:blank'});await new Promise(r=>setTimeout(r,100));
   const body=read(page+'.html').match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[\s\S]*?<\/script>/g,'');
   await call('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:false});

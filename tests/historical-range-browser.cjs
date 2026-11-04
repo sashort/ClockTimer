@@ -22,6 +22,13 @@ await p.waitForFunction(()=>!document.querySelector('#historicalRangeBanner').hi
 const state=await p.evaluate(()=>({total:clockTimer.getSummarySnapshot().total,trip:clockTimer.uiState.trip_active,standard:clockTimer.uiState.standard_time_component.value,time:clockTimer.uiState.time_component.text,label:clockTimer.uiState.time_header_text}));
 assert.equal(await p.evaluate(()=>clockTimer.getGoalBarSnapshot().nodes.find(node=>node.current)?.percent),150,'historical bar shows historical performance');
 assert.equal(state.total.standardTimeMilliseconds,1800000,'past total excludes running trip');assert.equal(state.standard,1800000);assert.equal(state.label,'Banked');assert.equal(state.time,'0:10:00');assert(state.trip,'history must not end the live trip');
+if(range==='week'){
+assert.equal(await p.locator('#tripLogRangeSelect option[value=week]').textContent(),'Week [37]','historical week dropdown refreshes');
+assert.equal(await p.locator('#scopeToggleDropdown [data-mode=week] .mode-option-label').textContent(),'Week [37]','main dropdown refreshes even while closed');
+await op(()=>document.querySelector('#tripLogReturnActiveButton').click());
+await p.waitForFunction(()=>document.querySelector('#tripLogRangeSelect option[value=week]').textContent==='Week [40]');
+assert.equal(await p.locator('#scopeToggleDropdown [data-mode=week] .mode-option-label').textContent(),'Week [40]','Return to Active resets main dropdown week');
+}
 console.log('PASS historical '+range+': Start/End aligned, main totals isolated, live trip retained');
 if(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR&&range==='week'){
  fs.mkdirSync(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR,{recursive:true});await p.screenshot({path:path.join(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR,'historical-main.png')});
@@ -29,6 +36,8 @@ if(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR&&range==='week'){
 
 }
 await op(()=>WMOFActions.openTripLog('pointer'));await p.waitForSelector('.trip-log-range-status');await op(()=>document.querySelector('#tripLogSettingsButton').click());await p.clock.runFor(500);
+const settingsBounds=await p.locator('.trip-log-settings-dialog').evaluate(e=>({bottom:e.getBoundingClientRect().bottom,safe:document.querySelector('#speechMicBar').getSafeTop()}));assert(settingsBounds.bottom<=settingsBounds.safe+1,'Trip Log Settings stays above Mic Bar '+JSON.stringify(settingsBounds));
+assert(!await p.locator('#tripLogBody').textContent().then(text=>text.includes('Loading trips...')),'loading text is removed after populated render');
 assert.equal(await p.locator('.trip-log-settings-dialog input[type="date"]').first().isDisabled(),false);assert.equal(await p.locator('.trip-log-settings-dialog input[type="date"]').nth(1).isDisabled(),true);
 if(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR){
  await p.screenshot({path:path.join(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR,'historical-trip-log.png')});

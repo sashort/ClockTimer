@@ -30,11 +30,11 @@
   }
   namespaceStorage(namespace){return {getItem:async key=>this.peek(namespace,key),setItem:(key,value)=>this.write(namespace,{[key]:value})};}
   installPersistence(local){
-   const account=this,isSetting=key=>key.startsWith('wmof.clock.')||['wmof.tripProductionFilter','wmof-recognizer-names-v1'].includes(key);
-   const namespace=key=>key==='wmof-recognizer-names-v1'?'speech':'orderFiller';
+   const account=this,isSetting=key=>key.startsWith('wmof.clock.')||key==='wmof.tripProductionFilter';
+   const namespace=()=> 'orderFiller';
    const write=async entries=>{
     if(!account.owner){for(const [key,value] of entries){account.settings[namespace(key)]||={};account.settings[namespace(key)][key]=value;}return true;}
-    for(const section of ['orderFiller','speech']){const changes=Object.fromEntries(entries.filter(([key])=>namespace(key)===section));if(Object.keys(changes).length)await account.write(section,changes);}return true;
+    for(const section of ['orderFiller']){const changes=Object.fromEntries(entries.filter(([key])=>namespace(key)===section));if(Object.keys(changes).length)await account.write(section,changes);}return true;
    };
    return {
     ready:local.ready,initializeLegacy:storage=>local.initializeLegacy(storage),

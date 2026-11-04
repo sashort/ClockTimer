@@ -2,8 +2,13 @@
 let database;
 function openDatabase() {
     return database ??= new Promise((resolve, reject) => {
-        const request = indexedDB.open("clocktimer-persistence", 1);
-        request.onupgradeneeded = () => request.result.createObjectStore("values");
+        const request = indexedDB.open("clocktimer-persistence", 2);
+        request.onupgradeneeded = () => {
+            const store = request.result.objectStoreNames.contains("values")
+                ? request.transaction.objectStore("values")
+                : request.result.createObjectStore("values");
+            store.delete("wmof-recognizer-names-v1");
+        };
         request.onerror = () => reject(request.error);
         request.onblocked = () => reject(new Error("Browser storage is blocked by another tab."));
         request.onsuccess = () => {

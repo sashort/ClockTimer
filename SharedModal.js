@@ -133,9 +133,10 @@
             }
         }
         #measure(){
-            const viewport=this.ownerDocument.defaultView.visualViewport;
-            const top=viewport?.offsetTop || 0;
-            let bottom=top+(viewport?.height || this.ownerDocument.defaultView.innerHeight);
+            const view=this.ownerDocument.defaultView,viewport=view.visualViewport;
+            const bounds=globalThis.ViewportLayout?.measure(view);
+            const top=bounds?.top??viewport?.offsetTop??0;
+            let bottom=top+(bounds?.height??viewport?.height??view.innerHeight);
             for(const control of this.#controls.keys())if(!control.hidden && control.dataset.surfaceSuppressed!=='true' && control.matches(':popover-open')){
                 const safe=Number(control.getSafeTop?.());if(Number.isFinite(safe))bottom=Math.min(bottom,safe);
             }

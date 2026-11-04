@@ -912,10 +912,10 @@ hamburger-menu.main-menu:not(:defined) > :not([slot="trigger"]) {
    Zero specificity lets each dialog retain its explicit size/position rules. */
 :where(shared-modal-host > dialog) {
     position: fixed;
-    inset: 0;
+    inset: 8px 0 calc(100dvh - var(--shared-modal-safe-height, 100dvh) + 8px);
     margin: auto;
     max-width: calc(100% - 2em - 6px);
-    max-height: calc(100% - 2em - 6px);
+    max-height: max(0px, calc(var(--shared-modal-safe-height, 100dvh) - 16px));
 }
 shared-modal, trip-log-modal {display: contents;}
 shared-modal-host {
@@ -7661,8 +7661,6 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
     .live-stream-section { padding: 8px; }
 }
 
-.recognizer-name-settings select, .recognizer-name-settings input { width: 100%; max-width: 100%; box-sizing: border-box; }
-.recognizer-name-settings output { display: block; }
 
 /* Trainer uses the same expandable category and indented submenu as Admin. */
 .trainer-menu-group[hidden], .trainer-submenu[hidden] { display: none; }
@@ -7677,9 +7675,6 @@ dialog.trip-transition-overlay::backdrop { background: rgb(0 0 0 / 35%); }
 .main-menu .hamburger-menu-popover summary::-webkit-details-marker { display: none; }
 .main-menu .hamburger-menu-popover summary::after { content: "\203a"; margin-left: auto; font-size: 28px; line-height: 1; }
 .main-menu .hamburger-menu-popover details[open] > summary::after { transform: rotate(90deg); }
-.main-menu #recognizerNameSubmenu > * { margin-inline: 20px; max-width: calc(100% - 40px); }
-.main-menu #recognizerNameSubmenu > label { display: block; }
-.main-menu #recognizerNameSubmenu > select, .main-menu #recognizerNameSubmenu > input { margin-block: 8px; }
 .main-menu .hamburger-menu-popover a[data-menu-icon] { display: flex; }
 
 /* Standard Mirror glyph: lower-left; existing status badges remain lower-right. */
@@ -8172,8 +8167,8 @@ shared-modal-host dialog#clockTimerSettingsFrameDialog iframe:not([data-settings
 .trip-log-body.trip-log-merged:not([hidden]):not(.trip-log-empty) {display:flex;flex-direction:column;overflow:auto;}
 .trip-log-settings,.trip-log-scope-header,.trip-log-range-status {flex-shrink:0;}
 .trip-log-split {display:flex;flex:1 0 260px;min-height:260px;flex-direction:column;overflow:hidden;}
-.trip-log-aggregate-pane {flex:0 1 var(--trip-log-aggregate-share,32%);min-height:60px;max-height:40%;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
-.trip-log-trips-pane {flex:1 1 60%;min-height:150px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-bottom:8px;}
+.trip-log-aggregate-pane {flex:0 0 var(--trip-log-aggregate-share,32%);min-height:60px;max-height:calc(100% - 170px);overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;}
+.trip-log-trips-pane {flex:1 1 0;min-height:150px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-bottom:8px;}
 .trip-log-trips-pane .trip-log-column-header {top:0;}
 .trip-log-splitter {flex:0 0 18px;position:relative;cursor:row-resize;touch-action:none;border-block:1px solid rgb(255 255 255 / 25%);background:var(--ui-charcoal-gradient,#263441);}
 .trip-log-splitter::after {content:'';position:absolute;width:42px;height:4px;border-radius:3px;left:calc(50% - 21px);top:6px;background:var(--wm-blue-light);}
@@ -8281,6 +8276,10 @@ html[data-seasonal-theme=halloween] .auto-bounding{color:#ffab53}
 .trip-log-overlay-content{max-height:calc(90dvh - 76px);overflow-y:auto;padding:12px}
 .trip-log-settings-dialog .trip-log-settings{position:static;display:block;opacity:1;transform:none;overflow:visible;background:transparent;transition:none}
 .trip-log-settings-dialog .trip-log-settings-content{overflow:visible}
+shared-modal-host > :is(.trip-log-settings-dialog,.trip-log-down-dialog){top:8px;bottom:calc(100dvh - var(--shared-modal-safe-height,100dvh) + 8px);height:max-content;max-height:max(0px,calc(var(--shared-modal-safe-height,100dvh) - 16px));margin:auto;}
+shared-modal-host > :is(.trip-log-settings-dialog,.trip-log-down-dialog)[open]{display:flex;flex-direction:column;}
+shared-modal-host > :is(.trip-log-settings-dialog,.trip-log-down-dialog)>.dialog-header{flex:none;}
+shared-modal-host > :is(.trip-log-settings-dialog,.trip-log-down-dialog)>.trip-log-overlay-content{min-height:0;max-height:none;overflow-y:auto;}
 .trip-log-settings-dialog .trip-log-settings-divider{display:none}
 .trip-log-down-dialog .trip-log-down-section{margin:0}
 .trip-log-down-button{position:fixed;z-index:22000;width:52px;height:52px;padding:10px;border:0;border-radius:6px;background:transparent;color:var(--wm-blue-light,#a9ddf7);cursor:pointer}
@@ -8360,3 +8359,59 @@ button.trip-log-down-logged{width:100%;border-top:1px solid #718392;padding:10px
 @keyframes trip-log-check-updated{50%{background:color-mix(in srgb,var(--wm-blue-light) 25%,transparent);box-shadow:0 0 0 2px var(--wm-blue-light)}}
 @media(prefers-reduced-motion:reduce){.trip-log-settings-checks label.is-shortcut-updated{animation:none;outline:2px solid var(--wm-blue-light);outline-offset:2px}}
 .trip-log-shortcut-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+
+#tripLogSubmenu>.trip-log-range-help{padding:12px;font-size:13px;line-height:1.45;}
+#tripLogSubmenu>.trip-log-range-help h3{font-size:16px;}
+#tripLogOpenButton{width:100%;}
+
+/* Trip Log row icons use the normal column; custom help spans both columns. */
+#tripLogSubmenu { --trip-log-menu-icon-center:35px; }
+.trip-menu-group #tripLogSubmenu > .trip-log-range-menu[data-menu-icon]::before {
+    inset-inline-start:calc(var(--trip-log-menu-icon-center) - 79px);
+}
+#tripLogSubmenu > [data-menu-layout="custom"] { min-width:0; box-sizing:border-box; }
+.trip-menu-group:has(> #tripLogSubmenu:not([hidden]))::before { display:none; }
+
+/* Centered action captions and help share one compact icon column. */
+.main-menu #tripLogSubmenu > :is(#tripLogReturnActiveButton,#tripLogOpenButton) {
+    position:relative;
+    display:block;
+    width:calc(100% - 24px);
+    min-height:42px;
+    margin:8px 12px 12px;
+    padding:10px 51px;
+    border:1px solid currentColor;
+    border-radius:8px;
+    background:rgb(255 255 255 / 10%);
+    text-align:center;
+    font-size:16px;
+    font-weight:600;
+    line-height:1.3;
+}
+.main-menu #tripLogSubmenu > :is(#tripLogReturnActiveButton,#tripLogOpenButton)[hidden] { display:none; }
+.main-menu #tripLogSubmenu > :is(#tripLogReturnActiveButton,#tripLogOpenButton)::before {
+    position:absolute;
+    width:20px;
+    height:20px;
+    inset-inline-start:calc(50% - var(--hamburger-menu-centered-caption-width,140px) / 2 - 32px);
+    top:50%;
+    transform:translateY(-50%);
+}
+#tripLogHistoricalRange { width:100%; box-sizing:border-box; text-align:center; justify-content:center; }
+#tripLogHistoricalRange > span { display:block; width:100%; }
+#tripLogSubmenu > .trip-log-range-help h3 { position:relative; }
+#tripLogSubmenu > .trip-log-range-help .trip-log-range-help-title { position:static; }
+#tripLogSubmenu > .trip-log-range-help .trip-log-range-info {
+    right:auto;
+    left:calc(50% - var(--hamburger-menu-centered-caption-width,140px) / 2 - 32px);
+}
+
+/* Every shared dialog respects the live Mic Bar boundary, including Profile. */
+shared-modal-host > dialog:not(.number-pad-dialog) {
+    box-sizing:border-box;
+    min-height:0;
+    max-height:max(0px,calc(var(--shared-modal-safe-height,100dvh) - 16px));
+}
+shared-modal-host > dialog:not(.number-pad-dialog):not(.login-dialog) {
+    bottom:calc(100dvh - var(--shared-modal-safe-height,100dvh) + 8px);
+}

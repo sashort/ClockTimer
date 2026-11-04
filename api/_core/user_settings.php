@@ -10,6 +10,9 @@ function validate_settings_changes(mixed $namespace, mixed $changes): array
         throw new InvalidArgumentException('Settings changes must be an object with at most 100 entries.');
     }
     foreach ($changes as $key => $value) {
+        if ($key === 'wmof-recognizer-names-v1' && $value !== null) {
+            throw new InvalidArgumentException('Recognizer Name setting has been retired.');
+        }
         if (!is_string($key) || !preg_match('/^[A-Za-z][A-Za-z0-9._-]{0,100}$/D', $key)) {
             throw new InvalidArgumentException('Invalid settings key.');
         }

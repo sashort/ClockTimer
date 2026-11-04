@@ -224,6 +224,7 @@ jobs:
           npm run test:speech-phrases
           npm run test:action-macros
           npm run test:editor-actions
+          node viewport-layout.mjs
           npm run test:hamburger-menu
           php admin_permissions.php
           php live_stream_permissions.php
@@ -299,7 +300,6 @@ jobs:
           php easter-egg-media-page.php
           php -l ../api/audio/easter-eggs/index.php
           node recognizer-names.mjs
-          node --check ../RecognizerNames.js
           node audio-routing-diagnostic.mjs
           node microphone-capture-lifecycle.mjs
           node drop-in-view.mjs

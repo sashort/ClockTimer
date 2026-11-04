@@ -280,12 +280,12 @@ assert.match(
 
 assert.match(
     appHtml,
-    /id="speechRecognitionHelpButton"[^>]*>i<\/button>/
+    /id="speechRecognitionHelpButton"[^>]*>\?<\/button>/
 );
 
 assert.match(
     appHtml,
-    /id="syncGoalsHelpButton"[^>]*>i<\/button>/
+    /id="syncGoalsHelpButton"[^>]*>\?<\/button>/
 );
 
 assert.match(

@@ -64,8 +64,8 @@
     },
     "fbf9380d-a9a9-5baf-8886-9577fe60eaa3": {
       "id": "fbf9380d-a9a9-5baf-8886-9577fe60eaa3",
-      "text": "Settings",
-      "default": "Settings"
+      "text": "UI Settings",
+      "default": "UI Settings"
     },
     "3b7646b5-36f6-578b-8c92-56f71b14da81": {
       "id": "3b7646b5-36f6-578b-8c92-56f71b14da81",
@@ -7362,6 +7362,31 @@
       "id": "d7400001-0000-4000-8000-000000000025",
       "text": "Trip Log filters updated.",
       "default": "Trip Log filters updated."
+    },
+    "d7400002-0000-4000-8000-000000000001": {
+      "id": "d7400002-0000-4000-8000-000000000001",
+      "text": "Visual Settings",
+      "default": "Visual Settings"
+    },
+    "d7400002-0000-4000-8000-000000000002": {
+      "id": "d7400002-0000-4000-8000-000000000002",
+      "text": "Layout",
+      "default": "Layout"
+    },
+    "d7400002-0000-4000-8000-000000000003": {
+      "id": "d7400002-0000-4000-8000-000000000003",
+      "text": "Goals",
+      "default": "Goals"
+    },
+    "d7400002-0000-4000-8000-000000000004": {
+      "id": "d7400002-0000-4000-8000-000000000004",
+      "text": "{goal} Actual Time",
+      "default": "{goal} Actual Time"
+    },
+    "d7400002-0000-4000-8000-000000000005": {
+      "id": "d7400002-0000-4000-8000-000000000005",
+      "text": "View Trip Log",
+      "default": "View Trip Log"
     }
   }
 }

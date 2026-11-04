@@ -214,6 +214,20 @@
             "  will-change: transform, width;",
             "  transition: width 220ms ease-in-out;",
             "}",
+            ':where(hamburger-menu) [data-menu-icons="none"] :is(button,a,summary)::before {',
+            '  display: none;',
+            '}',
+            ':where(hamburger-menu) [data-menu-layout="custom"] {',
+            '  box-sizing: border-box;',
+            '  align-self: stretch;',
+            '  margin-inline: 0;',
+            '  width: 100%;',
+            '  min-width: 0;',
+            '}',
+            ':where(hamburger-menu) [data-menu-layout="custom"][data-menu-column="content"] {',
+            '  margin-inline-start: var(--hamburger-menu-effective-icon-column-width, var(--hamburger-menu-icon-column-width, 64px));',
+            '  width: calc(100% - var(--hamburger-menu-effective-icon-column-width, var(--hamburger-menu-icon-column-width, 64px)));',
+            '}',
             ":where(hamburger-menu) .hamburger-menu-focus-layer {",
             "  position: absolute;",
             "  inset: 0;",
@@ -1840,9 +1854,9 @@
                                             mutation
                                                 .type ===
                                                 "characterData" ||
-                                            mutation
-                                                .attributeName ===
-                                                "hidden"
+                                            ["hidden", "data-menu-icon", "data-menu-layout",
+                                                "data-menu-column", "data-menu-align"]
+                                                .includes(mutation.attributeName)
                                     );
 
                             if (!relevant) {
@@ -1879,7 +1893,8 @@
                         attributes:
                             true,
                         attributeFilter: [
-                            "hidden"
+                            "hidden", "data-menu-icon", "data-menu-layout",
+                            "data-menu-column", "data-menu-align"
                         ]
                     }
                 );
@@ -3751,6 +3766,38 @@
             return pages;
         }
 
+        #syncPaneIconColumn(pane) {
+            if (!pane) return;
+            const hasIcons = [...pane.querySelectorAll('button,a,label,summary')].some(row => {
+                if (row.closest('[hidden],[data-menu-layout="custom"]') ||
+                    getComputedStyle(row).display === 'none') return false;
+                if (row.matches('[data-menu-icon]:not([data-menu-icon=""])')) return true;
+                if ([...row.querySelectorAll('svg')].some(svg => !svg.closest('[hidden]'))) return true;
+                const icon = getComputedStyle(row, '::before');
+                return (icon.maskImage && icon.maskImage !== 'none') ||
+                    (icon.webkitMaskImage && icon.webkitMaskImage !== 'none');
+            });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            let captionWidth = 0;
+            for (const row of pane.querySelectorAll('[data-menu-align="center"]')) {
+                if (row.closest('[hidden]') || getComputedStyle(row).display === 'none') continue;
+                if (context) {
+                    const style = getComputedStyle(row);
+                    context.font = style.font;
+                    captionWidth = Math.max(captionWidth, context.measureText(row.textContent.trim()).width);
+                }
+            }
+            const caption = Math.ceil(captionWidth) + 'px';
+            if (pane.style.getPropertyValue('--hamburger-menu-centered-caption-width') !== caption)
+                pane.style.setProperty('--hamburger-menu-centered-caption-width', caption);
+            const state = hasIcons ? 'present' : 'none';
+            if (pane.dataset.menuIcons !== state) pane.dataset.menuIcons = state;
+            const width = hasIcons ? 'var(--hamburger-menu-icon-column-width, 64px)' : '0px';
+            if (pane.style.getPropertyValue('--hamburger-menu-effective-icon-column-width') !== width)
+                pane.style.setProperty('--hamburger-menu-effective-icon-column-width', width);
+        }
+
         #layoutPanels(beforeOpen = false) {
             if (
                 (!this.isOpen && !beforeOpen) ||
@@ -3797,6 +3844,7 @@
                 measurementPane.className = "hamburger-menu-panel pane-page-horizontal-item";
                 measurementPane.append(...items);
                 this.#source.replaceChildren(measurementPane);
+                this.#syncPaneIconColumn(measurementPane);
             });
 
             let pages =
@@ -3866,6 +3914,8 @@
                         );
                 }
             );
+
+            for (const panel of this.#panels()) this.#syncPaneIconColumn(panel);
 
             // Re-measure after partitioning: the final pane DOM, margins,
             // and current styles determine the height to freeze.
@@ -4982,6 +5032,7 @@
             };
 
             const visit = group => {
+                if (group.matches('[data-menu-layout="custom"]')) return;
                 const button = group.querySelector(
                     ":scope > button[aria-controls]"
                 );
@@ -5013,7 +5064,8 @@
             };
             const collect = (element, parent) => {
                 if (!visible(element)) return;
-                const owner = element.querySelector(
+                const custom = element.matches('[data-menu-layout="custom"]');
+                const owner = !custom && element.querySelector(
                     ":scope > button[aria-controls]"
                 );
                 const submenu = owner && document.getElementById(
@@ -5825,6 +5877,7 @@
 
             if (
                 !button ||
+                button.closest('[data-menu-layout="custom"]') ||
                 !this.contains(
                     button
                 ) ||
@@ -7270,6 +7323,7 @@
 
             const group =
                 current.group;
+            this.#syncPaneIconColumn(group);
 
             const fullHeight =
                 Number.isFinite(
@@ -7559,6 +7613,7 @@
                 const button of
                 allButtons
             ) {
+                if (button.closest('[data-menu-layout="custom"]')) continue;
                 const submenu =
                     document
                         .getElementById(

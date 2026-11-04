@@ -239,6 +239,11 @@ jobs:
       - run: node tests/vosk-collector-browser.cjs
       - run: node tests/web-speech-browser.cjs
       - run: node tests/percent-summary-layout-browser.cjs
+      - run: node tests/hamburger-custom-sections-browser.cjs
+      - run: node tests/summary-caption-fitting-browser.cjs
+      - run: node tests/sync-menu-announcement-browser.cjs
+      - run: node tests/dialog-safe-boundary-browser.cjs
+      - run: node tests/drop-in-dialog-boundary-browser.cjs
       - run: node tests/invalid-trip-recovery-browser.cjs
       - run: node tests/retained-page-operation-browser.cjs
       - run: node tests/trip-time-bank-browser.cjs

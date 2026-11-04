@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const frames=new Map(),timers=new Map(),values=new Map(),listeners=new Map();let id=0;
+const target={addEventListener(type,cb){listeners.set(type,cb);},removeEventListener(type){listeners.delete(type);}};
+const view={...target,innerWidth:390,innerHeight:720,visualViewport:{...target,width:390,height:720,offsetTop:0,scale:1},document:{...target,activeElement:{matches:()=>false},fullscreenElement:null,documentElement:{style:{setProperty:(k,v)=>values.set(k,v)}}},requestAnimationFrame(cb){const n=++id;frames.set(n,cb);return n;},cancelAnimationFrame:n=>frames.delete(n),setTimeout(cb){const n=++id;timers.set(n,cb);return n;},clearTimeout:n=>timers.delete(n)};
+const context={};vm.runInNewContext(fs.readFileSync(new URL('../ViewportLayout.js',import.meta.url),'utf8'),context);
+const {ViewportLayout}=context;let refreshes=0;const layout=new ViewportLayout({view,refresh:()=>refreshes++});
+const flush=()=>{while(frames.size){const entries=[...frames];frames.clear();for(const [,cb]of entries)cb();}};
+flush();assert.equal(values.get('--app-viewport-height'),'720px');
+view.document.fullscreenElement={};view.innerHeight=844;view.visualViewport.height=720;listeners.get('fullscreenchange')();flush();assert.equal(values.get('--app-viewport-height'),'844px','fullscreen layout ignores stale visual viewport height');
+view.innerHeight=900;const late=[...timers.values()];timers.clear();for(const cb of late)cb();flush();assert.equal(values.get('--app-viewport-height'),'900px','late fullscreen metrics settle without a second resize event');
+view.document.activeElement={matches:()=>true};view.visualViewport.height=450;view.visualViewport.offsetTop=30;listeners.get('focusin')();flush();assert.equal(values.get('--app-viewport-height'),'450px');assert.equal(ViewportLayout.measure(view).top,30,'keyboard uses visible viewport');
+view.document.activeElement={matches:()=>false};view.visualViewport.scale=2;view.visualViewport.width=195;assert.equal(ViewportLayout.measure(view).width,195,'pinch zoom retains visual viewport geometry');
+assert(refreshes>=4);layout.disconnect();assert.equal(timers.size,0);assert.equal(frames.size,0);assert.equal(listeners.size,0);console.log('PASS fullscreen settling, keyboard/pinch geometry and observer cleanup');

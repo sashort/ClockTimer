@@ -2125,11 +2125,16 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 0
             );
 
+        const visible = globalThis.ViewportLayout?.measure(view) || {
+            height: view.visualViewport?.height || viewportHeight,
+            top: view.visualViewport?.offsetTop || 0
+        };
         let left = 0;
-        let right =
-            viewportWidth;
-        let bottom =
-            viewportHeight;
+        let right = viewportWidth;
+        // Native field focus can scroll the document without moving the visual
+        // viewport. Anchor to that viewport, never a scrolled app/body rectangle.
+        let bottom = Math.min(viewportHeight, visible.top + visible.height);
+        let bottomInset = 0;
 
         const containers =
             [
@@ -2178,11 +2183,10 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                     bounds.right
                 );
 
-            bottom =
-                Math.min(
-                    bottom,
-                    bounds.bottom
-                );
+            const style = view.getComputedStyle(element);
+            bottomInset = Math.max(bottomInset,
+                (Number.parseFloat(style.paddingBottom) || 0) +
+                (Number.parseFloat(style.marginBottom) || 0));
         }
 
         this.style.setProperty(
@@ -2204,6 +2208,7 @@ class SpeechMicBar extends (globalThis.SharedModal || HTMLElement) {
                 "px"
         );
 
+        bottom -= bottomInset;
         this.style.setProperty(
             "--speech-mic-fixed-bottom",
             Math.max(

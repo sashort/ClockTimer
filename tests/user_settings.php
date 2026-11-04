@@ -9,7 +9,7 @@ check($result['orderFiller']['mode'] === 'auto', 'changed field saved');
 check($result['orderFiller']['sound'] === 80 && $result['dropIn']['preferences'] === 'observer', 'unrelated settings preserved');
 $result = merge_user_settings(json_encode($result), 'orderFiller', ['mode' => null]);
 check(!isset($result['orderFiller']['mode']), 'null removes override');
-foreach ([['credentials', ['x' => 1]], ['speech', [1, 2]], ['dropIn', ['bad:key' => 1]], ['orderFiller', ['huge' => str_repeat('a', 262145)]]] as [$namespace, $changes]) {
+foreach ([['speech', ['wmof-recognizer-names-v1' => 'retired']], ['credentials', ['x' => 1]], ['speech', [1, 2]], ['dropIn', ['bad:key' => 1]], ['orderFiller', ['huge' => str_repeat('a', 262145)]]] as [$namespace, $changes]) {
     try {validate_settings_changes($namespace, $changes);throw new RuntimeException('Invalid input accepted');}
     catch (InvalidArgumentException) {}
 }

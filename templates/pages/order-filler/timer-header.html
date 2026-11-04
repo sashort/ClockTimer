@@ -10,18 +10,18 @@
 <div id="menuLogoutSlot"></div>
                 <hr id="accountMenuDivider">
                 <div class="settings-menu-group">
-                    <button id="settingsMenuButton" type="button" aria-expanded="false" aria-controls="settingsSubmenu"><span class="menu-inline-icon settings-gear-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="5.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></svg></span><span data-language-id="708d54ab-8dc9-5047-b30b-67ee440153da">{{text:708d54ab-8dc9-5047-b30b-67ee440153da:text0}}</span></button>
+                    <button id="settingsMenuButton" type="button" aria-expanded="false" aria-controls="settingsSubmenu"><span class="menu-inline-icon settings-gear-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6"/></svg></span><span data-language-id="708d54ab-8dc9-5047-b30b-67ee440153da">{{text:708d54ab-8dc9-5047-b30b-67ee440153da:text0}}</span></button>
                     <div id="settingsSubmenu" class="settings-submenu" hidden>
-                        <button id="audioSettingsButton" type="button" data-open-clock-timer-settings data-settings-surface="audioSettingsDialog"><span class="menu-inline-icon audio-speaker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span data-language-id="7b7d624d-739b-57ae-96f4-f79bad524320">Audio Settings</span></button>
+                        <button id="audioSettingsButton" type="button" data-open-clock-timer-settings data-settings-surface="audioSettingsDialog"><span class="menu-inline-icon audio-speaker-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span data-language-id="7b7d624d-739b-57ae-96f4-f79bad524320">Audio Settings</span></button><div class="visualSettings-menu-group"><button id="visualSettingsMenuButton" type="button" aria-expanded="false" aria-controls="visualSettingsSubmenu" data-menu-icon="visual" data-language-id="d7400002-0000-4000-8000-000000000001">{{text:d7400002-0000-4000-8000-000000000001:text0}}</button><div id="visualSettingsSubmenu" class="settings-submenu" hidden>
                         <div class="theme-settings-group">
                             <button id="themesMenuButton" type="button" aria-expanded="false" aria-controls="themesSubmenu" data-menu-icon="palette">Themes</button>
                             <div id="themesSubmenu" class="themes-submenu" hidden>
-                                <label class="halloween-theme-option" data-menu-toggle><input id="halloweenThemeToggle" type="checkbox"><span>Halloween</span></label>
+                                <label class="halloween-theme-option" data-menu-toggle data-menu-icon="pumpkin"><span>Halloween</span><input id="halloweenThemeToggle" type="checkbox"></label>
                             </div>
                         </div>
-                        <button id="openGraphicalSettingsFrame" type="button" data-open-clock-timer-settings data-settings-surface="graphicalSettingsDialog" data-language-id="92a6c5f7-f8b9-51f6-a70b-73669905326c" data-menu-icon="palette">Clock/Timer Settings</button>
+                        <button id="openGraphicalSettingsFrame" type="button" data-open-clock-timer-settings data-settings-surface="graphicalSettingsDialog" data-language-id="92a6c5f7-f8b9-51f6-a70b-73669905326c" data-menu-icon="clock-settings">Clock/Timer Settings</button>
 
-                        <div class="percentage-display-setting">
+                        <div class="layoutSettings-menu-group"><button id="layoutSettingsMenuButton" type="button" aria-expanded="false" aria-controls="layoutSettingsSubmenu" data-menu-icon="layout" data-language-id="d7400002-0000-4000-8000-000000000002">{{text:d7400002-0000-4000-8000-000000000002:text0}}</button><div id="layoutSettingsSubmenu" class="settings-submenu" hidden><div class="percentage-display-setting">
                             <span id="percentageDisplayLabel" class="percentage-display-label" data-language-id="c9eaad81-ec2f-5f02-8f80-aacc4f7b7f33">% &nbsp; {{text:c9eaad81-ec2f-5f02-8f80-aacc4f7b7f33:text0}}</span>
                             <div class="percentage-display-options" role="radiogroup" aria-labelledby="percentageDisplayLabel">
                                 <button id="percentageDisplayClassic" type="button" role="radio" aria-checked="true" data-percentage-display="classic" data-menu-icon="settings"><span data-language-id="57b7ec0c-1ac5-56e2-ba6b-98beeb8aef93">{{text:57b7ec0c-1ac5-56e2-ba6b-98beeb8aef93:text0}}</span><small id="percentageClassicPreview" aria-hidden="true">— / —</small></button>
@@ -34,30 +34,23 @@
                                 <button id="actionDisplayFull" data-language-id="afc4c85f-5629-4762-9414-c66fc6fbfc0b" type="button" role="radio" aria-checked="true" data-action-display="full" data-menu-icon="settings">{{text:afc4c85f-5629-4762-9414-c66fc6fbfc0b:text0}}</button>
                                 <button id="actionDisplayCompact" data-language-id="8ba6b8cf-ef58-4e94-b1e8-7150e652e3af" type="button" role="radio" aria-checked="false" data-action-display="compact" data-menu-icon="settings">{{text:8ba6b8cf-ef58-4e94-b1e8-7150e652e3af:text0}}</button>
                             </div>
-                        </div>
-                    </div>
+                        </div></div></div>
+                    </div></div></div>
                 </div>
                 <div class="main-menu-row speech-recognition-menu-row">
                     <button id="speechRecognitionButton" data-menu-toggle type="button" aria-pressed="false" title="{{text:d549a1af-0e08-5ef7-8a33-0106901cb282:title}}" disabled data-language-id="d549a1af-0e08-5ef7-8a33-0106901cb282" data-menu-icon="settings"><span data-language-id="64bf66be-85cc-529b-b86e-95855d455a33">{{text:64bf66be-85cc-529b-b86e-95855d455a33:text0}}</span></button>
                     <button id="speechRecognitionHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="speechRecognition" aria-label="{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:aria-label}}" data-language-id="6e6ea3a3-2d38-5c75-b5ed-9620454a3520" data-menu-icon="settings">{{text:6e6ea3a3-2d38-5c75-b5ed-9620454a3520:text0}}</button>
 
                 </div>
-                    <div class="recognizer-name-settings"><button id="recognizerNameMenuButton" type="button" aria-expanded="false" aria-controls="recognizerNameSubmenu" data-menu-icon="microphone">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</button><div id="recognizerNameSubmenu" hidden>
-                        <p>{{text:93bbc7ae-c8b0-5546-81c3-304a17ba6272:text0}}</p>
-                        <label for="recognizerNamePreset">{{text:a9f4aec7-fd1c-5ce0-add9-52faee24badc:text0}}</label>
-                        <select id="recognizerNamePreset"><option value="">{{text:aaf29102-ffde-519d-b4de-c44844040d6c:text0}}</option><option value="custom">{{text:542b3639-2667-58eb-9544-a3692e3aeaac:text0}}</option></select>
-                        <input id="recognizerNameCustom" maxlength="40" hidden aria-label="{{text:35b6f8db-afeb-5290-8f1c-e02ee2688d79:text0}}">
-                        <button id="recognizerNameSave" type="button" data-menu-icon="edit">{{text:895ec700-dc9d-574d-b1eb-cef2d0f99adc:text0}}</button>
-                        <output id="recognizerNameStatus" role="status"></output>
-                    </div></div>
-                <div class="main-menu-row sync-goals-menu-row">
+
+                <div class="goalSettings-menu-group"><button id="goalSettingsMenuButton" type="button" aria-expanded="false" aria-controls="goalSettingsSubmenu" data-menu-icon="goals" data-language-id="d7400002-0000-4000-8000-000000000003">{{text:d7400002-0000-4000-8000-000000000003:text0}}</button><div id="goalSettingsSubmenu" class="settings-submenu" hidden><div class="main-menu-row sync-goals-menu-row">
                     <button id="toggleSyncMenuButton" data-menu-toggle class="sync-goals-menu-button" type="button" data-editor-action="toggleSync" aria-pressed="false" data-menu-icon="settings"><span class="sync-goals-menu-icon" data-sync-state="disabled" aria-hidden="true"></span><span data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</span></button>
                     <button id="syncGoalsHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="syncGoals" aria-label="{{text:fe244302-ff9a-5be1-949d-444793532606:aria-label}}" data-language-id="fe244302-ff9a-5be1-949d-444793532606" data-menu-icon="settings">{{text:fe244302-ff9a-5be1-949d-444793532606:text0}}</button>
                 </div>
                 <div class="main-menu-row sync-override-menu-row">
                     <button id="goalBoundingButton" data-menu-toggle data-menu-icon="goal-bounding" type="button" role="switch" aria-checked="true"><span data-language-id="7f05505a-1327-5bb2-9804-4ecf0c78b536">{{text:7f05505a-1327-5bb2-9804-4ecf0c78b536:text0}}</span></button>
                     <button id="goalBoundingHelpButton" class="settings-help-button menu-help-button is-visible" type="button" data-help-key="goalBounding" aria-label="{{text:0ab8d3cc-a3d0-5072-8d06-55dff706addd:aria-label}}" data-language-id="0ab8d3cc-a3d0-5072-8d06-55dff706addd" data-menu-icon="settings">{{text:0ab8d3cc-a3d0-5072-8d06-55dff706addd:text0}}</button>
-                </div>
+                </div></div></div>
                 <button id="includePendingDownTimeButton" hidden data-menu-toggle data-menu-icon="pending-down" type="button" role="switch" aria-checked="true"><span data-language-id="d7300001-7888-4711-9000-000000000007">{{text:d7300001-7888-4711-9000-000000000007:text0}}</span></button>
                 <button id="editActiveTripButton" hidden data-menu-icon="edit" type="button">Edit Trip</button>
                 <div class="trip-menu-group main-menu-row">
@@ -73,9 +66,12 @@
                     <label for="tripLogStartDate" data-language-id="cb47bd54-b509-5823-85ad-d2c8cab78285">{{text:cb47bd54-b509-5823-85ad-d2c8cab78285:text0}}</label><input id="tripLogStartDate" type="date" aria-label="{{text:305d99aa-8c68-5a7e-beea-9056d17cca88:aria-label}}" data-language-id="305d99aa-8c68-5a7e-beea-9056d17cca88">
                     <label for="tripLogEndDate" data-language-id="92a78904-7c6f-5666-9ad2-48301e067257">{{text:92a78904-7c6f-5666-9ad2-48301e067257:text0}}</label><input id="tripLogEndDate" type="date" aria-label="{{text:5b827a18-10f3-56fa-b022-4ccf3f47a04e:aria-label}}" disabled data-language-id="5b827a18-10f3-56fa-b022-4ccf3f47a04e">
                 </div>
-                <div id="tripLogHistoricalRange" class="historical-range-status" hidden role="status"><span></span><button type="button" data-menu-icon="calendar" data-return-current-range data-language-id="d7300001-7888-4711-9000-000000000010">{{text:d7300001-7888-4711-9000-000000000010:text0}}</button></div>
+
+                <button id="tripLogOpenButton" data-menu-align="center" type="button" data-menu-icon="list" data-language-id="d7400002-0000-4000-8000-000000000005">{{text:d7400002-0000-4000-8000-000000000005:text0}}</button>
+                <button id="tripLogReturnActiveButton" data-menu-align="center" hidden type="button" data-menu-icon="reset" data-return-current-range data-language-id="d7300001-7888-4711-9000-000000000010">{{text:d7300001-7888-4711-9000-000000000010:text0}}</button>
+                <div id="tripLogHistoricalRange" class="historical-range-status" hidden role="status"><span></span></div>
                 <p id="tripLogRangeError" class="trip-log-range-error" role="status" hidden></p>
-                </div></div>
+                <section class="trip-log-range-help" data-menu-layout="custom" data-menu-column="full"><hr><h3><span class="trip-log-range-help-title"><span class="trip-log-range-info" aria-hidden="true">?</span><span data-language-id="d7400001-0000-4000-8000-000000000023">{{text:d7400001-0000-4000-8000-000000000023:text0}}</span></span></h3><div class="trip-log-range-help-grid"><strong><span data-language-id="d7400001-0000-4000-8000-000000000019">{{text:d7400001-0000-4000-8000-000000000019:text0}}</span></strong><strong><span data-language-id="d7400001-0000-4000-8000-000000000020">{{text:d7400001-0000-4000-8000-000000000020:text0}}</span></strong><p><span data-language-id="d7400001-0000-4000-8000-000000000021">{{text:d7400001-0000-4000-8000-000000000021:text0}}</span></p><p><span data-language-id="d7400001-0000-4000-8000-000000000022">{{text:d7400001-0000-4000-8000-000000000022:text0}}</span></p></div></section></div></div>
                 <hr class="developer-menu-separator">
                 <div id="developerMenuGroup" class="developer-menu-group">
                     <button id="developerMenuButton" type="button" aria-expanded="false" aria-controls="developerSubmenu" data-language-id="8461371b-dd5d-5da0-b561-4d76102e9820" data-menu-icon="tools">{{text:8461371b-dd5d-5da0-b561-4d76102e9820:text0}}</button>

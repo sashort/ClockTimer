@@ -377,6 +377,20 @@ kbd {
 </svg>
 </figure>
 
+<h2>Application-owned custom sections</h2>
+<p>Set <code>data-menu-layout="custom"</code> on a direct menu row or submenu child when the application owns its internal layout, for example a two-column range-help card. Hamburger measures and animates the section as one block; it does not promote internal <code>button[aria-controls]</code> controls or reset their state on close. Application CSS and handlers own those controls.</p>
+<pre>&lt;section data-menu-layout="custom" data-menu-column="full" class="trip-log-range-help"&gt;
+  &lt;h3&gt;Date Ranges&lt;/h3&gt;
+  &lt;div class="trip-log-range-help-grid"&gt;...&lt;/div&gt;
+&lt;/section&gt;</pre>
+<p><code>data-menu-column="full"</code> spans the full pane, including the icon column; this is the default when omitted. Set <code>data-menu-column="content"</code> to reserve the icon column and align the section with captions on the right. Set <code>--hamburger-menu-icon-column-width</code> on the menu to change the reserved width (default <code>64px</code>). These attributes belong to the custom section, so different sections in the same menu can choose independently. Application-owned column dividers must stop outside full-width sections.</p>
+<p>Keep the section in normal document flow with a measurable height. Its margins and full rendered height participate in safe-boundary packing and submenu growth. Resize and mutation observers remeasure changes. Normal menu pages use horizontal paging. Promoted submenus can scroll vertically when their content exceeds the frozen pane height; the custom section participates in that existing scroll area as a single block. Avoid adding a second scroll area inside short help cards.</p>
+<p>Native focus and application click handlers remain available inside the section. Custom content does not become a separate menu-navigation level. Place Hamburger-managed submenu parent buttons outside the custom section. The attribute does not reset application styles: scope custom grid, padding, typography, and control rules to the section to override any application-wide menu styling.</p>
+<p>Icon-column presence is determined independently for each Hamburger pane, including a promoted submenu. When it contains no visible row icons, the component exposes <code>data-menu-icons="none"</code> and sets its effective icon-column width to zero. Content-only custom areas then reclaim that space. Adding, hiding, or removing row icons triggers the normal observed relayout. Icons inside application-owned custom sections do not reserve a pane-wide icon column.</p>
+<h3>Order Filler menu conventions</h3>
+<p>UI Settings contains Audio Settings and Visual Settings. Visual Settings contains Themes, Clock/Timer Settings, and Layout; Layout retains the Percentage Display and Action Display controls. Goals groups Sync Goals and Goal Bounding. Trip Log includes Date Ranges help, a historical-only Return to Active button using the numberpad Reset icon, and a View Trip Log button. Both actions have a visible border and background, with 16-pixel captions and 20-pixel icons matching the Date Ranges heading. Beneath End, the order is View Trip Log, Return to Active (historical only), the centered historical-range status (when applicable), then the divider and Date Ranges help.</p>
+<p>Filter and range icons share a 30-pixel box centered 35 pixels from the submenu’s inline start edge. Return to Active and View Trip Log use centered captions. Their separate shared icon column sits 12 pixels before the longest visible caption; Date Ranges centers its heading and aligns the question circle to this action-icon column. Mark centered captions with <code>data-menu-align="center"</code>; the component publishes their maximum text width as <code>--hamburger-menu-centered-caption-width</code> for application styling.</p>
+
 <h2>Attributes and properties</h2>
 <table>
 <thead><tr><th>Name</th><th>Type</th><th>Purpose</th></tr></thead>
