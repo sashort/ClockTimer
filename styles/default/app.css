@@ -8603,15 +8603,23 @@ html[data-seasonal-theme=halloween] .trip-log-entry.is-not-applied {background:#
 .mode-dropdown .auto-target-choice .auto-override-check {justify-self:center;}
 .mode-dropdown .auto-goal-value {display:flex;align-items:center;justify-content:center;gap:1px;width:100%;min-width:0;min-height:32px;padding:3px 2px;border:1px solid var(--wm-blue-light);border-radius:5px;background:color-mix(in srgb,var(--wm-blue-light) 8%,transparent);font:inherit;font-weight:700;color:inherit;white-space:nowrap;}
 .mode-dropdown .auto-goal-value::before {content:none;}
-.mode-dropdown .auto-aggregate-select {width:100%;min-width:0;min-height:32px;padding:4px 20px 4px 6px;font:inherit;font-weight:700;color:inherit;background:var(--ui-charcoal-gradient,#263441);border:1px solid var(--wm-blue-light);border-radius:5px;}
-.mode-dropdown .auto-aggregate-select option {background:#263441;color:white;}
+.mode-dropdown .auto-aggregate-select {width:100%;min-width:0;min-height:32px;padding:4px 20px 4px 6px;font:inherit;font-weight:700;color:inherit;background:color-mix(in srgb,var(--wm-blue-light) 10%,var(--wm-blue-dark));border:1px solid var(--wm-blue-light);border-radius:5px;}
+.mode-dropdown .auto-aggregate-select option {background:var(--wm-blue-dark);color:var(--wm-white);}
 
 /* Auto target drafts use explicit theme-colored confirmation controls. */
 .mode-dropdown.is-auto-goals .auto-pane-head {margin:-6px -6px 0;padding:10px 12px;background:var(--wm-blue-light);color:var(--wm-blue-dark);border-bottom:2px solid color-mix(in srgb,var(--wm-blue-light) 65%,white);}
 .mode-dropdown.is-auto-goals .auto-pane-head strong,.mode-dropdown.is-auto-goals .auto-pane-back {color:inherit;}
-.mode-dropdown .auto-pane-actions {position:sticky;bottom:-6px;display:flex;gap:10px;margin:8px -6px -6px;padding:10px 12px;background:var(--ui-charcoal-gradient,#263441);border-top:1px solid var(--wm-blue-light);z-index:2;}
+.mode-dropdown .auto-pane-actions {position:sticky;bottom:-6px;display:flex;gap:10px;margin:8px -6px -6px;padding:10px 12px;background:color-mix(in srgb,var(--wm-blue-light) 18%,var(--wm-blue-dark));border-top:1px solid var(--wm-blue-light);z-index:2;}
 .mode-dropdown .auto-pane-actions button {flex:1;min-width:0;width:auto;min-height:36px;border:1px solid var(--wm-blue-light);border-radius:6px;font:inherit;font-size:14px;font-weight:bold;text-align:center;justify-content:center;padding:6px;}
 .mode-dropdown .auto-pane-actions button::before {content:none;}
-.mode-dropdown .auto-pane-cancel {background:#566473;color:#fff;}
+.mode-dropdown .auto-pane-cancel {background:var(--wm-blue-dark);color:var(--wm-blue-light);}
 .mode-dropdown .auto-pane-ok {background:var(--wm-blue-light);color:var(--wm-blue-dark);}
-html[data-seasonal-theme="halloween"] .mode-dropdown .auto-pane-cancel {background:#634775;color:#fff;}
+
+.mode-dropdown .auto-standard-goal {display:block;text-align:center;font-weight:700;color:inherit;border:0;background:transparent;cursor:default;}
+
+html:not([data-seasonal-theme="halloween"]) .mode-dropdown.is-auto-goals {--wm-blue-light:#a9ddf7;--wm-blue-dark:#001e60;background:#001e60;border-color:#8193ac;}
+html:not([data-seasonal-theme="halloween"]) .mode-dropdown.is-auto-goals .auto-pane-head {background:#596775;color:white;border-bottom-color:#8193ac;}
+html:not([data-seasonal-theme="halloween"]) .mode-dropdown.is-auto-goals .auto-pane-actions {background:#263b61;border-top-color:#8193ac;}
+html:not([data-seasonal-theme="halloween"]) .mode-dropdown.is-auto-goals .auto-pane-actions button {border-color:#8193ac;}
+html:not([data-seasonal-theme="halloween"]) .mode-dropdown.is-auto-goals .auto-pane-ok {background:#304e7a;color:#a9ddf7;}
+html:not([data-seasonal-theme="halloween"]) .mode-dropdown.is-auto-goals :is(.auto-aggregate-select,.auto-goal-value) {background:#20375e;border-color:#8193ac;}
