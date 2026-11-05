@@ -37,8 +37,8 @@ goals share one label stack and a short linked-station shape. Time sits directly
 above percentage, both below the bar, with one connector. There are no goal-name
 captions or tick marks. If time is undefined (idle or standalone break), the empty
 time row collapses and the percentage hugs the node. Standard is a dashed line;
-Current is a double solid line. Standard has no separate label: a configured or
-inferred 100% goal supplies a shared stack pinned beneath the Standard line. Its
+Current is a double solid line. Standard always has one bordered 100% label. A configured or
+inferred 100% goal owns that shared stack beneath the Standard line, without a duplicate Standard label. Its
 connector is omitted. The bar outline is white, 2.5px, drawn above its fill.
 
 The selected target's label stack has a border. Border ownership follows every
@@ -91,7 +91,7 @@ Connectors follow the final collision-adjusted marker and label positions.
 On failure, labels fade and the failed node moves off the right edge. Stable
 node IDs preserve motion through recalculation; interrupted animations start
 from visible positions. When every goal fails, retain the last goal at the right
-with any 100% goal sharing the Standard reference label; Standard alone remains unlabelled. That scale runs from zero at the
+with any 100% goal sharing the Standard reference label; Standard alone retains its 100% box. That scale runs from zero at the
 left to Standard's 100% at the right, with Current placed proportionally.
 
 The bar uses the user's productive Trip/B-game/Overtime colors, ignoring Break
@@ -103,7 +103,7 @@ animate height/opacity; Sync's fixed column enters/leaves and the bar refits.
 Reduced-motion preferences suppress node travel and pulses.
 
 The bar model is opt-in via the timer's `goal-bar` attribute. Classic ticks do
-not calculate the extra snapshot. Both views share the whole-bar goal-selector action;
+not calculate the extra snapshot. Both views share the node/info-box goal-edit action;
 Drop-In actions remain subject to its existing control permissions.
 
 ## Goal input limit
@@ -180,15 +180,19 @@ screens; Sync appearing/disappearing; Drop-In attaching midway through a trip;
 and reduced motion. Assert no idle time labels, no active-load idle flash, no
 historical failure replay, and final positions matching the model snapshot.
 
-## Whole-bar goal selection
+## Node gestures and goal selection
 
-The entire bar is one click/touch/Enter/Space action. Track, blank area, Standard,
-Current, labels and both compression triangles all use the same shared action. A single applicable goal opens its numberpad directly; Auto with multiple goals opens the existing configurable selector.
-Trip offers Trip only; aggregate modes offer that aggregate only; Auto offers both.
-Failed goals remain selectable. Failure count does not change the offered choices.
-The separate Sync button retains its own action. Standard Time is never offered
-here and Current no longer changes time mode. Standard Time editing remains on its
-existing main control. The bar has one keyboard focus target.
+Only each goal's marker and matching info rectangle respond to pointer gestures.
+A short tap edits that goal in every mode. In Auto, a 550ms hold locks an unlocked
+goal and clears any other lock; holding an already locked goal clears the lock.
+Shared nodes/100% boxes offer the applicable identities, including Standard.
+Standard's 100% is fixed, so its tap edits Standard Time through the duration pad
+for a live trip. The thin Standard marker itself is decorative.
+
+The track, continuation arrows, Current readout, avatars and surrounding space
+have no editor/selection action. Invisible target borders and old-value ghosts
+cannot intercept taps. Keyboard Enter/Space edits the focused individual goal;
+the SVG is a group, with no whole-bar keyboard action. Sync retains its own action.
 
 The selector and numberpad show the configured goal in larger type and Inferred Trip Goal in smaller type.
 Classic uses the same details. Actual is the stored, editable percentage; inferred
@@ -212,7 +216,8 @@ shared state projection while retaining its existing read-only publisher control
 ```mermaid
 flowchart TD
     H[Main Standard Time header] --> T[Trip Standard Time settings]
-    B[Whole bar: nodes, labels, track, triangles] --> C[Goal selector: applicable goals]
+    B[Goal circle or info box: tap] --> C[Edit goal: chooser if shared]
+    B2[Auto goal: hold] --> K[Lock, switch or clear override]
     L[Classic Auto goal label] --> C
     C --> P[Edit actual configured goal]
     P --> I[Show inferred trip requirement preview]
@@ -335,10 +340,10 @@ budgets exactly once. Main bar/live bank-coordinate behavior is unchanged.
 See time-range-model.md, Productive Actual and bank credit are separate.
 
 
-Pointer-region correction: only the painted track, markers, compression arrows
-and their value labels open goal editing. The runner/avatar and empty vertical
-space are decorative and pass pointer input through. The main time label remains
-above the bar for hit testing. The SVG remains a single keyboard goal-edit action.
+Pointer-region correction: the goal's painted marker and matching info rectangle
+are the only node hit regions. The runner/avatar, track, continuation arrows and
+empty space pass pointer input through. The main time label remains above the bar
+for hit testing. Each goal has its own keyboard target.
 At 100%, Trip and aggregate targets keep their real names in display and speech;
 Standard naming applies only to the actual Standard fallback.
 
@@ -430,3 +435,7 @@ Compact Down entrance at end-buffer expiry uses the rail fade/scale transition; 
 The next-goal countdown resolves aggregate identities through the current localized range caption (Day, Week, Year, etc.), matching the bar; it does not expose the internal Total fallback. Merged captions use that same name, e.g. Trip/Week Goal In. Single named goals use the same Goal In suffix; when Standard is the next target, the caption is Standard In. Fractional markers are absent at exact whole seconds and zero. Both countdown and main durations use TemporalFormat.timeReadout for rounding and correction; positive frozen remaining durations append + only when milliseconds were omitted.
 
 Layout-option selection uses the applied `aria-checked` state. Selected Classic/Goal bar and Full/Compact radio buttons retain their selected fill and border while hovered or keyboard-focused; generic menu hover/focus decoration must not obscure selection after Switching Layout closes. Browser verification covers all four options without reopening Settings.
+
+Node gestures use the painted circular/merged marker and the info rectangle only. The transparent info hit shape shares the visible target frame's geometry and animated stack transform. Glyphs, invisible/previous target frames, old-value ghosts, pins, and connectors cannot expand a node's touch region. Exiting nodes are non-interactive. Leaving the SVG cancels a held-node gesture. A short tap edits in every mode; an Auto-only hold locks or clears the override. Merged goals use a chooser. The track, continuation arrows, Current readout, and surrounding space have no action. Keyboard Enter/Space on an individual goal opens its editor. The obsolete whole-bar editor/keyboard action has been removed.
+
+Standard always has a bordered 100% label. When a named goal is at 100%, its info box owns the shared label and Standard offers no duplicate label or pointer target. The shared 100% border remains visible even when another goal is the active target. Auto holds clear the existing lock when it is among the touched choices; otherwise they lock the single identity or open the shared-goal chooser. The chooser includes Standard when applicable. Standard taps edit Standard Time through the existing numberpad during a live trip. Lock badges use the menu's outlined pushpin on a contrasting backplate.

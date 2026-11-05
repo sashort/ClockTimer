@@ -132,22 +132,22 @@
   static attach(row){if(!this.instances.has(row))this.instances.set(row,new this(row));return this.instances.get(row);}
   constructor(row){
    this.row=row;this.nodes=new Map();this.previous=new Map();this.units=[];this.motion=new Map();this.prefix='goal-shape-'+(++GoalBar.sequence);
-   this.svg=svgElement('svg',{class:'goal-bar-svg',role:'button',tabindex:0,'aria-label':'Goal bar · Edit goals',viewBox:'0 0 300 112'});
+   this.svg=svgElement('svg',{class:'goal-bar-svg',role:'group','aria-label':'Goal bar · Edit goals',viewBox:'0 0 300 112'});
    this.track=svgElement('rect',{class:'goal-bar-track'});this.outline=svgElement('rect',{class:'goal-bar-outline','aria-hidden':'true'});this.fill=svgElement('rect',{class:'goal-bar-fill'});this.segment=svgElement('rect',{class:'goal-bar-segment'});
    const defs=svgElement('defs'),clip=svgElement('clipPath',{id:this.prefix+'-ticks'});this.tickClip=svgElement('rect');clip.append(this.tickClip);defs.append(clip);this.svg.append(defs);
    this.ticks=svgElement('g',{class:'goal-bar-scale-ticks','clip-path':`url(#${this.prefix}-ticks)`,'aria-hidden':'true'});this.ticks.style.pointerEvents='none';this.tickNodes=new Map();
    this.connectors=svgElement('g',{class:'goal-bar-connectors','aria-hidden':'true'});this.layer=svgElement('g');
    this.leftCompression=svgElement('path',{class:'goal-bar-compression goal-bar-compression-left',fill:'#c6def5','aria-hidden':'true'});
-   this.rightCompression=svgElement('g',{class:'goal-bar-compression goal-bar-compression-right','aria-hidden':'true'});this.rightCompression.append(svgElement('rect',{x:-12,y:-20,width:24,height:40,fill:'transparent'}),svgElement('path',{d:'M -6 -7 L 7 0 L -6 7 Z',fill:'#c6def5'}));
-   const activate=()=>{const mode=this.state?.goal_type,choices=mode==='trip'?['trip']:mode==='total'?['total']:['trip','total'];this.row.dispatchEvent(new CustomEvent('goal-bar-edit',{bubbles:true,detail:{choices}}));};
+   this.rightCompression=svgElement('g',{class:'goal-bar-compression goal-bar-compression-right','aria-hidden':'true'});this.rightCompression.append(svgElement('path',{d:'M -6 -7 L 7 0 L -6 7 Z',fill:'#c6def5'}));
    let press=null,suppressClick=false,suppressUntil=0;
-   const nodeChoices=event=>{const node=event.target.closest?.('.goal-bar-node');if(!node)return null;const choices=String(node.dataset.members||node.dataset.nodeId).split(' ').filter(id=>['trip','total','standard'].includes(id));const snapshot=this.state?.goal_bar?.nodes||[];if(choices.some(id=>near(snapshot.find(n=>n.id===id)?.percent,100))&&!choices.includes('standard'))choices.push('standard');return choices;};
+   const choicesForNode=node=>{if(!node)return null;const choices=String(node.dataset.members||node.dataset.nodeId).split(' ').filter(id=>['trip','total','standard'].includes(id));const snapshot=this.state?.goal_bar?.nodes||[];if(choices.some(id=>near(snapshot.find(n=>n.id===id)?.percent,100))&&!choices.includes('standard'))choices.push('standard');return choices;};
+   const nodeChoices=event=>event.target.closest?.('.goal-bar-marker,.goal-bar-info-hit')?choicesForNode(event.target.closest('.goal-bar-node')):null;
    const gesture=(choices,edit)=>this.row.dispatchEvent(new CustomEvent(edit?'goal-bar-edit':'goal-bar-select',{bubbles:true,detail:{choices}}));
-   this.svg.addEventListener('pointerdown',event=>{const choices=nodeChoices(event);if(!choices?.length)return;press={x:event.clientX,y:event.clientY,timer:setTimeout(()=>{suppressClick=true;suppressUntil=performance.now()+1000;gesture(choices,true);press=null;},550)};});
+   this.svg.addEventListener('pointerdown',event=>{suppressClick=false;if(this.state?.goal_type!=='auto')return;const choices=nodeChoices(event);if(!choices?.length)return;press={x:event.clientX,y:event.clientY,timer:setTimeout(()=>{suppressClick=true;suppressUntil=performance.now()+1000;gesture(choices,false);press=null;},550)};});
    const cancel=()=>{if(press)clearTimeout(press.timer);press=null;};
-   this.svg.addEventListener('pointermove',e=>{if(press&&Math.hypot(e.clientX-press.x,e.clientY-press.y)>8)cancel();});this.svg.addEventListener('pointercancel',cancel);this.svg.addEventListener('pointerup',cancel);
+   this.svg.addEventListener('pointermove',e=>{if(press&&Math.hypot(e.clientX-press.x,e.clientY-press.y)>8)cancel();});this.svg.addEventListener('pointercancel',cancel);this.svg.addEventListener('pointerleave',cancel);this.svg.addEventListener('pointerup',cancel);
    this.svg.addEventListener('contextmenu',e=>{if(nodeChoices(e))e.preventDefault();});
-   this.svg.addEventListener('click',event=>{cancel();if(suppressClick){suppressClick=false;if(performance.now()<suppressUntil)return;}const choices=nodeChoices(event);if(choices?.length){gesture(choices,this.state?.goal_type!=='auto');return;}if(event.target.closest?.('.goal-bar-track,.goal-bar-fill,.goal-bar-segment,.goal-bar-outline,.goal-bar-node,.goal-bar-compression'))activate();});this.svg.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();activate();}});
+   this.svg.addEventListener('click',event=>{cancel();if(suppressClick){suppressClick=false;if(performance.now()<suppressUntil)return;}const choices=nodeChoices(event);if(choices?.length)gesture(choices,true);});this.svg.addEventListener('keydown',event=>{if(!['Enter',' '].includes(event.key))return;const choices=choicesForNode(event.target.closest?.('.goal-bar-node'));if(choices?.length){event.preventDefault();gesture(choices,true);}});
    this.svg.append(this.track,this.fill,this.segment,this.ticks,this.outline,this.connectors,this.layer,this.leftCompression,this.rightCompression);row.append(this.svg);this.avatar=globalThis.WMOFGoalBarAvatar?.create(this.svg,row);
    this.probe=svgElement('text',{'aria-hidden':'true',visibility:'hidden'});this.probe.style.pointerEvents='none';this.svg.append(this.probe);this.widthDigits=new Map();
    this.resize=new ResizeObserver(()=>this.schedule());this.resize.observe(this.svg);TimerSpaceLayout.attach(row.closest('.app'));
@@ -175,13 +175,13 @@
    if(this.nodes.has(id))return this.nodes.get(id);
    const group=svgElement('g',{class:'goal-bar-node','data-node-id':id}),markerGroup=svgElement('g'),stack=svgElement('g',{class:'goal-bar-value-stack'});
    const marker=svgElement('path',{class:'goal-bar-marker'}),glyph=svgElement('text',{'text-anchor':'middle',class:'goal-bar-glyph'}),glyph2=svgElement('text',{'text-anchor':'middle',class:'goal-bar-glyph'});
-   const targetFrame=svgElement('rect',{class:'goal-bar-target-frame',rx:5,fill:'none','stroke-width':1.5});
+   const targetFrame=svgElement('rect',{class:'goal-bar-target-frame',rx:5,fill:'none','stroke-width':1.5}),infoHit=svgElement('rect',{class:'goal-bar-info-hit',rx:5,fill:'transparent',stroke:'transparent','stroke-width':1.5,'aria-hidden':'true'});
    const time=svgElement('text',{'text-anchor':'middle',class:'goal-bar-time'}),percent=svgElement('text',{'text-anchor':'middle',class:'goal-bar-percent'}),title=svgElement('title');
    const defs=svgElement('defs'),gradient=svgElement('linearGradient',{id:this.prefix+'-'+id,x1:'0%',x2:'100%'});gradient.append(svgElement('stop',{offset:'30%','stop-color':'#ffc220'}),svgElement('stop',{offset:'70%','stop-color':'#55d5fb'}));defs.append(gradient);
    const boundIndicator=svgElement('path',{class:'goal-bounding-marker',d:'M -5 3 L 0 -5 L 5 3 Z',fill:'#fff',stroke:'#001e60','stroke-width':1,'aria-hidden':'true'});boundIndicator.style.pointerEvents='none';boundIndicator.style.opacity='0';markerGroup.append(marker,glyph,glyph2,boundIndicator);
-   stack.append(targetFrame,time,percent);group.append(defs,markerGroup,stack,title);this.layer.append(group);
-   const overridePin=svgElement('path',{class:'goal-bar-override-pin',d:'M -3 -7 H 3 L 2 -2 L 5 1 H -5 L -2 -2 Z M 0 1 V 7',fill:'currentColor',stroke:'currentColor','stroke-width':1,'aria-hidden':'true'});markerGroup.append(overridePin);
-   const parts={group,markerGroup,stack,overridePin,boundIndicator,marker,glyph,glyph2,targetFrame,time,percent,title,fresh:true};this.nodes.set(id,parts);return parts;
+   stack.append(infoHit,targetFrame,time,percent);group.append(defs,markerGroup,stack,title);this.layer.append(group);
+   const overridePin=svgElement('g',{class:'goal-bar-override-pin','aria-hidden':'true'});overridePin.append(svgElement('rect',{class:'goal-bar-pin-badge',x:-11,y:-11,width:22,height:22,rx:5}),svgElement('path',{d:'M8 2h8l-1 7 4 5H5l4-5Zm4 12v9',transform:'translate(-8,-8) scale(.67) rotate(35 12 12)',fill:'none',stroke:'currentColor','stroke-width':2,'stroke-linecap':'round','stroke-linejoin':'round'}));markerGroup.append(overridePin);
+   const parts={group,markerGroup,stack,overridePin,boundIndicator,marker,glyph,glyph2,targetFrame,infoHit,time,percent,title,fresh:true};this.nodes.set(id,parts);return parts;
   }
   makeUnits(data){
    const raw=(data.nodes||[]).map(n=>n.current&&n.unbounded?{...n,percent:Math.max(150,...(data.nodes||[]).filter(g=>!g.current&&Number.isFinite(g.percent)).map(g=>g.percent)),percentText:"\u2014"}:n).filter(n=>Number.isFinite(n.percent)&&(n.current||n.percent>0)),goals=raw.filter(n=>!n.current),available=goals.filter(n=>!n.failed),allFailed=data.active!==false&&!available.length;
@@ -215,7 +215,7 @@
    const {raw,goals,available,allFailed,units}=this.makeUnits(data),active=data.active!==false,oldUnits=this.units;
    const avatarSpace=this.avatar?.topSpace(this.state)||0;const count=units.length||1,r=Math.max(9,Math.min(25,height*.11)),preferred=Math.max(9,Math.min(28,height*.17,(width-12)/(count*4.1+1),(height-2*(r+5)-avatarSpace-16)/(active?2.6:1.15)));
    const at100=units.find(u=>u.id!=='standard'&&!u.current&&near(u.percent,100)),standard=units.find(u=>u.id==='standard');
-   const labelUnits=units.filter(u=>u.id!=='standard'&&(u.current||!u.failed||allFailed&&near(u.percent,100))),padding=6,gap=7;
+   const labelUnits=units.filter(u=>u.id==='standard'?!at100:(u.current||!u.failed||near(u.percent,100))),padding=6,gap=7;
    const target=(!active&&this.state?.goal_type==="auto"?null:available.find(n=>n.id===this.state?.effective_goal_type))||available.toSorted((a,b)=>b.percent-a.percent)[0];let labelTarget=units.find(u=>u.members.includes(target?.id));if(labelTarget===standard&&at100)labelTarget=at100;
    for(const unit of units){const p=this.node(unit.id);unit.detailed=labelUnits.includes(unit);
     const prior=oldUnits.find(u=>u.members.includes(unit.id));
@@ -225,13 +225,13 @@
      this.tween(ghost,unit.id+'-old-values',{opacity:'1'},{opacity:'0'},{force:true,duration:140}).then(()=>{if(p.ghost===ghost){ghost.remove();p.ghost=null;p.widthRatio=0;this.schedule();}});
      this.tween(p.time,unit.id+'-new-time',{opacity:'0'},{opacity:'1'},{force:true});this.tween(p.percent,unit.id+'-new-percent',{opacity:'0'},{opacity:'1'},{force:true});
     }
-p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textContent=unit.detailed?(unit.percentText??`${unit.current?Number(unit.percent.toFixed(2)):Math.ceil(unit.percent-1e-9)}%`):'';goalFont(p,preferred);}
+p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'):'';p.percent.textContent=unit.detailed?(unit.percentText??`${unit.current?Number(unit.percent.toFixed(2)):Math.ceil(unit.percent-1e-9)}%`):'';goalFont(p,preferred);}
    const measure=u=>{const p=this.node(u.id);return Math.max(p.time.getComputedTextLength(),u.current&&!u.percentText?this.currentPercentWidth(u,p):p.percent.getComputedTextLength(),(p.widthRatio||0)*parseFloat(p.time.style.fontSize));};
-   const total=labelUnits.reduce((n,u)=>n+measure(u),0),fontScale=Math.min(1,Math.max(1,width-padding*2-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0))/Math.max(1,total));
-   let font=preferred*fontScale;for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}
+   const boxPadding=labelUnits.reduce((sum,u)=>sum+(u===labelTarget||!u.current&&near(u.percent,100)?10:0),0),total=labelUnits.reduce((n,u)=>n+measure(u),0),fontScale=Math.min(1,Math.max(1,width-padding*2-gap*Math.max(0,labelUnits.length-1)-boxPadding)/Math.max(1,total));
+   let font=preferred*fontScale;for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget||!unit.current&&near(unit.percent,100)?5:0);}
    // Only an active trip pins its label to Standard. Idle labels must inset
    // independently without moving the endpoint after its outer bounds are measured.
-   const pin=active&&standard&&labelUnits.includes(at100)?at100:undefined,wide=units.some(u=>u.merged)?Math.sqrt(r*r-(r*.45)**2)+2+r+1:0;
+   const pin=active&&standard?(at100||standard):undefined,wide=units.some(u=>u.merged)?Math.sqrt(r*r-(r*.45)**2)+2+r+1:0;
    const margin=Math.max(30,(pin?.half||0)+padding+3,wide+(at100?.merged&&active?30:6));let left=margin,right=Math.max(left,width-margin);
    const low=!active||allFailed?0:Math.min(...available.map(n=>Math.min(150,n.percent))),high=!active?(data.scale_max||100):allFailed?100:Math.max(low,Math.min(150,raw.find(n=>n.current)?.percent??150),units.some(u=>!u.current&&u.failed&&near(u.percent,100))?100:0);
    // Equal counted-time distances are equal screen distances. Standard / ratio
@@ -266,7 +266,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
    // arrow when present; otherwise track/node endpoints remain the limit.
    const labelLeft=Math.max(padding,outerLeft+centerShift)+.75,labelRight=Math.min(width-padding,outerRight+centerShift)-.75;
    const labelNeed=labelUnits.reduce((sum,u)=>sum+u.half*2,0)+gap*Math.max(0,labelUnits.length-1);
-   if(labelNeed>labelRight-labelLeft){font*=Math.max(.01,(labelRight-labelLeft-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0))/Math.max(1,labelNeed-gap*Math.max(0,labelUnits.length-1)-(labelUnits.includes(labelTarget)?10:0)));for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget?5:0);}}
+   if(labelNeed>labelRight-labelLeft){font*=Math.max(.01,(labelRight-labelLeft-gap*Math.max(0,labelUnits.length-1)-boxPadding)/Math.max(1,labelNeed-gap*Math.max(0,labelUnits.length-1)-boxPadding));for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget||!unit.current&&near(unit.percent,100)?5:0);}}
    // Keep the 100% stack centered on Standard and fit other stacks on its side.
    if(pin){
     const i=labelUnits.indexOf(pin),before=labelUnits.slice(0,i),after=labelUnits.slice(i+1);
@@ -276,6 +276,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
     pin.labelX=Math.max(labelLeft+leftNeed,Math.min(labelRight-rightNeed,pin.x));
     pin.x=pin.labelX;if(standard)standard.x=pin.x;
     let edge=pin.labelX-pin.half-gap;for(let j=before.length-1;j>=0;j--){const u=before[j];u.labelX=Math.min(u.x,edge-u.half);edge=u.labelX-u.half-gap;}
+    let leftEdge=labelLeft;for(const u of before){u.labelX=Math.max(u.labelX,leftEdge+u.half);leftEdge=u.labelX+u.half+gap;}
     let edgeRight=pin.labelX+pin.half+gap;for(const u of after){u.labelX=Math.max(u.x,edgeRight+u.half);edgeRight=u.labelX+u.half+gap;}
     edge=labelRight;for(let j=after.length-1;j>=0;j--){const u=after[j];u.labelX=Math.min(u.labelX,edge-u.half);edge=u.labelX-u.half-gap;}
    }
@@ -330,13 +331,13 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
      if(!unit.current&&unit.id!=='standard')parts.marker.setAttribute('d',goalShape(source.radiusValue||r,source.merged&&!changed));
      if(source.merged&&changed){const c=Math.sqrt(r*r-(r*.45)**2)+2;parts.markerGroup.style.transform=`translate(${source.x+(source.members.indexOf(unit.id)===0?-c:c)}px, ${y}px)`;parts.markerGroup.style.opacity='0';}
     }
-    parts.group.removeAttribute('aria-hidden');parts.group.style.pointerEvents='';parts.group.dataset.members=unit.members.join(' ');parts.group.dataset.details=String(unit.detailed);parts.group.dataset.merged=String(Boolean(unit.merged));
+    parts.group.removeAttribute('aria-hidden');parts.group.style.pointerEvents='';parts.group.setAttribute('role',unit.current||unit.id==='standard'&&!unit.detailed?'img':'button');if(unit.current||unit.id==='standard'&&!unit.detailed)parts.group.removeAttribute('tabindex');else parts.group.setAttribute('tabindex','0');parts.group.dataset.members=unit.members.join(' ');parts.group.dataset.details=String(unit.detailed);parts.group.dataset.merged=String(Boolean(unit.merged));
     parts.group.classList.toggle('is-current',Boolean(unit.current));parts.group.classList.toggle('is-failed',Boolean(unit.failed));
     const members=unit.members.map(id=>raw.find(n=>n.id===id)).filter(Boolean),label=n=>n.id==='total'?(this.state.goal_bar_total_label||n.label):n.label;
     parts.title.textContent=[members.map(label).join(' + '),unit.time,(unit.percentText??`${unit.current?Number(unit.percent.toFixed(2)):Math.ceil(unit.percent-1e-9)}%`),unit.failed?'Missed':''].filter(Boolean).join(' · ');parts.group.setAttribute('aria-label',parts.title.textContent);
     const selected=this.state?.goal_type==='auto'?this.state.auto_goal_override:null;
-    const pinned=unit.members.includes(selected);parts.overridePin.style.display=pinned?'':'none';parts.group.dataset.autoLocked=String(pinned);
-    if(pinned){const index=unit.members.indexOf(selected),offset=unit.merged?(index===0?-r*.85:r*.85):0;parts.overridePin.setAttribute('transform',`translate(${offset-r*.7},${-r*.65}) scale(.65)`);}
+    const pinned=selected==='standard'?!unit.current&&near(unit.percent,100)&&unit.detailed:unit.members.includes(selected);parts.overridePin.style.display=pinned?'':'none';parts.group.dataset.autoLocked=String(pinned);if(!unit.current&&(unit.id!=='standard'||unit.detailed)&&this.state?.goal_type==='auto')parts.group.setAttribute('aria-pressed',String(pinned));else parts.group.removeAttribute('aria-pressed');
+    if(pinned){const index=unit.members.indexOf(selected),offset=unit.merged&&selected!=='standard'?(index===0?-r*.85:r*.85):0;parts.overridePin.setAttribute('transform',`translate(${offset-(unit.id==='standard'?r*.4:r*.7)},${-r*.75})`);}
     const raised=members.some(n=>n.bounding?.adjusted),lower=!raised&&unit.percent<100&&unit.members.includes(this.state.effective_goal_type),direction=raised?'raised':lower?'lower':'';
     parts.group.dataset.goalBounding=direction;
     const markerInfo=raised?'Raised to 100%':lower?'Below-floor target':'';
@@ -361,7 +362,7 @@ p.time.textContent=active&&unit.detailed?(unit.time||'—'):'';p.percent.textCon
      if(unit.merged){const gradient=parts.group.querySelector('linearGradient');gradient.children[0].setAttribute('stop-color',members[0].id==='trip'?'#ffc220':'#55d5fb');gradient.children[1].setAttribute('stop-color',members[1].id==='trip'?'#ffc220':'#55d5fb');}
     }
     parts.time.setAttribute('y',timeOffset);parts.percent.setAttribute('y',percentOffset);
-    parts.group.dataset.target=String(unit===labelTarget);if(unit===labelTarget){parts.targetFrame.setAttribute('x',-(unit.half||0));const percentBox=parts.percent.getBBox(),timeBox=parts.time.getBBox(),top=active&&parts.time.textContent?Math.min(timeBox.y,percentBox.y):percentBox.y,bottom=percentBox.y+percentBox.height;parts.targetFrame.setAttribute('y',top-4);parts.targetFrame.setAttribute('width',(unit.half||0)*2);parts.targetFrame.setAttribute('height',bottom-top+8);parts.targetFrame.style.stroke=unit.merged?`url(#${this.prefix}-${unit.id})`:stroke;}this.tween(parts.targetFrame,unit.id+'-target-border',{opacity:parts.targetFrame.style.opacity||'0'},{opacity:unit===labelTarget?'1':'0'});
+    parts.group.dataset.target=String(unit===labelTarget);parts.infoHit.style.display=unit.detailed?'':'none';if(unit.detailed){const percentBox=parts.percent.getBBox(),timeBox=parts.time.getBBox(),top=active&&parts.time.textContent?Math.min(timeBox.y,percentBox.y):percentBox.y,bottom=percentBox.y+percentBox.height,geometry={x:-(unit.half||0),y:top-4,width:(unit.half||0)*2,height:bottom-top+8};for(const element of [parts.infoHit,parts.targetFrame])for(const [name,value] of Object.entries(geometry))element.setAttribute(name,value);parts.targetFrame.style.stroke=unit.merged?`url(#${this.prefix}-${unit.id})`:stroke;}this.tween(parts.targetFrame,unit.id+'-target-border',{opacity:parts.targetFrame.style.opacity||'0'},{opacity:unit===labelTarget||!unit.current&&near(unit.percent,100)&&unit.detailed?'1':'0'});
     const crossing=changed&&oldUnits.some(other=>other.detailed&&other.id!==source.id&&units.some(next=>next.id===other.id&&(source.labelX-other.labelX)*(unit.labelX-next.labelX)<0));
     if(crossing&&parts.ghost){this.layer.append(parts.ghost);parts.ghost.style.transform=`translate(${source.labelX}px, ${y}px)`;}
     if(split&&changed)parts.stack.style.opacity='0';

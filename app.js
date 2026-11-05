@@ -25780,7 +25780,7 @@
             },
 
             openGoalEditor({scope, choices} = {}) {
-                if(scope==='standard')return globalThis.WMOFActions.openStandardTimeSettings({tripScope:true});
+                if(scope==='standard'){if(clockTimer.getUIState().break_only)return false;if(!tripIsLive())return globalThis.WMOFActions.openStandardTimeSettings({tripScope:true});return openNumberPad({mode:'time',source:'standard-time',initialValue:clockTimer.getSummarySnapshot()?.trip?.standardTimeMilliseconds,startsTripOnConfirm:false,role:'root',workflow:'edit-trip',cancelTarget:'home',confirmTarget:'home'});}
                 if (["trip", "total"].includes(scope)) {
                     if ((endTimeGoalOverride?.scopes || []).includes(scope)) {flashEndTimeGoalLock();return false;}
                     void openPercentGoalNumberPad(scope).catch(() => {});

@@ -97,7 +97,7 @@
     document.querySelector('.percent-summary')?.addEventListener('goal-bar-edit',event=>{
         if(busy||!permission(64))return;
         const choices=event.detail?.choices||['trip','total'];
-        if(choices.length===1)openGoal(choices[0]);else openGoalSelector({choices});
+        if(choices.length===1){if(choices[0]!=='standard')openGoal(choices[0]);}else openGoalSelector({choices});
     });
     function updateModeButton() {
         const mode=$('liveStreamViewMode'),button=$('scopeToggle'),mirrored=mode.value==='user';
