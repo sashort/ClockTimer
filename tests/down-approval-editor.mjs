@@ -7,7 +7,7 @@ const editor=new w.TripEditor(trip,{events,settings:{},revision:'test'},{numberP
 await editor.editApproval(down,'approved');const pending=pad.onConfirm(undefined);[...w.document.querySelectorAll('.trip-editor-choice button')].find(b=>b.textContent==='Pending').click();await pending;
 assert.equal(down.value.approvalState,'pending');assert.equal(down.value.approvedTime,null);
 assert.deepEqual([...editor.body.querySelectorAll('[data-down-amount]')].map(e=>e.dataset.downAmount),['recorded','pending']);
-await editor.editApproval(down,'pending');assert.equal(pad.initialValue,undefined);await pad.onConfirm(0);assert.equal(down.value.approvalState,'approved','zero approval is valid');
+await editor.editApproval(down,'pending');assert.equal(pad.initialValue,60000,'Pending preloads the recorded duration');await pad.onConfirm(0);assert.equal(down.value.approvalState,'approved','zero approval is valid');
 assert.deepEqual([...editor.body.querySelectorAll('[data-down-amount]')].map(e=>e.dataset.downAmount),['recorded','approved','unapproved','net']);assert.equal(editor.body.querySelector('[data-down-amount=net] strong').textContent,'−01:00.000');
 await editor.editApproval(down,'approved');const unapproved=pad.onConfirm(undefined);[...w.document.querySelectorAll('.trip-editor-choice button')].find(b=>b.textContent==='Unapproved').click();await unapproved;assert.equal(down.value.approvalState,'unapproved');
 assert.equal(events[1].value.approvedTime,30000,'source remains unchanged before Save');
