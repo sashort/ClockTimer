@@ -29,7 +29,52 @@
         return icon;
     };
     class TripLog {
-        constructor(root,options) {this.root=root;this.options=options;this.trips=[];this.expanded=new Map();this.editor=null;this.settingsVisible=false;this.downTimeExpanded=true;this.downTimeOnly=false;this.adjustedOnly=false;this.showPending=true;for(const key of ['downTimeExpanded','downTimeOnly','adjustedOnly','showPending'])if(typeof options.viewSettings?.()?.[key]==='boolean')this[key]=options.viewSettings()[key];}
+        static visualText(key) {return globalThis.WMOFLanguagePack.text({'not-applied':'d7600001-0000-4000-8000-000000000001','totals-only':'d7600001-0000-4000-8000-000000000002',mixed:'d7600001-0000-4000-8000-000000000003',surplus:'d7600001-0000-4000-8000-000000000004',deficit:'d7600001-0000-4000-8000-000000000005',gained:'d7600001-0000-4000-8000-000000000006',lost:'d7600001-0000-4000-8000-000000000007'}[key]);}
+        static netRange(value) {return value<0?'approval-deficit':value>0?'approval-surplus':'down';}
+        static mutedColor(value) {
+            TripLog.colorCache??=new Map();if(TripLog.colorCache.has(value))return TripLog.colorCache.get(value);
+            let rgb;if(/^#[0-9a-f]{6}$/i.test(value))rgb=value.slice(1).match(/../g).map(v=>parseInt(v,16));
+            else if(/^rgb/.test(value))rgb=value.match(/[\d.]+/g)?.slice(0,3).map(Number);
+            if(!rgb)return value;
+            const grey=rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722,color='#'+rgb.map(v=>Math.round(v*.7+grey*.3).toString(16).padStart(2,'0')).join('');TripLog.colorCache.set(value,color);return color;
+        }
+        static palette(force=false) {
+            if(!force&&TripLog.paletteCache)return TripLog.paletteCache;
+            const source=document.querySelector('#clockTimer,clock-timer'),style=getComputedStyle(source||document.documentElement),fallback={trip:'#0053e2',break:'#001e60',lunch:'#ffc220',down:'#5f6772','approval-surplus':'#9c6b30','approval-deficit':'#7a1f3d'};
+            return TripLog.paletteCache=Object.fromEntries(Object.entries(fallback).map(([key,value])=>[key,TripLog.mutedColor(style.getPropertyValue('--clock-timer-'+key+'-color').trim()||style.getPropertyValue('--timer-'+key+'-color').trim()||value)]));
+        }
+        static accent(element,key) {element.dataset.rangeColor=key;element.style.setProperty('--down-accent',TripLog.palette()[key]||TripLog.palette().down);return element;}
+        static exclusion(element,status) {
+            if(!status)return;element.dataset.exclusion=status;element.classList.add('down-excluded');const badge=node('small',TripLog.visualText(status),'down-exclusion-badge');element.append(badge);return element;
+        }
+        static dot(target,key) {const dot=node('i',undefined,'down-timeline-dot');dot.setAttribute('aria-hidden','true');dot.dataset.timelineDot='true';TripLog.accent(dot,key);target.append(dot);return dot;}
+        static layoutTimeline(timeline) {
+            if(!timeline.isConnected)return;timeline.querySelectorAll(':scope>.down-timeline-link').forEach(line=>line.remove());const dots=[...timeline.querySelectorAll('[data-timeline-dot]')],box=timeline.getBoundingClientRect(),scaleX=timeline.offsetWidth?box.width/timeline.offsetWidth:1,scaleY=timeline.offsetHeight?box.height/timeline.offsetHeight:1;
+            for(let i=0;i<dots.length-1;i++){const a=dots[i].getBoundingClientRect(),b=dots[i+1].getBoundingClientRect();if(!a.width||b.top<a.top)continue;const line=node('i',undefined,'down-timeline-link');line.setAttribute('aria-hidden','true');line.dataset.fromRange=dots[i].dataset.rangeColor;line.dataset.toRange=dots[i+1].dataset.rangeColor;line.style.left=((a.left+a.width/2-box.left)/scaleX-timeline.clientLeft-1)+'px';line.style.top=((a.top+a.height/2-box.top)/scaleY-timeline.clientTop)+'px';line.style.height=((b.top+b.height/2-a.top-a.height/2)/scaleY)+'px';line.style.background='linear-gradient(to bottom,'+getComputedStyle(dots[i]).getPropertyValue('--down-accent')+','+getComputedStyle(dots[i+1]).getPropertyValue('--down-accent')+')';timeline.append(line);}
+        }
+        static refreshVisuals() {const palette=TripLog.palette(true);document.querySelectorAll('[data-range-color]').forEach(element=>element.style.setProperty('--down-accent',palette[element.dataset.rangeColor]||palette.down));document.querySelectorAll('.trip-log-timeline,.trip-editor-timeline').forEach(timeline=>TripLog.layoutTimeline(timeline));document.querySelectorAll('.down-accounting-strip').forEach(strip=>TripLog.fitAccounting(strip));}
+        static fitAccounting(strip) {
+            if(!strip.isConnected)return;const cells=[...strip.querySelectorAll('[data-down-amount]')];for(const cell of cells)for(const child of cell.children)child.style.removeProperty('font-size');
+            const factors={label:1,value:1,badge:1};for(const cell of cells){const style=getComputedStyle(cell),available=cell.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);if(available<=0)continue;for(const child of cell.children){const kind=child.classList.contains('down-exclusion-badge')?'badge':child.tagName==='STRONG'?'value':'label',size=child.getBoundingClientRect().width;let width=size;if(child.classList.contains('down-exclusion-badge'))width=Math.max(size,child.scrollWidth+2);if(width>available)factors[kind]=Math.min(factors[kind],available/width);}}
+            for(const cell of cells)for(const child of cell.children){const kind=child.classList.contains('down-exclusion-badge')?'badge':child.tagName==='STRONG'?'value':'label';if(factors[kind]<1)child.style.setProperty('font-size',Math.max(5,parseFloat(getComputedStyle(child).fontSize)*factors[kind]-.2)+'px',child.classList.contains('down-exclusion-badge')?'important':'');}
+        }
+        static scheduleVisuals() {if(TripLog.visualFrame)return;TripLog.visualFrame=requestAnimationFrame(()=>{TripLog.visualFrame=0;TripLog.refreshVisuals();});}
+        static watchVisuals() {
+            if(TripLog.visualsWatching)return;TripLog.visualsWatching=true;const refresh=()=>TripLog.scheduleVisuals();globalThis.addEventListener('resize',refresh);document.fonts?.addEventListener?.('loadingdone',refresh);
+            TripLog.paletteObserver=new MutationObserver(refresh);TripLog.paletteObserver.observe(document.documentElement,{attributes:true,attributeFilter:['style','data-seasonal-theme']});const clock=document.querySelector('#clockTimer,clock-timer');if(clock)TripLog.paletteObserver.observe(clock,{attributes:true,attributeFilter:['style']});
+        }
+        static accountingStyle(strip,{mode,hasPending,hasFinalized,net=0}) {
+            strip.classList.add('down-accounting-strip');const cells=[...strip.children];strip.style.setProperty('--down-columns',cells.length);
+            for(const cell of cells){const kind=cell.dataset.downAmount;TripLog.accent(cell,kind==='unapproved'?'approval-deficit':kind==='net'?TripLog.netRange(net):'down');cell.classList.remove('is-not-applied');let status=mode==='ignore-pending'&&kind==='pending'?'not-applied':mode==='pending-only'&&['approved','unapproved','net'].includes(kind)?'totals-only':null;if(kind==='net'&&mode==='pending-only'&&hasPending&&hasFinalized)status='mixed';TripLog.exclusion(cell,status);}
+            strip.replaceChildren();for(const rowCells of [cells.filter(cell=>['recorded','pending'].includes(cell.dataset.downAmount)),cells.filter(cell=>!['recorded','pending'].includes(cell.dataset.downAmount))]){
+                if(!rowCells.length)continue;const row=node('div',undefined,'down-accounting-row');row.style.setProperty('--row-columns',rowCells.length);strip.append(row);
+                for(let i=0;i<rowCells.length;i++){const cell=rowCells[i],normal=!cell.dataset.exclusion,shared=!normal&&['approval-deficit','approval-surplus'].includes(cell.dataset.rangeColor),run=[cell];while(i+1<rowCells.length&&(normal?!rowCells[i+1].dataset.exclusion:shared&&rowCells[i+1].dataset.exclusion&&rowCells[i+1].dataset.rangeColor===cell.dataset.rangeColor))run.push(rowCells[++i]);
+                    if(normal||run.length>1){const group=node('div',undefined,normal?'down-accounting-normal':'down-accounting-shared-edge down-excluded');group.style.setProperty('--cell-share',run.length);group.style.setProperty('--group-columns',run.length);if(normal){if(i+1<rowCells.length)group.classList.add('meets-rounded-section');}else{TripLog.accent(group,cell.dataset.rangeColor);group.dataset.exclusion=cell.dataset.exclusion;}run.forEach(item=>group.append(item));row.append(group);}else{cell.style.setProperty('--cell-share',1);row.append(cell);}
+                }
+            }
+
+        }
+        constructor(root,options) {TripLog.watchVisuals();this.root=root;this.options=options;this.trips=[];this.expanded=new Map();this.editor=null;this.settingsVisible=false;this.downTimeExpanded=true;this.downTimeOnly=false;this.adjustedOnly=false;this.showPending=true;for(const key of ['downTimeExpanded','downTimeOnly','adjustedOnly','showPending'])if(typeof options.viewSettings?.()?.[key]==='boolean')this[key]=options.viewSettings()[key];}
         downtimeSummary(summary, overview=false) {
             if(!summary?.hasDowntime)return undefined;
             const box=node('div',undefined,'trip-log-downtime'+(overview?' trip-log-downtime-overview':''));
@@ -43,7 +88,7 @@
                 if(kind==='approved'){cell.dataset.pendingIncluded=String(includePending);cell.title=includePending?globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000001'):label;}
                 cell.append(node('span',label+' '),node('strong',duration(value)));box.append(cell);
             }
-            return box;
+            TripLog.accent(box,'down');if(!includePending&&summary.pendingMilliseconds>0&&!(summary.approvedMilliseconds>0))TripLog.exclusion(box,'not-applied');return box;
         }
         static normalizePendingMode(value) {return ['pending-only','all','ignore-pending'].includes(value)?value:value===false?'ignore-pending':'all';}
         static nextPendingMode(value) {return {'pending-only':'all',all:'ignore-pending','ignore-pending':'pending-only'}[TripLog.normalizePendingMode(value)];}
@@ -121,7 +166,7 @@
             const content=node('div',undefined,'trip-log-down-content'),grid=node('div',undefined,'trip-log-down-grid');
             for(const [id,value,kind] of [['d7300001-7888-4711-9000-000000000002',totals.pendingMilliseconds,'pending'],['a6d2eeb0-2d5b-4a59-b059-4039e7492e39',totals.approvedMilliseconds,'approved'],['d7300001-7888-4711-9000-000000000003',totals.unapprovedMilliseconds,'unapproved']]){
 
-                const cell=this.downCategoryButton(kind,text(id),value,'trip-log-down-'+kind,true);grid.append(cell);
+                const cell=this.downCategoryButton(kind,text(id),value,'trip-log-down-'+kind,true);TripLog.accent(cell,kind==='unapproved'?'approval-deficit':'down');if(kind==='pending'&&!includePending)TripLog.exclusion(cell,'not-applied');else if(this.pendingMode==='pending-only'&&kind!=='pending'&&totals.approvedMilliseconds+totals.unapprovedMilliseconds>0)TripLog.exclusion(cell,'totals-only');grid.append(cell);
             }
             const logged=this.downCategoryButton('logged',text('edb1ce75-f212-4577-a1b3-e88dc28bcb78'),totals.loggedMilliseconds,'trip-log-down-logged');
             content.append(grid,logged);details.append(summary,content);
@@ -199,6 +244,7 @@
                 const label=globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000009');status.append(node('span',`${label} · ${dates.start} – ${dates.end}`));
                 const current=node('button',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000010'));current.type='button';current.dataset.returnCurrentRange='true';current.addEventListener('click',()=>this.options.onCurrent?.());status.append(current);fragment.append(status);
             }
+            TripLog.scheduleVisuals();
             this.root.classList.toggle('trip-log-empty',visibleTrips.length===0);
             if(visibleTrips.length) {
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
@@ -296,7 +342,7 @@
             };
             const build=(rows,remaining,parents=[])=>{
                 const result=document.createDocumentFragment();if(!remaining.length)return result;const [level,...rest]=remaining,groups=new Map();for(const trip of rows){const key=this.key(trip,level);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(trip);}
-                for(const [key,group] of groups){if(!group.some(trip=>this.tripPresentationIncludes(trip)))continue;const id=parents.map(parent=>parent.id).join('/')+level+key,scope={id,key,level,trips:group,label:this.label(key,level),parents},details=node('details',undefined,'trip-log-group'),summary=node('summary'),heading=node('div',undefined,'trip-log-group-heading');scopes.push(scope);details.dataset.scopeId=id;details.dataset.scopeLevel=level;details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));const active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
+                for(const [key,group] of groups){if(!group.some(trip=>this.tripPresentationIncludes(trip)))continue;const id=parents.map(parent=>parent.id).join('/')+level+key,scope={id,key,level,trips:group,label:this.label(key,level),parents},details=node('details',undefined,'trip-log-group'),summary=node('summary'),heading=node('div',undefined,'trip-log-group-heading');scopes.push(scope);details.dataset.scopeId=id;details.dataset.scopeLevel=level;details.open=this.expanded.get(id)??true;details.addEventListener('toggle',()=>{this.expanded.set(id,details.open);TripLog.scheduleVisuals();});const active=group.find(trip=>trip.running);details.classList.toggle('has-active-trip',Boolean(active));if(active){details.dataset.activeState=active.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
                     heading.append(node('strong',scope.label),node('span',`${aggregate(group,true,this.downtimeNow).tripCount} trips · ${percent(group,true)}`,'trip-log-actual'));if(this.incomplete)heading.lastElementChild.append(uncertainIcon());summary.append(heading);const ledger=this.downtimeSummary(aggregate(group,true,this.downtimeNow).downtime);if(ledger)summary.append(ledger);summary.addEventListener('click',()=>select(scope));const children=node('div',undefined,'trip-log-group-children');children.append(build(group,rest,[...parents,scope]));details.append(summary,children);result.append(details);
                 }return result;
             };
@@ -313,7 +359,7 @@
         }
 
         trip(trip) {
-            const standalone=breakOnly(trip);const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.classList.toggle('is-break-only',standalone);details.dataset.tripId=String(trip.id);details.classList.toggle('is-active-trip',Boolean(trip.running));if(trip.running){details.dataset.activeState=trip.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>this.expanded.set(id,details.open));
+            const standalone=breakOnly(trip);const details=node('details',undefined,'trip-log-trip'),id='trip'+trip.id;details.classList.toggle('is-break-only',standalone);details.dataset.tripId=String(trip.id);details.classList.toggle('is-active-trip',Boolean(trip.running));if(trip.running){details.dataset.activeState=trip.activeState||'normal';details.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}details.open=this.expanded.get(id)??false;details.addEventListener('toggle',()=>{this.expanded.set(id,details.open);TripLog.scheduleVisuals();});
             const summary=node('summary');const fmt=new Intl.DateTimeFormat(undefined,{timeZone:this.calendar.timezone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
             if(standalone) {
                 const badge=node('span',globalThis.WMOFLanguagePack.text('418a206a-0686-4503-a9fd-4913490a5999'),'trip-log-break-only-badge');
@@ -339,12 +385,24 @@
             if(official?.startTime)visible.push({event:'trip.official-start',timestamp:official.startTime,value:{}});
             visible.sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
             const activeEntry=trip.running?(visible.find(event=>event.event==='interval.started'&&!events.some(e=>e.event==='interval.ended'&&e.value?.intervalKey===event.value?.intervalKey))||visible.find(event=>event.event==='trip.started')):null;
-            for(const event of visible){const started=event.event==='interval.ended'?events.find(e=>e.event==='interval.started'&&e.value?.intervalKey===event.value?.intervalKey):event,ended=started?.event==='interval.started'?events.find(e=>e.event==='interval.ended'&&e.value?.intervalKey===started.value?.intervalKey):null;
-                const row=node('div',undefined,'trip-log-entry');if(started?.value?.type==='down'&&TripDowntimeSummary.approvalState(started,events)==='pending'&&!this.showPendingEffective)row.classList.add('is-not-applied');if(event.value?.intervalKey)row.dataset.intervalKey=event.value.intervalKey;
-                if(event.event==='trip.official-start')row.classList.add('is-official-start');
+            for(const event of visible){
+                if(event.event==='interval.ended')continue;
+                const row=node('div',undefined,'trip-log-entry'),isInterval=event.event==='interval.started',end=isInterval?events.find(e=>e.event==='interval.ended'&&e.value?.intervalKey===event.value?.intervalKey):null;
                 if(event===activeEntry){row.classList.add('is-active-entry');row.dataset.activeState=trip.activeState||'trip';row.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
-                const label=node('span',event.event==='trip.official-start'?TripLog.officialText('officialStart'):this.entryLabel(event,started,ended,events));if(started?.value?.type==='down')this.downEditorTarget(label,trip,started.value.intervalKey);row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),label);timeline.append(row);
+                if(isInterval){
+                    const type=event.value.type,state=type==='down'?TripDowntimeSummary.approvalState(event,events):null,recorded=Math.max(0,(end?Date.parse(iso(end.timestamp)):this.downtimeNow)-Date.parse(iso(event.timestamp))),approved=state==='approved'?(TripDowntimeSummary.approved(event,end,events)||0):0,net=approved-recorded;
+                    const key=type==='down'?(state==='pending'?'down':TripLog.netRange(net)):type==='lunch'?'lunch':'break';row.dataset.intervalKey=event.value.intervalKey;row.classList.add('trip-log-consolidated-interval');TripLog.accent(row,key);
+                    const times=node('span',undefined,'trip-log-interval-times');for(const point of [event,...(end?[end]:[])]){const value=node('span',fmt.format(new Date(iso(point.timestamp))));TripLog.dot(value,key);times.append(value);}if(!end)times.append(node('small',globalThis.WMOFLanguagePack.text('d7600001-0000-4000-8000-000000000008')));
+                    const label=node('span',undefined,'trip-log-interval-caption'),caption=node('span',undefined,'trip-log-interval-caption-lines'),icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.innerHTML='<path d="M9 2h6M12 2v3M18 6l2-2"/><circle cx="12" cy="14" r="8"/><path d="M12 9v5l3 2"/>';
+                    const compact=value=>duration(Math.abs(value)).replace(/^0:/,'');let title,amount=recorded,adjustment='';
+                    if(type==='down'){title=globalThis.WMOFLanguagePack.text(state==='pending'?'d7300001-7888-4711-9000-000000000002':state==='approved'?'a6d2eeb0-2d5b-4a59-b059-4039e7492e39':'d7300001-7888-4711-9000-000000000003');if(state==='approved')amount=approved;if(state!=='pending'&&net!==0)adjustment=compact(net)+' '+TripLog.visualText(net>0?'surplus':'deficit');}
+                    else{title=type==='lunch'?'Lunch':this.entryKind(event)==='short-break'?'Short Break':'Break';const planned=durationMilliseconds(event.value.length)+durationMilliseconds(event.value.startBuffer)+durationMilliseconds(event.value.endBuffer);if(end&&planned!==recorded)adjustment=compact(recorded-planned)+' '+TripLog.visualText(recorded>planned?'lost':'gained');}
+                    caption.append(icon,node('span',title+': '+compact(amount)));if(adjustment)caption.append(node('span',adjustment,'interval-net-adjustment'));label.append(caption);if(type==='down')this.downEditorTarget(caption,trip,event.value.intervalKey);
+                    if(type==='down'&&state==='pending'&&!this.showPendingEffective)TripLog.exclusion(label,'not-applied');else if(type==='down'&&state!=='pending'&&this.pendingMode==='pending-only')TripLog.exclusion(label,'totals-only');row.append(times,label);
+                }else{const time=node('span',fmt.format(new Date(iso(event.timestamp))));TripLog.dot(time,'trip');row.append(time,node('span',event.event==='trip.official-start'?TripLog.officialText('officialStart'):this.entryLabel(event,event,null,events)));if(event.event==='trip.official-start')row.classList.add('is-official-start');}
+                timeline.append(row);
             }
+            TripLog.scheduleVisuals();
             details.append(entries);return details;
         }
         downEditorTarget(label,trip,intervalKey){

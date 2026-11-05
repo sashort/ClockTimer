@@ -89,6 +89,7 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
             paletteRoot.style.setProperty("--timer-tolerance-color", toleranceColor);
             paletteRoot.style.setProperty("--timer-overtime-color", overtimeColor);
             paletteRoot.style.setProperty("--timer-latency-color", latencyColor);
+            requestAnimationFrame(()=>globalThis.TripLog?.refreshVisuals?.());
         }
     }
 

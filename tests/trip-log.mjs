@@ -120,7 +120,7 @@ assert.equal(root.querySelectorAll('.trip-log-trip .trip-log-menu').length,2);
 const localEvents=events.map((event,index)=>({...event,id:`local-${index}`})),offlineTrip={...trips[1],id:'offline-two',buffered:true,events:localEvents};
 const offlineChanges=[];view.options.request=async(id,change)=>{if(change)offlineChanges.push(change);return {events:localEvents,settings,revision:'offline'};};view.options.refresh=async()=>{};
 view.render({trips:[offlineTrip],offline:true,incomplete:true},calendar);
-assert([...root.querySelectorAll('.trip-log-entry')].some(row=>row.textContent.includes('Break Started')));assert([...root.querySelectorAll('.trip-log-entry')].some(row=>row.textContent.includes('Break Ended')));
+assert(root.querySelector('.trip-log-consolidated-interval').textContent.includes('Break:'));assert.equal(root.querySelectorAll('.trip-log-consolidated-interval .trip-log-interval-times>span').length,2,'start/end times remain aligned with their own nodes');
 assert.equal(root.querySelectorAll('.trip-log-menu-actions button').length,2);assert.equal(root.querySelector('.trip-log-menu-actions button').textContent,'Edit Trip');
 view.options.request=originalRequest;console.log('PASS obsolete inline editor and camera controls are absent');
 view.setSettingsVisible(false);

@@ -95,7 +95,7 @@
             const officialStart=this.previewTrip.officialCorrection?.startTime;if(officialStart)rows.push({id:'official-start',event:'trip.official-start',timestamp:officialStart,value:{}});
             rows.sort((a,b)=>order(a)-order(b)||(a.event==='trip.scheduled-start'?-1:b.event==='trip.scheduled-start'?1:0));
             for(const event of rows){
-                const card=el('section',undefined,'trip-editor-card');card.dataset.eventId=event.id;if(event._draft)card.classList.add('is-new-entry');
+                const card=el('section',undefined,'trip-editor-card');card.dataset.eventId=event.id;let range='trip';if(event.event==='interval.started'){if(event.value.type==='down'){const state=TripDowntimeSummary.approvalState(event,this.events),approved=state==='approved'?(TripDowntimeSummary.approved(event,this.end(event),this.events)||0):0;range=state==='pending'?'down':TripLog.netRange(approved-this.recordedDown(event));}else range=event.value.type==='lunch'?'lunch':'break';}TripLog.accent(card,range);TripLog.dot(card,range);if(event._draft)card.classList.add('is-new-entry');
                 if(event.event==='trip.scheduled-start'){
                     card.classList.add('trip-editor-boundary','trip-editor-scheduled');card.append(el('strong','Scheduled start'),this.button(this.format(event.timestamp),()=>this.pad({mode:'absolute',source:'Scheduled start',title:'Scheduled start',initialValue:event.timestamp,onConfirm:async value=>{const previous=this.settings.instants.scheduledStart;this.settings.instants.scheduledStart=value;if(this.initialDownStartsEarly()){this.settings.instants.scheduledStart=previous;const actual=this.events.find(e=>e.event==='trip.started');if(await this.choice('Move Scheduled Start to '+this.format(actual.timestamp)+' as well?',[['OK',true],['Cancel',false]])!==true)return false;this.settings.instants.scheduledStart=actual.timestamp;}this.changed();return true;}}),'trip-log-entry-time'));card.querySelector('button').setAttribute('aria-invalid',String(!Number.isFinite(time(event.timestamp))));timeline.append(card);continue;
                 }
@@ -121,7 +121,7 @@
                 }
                 timeline.append(card);
             }
-            const downSummary=this.downSummary();if(downSummary)this.body.append(downSummary);
+            const downSummary=this.downSummary();if(downSummary)this.body.append(downSummary);TripLog.scheduleVisuals();
         }
         drawControls(){
             this.controls.replaceChildren();
@@ -146,8 +146,10 @@
             cell('Recorded',recorded);
             if(state==='pending')cell('Pending',recorded,true);
             else{cell('Approved',approved,true);cell('Unapproved',Math.max(0,recorded-approved));cell('Net',approved-recorded,false,true);}
-            return strip;
+            this.styleDownAccounting(strip,approved-recorded);return strip;
         }
+        get pendingMode(){return TripLog.normalizePendingMode(this.options.pendingDownTimeMode?.()??this.pendingDownApplied);}
+        styleDownAccounting(strip,net){const states=this.intervals().filter(e=>e.value.type==='down').map(e=>TripDowntimeSummary.approvalState(e,this.events));TripLog.accountingStyle(strip,{mode:this.pendingMode,hasPending:states.includes('pending'),hasFinalized:states.some(state=>state!=='pending'),net});}
         get pendingDownApplied(){return this.options.pendingDownTimeApplied?.()??this.options.showPendingDownTime?.()??this.options.includePendingDownTime?.()??true;}
         downAmountCell(label,value,edit,signed=false){
             const node=edit?this.button(undefined,edit,'trip-editor-approval trip-editor-accounting-cell'):el('span',undefined,'trip-editor-accounting-cell');
@@ -161,7 +163,7 @@
             const values=[['Recorded',totals.loggedMilliseconds]];if(states.includes('pending'))values.push(['Pending',totals.pendingMilliseconds]);
             if(reviewed)values.push(['Approved',totals.approvedMilliseconds],['Unapproved',totals.unapprovedMilliseconds],['Net',totals.approvedMilliseconds-totals.loggedMilliseconds]);
             const section=el('section',undefined,'trip-editor-down-summary');section.append(el('h3','Down Time'));const strip=el('div',undefined,'trip-editor-down-accounting');strip.style.setProperty('--down-columns',String(values.length));
-            for(const [label,value] of values)strip.append(this.downAmountCell(label,incomplete?NaN:value,undefined,label==='Net'));section.append(strip);section.setAttribute('role','button');section.tabIndex=0;section.setAttribute('aria-label','Edit combined approved Down Time');section.addEventListener('click',()=>void this.editCombinedApproval().catch(error=>this.error(error)));section.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();section.click();}});return section;
+            for(const [label,value] of values)strip.append(this.downAmountCell(label,incomplete?NaN:value,undefined,label==='Net'));this.styleDownAccounting(strip,totals.approvedMilliseconds-totals.loggedMilliseconds);section.append(strip);section.setAttribute('role','button');section.tabIndex=0;section.setAttribute('aria-label','Edit combined approved Down Time');section.addEventListener('click',()=>void this.editCombinedApproval().catch(error=>this.error(error)));section.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();section.click();}});return section;
         }
         recordedDown(event,now=Date.now()){return Math.max(0,(time(this.end(event)?.timestamp)||now)-time(event.timestamp));}
         setDownApproval(event,state,value){

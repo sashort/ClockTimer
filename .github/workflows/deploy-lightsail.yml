@@ -267,6 +267,7 @@ jobs:
       - run: node tests/dedicated-trip-editor-browser.cjs
       - run: node tests/trip-log-down-editor-gestures-browser.cjs
       - run: node tests/trip-editor-down-colors-browser.cjs
+      - run: node tests/down-time-visuals-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
       - run: node tests/goal-bar-hit-area-browser.cjs
       - run: node tests/goal-bar-label-width-browser.cjs
