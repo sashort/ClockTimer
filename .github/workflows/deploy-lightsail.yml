@@ -245,6 +245,11 @@ jobs:
       - run: node tests/sync-menu-announcement-browser.cjs
       - run: node tests/dialog-safe-boundary-browser.cjs
       - run: node tests/drop-in-dialog-boundary-browser.cjs
+      - run: node tests/drop-in-auto-goals-browser.cjs
+      - run: node tests/drop-in-auto-goals.mjs
+      - run: node tests/drop-in-page.mjs
+      - run: node tests/drop-in-preferences.mjs
+      - run: node tests/observer-goal-pad.mjs
       - run: node tests/invalid-trip-recovery-browser.cjs
       - run: node tests/retained-page-operation-browser.cjs
       - run: node tests/trip-time-bank-browser.cjs

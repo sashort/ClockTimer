@@ -33,4 +33,7 @@ await restored.applyViewTarget(42,{sync:'off'},{defaults:true,user:true});assert
 reject=true;await assert.rejects(restored.applyViewTarget(42,{mode:'year'},{defaults:true,user:true}));assert.equal(restored.defaults.view.mode,'week');assert.equal(restored.get(42).custom.view.mode,'user');reject=false;
 await restored.load(8);assert.equal(restored.get(42).custom.view.tripGoal,'mirror','field mirror survives reload');
 await restored.updateDefault({audio:{master:85}});assert.equal(restored.get(42).custom.audio.master,85,'cleared override follows future default changes');
+await restored.applyViewTarget(42,{mode:'auto',aggregateScope:'day',aggregateGoals:{day:'120',week:'110'},autoGoalOverride:'day'},{defaults:false,user:true});
+const reloaded=new Store({persistence});await reloaded.load(8);assert.equal(reloaded.get(42).custom.view.autoGoalOverride,'day');assert.equal(reloaded.get(42).custom.view.aggregateGoals.day,'120');assert.equal(reloaded.get(42).custom.view.aggregateScope,'day');
+await reloaded.applyViewTarget(42,{autoGoalOverride:null},{defaults:false,user:true});assert.equal(reloaded.get(42).custom.view.autoGoalOverride,null);assert.equal(reloaded.get(42).custom.view.aggregateGoals.week,'110');
 await w.happyDOM.close();console.log('PASS per-observer settings, mirror/custom retention, defaults, selected/all field patches, reload, rollback and serial saves');

@@ -1,0 +1,26 @@
+const fixture=require('./order-filler-master-fixture.cjs'),assert=require('assert/strict'),fs=require('fs');
+(async()=>{const f=await fixture({input:'transcript'});try{
+ let permissions=4;const p=await f.browser.newPage({viewport:{width:390,height:700}}),errors=[];p.on('pageerror',e=>errors.push(e.message));
+ await p.clock.install({time:new Date('2026-10-07T12:00:00Z')});
+ await p.route('**/DropInView.js*',async r=>{const response=await r.fetch();await r.fulfill({response,body:await response.text()+`;globalThis.WMOFDropInView=class extends WMOFDropInView{constructor(options){super(options);globalThis.testDropInView=this;}};`});});
+ await p.route('**/api/**',r=>new URL(r.request().url()).pathname.endsWith('.js')?r.continue():r.fulfill({json:{csrfToken:'a'.repeat(64),user:{id:2,username:'test',permissions},userId:2,settings:{version:1},calendars:[],trips:[],users:[],events:[],streaming:[],instruments:[],voices:[]}}));
+ await p.goto(f.page.url().replace('/order-filler.php','/drop-in.php'));await p.waitForFunction(()=>globalThis.testDropInView&&!document.querySelector('#scopeToggle').disabled);
+ const source=fs.readFileSync(require('path').join(__dirname,'drop-in-view.mjs'),'utf8');
+ const literal=source.slice(source.indexOf('const snapshot = ')+17,source.indexOf('snapshot.viewData.model.totals ='));
+ await p.evaluate(literal=>{const snapshot=Function('return '+literal)();snapshot.viewData.percentageDisplay='bar';testDropInView.update(snapshot);},literal);
+ const auto=p.locator('#scopeToggleDropdown'),target=p.locator('#dropInTargetDialog');
+ const open=async()=>{await p.locator('#scopeToggle').click();await auto.locator('[data-mode=auto]').click();await p.waitForFunction(()=>document.querySelectorAll('[data-auto-target]').length===3);};
+ await open();assert.equal(await auto.locator('[data-auto-target]').count(),3);
+ await auto.locator('[data-auto-target=trip] .auto-goal-value').click();await p.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open);
+ for(const d of '125')await p.locator('#numberPadDialog [data-number="'+d+'"]').click();await p.locator('#numberPadConfirm').click();await p.waitForFunction(()=>document.querySelector('#scopeToggleDropdown').matches(':popover-open'));
+ await p.waitForFunction(()=>document.querySelector('[data-auto-target=trip] .auto-goal-value')?.textContent==='125%');assert.equal(await auto.locator('[data-auto-target=trip] .auto-goal-value').textContent(),'125%');await auto.locator('.auto-pane-cancel').click();assert.equal(await target.evaluate(d=>d.open),false,'Cancel discards staged edits');
+ await open();assert.equal(await auto.locator('[data-auto-target=trip] .auto-goal-value').textContent(),'100%');
+ await auto.locator('[data-auto-target=standard] input').click();await auto.locator('.auto-pane-ok').click();await p.waitForFunction(()=>document.querySelector('#dropInTargetDialog').open);await p.locator('#dropInTargetApply').click();await p.waitForFunction(()=>testDropInView.displayState.auto_goal_override==='standard');
+ assert.equal(await p.locator('.auto-goal-header-lock').isVisible(),true);await p.waitForTimeout(700);
+ const standard=p.locator('.goal-bar-node[data-node-id=trip] .goal-bar-info-hit');const box=await standard.boundingBox();assert(box);
+ await p.mouse.move(box.x+box.width/2,box.y+box.height/2);await p.mouse.down();await p.waitForTimeout(650);await p.mouse.up();await p.waitForFunction(()=>document.querySelector('#dropInTargetDialog').open);await p.locator('#dropInTargetApply').click();await p.waitForFunction(()=>testDropInView.displayState.auto_goal_override===null);
+ await p.locator('.goal-bar-node[data-node-id=trip] .goal-bar-marker').click();await p.waitForFunction(()=>document.querySelector('#autoGoalDialog').open);await p.locator('#autoGoalDialog [data-auto-goal-scope=trip]').click();await p.waitForFunction(()=>document.querySelector('#numberPadDialog')?.open);await p.locator('#numberPadCancel').click();
+ for(const theme of ['default','halloween'])for(const size of [{width:390,height:700},{width:320,height:568}]){await p.setViewportSize(size);await p.evaluate(theme=>document.documentElement.dataset.seasonalTheme=theme,theme);await open();const r=await auto.boundingBox();assert(r.x>=0&&r.y>=0&&r.x+r.width<=size.width+1&&r.y+r.height<=size.height+1,JSON.stringify({theme,size,r}));await auto.locator('.auto-pane-cancel').click();}
+ permissions=128;await p.reload();await p.waitForFunction(()=>Boolean(globalThis.testDropInView));assert(await p.locator('#scopeToggle').isDisabled());await p.evaluate(()=>{const view=testDropInView;view.applyPreference({mode:'auto'});const root=document.querySelector('.percent-summary');for(const type of ['goal-bar-select','goal-bar-edit'])root.dispatchEvent(new CustomEvent(type,{detail:{choices:['trip']}}));});assert.equal(await target.evaluate(d=>d.open),false);assert.equal(await p.locator('#numberPadDialog').count(),0,'read-only observer cannot open editing controls');
+ assert.deepEqual(errors,[]);console.log('PASS native Drop-In Auto staging/cancel, Standard hold lock clear, merged tap edit, header sync and compact themed popover bounds');
+}finally{await f.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

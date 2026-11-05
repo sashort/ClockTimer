@@ -14,6 +14,7 @@ w.document.body.innerHTML=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<scr
 w.eval(fs.readFileSync(new URL('../DropInPreferences.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../IdentityContext.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../ObserverSettingBadge.js',import.meta.url),'utf8'));
+w.eval(fs.readFileSync(new URL('../AutoGoalMenu.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 w.eval(fs.readFileSync(new URL('../TimerAppearance.js',import.meta.url),'utf8'));
 const events=[],errors=[],stored=new Map();let rejectStart=false,rejectSave=false,deliveryFailures=[];
@@ -161,7 +162,7 @@ change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();a
 change('liveStreamViewMode','user');$('dropInTargetApply').click();await tick();assert.equal($('scopeToggle').querySelector('.mode-button-label').textContent,'Mirror','Mirror without a selected user must not display Trip');assert($('scopeToggle').querySelector('[data-menu-icon=mirror]'),'Mirror shows its symbol');
 change('liveStreamViewMode','day');$('dropInTargetApply').click();await tick();assert.equal($('scopeToggle').querySelector('.mode-button-label').textContent,'Day - 110%');assert.equal($('scopeToggle').querySelector('[data-menu-icon=mirror]'),null);
 $('toggleSyncMenuButton').click();$('dropInSyncPopover').querySelector('[data-sync=on]').click();assert.equal($('dropInTargetUser').disabled,true);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.sync,'on');
-$('goalPercentValue').click();await tick();assert.equal(w.goalOpened.scope,'total');w.testGoalPad.onConfirm('total',125);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.totalGoal,'125');assert.equal($('goalPercentValue').textContent,'125%');
+$('goalPercentValue').click();await tick();assert.equal(w.goalOpened.scope,'total');w.testGoalPad.onConfirm('total',125);assert.equal($('dropInTargetUser').checked,false);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.aggregateGoals.day,'125');assert.equal(JSON.parse(stored.get('settings')).defaults.view.totalGoal,'','editing Day does not change other legacy aggregate goals');assert.equal($('goalPercentValue').textContent,'125%');
 rejectSave=true;change('liveStreamViewMode','year');$('dropInTargetApply').click();await tick();assert.equal($('liveStreamViewMode').value,'day','failed default save restores accepted mode');rejectSave=false;
 const timePopover=$('toggleRenderedTimeButtonDropdown');
 $('toggleRenderedTimeButton').click();assert.deepEqual([...timePopover.querySelectorAll('button')].map(button=>button.dataset.mode),['remaining','elapsed','calculated-end','user']);
@@ -174,6 +175,13 @@ assert.equal(JSON.parse(stored.get('settings')).users['3'].sources.view.mode,'de
 const defaultAudio=w.document.querySelector('[data-default-audio="master"]');defaultAudio.value='75';defaultAudio.dispatchEvent(new w.Event('change'));await tick();
 assert.equal(JSON.parse([...stored.values()][0]).defaults.audio.master,75);
 assert.equal(w.document.querySelector('[data-settings-default="audio.master"]').textContent,'Default: 75%');
+$('scopeToggle').click();$('scopeToggleDropdown').querySelector('[data-mode=auto]').click();await tick();
+const auto=$('scopeToggleDropdown');assert.equal(auto.querySelectorAll('[data-auto-target]').length,3,'Auto uses shared Aggregate/Trip/Standard rows');
+auto.querySelector('[data-auto-target=trip]').click();await tick();assert(auto.querySelector('[data-auto-target=trip] input').checked);
+auto.querySelector('.auto-pane-cancel').click();assert.equal($('dropInTargetDialog').open,false,'Auto Cancel never asks to save');
+$('scopeToggle').click();auto.querySelector('[data-mode=auto]').click();await tick();auto.querySelector('[data-auto-target=standard]').click();await tick();auto.querySelector('.auto-pane-ok').click();await tick();assert($('dropInTargetDialog').open);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.autoGoalOverride,'standard');
+const summary=w.document.querySelector('.percent-summary');summary.dispatchEvent(new w.CustomEvent('goal-bar-select',{detail:{choices:['standard']}}));assert($('dropInTargetDialog').open);$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.autoGoalOverride,null,'holding selected Standard clears lock');
+summary.dispatchEvent(new w.CustomEvent('goal-bar-select',{detail:{choices:['trip','total','standard']}}));assert($('autoGoalDialog').open);assert(!$('autoGoalDialog').querySelector('[data-auto-goal-scope=standard]').disabled);$('autoGoalDialog').querySelector('[data-auto-goal-scope=standard]').click();$('dropInTargetApply').click();await tick();assert.equal(JSON.parse(stored.get('settings')).defaults.view.autoGoalOverride,'standard');
 const destinations=[];w.location.assign=value=>destinations.push(String(value));$('dropInExitButton').click();await tick();assert(events.includes('close'));assert(events.includes('destroy'));assert.deepEqual(destinations,['https://clock.example/index.php']);
 await w.happyDOM.close();
 console.log('PASS standalone Drop-In session, serialized switching, message targeting, stale snapshots and failed authorization');

@@ -147,3 +147,11 @@ button#toggleSyncMenuButton:active:not(:disabled) {transform:translateY(calc(-50
 #renderedTimeLabel > [data-menu-icon="mirror"] {display:inline-flex;flex:none;}
 #renderedTimeLabel > .observer-source-badge {margin-inline-start:0;}
 #renderedTimeLabel > [data-menu-icon="mirror"]::before {margin-inline-end:0;}
+
+/* The observer owns a percentage-only pad; hidden voice/settings rows take no space. */
+.observer-goal-pad .number-pad-shell {grid-template-rows:auto minmax(90px,1fr) minmax(180px,2fr) auto auto;}
+.observer-goal-pad .number-pad-header {grid-row:2;}
+.observer-goal-pad .number-pad-grid {grid-row:3;}
+.observer-goal-pad #observerGoalChoices {grid-row:4;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
+.observer-goal-pad #observerGoalMirror {grid-row:5;}
+.observer-goal-pad [hidden] {display:none!important;}

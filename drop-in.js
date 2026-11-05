@@ -24,7 +24,7 @@
     function publisherValues(){const data=view.snapshot?.viewData,state=view.snapshot?.uiState;return {timeDisplay:data?.timeDisplay,mode:data?.mode==='total'?data.range:data?.mode,sync:typeof state?.sync_enabled==='boolean'?(state.sync_enabled?'on':'off'):undefined,tripGoal:goalNumber(state?.trip_goal_component),totalGoal:goalNumber(state?.total_goal_component)};}
     function goalNumber(component){if(typeof component?.value==='number'&&Number.isFinite(component.value)&&component.value>0)return String(Math.round(component.value*100));const match=String(component?.text||component||'').match(/^(\d+)\s*%$/);return match?.[1];}
     function valueLabel(field,value){if(value===undefined)return '-';if(field==='mode')return $('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent||'-';if(field==='timeDisplay')return $('liveStreamViewTime').querySelector('option[value="'+value+'"]')?.textContent||'-';if(field==='sync')return $('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent||'-';return WMOFLanguagePack.text('e3620451-3e1a-5638-b0e7-c608c808d5b7',{value0:value});}
-    function optionDetails(field,value){const publisher=publisherValues(),record=currentSettings(),defaults=preferences.defaults.view;return {source:globalThis.WMOFObserverSettingBadge?.match(field,value,record,defaults,publisher),label:value==='user'||value==='mirror'?WMOFLanguagePack.text('c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a',{value:valueLabel(field,publisher[field])}):undefined};}
+    function optionDetails(field,value){const publisher=publisherValues();let record=currentSettings(),defaults=preferences.defaults.view;if(field==='totalGoal'){const scope=autoScope(),goal=record.custom.view.aggregateGoals?.[scope];defaults={...defaults,totalGoal:defaults.aggregateGoals?.[scope]??defaults.totalGoal};if(goal!==undefined)record={...record,custom:{...record.custom,view:{...record.custom.view,totalGoal:goal}},sources:{...record.sources,view:{...record.sources.view,totalGoal:record.sources.view.aggregateGoals}}};}return {source:globalThis.WMOFObserverSettingBadge?.match(field,value,record,defaults,publisher),label:value==='user'||value==='mirror'?WMOFLanguagePack.text('c7e4b9b9-3df5-53d2-9314-f0b3eb6e8f9a',{value:valueLabel(field,publisher[field])}):undefined};}
     function refreshOptionDetails(){
         modeMenu?.refresh();timeMenu?.refresh();goalPad?.refresh();const menu=$('dropInSyncPopover');
         if(menu)for(const option of menu.querySelectorAll('[data-sync]')){const details=optionDetails('sync',option.dataset.sync);option.querySelector('.mode-option-label').textContent=details.label||WMOFLanguagePack.text(option.dataset.labelId);globalThis.WMOFObserverSettingBadge?.render(option,details.source);}
@@ -87,7 +87,7 @@
         if(!view.userId){
             $('renderedTimeLabel').textContent=$('liveStreamViewTime').querySelector('option[value="'+(values.timeDisplay==='user'?'remaining':values.timeDisplay)+'"]')?.textContent||$('liveStreamViewTime').querySelector('option[value="remaining"]').textContent;
             const scope=['trip','user','auto'].includes(values.mode)?'trip':'total';view.localScope=scope;
-            $('goalPercentValue').textContent=(values[scope==='total'?'totalGoal':'tripGoal']||100)+'%';
+            $('goalPercentValue').textContent=((scope==='total'?values.aggregateGoals?.[autoScope()]??values.totalGoal:values.tripGoal)||100)+'%';
             const icon=$('toggleSyncMenuButton').querySelector('.sync-goals-menu-icon');
             icon.dataset.syncState=values.sync==='on'?'enabled':'disabled';icon.querySelector('.sync-mirror-badge').hidden=values.sync!=='user';
             $('toggleSyncMenuButton').dataset.syncMode=values.sync;$('toggleSyncMenuButton').setAttribute('aria-pressed',String(values.sync==='on'));
@@ -99,6 +99,19 @@
         const choices=event.detail?.choices||['trip','total'];
         if(choices.length===1){if(choices[0]!=='standard')openGoal(choices[0]);}else openGoalSelector({choices});
     });
+    const aggregateScopes=['day','week','pay-period','month','year','custom'];
+    function viewConfig(){const record=currentSettings();return record.settingsSource==='default'?preferences.defaults.view:record.settingsSource==='user'?mirrorView():record.custom.view;}
+    function autoScope(){const mode=$('liveStreamViewMode').value;return aggregateScopes.includes(mode)?mode:viewConfig().aggregateScope||view.snapshot?.viewData?.range||'week';}
+    function autoIdentity(){return viewConfig().autoGoalOverride??null;}
+    function scopeLabel(scope){return view.scopeLabel?.(scope)||$('liveStreamViewMode').querySelector('option[value="'+scope+'"]')?.textContent||scope;}
+    document.querySelector('.percent-summary')?.addEventListener('goal-bar-select',event=>{
+        if(busy||!permission(64)||$('liveStreamViewMode').value!=='auto')return;
+        const choices=event.detail?.choices||[],selected=aggregateScopes.includes(autoIdentity())?'total':autoIdentity();
+        if(choices.includes(selected))changeSettings({view:{autoGoalOverride:null},mirror:false});
+        else if(choices.length===1)lockGoal(choices[0]);
+        else openGoalSelector({choices,intent:'select'});
+    });
+    function lockGoal(scope){changeSettings({view:{autoGoalOverride:scope==='total'?autoScope():scope},mirror:false});}
     function updateModeButton() {
         const mode=$('liveStreamViewMode'),button=$('scopeToggle'),mirrored=mode.value==='user';
         const label=document.createElement('span');label.className='mode-button-label';label.textContent=mirrored && !view.userId ? text('b11c3a59-8432-515c-b361-acabaf1e7a88') : mirrored
@@ -114,6 +127,9 @@
             label.textContent+=` - ${configuredGoal(effectiveMode==='trip'?'trip':'total')}%`;
         }
         button.replaceChildren(label);
+        const locked=effectiveMode==='auto'&&(mirrored?state?.auto_goal_override:autoIdentity());
+        const host=button.closest('.scope-control');let icon=host?.querySelector('.auto-goal-header-lock');
+        if(host&&!icon){icon=document.createElement('span');icon.className='auto-goal-header-lock';icon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4"/></svg>';icon.setAttribute('aria-label',text('d7400001-0000-4000-8000-000000000003'));host.append(icon);}if(icon)icon.hidden=!locked;
         if(mirrored){const icon=document.createElement('span');icon.dataset.menuIcon='mirror';icon.setAttribute('aria-hidden','true');button.prepend(icon);}
     }
     async function commitSettings(patch,targets) {
@@ -136,12 +152,12 @@
         if(patch.mirror!==undefined){next.mirror=patch.mirror;next.settingsSource=patch.mirror?'user':'custom';}
         if(patch.settingsSource){next.settingsSource=patch.settingsSource;next.mirror=patch.settingsSource==='user';}
         renderSettings(next);
-        if(patch.view && Object.keys(patch.view).some(key=>['mode','sync','tripGoal','totalGoal','percent','timeDisplay'].includes(key))){
+        if(patch.view && Object.keys(patch.view).some(key=>['mode','sync','tripGoal','totalGoal','percent','timeDisplay','aggregateScope','aggregateGoals','autoGoalOverride'].includes(key))){
             pendingViewChange={target:view.userId?Number(view.userId):null,view:patch.view};
-            const key=['mode','tripGoal','totalGoal','sync','percent','timeDisplay'].find(key=>key in patch.view),value=patch.view[key],mirrored=value==='user'||value==='mirror',choice=$('dropInTargetChoice');
+            const key=['mode','tripGoal','totalGoal','sync','autoGoalOverride','aggregateGoals','aggregateScope','percent','timeDisplay'].find(key=>key in patch.view),value=patch.view[key],mirrored=value==='user'||value==='mirror',choice=$('dropInTargetChoice');
             choice.classList.toggle('mirror-option',mirrored);
             if(mirrored){choice.dataset.menuIcon='mirror';choice.textContent=optionDetails(key,value).label;}
-            else {delete choice.dataset.menuIcon;choice.textContent=key==='mode'?$('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent:key==='sync'?$('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent:key==='timeDisplay'?$('liveStreamViewTime').querySelector('option[value="'+value+'"]')?.textContent:value+'%';}
+            else {delete choice.dataset.menuIcon;choice.textContent=key==='aggregateGoals'?scopeLabel(autoScope())+' - '+value[autoScope()]+'%':['autoGoalOverride','aggregateScope'].includes(key)?text('d7400001-0000-4000-8000-000000000002'):key==='mode'?$('liveStreamViewMode').querySelector('option[value="'+value+'"]')?.textContent:key==='sync'?$('liveStreamViewSync').querySelector('option[value="'+value+'"]')?.textContent:key==='timeDisplay'?$('liveStreamViewTime').querySelector('option[value="'+value+'"]')?.textContent:value+'%';}
             $('dropInTargetDefault').checked=current.settingsSource==='default';$('dropInTargetUser').disabled=!view.userId;$('dropInTargetUser').checked=Boolean(view.userId)&&current.settingsSource!=='default';
             $('dropInTargetName').textContent=view.userId?name(context.current):'';$('dropInTargetApply').disabled=false;$('dropInTargetDialog').showModal();return;
         }
@@ -185,20 +201,33 @@
     });
     $('dropInRestoreDefault').addEventListener('click',()=>changeSettings({defaultAudio:true}));
     $('liveStreamResetPercent').addEventListener('click',()=>changeSettings({mirror:true}));
+    let customAutoDialog;
+    function editAutoRange(dates,onExit){
+        if(!customAutoDialog){customAutoDialog=document.createElement('dialog');customAutoDialog.className='mode-date-dialog';customAutoDialog.innerHTML=modeMenu.dates.innerHTML;document.body.append(customAutoDialog);}
+        const dialog=customAutoDialog,inputs=[...dialog.querySelectorAll('input[type=date]')],current=dates||{start:$('liveStreamViewStart').value,end:$('liveStreamViewEnd').value};
+        inputs[0].value=current.start||'';inputs[1].value=current.end||'';inputs[1].min=inputs[0].value;inputs[0].onchange=()=>inputs[1].min=inputs[0].value;
+        let accepted;dialog.querySelector('form').onsubmit=event=>{event.preventDefault();if(inputs[1].value<inputs[0].value)return;try{CalendarRange.custom(inputs[0].value,inputs[1].value,new CalendarRange({databaseOnly:true}).getTimezone());}catch{return;}accepted={start:inputs[0].value,end:inputs[1].value};dialog.close();};
+        dialog.querySelector('button[type=button]').onclick=()=>dialog.close();dialog.addEventListener('close',()=>onExit(accepted),{once:true});dialog.showModal();inputs[0].focus();
+    }
     modeMenu=globalThis.WMOFModeMenu?.bind($('scopeToggle'),{getOptionDetails:value=>optionDetails('mode',value),getValue:()=>$('liveStreamViewMode').value,
         getDates:()=>({start:$('liveStreamViewStart').value,end:$('liveStreamViewEnd').value}),extraOptions:[['user','b11c3a59-8432-515c-b361-acabaf1e7a88']],
-        onSelect:(value,dates)=>{changeSettings({view:{mode:value,...dates},mirror:false});}});
+        autoGoals:{getState:()=>({scope:autoScope(),override:autoIdentity(),goals:Object.fromEntries(aggregateScopes.map(scope=>[scope,Number(viewConfig().aggregateGoals?.[scope])||Number(viewConfig().totalGoal)||100])),tripGoal:configuredGoal('trip')}),
+            getRows:pending=>[...aggregateScopes,'trip','standard'].map(scope=>{const details=scope==='trip'||scope===autoScope()?view.timer?.getGoalEditorSnapshot(scope==='trip'?'trip':'total',scope==='trip'?pending.tripGoal:pending.goals[scope]):null;return {id:scope,label:scope==='standard'?text('d7800001-0000-4000-8000-000000000002'):scopeLabel(scope),goal:scope==='trip'?pending.tripGoal:scope==='standard'?100:pending.goals[scope],adjusted:Boolean(details?.bounding?.adjusted),raw:details?.raw_inferred_percent,target:details?.inferred_percent};}),
+            customRange:editAutoRange,
+            edit:async(scope,value,onValue,onExit)=>{if(busy||!permission(64)){onExit();return;}try{await goalPad.open(scope==='trip'?'trip':'total',value,scopeLabel(scope),{onConfirm:(_scope,goal)=>onValue(goal),getGoalDetails:(_scope,goal)=>({...((scope==='trip'||scope===autoScope())?view.timer?.getGoalEditorSnapshot(_scope,goal):{actual_percent:goal,trip_active:false}),scope:_scope,scope_label:scopeLabel(scope)}),onClose:onExit});}catch(error){status(error.message);onExit();}},
+            commit:async pending=>{if(pending.scope==='custom')CalendarRange.custom(pending.customDates?.start||$('liveStreamViewStart').value,pending.customDates?.end||$('liveStreamViewEnd').value,new CalendarRange({databaseOnly:true}).getTimezone());if(busy||!permission(64))throw Error(text('0272ce50-1b2e-5e54-8447-91af78590f38'));changeSettings({view:{mode:'auto',aggregateScope:pending.scope,aggregateGoals:pending.goals,tripGoal:String(pending.tripGoal),autoGoalOverride:pending.override,percent:'',percentScope:null,...(pending.customDates||{})},mirror:false});}},
+        onSelect:(value,dates)=>{const identity=autoIdentity();changeSettings({view:{mode:value,...dates,...(aggregateScopes.includes(value)?{aggregateScope:value,...(aggregateScopes.includes(identity)&&identity!==value?{autoGoalOverride:null}:{})}:{})},mirror:false});}});
     $('liveStreamDialog').addEventListener('drop-in-mode-changed',()=>{updateModeButton();refreshOptionDetails();});
 
     goalPad=globalThis.WMOFObserverGoalPad?new WMOFObserverGoalPad({getChoices:scope=>{
         const field=scope==='total'?'totalGoal':'tripGoal',record=currentSettings();
-        return [...new Set([preferences.defaults.view[field],record.custom.view[field],publisherValues()[field]])].filter(value=>/^\d+$/.test(String(value))).map(value=>({value,source:optionDetails(field,value).source}));
+        return [...new Set([scope==='total'?(preferences.defaults.view.aggregateGoals?.[autoScope()]??preferences.defaults.view[field]):preferences.defaults.view[field],scope==='total'?(record.custom.view.aggregateGoals?.[autoScope()]??record.custom.view[field]):record.custom.view[field],publisherValues()[field]])].filter(value=>/^\d+$/.test(String(value))).map(value=>({value,source:optionDetails(field,value).source}));
     },getGoalDetails:(scope,value)=>({...view.timer?.getGoalEditorSnapshot(scope,value),scope,scope_label:goalLabel(scope)}),getDetails:(scope,value)=>optionDetails(scope==='total'?'totalGoal':'tripGoal',String(value)),onConfirm:(scope,value)=>{
-        const patch={percent:'',percentScope:null,[scope==='total'?'totalGoal':'tripGoal']:String(value)};
+        const patch={percent:'',percentScope:null};if(scope==='total')patch.aggregateGoals={...viewConfig().aggregateGoals,[autoScope()]:String(value)};else patch.tripGoal=String(value);
         if(scope==='trip'&&value!=='mirror')patch.sync='off';changeSettings({view:patch,mirror:false});
     }}):null;
     const configuredGoal=scope=>{
-        const custom=currentSettings(),config=custom.settingsSource==='default'?preferences.defaults.view:custom.custom.view,override=!custom.mirror&&config[scope==='total'?'totalGoal':'tripGoal'];
+        const custom=currentSettings(),config=custom.settingsSource==='default'?preferences.defaults.view:custom.custom.view,override=!custom.mirror&&(scope==='total'?(config.aggregateGoals?.[autoScope()]??config.totalGoal):config.tripGoal);
         if(override && override!=='mirror')return Number(override);
         const attributes=view.snapshot?.viewData?.model?.attributes;
         const raw=Array.isArray(attributes)?attributes.find(([name])=>name===(scope==='total'?'total-goal':'trip-goal'))?.[1]:undefined;
@@ -206,12 +235,12 @@
         if(Number.isFinite(configured)&&configured>0)return configured;
         return Number(goalNumber(view.snapshot?.uiState?.[scope==='total'?'total_goal_component':'trip_goal_component']))||100;
     };
-    const goalLabel=scope=>{const selected=$('liveStreamViewMode').value;const range=['user','auto','trip'].includes(selected)?view.snapshot?.viewData?.range||'week':selected;return $('liveStreamViewMode').querySelector('option[value="'+(scope==='trip'?'trip':range)+'"]')?.textContent||'-';};
+    const goalLabel=scope=>scopeLabel(scope==='trip'?'trip':autoScope());
     const openGoal=scope=>{if(!permission(64)||!goalPad)return;void goalPad.open(scope,configuredGoal(scope),goalLabel(scope)).catch(error=>status(error.message));};
-    function openGoalSelector({choices=['trip','total']}={}) {
-        const offered=new Set(choices),dialog=$('autoGoalDialog');
+    function openGoalSelector({choices=['trip','total'],intent='edit'}={}) {
+        const offered=new Set(choices),dialog=$('autoGoalDialog');dialog.dataset.intent=intent;
         for(const button of dialog.querySelectorAll('[data-auto-goal-scope]')){
-            const scope=button.dataset.autoGoalScope;button.hidden=!offered.has(scope);button.disabled=scope==='standard';
+            const scope=button.dataset.autoGoalScope;button.hidden=!offered.has(scope);button.disabled=scope==='standard'&&intent!=='select';
             globalThis.WMOFTimerSummaryView?.renderGoalDetails(button,scope==='standard'?null:{...view.timer?.getGoalEditorSnapshot(scope,configuredGoal(scope)),scope,scope_label:goalLabel(scope)});
             const percentValue=button.querySelector('strong');if(percentValue)percentValue.hidden=scope!=='standard';
             if(scope==='standard'){$('autoStandardTimeValue').textContent=view.displayState?.standard_time_component?.text||'---';}
@@ -225,7 +254,7 @@
         if(mode==='auto')openGoalSelector();
         else openGoal(['trip','user'].includes(mode)?'trip':'total');
     });
-    for(const button of $('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]'))button.addEventListener('click',()=>{if(button.hidden||button.disabled)return;$('autoGoalDialog').close();openGoal(button.dataset.autoGoalScope);});
+    for(const button of $('autoGoalDialog').querySelectorAll('[data-auto-goal-scope]'))button.addEventListener('click',()=>{if(button.hidden||button.disabled)return;const select=$('autoGoalDialog').dataset.intent==='select';$('autoGoalDialog').close();if(select)lockGoal(button.dataset.autoGoalScope);else openGoal(button.dataset.autoGoalScope);});
     $('autoGoalDialog').querySelector('[data-close-dialog]').addEventListener('click',()=>$('autoGoalDialog').close());
     timeMenu=globalThis.WMOFModeMenu.bind($('toggleRenderedTimeButton'),{getValue:()=>$('liveStreamViewTime').value,
         extraOptions:[['user','b11c3a59-8432-515c-b361-acabaf1e7a88']],
@@ -256,7 +285,7 @@
         $('toggleSyncMenuButton').dataset.syncMode=mirrored?'user':event.detail?.sync_enabled?'on':'off';
         icon.dataset.syncState=event.detail?.sync_enabled?'enabled':'disabled';
         icon.querySelector('.sync-mirror-badge').hidden=!mirrored;
-        renderSettingSources();
+        updateModeButton();renderSettingSources();
     });
     const remoteMicrophone=globalThis.WMOFObserverMicrophone ? new WMOFObserverMicrophone({button:$('dropInMicrophoneButton'),stream,onFailure:()=>status(WMOFDropInText('failed'))}):null;
     function controls() {
@@ -288,7 +317,7 @@
     }
     async function select(identity, watch = stream.viewing) {
         if (exiting || busy || !identity || Number(identity.userId) === Number(user?.id)) return;
-        pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();timeMenu?.close();remoteMicrophone?.reset(identity.userId);
+        pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();timeMenu?.close();modeMenu?.autoPane?.discard();modeMenu?.close();customAutoDialog?.close();remoteMicrophone?.reset(identity.userId);
         busy = true; const request = ++revision; settingsRevision++;goalPad?.cancel();$('autoGoalDialog').close(); controls();
         try {
             await stream.stopViewing();
@@ -350,7 +379,7 @@
     });
     stream.addEventListener('viewerChanged', event => {
         controls();
-        if (!stream.viewing) {pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();timeMenu?.close();remoteMicrophone?.reset();view.clear();$('liveStreamRemoteSpeech').textContent='—';}
+        if (!stream.viewing) {pendingViewChange=undefined;$('dropInTargetDialog').close();closeSync();timeMenu?.close();modeMenu?.autoPane?.discard();modeMenu?.close();customAutoDialog?.close();remoteMicrophone?.reset();view.clear();$('liveStreamRemoteSpeech').textContent='—';}
         if (!busy) status(stream.viewing ? String(event.detail.state || '') : text('bafe351c-ceef-5648-9536-fcf9da113818'));
     });
     stream.addEventListener('message', event => {

@@ -5350,7 +5350,7 @@
             this.#stopDisplayTimer();
         }
 
-        applyObserverSnapshot(snapshot, {totals, mode, goal, goalScope, goals, sync, timeDisplay, totalLabel, now = new Date()} = {}) {
+        applyObserverSnapshot(snapshot, {totals, mode, goal, goalScope, goals, autoGoalOverride, goalBar, sync, timeDisplay, totalLabel, now = new Date()} = {}) {
             if (!this.#observerOnly) throw new Error("Enable observer mode before applying a mirrored snapshot.");
             // Event clock strings belong to the publisher's civil day. Replay in
             // the observer's civil day while preserving the absolute instants.
@@ -5380,6 +5380,7 @@
             const observerModelSignature = JSON.stringify(events);
             this.restoreState({...snapshot,events,attributes,totals:aggregate,pending:[],completed:[],preparedTrip:null},
                 {observerModelSignature, now});
+            if(typeof goalBar==='boolean')this.toggleAttribute('goal-bar',goalBar);
             // Reapplying an unchanged filter rebuilds the interval schedule and
             // restarts fitted-range animations on every observer cadence tick.
             const productionFilter = snapshot.productionFilter || 'all';
@@ -5393,7 +5394,7 @@
                 }
             }
             const configuration = {goal_type:mode || this.percentMode,
-                auto_goal_override:['trip','total','standard'].includes(snapshot.autoGoalOverride)?snapshot.autoGoalOverride:null,auto_goal:sync ?? snapshot.sync, goal_bounding:typeof snapshot.goalBounding==="boolean"?snapshot.goalBounding:snapshot.syncOverride!==true, rendered_time_type:'time_remaining'};
+                auto_goal_override:autoGoalOverride===undefined?(['trip','total','standard'].includes(snapshot.autoGoalOverride)?snapshot.autoGoalOverride:null):autoGoalOverride,auto_goal:sync ?? snapshot.sync, goal_bounding:typeof snapshot.goalBounding==="boolean"?snapshot.goalBounding:snapshot.syncOverride!==true, rendered_time_type:'time_remaining'};
             for (const scope of ['trip','total']) if (Number.isFinite(Number(goals?.[scope])) && Number(goals[scope]) > 0) configuration[scope+'_goal'] = `${goals[scope]}%`;
             if (Number.isFinite(goal) && goal > 0) configuration[goalScope === 'total' ? 'total_goal' : 'trip_goal'] = `${goal}%`;
             if (totalLabel) this.setAttribute('total-label', totalLabel);

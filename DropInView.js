@@ -41,28 +41,21 @@
         }
         capturePreference() {
             return {mode:this.mode.value,start:this.start.value,end:this.end.value,percent:this.percent.value,
-                percentScope:this.percentScope || null,sync:this.sync.value,timeDisplay:this.timeDisplay.value};
+                percentScope:this.percentScope || null,sync:this.sync.value,timeDisplay:this.timeDisplay.value,tripGoal:this.goals?.trip,totalGoal:this.goals?.total,aggregateScope:this.aggregateScope,aggregateGoals:{...this.aggregateGoals},autoGoalOverride:this.autoGoalOverride??null};
         }
         applyPreference(preference) {
             this.mode.value=preference.mode || 'user';this.start.value=preference.start || '';this.end.value=preference.end || '';
-            this.percent.value=preference.percent || '';this.percentScope=preference.percentScope;this.goals={trip:preference.tripGoal,total:preference.totalGoal};
+            this.percent.value=preference.percent || '';this.percentScope=preference.percentScope;this.goals={trip:preference.tripGoal,total:preference.totalGoal};this.aggregateScope=preference.aggregateScope;this.aggregateGoals=preference.aggregateGoals||{};this.autoGoalOverride=preference.autoGoalOverride??null;
             this.sync.value=preference.sync || 'user';this.timeDisplay.value=preference.timeDisplay || 'user';this.select();
             this.root.dispatchEvent(new CustomEvent('drop-in-mode-changed'));
         }
         setUser(userId) {
             if (userId === this.userId) return;
-            if (this.userId) this.preferences.set(this.userId, {
-                mode:this.mode.value,start:this.start.value,end:this.end.value,percent:this.percent.value,
-                percentScope:this.percentScope,sync:this.sync.value,timeDisplay:this.timeDisplay.value
-            });
+            if (this.userId) this.preferences.set(this.userId,this.capturePreference());
             this.clear(); this.userId = userId; this.localScope = null;
-            const preference = this.preferences.get(userId);
-            this.mode.value = preference?.mode || 'user';
-            this.start.value = preference?.start || ''; this.end.value = preference?.end || '';
-            this.percent.value = preference?.percent || ''; this.percentScope = preference?.percentScope;
-            this.sync.value = preference?.sync || 'user'; this.timeDisplay.value = preference?.timeDisplay || 'user';
-            this.select();
+            this.applyPreference(this.preferences.get(userId)||{mode:'user'});
         }
+
         clear() {
             this.revision++; this.snapshot = null; this.cache = null;this.showComponents(null);
             this.status.textContent = '';
@@ -143,26 +136,31 @@
             const goal = this.percent.value && this.percent.checkValidity() ? Number(this.percent.value) : undefined;
             const goalScope = this.percentScope || (mode === 'user' || mode === 'auto'
                 ? this.snapshot.uiState?.effective_goal_type : mode === 'trip' ? 'trip' : 'total');
-            this.timer.toggleAttribute('goal-bar', this.snapshot?.viewData?.percentageDisplay === 'bar');
             const result = this.timer.applyObserverSnapshot(model, {
                 totals:aggregate, mode:mode === 'user' ? this.snapshot.viewData.mode : ['trip','auto'].includes(mode) ? mode : 'total',
-                goal, goalScope, goals:this.goals,
+                goalBar:this.snapshot?.viewData?.percentageDisplay==='bar',goal, goalScope, goals:{...this.goals,total:this.aggregateGoals?.[this.activeAggregateScope()]??this.goals?.total},
+                autoGoalOverride:mode==='user'?undefined:(['day','week','pay-period','month','year','custom'].includes(this.autoGoalOverride)?'total':this.autoGoalOverride),
                 sync:this.sync.value === 'user' ? undefined : this.sync.value === 'on',
                 timeDisplay:this.timeDisplay.value === 'user' ? undefined : this.timeDisplay.value,
-                totalLabel:selected, now:new Date(this.snapshot.timestamp)
+                totalLabel:this.scopeLabel(this.activeAggregateScope())||selected, now:new Date(this.snapshot.timestamp)
             });
             globalThis.WMOFTimerAppearance?.applyGraphical(this.timer,this.appearanceSettings);
             const state = result.uiState;
             this.showComponents(state);
             this.localScope = state.effective_goal_type;
             const label = this.localScope === 'total'
-                ? ['user','auto','trip'].includes(mode) ? this.snapshot.viewData.range : mode : this.localScope;
-            this.root.querySelector('#liveStreamViewerActiveGoal').textContent = [...this.mode.options]
-                .find(option => option.value === label)?.textContent || this.text(label || 'standard');
+                ? ['user','auto','trip'].includes(mode) ? this.activeAggregateScope() : mode : this.localScope;
+            this.root.querySelector('#liveStreamViewerActiveGoal').textContent = this.scopeLabel(label||'standard');
             this.root.querySelector('#liveStreamRemoteTime').textContent = state.time_component?.text || '—';
             this.root.querySelector('#liveStreamRemainingTime').textContent = result.remaining || '—';
             this.root.querySelector('#liveStreamRemoteGoal').textContent = [state.current_percent_component?.text,
                 state.goal_component?.text].filter(Boolean).join(' / ') || '—';
+        }
+        activeAggregateScope(){return ['day','week','pay-period','month','year','custom'].includes(this.mode.value)?this.mode.value:this.mode.value==='user'?this.snapshot?.viewData?.range||'week':this.aggregateScope||this.snapshot?.viewData?.range||'week';}
+        scopeLabel(scope){
+            let label=[...this.mode.options].find(option=>option.value===scope)?.textContent||scope;
+            if(scope==='week'&&this.snapshot?.viewData?.calendars){const calendar=new CalendarRange({databaseOnly:true});calendar.setDatabaseRecords(this.snapshot.viewData.calendars);const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:calendar.getTimezone(),year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(this.snapshot.timestamp)).map(p=>[p.type,p.value]));const week=calendar.weekNumber(`${parts.year}-${parts.month}-${parts.day}`);if(week)label+=' '+week;}
+            return label;
         }
         async render() {
             const selected = this.mode.selectedOptions[0]?.textContent || '';
@@ -184,7 +182,7 @@
                 ? this.text(state.sync_enabled ? 'on' : 'off') : '—';
             this.status.textContent = '';
             if (!view) { this.show(null); this.status.textContent = this.text('unavailable'); return; }
-            if (['user','auto'].includes(this.mode.value)) {
+            if (this.mode.value==='user' || (this.mode.value==='auto' && this.activeAggregateScope()===view.range && this.activeAggregateScope()!=='custom')) {
                 this.project(view.summary?.trip?.available ? view.summary.trip : null, view.summary?.total, this.mode.value);
                 if (this.mode.value === 'user' && !this.percent.value && !this.goals?.trip && !this.goals?.total && this.sync.value === 'user' && this.timeDisplay.value === 'user') {
                     this.showComponents(state);
@@ -202,9 +200,9 @@
             try {
                 const calendar = new CalendarRange({databaseOnly:true});
                 calendar.setDatabaseRecords(view.calendars);
-                window = this.mode.value === 'custom'
+                window = this.activeAggregateScope() === 'custom'
                     ? CalendarRange.custom(this.start.value, this.end.value, calendar.getTimezone())
-                    : await calendar.resolve({range:this.mode.value, at:snapshot.timestamp});
+                    : await calendar.resolve({range:this.activeAggregateScope(), at:snapshot.timestamp});
             } catch (error) {
                 if (revision !== this.revision) return;
                 this.show(null); this.status.textContent = this.text('invalidRange'); return;

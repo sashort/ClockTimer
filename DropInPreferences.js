@@ -1,7 +1,7 @@
 (() => {
     'use strict';
     const clone=value=>JSON.parse(JSON.stringify(value));
-    const initial=()=>({view:{mode:'trip',start:'',end:'',percent:'',percentScope:null,tripGoal:'',totalGoal:'',sync:'user',timeDisplay:'user'},audio:{muted:false,master:100,microphone:100,program:100}});
+    const initial=()=>({view:{mode:'trip',start:'',end:'',percent:'',percentScope:null,tripGoal:'',totalGoal:'',sync:'user',timeDisplay:'user',aggregateScope:null,aggregateGoals:{},autoGoalOverride:null},audio:{muted:false,master:100,microphone:100,program:100}});
     const normalize=value=>{
         const result=initial();
         const allowed={mode:['user','trip','auto','day','week','pay-period','month','year','custom'],sync:['user','on','off'],timeDisplay:['user','remaining','elapsed','calculated-end']};
@@ -10,6 +10,10 @@
         if(value.view?.percent!==''&&Number.isFinite(Number(value.view?.percent))&&Number(value.view.percent)>0)result.view.percent=String(value.view.percent);
         if(['trip','total'].includes(value.view?.percentScope))result.view.percentScope=value.view.percentScope;
         for(const key of ['tripGoal','totalGoal'])if(value.view?.[key]==='mirror'||(/^\d+$/.test(value.view?.[key])&&Number(value.view[key])>0))result.view[key]=String(value.view[key]);
+        const scopes=['day','week','pay-period','month','year','custom'];
+        if(scopes.includes(value.view?.aggregateScope))result.view.aggregateScope=value.view.aggregateScope;
+        if([...scopes,'trip','standard'].includes(value.view?.autoGoalOverride))result.view.autoGoalOverride=value.view.autoGoalOverride;
+        for(const scope of scopes){const goal=value.view?.aggregateGoals?.[scope];if(goal==='mirror'||(Number.isFinite(Number(goal))&&Number(goal)>0))result.view.aggregateGoals[scope]=goal==='mirror'?'mirror':String(goal);}
         result.audio.muted=value.audio?.muted===true;
         for(const key of ['master','microphone','program'])if(Number.isFinite(value.audio?.[key]))result.audio[key]=Math.max(0,Math.min(100,value.audio[key]));
         return result;
