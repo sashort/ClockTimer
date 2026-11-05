@@ -7477,6 +7477,31 @@
       "id": "aee419c2-4c28-54b6-822a-e65a8ca28c10",
       "text": "Break",
       "default": "Break"
+    },
+    "d7500001-0000-4000-8000-000000000001": {
+      "id": "d7500001-0000-4000-8000-000000000001",
+      "text": "Show Pending Down Time Only",
+      "default": "Show Pending Down Time Only"
+    },
+    "d7500001-0000-4000-8000-000000000002": {
+      "id": "d7500001-0000-4000-8000-000000000002",
+      "text": "Show All Down Time",
+      "default": "Show All Down Time"
+    },
+    "d7500001-0000-4000-8000-000000000003": {
+      "id": "d7500001-0000-4000-8000-000000000003",
+      "text": "Ignore Pending Down Time",
+      "default": "Ignore Pending Down Time"
+    },
+    "d7500001-0000-4000-8000-000000000004": {
+      "id": "d7500001-0000-4000-8000-000000000004",
+      "text": "{count} Trips with finalized down time hidden",
+      "default": "{count} Trips with finalized down time hidden"
+    },
+    "d7500001-0000-4000-8000-000000000005": {
+      "id": "d7500001-0000-4000-8000-000000000005",
+      "text": "Edit Down Time",
+      "default": "Edit Down Time"
     }
   }
 }

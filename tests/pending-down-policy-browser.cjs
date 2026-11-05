@@ -15,7 +15,7 @@ for(let i=0;i<4;i++)for(const include of [false,true]){
 }
 assert.deepEqual(await p.evaluate(()=>failures),[],'cached and PHP response renders never flash a partial or inflated percentage');
 await p.evaluate(()=>{observer.disconnect();pending=false;view.hasVisibleDownTime=false;view.downTimeOnly=true;view.render({trips:[responses.excluded]},calendar);view.setSettingsVisible(true);});
-assert.equal(await p.locator('.trip-log-trip .trip-log-actual').innerText(),'98.45%','override resolves from incoming data before any percentage is projected');
-const check=p.locator('[data-show-pending]');assert.equal(await check.isDisabled(),false);await check.check();assert.equal(await check.evaluate(e=>e.closest('label').classList.contains('is-overridden')),false);await check.uncheck();assert.equal(await check.evaluate(e=>e.closest('label').classList.contains('is-overridden')),true);assert.equal(await p.locator('.trip-log-trip .trip-log-actual').innerText(),'98.45%','editing the saved preference does not defeat the active override');
-console.log('PASS PHP/client policy parity, two pending intervals with late Lunch, stable trip/aggregate rendering, incoming override resolution, editable preferences and inactive ledger styling');
+assert.equal(await p.locator('.trip-log-trip .trip-log-actual').innerText(),'61.44%','Down-only never overrides pending accounting');
+const check=p.locator('[data-show-pending]');assert.equal(await check.isDisabled(),false);await check.click();assert.equal(await p.locator('.trip-log-trip .trip-log-actual').innerText(),'98.45%');assert.equal(await check.evaluate(e=>e.closest('label').classList.contains('is-overridden')),false);
+console.log('PASS PHP/client policy parity, two pending intervals with late Lunch, stable trip/aggregate rendering, independent Down-only filtering, editable preferences and inactive ledger styling');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

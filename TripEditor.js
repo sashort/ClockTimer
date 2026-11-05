@@ -161,9 +161,34 @@
             const values=[['Recorded',totals.loggedMilliseconds]];if(states.includes('pending'))values.push(['Pending',totals.pendingMilliseconds]);
             if(reviewed)values.push(['Approved',totals.approvedMilliseconds],['Unapproved',totals.unapprovedMilliseconds],['Net',totals.approvedMilliseconds-totals.loggedMilliseconds]);
             const section=el('section',undefined,'trip-editor-down-summary');section.append(el('h3','Down Time'));const strip=el('div',undefined,'trip-editor-down-accounting');strip.style.setProperty('--down-columns',String(values.length));
-            for(const [label,value] of values)strip.append(this.downAmountCell(label,incomplete?NaN:value,undefined,label==='Net'));section.append(strip);return section;
+            for(const [label,value] of values)strip.append(this.downAmountCell(label,incomplete?NaN:value,undefined,label==='Net'));section.append(strip);section.setAttribute('role','button');section.tabIndex=0;section.setAttribute('aria-label','Edit combined approved Down Time');section.addEventListener('click',()=>void this.editCombinedApproval().catch(error=>this.error(error)));section.addEventListener('keydown',event=>{if(['Enter',' '].includes(event.key)){event.preventDefault();section.click();}});return section;
         }
-        async editApproval(event,state){await this.pad({mode:'duration',source:'approved-down-time',title:'Approved Down Time',allowEmpty:true,initialValue:state==='approved'?(this.events.findLast(e=>e.event==='interval.approval-changed'&&e.value?.intervalKey===event.value.intervalKey)?.value.value??event.value.approvedTime):undefined,onConfirm:async value=>{const next=value===undefined?await this.choice('Down Time status',[['Unapproved','unapproved'],['Pending','pending']]):'approved';if(!next)return;event.value.approvedTime=value??null;event.value.approvalState=next;for(const approval of this.events.filter(e=>e.event==='interval.approval-changed'&&e.value?.intervalKey===event.value.intervalKey)){approval.value.state=next;approval.value.value=value??0;}this.changed();}});}
+        recordedDown(event,now=Date.now()){return Math.max(0,(time(this.end(event)?.timestamp)||now)-time(event.timestamp));}
+        setDownApproval(event,state,value){
+            event.value.approvedTime=state==='approved'?value:null;event.value.approvalState=state;
+            for(const approval of this.events.filter(e=>e.event==='interval.approval-changed'&&e.value?.intervalKey===event.value.intervalKey)){approval.value.state=state;approval.value.value=state==='approved'?value:0;}
+        }
+        async focusDown({intervalKey,approve=false}={}){
+            const downs=this.intervals().filter(event=>event.value.type==='down'),event=downs.find(event=>event.value.intervalKey===intervalKey);if(!downs.length||intervalKey&&!event)return;
+            const target=event||downs.length===1?Array.from(this.body.querySelectorAll('.trip-editor-card')).find(card=>card.dataset.eventId===String((event??downs[0]).id)):this.body.querySelector('.trip-editor-down-summary');
+            if(target){target.tabIndex=-1;target.scrollIntoView({block:'center'});target.focus({preventScroll:true});}
+            if(approve){if(event)await this.editApproval(event,TripDowntimeSummary.approvalState(event,this.events));else await this.editCombinedApproval();}
+        }
+        async editApproval(event,state){await this.pad({mode:'duration',source:'approved-down-time',title:'Approved Down Time',allowEmpty:true,initialValue:state==='pending'?this.recordedDown(event):state==='approved'?(this.events.findLast(e=>e.event==='interval.approval-changed'&&e.value?.intervalKey===event.value.intervalKey)?.value.value??event.value.approvedTime):undefined,onConfirm:async value=>{const next=value===undefined?await this.choice('Down Time status',[['Unapproved','unapproved'],['Pending','pending']]):'approved';if(!next)return;this.setDownApproval(event,next,value);this.changed();}});}
+        async editCombinedApproval(){
+            const downs=this.intervals().filter(event=>event.value.type==='down');if(!downs.length)return;
+            if(downs.some(event=>Object.values(this.invalid(event)).some(Boolean))){this.showValidation();return;}
+            const totals=TripDowntimeSummary.breakdown([{...this.trip,events:this.events}]),allPending=downs.every(event=>TripDowntimeSummary.approvalState(event,this.events)==='pending');
+            await this.pad({mode:'duration',source:'approved-down-time',title:'Total Approved Down Time',allowEmpty:true,initialValue:allPending?totals.pendingMilliseconds:totals.approvedMilliseconds,onConfirm:async value=>{
+                if(value===undefined){const state=await this.choice('Down Time status',[['Unapproved','unapproved'],['Pending','pending']]);if(!state)return;for(const event of downs)this.setDownApproval(event,state);}
+                else{
+                    if(!Number.isSafeInteger(value)||value<0)return false;
+                    let remaining=value;const now=Date.now();
+                    for(let index=0;index<downs.length;index++){const event=downs[index],approved=index===downs.length-1?remaining:Math.min(remaining,this.recordedDown(event,now));this.setDownApproval(event,approved>0?'approved':'unapproved',approved);remaining-=approved;}
+                }
+                this.changed();return true;
+            }});
+        }
         async editOfficial(){
             const official=this.previewTrip.officialCorrection,initial=official?.percent??Number((TripAggregates.performance(this.previewTrip)*100).toFixed(1));
             await this.pad({mode:'percent',source:'official-percent',title:'Official Percentage',anchorDigit:.1,confirmUnchanged:true,initialValue:initial,

@@ -69,6 +69,7 @@
         tripLogRange: "wmof.clock.tripLogRange",
         tripLogIncludeCurrent: "wmof.clock.tripLogIncludeCurrent",
         includePendingDownTime: "wmof.clock.includePendingDownTime",
+        pendingDownTimeMode: "wmof.clock.pendingDownTimeMode",
         tripLogView: "wmof.clock.tripLogView",
         customTripLogDates: "wmof.clock.customTripLogDates",
         tripLogAnchorDate: "wmof.clock.tripLogAnchorDate",
@@ -2850,7 +2851,7 @@
     let resolvedTripLogCalendar;
     let selectedTripLogIncludeCurrentPreference;
     let selectedPendingDownTimePreference;
-    let pendingDownTimeOverride=false;
+
     const toggleSyncMenuButton = $("#toggleSyncMenuButton");
     const syncGoalsMenuIcon = toggleSyncMenuButton?.querySelector(".sync-goals-menu-icon");
     const tripLogButton = $("#tripLogButton");
@@ -6325,27 +6326,17 @@
         try{return JSON.parse(safeStorageGet(STORAGE.tripLogView))||{};}catch{return {};}
     }
     function saveTripLogViewSettings(value) {safeStorageSet(STORAGE.tripLogView,JSON.stringify(value));}
-    function getIncludePendingDownTime() {return selectedPendingDownTimePreference??(safeStorageGet(STORAGE.includePendingDownTime)!=='false');}
-    async function setIncludePendingDownTime(value) {
+    function getPendingDownTimeMode() {return TripLog.normalizePendingMode(selectedPendingDownTimePreference??safeStorageGet(STORAGE.pendingDownTimeMode)??(safeStorageGet(STORAGE.includePendingDownTime)!=='false'));}
+    function getIncludePendingDownTime() {return getPendingDownTimeMode()!=='ignore-pending';}
+    async function setPendingDownTimeMode(value) {
         tripRangeRevision++;
-        selectedPendingDownTimePreference=Boolean(value);
-        safeStorageSet(STORAGE.includePendingDownTime,String(Boolean(value)));
-        clockTimer.includePendingDownTime=pendingDownTimeOverride||Boolean(value);
+        selectedPendingDownTimePreference=TripLog.normalizePendingMode(value);
+        safeStorageSet(STORAGE.pendingDownTimeMode,selectedPendingDownTimePreference);
+        safeStorageSet(STORAGE.includePendingDownTime,String(getIncludePendingDownTime()));
+        clockTimer.includePendingDownTime=getIncludePendingDownTime();
         tripLogView?.rerender();renderSyncGoalsState();updateSummaryValues();
         try{await refreshGoalTotalsForRange(getTripLogRange());if(getTripListState()==='open')await dispatchTripListRequest('pending-down');}
         catch(error){console.warn('Pending Down totals refresh failed',error);}
-    }
-
-    function setPendingDownTimeOverride(value) {
-        if(pendingDownTimeOverride===Boolean(value))return;
-        pendingDownTimeOverride=Boolean(value);
-        const effective=pendingDownTimeOverride||getIncludePendingDownTime();
-        if(clockTimer.includePendingDownTime!==effective){
-            clockTimer.includePendingDownTime=effective;
-            tripRangeRevision++;
-            queueMicrotask(()=>{tripLogView?.rerender();void refreshGoalTotalsForRange(getTripLogRange()).catch(console.warn);});
-        }
-        renderSyncGoalsState();updateSummaryValues();
     }
 
     function offlineTripLogData(calendar) {
@@ -6376,7 +6367,7 @@
             range:getTripLogRange, filter:()=>clockTimer.productionFilter || "all",
             includeCurrent:getTripLogIncludeCurrent,
             includePendingDownTime:()=>clockTimer.includePendingDownTime,
-            showPendingDownTime:getIncludePendingDownTime,onShowPendingDownTime:setIncludePendingDownTime,onPendingOverride:setPendingDownTimeOverride,
+            pendingDownTimeMode:getPendingDownTimeMode,onPendingDownTimeMode:setPendingDownTimeMode,showPendingDownTime:getIncludePendingDownTime,
             viewSettings:getTripLogViewSettings,onViewSettings:saveTripLogViewSettings,
             onIncludeCurrent:setTripLogIncludeCurrent,
             onSettingsOpened:()=>{tripLogSettingsVisible=true;tripLogSettingsButton?.setAttribute('aria-expanded','true');},
@@ -7480,7 +7471,7 @@
         const pendingButton=$("#includePendingDownTimeButton");
         const editTripButton=$("#editActiveTripButton");
         if(editTripButton)editTripButton.hidden=!tripIsLive();
-        if(pendingButton){pendingButton.hidden=!clockTimer.hasDownTime;pendingButton.setAttribute("aria-checked",String(getIncludePendingDownTime()));pendingButton.disabled=false;pendingButton.classList.toggle("is-overridden",getIncludePendingDownTime()!==clockTimer.includePendingDownTime);}
+        if(pendingButton){pendingButton.hidden=!clockTimer.hasDownTime;const mode=getPendingDownTimeMode();pendingButton.setAttribute("aria-checked",mode==='all'?'mixed':String(mode==='pending-only'));const caption=pendingButton.querySelector('span');if(caption){caption.removeAttribute('data-language-id');caption.textContent=TripLog.pendingModeLabel(mode);}pendingButton.disabled=false;pendingButton.classList.remove("is-overridden");}
         const overrideButton = $("#goalBoundingButton");
         if (overrideButton) {
             overrideButton.setAttribute("aria-checked", String(clockTimer.goalBounding));
@@ -12528,7 +12519,7 @@
         globalThis.WMOFActions.openGoalEditor(choices?.length === 1 ? {scope:choices[0]} : {choices});
     });
 
-    $('#includePendingDownTimeButton')?.addEventListener('click',()=>void setIncludePendingDownTime(!getIncludePendingDownTime()));
+    $('#includePendingDownTimeButton')?.addEventListener('click',()=>void setPendingDownTimeMode(TripLog.nextPendingMode(getPendingDownTimeMode())));
     $('#editActiveTripButton')?.addEventListener('click',async()=>{
         try{const view=ensureTripLogView(),trip=view?.options.liveTrip?.();if(!trip)return;view.calendar=await resolveTripLogCalendar();await view.openTripEditor(trip);}
         catch(error){ensureTripLogView()?.error(error);}
@@ -22887,7 +22878,7 @@
                 if(Number(signedInProfile?.id)!==owner)return;
                 await account.load(owner,session.csrfToken);
                 if(Number(signedInProfile?.id)!==owner)return;
-                selectedTripLogAnchorDate=undefined;resolvedTripLogCalendar=undefined;selectedPendingDownTimePreference=undefined;selectedTripLogIncludeCurrentPreference=undefined;pendingDownTimeOverride=false;
+                selectedTripLogAnchorDate=undefined;resolvedTripLogCalendar=undefined;selectedPendingDownTimePreference=undefined;selectedTripLogIncludeCurrentPreference=undefined;
                 const graphical=getGraphicalSettings(),preferences=getTripPreferences();
                 applyGraphicalSettings(graphical);fillGraphicalForm(graphical);fillTripPreferencesForm(preferences);
                 clockTimer.configure({auto_goal:preferences.syncGoals, goal_bounding:preferences.goalBounding,include_pending_down_time:getIncludePendingDownTime()});

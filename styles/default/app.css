@@ -8516,3 +8516,12 @@ html[data-seasonal-theme=halloween] .trip-log-down-button.is-not-applied {backgr
 .trip-editor-accounting-cell.is-not-applied {background:#25313a;color:#b6c0c8;border-color:#68737c;}
 html[data-seasonal-theme=halloween] .trip-editor-accounting-cell.is-not-applied,
 html[data-seasonal-theme=halloween] .trip-log-entry.is-not-applied {background:#29251f;color:#c1b6a6;}
+
+/* Down labels navigate without changing the timeline's time-column layout. */
+.trip-log-down-edit {display:inline-flex;align-items:center;gap:inherit;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:inherit;cursor:pointer;touch-action:manipulation;}
+.trip-log-down-edit:hover,.trip-log-down-edit:focus-visible {text-decoration:underline;text-underline-offset:3px;}
+.trip-log-down-edit:focus-visible {outline:2px solid currentColor;outline-offset:3px;border-radius:3px;}
+.trip-log-hidden-finalized {padding:12px;text-align:center;border-bottom:1px solid #7e8f9a;color:inherit;}
+
+[data-down-ledger-edit],.trip-editor-down-summary[role="button"] {cursor:pointer;touch-action:manipulation;}
+[data-down-ledger-edit]:focus-visible,.trip-editor-down-summary[role="button"]:focus-visible {outline:2px solid currentColor;outline-offset:2px;}

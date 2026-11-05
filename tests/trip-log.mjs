@@ -161,7 +161,7 @@ assert(root.querySelector('[data-trip-id="303"] .trip-log-downtime-approved').te
 view.showDownSummary();assert.equal(view.downDialog.querySelector('.trip-log-down-effective>span').textContent,'Applied');
 showPending=false;view.rerender();assert(root.querySelector('.trip-log-group>summary .trip-log-downtime-approved').textContent.includes('Approved 0:05:00'));
 assert(root.querySelector('[data-trip-id="303"] .trip-log-downtime-approved').textContent.includes('Approved 0:00:00'));
-view.downTimeOnly=true;view.rerender();assert(root.querySelector('.trip-log-group>summary .trip-log-downtime-approved').textContent.includes('Applied 0:13:00'),'forced Pending uses the effective setting');
+view.downTimeOnly=true;view.rerender();assert(root.querySelector('.trip-log-group>summary .trip-log-downtime-approved').textContent.includes('Approved 0:05:00'),'Down-only does not override the pending calculation preference');
 view.downTimeOnly=false;view.options.showPendingDownTime=undefined;
 console.log('PASS Applied/Approved ledger labels and values follow the effective Pending setting at trip and aggregate levels');
 const standalone={id:910,startTime:'2026-09-18T13:00:00Z',endTime:'2026-09-18T13:15:00Z',breakOnly:true,nonProduction:false,

@@ -175,6 +175,7 @@ jobs:
           node tests/trip-time-bank.mjs
           node tests/official-percent.mjs
           node tests/trip-editor-friendly.mjs
+          node tests/trip-editor-combined-down-approval.mjs
           node tests/numberpad-anchors.mjs
           node tests/numberpad-clipboard.mjs
           node tests/observer-goal-pad.mjs
@@ -264,6 +265,7 @@ jobs:
       - run: node tests/official-percent-browser.cjs
       - run: node tests/live-trip-editor-browser.cjs
       - run: node tests/dedicated-trip-editor-browser.cjs
+      - run: node tests/trip-log-down-editor-gestures-browser.cjs
       - run: node tests/trip-editor-down-colors-browser.cjs
       - run: node tests/goal-bar-units-browser.cjs
       - run: node tests/goal-bar-hit-area-browser.cjs

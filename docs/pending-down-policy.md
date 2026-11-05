@@ -29,3 +29,44 @@ Tests cover PHP/client parity, repeated policy changes, immediate cached versus
 later server renders, incoming filter overrides, editable preferences and
 pending-only ledger styling. Production trip records are not modified by these
 read-side changes.
+
+
+## Tri-state preference and category shortcuts
+
+`wmof.clock.pendingDownTimeMode` stores `pending-only`, `all`, or
+`ignore-pending`. Legacy true maps to `all`; legacy false maps to
+`ignore-pending`. The shared hamburger and Trip Log control cycles checked
+(Pending only), mixed (All), unchecked (Ignore). Down-only filtering never
+changes this preference or its appearance. ClockTimer and API calculations
+continue to use the derived Boolean: pending is included except in Ignore.
+
+Pending-only hides finalized-only Down trips from individual trip rows, with a
+count notice, while retaining mixed and no-Down trips. The separate Down-only
+filter still hides no-Down trip rows, without changing scope counts, aggregate
+headers, totals, the goal bar, or Clock Timer. Aggregate rows with no visible
+trips are also hidden; visible parent totals still include those trips. Hidden finalized trips continue to contribute
+to aggregate counts and totals.
+
+Ledger category shortcuts search the 24 combinations of the three-state mode,
+Include Active Trip, Adjusted Trips Only, and Down-only filtering. They retain
+all contributors, minimize extra trips, and use ordinary user-visible settings.
+The Down dialog closes before changed checks are highlighted in Settings;
+Settings then closes automatically. No changes means no Settings interruption.
+
+## Down interval navigation
+
+Individual Down interval labels in Trip Log open the exact interval in the
+editor. Double-tapping also opens its approved-duration numberpad. Pending
+intervals prefill recorded Pending duration; approved intervals prefill their
+approved value.
+
+The trip's Down ledger opens the editor at its summary for multiple intervals,
+or its only Down interval. Double-tapping also opens total approval entry.
+The editor's summary opens total approval entry when clicked anywhere.
+An all-Pending group prefills total Pending; other groups prefill total Approved.
+
+Combined approval fills Down intervals in chronological order up to each
+recorded duration, then moves to the next. Any surplus is retained on the final
+interval so the entered total is preserved. Intervals receiving no allocation
+become Unapproved. Clearing the group prompts for Pending or Unapproved and
+applies that state to every interval. All changes remain drafts until Save.
