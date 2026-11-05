@@ -54,7 +54,7 @@ module.exports = async function runMaster(method) {
   for (const mode of ['day','week','pay-period','month','year','trip','auto']) {
    await check('goal mode '+mode, async () => {
     if (method==='voice') await say((mode==='pay-period'?'money':mode)+' mode');
-    else {await tap('#scopeToggle');await tap(`#scopeToggleDropdown [data-mode="${mode}"]`);if(mode==='auto'){await page.locator('[data-auto-target=aggregate] input').dblclick();}}
+    else {await tap('#scopeToggle');await tap(`#scopeToggleDropdown [data-mode="${mode}"]`);if(mode==='auto'){await page.locator('.auto-pane-ok').click();}}
     const expected = ['trip','auto'].includes(mode)?mode:'total';
     await page.waitForFunction(expected=>document.querySelector('#clockTimer').percentMode===expected,expected);
    });
