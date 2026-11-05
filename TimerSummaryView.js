@@ -339,11 +339,11 @@ p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'
     const pinned=selected==='standard'?!unit.current&&near(unit.percent,100)&&unit.detailed:unit.members.includes(selected);parts.overridePin.style.display=pinned?'':'none';parts.group.dataset.autoLocked=String(pinned);if(!unit.current&&(unit.id!=='standard'||unit.detailed)&&this.state?.goal_type==='auto')parts.group.setAttribute('aria-pressed',String(pinned));else parts.group.removeAttribute('aria-pressed');
     if(pinned){const index=unit.members.indexOf(selected),offset=unit.merged&&selected!=='standard'?(index===0?-r*.85:r*.85):0;parts.overridePin.setAttribute('transform',`translate(${offset-(unit.id==='standard'?r*.4:r*.7)},${-r*.75})`);}
     const raised=members.some(n=>n.bounding?.adjusted),lower=!raised&&unit.percent<100&&unit.members.includes(this.state.effective_goal_type),direction=raised?'raised':lower?'lower':'';
-    parts.group.dataset.goalBounding=direction;
+    parts.group.dataset.goalBounding=direction;const boundingX=r*.6+(unit.merged?Math.sqrt(r*r-(r*.45)**2)+2:0);
     const markerInfo=raised?'Raised to 100%':lower?'Below-floor target':'';
     if(markerInfo){parts.title.textContent+=' · '+markerInfo;parts.group.setAttribute('aria-label',parts.title.textContent);}
     this.tween(parts.boundIndicator,unit.id+'-bounding-opacity',{opacity:getComputedStyle(parts.boundIndicator).opacity},{opacity:direction?'1':'0'});
-    this.tween(parts.boundIndicator,unit.id+'-bounding-direction',{transform:getComputedStyle(parts.boundIndicator).transform==='none'?'translate(0px, 0px)':getComputedStyle(parts.boundIndicator).transform},{transform:`translate(${r*.6}px, ${raised?-r*.6:r*.6}px) rotate(${raised?0:180}deg)`});
+    this.tween(parts.boundIndicator,unit.id+'-bounding-direction',{transform:getComputedStyle(parts.boundIndicator).transform==='none'?'translate(0px, 0px)':getComputedStyle(parts.boundIndicator).transform},{transform:`translate(${boundingX}px, ${raised?-r*.6:r*.6}px) rotate(${raised?0:180}deg)`});
 
     const stroke=unit.id==='total'?'#55d5fb':unit.id==='trip'?'#ffc220':'#fff';parts.marker.style.fill=unit.id==='standard'||unit.current?'none':'#001e60';parts.marker.style.stroke=unit.merged?`url(#${this.prefix}-${unit.id})`:stroke;parts.group.style.setProperty('--goal-node-color',stroke);
     if(unit.id==='standard'||unit.current){parts.marker.setAttribute('d',unit.current?`M -3 -${halfLine} V ${halfLine} M 3 -${halfLine} V ${halfLine}`:`M 0 -${halfLine} V ${halfLine}`);parts.marker.setAttribute('stroke-dasharray',unit.id==='standard'?'3 3':'none');parts.glyph.textContent=parts.glyph2.textContent='';}
