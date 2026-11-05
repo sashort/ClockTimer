@@ -7542,6 +7542,31 @@
       "id": "d7600001-0000-4000-8000-000000000008",
       "text": "In progress",
       "default": "In progress"
+    },
+    "d7700001-0000-4000-8000-000000000001": {
+      "id": "d7700001-0000-4000-8000-000000000001",
+      "text": "{count} finalized trips hidden",
+      "default": "{count} finalized trips hidden"
+    },
+    "d7700001-0000-4000-8000-000000000002": {
+      "id": "d7700001-0000-4000-8000-000000000002",
+      "text": "Double-tap to confirm",
+      "default": "Double-tap to confirm"
+    },
+    "d7700001-0000-4000-8000-000000000003": {
+      "id": "d7700001-0000-4000-8000-000000000003",
+      "text": "{count} finalized trip hidden",
+      "default": "{count} finalized trip hidden"
+    },
+    "d7800001-0000-4000-8000-000000000001": {
+      "id": "d7800001-0000-4000-8000-000000000001",
+      "text": "Aggregate goal",
+      "default": "Aggregate goal"
+    },
+    "d7800001-0000-4000-8000-000000000002": {
+      "id": "d7800001-0000-4000-8000-000000000002",
+      "text": "Standard",
+      "default": "Standard"
     }
   }
 }

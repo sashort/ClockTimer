@@ -41,10 +41,11 @@ changes this preference or its appearance. ClockTimer and API calculations
 continue to use the derived Boolean: pending is included except in Ignore.
 
 Pending-only hides finalized-only Down trips from individual trip rows, with a
-count notice, while retaining mixed and no-Down trips. The separate Down-only
+per-day count notice, while retaining mixed and no-Down trips. There is no
+range-wide hidden-count notice. The separate Down-only
 filter still hides no-Down trip rows, without changing scope counts, aggregate
-headers, totals, the goal bar, or Clock Timer. Aggregate rows with no visible
-trips are also hidden; visible parent totals still include those trips. Hidden finalized trips continue to contribute
+headers, totals, the goal bar, or Clock Timer. Every aggregate and day header remains visible. Hidden-only aggregate headers
+have no disclosure triangle and remain selectable for viewing their scope. Hidden finalized trips continue to contribute
 to aggregate counts and totals.
 
 Ledger category shortcuts search the 24 combinations of the three-state mode,

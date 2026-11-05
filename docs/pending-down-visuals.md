@@ -2,8 +2,9 @@
 
 Trip Log and the dedicated editor use the effective Clock Timer range colors,
 including user choices and theme overrides. Log/editor accents are mixed with
-30% luminance-matched grey. Neutral greys stay unchanged, and Clock Timer's
-colors retain their original saturation. Existing theme backgrounds remain;
+30% luminance-matched grey. Near-neutral accents then receive a contrast correction when necessary to
+reach 3:1 against their painted surfaces and the surrounding gray panel. Circle
+fills match the surrounding surface. Clock Timer's colors remain unchanged. Existing theme backgrounds remain;
 readout and badge text uses contrasting white/black rather than muted ink.
 
 - Pending and Approved use Down; Unapproved uses Deficit.

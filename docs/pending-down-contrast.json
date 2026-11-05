@@ -1,0 +1,184 @@
+{
+  "minimumContrast": 3,
+  "method": "sRGB relative luminance; near-neutral RGB spread <=32; contrast correction is presentation-only",
+  "clockTimerColorsChanged": false,
+  "themes": {
+    "default": {
+      "minimumBefore": 1.417,
+      "minimumAfter": 4.34,
+      "samples": [
+        {
+          "range": "down",
+          "background": [
+            59,
+            70,
+            80
+          ],
+          "adjusted": "#bbbec1",
+          "before": 1.687,
+          "after": 5.165
+        },
+        {
+          "range": "down",
+          "background": [
+            48,
+            57,
+            66
+          ],
+          "adjusted": "#bbbec1",
+          "before": 2.043,
+          "after": 6.254
+        },
+        {
+          "range": "down",
+          "background": [
+            57,
+            65,
+            73
+          ],
+          "adjusted": "#bbbec1",
+          "before": 1.813,
+          "after": 5.551
+        },
+        {
+          "range": "down",
+          "background": [
+            48,
+            59,
+            70
+          ],
+          "adjusted": "#bbbec1",
+          "before": 1.996,
+          "after": 6.111
+        },
+        {
+          "range": "down",
+          "background": [
+            70,
+            81,
+            92
+          ],
+          "adjusted": "#bbbec1",
+          "before": 1.417,
+          "after": 4.34
+        },
+        {
+          "range": "down",
+          "background": [
+            48,
+            59,
+            69
+          ],
+          "adjusted": "#bbbec1",
+          "before": 2.0,
+          "after": 6.123
+        },
+        {
+          "range": "down",
+          "background": [
+            48,
+            57,
+            66
+          ],
+          "adjusted": "#bcbcbc",
+          "before": 2.957,
+          "after": 6.148
+        },
+        {
+          "range": "down",
+          "background": [
+            57,
+            65,
+            73
+          ],
+          "adjusted": "#bcbcbc",
+          "before": 2.624,
+          "after": 5.457
+        }
+      ]
+    },
+    "halloween": {
+      "minimumBefore": 2.327,
+      "minimumAfter": 5.093,
+      "samples": [
+        {
+          "range": "down",
+          "background": [
+            59,
+            70,
+            80
+          ],
+          "adjusted": "#bebcba",
+          "before": 2.327,
+          "after": 5.093
+        },
+        {
+          "range": "down",
+          "background": [
+            48,
+            42,
+            36
+          ],
+          "adjusted": "#bebcba",
+          "before": 3.418,
+          "after": 7.483
+        },
+        {
+          "range": "down",
+          "background": [
+            56,
+            51,
+            45
+          ],
+          "adjusted": "#bebcba",
+          "before": 3.017,
+          "after": 6.604
+        },
+        {
+          "range": "down",
+          "background": [
+            50,
+            37,
+            26
+          ],
+          "adjusted": "#bebcba",
+          "before": 3.585,
+          "after": 7.847
+        },
+        {
+          "range": "down",
+          "background": [
+            55,
+            38,
+            23
+          ],
+          "adjusted": "#bebcba",
+          "before": 3.49,
+          "after": 7.639
+        },
+        {
+          "range": "down",
+          "background": [
+            33,
+            23,
+            14
+          ],
+          "adjusted": "#bebcba",
+          "before": 4.245,
+          "after": 9.293
+        },
+        {
+          "range": "down",
+          "background": [
+            41,
+            37,
+            31
+          ],
+          "adjusted": "#bebcba",
+          "before": 3.675,
+          "after": 8.045
+        }
+      ]
+    }
+  }
+}

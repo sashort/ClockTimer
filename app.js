@@ -5544,8 +5544,9 @@
     function dropdownScopeLabel(scope){const label=aggregateScopeLabel(scope);return scope==='week'?label.replace(/ (\d+)$/,' [$1]'):label;}
     function totalScopeLabel() {return aggregateScopeLabel(getTripLogRange());}
     async function autoMenuRows(pending){
-        return Promise.all([...aggregateScopes,'standard'].map(async scope=>{
-            if(scope==='standard')return{id:scope,label:WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000009'),goal:100,target:100};
+        return Promise.all([...aggregateScopes,'trip','standard'].map(async scope=>{
+            if(scope==='trip'){const details=clockTimer.getGoalEditorSnapshot('trip',pending.tripGoal??100);return{id:scope,label:announcementText('messages.scope.trip'),goal:pending.tripGoal??100,raw:details.raw_inferred_percent,target:details.inferred_percent??pending.tripGoal??100,adjusted:Boolean(details.bounding?.adjusted)};}
+            if(scope==='standard')return{id:scope,label:WMOFLanguagePack.text('d7800001-0000-4000-8000-000000000002'),goal:100,target:100};
             let calendar,details;
             try{
                 calendar=scope==='custom'?CalendarRange.custom(pending.customDates?.start||tripLogStartDate.value,pending.customDates?.end||tripLogEndDate.value,calendarRanges.getTimezone()):await calendarRanges.resolve({range:scope,date:getTripLogAnchorDate()});scopeCalendars.set(scope,calendar);
@@ -5568,7 +5569,7 @@
         body.replaceChildren(controls);dialog.addEventListener('close',()=>{body.replaceChildren(...original);let valid;try{CalendarRange.custom(selected.start,selected.end,calendarRanges.getTimezone());valid=selected;}catch{}onExit(valid);},{once:true});dialog.showModal();controls.querySelector('input[type=date]').focus();
     }
     async function editMenuAggregateGoal(scope,value,onValue,onExit){
-        const opened=await openNumberPad({mode:'percent',source:'aggregate-menu-goal',title:aggregateScopeLabel(scope)+' Goal',initialValue:value,confirmUnchanged:true,cancelTarget:'none',confirmTarget:'none',inputMode:'touch',onConfirm:value=>{if(!(value>0&&value<=150))return false;onValue(value);return true;}});
+        const opened=await openNumberPad({mode:'percent',source:scope==='trip'?'trip-goal':'aggregate-menu-goal',title:aggregateScopeLabel(scope)+' Goal',initialValue:value,confirmUnchanged:true,cancelTarget:'none',confirmTarget:'none',inputMode:'touch',onConfirm:value=>{if(!(value>0&&value<=150))return false;onValue(value);return true;}});
         if(!opened){onExit();return;}numberPadDialog.addEventListener('close',()=>setTimeout(onExit,300),{once:true});
     }
 
@@ -12313,9 +12314,10 @@
 
     mainModeMenu=globalThis.WMOFModeMenu?.bind(scopeToggle, {
         getOptionDetails:value=>aggregateScopes.includes(value)?{label:dropdownScopeLabel(value)}:null,
-        autoGoals:{getState:()=>{aggregateMenuCache.clear();return {scope:getTripLogRange(),override:autoGoalIdentity(),goals:aggregateGoals()};},getRows:autoMenuRows,
+        autoGoals:{getState:()=>{aggregateMenuCache.clear();return {scope:getTripLogRange(),override:autoGoalIdentity(),goals:aggregateGoals(),tripGoal:clockTimer.getGoalEditorSnapshot('trip').actual_percent??100};},getRows:autoMenuRows,
             customRange:editAutoCustomRange,edit:editMenuAggregateGoal,commit:async pending=>{
                 if(pending.scope==='custom'&&pending.customDates){CalendarRange.custom(pending.customDates.start,pending.customDates.end,calendarRanges.getTimezone());tripLogStartDate.value=pending.customDates.start;tripLogEndDate.value=pending.customDates.end;await safeStorageSet(STORAGE.customTripLogDates,JSON.stringify(pending.customDates));}
+                if(pending.tripGoal!==undefined&&pending.tripGoal!==clockTimer.getGoalEditorSnapshot('trip').actual_percent){if(await setGoalPercentValue('trip',pending.tripGoal)===false)throw Error('Trip goal could not be changed.');}
                 await saveAggregateGoals(pending.goals);
                 setTripLogRange(pending.scope,{announce:false});const savedOverride=setAutoGoalIdentity(pending.override);applyScope('auto');await savedOverride;await tripRangeRefreshCompletion;announceScopeSelection('auto');
             }},
