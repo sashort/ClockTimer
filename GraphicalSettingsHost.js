@@ -7,6 +7,9 @@
             const raw = await WMOFPersistence.getItem(key);
             try {return raw ? JSON.parse(raw) : undefined;} catch {return undefined;}
         },
+        preview(settings) {
+            document.dispatchEvent(new CustomEvent('graphical-settings-preview',{detail:WMOFTimerAppearance.normalizeGraphicalSettings(settings)}));
+        },
         async save(settings) {
             const normalized = WMOFTimerAppearance.normalizeGraphicalSettings(settings);
             if (globalThis.WMOFActions?.updateGraphicalSettings) {

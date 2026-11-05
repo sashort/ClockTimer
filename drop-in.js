@@ -4,6 +4,7 @@
     const debugSpeech = new URL(location.href).searchParams.get('debug') === 'speech';
     const stream = new WMOFLiveTripStream({baseUrl: new URL('./', document.baseURI)});
     const view = new WMOFDropInView({root:$('liveStreamDialog'),stream,text:WMOFDropInText});
+    document.addEventListener('graphical-settings-preview', event => view.setGraphicalSettings(event.detail));
     document.addEventListener('graphical-settings-saved', event => {
         view.setGraphicalSettings(event.detail);
     });

@@ -60,8 +60,10 @@ const server=http.createServer((req,res)=>{
    await child.locator('[data-graphical-tab=timer]').click();
    const originalColor=await child.locator('[name=tripColor]').inputValue();
    await child.locator('[name=tripColor]').evaluate(e=>{e.value='#123456';e.dispatchEvent(new Event('input',{bubbles:true}));});
+   assert.equal(await page.locator('#clockTimer').evaluate(e=>e.style.getPropertyValue('--clock-timer-trip-color')),'#123456','draft immediately updates the live timer');
    await child.locator('[data-close-dialog]').last().click();
    await page.waitForFunction(()=>!document.querySelector('#clockTimerSettingsFrameDialog').open);
+   assert.equal(await page.locator('#clockTimer').evaluate(e=>e.style.getPropertyValue('--clock-timer-trip-color')),originalColor,'Cancel restores the live appearance');
    assert.equal(await page.locator('#clockTimerSettingsFrame').getAttribute('src'),'about:blank');
    assert.equal(new URL(page.url()).pathname,'/order-filler.php','closing cannot navigate the base page');
    assert.equal(await page.locator('#app').count(),1,'only one Order Filler remains');

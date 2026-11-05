@@ -305,6 +305,7 @@ jobs:
       - run: node tests/application-state-inventory-browser.cjs
       - run: node tests/graphical-settings-browser.cjs
       - run: node tests/clock-settings-previews-browser.cjs
+      - run: node tests/observer-fitted-stability-browser.cjs
       - run: node tests/ring-hidden-range-browser.cjs
       - run: node tests/radial-fitted-tick-browser.cjs
       - run: php -l graphical-settings.php

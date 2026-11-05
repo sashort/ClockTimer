@@ -20,9 +20,9 @@
         };
         if (kind === 1) {
             interval('lunch','lunch',25,20,52,2,2);
-            interval('break','break',58,8,70,1,1);
             interval('down','down',75,0,85);
         } else {
+            interval('break','break',32,8,40);
             interval('surplus','down',20,0,28,0,0,12);
             interval('deficit','down',45,0,55,0,0,5);
         }
@@ -37,12 +37,13 @@
             if (!model) return;
             const now = new Date();
             model.attributes = [...timer.attributes].filter(a => customElements.get('clock-timer').observedAttributes.includes(a.name)).map(a => [a.name,a.value]);
-            timer.applyObserverSnapshot(model,{now,mode:'trip',goal:kind === 1 ? 125 : 130,goalScope:'trip',timeDisplay:'remaining',sync:false});
+            timer.applyObserverSnapshot(model,{now,mode:'trip',goal:kind === 1 ? 125 : 100,goalScope:'trip',timeDisplay:'remaining',sync:false});
             timer.dataset.sampleElapsed = String(120*MINUTE-5000 + now.getTime()-selectedAt);
         };
         return {
             apply(value) { WMOFTimerAppearance.applyGraphical(timer,value); if(model) render(); },
-            start() { this.stop();selectedAt=Date.now();model=snapshot(kind,selectedAt);render();loop=setInterval(render,1000); },
+            reset() { this.stop();selectedAt=Date.now();model=snapshot(kind,selectedAt);render(); },
+            start() { this.reset();loop=setInterval(render,1000); },
             stop() { clearInterval(loop);loop=undefined; },
             get model() { return model; }
         };

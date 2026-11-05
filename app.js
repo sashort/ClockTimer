@@ -12682,6 +12682,8 @@
         });
     });
 
+    document.addEventListener('graphical-settings-preview', event => applyGraphicalSettings(event.detail));
+
     $("#graphicalSettingsForm").addEventListener("input", event => {
         const form = event.currentTarget;
 

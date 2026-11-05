@@ -19,7 +19,7 @@
     const error = document.createElement('p');
     error.id = 'graphicalSettingsError'; error.setAttribute('role','alert');
     form.querySelector('.dialog-header').after(error);
-    let host, saving = false;
+    let host, saving = false, savedSettings;
     try {
         if (embedded && parent.document.querySelector('#clockTimerSettingsFrame')?.contentWindow === window) {
             host = parent.WMOFGraphicalSettingsHost;
@@ -36,7 +36,8 @@
             const raw = await WMOFPersistence.getItem(key);
             try {stored = raw ? JSON.parse(raw) : undefined;} catch {stored = undefined;}
         }
-        controller.fillGraphicalForm(WMOFTimerAppearance.normalizeGraphicalSettings(stored));
+        savedSettings = WMOFTimerAppearance.normalizeGraphicalSettings(stored);
+        controller.fillGraphicalForm(savedSettings);
         dialog.dispatchEvent(new Event('opening'));
         dialog.showModal();
         dialog.dispatchEvent(new Event('opened'));
@@ -56,7 +57,10 @@
         const rect = dialog.getBoundingClientRect();
         if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) close();
     });
+    const restoreLiveAppearance = () => {if (host && savedSettings) host.preview(savedSettings);};
+    window.addEventListener('pagehide',restoreLiveAppearance);
     dialog.addEventListener('close', () => {
+        restoreLiveAppearance();
         if (embedded) parent.postMessage({type:'clocktimer-settings-closed',session:new URLSearchParams(location.search).get('session')}, location.origin);
     });
     form.addEventListener('input', event => {
@@ -67,8 +71,9 @@
         else if (event.target.name === 'timeFormat') controller.syncMilitaryToggleForTimeFormat(form);
         controller.applyGraphicalSettings(controller.settingsFromForm(form), preview);
         controller.refreshActiveGraphicalHelpState();
+        host?.preview(controller.settingsFromForm(form));
     });
-    document.querySelector('#resetGraphicalSettings').addEventListener('click', () => controller.fillGraphicalForm(WMOFTimerAppearance.graphicalDefaults));
+    document.querySelector('#resetGraphicalSettings').addEventListener('click', () => {controller.fillGraphicalForm(WMOFTimerAppearance.graphicalDefaults);host?.preview(controller.settingsFromForm(form));});
     form.addEventListener('submit', async event => {
         event.preventDefault();
         if (saving) return;
@@ -79,6 +84,7 @@
             const settings = WMOFTimerAppearance.normalizeGraphicalSettings(controller.settingsFromForm(form));
             if (host) await host.save(settings);
             else await WMOFPersistence.setItem(key, JSON.stringify({...settings, showTolerance:settings.showTolerance ?? null}));
+            savedSettings = settings;
             saving = false; close();
         } catch (failure) {error.textContent = failure.message || 'Settings could not be saved.';}
         finally {saving = false;buttons.forEach(button => button.disabled = false);}

@@ -35,8 +35,10 @@ const server=http.createServer((req,res)=>{
    await page.clock.runFor(300);
    const before=await metrics(id);assert(before.elapsed>=7195000&&before.elapsed<7196000);
    assert(before.height>200&&before.width>200,'preview fills the constrained pane');
-   const expected=index===1?['earlystart','break','lunch','buffer','latency','down','tolerance']:['down','approval-surplus','approval-deficit','tolerance','overtime'];
+   const expected=index===1?['earlystart','lunch','buffer','latency','down','tolerance']:['break','down','approval-surplus','approval-deficit','overtime'];
    for(const range of expected)assert(before.types.includes(range),type+' preview '+index+' missing '+range);
+   assert(!before.types.includes(index===1?'break':'lunch'),'Lunch and Break appear in separate samples');
+   if(index===2)assert(!before.types.includes('buffer')&&!before.types.includes('tolerance'),'second sample avoids duplicate buffers and B-Game');
    if(type==='radial-overflow')assert.deepEqual(before.active,[1]);else assert.deepEqual(before.base,[0],'fitted uses one base ring');
    await page.clock.runFor(4400);if(type==='radial-overflow')assert.deepEqual((await metrics(id)).active,before.active,'no premature ring switch');else assert.deepEqual((await metrics(id)).base,[0]);
    await page.clock.runFor(800);const after=await metrics(id);
@@ -45,10 +47,39 @@ const server=http.createServer((req,res)=>{
    await page.locator('[data-preview-legend="'+index+'"]').click();
    assert(await page.locator('#graphicalPreviewLegend').isVisible());
    assert.equal(await page.locator('#graphicalPreviewLegend').evaluate(e=>getComputedStyle(e).opacity),'1');
+   assert(await page.locator('#graphicalPreviewLegend').evaluate(e=>{const r=e.getBoundingClientRect();return r.left>=8&&r.top>=8&&r.right<=innerWidth-8&&r.bottom<=innerHeight-8;}),'the full legend fits inside its viewport');
    assert.match(await page.locator('#graphicalPreviewLegend').innerText(),index===1?/Early Start/:/Approval Surplus/);
+   const colorKey = index === 1 ? 'lunchColor' : 'approvalSurplusColor';
+   const edit = page.locator('[data-color-key="'+colorKey+'"] [type=color]');
+   await edit.evaluate(e=>{e.value='#ce7139';e.dispatchEvent(new Event('input',{bubbles:true}));});
+   assert.equal(await page.locator('[name="'+colorKey+'"]').inputValue(),'#ce7139','legend edits the shared setting');
+   const cssKey='--clock-timer-'+colorKey.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+   for(const timer of ['#clockPreview','#clockPreview2'])assert.equal(await page.locator(timer).evaluate((e,k)=>e.style.getPropertyValue(k),cssKey),'#ce7139','both previews update immediately');
+   if(index===1){
+    const toggle=page.locator('[data-state-key=showTolerance]');
+    for(const expected of ['false','mixed','true']){
+     await toggle.click();
+     assert.equal(await toggle.getAttribute('aria-checked'),expected,'legend preserves three-state B-Game behavior');
+    }
+   }
    await page.locator('[data-close-preview-legend]').click();
   }
  }
+ // Preview selectors and the main selector share one draft and reset both epochs.
+ await page.getByRole('tab',{name:'Preview 1',exact:true}).click();
+ await page.clock.runFor(2200);
+ await page.locator('[data-preview-timer-type="1"]').selectOption('radial-overflow');
+ assert.equal(await page.locator('[name=timerType]').inputValue(),'radial-overflow');
+ assert.equal(await page.locator('[data-preview-timer-type="2"]').inputValue(),'radial-overflow');
+ for(const id of ['clockPreview','clockPreview2'])assert.equal((await metrics(id)).elapsed,7195000,'both sample epochs reset on a type change');
+ await page.clock.runFor(4800);assert.deepEqual((await metrics('clockPreview')).active,[1]);
+ await page.clock.runFor(450);assert.deepEqual((await metrics('clockPreview')).active,[2],'five-second ring transition is rearmed by preview dropdown');
+ await page.getByRole('tab',{name:'Preview 2',exact:true}).click();
+ await page.locator('[data-preview-timer-type="2"]').selectOption('radial-fitted');
+ assert.equal(await page.locator('[data-preview-timer-type="1"]').inputValue(),'radial-fitted');
+ assert.equal(await page.locator('[name=timerType]').inputValue(),'radial-fitted');
+ assert.equal(await page.locator('#clockPreview').getAttribute('timer-type'),'radial-fitted');
+ assert.equal(await page.locator('#clockPreview2').getAttribute('timer-type'),'radial-fitted');
  await page.getByRole('tab',{name:'Style',exact:true}).click();
  await page.locator('[name=hourColor]').evaluate(e=>{e.value='#abcdef';e.dispatchEvent(new Event('input',{bubbles:true}));});
  assert.equal(await page.locator('#clockPreview2').evaluate(e=>e.style.getPropertyValue('--clock-timer-tick-color')),'#abcdef');

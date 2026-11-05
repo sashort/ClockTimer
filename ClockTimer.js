@@ -5380,7 +5380,10 @@
             const observerModelSignature = JSON.stringify(events);
             this.restoreState({...snapshot,events,attributes,totals:aggregate,pending:[],completed:[],preparedTrip:null},
                 {observerModelSignature, now});
-            this.productionFilter = snapshot.productionFilter || 'all';
+            // Reapplying an unchanged filter rebuilds the interval schedule and
+            // restarts fitted-range animations on every observer cadence tick.
+            const productionFilter = snapshot.productionFilter || 'all';
+            if (this.productionFilter !== productionFilter) this.productionFilter = productionFilter;
             const start = this.getUIState(now).trip_start_component?.value;
             if (totals && Number.isFinite(start)) {
                 if (!(start >= Date.parse(totals.startTime) && start <= Date.parse(totals.endTime))) {

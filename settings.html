@@ -789,9 +789,15 @@ body.settings-page :is(#audioSettingsDialog,#audioAnnouncementsDialog) > form {h
 
 <section id="graphical-pane-preview1" class="clock-preview graphical-tab-panel" role="tabpanel" aria-labelledby="graphical-tab-preview1" hidden>
                     <button type="button" class="preview-legend-button" data-preview-legend="1" aria-label="Sample range legend">?</button>
+                    <div class="preview-controls"><label>Timer Type
+                            <select data-preview-timer-type="1" aria-label="Timer Type
+                            "><option value="radial-overflow" data-language-id="022d156a-f030-5095-993b-96c1d5cddabc">Radial Overflow</option><option value="radial-fitted" data-language-id="de2b485b-5023-5cb6-92a8-e9f0a75b5200">Radial Fitted</option></select></label></div>
                     <clock-timer id="clockPreview" military-time="true" time-format="HHmm" visible-hours="12,3,6,9" tick-marks="[10]" indicator-symbol="▲"></clock-timer>
                 </section><section id="graphical-pane-preview2" class="clock-preview graphical-tab-panel" role="tabpanel" aria-labelledby="graphical-tab-preview2" hidden>
                     <button type="button" class="preview-legend-button" data-preview-legend="2" aria-label="Sample range legend">?</button>
+                    <div class="preview-controls"><label>Timer Type
+                            <select data-preview-timer-type="2" aria-label="Timer Type
+                            "><option value="radial-overflow" data-language-id="022d156a-f030-5095-993b-96c1d5cddabc">Radial Overflow</option><option value="radial-fitted" data-language-id="de2b485b-5023-5cb6-92a8-e9f0a75b5200">Radial Fitted</option></select></label></div>
                     <clock-timer id="clockPreview2" military-time="true" time-format="HHmm" visible-hours="12,3,6,9" tick-marks="[10]" indicator-symbol="▲"></clock-timer>
                 </section>
 

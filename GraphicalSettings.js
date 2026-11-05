@@ -659,6 +659,7 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
     const previews = previewTimers.map((timer,index) => WMOFClockTimerPreview.create(timer,index+1));
     function renderClockPreviewRanges(settings = settingsFromForm($('#graphicalSettingsForm'))) {
         previews.forEach(preview => preview.apply(settings));
+        graphicalDialog.querySelectorAll('[data-preview-timer-type]').forEach(select => select.value = settings.timerType);
         renderPreviewLegend();
     }
 
@@ -1164,17 +1165,47 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
         if (!legend) return;
         const settings = settingsFromForm($('#graphicalSettingsForm'));
         const keys = activeTab === 'preview2'
-            ? ['tripColor','downColor','approvalSurplusColor','approvalDeficitColor','toleranceColor','overtimeColor']
-            : ['tripColor','earlyStartColor','breakColor','lunchColor','breakBufferColor','latencyColor','downColor','toleranceColor'];
-        legend.querySelector('[data-preview-legend-rows]').replaceChildren(...keys.map(key => {
-            const row = document.createElement('div'); row.className = 'preview-legend-row';
-            const swatch = document.createElement('span');
-            const timer = previewTimers[activeTab === 'preview2' ? 1 : 0];
-            const variable = '--clock-timer-' + key.replace(/[A-Z]/g,c => '-'+c.toLowerCase());
-            swatch.style.backgroundColor = (timer && getComputedStyle(timer).getPropertyValue(variable).trim()) || settings[key] || GRAPHICAL_DEFAULTS[key];
-            row.append(swatch,document.createTextNode(WMOFLanguagePack.text(legendLabels[key])));
-            return row;
-        }));
+            ? ['tripColor','breakColor','downColor','approvalSurplusColor','approvalDeficitColor','overtimeColor']
+            : ['tripColor','earlyStartColor','lunchColor','breakBufferColor','latencyColor','downColor','toleranceColor'];
+        const form = $('#graphicalSettingsForm');
+        const rows = legend.querySelector('[data-preview-legend-rows]');
+        if (rows.dataset.keys !== keys.join(',')) {
+            rows.dataset.keys = keys.join(',');
+            rows.replaceChildren(...keys.map(key => {
+                const source = form.elements[key];
+                const row = document.createElement('div');
+                row.className = 'preview-legend-row'; row.dataset.colorKey = key;
+                const caption = document.createElement('label');
+                caption.textContent = WMOFLanguagePack.text(legendLabels[key]);
+                const color = document.createElement('input');
+                color.type = 'color'; color.id = 'preview-legend-'+key;
+                color.setAttribute('aria-label',source.getAttribute('aria-label') || caption.textContent);
+                caption.htmlFor = color.id;
+                const stateKey = GRAPHICAL_HELP[key]?.stateControl;
+                if (stateKey) {
+                    const toggle = document.createElement('input'); toggle.type = 'checkbox';
+                    toggle.dataset.stateKey = stateKey;
+                    toggle.setAttribute('aria-label',form.elements[stateKey].getAttribute('aria-label'));
+                    toggle.addEventListener('change',() => form.elements[stateKey].click());
+                    row.append(toggle);
+                } else row.classList.add('without-toggle');
+                color.addEventListener('input',() => {
+                    source.value = color.value;
+                    source.dispatchEvent(new Event('input',{bubbles:true}));
+                });
+                row.append(caption,color);
+                return row;
+            }));
+        }
+        for (const row of rows.children) {
+            row.querySelector('[type=color]').value = settings[row.dataset.colorKey];
+            const toggle = row.querySelector('[type=checkbox]');
+            if (toggle) {
+                const state = getGraphicalHelpState(form.elements[toggle.dataset.stateKey]);
+                toggle.checked = state === true; toggle.indeterminate = state === undefined;
+                toggle.setAttribute('aria-checked',state === undefined ? 'mixed' : String(state));
+            }
+        }
     }
     function selectGraphicalTab(key,{focus=false}={}) {
         activeTab = key;
@@ -1193,7 +1224,19 @@ globalThis.WMOFGraphicalSettings = {create({clockTimer, clockPreview = document.
             requestAnimationFrame(() => previewTimers[Number(key.slice(-1))-1]?.refreshLayout());
         }
     }
+    function changePreviewTimerType(value) {
+        $('#graphicalSettingsForm').elements.timerType.value = value;
+        renderClockPreviewRanges();
+        previews.forEach((preview,index) => {
+            if (activeTab === 'preview'+(index+1)) preview.start();
+            else preview.reset();
+        });
+    }
     function installGraphicalTabs() {
+        graphicalDialog.querySelectorAll('[data-preview-timer-type]').forEach(select => {
+            select.addEventListener('input',() => changePreviewTimerType(select.value));
+        });
+        $('#graphicalSettingsForm').elements.timerType.addEventListener('input',event => changePreviewTimerType(event.target.value));
         tabs.forEach((tab,index) => {
             tab.addEventListener('click',() => selectGraphicalTab(tab.dataset.graphicalTab));
             tab.addEventListener('keydown',event => {

@@ -8469,12 +8469,15 @@ shared-modal-host > dialog.graphical-dialog {
     background:#0053e2;color:white;font-size:18px;line-height:1;z-index:2;
 }
 .graphical-preview-legend {
-    box-sizing:border-box;position:fixed;inset:0;margin:auto;
+    box-sizing:border-box;position:fixed;inset:0;margin:auto;transform:none;
     width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;
     background:#253e52!important;color:#fff;border:1px solid #a9ddf7;border-radius:10px;padding:12px;
 }
-.preview-legend-row {display:flex;align-items:center;gap:10px;min-height:30px;font-size:15px;}
-.preview-legend-row > span {flex:none;width:22px;height:12px;border:1px solid #fff;border-radius:3px;}
+.preview-legend-row {display:grid;grid-template-columns:24px minmax(0,1fr) 44px;align-items:center;gap:10px;min-height:44px;font-size:15px;}
+.preview-legend-row.without-toggle > label {grid-column:2;}
+.preview-legend-row > label {min-width:0;line-height:1.2;}
+.preview-legend-row > input[type=checkbox] {width:20px;height:20px;margin:0;accent-color:#a9ddf7;}
+.preview-legend-row > input[type=color] {box-sizing:border-box;width:44px;height:32px;padding:2px;border:1px solid #a9ddf7;border-radius:5px;background:#172b3b;cursor:pointer;}
 html[data-seasonal-theme="halloween"] .graphical-tab-row > button {background:#49351f;color:#fff5e2;border-color:#a77e48;}
 html[data-seasonal-theme="halloween"] .graphical-preview-tabs > button {background:#704013;}
 html[data-seasonal-theme="halloween"] .graphical-tab-row > button[aria-selected="true"] {background:#8b571f;border-color:#ffd966;box-shadow:inset 0 -3px #ffd966;}
@@ -8482,3 +8485,17 @@ html[data-seasonal-theme="halloween"] .graphical-tab-panes,
 html[data-seasonal-theme="halloween"] .graphical-dialog .graphical-tab-panel {background:#211910;color:#fff5e2;}
 html[data-seasonal-theme="halloween"] .graphical-dialog .clock-preview clock-timer {--clock-timer-face-background-color:#211910;--clock-timer-active-ring-background-color:#211910;}
 html[data-seasonal-theme="halloween"] .graphical-preview-legend {background:#302416!important;color:#fff5e2;border-color:#ffd966;}
+
+/* The preview toolbar shares the draft Timer Type and leaves room for its legend. */
+.graphical-dialog .clock-preview.graphical-tab-panel {
+    grid-template-rows:auto minmax(0,1fr);padding:8px;gap:8px;
+}
+.preview-controls {min-width:0;padding-right:36px;}
+.graphical-dialog .preview-controls > label {
+    display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;
+    gap:8px;margin:0;font-size:14px;line-height:1.2;
+}
+.graphical-dialog .preview-controls select {
+    box-sizing:border-box;min-width:0;width:100%;height:36px;min-height:36px;
+    padding:4px 6px;font-size:14px;
+}

@@ -8,9 +8,10 @@ its aspect ratio and sizes itself within the preview panel. No overlap fading
 or settings accordion is used.
 
 Both preview clocks share the same unsaved graphical settings. Preview 1 replays
-an early start, lunch and an ordinary break with start/end buffers, late returns, pending Down Time
-and a B-Game target. Preview 2 replays approved Down intervals with surplus and
-deficit, plus tolerance and overtime. The blue question button in the upper-right
+an early start, lunch with start/end buffers, a late return, pending Down Time
+and a B-Game target. Preview 2 replays one unbuffered Break and approved Down intervals with surplus
+and deficit, plus overtime. B-Game is the tolerance range and is demonstrated
+only in Preview 1. The blue question button in the upper-right
 of each pane opens an opaque legend for that sample. The normal visibility
 settings still control how each range is shown.
 
@@ -27,3 +28,26 @@ Verification includes both sample event types, boundary timing, both timer modes
 shared drafts, legend accessibility, keyboard navigation, phone-size panels,
 scroll-independent tab bounds, Default/Halloween styling, cancellation and
 native/embedded settings parity.
+
+Repeated observer snapshots retain the existing trip filter when it has not
+changed. The productionFilter setter rebuilds the planned interval schedule;
+calling it every second used to reapply buffer/Down shifts and animate the
+fitted B-Game arc between inconsistent positions. A frame-level browser
+regression now samples every fitted range between successive snapshot ticks.
+The failure and the temporary no-op fix were also measured on the Pixel 6.
+
+Each preview has a Timer Type dropdown above the clock. Both dropdowns and the
+Timer tab's selector share the same draft. Changing any selector resets both
+sample epochs; only the visible sample runs. Its next overflow ring transition
+is five seconds after the change. The inactive preview restarts when selected.
+
+The preview legend uses inset/margin centering with transform:none. It must not
+inherit the generic help popup's translate(-50%,-50%), which displaced it off
+the left edge on the Pixel. Browser checks assert all four legend edges fit.
+
+The sample legend duplicates the Timer tab's applicable visibility checkboxes
+and color pickers. Both surfaces edit one draft, including the three-state
+B-Game setting. Legend controls retain their DOM nodes while colors change so
+native color selection and keyboard focus remain stable. Draft edits update
+both preview clocks and the host's live clock immediately. Cancel restores the
+saved host appearance; Save persists the draft. No preview edit changes trip data.
