@@ -49,6 +49,10 @@ const server=http.createServer((req,res)=>{
    assert.equal(await page.locator('#graphicalPreviewLegend').evaluate(e=>getComputedStyle(e).opacity),'1');
    assert(await page.locator('#graphicalPreviewLegend').evaluate(e=>{const r=e.getBoundingClientRect();return r.left>=8&&r.top>=8&&r.right<=innerWidth-8&&r.bottom<=innerHeight-8;}),'the full legend fits inside its viewport');
    assert.match(await page.locator('#graphicalPreviewLegend').innerText(),index===1?/Early Start/:/Approval Surplus/);
+   assert(await page.locator('#graphicalPreviewLegend .settings-help-header').evaluate(e=>{
+    const box=e.getBoundingClientRect(),title=e.querySelector('h3').getBoundingClientRect(),close=e.querySelector('button').getBoundingClientRect();
+    return title.left-box.left>=12&&box.right-close.right>=12&&parseFloat(getComputedStyle(e).borderTopLeftRadius)>=8;
+   }),'legend header insets its title and close button inside rounded edges');
    const colorKey = index === 1 ? 'lunchColor' : 'approvalSurplusColor';
    const edit = page.locator('[data-color-key="'+colorKey+'"] [type=color]');
    await edit.evaluate(e=>{e.value='#ce7139';e.dispatchEvent(new Event('input',{bubbles:true}));});

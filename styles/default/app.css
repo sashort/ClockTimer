@@ -8473,6 +8473,9 @@ shared-modal-host > dialog.graphical-dialog {
     width:min(340px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;
     background:#253e52!important;color:#fff;border:1px solid #a9ddf7;border-radius:10px;padding:12px;
 }
+.graphical-preview-legend .settings-help-header {
+    box-sizing:border-box;padding:12px;border-radius:8px;margin-bottom:12px;
+}
 .preview-legend-row {display:grid;grid-template-columns:24px minmax(0,1fr) 44px;align-items:center;gap:10px;min-height:44px;font-size:15px;}
 .preview-legend-row.without-toggle > label {grid-column:2;}
 .preview-legend-row > label {min-width:0;line-height:1.2;}
