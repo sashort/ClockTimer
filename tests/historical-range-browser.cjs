@@ -24,10 +24,10 @@ assert.equal(await p.evaluate(()=>clockTimer.getGoalBarSnapshot().nodes.find(nod
 assert.equal(state.total.standardTimeMilliseconds,1800000,'past total excludes running trip');assert.equal(state.standard,1800000);assert.equal(state.label,'Banked');assert.equal(state.time,'0:10:00');assert(state.trip,'history must not end the live trip');
 if(range==='week'){
 assert.equal(await p.locator('#tripLogRangeSelect option[value=week]').textContent(),'Week [37]','historical week dropdown refreshes');
-assert.equal(await p.locator('#scopeToggleDropdown [data-mode=week] .mode-option-label').textContent(),'Week [37]','main dropdown refreshes even while closed');
+assert.equal(await p.locator('#scopeToggleDropdown [data-mode=week] .mode-option-label').textContent(),'Week 37','main dropdown refreshes even while closed');
 await op(()=>document.querySelector('#tripLogReturnActiveButton').click());
 await p.waitForFunction(()=>document.querySelector('#tripLogRangeSelect option[value=week]').textContent==='Week [40]');
-assert.equal(await p.locator('#scopeToggleDropdown [data-mode=week] .mode-option-label').textContent(),'Week [40]','Return to Active resets main dropdown week');
+assert.equal(await p.locator('#scopeToggleDropdown [data-mode=week] .mode-option-label').textContent(),'Week 40','Return to Active resets main dropdown week');
 }
 console.log('PASS historical '+range+': Start/End aligned, main totals isolated, live trip retained');
 if(process.env.HISTORICAL_RANGE_SCREENSHOT_DIR&&range==='week'){

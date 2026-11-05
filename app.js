@@ -5541,7 +5541,7 @@
         return announcementText('messages.scope.week')+(week?' '+week:'');
     }
     function aggregateScopeLabel(scope){return scope==='week'?fiscalWeekLabel():scope==='custom'?WMOFLanguagePack.text('9e063c44-5f74-4196-bbab-3a49a72be041'):announcementText(`messages.scope.${scope}`);}
-    function dropdownScopeLabel(scope){const label=aggregateScopeLabel(scope);return scope==='week'?label.replace(/ (\d+)$/,' [$1]'):label;}
+    function tripLogSettingsScopeLabel(scope){const label=aggregateScopeLabel(scope);return scope==='week'?label.replace(/ (\d+)$/,' [$1]'):label;}
     function totalScopeLabel() {return aggregateScopeLabel(getTripLogRange());}
     async function autoMenuRows(pending){
         return Promise.all([...aggregateScopes,'trip','standard'].map(async scope=>{
@@ -5558,7 +5558,7 @@
                     details=clockTimer.previewAggregateGoal(pending.goals[scope],await request,window);
                 }
             }catch{}
-            return{id:scope,label:dropdownScopeLabel(scope),goal:pending.goals[scope],raw:details?.raw_inferred_percent,target:clockTimer.getUIState().trip_active?(details?.inferred_percent??null):pending.goals[scope],adjusted:Boolean(details?.bounding?.adjusted)};
+            return{id:scope,label:aggregateScopeLabel(scope),goal:pending.goals[scope],raw:details?.raw_inferred_percent,target:clockTimer.getUIState().trip_active?(details?.inferred_percent??null):pending.goals[scope],adjusted:Boolean(details?.bounding?.adjusted)};
         }));
     }
     function editAutoCustomRange(dates,onExit){
@@ -5698,7 +5698,7 @@
             clockTimer.setAttribute('total-label',totalScopeLabel());
             updateScopeTargetLabel(clockTimer.getUIState());
             renderClockTimerUIState(clockTimer.uiState);
-            const weekOption=tripLogRangeSelect?.querySelector('option[value=week]');if(weekOption)weekOption.textContent=dropdownScopeLabel('week');
+            const weekOption=tripLogRangeSelect?.querySelector('option[value=week]');if(weekOption)weekOption.textContent=tripLogSettingsScopeLabel('week');
             mainModeMenu?.refresh();
             refreshAutoGoalDialog();
             renderHistoricalRangeState(resolvedTripLogCalendar);
@@ -6374,7 +6374,7 @@
             onSettingsOpened:()=>{tripLogSettingsVisible=true;tripLogSettingsButton?.setAttribute('aria-expanded','true');},
             onSettingsClosed:()=>{tripLogSettingsVisible=false;tripLogSettingsButton?.setAttribute('aria-expanded','false');},
             onDownAvailable:(visible,applied)=>{if(tripLogDownButton){tripLogDownButton.classList.toggle('is-not-applied',!applied);tripLogDownButton.dataset.available=String(visible);tripLogDownButton.hidden=!visible||getTripListState()!=='open';}},
-            rangeLabelFor:scope=>dropdownScopeLabel(scope),
+            rangeLabelFor:scope=>tripLogSettingsScopeLabel(scope),
             rangeLabel:()=>totalScopeLabel(),
             weekNumber:date=>calendarRanges.weekNumber(date),
             onRange:value=>setTripLogRange(value),
@@ -12313,7 +12313,7 @@
     }
 
     mainModeMenu=globalThis.WMOFModeMenu?.bind(scopeToggle, {
-        getOptionDetails:value=>aggregateScopes.includes(value)?{label:dropdownScopeLabel(value)}:null,
+        getOptionDetails:value=>aggregateScopes.includes(value)?{label:aggregateScopeLabel(value)}:null,
         autoGoals:{getState:()=>{aggregateMenuCache.clear();return {scope:getTripLogRange(),override:autoGoalIdentity(),goals:aggregateGoals(),tripGoal:clockTimer.getGoalEditorSnapshot('trip').actual_percent??100};},getRows:autoMenuRows,
             customRange:editAutoCustomRange,edit:editMenuAggregateGoal,commit:async pending=>{
                 if(pending.scope==='custom'&&pending.customDates){CalendarRange.custom(pending.customDates.start,pending.customDates.end,calendarRanges.getTimezone());tripLogStartDate.value=pending.customDates.start;tripLogEndDate.value=pending.customDates.end;await safeStorageSet(STORAGE.customTripLogDates,JSON.stringify(pending.customDates));}
