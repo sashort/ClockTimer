@@ -52,6 +52,12 @@ function trip_time_bank_base_projection(array $trip, array $events, bool $includ
             elseif (($approval['state'] ?? null) === 'approved' && is_int($approval['value'] ?? null)) $excluded = $duration($approval['value']);
             elseif (is_int($value['approvedTime'] ?? null)) $excluded = $duration($value['approvedTime']);
         }
+        // Late return beyond a planned break/buffer allowance is counted work.
+        // Keep this projection consistent with the editor and live timer.
+        if (in_array($type,['break','lunch'],true) && is_int($value['length'] ?? null)) {
+            $allowance=$duration($value['length'])+$duration($value['startBuffer'] ?? null)+$duration($value['endBuffer'] ?? null);
+            if ($allowance>0) $excluded=min($excluded,$allowance);
+        }
         $segments[] = [max($begin,$left),min($finish,$left+$excluded)];
         if (isset($ends[$key]) && in_array($type,['break','lunch'],true) && is_int($value['length'] ?? null))
             $credit += max(0,$value['length']+$duration($value['startBuffer'] ?? null)+$duration($value['endBuffer'] ?? null)-($right-$left));

@@ -8502,3 +8502,17 @@ html[data-seasonal-theme="halloween"] .graphical-preview-legend {background:#302
     box-sizing:border-box;min-width:0;width:100%;height:36px;min-height:36px;
     padding:4px 6px;font-size:14px;
 }
+
+/* Retain recorded Down details while distinguishing time excluded by the policy. */
+.trip-log-downtime.is-not-applied,.trip-log-down-section.is-not-applied {background:#25313a;color:#9ca7af;}
+.trip-log-downtime.is-not-applied .trip-log-downtime-approved {color:inherit;}
+.trip-log-down-button.is-not-applied {background:#25313a;color:#9ca7af;border-color:#68737c;}
+#includePendingDownTimeButton.is-overridden>[data-language-id] {text-decoration:line-through;opacity:.65;}
+html[data-seasonal-theme=halloween] .trip-log-downtime.is-not-applied,
+html[data-seasonal-theme=halloween] .trip-log-down-section.is-not-applied,
+html[data-seasonal-theme=halloween] .trip-log-down-button.is-not-applied {background:#29251f;color:#b6ac9d;}
+
+.trip-log-entry.is-not-applied {background:#25313a;color:#b6c0c8;border-radius:5px;}
+.trip-editor-accounting-cell.is-not-applied {background:#25313a;color:#b6c0c8;border-color:#68737c;}
+html[data-seasonal-theme=halloween] .trip-editor-accounting-cell.is-not-applied,
+html[data-seasonal-theme=halloween] .trip-log-entry.is-not-applied {background:#29251f;color:#c1b6a6;}

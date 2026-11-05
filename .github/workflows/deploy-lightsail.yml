@@ -299,6 +299,7 @@ jobs:
       - run: node tests/completed-summary-sync-browser.cjs
       - run: node tests/summary-official-percent-browser.cjs
       - run: php tests/pending-down-accounting.php
+      - run: node tests/pending-down-policy-browser.cjs
       - run: node tests/break-session-browser.cjs
       - run: node tests/break-only-log-browser.cjs
       - run: node tests/impersonation-portal-browser.cjs

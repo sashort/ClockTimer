@@ -14,4 +14,11 @@ assert.deepEqual(w.TripTimeBank.project(early),earlyExpected,'canonical early-st
 const unchanged=JSON.stringify(trip);w.TripTimeBank.project(trip);assert.equal(JSON.stringify(trip),unchanged,'projection cannot mutate saved history');
 for(const type of ['break','lunch']){const copy=structuredClone(trip);copy.events[1].value.type=type;assert.equal(w.TripTimeBank.project(copy).productiveTimeMilliseconds,289957);}
 const netPositive=structuredClone(trip);netPositive.endTime='2026-01-01T12:30:00.000Z';netPositive.events.at(-1).timestamp=netPositive.endTime;netPositive.countedTimeMilliseconds=548073;const p=w.TripTimeBank.project(netPositive);assert(p.productiveTimeMilliseconds>p.allowanceCreditMilliseconds);assert.equal(p.bankCreditCarryMilliseconds,0,'no surplus is credited twice');
+const pendingFixture=JSON.parse(fs.readFileSync(new URL('fixtures/pending-down-late-lunch.json',import.meta.url),'utf8'));
+let policyTrip=pendingFixture.trip;
+for(let i=0;i<20;i++)for(const included of [false,true]){
+ policyTrip=w.TripTimeBank.withPendingPolicy(policyTrip,included);
+ assert.equal(w.TripAggregates.performance(policyTrip).toFixed(8),(3106000/pendingFixture.expected[included?'includedWork':'excludedWork']).toFixed(8),'policy is reversible without accumulating deductions');
+ assert.equal(w.TripTimeBank.recalculate(pendingFixture.trip).productiveTimeMilliseconds,3154944,'reconstruction counts late Lunch as work');
+}
 console.log('PASS separate productive Actual, unused break/buffer bank credit, legacy-zero recovery and non-mutating log rendering');await w.happyDOM.close();

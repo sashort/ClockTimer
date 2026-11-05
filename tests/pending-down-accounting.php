@@ -18,3 +18,12 @@ foreach(['approved','unapproved','pending'] as $state){
  $project=trip_time_bank_projection($trip,$changed,false);
  check_pending($project['productiveTimeMilliseconds'],$state==='approved'?1500000:1800000,'aggregate master affects Pending only: '.$state);
 }
+
+$fixture=json_decode(file_get_contents(__DIR__.'/fixtures/pending-down-late-lunch.json'),true,512,JSON_THROW_ON_ERROR);
+$reference=$fixture['trip'];$events=$reference['events'];
+foreach([true,false] as $include){
+ $bank=trip_time_bank_projection($reference,$events,$include);
+ $work=$bank['productiveTimeMilliseconds']??$reference['countedTimeMilliseconds'];
+ check_pending($work,$fixture['expected'][$include?'includedWork':'excludedWork'],'two Pending intervals plus late Lunch: '.($include?'applied':'not applied'));
+ check_pending(number_format(100*$reference['standardTimeMilliseconds']/$work,2),$include?'98.45':'61.44','correct reference percent');
+}

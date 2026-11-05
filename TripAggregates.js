@@ -112,6 +112,10 @@
             if(!['break','lunch','down','buffer'].includes(type))continue;
             let excluded=right-left;
             if(type==='down')excluded=TripDowntimeSummary.approved(event,end,events)??excluded;
+            if(['break','lunch'].includes(type)&&Number.isSafeInteger(value.length)) {
+                const allowance=duration(value.length)+duration(value.startBuffer)+duration(value.endBuffer);
+                if(allowance>0)excluded=Math.min(excluded,allowance);
+            }
             segments.push([Math.max(begin,left),Math.min(finish,left+excluded)]);
             if(end&&['break','lunch'].includes(type)&&Number.isSafeInteger(value.length))
                 credit+=Math.max(0,value.length+duration(value.startBuffer)+duration(value.endBuffer)-(right-left));

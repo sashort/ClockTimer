@@ -37,6 +37,7 @@
             box.setAttribute('role','group');box.setAttribute('aria-label',title);
             const heading=node('strong',undefined,'trip-log-downtime-title'),icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.classList.add('trip-log-downtime-icon');icon.innerHTML='<path d="M9 2h6M12 2v3M18 6l2-2"/><circle cx="12" cy="14" r="8"/><path d="M12 9v5l3 2"/>';heading.append(icon,document.createTextNode(title));box.append(heading);
             const includePending=this.showPendingEffective;
+            box.classList.toggle('is-not-applied',!(summary.approvedMilliseconds+(includePending?(summary.pendingMilliseconds||0):0)>0));
             for(const [label,value,kind] of [[globalThis.WMOFLanguagePack.text('edb1ce75-f212-4577-a1b3-e88dc28bcb78'),summary.loggedMilliseconds,'logged'],[globalThis.WMOFLanguagePack.text(includePending?'d7300001-7888-4711-9000-000000000011':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39'),summary.approvedMilliseconds+(includePending?(summary.pendingMilliseconds||0):0),'approved']]) {
                 const cell=node('span',undefined,'trip-log-downtime-'+kind);
                 if(kind==='approved'){cell.dataset.pendingIncluded=String(includePending);cell.title=includePending?globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000001'):label;}
@@ -105,6 +106,7 @@
             if(totals.pendingMilliseconds+totals.approvedMilliseconds+totals.unapprovedMilliseconds===0)return undefined;
             const includePending=this.showPendingEffective;
             const section=node('section',undefined,'trip-log-down-section');
+            section.classList.toggle('is-not-applied',!(totals.approvedMilliseconds+(includePending?totals.pendingMilliseconds:0)>0));
             const details=node('section',undefined,'trip-log-down-breakdown');
             const summary=node('header');summary.append(node('strong',text('e09300d4-7ac5-4678-9f45-f5cc4500ff6d')));
             const total=this.downCategoryButton(includePending?'applied':'approved',text(includePending?'d7300001-7888-4711-9000-000000000011':'a6d2eeb0-2d5b-4a59-b059-4039e7492e39'),includePending?totals.combinedMilliseconds:totals.approvedMilliseconds,'trip-log-down-effective');summary.append(total);
@@ -139,7 +141,7 @@
         }
         updateDownSummary(trips) {
             this.downSummaryTrips=trips;const totals=TripDowntimeSummary.breakdown(trips,{now:this.downtimeNow});
-            this.options.onDownAvailable?.(totals.pendingMilliseconds+totals.approvedMilliseconds+totals.unapprovedMilliseconds>0);
+            this.options.onDownAvailable?.(totals.hasDowntime,totals.approvedMilliseconds+(this.showPendingEffective?totals.pendingMilliseconds:0)>0);
             if(this.downDialog?.open){const section=this.downTimeSection(trips);if(section){this.downDialog.lastElementChild.replaceChildren(section);}else this.downDialog.close();}
         }
 
@@ -149,7 +151,7 @@
             this.calendar=calendar;this.downtimeNow=this.options.now?.()??Date.now();
             this.activeSweepDelay=`-${Math.round(performance.now()%4200)}ms`;
             this.incomplete=Boolean(data.incomplete);this.offline=Boolean(data.offline);this.loginRequired=Boolean(data.loginRequired);
-            const trips=data.loginRequired?[]:data.trips.map(t=>TripTimeBank.withPendingPolicy({...t},this.showPendingEffective,{now:this.downtimeNow}));const liveSource=data.loginRequired?null:this.options.liveTrip?.();const live=liveSource?TripTimeBank.withPendingPolicy(liveSource,this.showPendingEffective,{now:this.downtimeNow}):null;
+            const trips=data.loginRequired?[]:data.trips.map(t=>({...t}));const live=data.loginRequired?null:this.options.liveTrip?.();
             if(live && Date.parse(live.startTime)>=Date.parse(calendar.startTime) && Date.parse(live.startTime)<Date.parse(calendar.endTime)) {
                 const index=trips.findIndex(t=>String(t.id)===String(live.id));
                 const filter=this.options.filter();
@@ -158,6 +160,10 @@
                 } else if(index>=0) trips.splice(index,1);
             }
             trips.sort((a,b)=>Date.parse(iso(b.startTime))-Date.parse(iso(a.startTime))||b.id-a.id);
+            // Resolve the override from the new dataset before projecting any row.
+            const rawMatching=trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip));
+            this.hasVisibleDownTime=TripDowntimeSummary.breakdown(rawMatching,{now:this.downtimeNow}).hasDowntime;
+            for(let i=0;i<trips.length;i++)trips[i]=TripTimeBank.withPendingPolicy(trips[i],this.showPendingEffective,{now:this.downtimeNow});
             this.trips=trips;
             const matchingTrips=trips.filter(trip=>!this.adjustedOnly||this.hasOfficialPercent(trip));
             const downTotals=TripDowntimeSummary.breakdown(matchingTrips,{now:this.downtimeNow});
@@ -175,7 +181,7 @@
                 const dates=window.CalendarRange.dates(calendar),inputs=settings.querySelectorAll('input[type=date]');
                 inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=i===1&&this.options.range()!=='custom';});
                 const includeCurrent=settings.querySelector('input[data-include-current]');if(includeCurrent){includeCurrent.checked=Boolean(this.options.includeCurrent?.());includeCurrent.disabled=false;includeCurrent.closest('label').classList.toggle('is-unavailable',!Boolean(this.options.liveTrip?.()||trips.some(t=>t.running)));}
-                const pending=settings.querySelector('input[data-show-pending]');if(pending){pending.checked=this.showPendingPreference;pending.disabled=this.downTimeOnlyEnabled;pending.closest('label').classList.toggle('is-unavailable',this.downTimeOnlyEnabled);}
+                const pending=settings.querySelector('input[data-show-pending]');if(pending){pending.checked=this.showPendingPreference;pending.disabled=false;pending.closest('label').classList.toggle('is-unavailable',!this.hasVisibleDownTime);}
                 const fallback=settings.querySelector('[data-down-time-filter-fallback]');if(fallback){fallback.checked=this.downTimeOnly;fallback.disabled=false;fallback.closest('label').hidden=false;fallback.closest('label').classList.toggle('is-unavailable',!this.hasVisibleDownTime);}
             }
 
@@ -239,8 +245,8 @@
             box.append(dates);const include=node('label',undefined,'trip-log-include-current');const check=node('input');check.type='checkbox';check.dataset.includeCurrent='true';check.checked=Boolean(this.options.includeCurrent?.());check.disabled=false;include.classList.toggle('is-unavailable',!Boolean(this.options.liveTrip?.()||this.trips?.some(t=>t.running)));check.addEventListener('change',()=>this.options.onIncludeCurrent?.(check.checked));include.append(node('span',globalThis.WMOFLanguagePack.text("d3df5443-5f50-4a22-b8e6-bdd43caf0d89")),check);box.append(include);
             const adjusted=node('label',undefined,'trip-log-include-current'),adjustedCheck=node('input');adjustedCheck.type='checkbox';adjustedCheck.dataset.adjustedOnly='true';adjustedCheck.checked=this.adjustedOnly;
             adjustedCheck.addEventListener('change',()=>{this.adjustedOnly=adjustedCheck.checked;this.saveViewSettings();this.rerender();});adjusted.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000005')),adjustedCheck);box.append(adjusted);
-            const pending=node('label',undefined,'trip-log-include-current'),pendingCheck=node('input');pendingCheck.type='checkbox';pendingCheck.dataset.showPending='true';pendingCheck.checked=this.showPendingPreference;pendingCheck.disabled=this.downTimeOnlyEnabled;pending.classList.toggle('is-unavailable',this.downTimeOnlyEnabled);
-            pendingCheck.addEventListener('change',()=>{if(this.downTimeOnlyEnabled)return;this.showPending=pendingCheck.checked;if(this.options.onShowPendingDownTime)void this.options.onShowPendingDownTime(pendingCheck.checked);else{this.saveViewSettings();this.rerender();}});pending.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000007')),pendingCheck);box.append(pending);
+            const pending=node('label',undefined,'trip-log-include-current'),pendingCheck=node('input');pendingCheck.type='checkbox';pendingCheck.dataset.showPending='true';pendingCheck.checked=this.showPendingPreference;pendingCheck.disabled=false;pending.classList.toggle('is-unavailable',!this.hasVisibleDownTime);
+            pendingCheck.addEventListener('change',()=>{this.showPending=pendingCheck.checked;if(this.options.onShowPendingDownTime)void this.options.onShowPendingDownTime(pendingCheck.checked);else{this.saveViewSettings();this.rerender();}});pending.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000007')),pendingCheck);box.append(pending);
             const fallback=node('label',undefined,'trip-log-include-current'),fallbackCheck=node('input');fallbackCheck.type='checkbox';fallbackCheck.dataset.downTimeFilterFallback='true';fallbackCheck.checked=this.downTimeOnly;fallbackCheck.disabled=false;fallback.hidden=false;fallback.classList.toggle('is-unavailable',!this.hasVisibleDownTime);
             fallbackCheck.addEventListener('change',()=>{this.downTimeOnly=fallbackCheck.checked;this.saveViewSettings();this.rerender();});fallback.append(node('span',globalThis.WMOFLanguagePack.text('d7300001-7888-4711-9000-000000000004')),fallbackCheck);const checks=node('div',undefined,'trip-log-settings-checks');checks.append(adjusted,include,fallback,pending);box.append(checks);const help=node('div',undefined,'trip-log-range-help');const grid=node('div',undefined,'trip-log-range-help-grid');for(const [tag,id] of [['strong',19],['strong',20],['p',21],['p',22]])grid.append(node(tag,globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-'+String(id).padStart(12,'0'))));const helpHeading=node('h3');const info=node('span','?','trip-log-range-info');info.setAttribute('aria-hidden','true');const title=node('span',globalThis.WMOFLanguagePack.text('d7400001-0000-4000-8000-000000000023'),'trip-log-range-help-title');title.prepend(info);helpHeading.append(title);help.append(node('hr'),helpHeading,grid);box.append(help);return box;
         }
@@ -326,7 +332,7 @@
             visible.sort((a,b)=>Date.parse(iso(a.timestamp))-Date.parse(iso(b.timestamp)));
             const activeEntry=trip.running?(visible.find(event=>event.event==='interval.started'&&!events.some(e=>e.event==='interval.ended'&&e.value?.intervalKey===event.value?.intervalKey))||visible.find(event=>event.event==='trip.started')):null;
             for(const event of visible){const started=event.event==='interval.ended'?events.find(e=>e.event==='interval.started'&&e.value?.intervalKey===event.value?.intervalKey):event,ended=started?.event==='interval.started'?events.find(e=>e.event==='interval.ended'&&e.value?.intervalKey===started.value?.intervalKey):null;
-                const row=node('div',undefined,'trip-log-entry');if(event.value?.intervalKey)row.dataset.intervalKey=event.value.intervalKey;
+                const row=node('div',undefined,'trip-log-entry');if(started?.value?.type==='down'&&TripDowntimeSummary.approvalState(started,events)==='pending'&&!this.showPendingEffective)row.classList.add('is-not-applied');if(event.value?.intervalKey)row.dataset.intervalKey=event.value.intervalKey;
                 if(event.event==='trip.official-start')row.classList.add('is-official-start');
                 if(event===activeEntry){row.classList.add('is-active-entry');row.dataset.activeState=trip.activeState||'trip';row.style.setProperty('--trip-log-active-sweep-delay',this.activeSweepDelay);}
                 row.append(node('span',fmt.format(new Date(iso(event.timestamp)))),node('span',event.event==='trip.official-start'?TripLog.officialText('officialStart'):this.entryLabel(event,started,ended,events)));timeline.append(row);
@@ -335,7 +341,7 @@
         }
         async openTripEditor(trip){
             if(this.tripEditor?.dialog.open){this.tripEditor.dialog.focus();return;}
-            this.tripEditor=await globalThis.TripEditor.open(trip,this.options,this.calendar);
+            this.tripEditor=await globalThis.TripEditor.open(trip,{...this.options,pendingDownTimeApplied:()=>this.showPendingEffective},this.calendar);
         }
         entryLabel(event,started,ended,events=[]) {
             if(event.event==='trip.started')return globalThis.WMOFLanguagePack.text("d15209dd-a85c-4361-a2e5-d2271f5ec425");if(event.event==='trip.stopped')return globalThis.WMOFLanguagePack.text("5bf5c47c-e341-46b1-bdf5-a7a2e838b9ef");

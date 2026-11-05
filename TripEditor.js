@@ -148,10 +148,11 @@
             else{cell('Approved',approved,true);cell('Unapproved',Math.max(0,recorded-approved));cell('Net',approved-recorded,false,true);}
             return strip;
         }
+        get pendingDownApplied(){return this.options.pendingDownTimeApplied?.()??this.options.showPendingDownTime?.()??this.options.includePendingDownTime?.()??true;}
         downAmountCell(label,value,edit,signed=false){
             const node=edit?this.button(undefined,edit,'trip-editor-approval trip-editor-accounting-cell'):el('span',undefined,'trip-editor-accounting-cell');
             const magnitude=Math.round(Math.abs(value)),whole=TripLog.duration(magnitude).replace(/^0:/,''),readout=el('strong');if(Number.isFinite(value))readout.append(document.createTextNode((signed?(value<0?'−':value>0?'+':''):'')+whole),el('small','.'+String(magnitude%1000).padStart(3,'0'),'trip-editor-accounting-fraction'));else readout.textContent='—';
-            node.append(el('small',label),readout);node.dataset.downAmount=label.toLowerCase();if(signed){node.title='Approved − Recorded';if(value<0)node.classList.add('is-deficit');}return node;
+            node.append(el('small',label),readout);node.dataset.downAmount=label.toLowerCase();node.classList.toggle('is-not-applied',label==='Pending'&&!this.pendingDownApplied);if(signed){node.title='Approved − Recorded';if(value<0)node.classList.add('is-deficit');}return node;
         }
         downSummary(){
             const downs=this.intervals().filter(e=>e.value.type==='down');if(downs.length<2)return;

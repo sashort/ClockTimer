@@ -6381,7 +6381,7 @@
             onIncludeCurrent:setTripLogIncludeCurrent,
             onSettingsOpened:()=>{tripLogSettingsVisible=true;tripLogSettingsButton?.setAttribute('aria-expanded','true');},
             onSettingsClosed:()=>{tripLogSettingsVisible=false;tripLogSettingsButton?.setAttribute('aria-expanded','false');},
-            onDownAvailable:visible=>{if(tripLogDownButton){tripLogDownButton.dataset.available=String(visible);tripLogDownButton.hidden=!visible||getTripListState()!=='open';}},
+            onDownAvailable:(visible,applied)=>{if(tripLogDownButton){tripLogDownButton.classList.toggle('is-not-applied',!applied);tripLogDownButton.dataset.available=String(visible);tripLogDownButton.hidden=!visible||getTripListState()!=='open';}},
             rangeLabelFor:scope=>dropdownScopeLabel(scope),
             rangeLabel:()=>totalScopeLabel(),
             weekNumber:date=>calendarRanges.weekNumber(date),
@@ -7480,7 +7480,7 @@
         const pendingButton=$("#includePendingDownTimeButton");
         const editTripButton=$("#editActiveTripButton");
         if(editTripButton)editTripButton.hidden=!tripIsLive();
-        if(pendingButton){pendingButton.hidden=!clockTimer.hasDownTime;pendingButton.setAttribute("aria-checked",String(getIncludePendingDownTime()));pendingButton.disabled=pendingDownTimeOverride;pendingButton.classList.toggle("is-unavailable",pendingDownTimeOverride);}
+        if(pendingButton){pendingButton.hidden=!clockTimer.hasDownTime;pendingButton.setAttribute("aria-checked",String(getIncludePendingDownTime()));pendingButton.disabled=false;pendingButton.classList.toggle("is-overridden",getIncludePendingDownTime()!==clockTimer.includePendingDownTime);}
         const overrideButton = $("#goalBoundingButton");
         if (overrideButton) {
             overrideButton.setAttribute("aria-checked", String(clockTimer.goalBounding));

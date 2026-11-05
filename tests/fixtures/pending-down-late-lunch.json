@@ -1,0 +1,90 @@
+{
+  "trip": {
+    "id": 1,
+    "startTime": "2026-11-03T12:00:00.000Z",
+    "endTime": "2026-11-03T13:59:15.619Z",
+    "standardTimeMilliseconds": 3106000,
+    "actualTimeMilliseconds": 7155619,
+    "countedTimeMilliseconds": 3154944,
+    "pendingDownIncluded": true,
+    "events": [
+      {
+        "id": 1,
+        "event": "trip.started",
+        "timestamp": "2026-11-03T12:00:00.000Z",
+        "scheduledStartTime": "2026-11-03T12:00:00.000Z",
+        "value": {
+          "scheduledStartOffsetMilliseconds": 0,
+          "standardTimeMilliseconds": 3106000
+        }
+      },
+      {
+        "id": 2,
+        "event": "interval.started",
+        "timestamp": "2026-11-03T12:27:30.886Z",
+        "value": {
+          "intervalKey": "down-one",
+          "type": "down",
+          "approvalState": "pending"
+        }
+      },
+      {
+        "id": 3,
+        "event": "interval.ended",
+        "timestamp": "2026-11-03T12:53:42.141Z",
+        "value": {
+          "intervalKey": "down-one"
+        }
+      },
+      {
+        "id": 4,
+        "event": "interval.started",
+        "timestamp": "2026-11-03T12:59:13.299Z",
+        "value": {
+          "intervalKey": "lunch",
+          "type": "lunch",
+          "length": 1800000,
+          "startBuffer": 150000,
+          "endBuffer": 150000
+        }
+      },
+      {
+        "id": 5,
+        "event": "interval.ended",
+        "timestamp": "2026-11-03T13:42:34.794Z",
+        "value": {
+          "intervalKey": "lunch"
+        }
+      },
+      {
+        "id": 6,
+        "event": "interval.started",
+        "timestamp": "2026-11-03T13:53:44.432Z",
+        "value": {
+          "intervalKey": "down-two",
+          "type": "down",
+          "approvalState": "pending"
+        }
+      },
+      {
+        "id": 7,
+        "event": "interval.ended",
+        "timestamp": "2026-11-03T13:59:13.852Z",
+        "value": {
+          "intervalKey": "down-two"
+        }
+      },
+      {
+        "id": 8,
+        "event": "trip.stopped",
+        "timestamp": "2026-11-03T13:59:15.619Z",
+        "value": {}
+      }
+    ]
+  },
+  "expected": {
+    "pendingMilliseconds": 1900675,
+    "includedWork": 3154944,
+    "excludedWork": 5055619
+  }
+}
