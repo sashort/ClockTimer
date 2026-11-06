@@ -61,7 +61,8 @@ async function exercise(core, checkFSM) {
             timer.configure({goal_bounding:false,goal_type:'auto',trip_goal:`${trip*100}%`,total_goal:`${total*100}%`});
             timer.autoSyncTripGoal=sync;
             await timer.start({standardTime:'0:30:00'});
-            const activeTrip=sync?timer.calculatedTripGoal:trip;
+            const activeTrip=trip; // Auto compares independent goals, regardless of saved Sync.
+            assert.equal(timer.calculatedTripGoal,undefined,'Auto does not calculate a synchronized Trip goal');
             const totalBudget=7200000/total-4800000;
             const requiredTripGoal=totalBudget>0?Math.ceil(1800000/totalBudget*100-1e-9)/100:undefined;
             const budgets={trip:Math.round(1800000/activeTrip),

@@ -4,11 +4,11 @@ import vm from 'node:vm';
 import {englishLanguage} from './announcement-language-fixture.mjs';
 const language=await englishLanguage(),app=fs.readFileSync(new URL('../app.js',import.meta.url),'utf8');
 let range='day',mode='auto',goals={trip:'110%',total:'100%'};
-const clockTimer={currentTripId:1,percentMode:'auto',calculatedTripGoal:1.12,calculatedGoalSource:'sync'};
+const clockTimer={currentTripId:1,percentMode:'auto',renderedPercentGoal:1.1,calculatedTripGoal:undefined,calculatedGoalSource:undefined};
 const spoken=[],songs=[],pending=[];let releaseChime,releaseSpeech;
 const chimeGate=new Promise(resolve=>releaseChime=resolve);
 const context=vm.createContext({console,clockTimer,
- announcementText:language.text,normalizePercentMode:value=>value,getTripLogRange:()=>range,
+ announcementText:language.text,normalizePercentMode:value=>value,getTripLogRange:()=>range,formatSummaryPercent:value=>Number((value*100).toFixed(6))+'%',
  goalPercentForScope:scope=>goals[scope],totalScopeLabel:()=>range[0].toUpperCase()+range.slice(1),
  consumeAnnouncementAction:()=>({perform:true}),goalFailureNumberWords:String,formatGoalFailureDuration:String,
  reserveSemanticEvent(){},audioAnnouncementOutput:()=>({speechDelayMs:0}),nextSemanticAnnouncementId:1000,
@@ -19,9 +19,10 @@ const context=vm.createContext({console,clockTimer,
 vm.runInContext(app.slice(app.indexOf('    class GoalChangeAnnouncement'),app.indexOf('    const setGoalPercentValue'))+
  app.slice(app.indexOf('    function buildGoalFailureSpeech('),app.indexOf('    function onPercentModeChanged'))+
  '\nglobalThis.Change=GoalChangeAnnouncement;globalThis.fail=onGoalFail;',context);
-const auto=new context.Change();range='week';goals={trip:'112%',total:'105%'};
+const auto=new context.Change();range='week';goals={trip:'110%',total:'105%'};clockTimer.renderedPercentGoal=1.12;
 assert.equal(auto.message('total','105%'),'Week goal set to 105 percent. Auto goal recalculated. New trip goal 112 percent.');
-clockTimer.percentMode='trip';const sync=new context.Change();goals={trip:'115%',total:'106%'};
+assert.equal(goals.trip,'110%','Auto feedback follows its selected target without replacing the independent Trip goal');
+clockTimer.percentMode='trip';clockTimer.calculatedTripGoal=1.12;clockTimer.calculatedGoalSource='sync';goals.trip='112%';const sync=new context.Change();goals={trip:'115%',total:'106%'};
 assert.equal(sync.message('total','106%'),'Week goal set to 106 percent. Sync value changed. New trip goal 115 percent.');
 const unchanged=new context.Change();assert.equal(unchanged.message('total','106%'),'');
 const direct=new context.Change();goals.trip='120%';assert.equal(direct.message('trip','120%'),'Trip goal set to 120 percent.');
