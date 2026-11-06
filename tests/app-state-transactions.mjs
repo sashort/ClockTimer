@@ -440,7 +440,7 @@ if(process.argv.includes('--goal-cascade')) {
  const say=async text=>{const u=window.SpeechMenu.testBegin();await window.SpeechMenu.testTranscript(u,text,true);await u.digestQueue;await u.segmentBarrier;await settle();assert(u.hadCommittedCommand&&!u.digestExecutionFailed,text+' commits');};
  await say('week goal one hundred five percent');
  assert.equal(timer.percentMode,'auto');assert.equal(timer.autoSyncTripGoal,true);
- assert.equal(timer.calculatedTripGoal,1.05);
+ assert.equal(timer.calculatedTripGoal,undefined,'Auto ignores the retained Sync preference');assert.equal(timer.renderedPercentGoal,1.05,'Auto still selects the derived aggregate candidate');assert.equal(timer.getGoalEditorSnapshot('trip').inferred_percent,timer.getGoalEditorSnapshot('trip').actual_percent,'Trip candidate stays independent');
  assert(spoken.includes('Week 36 goal set to 105 percent. Auto goal recalculated. New trip goal 105 percent.'),JSON.stringify(spoken));
  await window.WMOFActions.changeGoalMode('trip');await settle();spoken.length=0;
  await say('day goal one hundred ten percent');

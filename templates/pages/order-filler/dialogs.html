@@ -613,3 +613,19 @@ dialog.clock-timer-settings-frame-dialog iframe[data-settings-surface="graphical
     <form method="dialog"><header class="dialog-header"><strong id="goalLimitTitle" data-language-id="a56623a0-0264-5979-bfaf-f57634db28d6">{{text:a56623a0-0264-5979-bfaf-f57634db28d6:text0}}</strong></header>
     <p id="goalLimitMessage"></p><button id="goalLimitOk" type="submit" class="goal-limit-ok" data-language-id="9a39f2ce-8373-5c05-aa08-b571058c2074">{{text:9a39f2ce-8373-5c05-aa08-b571058c2074:text0}}</button></form>
 </dialog>
+
+<dialog id="syncAggregateDialog" class="app-dialog sync-aggregate-dialog" aria-labelledby="syncAggregateTitle" aria-describedby="syncAggregatePrompt">
+    <header class="dialog-header">
+        <h2 id="syncAggregateTitle" data-language-id="3ac5fd49-8e6e-5fcd-b617-b066d5596e44">{{text:3ac5fd49-8e6e-5fcd-b617-b066d5596e44:text0}}</h2>
+    </header>
+    <p id="syncAggregatePrompt" data-language-id="d8a00001-0000-4000-8000-000000000001">{{text:d8a00001-0000-4000-8000-000000000001:text0}}</p>
+    <div id="syncAggregateChoices" class="sync-aggregate-choices"></div>
+    <section id="syncCustomDates" class="sync-custom-dates" hidden>
+        <div class="sync-custom-fields">
+            <label><span data-language-id="adccfb3d-ed2e-5127-ab90-a905b5feffb3">{{text:adccfb3d-ed2e-5127-ab90-a905b5feffb3:text0}}</span><input id="syncCustomStart" type="date" required></label>
+            <label><span data-language-id="86592c6b-226a-5979-87ad-be33884929b5">{{text:86592c6b-226a-5979-87ad-be33884929b5:text0}}</span><input id="syncCustomEnd" type="date" required></label>
+        </div>
+        <p data-language-id="d8a00001-0000-4000-8000-000000000003">{{text:d8a00001-0000-4000-8000-000000000003:text0}}</p>
+    </section>
+    <p id="syncAggregateError" class="sync-aggregate-error" role="alert" hidden></p>
+</dialog>

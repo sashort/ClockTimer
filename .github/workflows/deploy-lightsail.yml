@@ -243,9 +243,11 @@ jobs:
       - run: node tests/hamburger-custom-sections-browser.cjs
       - run: node tests/summary-caption-fitting-browser.cjs
       - run: node tests/sync-menu-announcement-browser.cjs
+      - run: node tests/sync-aggregate-dialog-browser.cjs
       - run: node tests/dialog-safe-boundary-browser.cjs
       - run: node tests/drop-in-dialog-boundary-browser.cjs
       - run: node tests/drop-in-auto-goals-browser.cjs
+      - run: node tests/auto-ignores-sync.mjs
       - run: node tests/drop-in-auto-goals.mjs
       - run: node tests/drop-in-page.mjs
       - run: node tests/drop-in-preferences.mjs

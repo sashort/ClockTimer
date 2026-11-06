@@ -7044,6 +7044,30 @@
         "text0": "89bde4b2-b28d-5ed9-8307-78612b549eab"
       },
       "attributes": {}
+    },
+    "d8a00001-0000-4000-8000-000000000001": {
+      "elementId": "d8a00001-0000-4000-8000-000000000001",
+      "source": "syncAggregatePrompt",
+      "texts": {
+        "text0": "d8a00001-0000-4000-8000-000000000001"
+      },
+      "attributes": {}
+    },
+    "d8a00001-0000-4000-8000-000000000002": {
+      "elementId": "d8a00001-0000-4000-8000-000000000002",
+      "source": "syncAggregateCustomPrompt",
+      "texts": {
+        "text0": "d8a00001-0000-4000-8000-000000000002"
+      },
+      "attributes": {}
+    },
+    "d8a00001-0000-4000-8000-000000000003": {
+      "elementId": "d8a00001-0000-4000-8000-000000000003",
+      "source": "syncAggregateCustomHint",
+      "texts": {
+        "text0": "d8a00001-0000-4000-8000-000000000003"
+      },
+      "attributes": {}
     }
   },
   "selects": {

@@ -7559,7 +7559,7 @@
             Boolean(value);
 
         if (
-            enabled &&
+            enabled && clockTimer.percentMode !== "auto" &&
             endTimeGoalOverride
         ) {
             endTimeGoalOverride =
@@ -7825,6 +7825,37 @@
                     }
                 });
         }
+    }
+
+    function applySyncGoalsFeedback(enabled) {
+        const current=getSyncGoalsState();
+        try {setSyncGoals(enabled);} catch {return confirmSettingChange(announcementText("announcements.syncTry.failed"),{feedbackSong:"goal-failed"});}
+        animateSyncGoalsIcons();
+        return confirmSettingChange(syncAnnouncement(current===enabled
+            ? announcementText("messages.voiceFeedback.syncAlready",{state:enabled?'on':'off'})
+            : announcementText(enabled?"announcements.syncTry.on":"announcements.syncTry.off")),{previous:current,next:enabled});
+    }
+    function expandSyncCustomDates() {
+        const dialog=document.getElementById('syncAggregateDialog');dialog.dataset.customExpanded='true';document.getElementById('syncCustomDates').hidden=false;
+        const prompt=document.getElementById('syncAggregatePrompt');prompt.dataset.languageId='d8a00001-0000-4000-8000-000000000002';prompt.textContent=WMOFLanguagePack.text(prompt.dataset.languageId);
+        for(const button of dialog.querySelectorAll('[data-sync-aggregate]'))button.setAttribute('aria-pressed',String(button.dataset.syncAggregate==='custom'));
+        dialog.querySelector('[data-sync-aggregate="custom"]')?.focus();return true;
+    }
+    function openSyncAggregateChooser() {
+        const dialog=document.getElementById('syncAggregateDialog');if(dialog.open)return true;
+        const selected=getTripLogRange(),choices=dialog.querySelector('#syncAggregateChoices');choices.replaceChildren();dialog.querySelector('#syncAggregateError').hidden=true;
+        delete dialog.dataset.customExpanded;document.getElementById('syncCustomDates').hidden=true;
+        const prompt=document.getElementById('syncAggregatePrompt');prompt.dataset.languageId='d8a00001-0000-4000-8000-000000000001';prompt.textContent=WMOFLanguagePack.text(prompt.dataset.languageId);
+        let saved;try{saved=JSON.parse(safeStorageGet(STORAGE.customTripLogDates)||'null');}catch{}
+        const start=document.getElementById('syncCustomStart'),end=document.getElementById('syncCustomEnd');start.value=saved?.start||tripLogStartDate.value;end.value=saved?.end||tripLogEndDate.value||start.value;end.min=start.value;
+        for(const input of [start,end]){input.removeAttribute('aria-invalid');input.oninput=()=>{end.min=start.value;input.removeAttribute('aria-invalid');};}
+
+        for(const scope of aggregateScopes){
+            const button=document.createElement('button');button.type='button';button.dataset.syncAggregate=scope;button.textContent=aggregateScopeLabel(scope);button.setAttribute('aria-pressed',String(scope===selected));
+            globalThis.WMOFInteractionFunctions.bindAction({element:button,event:'click',name:'selectSyncAggregate_'+scope.replaceAll('-','_'),action:'selectSyncAggregate',args:()=>[scope]});choices.append(button);
+        }
+        const opened=openDialog('syncAggregateDialog',{fromPopover:true,reason:'sync-aggregate'});
+        if(opened){if(selected==='custom')expandSyncCustomDates();choices.querySelector('[data-sync-aggregate="'+selected+'"]')?.focus();}return opened;
     }
 
     function toggleSyncGoals() {
@@ -12574,7 +12605,7 @@
             name:
                 "toggleMenuSyncClick",
             action:
-                "toggleSync",
+                "toggleSyncButton",
             preventDefault:
                 true
         });
@@ -12589,7 +12620,7 @@
             name:
                 "toggleGoalSyncClick",
             action:
-                "toggleSync",
+                "toggleSyncButton",
             preventDefault:
                 true
         });
@@ -12662,6 +12693,7 @@
 
     document.querySelectorAll("dialog").forEach(dialog => {
         dialog.addEventListener("cancel", event => {
+            if(dialog.id==='syncAggregateDialog'){event.preventDefault();return;}
             if (dialog === tripLogDialog) {event.preventDefault(); void closeTripList('escape'); return;}
             if (dialog === voiceEntrySurface) {event.preventDefault(); void closeVoiceEntry({cancel: true}); return;}
             if (dialog === tripSettingsDialog) {
@@ -23214,6 +23246,8 @@
                 return actions.closeSpeechOptions();
             }
 
+            if(document.getElementById('syncAggregateDialog')?.open)return false;
+
             const popover = targetSurface?.matches?.('dialog') ? undefined
                 : targetSurface?.hasAttribute?.('popover') ? targetSurface :
                 [
@@ -23914,8 +23948,8 @@
     class GoalChangeAnnouncement {
         constructor() {
             this.mode = normalizePercentMode(clockTimer.percentMode);
-            this.tripGoal = goalPercentForScope("trip");
-            this.goals = {trip: this.tripGoal, total: goalPercentForScope("total")};
+            this.tripGoal = this.mode === "auto" ? formatSummaryPercent(clockTimer.renderedPercentGoal) : goalPercentForScope("trip");
+            this.goals = {trip: goalPercentForScope("trip"), total: goalPercentForScope("total")};
             this.range = getTripLogRange();
         }
         async run(action) {
@@ -23932,8 +23966,8 @@
                 sentences.push(announcementText("messages.settings.goalChanged", {
                     scope: scope === "total" ? totalScopeLabel() : "Trip", percent: after.replace(/%$/, "")
                 }));
-            const tripGoal = goalPercentForScope("trip");
-            if (scope !== "trip" && tripGoal && tripGoal !== this.tripGoal && clockTimer.calculatedTripGoal > 0) {
+            const tripGoal = this.mode === "auto" ? formatSummaryPercent(clockTimer.renderedPercentGoal) : goalPercentForScope("trip");
+            if (scope !== "trip" && tripGoal && tripGoal !== this.tripGoal && (this.mode === "auto" || clockTimer.calculatedTripGoal > 0)) {
                 const cause = this.mode === "auto" ? "autoGoalRecalculated"
                     : clockTimer.calculatedGoalSource === "sync" ? "syncValueChanged" : undefined;
                 if (cause) sentences.push(announcementText("messages.settings." + cause));
@@ -25275,6 +25309,28 @@
                         {state:clockTimer.goalBounding ? "on" : "off"}), {unchanged:true});
                 if (!["on","off"].includes(boundingAction)) return false;
                 return setGoalBounding(boundingAction === "on");
+            },
+
+            toggleSyncButton() {
+                if(normalizedConnectionStatus()==='offline'){animateOfflineClouds();return confirmSettingChange(syncAnnouncement(announcementText("announcements.syncTry.offline")));}
+                return getSyncGoalsState()?applySyncGoalsFeedback(false):openSyncAggregateChooser();
+            },
+            async selectSyncAggregate(scope) {
+                const dialog=document.getElementById('syncAggregateDialog');if(!dialog.open||!aggregateScopes.includes(scope)||dialog.dataset.applying==='true')return false;
+                if(scope==='custom'&&dialog.dataset.customExpanded!=='true')return expandSyncCustomDates();
+                const choices=[...dialog.querySelectorAll('[data-sync-aggregate]')],error=dialog.querySelector('#syncAggregateError');dialog.dataset.applying='true';dialog.setAttribute('aria-busy','true');error.hidden=true;for(const button of choices)button.disabled=true;
+                let rangeError;const onError=event=>{if(event.detail?.range===scope)rangeError=event.detail.message;};window.addEventListener('wmof:trip-log-error',onError);
+                try {
+                    if(scope==='custom'){
+                        const start=document.getElementById('syncCustomStart'),end=document.getElementById('syncCustomEnd');
+                        try{CalendarRange.custom(start.value,end.value,calendarRanges.getTimezone());}catch(cause){start.setAttribute('aria-invalid',String(!start.validity.valid));end.setAttribute('aria-invalid','true');throw cause;}
+                        const dates={start:start.value,end:end.value};await safeStorageSet(STORAGE.customTripLogDates,JSON.stringify(dates));tripLogStartDate.value=dates.start;tripLogEndDate.value=dates.end;
+                    }
+                    setTripLogRange(scope,{announce:false});await tripRangeRefreshCompletion;
+                    if(rangeError)throw Error(rangeError);
+                    const result=applySyncGoalsFeedback(true);await closeDialogWithReturn(dialog,{reason:'sync-aggregate-selected'});return result;
+                } catch(cause){error.textContent=cause.message;error.hidden=false;return false;}
+                finally{window.removeEventListener('wmof:trip-log-error',onError);delete dialog.dataset.applying;dialog.removeAttribute('aria-busy');for(const button of choices)button.disabled=false;}
             },
 
             toggleSync(
@@ -27766,7 +27822,7 @@
             }
         );
 
-    for (const action of ["toggleSync","changeGoalBounding"])
+    for (const action of ["toggleSync","toggleSyncButton","selectSyncAggregate","changeGoalBounding"])
         globalThis.WMOFActionFunctions.setMetadata(action,{transaction:false,independent:true,slotKey:'sync',waitForSlotKeys:['authentication','sync']});
     for (const action of ['readTripGoal','readScopeGoal','setTripGoal','setTotalGoal','changeGoal'])
         globalThis.WMOFActionFunctions.setMetadata(action,{transaction:false,independent:true,slotKey:'goal',waitForSlotKeys:['authentication','goal']});

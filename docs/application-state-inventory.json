@@ -4203,6 +4203,19 @@
       ],
       "stateIdPrefix": "SURFACE-GRAPHICAL-PREVIEW-LEGEND",
       "kind": "popover"
+    },
+    {
+      "id": "syncAggregateDialog",
+      "source": "order-filler.html",
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "stateIdPrefix": "SURFACE-SYNC-AGGREGATE-DIALOG",
+      "kind": "dialog",
+      "notes": "Button-only mandatory aggregate choice when enabling Sync; Day is default. No X, OK/Cancel, Escape/backdrop or generic Close dismissal. Custom expands draft Start/End fields and applies on the next Custom tap. Voice Sync on/off bypasses this surface."
     }
   ],
   "constraints": [

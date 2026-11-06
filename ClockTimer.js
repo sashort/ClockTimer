@@ -1883,7 +1883,7 @@
                 goal_bounding_state:this.#resolveGoalSelection().requirements.bounding??null,
                 sync_override: this.#syncOverride,
                 sync_below_floor: this.syncBelowFloor,
-                sync_override_in_use: this.#started&&this.#autoSyncTripGoal&&scope==="trip"&&
+                sync_override_in_use: this.#percentMode!=="auto"&&this.#started&&this.#autoSyncTripGoal&&scope==="trip"&&
                     this.#resolveGoalSelection().requirements.tripGoal<1,
                 auto_goal_order: Object.freeze(this.#getPercentageOrder().split("_")),
                 active_break_type: interval?.breakType || null,
@@ -6334,7 +6334,7 @@
                 this.#preparedTrip = undefined;
             }
 
-            if (this.#autoSyncTripGoal) {
+            if (this.#percentMode!=="auto" && this.#autoSyncTripGoal) {
                 const previousRenderedPercentGoalSourceOverride =
                     this.#renderedPercentGoalSourceOverride;
 
@@ -8119,7 +8119,7 @@
                     await this.loadTrip(tripId);
                     this.autoSyncTripGoal = auto;
                     if (goal) this.setAttribute("trip-goal",goal);
-                    if (auto) this.setTripGoalToTotalGoal();
+                    if (auto && this.#percentMode!=="auto") this.setTripGoalToTotalGoal();
                 }
             }
             return result;
@@ -8236,7 +8236,7 @@
             this.#handleTripGoalChange("user");
         }
         get syncBelowFloor() {
-            return this.#autoSyncTripGoal && Number.isFinite(this.#rawSyncTripGoal) &&
+            return this.#percentMode!=="auto" && this.#autoSyncTripGoal && Number.isFinite(this.#rawSyncTripGoal) &&
                 this.#rawSyncTripGoal < 1;
         }
         get rawSyncTripGoal() { return this.#rawSyncTripGoal; }
@@ -8272,7 +8272,10 @@
             this.#autoSyncTripGoal =
                 value;
 
-            if (value) {
+            if (this.#percentMode === "auto") {
+                this.#refreshCalculatedTripGoal();
+            }
+            else if (value) {
                 this.#calculatedTotalGoal = undefined;
                 this.#calculatedGoalSource = "sync";
                 this.#refreshCalculatedTripGoal();
@@ -24294,7 +24297,7 @@
             source = this.#renderedPercentGoalSourceOverride ?? "automatic",
             { forceEvent = false } = {}
         ) {
-            const enabled = this.#autoSyncTripGoal && this.#started && this.#hasStartProperties();
+            const enabled = this.#percentMode!=="auto" && this.#autoSyncTripGoal && this.#started && this.#hasStartProperties();
             return this.#dispatch("syncGoal", [enabled ? "on" : "off"], { source, forceEvent });
         }
 
@@ -27485,6 +27488,9 @@
         }
 
         #getTripGoal() {
+            // Auto compares independent candidates; a stored Sync preference
+            // must not replace its Trip candidate with the aggregate candidate.
+            if(this.#percentMode==='auto'&&this.#calculatedGoalSource==='sync')return this.#getUserTripGoal();
             return (
                 Number.isFinite(this.#calculatedTripGoal) &&
                 this.#calculatedTripGoal > 0

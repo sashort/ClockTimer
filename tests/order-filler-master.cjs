@@ -6,6 +6,8 @@ const reporter = require('./diagnostics-reporter.cjs').sharedReporter();
 
 module.exports = async function runMaster(method) {
  const f = await fixture({input:method==='voice'?(process.env.CLOCKTIMER_VOICE_INPUT||'audio'):'transcript'}), {page} = f;
+ // Range selection requires the same valid totals shape as the production API.
+ await page.route('**/api/trips/**',async route=>{const url=new URL(route.request().url());if(route.request().method()==='GET'&&url.searchParams.has('startTime'))return route.fulfill({json:{aggregateBreakdown:{production:{tripCount:0,standardTimeMilliseconds:0,actualTimeMilliseconds:0,countedTimeMilliseconds:0},nonProduction:{trips:[]}}}});return route.fallback();});
  const diagnostics=require('./diagnostics-reporter.cjs');
  diagnostics.setCheckpointHooks(new (require('./browser-test-pause.cjs'))(page));
  const steps = [];
@@ -95,7 +97,7 @@ module.exports = async function runMaster(method) {
   await check('sync on and off',async()=>{
    for(const enabled of [true,false]) {
     if(method==='voice')await say('sync '+(enabled?'on':'off'));
-    else {await tap('#menuButton');await tap('#goalSettingsMenuButton');await tap('#toggleSyncMenuButton');await tap('#menuButton');}
+    else {await tap('#menuButton');await tap('#goalSettingsMenuButton');await tap('#toggleSyncMenuButton');if(enabled){await page.waitForFunction(()=>document.querySelector('#syncAggregateDialog').open);await tap('#syncAggregateDialog [data-sync-aggregate][aria-pressed="true"]');await page.waitForFunction(()=>!document.querySelector('#syncAggregateDialog').open);}await tap('#menuButton');}
     assert.equal(await state(()=>document.querySelector('#clockTimer').autoSyncTripGoal),enabled);
    }
   });

@@ -7567,6 +7567,21 @@
       "id": "d7800001-0000-4000-8000-000000000002",
       "text": "Standard",
       "default": "Standard"
+    },
+    "d8a00001-0000-4000-8000-000000000001": {
+      "id": "d8a00001-0000-4000-8000-000000000001",
+      "text": "Select an aggregate to sync with.",
+      "default": "Select an aggregate to sync with."
+    },
+    "d8a00001-0000-4000-8000-000000000002": {
+      "id": "d8a00001-0000-4000-8000-000000000002",
+      "text": "Set the dates, then tap Custom.",
+      "default": "Set the dates, then tap Custom."
+    },
+    "d8a00001-0000-4000-8000-000000000003": {
+      "id": "d8a00001-0000-4000-8000-000000000003",
+      "text": "Tap Custom above to sync with these dates.",
+      "default": "Tap Custom above to sync with these dates."
     }
   }
 }

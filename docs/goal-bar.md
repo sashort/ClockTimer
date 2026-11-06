@@ -348,8 +348,8 @@ At 100%, Trip and aggregate targets keep their real names in display and speech;
 Standard naming applies only to the actual Standard fallback.
 
 
-Active Trip nodes use the effective synchronized goal, including the Goal Bounding
-floor and raw-goal fallback policy; idle nodes still use configured goals. Changing Goal Bounding recalculates
+Active Trip nodes use the mode’s effective goal, including the Goal Bounding
+floor and raw-goal fallback policy. Trip mode honors Sync; Auto ignores Sync and keeps its Trip candidate independent from the aggregate. Idle nodes still use configured goals. Changing Goal Bounding recalculates
 the node immediately. Editors continue to edit the underlying configured goal.
 Current percentage reserves a measured widest-digit width for its integer-digit
 band plus two decimals and the percent sign. The displayed value is unchanged.
