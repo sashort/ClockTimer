@@ -2005,7 +2005,12 @@
                 percent:Number.isFinite(current)?current*100:null, unbounded:Number(summary.trip?.productiveTimeMilliseconds??counted) <= 0, counted_position:counted,
                 time:this.#decorateTripTimeText(this.#getCurrentTripTimeText(summary, now), now,this.#getCurrentTripTimeValue(summary,now)), failed:false}));
             const failed = nodes.filter(node=>!node.current).every(node=>node.failed);
-            const upcoming=nodes.filter(node=>!node.current&&!node.failed&&Number.isFinite(node.remaining_milliseconds)).sort((a,b)=>b.percent-a.percent);
+            const targetScope=this.#getRenderedPercentScope();
+            const locked=this.#percentMode==='auto'&&this.#autoGoalOverride!==null;
+            // A lock selects an identity, even when another node is earlier,
+            // shares its percentage, or the locked target has already passed.
+            const upcoming=nodes.filter(node=>!node.current&&Number.isFinite(node.remaining_milliseconds)
+                &&(locked?node.id===targetScope:!node.failed)).sort((a,b)=>b.percent-a.percent);
             let nextGoal=null;
             if(upcoming.length){
                 let shared=upcoming.filter(node=>Math.abs(node.percent-upcoming[0].percent)<1e-7);
@@ -2014,7 +2019,7 @@
                 const remaining=upcoming[0].remaining_milliseconds;
                 nextGoal=Object.freeze({ids:Object.freeze(shared.map(node=>node.id)),label:shared.map(node=>node.label).reverse().join("/"),remaining_milliseconds:remaining,clock:this.#decorateTripTimeText(this.#formatRemainingRenderedDuration(remaining),now,remaining,"remaining")});
             }
-            const targetNode=nodes.find(n=>n.id===this.#getRenderedPercentScope())||nodes.find(n=>n.id==='standard');
+            const targetNode=nodes.find(n=>n.id===targetScope)||nodes.find(n=>n.id==='standard');
             const targetGoal=targetNode&&Number.isFinite(targetNode.remaining_milliseconds)?Object.freeze({ids:Object.freeze([targetNode.id]),label:targetNode.label,remaining_milliseconds:targetNode.remaining_milliseconds,clock:this.#decorateTripTimeText(this.#formatRemainingRenderedDuration(targetNode.remaining_milliseconds),now,targetNode.remaining_milliseconds,'remaining')}):null;
             return Object.freeze({available:true, active:true, next_goal:nextGoal, target_goal:targetGoal,time_mode:mode, nodes:Object.freeze(nodes),
                 all_failed:failed,

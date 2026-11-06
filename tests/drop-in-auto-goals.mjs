@@ -45,7 +45,7 @@ snapshot.viewData.percentageDisplay='bar';const unchanged=JSON.stringify(snapsho
 const tick=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
 controller.applyPreference({mode:'auto',aggregateScope:'week',tripGoal:'125',aggregateGoals:{week:'110',day:'120'},autoGoalOverride:'standard',sync:'off'});
 assert.equal(controller.displayState.auto_goal_override,'standard');
-assert.equal(controller.displayState.effective_goal_type,'standard');
+assert.equal(controller.displayState.effective_goal_type,'standard');assert.deepEqual([...controller.displayState.goal_bar.next_goal.ids],['standard']);assert.equal(controller.displayState.goal_bar.next_goal.remaining_milliseconds,controller.displayState.goal_bar.nodes.find(n=>n.id==='standard').remaining_milliseconds);
 assert.equal(controller.timer.getAttribute('trip-goal'),'125%');
 assert.equal(controller.timer.getAttribute('total-goal'),'110%');
 controller.update(structuredClone(snapshot));
@@ -58,7 +58,7 @@ requests[0].resolve({standardTimeMilliseconds:600000,countedTimeMilliseconds:600
 assert.equal(controller.timer.percentMode,'auto');
 assert.equal(controller.timer.getAttribute('total-goal'),'120%');
 assert.equal(controller.displayState.auto_goal_override,'total');
-assert.equal(controller.displayState.effective_goal_type,'total');
+assert.equal(controller.displayState.effective_goal_type,'total');assert.deepEqual([...controller.displayState.goal_bar.next_goal.ids],['total']);
 const readouts=JSON.stringify(controller.displayState);
 controller.update(structuredClone(snapshot));await tick();
 assert.equal(JSON.stringify(controller.displayState),readouts,'same snapshot keeps locked percentage and time readouts stable');
