@@ -109,7 +109,7 @@ let appSource=fs.readFileSync(process.env.CLOCKTIMER_APP_SOURCE || new URL('../a
 // The fixture freezes Date.now for trip boundaries; eliminate audio pauses
 // so its frozen wall clock cannot accumulate an artificial playback backlog.
 if(process.argv.includes('--voice-feedback') || process.argv.includes('--interval-actions')) appSource=appSource.replace('const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 300;', 'const ANNOUNCEMENT_SPEECH_PAUSE_AT_1X = 0;');
-if(process.argv.includes('--pointer-mode') || process.argv.includes('--range-permissions') || process.argv.includes('--scope-feedback'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
+if(process.argv.includes('--pointer-mode') || process.argv.includes('--range-permissions') || process.argv.includes('--scope-feedback') || process.argv.includes('--sync-override-feedback'))window.eval(fs.readFileSync(new URL('../ModeMenu.js',import.meta.url),'utf8'));
 if(process.argv.includes('--mic-feedback'))appSource=appSource.replace('    let microphoneReminderTimer=null,microphoneReminderGeneration=0;', '    let microphoneReminderTimer=null,microphoneReminderGeneration=0;globalThis.testMicrophoneReminder=()=>microphoneReminderTimer;');
 if(process.argv.includes('--exhaustive-values'))appSource=appSource.replace('    document.dispatchEvent(new Event("clocktimer-app-ready"));',`    globalThis.testValueSnapshot=()=>{const p=splitAbsoluteDigits(numberPadState?.pending);return {pending:numberPadState?.pending,date:numberPadState?.pendingDate,meridiem:numberPadState?.meridiem,valid:numberPadValueValid(),value:numberPadState?.mode==='absolute'?(p?absoluteHour24(numberPadState)*3600000+p.minute*60000+p.second*1000:undefined):timeDigitsToMilliseconds(numberPadState?.pending),voice:voiceEntryValue.textContent,touch:numberPadDisplay?.textContent};};
     document.dispatchEvent(new Event("clocktimer-app-ready"));`);
@@ -1259,7 +1259,9 @@ if(process.argv.includes('--commands-close')) {
  console.log('PASS Commands open/close settles orchestration and re-enables controls');await window.happyDOM.close();process.exit(0);
 }
 if(process.argv.includes('--sync-override-feedback')) {
+ timer.configure({goal_type:'auto'});
  await timer.connect('test','test');window.document.querySelector('#loginDialog').close();await settle();
+ await window.WMOFActions.changeGoalMode('trip');await settle();
  const button=window.document.querySelector('#goalBoundingButton');
  await window.WMOFActions.toggleSync('off');await settle();
  for(const enabled of [false,true]) {
@@ -1268,7 +1270,7 @@ if(process.argv.includes('--sync-override-feedback')) {
  }
  await timer.start({standardTime:'00:20:00'});await window.WMOFActions.toggleSync('on');await settle();
  timer.configure({goal_type:'trip',auto_goal:true,trip_goal:'100%',total_goal:'100%',external_standard_time:600000,external_counted_time:300000});await settle();
- assert.equal(timer.getSummarySnapshot().trip.percentGoal,1,'floor initially applies');spoken.length=0;button.click();await settle();
+ assert.equal(timer.percentMode,'trip');assert.equal(timer.getSummarySnapshot().trip.percentGoal,1,'floor initially applies');spoken.length=0;button.click();await settle();
  assert.equal(timer.getSummarySnapshot().trip.percentGoal,.8,'disabling bounding recalculates below the floor');
  assert.deepEqual(spoken,['Goal bounding off. New trip goal 80 percent.'],'bounding state precedes recalculation');
  spoken.length=0;button.click();await settle();assert.equal(timer.getSummarySnapshot().trip.percentGoal,1);
