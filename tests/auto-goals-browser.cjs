@@ -3,7 +3,7 @@ const fixture=require('./order-filler-master-fixture.cjs'),assert=require('node:
 await op(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();while(!WMOFAccountSettings.loaded)await new Promise(r=>setTimeout(r,20));});
 const state=()=>p.evaluate(()=>({mode:clockTimer.percentMode,range:WMOFInteractionState.state.tripLogRange,override:clockTimer.uiState.auto_goal_override,actual:clockTimer.getGoalEditorSnapshot('total').actual_percent,goals:WMOFInteractionState.state.goals.aggregateGoals,identity:WMOFInteractionState.state.goals.autoOverride}));
 const row=kind=>p.locator('[data-auto-target='+kind+']');
-const open=async()=>{await p.waitForFunction(()=>!document.querySelector('#scopeToggleDropdown').matches(':popover-open'));await p.locator('#scopeToggle').click();await p.locator('#scopeToggleDropdown [data-mode=auto]').click();await row('aggregate').waitFor();};
+const open=async()=>{await p.clock.runFor(500);await p.waitForFunction(()=>!document.querySelector('#scopeToggleDropdown').matches(':popover-open'));await p.locator('#scopeToggle').click();await p.locator('#scopeToggleDropdown [data-mode=auto]').click();await row('aggregate').waitFor();};
 const toggle=async kind=>{await row(kind).locator('input').click();await p.clock.runFor(400);};
 const confirm=async(kind='aggregate')=>{await p.locator('.auto-pane-ok').click();await p.waitForFunction(()=>!document.querySelector('#scopeToggleDropdown').matches(':popover-open'));};
 const choose=async scope=>{await p.locator('.auto-aggregate-select').selectOption(scope);await p.locator('[data-auto-scope='+scope+']').waitFor();};

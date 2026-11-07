@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict'),{commands,reusable}=require('../scripts/ci-browser-resume.cjs');
+const before='  settings-browser:\n    steps:\n      - run: node tests/a.cjs\n      - run: node tests/b.cjs\n  break-session-backend:\n';
+const after=before.replace('    steps:\n','    steps:\n      # browser-resume:start\n      - run: node scripts/ci-browser-resume.cjs --plan\n      # browser-resume:end\n').replaceAll('- run: node tests/','- run: node scripts/ci-browser-resume.cjs node tests/');
+assert.deepEqual(commands(after),['node tests/a.cjs','node tests/b.cjs']);
+assert.deepEqual(reusable({before,after,changed:[]}),commands(before));
+assert.deepEqual(reusable({before,after,changed:['tests/a.cjs']}),['node tests/b.cjs']);
+for(const changed of [['app.js'],['tests/shared-fixture.cjs'],['tests/package-lock.json']])assert.deepEqual(reusable({before,after,changed}),[]);
+assert.deepEqual(reusable({before,after,changed:['tests/a.cjs'],referenced:()=>true}),[]);
+assert.deepEqual(reusable({before,after:after.replace('steps:','runs-on: changed\n    steps:'),changed:[]}),[]);
+console.log('PASS browser resume preserves unchanged results, reruns changed tests and invalidates shared/application/setup changes');

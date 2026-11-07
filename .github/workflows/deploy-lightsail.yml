@@ -213,8 +213,17 @@ jobs:
   settings-browser:
     runs-on: ubuntu-latest
     needs: [wav-library]
+    # browser-resume:start
+    permissions:
+      actions: read
+      contents: read
+    # browser-resume:end
     steps:
       - uses: actions/checkout@v4
+        # browser-resume:start
+        with:
+          fetch-depth: 0
+        # browser-resume:end
       - uses: actions/download-artifact@v4
         with:
           pattern: wav-library-*
@@ -228,99 +237,107 @@ jobs:
         working-directory: tests
       - run: npx playwright install --with-deps chromium
         working-directory: tests
-      - run: node tests/main-page-browser.cjs
-      - run: node tests/halloween-theme-browser.cjs
-      - run: node tests/halloween-keypad-browser.cjs
-      - run: node tests/halloween-keypad-levels.cjs
-      - run: node tests/halloween-trip-playback-browser.cjs
+      # browser-resume:start
+      - name: Reuse verified unchanged browser checks
+        run: |
+          node tests/ci-browser-resume.cjs
+          node scripts/ci-browser-resume.cjs --plan
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      # browser-resume:end
+      - run: node scripts/ci-browser-resume.cjs node tests/main-page-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/halloween-theme-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/halloween-keypad-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/halloween-keypad-levels.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/halloween-trip-playback-browser.cjs
       - run: node scripts/verify-wav-library.cjs
       - run: node scripts/build-wav-catalogs.cjs
-      - run: node tests/halloween-trip-arrangements.mjs
-      - run: node tests/announcement-real-engine-browser.cjs
-      - run: node tests/vosk-collector-browser.cjs
-      - run: node tests/web-speech-browser.cjs
-      - run: node tests/percent-summary-layout-browser.cjs
-      - run: node tests/hamburger-custom-sections-browser.cjs
-      - run: node tests/summary-caption-fitting-browser.cjs
-      - run: node tests/sync-menu-announcement-browser.cjs
-      - run: node tests/sync-aggregate-dialog-browser.cjs
-      - run: node tests/dialog-safe-boundary-browser.cjs
-      - run: node tests/drop-in-dialog-boundary-browser.cjs
-      - run: node tests/drop-in-auto-goals-browser.cjs
-      - run: node tests/auto-ignores-sync.mjs
-      - run: node tests/drop-in-auto-goals.mjs
-      - run: node tests/drop-in-page.mjs
-      - run: node tests/drop-in-preferences.mjs
-      - run: node tests/observer-goal-pad.mjs
-      - run: node tests/invalid-trip-recovery-browser.cjs
-      - run: node tests/retained-page-operation-browser.cjs
-      - run: node tests/trip-time-bank-browser.cjs
-      - run: node tests/overtime-break-browser.cjs
-      - run: node tests/break-buffer-layout-browser.cjs
-      - run: node tests/timer-attention-browser.cjs
-      - run: node tests/buffer-wing-motion-browser.cjs
-      - run: node tests/early-break-readout-browser.cjs
-      - run: node tests/goal-bounding-browser.cjs
-      - run: node tests/goal-bar-browser.cjs
-      - run: node tests/next-goal-countdown-browser.cjs
-      - run: node tests/end-time-projection-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/halloween-trip-arrangements.mjs
+      - run: node scripts/ci-browser-resume.cjs node tests/announcement-real-engine-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/vosk-collector-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/web-speech-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/percent-summary-layout-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/hamburger-custom-sections-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/summary-caption-fitting-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/sync-menu-announcement-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/sync-aggregate-dialog-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/dialog-safe-boundary-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/drop-in-dialog-boundary-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/drop-in-auto-goals-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/auto-ignores-sync.mjs
+      - run: node scripts/ci-browser-resume.cjs node tests/drop-in-auto-goals.mjs
+      - run: node scripts/ci-browser-resume.cjs node tests/drop-in-page.mjs
+      - run: node scripts/ci-browser-resume.cjs node tests/drop-in-preferences.mjs
+      - run: node scripts/ci-browser-resume.cjs node tests/observer-goal-pad.mjs
+      - run: node scripts/ci-browser-resume.cjs node tests/invalid-trip-recovery-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/retained-page-operation-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/trip-time-bank-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/overtime-break-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/break-buffer-layout-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/timer-attention-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/buffer-wing-motion-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/early-break-readout-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bounding-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bar-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/next-goal-countdown-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/end-time-projection-browser.cjs
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-      - run: node tests/trip-editor-dst-matrix.cjs
-      - run: node tests/numberpad-clipboard-browser.cjs
-      - run: node tests/official-percent-browser.cjs
-      - run: node tests/live-trip-editor-browser.cjs
-      - run: node tests/dedicated-trip-editor-browser.cjs
-      - run: node tests/trip-log-down-editor-gestures-browser.cjs
-      - run: node tests/trip-editor-down-colors-browser.cjs
-      - run: node tests/down-time-visuals-browser.cjs
-      - run: node tests/goal-bar-units-browser.cjs
-      - run: node tests/goal-bar-hit-area-browser.cjs
-      - run: node tests/goal-bar-label-width-browser.cjs
-      - run: node tests/goal-bar-avatar-browser.cjs
-      - run: node tests/goal-bar-avatar-surface-browser.cjs
-      - run: node tests/halloween-avatar-layout-browser.cjs
-      - run: node tests/goal-bar-ticks-browser.cjs
-      - run: node tests/layout-mode-transitions-browser.cjs
-      - run: node tests/layout-startup-browser.cjs
-      - run: node tests/goal-bar-interactions-browser.cjs
-      - run: node tests/auto-goals-browser.cjs
-      - run: node tests/compact-actions-browser.cjs
-      - run: node tests/start-in-down-browser.cjs
-      - run: node tests/goal-pad-layout-browser.cjs
-      - run: node tests/web-speech-login-browser.cjs
-      - run: node tests/web-speech-value-collection-browser.cjs
-      - run: node tests/login-fullscreen-browser.cjs
-      - run: node tests/order-filler-layout-browser.cjs
-      - run: node tests/order-filler-master-touch.cjs
-      - run: node tests/diagnostic-speech-audio-test.cjs
-      - run: node tests/human-speech-audio-test.cjs
-      - run: node tests/speech-recordings-browser.cjs
-      - run: node tests/speech-continuation-browser.cjs
-      - run: node tests/shared-modal-browser.cjs
-      - run: node tests/hamburger-menu-coverage-browser.cjs
-      - run: node tests/mic-modal-browser.cjs
-      - run: node tests/trip-log-splitter-browser.cjs
-      - run: node tests/trip-log-downtime-browser.cjs
-      - run: node tests/trip-log-down-filters-browser.cjs
-      - run: node tests/pending-down-master-browser.cjs
-      - run: node tests/historical-range-browser.cjs
-      - run: node tests/completed-summary-sync-browser.cjs
-      - run: node tests/summary-official-percent-browser.cjs
-      - run: php tests/pending-down-accounting.php
-      - run: node tests/pending-down-policy-browser.cjs
-      - run: node tests/break-session-browser.cjs
-      - run: node tests/break-only-log-browser.cjs
-      - run: node tests/impersonation-portal-browser.cjs
-      - run: node tests/application-state-inventory-browser.cjs
-      - run: node tests/graphical-settings-browser.cjs
-      - run: node tests/clock-settings-previews-browser.cjs
-      - run: node tests/observer-fitted-stability-browser.cjs
-      - run: node tests/ring-hidden-range-browser.cjs
-      - run: node tests/radial-fitted-tick-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/trip-editor-dst-matrix.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/numberpad-clipboard-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/official-percent-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/live-trip-editor-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/dedicated-trip-editor-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/trip-log-down-editor-gestures-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/trip-editor-down-colors-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/down-time-visuals-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bar-units-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bar-hit-area-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bar-label-width-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bar-avatar-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bar-avatar-surface-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/halloween-avatar-layout-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bar-ticks-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/layout-mode-transitions-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/layout-startup-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-bar-interactions-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/auto-goals-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/compact-actions-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/start-in-down-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/goal-pad-layout-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/web-speech-login-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/web-speech-value-collection-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/login-fullscreen-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/order-filler-layout-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/order-filler-master-touch.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/diagnostic-speech-audio-test.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/human-speech-audio-test.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/speech-recordings-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/speech-continuation-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/shared-modal-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/hamburger-menu-coverage-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/mic-modal-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/trip-log-splitter-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/trip-log-downtime-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/trip-log-down-filters-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/pending-down-master-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/historical-range-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/completed-summary-sync-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/summary-official-percent-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs php tests/pending-down-accounting.php
+      - run: node scripts/ci-browser-resume.cjs node tests/pending-down-policy-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/break-session-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/break-only-log-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/impersonation-portal-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/application-state-inventory-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/graphical-settings-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/clock-settings-previews-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/observer-fitted-stability-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/ring-hidden-range-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/radial-fitted-tick-browser.cjs
       - run: php -l graphical-settings.php
-      - run: php tests/graphical-settings-page.php
+      - run: node scripts/ci-browser-resume.cjs php tests/graphical-settings-page.php
   break-session-backend:
     runs-on: ubuntu-latest
     services:
