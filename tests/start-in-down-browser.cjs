@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fixture=require('./order-filler-master-fixture.cjs');
-(async()=>{for(const scheduled of [false,true]){const f=await fixture({input:'transcript'});try{const p=f.page,op=require('./retained-page-operation.cjs')(p);
+(async()=>{for(const scheduled of [false,true]){const f=await fixture({input:'transcript',clockTime:'2026-10-06T12:00:00Z',timezoneId:'UTC'});try{const p=f.page,op=require('./retained-page-operation.cjs')(p);
 await op(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();});
 let next;if(scheduled){
  next=await p.evaluate(()=>{const date=new Date(Date.now());date.setMinutes(date.getMinutes()+2,0,0);return {phrase:date.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),advance:date.getTime()-Date.now()+1000};});await op(value=>WMOFActions.scheduleStartAt(value),next.phrase);await p.waitForSelector('#scheduledStartDialog[open]');
