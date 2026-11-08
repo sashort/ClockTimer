@@ -7,7 +7,7 @@ const fixture = require('./order-filler-master-fixture.cjs');
   await p.evaluate(()=>{window.earlyBreakSetup=(async()=>{await clockTimer.connect('test','test');document.querySelector('#loginDialog').close();document.querySelector('#percentageDisplayBar').click();})().then(()=>{window.earlyBreakSetupDone=true;},error=>{window.earlyBreakSetupError=String(error.stack||error);});});
   await p.waitForFunction(()=>window.earlyBreakSetupDone||window.earlyBreakSetupError);assert.equal(await p.evaluate(()=>window.earlyBreakSetupError),undefined);
   const operation=require('./retained-page-operation.cjs')(p);
-  const snapshot=()=>p.evaluate(()=>{const s=clockTimer.uiState,current=s.goal_bar.nodes.find(n=>n.current),marker=document.querySelector('.goal-bar-node.is-current:not([aria-hidden=true])');return{trip:s.trip_active,paused:s.paused,time:s.time_component,bar:current,rendered:document.querySelector('#renderedTimeValue').textContent,marker:marker?.querySelector('path')?.getAttribute('d'),percent:marker?.querySelector('.goal-bar-percent')?.textContent,runner:document.querySelector('.goal-bar-avatar')?.dataset.mode,summary:clockTimer.getSummarySnapshot(s.timestamp).trip};});
+  const snapshot=()=>p.evaluate(()=>{const s=clockTimer.uiState,current=s.goal_bar.nodes.find(n=>n.current),marker=document.querySelector('.goal-bar-node.is-current:not([aria-hidden=true])');return{trip:s.trip_active,paused:s.paused,time:s.time_component,bar:current,rendered:document.querySelector('#renderedTimeValue').textContent,marker:marker?getComputedStyle(marker.querySelector('.goal-bar-marker')).backgroundImage:null,percent:marker?.querySelector('.goal-bar-percent')?.textContent,runner:document.querySelector('.goal-bar-avatar')?.dataset.mode,summary:clockTimer.getSummarySnapshot(s.timestamp).trip};});
   for(const type of ['break','lunch','short break']){
    await operation(()=>clockTimer.start({standardTime:'0:02:00'}));
    await p.clock.runFor(10000);
@@ -21,7 +21,7 @@ const fixture = require('./order-filler-master-fixture.cjs');
    assert(!s.bar.unbounded&&s.bar.counted_position<0,type+' retains signed credit with a finite earned/work percentage');
    assert.equal(s.summary.countedTimeElapsedMilliseconds,0,'persisted counted duration remains nonnegative');
    assert(Number.isFinite(s.bar.percent)&&s.bar.percent>100,'unused credit bolsters a finite percentage');
-   assert.match(s.marker,/M -3.*M 3/,'Current double line remains visible');
+   assert.match(s.marker,/linear-gradient/,'Current double line remains visible');
    assert.equal(s.runner,'running','runner returns after standing up');
    for(const mode of ['remaining','elapsed','calculated-end']){
     await p.evaluate(mode=>clockTimer.renderedTimeMode=mode,mode);

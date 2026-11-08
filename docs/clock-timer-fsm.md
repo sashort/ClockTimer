@@ -283,6 +283,8 @@ new phase when a boundary is crossed. Rendered rings never determine these state
 | `syncGoal` | Whether Sync can run for the active trip | `syncGoal_on`, `syncGoal_off` |
 | `tick` | Operating state | `tick_running`, `tick_down`, `tick_buffer` |
 | `renderTime` | Time display or idle clock | `renderTime_elapsed`, `renderTime_remaining`, `renderTime_end`, `renderTime_clock` |
+
+Wall-clock display and model callbacks reschedule their next tick in `finally`, including the initial update. A transient formatting, hand-rendering, or range-model error remains observable but cannot permanently stop either cadence. Reentrant state changes must not create a second pending tick. The wall-clock text still gets an update attempt when synchronizing the hands fails. Run `node tests/clock-timer-cadence-recovery-browser.cjs` for the general transient-error recovery regression.
 | `ringOrder` | Active trip or inactive | `ringOrder_running`, `ringOrder_inactive` |
 | `ringLayout` | Fit or overflow | `ringLayout_fit`, `ringLayout_overflow` |
 

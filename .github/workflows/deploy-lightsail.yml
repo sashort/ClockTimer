@@ -318,6 +318,7 @@ jobs:
       - run: node scripts/ci-browser-resume.cjs node tests/shared-modal-browser.cjs
       - run: node scripts/ci-browser-resume.cjs node tests/hamburger-menu-coverage-browser.cjs
       - run: node scripts/ci-browser-resume.cjs node tests/mic-modal-browser.cjs
+      - run: node scripts/ci-browser-resume.cjs node tests/clock-timer-cadence-recovery-browser.cjs
       - run: node scripts/ci-browser-resume.cjs node tests/trip-log-splitter-browser.cjs
       - run: node scripts/ci-browser-resume.cjs node tests/trip-log-downtime-browser.cjs
       - run: node scripts/ci-browser-resume.cjs node tests/trip-log-down-filters-browser.cjs

@@ -32685,7 +32685,8 @@
             const scheduleNext =
                 () => {
                     if (
-                        !this.isConnected
+                        !this.isConnected ||
+                        this.#displayTimeout !== undefined
                     ) {
                         return;
                     }
@@ -32719,31 +32720,30 @@
 
                                 const displayNow = new Date();
 
-                                this.#synchronizeHands(
-                                    displayNow
-                                );
-
-                                this.#updateDisplay(
-                                    displayNow
-                                );
-
-                                if (!this.#needsTick()) {
-                                    this.#emitCadenceTick(
-                                        displayNow
-                                    );
+                                try {
+                                    try {
+                                        this.#synchronizeHands(displayNow);
+                                    } finally {
+                                        this.#updateDisplay(displayNow);
+                                    }
+                                    if (!this.#needsTick()) {
+                                        this.#emitCadenceTick(displayNow);
+                                    }
+                                } finally {
+                                    // A transient render/model error must not permanently
+                                    // stop the wall clock. Keep the original error visible.
+                                    scheduleNext();
                                 }
-
-                                scheduleNext();
                             },
                             delay
                         );
                 };
 
-            this.#updateDisplay(
-                new Date()
-            );
-
-            scheduleNext();
+            try {
+                this.#updateDisplay(new Date());
+            } finally {
+                scheduleNext();
+            }
         }
 
         #stopDisplayTimer() {
@@ -32770,13 +32770,15 @@
                 return;
             }
 
-            this.#tick();
-
-            this.#scheduleNextTick();
+            try {
+                this.#tick();
+            } finally {
+                this.#scheduleNextTick();
+            }
         }
 
         #scheduleNextTick() {
-            if (!this.#needsTick()) {
+            if (!this.#needsTick() || this.#tickTimeout !== undefined) {
                 return;
             }
 
@@ -32813,9 +32815,11 @@
                             return;
                         }
 
-                        this.#tick();
-
-                        this.#scheduleNextTick();
+                        try {
+                            this.#tick();
+                        } finally {
+                            this.#scheduleNextTick();
+                        }
                     },
                     delay
                 );

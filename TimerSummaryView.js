@@ -90,20 +90,26 @@
  }
  const svgNS='http://www.w3.org/2000/svg';
  const svgElement=(name,attributes={})=>{const e=document.createElementNS(svgNS,name);for(const [key,value] of Object.entries(attributes))e.setAttribute(key,value);return e;};
- function goalFont(parts,size){parts.time.style.fontSize=parts.percent.style.fontSize=size+'px';for(const text of parts.ghost?.children||[])text.style.fontSize=size+'px';}
+ const barElement=(className,tag='div',attributes={})=>{const element=document.createElement(tag);if(className)element.className=className;for(const [name,value] of Object.entries(attributes))element.setAttribute(name,value);return element;};
+ const barRect=(element,{x=0,y=0,width=0,height=0,radius=0})=>{for(const [name,value] of Object.entries({x,y,width,height,radius}))element.style.setProperty('--bar-'+name,value+'px');};
+ const barTextY=(element,y)=>{element.dataset.baseline=String(y);element.style.top=y+'px';};
+ const barTextWidth=element=>element.getBoundingClientRect().width;
+ const barTextBounds=element=>{const rect=element.getBoundingClientRect();return{x:-rect.width/2,y:Number(element.dataset.baseline||0)-rect.height*.8,width:rect.width,height:rect.height};};
+ function goalFont(parts,size){parts.group.style.setProperty('--goal-label-size',size+'px');}
  const near=(a,b)=>Math.abs(a-b)<1e-6;
  // Eight cubic segments in both forms: the facing curves become the corridor.
- function goalShape(radius,merged=false){
+ function goalShape(radius,merged=false,center,neck){
   const f=n=>Number(n.toFixed(4));let values=[];
   if(!merged){
    const step=Math.PI/4,k=4/3*Math.tan(step/4);values=[0,-radius];
    for(let i=0;i<8;i++){const a=-Math.PI/2+i*step,b=a+step;values.push(radius*(Math.cos(a)-k*Math.sin(a)),radius*(Math.sin(a)+k*Math.cos(a)),radius*(Math.cos(b)+k*Math.sin(b)),radius*(Math.sin(b)-k*Math.cos(b)),radius*Math.cos(b),radius*Math.sin(b));}
   }else{
-   const r=radius,h=r*.45,gap=4,c=Math.sqrt(r*r-h*h)+gap/2,k=.55228475*r;
+   const r=radius,h=neck??r*.45,gap=4,c=center??Math.sqrt(r*r-h*h)+gap/2,k=.55228475*r;
    values=[0,-h,gap/2,-h,c-r*.8,-r,c,-r,c+k,-r,c+r,-k,c+r,0,c+r,k,c+k,r,c,r,c-r*.8,r,gap/2,h,0,h,-gap/2,h,-c+r*.8,r,-c,r,-c-k,r,-c-r,k,-c-r,0,-c-r,-k,-c-k,-r,-c,-r,-c+r*.8,-r,-gap/2,-h,0,-h];
   }
   return `M ${values.slice(0,2).map(f).join(' ')} `+Array.from({length:8},(_,i)=>'C '+values.slice(2+i*6,8+i*6).map(f).join(' ')).join(' ')+' Z';
  }
+ function goalClip(radius,merged,center,x,y,neck){let i=0;const shifted=goalShape(radius,merged,center,neck).replace(/-?\d+(?:\.\d+)?/g,value=>Number((Number(value)+(i++%2?y:x)).toFixed(4)));return `path("${shifted}")`;}
  class TimerSpaceLayout{
   static views=new WeakMap();
   static attach(app){if(!app?.querySelector('.clock-region')||this.views.has(app))return;this.views.set(app,new this(app));}
@@ -128,29 +134,36 @@
   }
  }
  class GoalBar{
-  static instances=new WeakMap();static sequence=0;
+  static instances=new WeakMap();
   static attach(row){if(!this.instances.has(row))this.instances.set(row,new this(row));return this.instances.get(row);}
   constructor(row){
-   this.row=row;this.nodes=new Map();this.previous=new Map();this.units=[];this.motion=new Map();this.prefix='goal-shape-'+(++GoalBar.sequence);
-   this.svg=svgElement('svg',{class:'goal-bar-svg',role:'group','aria-label':'Goal bar · Edit goals',viewBox:'0 0 300 112'});
-   this.track=svgElement('rect',{class:'goal-bar-track'});this.outline=svgElement('rect',{class:'goal-bar-outline','aria-hidden':'true'});this.fill=svgElement('rect',{class:'goal-bar-fill'});this.segment=svgElement('rect',{class:'goal-bar-segment'});
-   const defs=svgElement('defs'),clip=svgElement('clipPath',{id:this.prefix+'-ticks'});this.tickClip=svgElement('rect');clip.append(this.tickClip);defs.append(clip);this.svg.append(defs);
-   this.ticks=svgElement('g',{class:'goal-bar-scale-ticks','clip-path':`url(#${this.prefix}-ticks)`,'aria-hidden':'true'});this.ticks.style.pointerEvents='none';this.tickNodes=new Map();
-   this.connectors=svgElement('g',{class:'goal-bar-connectors','aria-hidden':'true'});this.layer=svgElement('g');
-   this.leftCompression=svgElement('path',{class:'goal-bar-compression goal-bar-compression-left',fill:'#c6def5','aria-hidden':'true'});
-   this.rightCompression=svgElement('g',{class:'goal-bar-compression goal-bar-compression-right','aria-hidden':'true'});this.rightCompression.append(svgElement('path',{d:'M -6 -7 L 7 0 L -6 7 Z',fill:'#c6def5'}));
+   this.row=row;this.nodes=new Map();this.previous=new Map();this.units=[];this.motion=new Map();
+   // The historical class name is retained for layout compatibility; this is HTML.
+   this.surface=barElement('goal-bar-elements goal-bar-svg','div',{role:'group','aria-label':'Goal bar · Edit goals'});
+   this.track=barElement('goal-bar-track goal-bar-rect');this.outline=barElement('goal-bar-outline goal-bar-rect','div',{'aria-hidden':'true'});this.fill=barElement('goal-bar-fill goal-bar-rect');this.segment=barElement('goal-bar-segment goal-bar-rect');
+   this.ticks=barElement('goal-bar-scale-ticks','div',{'aria-hidden':'true'});this.tickNodes=new Map();
+   this.connectors=barElement('goal-bar-connectors','div',{'aria-hidden':'true'});this.layer=barElement('goal-bar-nodes');
+   this.leftCompression=barElement('goal-bar-compression goal-bar-compression-left','div',{'aria-hidden':'true'});this.rightCompression=barElement('goal-bar-compression goal-bar-compression-right','div',{'aria-hidden':'true'});
    let press=null,suppressClick=false,suppressUntil=0;
    const choicesForNode=node=>{if(!node)return null;const choices=String(node.dataset.members||node.dataset.nodeId).split(' ').filter(id=>['trip','total','standard'].includes(id));const snapshot=this.state?.goal_bar?.nodes||[];if(choices.some(id=>near(snapshot.find(n=>n.id===id)?.percent,100))&&!choices.includes('standard'))choices.push('standard');return choices;};
-   const nodeChoices=event=>event.target.closest?.('.goal-bar-marker,.goal-bar-info-hit')?choicesForNode(event.target.closest('.goal-bar-node')):null;
+   const nodeChoices=event=>{
+    const shape=event.target.closest?.('.goal-bar-marker,.goal-bar-info-hit'),node=shape?.closest('.goal-bar-node');
+    if(!shape||!node||node.getAttribute('aria-hidden')==='true'||node.classList.contains('is-current')||getComputedStyle(shape).pointerEvents==='none')return null;
+    // CSS clipping owns the hit contour, including rounded corners and merged cutouts.
+    // Recheck the point when touch/pointer capture keeps targeting the pressed element.
+    const hit=document.elementFromPoint(event.clientX,event.clientY);
+    if(hit?.closest('.goal-bar-marker,.goal-bar-info-hit')!==shape)return null;
+    return choicesForNode(node);
+   };
    const gesture=(choices,edit)=>this.row.dispatchEvent(new CustomEvent(edit?'goal-bar-edit':'goal-bar-select',{bubbles:true,detail:{choices}}));
-   this.svg.addEventListener('pointerdown',event=>{suppressClick=false;if(this.state?.goal_type!=='auto')return;const choices=nodeChoices(event);if(!choices?.length)return;press={x:event.clientX,y:event.clientY,timer:setTimeout(()=>{suppressClick=true;suppressUntil=performance.now()+1000;gesture(choices,false);press=null;},550)};});
+   this.surface.addEventListener('pointerdown',event=>{suppressClick=false;if(this.state?.goal_type!=='auto')return;const choices=nodeChoices(event);if(!choices?.length)return;press={x:event.clientX,y:event.clientY,timer:setTimeout(()=>{suppressClick=true;suppressUntil=performance.now()+1000;gesture(choices,false);press=null;},550)};});
    const cancel=()=>{if(press)clearTimeout(press.timer);press=null;};
-   this.svg.addEventListener('pointermove',e=>{if(press&&Math.hypot(e.clientX-press.x,e.clientY-press.y)>8)cancel();});this.svg.addEventListener('pointercancel',cancel);this.svg.addEventListener('pointerleave',cancel);this.svg.addEventListener('pointerup',cancel);
-   this.svg.addEventListener('contextmenu',e=>{if(nodeChoices(e))e.preventDefault();});
-   this.svg.addEventListener('click',event=>{cancel();if(suppressClick){suppressClick=false;if(performance.now()<suppressUntil)return;}const choices=nodeChoices(event);if(choices?.length)gesture(choices,true);});this.svg.addEventListener('keydown',event=>{if(!['Enter',' '].includes(event.key))return;const choices=choicesForNode(event.target.closest?.('.goal-bar-node'));if(choices?.length){event.preventDefault();gesture(choices,true);}});
-   this.svg.append(this.track,this.fill,this.segment,this.ticks,this.outline,this.connectors,this.layer,this.leftCompression,this.rightCompression);row.append(this.svg);this.avatar=globalThis.WMOFGoalBarAvatar?.create(this.svg,row);
-   this.probe=svgElement('text',{'aria-hidden':'true',visibility:'hidden'});this.probe.style.pointerEvents='none';this.svg.append(this.probe);this.widthDigits=new Map();
-   this.resize=new ResizeObserver(()=>this.schedule());this.resize.observe(this.svg);TimerSpaceLayout.attach(row.closest('.app'));
+   this.surface.addEventListener('pointermove',e=>{if(press&&(!nodeChoices(e)||Math.hypot(e.clientX-press.x,e.clientY-press.y)>8))cancel();});this.surface.addEventListener('pointercancel',cancel);this.surface.addEventListener('pointerleave',cancel);this.surface.addEventListener('pointerup',cancel);
+   this.surface.addEventListener('contextmenu',e=>{if(nodeChoices(e))e.preventDefault();});
+   this.surface.addEventListener('click',event=>{cancel();if(suppressClick){suppressClick=false;if(performance.now()<suppressUntil)return;}const choices=nodeChoices(event);if(choices?.length)gesture(choices,true);});this.surface.addEventListener('keydown',event=>{if(!['Enter',' '].includes(event.key))return;const choices=choicesForNode(event.target.closest?.('.goal-bar-node'));if(choices?.length){event.preventDefault();gesture(choices,true);}});
+   this.surface.append(this.track,this.fill,this.segment,this.ticks,this.outline,this.connectors,this.layer,this.leftCompression,this.rightCompression);row.append(this.surface);this.avatarOverlay=svgElement('svg',{class:'goal-bar-avatar-overlay','aria-hidden':'true'});this.surface.append(this.avatarOverlay);this.avatar=globalThis.WMOFGoalBarAvatar?.create(this.avatarOverlay,row);
+   this.probe=barElement('goal-bar-text goal-bar-probe','span',{'aria-hidden':'true'});this.surface.append(this.probe);this.widthDigits=new Map();
+   this.resize=new ResizeObserver(()=>this.schedule());this.resize.observe(this.surface);TimerSpaceLayout.attach(row.closest('.app'));
   }
   reduced(){return this.initial||matchMedia('(prefers-reduced-motion: reduce)').matches;}
   reset(){for(const animation of this.motion.values())animation.cancel();this.motion.clear();this.layer.replaceChildren();this.nodes.clear();this.units=[];this.previous.clear();this.initial=true;}
@@ -173,14 +186,13 @@
   }
   node(id){
    if(this.nodes.has(id))return this.nodes.get(id);
-   const group=svgElement('g',{class:'goal-bar-node','data-node-id':id}),markerGroup=svgElement('g'),stack=svgElement('g',{class:'goal-bar-value-stack'});
-   const marker=svgElement('path',{class:'goal-bar-marker'}),glyph=svgElement('text',{'text-anchor':'middle',class:'goal-bar-glyph'}),glyph2=svgElement('text',{'text-anchor':'middle',class:'goal-bar-glyph'});
-   const targetFrame=svgElement('rect',{class:'goal-bar-target-frame',rx:5,fill:'none','stroke-width':1.5}),infoHit=svgElement('rect',{class:'goal-bar-info-hit',rx:5,fill:'transparent',stroke:'transparent','stroke-width':1.5,'aria-hidden':'true'});
-   const time=svgElement('text',{'text-anchor':'middle',class:'goal-bar-time'}),percent=svgElement('text',{'text-anchor':'middle',class:'goal-bar-percent'}),title=svgElement('title');
-   const defs=svgElement('defs'),gradient=svgElement('linearGradient',{id:this.prefix+'-'+id,x1:'0%',x2:'100%'});gradient.append(svgElement('stop',{offset:'30%','stop-color':'#ffc220'}),svgElement('stop',{offset:'70%','stop-color':'#55d5fb'}));defs.append(gradient);
-   const boundIndicator=svgElement('path',{class:'goal-bounding-marker',d:'M -5 3 L 0 -5 L 5 3 Z',fill:'#fff',stroke:'#001e60','stroke-width':1,'aria-hidden':'true'});boundIndicator.style.pointerEvents='none';boundIndicator.style.opacity='0';markerGroup.append(marker,glyph,glyph2,boundIndicator);
-   stack.append(infoHit,targetFrame,time,percent);group.append(defs,markerGroup,stack,title);this.layer.append(group);
-   const overridePin=svgElement('g',{class:'goal-bar-override-pin','aria-hidden':'true'});overridePin.append(svgElement('rect',{class:'goal-bar-pin-badge',x:-11,y:-11,width:22,height:22,rx:5}),svgElement('path',{d:'M8 2h8l-1 7 4 5H5l4-5Zm4 12v9',transform:'translate(-8,-8) scale(.67) rotate(35 12 12)',fill:'none',stroke:'currentColor','stroke-width':2,'stroke-linecap':'round','stroke-linejoin':'round'}));markerGroup.append(overridePin);
+   const group=barElement('goal-bar-node','div',{'data-node-id':id}),markerGroup=barElement('goal-bar-marker-group'),stack=barElement('goal-bar-value-stack');
+   const marker=barElement('goal-bar-marker'),glyph=barElement('goal-bar-text goal-bar-glyph','span'),glyph2=barElement('goal-bar-text goal-bar-glyph','span');
+   const targetFrame=barElement('goal-bar-target-frame goal-bar-rect','div',{'aria-hidden':'true'}),infoHit=barElement('goal-bar-info-hit goal-bar-rect','div',{'aria-hidden':'true'});
+   const time=barElement('goal-bar-text goal-bar-time','span'),percent=barElement('goal-bar-text goal-bar-percent','span'),title=barElement('goal-bar-accessible-title','span');
+   const boundIndicator=barElement('goal-bounding-marker','span',{'aria-hidden':'true'});boundIndicator.style.opacity='0';markerGroup.append(marker,glyph,glyph2,boundIndicator);
+   stack.append(infoHit,targetFrame,time,percent);group.append(markerGroup,stack,title);this.layer.append(group);
+   const overridePin=barElement('goal-bar-override-pin','span',{'aria-hidden':'true'});overridePin.append(barElement('goal-bar-pin-icon','span'));markerGroup.append(overridePin);
    const parts={group,markerGroup,stack,overridePin,boundIndicator,marker,glyph,glyph2,targetFrame,infoHit,time,percent,title,fresh:true};this.nodes.set(id,parts);return parts;
   }
   makeUnits(data){
@@ -202,16 +214,16 @@
    const style=getComputedStyle(parts.percent),fields=['fontFamily','fontSize','fontWeight','fontStyle','fontStretch','fontVariantNumeric','fontFeatureSettings','letterSpacing'],key=fields.map(name=>style[name]).join('|');
    for(const name of fields)this.probe.style[name]=style[name];
    let digit=this.widthDigits.get(key);
-   if(digit===undefined){let widest=-1;for(const value of '0123456789'){this.probe.textContent=value;const width=this.probe.getComputedTextLength();if(width>widest){widest=width;digit=value;}}if(this.widthDigits.size>64)this.widthDigits.clear();this.widthDigits.set(key,digit);}
+   if(digit===undefined){let widest=-1;for(const value of '0123456789'){this.probe.textContent=value;const width=barTextWidth(this.probe);if(width>widest){widest=width;digit=value;}}if(this.widthDigits.size>64)this.widthDigits.clear();this.widthDigits.set(key,digit);}
    const rounded=Number(Math.abs(unit.percent).toFixed(2)),digits=Math.max(1,String(Math.floor(rounded)).length);
    this.probe.textContent=digit.repeat(digits)+'.'+digit.repeat(2)+'%';
    parts.group.dataset.percentDigits=String(digits);
-   const width=this.probe.getComputedTextLength();parts.group.dataset.reservedPercentWidth=String(width);return width;
+   const width=barTextWidth(this.probe);parts.group.dataset.reservedPercentWidth=String(width);return width;
   }
   draw(){
    if(this.row.dataset.percentageDisplay!=='bar')return;
-   const data=this.state?.goal_bar||{},width=this.svg.getBoundingClientRect().width,height=this.svg.getBoundingClientRect().height;if(!(width>0&&height>0))return;
-   this.svg.setAttribute('viewBox',`0 0 ${width} ${height}`);
+   const data=this.state?.goal_bar||{},width=this.surface.getBoundingClientRect().width,height=this.surface.getBoundingClientRect().height;if(!(width>0&&height>0))return;
+   this.avatarOverlay.setAttribute('viewBox',`0 0 ${width} ${height}`);
    const {raw,goals,available,allFailed,units}=this.makeUnits(data),active=data.active!==false,oldUnits=this.units;
    const avatarSpace=this.avatar?.topSpace(this.state)||0;const count=units.length||1,r=Math.max(9,Math.min(25,height*.11)),preferred=Math.max(9,Math.min(28,height*.17,(width-12)/(count*4.1+1),(height-2*(r+5)-avatarSpace-16)/(active?2.6:1.15)));
    const at100=units.find(u=>u.id!=='standard'&&!u.current&&near(u.percent,100)),standard=units.find(u=>u.id==='standard');
@@ -220,13 +232,13 @@
    for(const unit of units){const p=this.node(unit.id);unit.detailed=labelUnits.includes(unit);
     const prior=oldUnits.find(u=>u.members.includes(unit.id));
     if(prior&&!unit.current&&!prior.merged&&!unit.merged&&!near(prior.percent,unit.percent)&&p.percent.textContent&&!this.reduced()){
-     p.ghost?.remove();const ghost=p.ghost=svgElement('g',{class:'goal-bar-value-ghost','aria-hidden':'true'});ghost.append(p.time.cloneNode(true),p.percent.cloneNode(true));p.stack.append(ghost);
-     p.widthRatio=Math.max(...[...ghost.children].map(e=>e.getComputedTextLength()))/Math.max(1,parseFloat(getComputedStyle(p.time).fontSize));
+     p.ghost?.remove();const ghost=p.ghost=barElement('goal-bar-value-ghost','div',{'aria-hidden':'true'});ghost.append(p.time.cloneNode(true),p.percent.cloneNode(true));p.stack.append(ghost);
+     p.widthRatio=Math.max(...[...ghost.children].map(e=>barTextWidth(e)))/Math.max(1,parseFloat(getComputedStyle(p.time).fontSize));
      this.tween(ghost,unit.id+'-old-values',{opacity:'1'},{opacity:'0'},{force:true,duration:140}).then(()=>{if(p.ghost===ghost){ghost.remove();p.ghost=null;p.widthRatio=0;this.schedule();}});
      this.tween(p.time,unit.id+'-new-time',{opacity:'0'},{opacity:'1'},{force:true});this.tween(p.percent,unit.id+'-new-percent',{opacity:'0'},{opacity:'1'},{force:true});
     }
 p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'):'';p.percent.textContent=unit.detailed?(unit.percentText??`${unit.current?Number(unit.percent.toFixed(2)):Math.ceil(unit.percent-1e-9)}%`):'';goalFont(p,preferred);}
-   const measure=u=>{const p=this.node(u.id);return Math.max(p.time.getComputedTextLength(),u.current&&!u.percentText?this.currentPercentWidth(u,p):p.percent.getComputedTextLength(),(p.widthRatio||0)*parseFloat(p.time.style.fontSize));};
+   const measure=u=>{const p=this.node(u.id);return Math.max(barTextWidth(p.time),u.current&&!u.percentText?this.currentPercentWidth(u,p):barTextWidth(p.percent),(p.widthRatio||0)*parseFloat(getComputedStyle(p.time).fontSize));};
    const boxPadding=labelUnits.reduce((sum,u)=>sum+(u===labelTarget||!u.current&&near(u.percent,100)?10:0),0),total=labelUnits.reduce((n,u)=>n+measure(u),0),fontScale=Math.min(1,Math.max(1,width-padding*2-gap*Math.max(0,labelUnits.length-1)-boxPadding)/Math.max(1,total));
    let font=preferred*fontScale;for(const unit of labelUnits){const p=this.node(unit.id);goalFont(p,font);unit.half=measure(unit)/2+(unit===labelTarget||!unit.current&&near(unit.percent,100)?5:0);}
    // Only an active trip pins its label to Standard. Idle labels must inset
@@ -253,7 +265,7 @@ p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'
    for(let i=units.length-1;i>=0;i--){const unit=units[i],next=units[i+1];unit.x=Math.min(unit.x,next?(unit.id==='standard'&&near(next.percent,100)?next.x:next.x-next.radius-unit.radius):right);}
    if(at100&&standard)standard.x=at100.x;
    // Labels stay within the actual track/marker extent, rather than using the
-   // SVG viewport as extra space. Preserve the centered 100% anchor by letting
+   // bar viewport as extra space. Preserve the centered 100% anchor by letting
    // the track include its stack, then center that complete extent once.
    if(pin&&standard)left=Math.min(left,standard.x-pin.half-.75);
    const visualLeft=Math.min(left,...units.map(u=>u.x-u.radius)),visualRight=Math.max(right,...units.map(u=>u.x+u.radius));
@@ -287,28 +299,27 @@ p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'
    for(const unit of units)unit.labelX??=unit.x;
    const halfLine=r+5,timeOffset=halfLine+7+font,percentOffset=active?timeOffset+font*1.25:halfLine+5+font*.8;
    const y=Math.max(halfLine+avatarSpace+2,height-percentOffset-font*.35-6),thickness=Math.max(14,r*1.3);
-   this.row.style.setProperty('--goal-bar-sync-offset',(y-height+20)+'px');this.svg.dataset.barY=String(y);this.svg.dataset.markerRadius=String(r);this.svg.dataset.labelLeft=String(labelLeft);this.svg.dataset.labelRight=String(labelRight);this.svg.dataset.visibleTop=String(y-halfLine-avatarSpace-1);this.svg.dataset.visibleBottom=String(y+percentOffset+font*.35+4);
-   const appearance=getComputedStyle(this.row.closest('.app')||this.row),color=key=>appearance.getPropertyValue(key).trim(),trip=color('--timer-trip-color')||'#0053e2',overtime=color('--timer-overtime-color')||'#ff5c5c';
-   const phase=data.all_failed||data.phase==='overtime'?overtime:data.phase==='b-game'?color('--timer-tolerance-color')||'#2e7d32':trip,segment=data.down?color('--timer-down-color')||'#5f6772':phase;
+   this.row.style.setProperty('--goal-bar-sync-offset',(y-height+20)+'px');this.surface.dataset.barY=String(y);this.surface.dataset.markerRadius=String(r);this.surface.dataset.labelLeft=String(labelLeft);this.surface.dataset.labelRight=String(labelRight);this.surface.dataset.visibleTop=String(y-halfLine-avatarSpace-1);this.surface.dataset.visibleBottom=String(y+percentOffset+font*.35+4);
+   this.surface.dataset.phase=data.all_failed||data.phase==='overtime'?'overtime':data.phase==='b-game'?'b-game':'trip';this.surface.dataset.down=String(Boolean(data.down));this.surface.dataset.allFailed=String(Boolean(allFailed));
    const current=units.find(u=>u.current),currentX=active?current?.x??left:right,targetUnit=units.find(u=>u.members.includes(target?.id)),targetX=targetUnit?.x??right;
-   for(const element of [this.track,this.fill,this.segment,this.outline]){element.setAttribute('y',y-thickness/2);element.setAttribute('height',thickness);element.setAttribute('rx',thickness/2);}
-   this.track.setAttribute('x',left);this.track.setAttribute('width',Math.max(0,right-left));this.outline.setAttribute('x',left);this.outline.setAttribute('width',Math.max(0,right-left));
-   for(const [key,value] of Object.entries({x:left+1.5,y:y-thickness/2+1.5,width:Math.max(0,right-left-3),height:Math.max(0,thickness-3),rx:Math.max(0,thickness/2-1.5)}))this.tickClip.setAttribute(key,value);
+   for(const element of [this.track,this.fill,this.segment,this.outline])barRect(element,{x:left,y:y-thickness/2,width:Math.max(0,right-left),height:thickness,radius:thickness/2});
+   for(const [name,value] of Object.entries({top:y-thickness/2+1.5,right:width-right+1.5,bottom:height-y-thickness/2+1.5,left:left+1.5,radius:Math.max(0,thickness/2-1.5)}))this.ticks.style.setProperty('--tick-clip-'+name,value+'px');
    const tickLeft=units.find(u=>near(u.percent,low))?.x??left,tickRight=units.find(u=>near(u.percent,high))?.x??right;
    const tickMinimum=Math.max(showSubstandardTicks?0:100,lowerBand?5:Math.ceil(low/5)*5);
    const visibleTicks=new Set();if(active&&data.available)for(let percent=tickMinimum;percent<=Math.min(150,high)+1e-7;percent+=5){
-    visibleTicks.add(percent);let tick=this.tickNodes.get(percent);if(!tick){tick=svgElement('path',{'data-percent':percent,stroke:'#fff','stroke-width':1});tick.style.opacity='0';this.tickNodes.set(percent,tick);this.ticks.append(tick);}
+    visibleTicks.add(percent);let tick=this.tickNodes.get(percent);if(!tick){tick=barElement('goal-bar-scale-tick','span',{'data-percent':percent});tick.style.opacity='0';this.tickNodes.set(percent,tick);this.ticks.append(tick);}
     tick.dataset.exiting='false';this.tween(tick,'scale-tick-opacity-'+percent,{opacity:tick.style.opacity||'0'},{opacity:'.6'},{duration:220});
-    tick.setAttribute('d',`M 0 ${-thickness*.23} V ${thickness*.23}`);this.move(tick,'scale-tick-'+percent,lowerBand&&percent<low?left+lowerFraction(percent)*(tickLeft-left):tickLeft+fraction(percent)*(tickRight-tickLeft),y);
+    tick.style.setProperty('--goal-tick-height',thickness*.46+'px');this.move(tick,'scale-tick-'+percent,lowerBand&&percent<low?left+lowerFraction(percent)*(tickLeft-left):tickLeft+fraction(percent)*(tickRight-tickLeft),y);
    }
    for(const [percent,tick] of this.tickNodes)if(!visibleTicks.has(percent)&&tick.dataset.exiting!=='true'){
     tick.dataset.exiting='true';this.tween(tick,'scale-tick-opacity-'+percent,{opacity:getComputedStyle(tick).opacity},{opacity:'0'},{duration:180}).then(()=>{if(tick.dataset.exiting==='true'&&this.tickNodes.get(percent)===tick){tick.remove();this.tickNodes.delete(percent);this.motion.get('scale-tick-'+percent)?.cancel();this.motion.delete('scale-tick-'+percent);}});
    }
-   this.fill.setAttribute('x',allFailed?currentX:left);this.fill.setAttribute('width',Math.max(0,allFailed?right-currentX:currentX-left));this.fill.style.fill=allFailed?(data.down?color('--timer-down-color')||'#5f6772':overtime):trip;
-   this.segment.setAttribute('x',targetX);this.segment.setAttribute('width',Math.max(0,currentX-targetX));this.segment.style.fill=segment;
-   this.connectors.replaceChildren();if((!active||allFailed)&&data.available){const zero=svgElement('text',{x:left,y:y+percentOffset,'text-anchor':'middle',class:'goal-bar-zero'});zero.textContent='0%';this.connectors.append(zero);}
-   this.svg.dataset.compressedLeft=String(lc);this.svg.dataset.compressedRight=String(rc);
-   this.leftCompression.style.display=lc?'':'none';const firstEdge=units.length?Math.min(left,...units.map(u=>u.x-u.radius)):left,lastEdge=units.length?Math.max(right,...units.map(u=>u.x+u.radius)):right;this.leftCompression.setAttribute('d',`M ${firstEdge-12} ${y-7} L ${firstEdge-25} ${y} L ${firstEdge-12} ${y+7} Z`);this.rightCompression.style.display=rc?'':'none';this.rightCompression.style.transform=`translate(${lastEdge+18}px, ${y}px)`;
+   barRect(this.fill,{x:allFailed?currentX:left,y:y-thickness/2,width:Math.max(0,allFailed?right-currentX:currentX-left),height:thickness,radius:thickness/2});
+   barRect(this.segment,{x:targetX,y:y-thickness/2,width:Math.max(0,currentX-targetX),height:thickness,radius:thickness/2});
+   this.connectors.replaceChildren();if((!active||allFailed)&&data.available){const zero=barElement('goal-bar-text goal-bar-zero','span');zero.style.left=left+'px';barTextY(zero,y+percentOffset);zero.textContent='0%';this.connectors.append(zero);}
+   this.surface.dataset.compressedLeft=String(lc);this.surface.dataset.compressedRight=String(rc);
+   const firstEdge=units.length?Math.min(left,...units.map(u=>u.x-u.radius)):left,lastEdge=units.length?Math.max(right,...units.map(u=>u.x+u.radius)):right;
+   this.leftCompression.style.display=lc?'':'none';this.leftCompression.style.transform=`translate(${firstEdge-18.5}px, ${y}px)`;this.rightCompression.style.display=rc?'':'none';this.rightCompression.style.transform=`translate(${lastEdge+18}px, ${y}px)`;
    this.displaying=new Set(units.map(u=>u.id));
    for(const [id,parts] of this.nodes){
     if(this.displaying.has(id))continue;if(parts.exiting)continue;parts.exiting=true;parts.group.setAttribute('aria-hidden','true');parts.group.style.pointerEvents='none';
@@ -328,7 +339,6 @@ p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'
     if(parts.exiting){for(const key of [unit.id+'-exit',unit.id+'-marker-fade',unit.id+'-fade'])this.motion.get(key)?.cancel();parts.exiting=false;parts.group.style.transform='';parts.group.style.opacity='1';}
     if(source&&(parts.fresh||source.id!==unit.id)){
      parts.markerGroup.style.transform=`translate(${source.x}px, ${y}px)`;parts.stack.style.transform=`translate(${source.labelX}px, ${y}px)`;
-     if(!unit.current&&unit.id!=='standard')parts.marker.setAttribute('d',goalShape(source.radiusValue||r,source.merged&&!changed));
      if(source.merged&&changed){const c=Math.sqrt(r*r-(r*.45)**2)+2;parts.markerGroup.style.transform=`translate(${source.x+(source.members.indexOf(unit.id)===0?-c:c)}px, ${y}px)`;parts.markerGroup.style.opacity='0';}
     }
     parts.group.removeAttribute('aria-hidden');parts.group.style.pointerEvents='';parts.group.setAttribute('role',unit.current||unit.id==='standard'&&!unit.detailed?'img':'button');if(unit.current||unit.id==='standard'&&!unit.detailed)parts.group.removeAttribute('tabindex');else parts.group.setAttribute('tabindex','0');parts.group.dataset.members=unit.members.join(' ');parts.group.dataset.details=String(unit.detailed);parts.group.dataset.merged=String(Boolean(unit.merged));
@@ -337,7 +347,7 @@ p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'
     parts.title.textContent=[members.map(label).join(' + '),unit.time,(unit.percentText??`${unit.current?Number(unit.percent.toFixed(2)):Math.ceil(unit.percent-1e-9)}%`),unit.failed?'Missed':''].filter(Boolean).join(' · ');parts.group.setAttribute('aria-label',parts.title.textContent);
     const selected=this.state?.goal_type==='auto'?this.state.auto_goal_override:null;
     const pinned=selected==='standard'?!unit.current&&near(unit.percent,100)&&unit.detailed:unit.members.includes(selected);parts.overridePin.style.display=pinned?'':'none';parts.group.dataset.autoLocked=String(pinned);if(!unit.current&&(unit.id!=='standard'||unit.detailed)&&this.state?.goal_type==='auto')parts.group.setAttribute('aria-pressed',String(pinned));else parts.group.removeAttribute('aria-pressed');
-    if(pinned){const index=unit.members.indexOf(selected),offset=unit.merged&&selected!=='standard'?(index===0?-r*.85:r*.85):0;parts.overridePin.setAttribute('transform',`translate(${offset-(unit.id==='standard'?r*.4:r*.7)},${-r*.75})`);}
+    if(pinned){const index=unit.members.indexOf(selected),offset=unit.merged&&selected!=='standard'?(index===0?-r*.85:r*.85):0;parts.overridePin.style.transform=`translate(${offset-(unit.id==='standard'?r*.4:r*.7)}px,${-r*.75}px)`;}
     const raised=members.some(n=>n.bounding?.adjusted),lower=!raised&&unit.percent<100&&unit.members.includes(this.state.effective_goal_type),direction=raised?'raised':lower?'lower':'';
     parts.group.dataset.goalBounding=direction;const boundingX=r*.6+(unit.merged?Math.sqrt(r*r-(r*.45)**2)+2:0);
     const markerInfo=raised?'Raised to 100%':lower?'Below-floor target':'';
@@ -345,24 +355,28 @@ p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'
     this.tween(parts.boundIndicator,unit.id+'-bounding-opacity',{opacity:getComputedStyle(parts.boundIndicator).opacity},{opacity:direction?'1':'0'});
     this.tween(parts.boundIndicator,unit.id+'-bounding-direction',{transform:getComputedStyle(parts.boundIndicator).transform==='none'?'translate(0px, 0px)':getComputedStyle(parts.boundIndicator).transform},{transform:`translate(${boundingX}px, ${raised?-r*.6:r*.6}px) rotate(${raised?0:180}deg)`});
 
-    const stroke=unit.id==='total'?'#55d5fb':unit.id==='trip'?'#ffc220':'#fff';parts.marker.style.fill=unit.id==='standard'||unit.current?'none':'#001e60';parts.marker.style.stroke=unit.merged?`url(#${this.prefix}-${unit.id})`:stroke;parts.group.style.setProperty('--goal-node-color',stroke);
-    if(unit.id==='standard'||unit.current){parts.marker.setAttribute('d',unit.current?`M -3 -${halfLine} V ${halfLine} M 3 -${halfLine} V ${halfLine}`:`M 0 -${halfLine} V ${halfLine}`);parts.marker.setAttribute('stroke-dasharray',unit.id==='standard'?'3 3':'none');parts.glyph.textContent=parts.glyph2.textContent='';}
+    parts.markerGroup.style.setProperty('--goal-marker-radius',r+'px');parts.markerGroup.style.setProperty('--goal-marker-half-line',halfLine+'px');
+    if(unit.id==='standard'||unit.current){parts.glyph.textContent=parts.glyph2.textContent='';}
     else{
-     const d=goalShape(r,unit.merged),oldD=getComputedStyle(parts.marker).d;parts.marker.setAttribute('stroke-dasharray','none');
-     if(parts.marker.getAttribute('d')!==d){parts.marker.setAttribute('d',d);if(oldD!=='none')this.tween(parts.marker,unit.id+'-shape',{d:oldD},{d:`path("${d}")`},{force:true});}
+     const border=parseFloat(getComputedStyle(parts.marker).getPropertyValue('--goal-node-border-width'))||2;
+     // Preserve the painted diameter of the former centered SVG stroke.
+     const centerX=unit.merged?Math.sqrt(r*r-(r*.45)**2)+2:0,outer=r+border/2,halfWidth=outer+centerX;
+     parts.marker.style.setProperty('--goal-marker-half-width',halfWidth+'px');parts.marker.style.setProperty('--goal-marker-outer-radius',outer+'px');
+     parts.marker.style.setProperty('--goal-node-shape',goalClip(outer,unit.merged,centerX,halfWidth,outer,r*.45+border/2));
+     parts.marker.style.setProperty('--goal-node-inner-shape',goalClip(Math.max(0,r-border/2),unit.merged,centerX,halfWidth,outer,Math.max(0,r*.45-border/2)));
      const center=Math.sqrt(r*r-(r*.45)**2)+2;
      parts.glyph.textContent=parts.glyph2.textContent='';delete parts.glyph.dataset.goalId;delete parts.glyph2.dataset.goalId;
      for(const [index,member] of members.entries()){
       const text=member.id==='trip'?parts.glyph:parts.glyph2;
       if(unit.merged&&!source?.merged){const prior=oldUnits.find(u=>u.members.includes(member.id));if(prior)text.style.transform=`translateX(${prior.x-unit.x}px)`;}
       else if(split&&!changed)text.style.transform=`translateX(${source.members.indexOf(unit.id)===0?-center:center}px)`;
-      text.dataset.goalId=member.id;text.textContent=member.id==='trip'?'T':label(member)?.[0]||'G';text.style.fill=member.id==='trip'?'#ffc220':'#55d5fb';text.style.fontSize=r*1.15+'px';text.setAttribute('y',r*.4);
+      text.dataset.goalId=member.id;text.textContent=member.id==='trip'?'T':label(member)?.[0]||'G';barTextY(text,r*.4);
       this.tween(text,unit.id+'-glyph-'+member.id,{transform:getComputedStyle(text).transform==='none'?'translateX(0px)':getComputedStyle(text).transform},{transform:`translateX(${unit.merged?(index===0?-center:center):0}px)`});
      }
-     if(unit.merged){const gradient=parts.group.querySelector('linearGradient');gradient.children[0].setAttribute('stop-color',members[0].id==='trip'?'#ffc220':'#55d5fb');gradient.children[1].setAttribute('stop-color',members[1].id==='trip'?'#ffc220':'#55d5fb');}
+
     }
-    parts.time.setAttribute('y',timeOffset);parts.percent.setAttribute('y',percentOffset);
-    parts.group.dataset.target=String(unit===labelTarget);parts.infoHit.style.display=unit.detailed?'':'none';if(unit.detailed){const percentBox=parts.percent.getBBox(),timeBox=parts.time.getBBox(),top=active&&parts.time.textContent?Math.min(timeBox.y,percentBox.y):percentBox.y,bottom=percentBox.y+percentBox.height,geometry={x:-(unit.half||0),y:top-4,width:(unit.half||0)*2,height:bottom-top+8};for(const element of [parts.infoHit,parts.targetFrame])for(const [name,value] of Object.entries(geometry))element.setAttribute(name,value);parts.targetFrame.style.stroke=unit.merged?`url(#${this.prefix}-${unit.id})`:stroke;}this.tween(parts.targetFrame,unit.id+'-target-border',{opacity:parts.targetFrame.style.opacity||'0'},{opacity:unit===labelTarget||!unit.current&&near(unit.percent,100)&&unit.detailed?'1':'0'});
+    barTextY(parts.time,timeOffset);barTextY(parts.percent,percentOffset);
+    parts.group.dataset.target=String(unit===labelTarget);parts.infoHit.style.display=unit.detailed?'':'none';if(unit.detailed){const percentBox=barTextBounds(parts.percent),timeBox=barTextBounds(parts.time),top=active&&parts.time.textContent?Math.min(timeBox.y,percentBox.y):percentBox.y,bottom=percentBox.y+percentBox.height,border=parseFloat(getComputedStyle(parts.infoHit).getPropertyValue('--goal-info-border-width'))||1.5,geometry={x:-(unit.half||0)-border/2,y:top-4-border/2,width:(unit.half||0)*2+border,height:bottom-top+8+border};for(const element of [parts.infoHit,parts.targetFrame])barRect(element,geometry);}this.tween(parts.targetFrame,unit.id+'-target-border',{opacity:parts.targetFrame.style.opacity||'0'},{opacity:unit===labelTarget||!unit.current&&near(unit.percent,100)&&unit.detailed?'1':'0'});
     const crossing=changed&&oldUnits.some(other=>other.detailed&&other.id!==source.id&&units.some(next=>next.id===other.id&&(source.labelX-other.labelX)*(unit.labelX-next.labelX)<0));
     if(crossing&&parts.ghost){this.layer.append(parts.ghost);parts.ghost.style.transform=`translate(${source.labelX}px, ${y}px)`;}
     if(split&&changed)parts.stack.style.opacity='0';
@@ -372,12 +386,12 @@ p.time.textContent=active&&unit.detailed&&unit.id!=='standard'?(unit.time||'—'
     if(unit===at100&&standard){const line=this.node('standard');const matrix=getComputedStyle(line.markerGroup).transform;if(matrix!=='none'&&parts.fresh)parts.stack.style.transform=`translate(${new DOMMatrix(matrix).m41}px, ${y}px)`;}
     this.move(parts.stack,unit.id+'-values',unit.labelX,y,{bounds});
     this.tween(parts.stack,unit.id+'-fade',{opacity:getComputedStyle(parts.stack).opacity},{opacity:unit.detailed?'1':'0'},{force:split&&changed||crossing,frames:crossing?[{opacity:'0'},{opacity:'0',offset:.7},{opacity:unit.detailed?'1':'0'}]:undefined});this.tween(parts.markerGroup,unit.id+'-marker-fade',{opacity:getComputedStyle(parts.markerGroup).opacity},{opacity:'1'});
-    if(active&&unit.detailed&&!near(unit.percent,100))this.connectors.append(svgElement('path',{class:'goal-bar-connector','data-node-id':unit.id,d:`M ${unit.x} ${y+halfLine} L ${unit.labelX} ${y+timeOffset-font}`,fill:'none',stroke:'#c6def5',opacity:.65}));
+    if(active&&unit.detailed&&!near(unit.percent,100)){const connector=barElement('goal-bar-connector','div',{'data-node-id':unit.id}),dx=unit.labelX-unit.x,dy=timeOffset-font-halfLine;connector.style.left=unit.x+'px';connector.style.top=y+halfLine+'px';connector.style.width=Math.hypot(dx,dy)+'px';connector.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`;this.connectors.append(connector);}
     parts.fresh=false;unit.radiusValue=r;
    }
    this.avatar?.place({left,right,x:currentX,y,halfLine,thickness,obstacles:units.filter(u=>u.id!=='standard'&&!u.current).map(u=>({x:u.x,width:u.radius*2,height:r+1}))});
    this.units=units.map(u=>({...u,members:[...u.members]}));this.previous=new Map(raw.map(n=>[n.id,{...n}]));this.initial=false;
-   this.svg.setAttribute('aria-label','Goal bar · Edit goals · '+(data.time_mode||''));PercentSummaryLayout.instances.get(this.row)?.balance();
+   this.surface.setAttribute('aria-label','Goal bar · Edit goals · '+(data.time_mode||''));PercentSummaryLayout.instances.get(this.row)?.balance();
   }
  }
  function fitHeaders(root=document){

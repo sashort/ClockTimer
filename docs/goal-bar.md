@@ -192,7 +192,7 @@ for a live trip. The thin Standard marker itself is decorative.
 The track, continuation arrows, Current readout, avatars and surrounding space
 have no editor/selection action. Invisible target borders and old-value ghosts
 cannot intercept taps. Keyboard Enter/Space edits the focused individual goal;
-the SVG is a group, with no whole-bar keyboard action. Sync retains its own action.
+the HTML bar is a group, with no whole-bar keyboard action. Sync retains its own action.
 
 The selector and numberpad show the configured goal in larger type and Inferred Trip Goal in smaller type.
 Classic uses the same details. Actual is the stored, editable percentage; inferred
@@ -358,7 +358,7 @@ from the actual rendered font instead of assuming that 8 is widest. Time text ma
 remain the wider constraint for a stacked label. Goal-selector option spacing is
 16px above and below the options.
 
-Label stacks are bounded by the outermost track, node or continuation-arrow edges, not by the SVG viewport. A label that would protrude moves inward with its connector; its marker keeps its position. The complete track/node/arrow extent stays centered beside Sync. The 100% anchor remains centered under Standard.
+Label stacks are bounded by the outermost track, node or continuation-arrow edges, not by the bar viewport. A label that would protrude moves inward with its connector; its marker keeps its position. The complete track/node/arrow extent stays centered beside Sync. The 100% anchor remains centered under Standard.
 
 The large Time Remaining readout above the bar also uses Standard minus counted trip time (100% is zero). A missed goal or target change must not reset that baseline. The Sync control is visible only when the selected mode is Trip; Auto hides it even when its current target is Trip. The shared Order Filler/Drop-In layout collapses the hidden column.
 
@@ -436,8 +436,16 @@ The next-goal countdown resolves aggregate identities through the current locali
 
 Layout-option selection uses the applied `aria-checked` state. Selected Classic/Goal bar and Full/Compact radio buttons retain their selected fill and border while hovered or keyboard-focused; generic menu hover/focus decoration must not obscure selection after Switching Layout closes. Browser verification covers all four options without reopening Settings.
 
-Node gestures use the painted circular/merged marker and the info rectangle only. The transparent info hit shape shares the visible target frame's geometry and animated stack transform. Glyphs, invisible/previous target frames, old-value ghosts, pins, and connectors cannot expand a node's touch region. Exiting nodes are non-interactive. Leaving the SVG cancels a held-node gesture. A short tap edits in every mode; an Auto-only hold locks or clears the override. Merged goals use a chooser. The track, continuation arrows, Current readout, and surrounding space have no action. Keyboard Enter/Space on an individual goal opens its editor. The obsolete whole-bar editor/keyboard action has been removed.
+Node gestures use the painted circular/merged marker and the info rectangle only. The transparent info hit shape shares the visible target frame's geometry and animated stack transform. Glyphs, invisible/previous target frames, old-value ghosts, pins, and connectors cannot expand a node's touch region. Exiting nodes are non-interactive. Leaving the bar surface cancels a held-node gesture. A short tap edits in every mode; an Auto-only hold locks or clears the override. Merged goals use a chooser. The track, continuation arrows, Current readout, and surrounding space have no action. Keyboard Enter/Space on an individual goal opens its editor. The obsolete whole-bar editor/keyboard action has been removed.
 
 Standard always has a bordered 100% label. When a named goal is at 100%, its info box owns the shared label and Standard offers no duplicate label or pointer target. The shared 100% border remains visible even when another goal is the active target. Auto holds clear the existing lock when it is among the touched choices; otherwise they lock the single identity or open the shared-goal chooser. The chooser includes Standard when applicable. Standard taps edit Standard Time through the existing numberpad during a live trip. Lock badges use the menu's outlined pushpin on a contrasting backplate.
 
 In Auto, a locked goal also owns the goal countdown caption and remaining time. Equal percentages do not merge the locked caption with other identities. A passed locked target keeps its signed overdue countdown until the lock is cleared; unlocked mode continues choosing the highest unfailed upcoming goal. This shared snapshot drives Order Filler and Drop-In.
+
+## HTML/CSS rendering
+
+The bar surface, rounded track/fills, circular or merged goal markers, information boxes, labels, connectors, continuation arrows, and scale ticks are HTML elements. Only the avatar and its artwork/effects retain SVG/canvas. The legacy `goal-bar-svg` class remains a layout hook on the HTML surface; it is not an SVG element.
+
+CSS owns fonts, text colors, border widths/colors, marker fill, rounded corners, and clipping. Layout supplies coordinates and CSS custom properties for the curved paths; markers use `clip-path: var(--goal-node-shape)` and information boxes use the same rounded contour as their visible frame. No enclosing rectangular fallback can activate a goal. Recheck captured pointer coordinates against the browser's clipped hit target, and cancel a hold when it leaves that contour. Keyboard actions retain one target per goal.
+
+Ticks are persistent positioned spans in a CSS-clipped layer, with no pointer interaction. The reciprocal/compressed scale calculations and existing opacity/movement transitions remain shared with Order Filler and Drop-In.

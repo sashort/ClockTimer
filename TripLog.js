@@ -240,8 +240,12 @@
             if(!settings){settings=node('section',undefined,'trip-log-settings');settings.id='tripLogSettings';
                 const contents=node('div',undefined,'trip-log-settings-content');contents.append(this.controls(calendar),node('hr',undefined,'trip-log-settings-divider'));settings.append(contents);this.settings=settings;
             } else {
-                const selects=settings.querySelectorAll('select');selects[0].value=this.options.filter();selects[1].value=this.options.range();
-                const week=selects[1].querySelector('option[value="week"]');if(week&&this.options.rangeLabelFor)week.textContent=this.options.rangeLabelFor('week');
+                const selects=settings.querySelectorAll('select'),filter=this.options.filter(),range=this.options.range();
+                // Writing identical option text makes Android redraw an open native picker.
+                // Live trip ticks must leave settings controls untouched unless they changed.
+                if(selects[0].value!==filter)selects[0].value=filter;
+                if(selects[1].value!==range)selects[1].value=range;
+                const week=selects[1].querySelector('option[value="week"]');if(week&&this.options.rangeLabelFor){const label=this.options.rangeLabelFor('week');if(week.textContent!==label)week.textContent=label;}
                 const dates=window.CalendarRange.dates(calendar),inputs=settings.querySelectorAll('input[type=date]');
                 inputs.forEach((input,i)=>{input.value=dates[i===0?'start':'end'];input.disabled=i===1&&this.options.range()!=='custom';});
                 const includeCurrent=settings.querySelector('input[data-include-current]');if(includeCurrent){includeCurrent.checked=Boolean(this.options.includeCurrent?.());includeCurrent.disabled=false;includeCurrent.closest('label').classList.toggle('is-unavailable',!Boolean(this.options.liveTrip?.()||trips.some(t=>t.running)));}
@@ -258,7 +262,7 @@
             this.root.classList.toggle('trip-log-empty',visibleTrips.length===0);
             if(visibleTrips.length) {
             const days=(Date.parse(calendar.endTime)-Date.parse(calendar.startTime))/86400000;
-            const levels=(days>370||this.options.range()==='year')?['year','month','week','day']:days>35?['month','week','day']:days>7?['week','day']:days>1?['day']:[];
+            const levels=(days>370||this.options.range()==='year')?['year','month','week','day']:days>35?['month','week','day']:days>7?['week','day']:['day'];
             const stamp=[calendar.startTime,calendar.endTime,this.options.range()].join('|');
             if(this.scopeStamp!==stamp){this.selectedScope=null;this.scopeStamp=stamp;}
             this.scopePanels(fragment,visibleTrips,matchingTrips,levels,calendar);

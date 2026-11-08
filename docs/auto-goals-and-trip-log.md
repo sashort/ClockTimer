@@ -10,6 +10,10 @@ The popover reduces vertical padding when needed, stays above the microphone bar
 
 Trip Log keeps its aggregate and trip panes independent of Settings and Down Time Details. Live ticks reconcile existing elements, preserving scroll and active-trip animation. Closing Trip Log closes child dialogs. All aggregate/day headers remain visible under presentation filters. A hidden-only aggregate has no disclosure triangle. Finalized hidden counts appear beneath individual day headings, with no range-wide hidden summary.
 
+Day ranges retain the totals, Day aggregate header, and adjustable splitter above the trip pane, including historical Day ranges. A one-day range is still an aggregate; it must not hide the upper pane. Empty ranges keep the existing centered empty-state message.
+
+Live trip updates must not rewrite unchanged settings selections or option labels. In particular, replacing identical Week text refreshes Android's open native picker and causes flickering. Update the Week label only when its text changes, so historical range changes and Return to Active still refresh the fiscal week number without disturbing an open selector on every tick.
+
 Selecting a Down Time category chooses the closest combination of existing checks and pending-mode states that includes all contributing trips. Extra trips may appear; no invisible category filter is added. If checks change, Down Time Details closes, Settings pulses changed checks, then closes. Otherwise it returns directly to Trip Log. Saved preferences remain distinct from temporary effective overrides.
 
 Regression coverage includes independent goal persistence, staged confirmation/cancel, radio clearing, bar gestures, custom ranges, fiscal weeks, both themes at phone sizes, live pane identity/scroll, category/check combinations, and gray accent contrast. Browser tests do not establish performance on a physical phone.

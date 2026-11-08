@@ -5698,7 +5698,7 @@
             clockTimer.setAttribute('total-label',totalScopeLabel());
             updateScopeTargetLabel(clockTimer.getUIState());
             renderClockTimerUIState(clockTimer.uiState);
-            const weekOption=tripLogRangeSelect?.querySelector('option[value=week]');if(weekOption)weekOption.textContent=tripLogSettingsScopeLabel('week');
+            const weekOption=tripLogRangeSelect?.querySelector('option[value=week]');if(weekOption){const label=tripLogSettingsScopeLabel('week');if(weekOption.textContent!==label)weekOption.textContent=label;}
             mainModeMenu?.refresh();
             refreshAutoGoalDialog();
             renderHistoricalRangeState(resolvedTripLogCalendar);
