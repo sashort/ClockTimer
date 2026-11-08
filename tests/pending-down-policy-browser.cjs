@@ -11,7 +11,8 @@ const responses=JSON.parse(execFileSync(php,['-r',`require 'api/_core/trip_time_
 for(let i=0;i<4;i++)for(const include of [false,true]){
  await p.evaluate(async include=>{pending=include;view.rerender();await new Promise(r=>setTimeout(r,50));view.render({trips:[responses[include?'included':'excluded']]},calendar);await new Promise(r=>setTimeout(r,50));},include);
  assert.equal(await p.locator('.trip-log-trip .trip-log-actual').innerText(),include?'98.45%':'61.44%');
- assert.equal(await p.locator('.trip-log-downtime.is-not-applied').count(),include?0:1);
+ assert.equal(await p.locator('.trip-log-trip .trip-log-downtime.is-not-applied').count(),include?0:1,'trip ledger reflects pending accounting');
+ assert.equal(await p.locator('.trip-log-aggregate-pane .trip-log-downtime.is-not-applied').count(),include?0:1,'Day aggregate ledger reflects the same pending accounting');
 }
 assert.deepEqual(await p.evaluate(()=>failures),[],'cached and PHP response renders never flash a partial or inflated percentage');
 await p.evaluate(()=>{observer.disconnect();pending=false;view.hasVisibleDownTime=false;view.downTimeOnly=true;view.render({trips:[responses.excluded]},calendar);view.setSettingsVisible(true);});
